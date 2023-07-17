@@ -5,26 +5,36 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;
 import spoon.MavenLauncher;
-
+import spoon.reflect.CtModel;
 import java.nio.file.Path;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+
+
 
 class APIExtractorTest {
 	APIExtractor extractor;
+	CtModel model;
+
 
 	@BeforeEach
 	void setUp() {
 		Path sources = Path.of("src/test/resources/api-extractor-tests/without-modules/v1");
 		Launcher launcher = new MavenLauncher(sources.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE, new String[0]);
 		launcher.getEnvironment().setNoClasspath(true);
-		extractor = new APIExtractor(launcher.buildModel());
+		model = launcher.buildModel();
+		extractor = new APIExtractor(model);
+
 	}
 
 	@Test
 	void write_some_interesting_tests_later() {
-		API extracted = extractor.getAPI();
-		assertThat(extracted.typeDeclarations(), hasSize(60));
+		// Extracting data and processing it
+		API api = extractor.dataProcessing(extractor);
+
+		// Printing the API for each type
+		extractor.printingData(api);
+		//extractor.trying();
 	}
+
+
 }

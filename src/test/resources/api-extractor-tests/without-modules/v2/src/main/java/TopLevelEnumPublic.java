@@ -4,7 +4,7 @@ public enum TopLevelEnumPublic {
 	// Inner classes
 	class InnerClass {}
 	public class InnerClassPublic {}
-	protected class InnerClassProtected {}
+	protected class InnerClassProtected extends Exception {}
 	private class InnerClassPrivate {}
 
 	// Nested classes

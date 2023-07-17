@@ -1,3 +1,5 @@
+
+
 // Top-level classes are either public or package-private
 class TopLevelClass {
 	// Inner classes

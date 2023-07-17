@@ -2,6 +2,7 @@ package pkg;
 
 // Top-level classes are either public or package-private
 class TopLevelClass {
+
 	// Inner classes
 	class InnerClass {}
 	public class InnerClassPublic {}
