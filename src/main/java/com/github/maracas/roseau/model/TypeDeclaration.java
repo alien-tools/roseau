@@ -16,17 +16,24 @@ public class TypeDeclaration {
     public String superclassName;
     public TypeDeclaration superclass;
     public List<String> superinterfacesNames;
+    public List<String> referencedTypes;
+    public List<String> formalTypeParameters;
+    public boolean nested;
 
 
 
 
-    public TypeDeclaration(String name, AccessModifier visibility, TypeType typeType, List<NonAccessModifiers> Modifiers,String superclassName, List<String> superinterfacesNames) {
+    public TypeDeclaration(String name, AccessModifier visibility, TypeType typeType, List<NonAccessModifiers> Modifiers,String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, boolean nested) {
         this.name = name;
         this.visibility = visibility;
         this.typeType = typeType;
         this.Modifiers = Modifiers;
         this.superclassName = superclassName;
         this.superinterfacesNames = superinterfacesNames;
+        this.referencedTypes = referencedTypes;
+        this.formalTypeParameters = formalTypeParameters;
+        this.nested = nested;
+
     }
 
     public String getName() {
@@ -54,6 +61,14 @@ public class TypeDeclaration {
     public List<String> getSuperinterfacesNames() {return superinterfacesNames; }
 
     public TypeDeclaration getSuperclass() { return superclass; }
+
+    public List<String> getReferencedTypes() { return referencedTypes; }
+
+    public List<String> getFormalTypeParameters() {
+        return formalTypeParameters;
+    }
+
+    public boolean isNested() { return nested; }
 
     public void setSuperclass(TypeDeclaration superclass) { this.superclass = superclass; }
 

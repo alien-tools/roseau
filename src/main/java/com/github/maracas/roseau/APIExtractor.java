@@ -80,11 +80,6 @@ public class APIExtractor {
 				.filter(this::typeIsAccessible)
 				.forEach(type -> {
 
-					//if (type.getSuperclass() != null) {
-						// System.out.println("Type: " + type.getSuperclass().getQualifiedName());
-					    // System.out.println("Type: " + type.getSuperInterfaces());
-					//}
-
 					types.add(type);
 					extractingNestedTypes(type, types);
 				});
@@ -215,7 +210,15 @@ public class APIExtractor {
 					List<String> superinterfacesNames = spoonType.getSuperInterfaces().stream()
 							.map(superinterface -> superinterface.getQualifiedName())
 							.toList();
-					return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames);
+					List<String> referencedTypes = spoonType.getReferencedTypes().stream()
+							.map(referencedType -> referencedType.toString())
+							.toList();
+					List<String> formalTypeParameters = spoonType.getFormalCtTypeParameters().stream()
+							.map(formalTypeParameter -> formalTypeParameter.toString())
+							.toList();
+					boolean isnested = !spoonType.isTopLevel();
+
+					return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames,referencedTypes, formalTypeParameters, isnested);
 
 					})
 
@@ -245,7 +248,10 @@ public class APIExtractor {
 					String name = spoonMethod.getSimpleName();
 					AccessModifier visibility = convertVisibility(spoonMethod.getVisibility());
 					String returnType = spoonMethod.getType().getQualifiedName();
-					String returnTypeReferencedType = spoonMethod.getType().toString();
+					List<String> returnTypeReferencedType = spoonMethod.getReferencedTypes().stream()
+							.map(ReferencedType -> ReferencedType.toString())
+							.toList();
+
 					List<NonAccessModifiers> modifiers = filterNonAccessModifiers(spoonMethod.getModifiers());
 					List<String> parametersTypes = spoonMethod.getParameters().stream()
 							.map(parameterType -> parameterType.getType().getQualifiedName())
@@ -255,6 +261,9 @@ public class APIExtractor {
 									.map(parametersReferencedType -> parametersReferencedType.toString())
 									.toList())
 							.toList();
+					List<String> formalTypeParameters = spoonMethod.getFormalCtTypeParameters().stream()
+							.map(formalTypeParameter -> formalTypeParameter.toString())
+							.toList();
 					Signature signature = new Signature(name, parametersTypes);
 					List<String> exceptions = spoonMethod.getThrownTypes().stream()
 							.map(exception-> exception.getQualifiedName())
@@ -263,7 +272,7 @@ public class APIExtractor {
 							.map(parameter -> parameter.isVarArgs())
 							.toList();
 					boolean isDefault = spoonMethod.isDefaultMethod();
-					return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, modifiers, signature, exceptions, parametersVarargsCheck, isDefault);
+					return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers, signature, exceptions, parametersVarargsCheck, isDefault);
 				})
 
 				.toList();
@@ -276,15 +285,26 @@ public class APIExtractor {
 					String name = spoonConstructor.getSimpleName();
 					AccessModifier visibility = convertVisibility(spoonConstructor.getVisibility());
 					String returnType = spoonConstructor.getType().getQualifiedName();
+					List<String> returnTypeReferencedType = spoonConstructor.getReferencedTypes().stream()
+							.map(ReferencedType -> ReferencedType.toString())
+							.toList();
 					List<String> parametersTypes = spoonConstructor.getParameters().stream()
 							.map(parameterType -> parameterType.getType().getQualifiedName())
+							.toList();
+					List<List<String>> parametersReferencedTypes = spoonConstructor.getParameters().stream()
+							.map(parameter -> parameter.getReferencedTypes().stream()
+									.map(parametersReferencedType -> parametersReferencedType.toString())
+									.toList())
+							.toList();
+					List<String> formalTypeParameters = spoonConstructor.getFormalCtTypeParameters().stream()
+							.map(formalTypeParameter -> formalTypeParameter.toString())
 							.toList();
 					List<NonAccessModifiers> modifiers = filterNonAccessModifiers(spoonConstructor.getModifiers());
 					Signature signature = new Signature(name, parametersTypes);
 					List<String> exceptions = spoonConstructor.getThrownTypes().stream()
 							.map(exception-> exception.getQualifiedName())
 							.toList();
-					return new ConstructorDeclaration(name, type, visibility, returnType,parametersTypes,modifiers,signature, exceptions);
+					return new ConstructorDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers,signature, exceptions);
 				})
 
 				.toList();
@@ -408,6 +428,7 @@ public class APIExtractor {
 					System.out.println("    Return Type: " + constructor.getReturnType());
 					System.out.println("    Modifiers: " + constructor.getModifiers());
 					System.out.println("    Parameters: " + constructor.getParametersTypes());
+					//System.out.println("    Parameters ref types: " + constructor.getParametersReferencedTypes());
 					System.out.println("    Signature: " + constructor.getSignature().getName() +  "  &  " +constructor.getSignature().getParameterTypes());
 					System.out.println("    Exceptions: " + constructor.getExceptions());
 					System.out.println("");

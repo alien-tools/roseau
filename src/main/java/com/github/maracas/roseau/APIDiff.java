@@ -52,12 +52,12 @@ public class APIDiff {
                     //System.out.println("Type removed: " + removedType.getName());
                     if (removedType.getTypeType().equals(TypeType.CLASS)) {
                         breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_REMOVED, new TypeBreakingChange(removedType)));
-                        appendToFile("New : " + removedType.getName() );
+                        appendToFile("New : " + removedType.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_REMOVED  + "\n");
 
                     }
                     if (removedType.getTypeType().equals(TypeType.INTERFACE)) {
                         breakingChanges.add(new BreakingChange(BreakingChangeKind.INTERFACE_REMOVED, new TypeBreakingChange(removedType)));
-                        appendToFile("New : " + removedType.getName() );
+                        appendToFile("New : " + removedType.getName() + " breaking change kind is : " + BreakingChangeKind.INTERFACE_REMOVED  + "\n");
                     }
 
                 })
@@ -96,7 +96,7 @@ public class APIDiff {
                 .peek(removedField -> {
                     //System.out.println("Field removed: " + removedField.getName());
                     breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_REMOVED, new FieldBreakingChange(removedField)));
-                    appendToFile("New : " + removedField.getType().getName() );
+                    appendToFile("New : " + removedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_REMOVED  + "\n");
                 })
                 .toList();
     }
@@ -109,9 +109,9 @@ public class APIDiff {
                 .peek(removedMethod -> {
                     //System.out.println("Method removed: " + removedMethod.getName());
                     breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, new MethodBreakingChange(removedMethod)));
-                    appendToFile("New : " + removedMethod.getType().getName() );
+                    appendToFile("New : " + removedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_REMOVED  + "\n");
                 })
-                        .toList();
+                .toList();
 
     }
 
@@ -123,7 +123,7 @@ public class APIDiff {
                 .peek(removedConstructor -> {
                     //System.out.println("Constructor removed: " + removedConstructor.getName());
                     breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, new ConstructorBreakingChange(removedConstructor)));
-                    appendToFile("New : " + removedConstructor.getType().getName() );
+                    appendToFile("New : " + removedConstructor.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_REMOVED  + "\n");
                 })
                 .toList();
     }
@@ -205,11 +205,11 @@ public class APIDiff {
 
                     if (type2.getTypeType().equals(TypeType.INTERFACE)) {
                         breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, new MethodBreakingChange(addedMethod)));
-                        appendToFile("New : " + addedMethod.getType().getName() );
+                        appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_ADDED_TO_INTERFACE  + "\n");
                     }
                     if (type2.getTypeType().equals(TypeType.CLASS) && addedMethod.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
                         breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, new MethodBreakingChange(addedMethod)));
-                        appendToFile("New : " + addedMethod.getType().getName() );
+                        appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS  + "\n");
                     }
                     if (type1.getSuperclass() != null && type2.getSuperclass() != null ){
 
@@ -231,17 +231,17 @@ public class APIDiff {
                         if (superMethodInV2 != null && superMethodInV1 != null){   // if the method actually overrides another
                             if (addedMethod.getModifiers().contains(NonAccessModifiers.STATIC) && !superMethodInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
                                 breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC, new MethodBreakingChange(addedMethod)));
-                                appendToFile("New : " + addedMethod.getType().getName() );
+                                appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC  + "\n");
 
                             }
                             if (!addedMethod.getModifiers().contains(NonAccessModifiers.STATIC) && superMethodInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
                                 breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC, new MethodBreakingChange(addedMethod)));
-                                appendToFile("New : " + addedMethod.getType().getName() );
+                                appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC  + "\n");
 
                             }
                             if (superMethodInV2.getVisibility().equals(AccessModifier.PUBLIC) && addedMethod.getVisibility().equals(AccessModifier.PROTECTED)) {
                                 breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, new MethodBreakingChange(addedMethod)));
-                                appendToFile("New : " + addedMethod.getType().getName() );
+                                appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS + "\n");
 
                             }
                         }
@@ -276,16 +276,16 @@ public class APIDiff {
                         if (superFieldInV2 != null && superFieldInV1 != null) { // if the field exists in both superclasses
                             if (addedField.getModifiers().contains(NonAccessModifiers.STATIC) && !superFieldInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
                                 breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC, new FieldBreakingChange(addedField)));
-                                appendToFile("New : " + addedField.getType().getName() );
+                                appendToFile("New : " + addedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC  + "\n");
 
                             }
                             if (!addedField.getModifiers().contains(NonAccessModifiers.STATIC) && superFieldInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
                                 breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC, new FieldBreakingChange(addedField)));
-                                appendToFile("New : " + addedField.getType().getName() );
+                                appendToFile("New : " + addedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC  + "\n");
                             }
                             if (superFieldInV2.getVisibility().equals(AccessModifier.PUBLIC) && addedField.getVisibility().equals(AccessModifier.PROTECTED)) {
                                 breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, new FieldBreakingChange(addedField)));
-                                appendToFile("New : " + addedField.getType().getName() );
+                                appendToFile("New : " + addedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS  + "\n");
 
                             }
                         }
@@ -301,33 +301,33 @@ public class APIDiff {
     public void fieldComparison(FieldDeclaration field1, FieldDeclaration field2) {
         if (!field1.getModifiers().contains(NonAccessModifiers.FINAL) && field2.getModifiers().contains(NonAccessModifiers.FINAL)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() );
+            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NOW_FINAL  + "\n");
         }
 
         if (!field1.getModifiers().contains(NonAccessModifiers.STATIC) && field2.getModifiers().contains(NonAccessModifiers.STATIC)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_STATIC, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() );
+            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NOW_STATIC  + "\n");
         }
 
         if (field1.getModifiers().contains(NonAccessModifiers.STATIC) && !field2.getModifiers().contains(NonAccessModifiers.STATIC)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NO_LONGER_STATIC, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() );
+            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NO_LONGER_STATIC  + "\n");
         }
 
         if (!field1.getDataType().equals(field2.getDataType())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_TYPE_CHANGED, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() );
+            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_TYPE_CHANGED  + "\n");
         }
 
 
         if (field1.getVisibility().equals(AccessModifier.PUBLIC) && field2.getVisibility().equals(AccessModifier.PROTECTED)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() );
+            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_LESS_ACCESSIBLE  + "\n");
         }
 
         if (field1.getDataType().equals(field2.getDataType()) && !field1.getReferencedTypes().equals(field2.getReferencedTypes())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() );
+            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_GENERICS_CHANGED  + "\n");
         }
 
     }
@@ -337,47 +337,59 @@ public class APIDiff {
     public void methodComparison(MethodDeclaration method1, MethodDeclaration method2) {
         if (!method1.getModifiers().contains(NonAccessModifiers.FINAL) && method2.getModifiers().contains(NonAccessModifiers.FINAL)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_FINAL, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_FINAL  + "\n");
         }
 
         if (!method1.getModifiers().contains(NonAccessModifiers.STATIC) && method2.getModifiers().contains(NonAccessModifiers.STATIC)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_STATIC, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_STATIC  + "\n");
         }
+
+        if (!method1.getModifiers().contains(NonAccessModifiers.NATIVE) && method2.getModifiers().contains(NonAccessModifiers.NATIVE)) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_NATIVE, new MethodBreakingChange(method1)));
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_NATIVE  + "\n");
+        }
+
 
         if (method1.getModifiers().contains(NonAccessModifiers.STATIC) && !method2.getModifiers().contains(NonAccessModifiers.STATIC)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STATIC, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NO_LONGER_STATIC  + "\n");
+        }
+
+
+        if (method1.getModifiers().contains(NonAccessModifiers.STRICTFP) && !method2.getModifiers().contains(NonAccessModifiers.STRICTFP)) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, new MethodBreakingChange(method1)));
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NO_LONGER_STRICTFP  + "\n");
         }
 
         if (!method1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && method2.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_ABSTRACT, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_ABSTRACT + "\n");
         }
 
         if (method1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && method2.isDefault()) { /// Careful
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT  + "\n");
         }
 
         if (method1.getVisibility().equals(AccessModifier.PUBLIC) && method2.getVisibility().equals(AccessModifier.PROTECTED)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_LESS_ACCESSIBLE  + "\n");
         }
 
         if (!method1.getReturnType().equals(method2.getReturnType())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED  + "\n");
         }
 
         if (method1.getReturnType().equals(method2.getReturnType()) && !method1.getReturnTypeReferencedTypes().equals(method2.getReturnTypeReferencedTypes())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED  + "\n");
         }
 
         if (!method1.getParametersReferencedTypes().equals(method2.getParametersReferencedTypes())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED  + "\n");
         }
 
         List<String> additionalExceptions1 = method1.getExceptions().stream()
@@ -391,12 +403,12 @@ public class APIDiff {
 
         if (!additionalExceptions1.isEmpty()) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION  + "\n");
         }
 
         if (!additionalExceptions2.isEmpty()) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() );
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION  + "\n");
         }
 
         IntStream.range(0, method1.getParametersVarargsCheck().size())
@@ -405,9 +417,19 @@ public class APIDiff {
                     boolean isNowVarargs = !method1.getParametersVarargsCheck().get(i) && method2.getParametersVarargsCheck().get(i);
                     BreakingChangeKind kind = isNowVarargs ? BreakingChangeKind.METHOD_NOW_VARARGS : BreakingChangeKind.METHOD_NO_LONGER_VARARGS;
                     breakingChanges.add(new BreakingChange(kind, new MethodBreakingChange(method1)));
-                    appendToFile("New : " + method1.getType().getName() );
-
+                    appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + kind + "\n");
                 });
+
+
+
+        if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, new MethodBreakingChange(method1)));
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED  + "\n");
+        }
+        if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, new MethodBreakingChange(method1)));
+            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED  + "\n");
+        }
 
 
 
@@ -417,7 +439,24 @@ public class APIDiff {
     public void constructorComparison(ConstructorDeclaration constructor1, ConstructorDeclaration constructor2) {
         if (constructor1.getVisibility().equals(AccessModifier.PUBLIC) && constructor2.getVisibility().equals(AccessModifier.PROTECTED)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, new ConstructorBreakingChange(constructor1)));
-            appendToFile("New : " + constructor1.getType().getName() );
+            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE  + "\n");
+        }
+
+        if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes())) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, new ConstructorBreakingChange(constructor1)));
+            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED  + "\n");
+        }
+        if (!constructor1.getReturnTypeReferencedTypes().equals(constructor2.getReturnTypeReferencedTypes())) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED, new ConstructorBreakingChange(constructor1)));
+            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED  + "\n");
+        }
+        if (constructor1.getFormalTypeParameters().size() > constructor2.getFormalTypeParameters().size()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, new ConstructorBreakingChange(constructor1)));
+            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED  + "\n");
+        }
+        if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, new ConstructorBreakingChange(constructor1)));
+            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED  + "\n");
         }
 
     }
@@ -427,34 +466,60 @@ public class APIDiff {
         if (type1.typeType.equals(TypeType.CLASS)) {
             if (!type1.getModifiers().contains(NonAccessModifiers.FINAL) && type2.getModifiers().contains(NonAccessModifiers.FINAL)) {
                 breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() );
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_NOW_FINAL  + "\n");
             }
 
             if (!type1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && type2.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
                 breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_ABSTRACT, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() );
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_NOW_ABSTRACT  + "\n");
             }
 
-            if (type1.getVisibility().equals(AccessModifier.PUBLIC) && type2.getVisibility().equals(AccessModifier.PROTECTED)) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_LESS_ACCESSIBLE, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() );
+            if (!type1.getModifiers().contains(NonAccessModifiers.STATIC) && type2.getModifiers().contains(NonAccessModifiers.STATIC) && type1.isNested()  && type2.isNested()) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, new TypeBreakingChange(type1)));
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.NESTED_CLASS_NOW_STATIC  + "\n");
             }
+
+            if (type1.getModifiers().contains(NonAccessModifiers.STATIC) && !type2.getModifiers().contains(NonAccessModifiers.STATIC) && type1.isNested()  && type2.isNested()) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, new TypeBreakingChange(type1)));
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC  + "\n");
+            }
+
 
             if (!type1.typeType.equals(type2.typeType)) {
                 breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() );
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_TYPE_CHANGED  + "\n");
             }
 
             if (!type1.getSuperclassName().equals("java.lang.Exception") && type2.getSuperclassName().equals("java.lang.Exception")) {
                 breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() );
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION  + "\n");
             }
 
             if (!type1.getSuperclassName().equals(type2.getSuperclassName()) || !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames())) {
                 breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() );
+                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE + "\n");
             }
 
+        }
+
+        if (type1.getVisibility().equals(AccessModifier.PUBLIC) && type2.getVisibility().equals(AccessModifier.PROTECTED)) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, new TypeBreakingChange(type1)));
+            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.TYPE_LESS_ACCESSIBLE + "\n");
+        }
+
+        if (!type1.getReferencedTypes().equals(type2.getReferencedTypes())) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_GENERICS_CHANGED, new TypeBreakingChange(type1)));
+            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.TYPE_GENERICS_CHANGED  + "\n");
+        }
+
+
+        if (type1.getFormalTypeParameters().size() > type2.getFormalTypeParameters().size()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED, new TypeBreakingChange(type1)));
+            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED  + "\n");
+        }
+        if (type1.getFormalTypeParameters().size() < type2.getFormalTypeParameters().size()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED, new TypeBreakingChange(type1)));
+            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED  + "\n");
         }
     }
 

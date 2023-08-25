@@ -13,6 +13,18 @@ public class MyClass {
         System.out.println("Name: " + name);
     }
 
+    public class GenericsClazzTypeAddSecond<T, K> {
+
+        public <S, D> void method1() {
+
+        }
+
+        public <Z extends Integer> void method2() {
+
+        }
+
+    }
+
     public class InnerClass {
         public int value; //
 
