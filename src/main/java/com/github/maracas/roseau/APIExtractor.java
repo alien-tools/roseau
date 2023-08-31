@@ -1,7 +1,5 @@
 package com.github.maracas.roseau;
 
-
-/** import com.github.maracas.roseau.model.API;**/
 import com.github.maracas.roseau.model.ConstructorDeclaration;
 import com.github.maracas.roseau.model.FieldDeclaration;
 import com.github.maracas.roseau.model.MethodDeclaration;
@@ -22,17 +20,23 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
-
+/**
+ * This class represents roseau's API extraction tool.
+ */
 
 public class APIExtractor {
 	private final CtModel model;
 
+
+	/**
+	 * Constructs an APIExtractor instance with the provided CtModel to extract its information.
+	 */
 	public APIExtractor(CtModel model) {
 		this.model = Objects.requireNonNull(model);
 	}
 
-	//Returning the packages as CtPackages
-	public List<CtPackage> rawSpoonPackages() {
+	// Returning the packages as spoon CtPackages
+	private List<CtPackage> rawSpoonPackages() {
 		return model.getAllPackages().stream()
 				.peek(packageDeclaration -> {
 					//System.out.println("Package: " + packageDeclaration.getQualifiedName());
@@ -55,51 +59,51 @@ public class APIExtractor {
 		return member.isPublic() || member.isProtected();
 	}
 
-	//Returning the accessible types of a package as CtTypes
+	// Returning the accessible types of a package as spoon CtTypes
 
-	public List<CtType<?>> rawSpoonTypes(CtPackage pkg) {
+	private List<CtType<?>> extractedSpoonTypes(CtPackage pkg) {
 		List<CtType<?>> types = new ArrayList<>();
 		pkg.getTypes().stream()
 				.filter(this::typeIsAccessible)
 				.forEach(type -> {
 
 					//if (type.getSuperclass() != null) {
-						// System.out.println("Type: " + type.getSuperclass().getQualifiedName());
+						// System.out.println("Type: " + type.getPosition().toString());
 						// System.out.println("Type: " + type.getSuperInterfaces());
 					//}
 
 					types.add(type);
-					extractingNestedTypes(type, types);
+					extractingSpoonNestedTypes(type, types);
 				});
 		return types;
 	}
 
-	// Handing nested types
-	public void extractingNestedTypes(CtType<?> parentType, List<CtType<?>> types) {
+	// Handling nested types
+	private void extractingSpoonNestedTypes(CtType<?> parentType, List<CtType<?>> types) {
 		parentType.getNestedTypes().stream()
 				.filter(this::typeIsAccessible)
 				.forEach(type -> {
-
 					types.add(type);
-					extractingNestedTypes(type, types);
+					extractingSpoonNestedTypes(type, types);
 				});
 	}
 
 
-	//Returning the accessible fields of a type as CtFields
-	public List<CtField<?>> rawSpoonFields(CtType<?> type) {
+	// Returning the accessible fields of a type as spoon CtFields
+	private List<CtField<?>> extractedSpoonFields(CtType<?> type) {
 		return type.getFields().stream()
 				.filter(this::memberIsAccessible)
 				.peek(field -> {
 
-					//System.out.println("Field: " + field.getSimpleName() + " and ref types are: " + field.getReferencedTypes() );
+					//System.out.println("Field: " + field.getPosition().toString() );
+
 
 				})
 				.toList();
 	}
 
-    //Returning the accessible methods of a type as CtMethods
-	public List<CtMethod<?>> rawSpoonMethods(CtType<?> type) {
+    // Returning the accessible methods of a type as spoon CtMethods
+	private List<CtMethod<?>> extractedSpoonMethods(CtType<?> type) {
 		return type.getMethods().stream()
 				.filter(this::memberIsAccessible)
 				.peek(method -> {
@@ -108,13 +112,13 @@ public class APIExtractor {
 				.toList();
 	}
 
-	//Returning the accessible constructors of a type as CtConstructors
-	public List<CtConstructor<?>> rawSpoonConstructors(CtType<?> type) {
+	// Returning the accessible constructors of a type as spoon CtConstructors
+	private List<CtConstructor<?>> extractedSpoonConstructors(CtType<?> type) {
 		if (type instanceof CtClass<?> cls) {
 			return new ArrayList<>(cls.getConstructors().stream()
 					.filter(this::memberIsAccessible)
 					.peek(constructor -> {
-						//System.out.println("Constructor: " + constructor.getSimpleName());
+						//System.out.println("Constructor: " + type.getPosition().toString());
 					})
 					.toList());
 		}
@@ -124,8 +128,8 @@ public class APIExtractor {
 
 
 
-	// Converting spoon's access ModifierKind to our enum: AccessModifier
-	public AccessModifier convertVisibility(ModifierKind visibility) {
+	// Converting spoon's access ModifierKind to roseau's enum : AccessModifier
+	private AccessModifier convertVisibility(ModifierKind visibility) {
 		if (visibility == ModifierKind.PUBLIC) {
 			return AccessModifier.PUBLIC;
 		} else if (visibility == ModifierKind.PRIVATE) {
@@ -137,8 +141,8 @@ public class APIExtractor {
 		}
 	}
 
-	// Converting spoon's Non-access ModifierKind to our enum: NonAccessModifier
-	public NonAccessModifiers convertNonAccessModifier(ModifierKind modifier) {
+	// Converting spoon's Non-access ModifierKind to roseau's enum : NonAccessModifier
+	private NonAccessModifiers convertNonAccessModifier(ModifierKind modifier) {
 		if (modifier == ModifierKind.STATIC) {
 			return NonAccessModifiers.STATIC;
 		} else if (modifier == ModifierKind.FINAL) {
@@ -163,7 +167,7 @@ public class APIExtractor {
 	}
 
 	// Filtering access modifiers because the convertVisibility() handles them already
-	public List<NonAccessModifiers> filterNonAccessModifiers(Set<ModifierKind> modifiers) {
+	private List<NonAccessModifiers> filterNonAccessModifiers(Set<ModifierKind> modifiers) {
 		List<NonAccessModifiers> nonAccessModifiers = new ArrayList<>();
 
 		for (ModifierKind modifier : modifiers) {
@@ -179,8 +183,8 @@ public class APIExtractor {
 
 
 
-	// Returning the types' types, whether if it's a class or an enum or whatever
-	public TypeType convertTypeType(CtType<?> type) {
+	// Returning the type's kind ( whether if it's a class/enum/interface/annotation/record )
+	private TypeType convertTypeType(CtType<?> type) {
 		if (type.isClass())
 			return TypeType.CLASS;
 		if (type.isInterface())
@@ -194,11 +198,12 @@ public class APIExtractor {
 	}
 
 
-	/** The conversion functions : Moving from spoon's Ct kinds to our Declaration kinds **/
+	// The conversion functions : Moving from spoon's Ct kinds to roseau's Declaration kinds
 
-	public List<TypeDeclaration> rawTypesConversion(List<CtType<?>> spoonTypes) {
+	private List<TypeDeclaration> convertingSpoonTypesToTypeDeclarations(List<CtType<?>> spoonTypes) {
 		return spoonTypes.stream()
 				.map(spoonType -> {
+					// Extracting relevant information from the spoonType
 					String name = spoonType.getQualifiedName();
 					AccessModifier visibility = convertVisibility(spoonType.getVisibility());
 					TypeType typeType = convertTypeType(spoonType);
@@ -216,19 +221,22 @@ public class APIExtractor {
 					List<String> formalTypeParameters = spoonType.getFormalCtTypeParameters().stream()
 							.map(formalTypeParameter -> formalTypeParameter.toString())
 							.toList();
-					boolean isnested = !spoonType.isTopLevel();
+					boolean isNested = !spoonType.isTopLevel();
+					String position = spoonType.getPosition().toString();
 
-					return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames,referencedTypes, formalTypeParameters, isnested);
+					// Creating a new TypeDeclaration object using the extracted information
+					return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames,referencedTypes, formalTypeParameters, isNested, position);
 
 					})
 
-				.toList();
+				.toList(); // Adding it to the list of TypeDeclarations
 	}
 
 
-	public List<FieldDeclaration> rawFieldsConversion(List<CtField<?>> spoonFields, TypeDeclaration type) {
+	private List<FieldDeclaration> convertingSpoonFieldsToFieldDeclarations(List<CtField<?>> spoonFields, TypeDeclaration type) {
 		return spoonFields.stream()
 				.map(spoonField -> {
+					// Extracting relevant information from the spoonField
 					String name = spoonField.getSimpleName();
 					AccessModifier visibility = convertVisibility(spoonField.getVisibility());
 					String dataType = spoonField.getType().getQualifiedName();
@@ -236,15 +244,18 @@ public class APIExtractor {
 					List<String> referencedTypes = spoonField.getReferencedTypes().stream()
 							.map(referencedType -> referencedType.toString())
 							.toList();
-					return new FieldDeclaration(name, type, visibility, dataType,modifiers, referencedTypes );
+					String position = spoonField.getPosition().toString();
+					// Creating a new FieldDeclaration object using the extracted information
+					return new FieldDeclaration(name, type, visibility, dataType,modifiers, referencedTypes, position );
 				})
 
-				.toList();
+				.toList();  // Adding it to the list of FieldDeclarations
 	}
 
-	public List<MethodDeclaration> rawMethodsConversion(List<CtMethod<?>> spoonMethods, TypeDeclaration type) {
+	private List<MethodDeclaration> convertingSpoonMethodsToMethodDeclarations(List<CtMethod<?>> spoonMethods, TypeDeclaration type) {
 		return spoonMethods.stream()
 				.map(spoonMethod -> {
+					// Extracting relevant information from the spoonMethod
 					String name = spoonMethod.getSimpleName();
 					AccessModifier visibility = convertVisibility(spoonMethod.getVisibility());
 					String returnType = spoonMethod.getType().getQualifiedName();
@@ -272,16 +283,18 @@ public class APIExtractor {
 							.map(parameter -> parameter.isVarArgs())
 							.toList();
 					boolean isDefault = spoonMethod.isDefaultMethod();
-					return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers, signature, exceptions, parametersVarargsCheck, isDefault);
+					String position = spoonMethod.getPosition().toString();
+					// Creating a new MethodDeclaration object using the extracted information
+					return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers, signature, exceptions, parametersVarargsCheck, isDefault, position);
 				})
 
-				.toList();
+				.toList();  // Adding it to the list of MethodDeclarations
 	}
 
-	public List<ConstructorDeclaration> rawConstructorsConversion(List<CtConstructor<?>> spoonConstructors, TypeDeclaration type) {
+	private List<ConstructorDeclaration> convertingSpoonConstructorsToConstructorDeclarations(List<CtConstructor<?>> spoonConstructors, TypeDeclaration type) {
 		return spoonConstructors.stream()
 				.map(spoonConstructor -> {
-
+					// Extracting relevant information from the spoonConstructor
 					String name = spoonConstructor.getSimpleName();
 					AccessModifier visibility = convertVisibility(spoonConstructor.getVisibility());
 					String returnType = spoonConstructor.getType().getQualifiedName();
@@ -304,49 +317,64 @@ public class APIExtractor {
 					List<String> exceptions = spoonConstructor.getThrownTypes().stream()
 							.map(exception-> exception.getQualifiedName())
 							.toList();
-					return new ConstructorDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers,signature, exceptions);
+					String position = type.getPosition().toString();
+					// Creating a new ConstructorDeclaration object using the extracted information
+					return new ConstructorDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers,signature, exceptions, position);
 				})
 
-				.toList();
+				.toList();  // Adding it to the list of ConstructorDeclarations
 	}
 
-	// Processing data and structuring the API using the previous functions
 
-	public API dataProcessing(APIExtractor extractor) {
-		List<CtPackage> packages = extractor.rawSpoonPackages(); // Returning packages
+	// The API extraction function
+
+
+	/**
+	 * Extracts the library's (model's) structured API.
+
+	 * @return Library's (model's) API.
+	 */
+
+	public API extractingAPI() {
+		List<CtPackage> packages = rawSpoonPackages(); // Returning packages
 		List<TypeDeclaration> AllTheTypes = new ArrayList<>();
 
-		for (CtPackage pkg : packages) {
+		for (CtPackage pkg : packages) {  // Looping over the packages to extract all the library's types
 
-			List<CtType<?>> types = extractor.rawSpoonTypes(pkg); // Only returning the packages' accessible types
-			List<TypeDeclaration> typesConverted = extractor.rawTypesConversion(types); // Transforming the CtTypes into TypeDeclarations
+			List<CtType<?>> types = extractedSpoonTypes(pkg); // Only returning the packages' accessible types
+			List<TypeDeclaration> typesConverted = convertingSpoonTypesToTypeDeclarations(types); // Transforming the spoon's CtTypes into TypeDeclarations
 
 			if (!typesConverted.isEmpty()) {
 				int i=0;
-				for (CtType<?> type : types) {
+				for (CtType<?> type : types) {  // Looping over spoon's types to fill the TypeDeclarations' fields / methods / constructors
+
 					TypeDeclaration typeDeclaration = typesConverted.get(i);
 
-					List<CtField<?>> fields = extractor.rawSpoonFields(type); // Returning the accessible fields of accessible types
-					List<FieldDeclaration> fieldsConverted = extractor.rawFieldsConversion(fields, typeDeclaration); // Transforming them into fieldDeclarations
-					typeDeclaration.setFields(fieldsConverted);
+					List<CtField<?>> fields = extractedSpoonFields(type); // Returning the accessible fields of accessible types
+					List<FieldDeclaration> fieldsConverted = convertingSpoonFieldsToFieldDeclarations(fields, typeDeclaration); // Transforming them into fieldDeclarations
+					typeDeclaration.setFields(fieldsConverted);  // Adding them to the TypeDeclaration they belong to
 
 					// Doing the same thing for methods and constructors
 
-					List<CtMethod<?>> methods = extractor.rawSpoonMethods(type);
-					List<MethodDeclaration> methodsConverted = extractor.rawMethodsConversion(methods, typeDeclaration);
+					List<CtMethod<?>> methods = extractedSpoonMethods(type);
+					List<MethodDeclaration> methodsConverted = convertingSpoonMethodsToMethodDeclarations(methods, typeDeclaration);
 					typeDeclaration.setMethods(methodsConverted);
 
-					List<CtConstructor<?>> constructors = extractor.rawSpoonConstructors(type);
-					List<ConstructorDeclaration> constructorsConverted = extractor.rawConstructorsConversion(constructors, typeDeclaration);
+					List<CtConstructor<?>> constructors = extractedSpoonConstructors(type);
+					List<ConstructorDeclaration> constructorsConverted = convertingSpoonConstructorsToConstructorDeclarations(constructors, typeDeclaration);
 					typeDeclaration.setConstructors(constructorsConverted);
 
 					i++;
+
 				};
 			}
 
 			AllTheTypes.addAll(typesConverted);
 
 		}
+
+
+		// Adding the superclasses info
 
 		API api = new API(AllTheTypes);
 
@@ -364,12 +392,18 @@ public class APIExtractor {
 		});
 
 
-		return api;
+		return api;  // returning the library's API
 
 	}
 
-	// A method for printing the API
-	public void printingData(API api) {
+	/**
+	 * Displays the API information provided in a structured format.
+
+	 * @param api The API containing the information to be displayed
+	 */
+
+	// A method for printing the library's API
+	public void displayingAPI(API api) {
 
 		List<TypeDeclaration> convertedTypes = api.getAllTheTypes();
 		for (TypeDeclaration typeDeclaration : convertedTypes) {
@@ -439,16 +473,9 @@ public class APIExtractor {
 			System.out.println("\n  =====  NEEEEEEEEXT  =====\n\n");
 		}
 
-	}
-
-	public void trying(){
-
 		System.out.println("  ๑(◕‿◕)๑ ");
 
-
 	}
-
-
 
 
 }

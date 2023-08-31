@@ -1,25 +1,17 @@
 package com.github.maracas.roseau.changes;
 
+
+import com.github.maracas.roseau.model.MethodDeclaration;
 import com.github.maracas.roseau.model.TypeDeclaration;
 
-import java.util.ArrayList;
-import java.util.List;
+/**
+ * Represents a type-related breaking change (class, interface, etc.) within an API.
+ * This class extends the {@link BreakingChange} and handles exclusively type-specific BCs.
+ */
+public class TypeBreakingChange extends BreakingChange {
 
-public class TypeBreakingChange extends BreakingChangeElement {
-    public TypeDeclaration type;
-
-    public TypeBreakingChange(TypeDeclaration type) {
-        this.type = type;
+    public TypeBreakingChange(BreakingChangeKind breakingChangeKind, TypeDeclaration breakingChangeTypeDeclaration, String breakingChangePosition, BreakingChangeNature breakingChangeNature) {
+        super(breakingChangeKind, breakingChangeTypeDeclaration, breakingChangePosition, breakingChangeNature);
     }
 
-    public List<String> getElement() {
-        List<String> elementInfo = new ArrayList<>();
-        elementInfo.add(type.getName());
-        elementInfo.add(type.getName());
-        return elementInfo;
-    }
-
-    public void setTypeBreakingChange(TypeDeclaration type) {
-        this.type = type;
-    }
 }

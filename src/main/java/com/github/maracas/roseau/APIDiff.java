@@ -1,70 +1,86 @@
+
 package com.github.maracas.roseau;
 
 import com.github.maracas.roseau.changes.*;
 import com.github.maracas.roseau.model.*;
-
-import java.io.FileWriter;
-import java.io.IOException;
-import java.io.PrintWriter;
 
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Objects;
 import java.util.stream.IntStream;
 
+/**
+ * This class represents Roseau's comparison tool for detecting breaking changes between two API versions.
+ */
 
 public class APIDiff {
+
+    /** The first version of the API to be compared. */
     public API v1;
+
+    /** The second version of the API to be compared. */
     public API v2;
-    List <BreakingChange> breakingChanges;
-    private String fileName = "/home/pc/Bureau/api-evolution-data-corpus-master/tools/.reports/roseau.txt";
+    /** List of all the breaking changes identified in the comparison. */
+    public List<BreakingChange> breakingChanges;
+
+    /** List of type-related breaking changes identified in the comparison. */
+    public List<TypeBreakingChange> typeBreakingChanges;
+
+    /** List of method-related breaking changes identified in the comparison. */
+    public List<MethodBreakingChange> methodBreakingChanges;
+
+    /** List of constructor-related breaking changes identified in the comparison. */
+    public List<ConstructorBreakingChange> constructorBreakingChanges;
+
+    /** List of field-related breaking changes identified in the comparison. */
+    public List<FieldBreakingChange> fieldBreakingChanges;
+
+    private boolean breakingChangesPopulated = false;
+
+    /**
+     * Constructs an APIDiff instance to compare two API versions for breaking changes detection.
+     *
+     * @param v1 The first version of the API to compare.
+     * @param v2 The second version of the API to compare.
+     */
 
     public APIDiff(API v1, API v2) {
         this.v1 = Objects.requireNonNull(v1);
         this.v2 = Objects.requireNonNull(v2);
         this.breakingChanges = new ArrayList<>();
+        this.methodBreakingChanges = new ArrayList<>();
+        this.typeBreakingChanges = new ArrayList<>();
+        this.fieldBreakingChanges = new ArrayList<>();
+        this.constructorBreakingChanges = new ArrayList<>();
     }
 
 
-    public void appendToFile(String content) {
-        try (PrintWriter writer = new PrintWriter(new FileWriter(fileName, true))) {
-            writer.println(content);
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public void clearFile() {
-        try (PrintWriter writer = new PrintWriter(fileName)) {
-            writer.print("");
-        } catch (IOException e) {
-            e.printStackTrace();
-        }
-    }
 
 
-    public List<TypeDeclaration> checkingForRemovedTypes() {
-        clearFile();
+
+    private List<TypeDeclaration> checkingForRemovedTypes() {
+
         return v1.getAllTheTypes().stream()
                 .filter(type -> v2.getAllTheTypes().stream()
                         .noneMatch(t -> t.getName().equals(type.getName())))
                 .peek(removedType -> {
                     //System.out.println("Type removed: " + removedType.getName());
                     if (removedType.getTypeType().equals(TypeType.CLASS)) {
-                        breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_REMOVED, new TypeBreakingChange(removedType)));
-                        appendToFile("New : " + removedType.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_REMOVED  + "\n");
+
+                        breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION));
+                        typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION));
 
                     }
                     if (removedType.getTypeType().equals(TypeType.INTERFACE)) {
-                        breakingChanges.add(new BreakingChange(BreakingChangeKind.INTERFACE_REMOVED, new TypeBreakingChange(removedType)));
-                        appendToFile("New : " + removedType.getName() + " breaking change kind is : " + BreakingChangeKind.INTERFACE_REMOVED  + "\n");
+                        breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.INTERFACE_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION));
+                        typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.INTERFACE_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION));
                     }
 
                 })
                 .toList();
     }
 
-    public List<List<TypeDeclaration>> getUnremovedTypes() {
+    private List<List<TypeDeclaration>> getUnremovedTypes() {
 
         List<TypeDeclaration> unremovedTypes1 = v1.getAllTheTypes().stream()
                 .filter(type -> v2.getAllTheTypes().stream()
@@ -89,48 +105,50 @@ public class APIDiff {
     }
 
 
-    public List<FieldDeclaration> checkingForRemovedFields(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<FieldDeclaration> checkingForRemovedFields(TypeDeclaration type1, TypeDeclaration type2) {
         return type1.getFields().stream()
                 .filter(field1 -> type2.getFields().stream()
                         .noneMatch(field2 -> field2.getName().equals(field1.getName())))
                 .peek(removedField -> {
                     //System.out.println("Field removed: " + removedField.getName());
-                    breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_REMOVED, new FieldBreakingChange(removedField)));
-                    appendToFile("New : " + removedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_REMOVED  + "\n");
+                    breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_REMOVED, removedField.getType(), removedField.getPosition(), BreakingChangeNature.DELETION, removedField));
+                    fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_REMOVED, removedField.getType(), removedField.getPosition(), BreakingChangeNature.DELETION, removedField));
                 })
                 .toList();
     }
 
 
-    public List<MethodDeclaration> checkingForRemovedMethods(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<MethodDeclaration> checkingForRemovedMethods(TypeDeclaration type1, TypeDeclaration type2) {
         return type1.getMethods().stream()
                 .filter(method2 -> type2.getMethods().stream()
                         .noneMatch(method1 -> method1.getSignature().getName().equals(method2.getSignature().getName()) && method1.getSignature().getParameterTypes().equals(method2.getSignature().getParameterTypes())))
                 .peek(removedMethod -> {
                     //System.out.println("Method removed: " + removedMethod.getName());
-                    breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, new MethodBreakingChange(removedMethod)));
-                    appendToFile("New : " + removedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_REMOVED  + "\n");
+                    breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+                    methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
                 })
                 .toList();
 
     }
 
 
-    public List<ConstructorDeclaration> checkingForRemovedConstructors(TypeDeclaration type1, TypeDeclaration type2) {
+
+    private List<ConstructorDeclaration> checkingForRemovedConstructors(TypeDeclaration type1, TypeDeclaration type2) {
         return type1.getConstructors().stream()
                 .filter(constructor1 -> type2.getConstructors().stream()
                         .noneMatch(constructor2 -> constructor2.getSignature().getName().equals(constructor1.getSignature().getName()) && constructor2.getSignature().getParameterTypes().equals(constructor1.getSignature().getParameterTypes())))
                 .peek(removedConstructor -> {
                     //System.out.println("Constructor removed: " + removedConstructor.getName());
-                    breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, new ConstructorBreakingChange(removedConstructor)));
-                    appendToFile("New : " + removedConstructor.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_REMOVED  + "\n");
+                    breakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, removedConstructor.getType(), removedConstructor.getPosition(), BreakingChangeNature.DELETION, removedConstructor));
+                    constructorBreakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, removedConstructor.getType(), removedConstructor.getPosition(), BreakingChangeNature.DELETION, removedConstructor));
+
                 })
                 .toList();
     }
 
 
 
-    public List<List<FieldDeclaration>> getUnremovedFields(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<List<FieldDeclaration>> getUnremovedFields(TypeDeclaration type1, TypeDeclaration type2) {
         List<FieldDeclaration> unremovedFields = type1.getFields().stream()
                 .filter( field1 -> type2.getFields().stream()
                         .anyMatch(field2 -> field2.getName().equals(field1.getName()) ))
@@ -151,7 +169,7 @@ public class APIDiff {
     }
 
 
-    public List<List<MethodDeclaration>> getUnremovedMethods(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<List<MethodDeclaration>> getUnremovedMethods(TypeDeclaration type1, TypeDeclaration type2) {
         List<MethodDeclaration> unremovedMethods = type1.getMethods().stream()
                 .filter(method1 -> type2.getMethods().stream()
                         .anyMatch(method2 -> method2.getSignature().getName().equals(method1.getSignature().getName()) &&
@@ -175,7 +193,7 @@ public class APIDiff {
 
 
 
-    public List<List<ConstructorDeclaration>> getUnremovedConstructors(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<List<ConstructorDeclaration>> getUnremovedConstructors(TypeDeclaration type1, TypeDeclaration type2) {
         List<ConstructorDeclaration> unremovedConstructors = type1.getConstructors().stream()
                 .filter(constructor1 -> type2.getConstructors().stream()
                         .anyMatch(constructor2 -> constructor2.getSignature().getParameterTypes().equals(constructor1.getSignature().getParameterTypes())))
@@ -196,7 +214,7 @@ public class APIDiff {
     }
 
 
-    public List<MethodDeclaration> getAddedMethods(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<MethodDeclaration> getAddedMethods(TypeDeclaration type1, TypeDeclaration type2) {
         return type2.getMethods().stream()
                 .filter(method2 -> type1.getMethods().stream()
                         .noneMatch(method1 -> method1.getSignature().getName().equals(method2.getSignature().getName()) &&
@@ -204,12 +222,14 @@ public class APIDiff {
                 .peek(addedMethod -> {
 
                     if (type2.getTypeType().equals(TypeType.INTERFACE)) {
-                        breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, new MethodBreakingChange(addedMethod)));
-                        appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_ADDED_TO_INTERFACE  + "\n");
+                        breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+                        methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+
                     }
                     if (type2.getTypeType().equals(TypeType.CLASS) && addedMethod.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
-                        breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, new MethodBreakingChange(addedMethod)));
-                        appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS  + "\n");
+                        breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+                        methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+
                     }
                     if (type1.getSuperclass() != null && type2.getSuperclass() != null ){
 
@@ -230,18 +250,21 @@ public class APIDiff {
 
                         if (superMethodInV2 != null && superMethodInV1 != null){   // if the method actually overrides another
                             if (addedMethod.getModifiers().contains(NonAccessModifiers.STATIC) && !superMethodInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC, new MethodBreakingChange(addedMethod)));
-                                appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC  + "\n");
+                                breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+                                methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+
 
                             }
                             if (!addedMethod.getModifiers().contains(NonAccessModifiers.STATIC) && superMethodInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC, new MethodBreakingChange(addedMethod)));
-                                appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC  + "\n");
+                                breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+                                methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+
 
                             }
                             if (superMethodInV2.getVisibility().equals(AccessModifier.PUBLIC) && addedMethod.getVisibility().equals(AccessModifier.PROTECTED)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, new MethodBreakingChange(addedMethod)));
-                                appendToFile("New : " + addedMethod.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS + "\n");
+                                breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+                                methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+
 
                             }
                         }
@@ -252,7 +275,7 @@ public class APIDiff {
 
     }
 
-    public List<FieldDeclaration> getAddedFields(TypeDeclaration type1, TypeDeclaration type2) {
+    private List<FieldDeclaration> getAddedFields(TypeDeclaration type1, TypeDeclaration type2) {
         return type2.getFields().stream()
                 .filter(field2 -> type1.getFields().stream()
                         .noneMatch(field1 -> field1.getName().equals(field2.getName())))
@@ -275,17 +298,19 @@ public class APIDiff {
 
                         if (superFieldInV2 != null && superFieldInV1 != null) { // if the field exists in both superclasses
                             if (addedField.getModifiers().contains(NonAccessModifiers.STATIC) && !superFieldInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC, new FieldBreakingChange(addedField)));
-                                appendToFile("New : " + addedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC  + "\n");
+                                breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
+                                fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
+
 
                             }
                             if (!addedField.getModifiers().contains(NonAccessModifiers.STATIC) && superFieldInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC, new FieldBreakingChange(addedField)));
-                                appendToFile("New : " + addedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC  + "\n");
+                                breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
+                                fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
+
                             }
                             if (superFieldInV2.getVisibility().equals(AccessModifier.PUBLIC) && addedField.getVisibility().equals(AccessModifier.PROTECTED)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, new FieldBreakingChange(addedField)));
-                                appendToFile("New : " + addedField.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS  + "\n");
+                                breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
+                                fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
 
                             }
                         }
@@ -298,98 +323,115 @@ public class APIDiff {
 
 
 
-    public void fieldComparison(FieldDeclaration field1, FieldDeclaration field2) {
+    private void fieldComparison(FieldDeclaration field1, FieldDeclaration field2) {
         if (!field1.getModifiers().contains(NonAccessModifiers.FINAL) && field2.getModifiers().contains(NonAccessModifiers.FINAL)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NOW_FINAL  + "\n");
+            breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+
         }
 
         if (!field1.getModifiers().contains(NonAccessModifiers.STATIC) && field2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_STATIC, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NOW_STATIC  + "\n");
+            breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NOW_STATIC, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NOW_STATIC, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+
         }
 
         if (field1.getModifiers().contains(NonAccessModifiers.STATIC) && !field2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NO_LONGER_STATIC, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_NO_LONGER_STATIC  + "\n");
+            breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NO_LONGER_STATIC, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_NO_LONGER_STATIC, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+
         }
 
         if (!field1.getDataType().equals(field2.getDataType())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_TYPE_CHANGED, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_TYPE_CHANGED  + "\n");
+            breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_TYPE_CHANGED, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_TYPE_CHANGED, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+
         }
 
 
         if (field1.getVisibility().equals(AccessModifier.PUBLIC) && field2.getVisibility().equals(AccessModifier.PROTECTED)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_LESS_ACCESSIBLE  + "\n");
+            breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+
         }
 
         if (field1.getDataType().equals(field2.getDataType()) && !field1.getReferencedTypes().equals(field2.getReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, new FieldBreakingChange(field1)));
-            appendToFile("New : " + field1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.FIELD_GENERICS_CHANGED  + "\n");
+            breakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            fieldBreakingChanges.add(new FieldBreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+
         }
 
     }
 
 
 
-    public void methodComparison(MethodDeclaration method1, MethodDeclaration method2) {
+    private void methodComparison(MethodDeclaration method1, MethodDeclaration method2) {
         if (!method1.getModifiers().contains(NonAccessModifiers.FINAL) && method2.getModifiers().contains(NonAccessModifiers.FINAL)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_FINAL, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_FINAL  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_FINAL, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_FINAL, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (!method1.getModifiers().contains(NonAccessModifiers.STATIC) && method2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_STATIC, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_STATIC  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_STATIC, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_STATIC, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (!method1.getModifiers().contains(NonAccessModifiers.NATIVE) && method2.getModifiers().contains(NonAccessModifiers.NATIVE)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_NATIVE, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_NATIVE  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_NATIVE, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_NATIVE, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
 
         if (method1.getModifiers().contains(NonAccessModifiers.STATIC) && !method2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STATIC, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NO_LONGER_STATIC  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STATIC, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STATIC, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
 
         if (method1.getModifiers().contains(NonAccessModifiers.STRICTFP) && !method2.getModifiers().contains(NonAccessModifiers.STRICTFP)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NO_LONGER_STRICTFP  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (!method1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && method2.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_ABSTRACT, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_ABSTRACT + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_ABSTRACT, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_ABSTRACT, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (method1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && method2.isDefault()) { /// Careful
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (method1.getVisibility().equals(AccessModifier.PUBLIC) && method2.getVisibility().equals(AccessModifier.PROTECTED)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_LESS_ACCESSIBLE  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (!method1.getReturnType().equals(method2.getReturnType())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (method1.getReturnType().equals(method2.getReturnType()) && !method1.getReturnTypeReferencedTypes().equals(method2.getReturnTypeReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (!method1.getParametersReferencedTypes().equals(method2.getParametersReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         List<String> additionalExceptions1 = method1.getExceptions().stream()
@@ -402,13 +444,15 @@ public class APIDiff {
 
 
         if (!additionalExceptions1.isEmpty()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
         if (!additionalExceptions2.isEmpty()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));;
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));;
+
         }
 
         IntStream.range(0, method1.getParametersVarargsCheck().size())
@@ -416,19 +460,21 @@ public class APIDiff {
                 .forEach(i -> {
                     boolean isNowVarargs = !method1.getParametersVarargsCheck().get(i) && method2.getParametersVarargsCheck().get(i);
                     BreakingChangeKind kind = isNowVarargs ? BreakingChangeKind.METHOD_NOW_VARARGS : BreakingChangeKind.METHOD_NO_LONGER_VARARGS;
-                    breakingChanges.add(new BreakingChange(kind, new MethodBreakingChange(method1)));
-                    appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + kind + "\n");
+                    breakingChanges.add(new MethodBreakingChange(kind, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
                 });
 
 
 
         if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
         if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, new MethodBreakingChange(method1)));
-            appendToFile("New : " + method1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED  + "\n");
+            breakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+            methodBreakingChanges.add(new MethodBreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
         }
 
 
@@ -436,95 +482,111 @@ public class APIDiff {
 
     }
 
-    public void constructorComparison(ConstructorDeclaration constructor1, ConstructorDeclaration constructor2) {
+    private void constructorComparison(ConstructorDeclaration constructor1, ConstructorDeclaration constructor2) {
         if (constructor1.getVisibility().equals(AccessModifier.PUBLIC) && constructor2.getVisibility().equals(AccessModifier.PROTECTED)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, new ConstructorBreakingChange(constructor1)));
-            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE  + "\n");
+            breakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+            constructorBreakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+
         }
 
         if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, new ConstructorBreakingChange(constructor1)));
-            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED  + "\n");
+            breakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+            constructorBreakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+
         }
         if (!constructor1.getReturnTypeReferencedTypes().equals(constructor2.getReturnTypeReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED, new ConstructorBreakingChange(constructor1)));
-            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED  + "\n");
+            breakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+            constructorBreakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+
         }
         if (constructor1.getFormalTypeParameters().size() > constructor2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, new ConstructorBreakingChange(constructor1)));
-            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED  + "\n");
+            breakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+            constructorBreakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+
         }
         if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, new ConstructorBreakingChange(constructor1)));
-            appendToFile("New : " + constructor1.getType().getName() + " breaking change kind is : " + BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED  + "\n");
+            breakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+            constructorBreakingChanges.add(new ConstructorBreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+
         }
 
     }
 
 
-    public void typeComparison(TypeDeclaration type1, TypeDeclaration type2) {
+    private void typeComparison(TypeDeclaration type1, TypeDeclaration type2) {
         if (type1.typeType.equals(TypeType.CLASS)) {
             if (!type1.getModifiers().contains(NonAccessModifiers.FINAL) && type2.getModifiers().contains(NonAccessModifiers.FINAL)) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_NOW_FINAL  + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
             if (!type1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && type2.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_ABSTRACT, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_NOW_ABSTRACT  + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_NOW_ABSTRACT, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_NOW_ABSTRACT, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
             if (!type1.getModifiers().contains(NonAccessModifiers.STATIC) && type2.getModifiers().contains(NonAccessModifiers.STATIC) && type1.isNested()  && type2.isNested()) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.NESTED_CLASS_NOW_STATIC  + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
             if (type1.getModifiers().contains(NonAccessModifiers.STATIC) && !type2.getModifiers().contains(NonAccessModifiers.STATIC) && type1.isNested()  && type2.isNested()) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC  + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
 
             if (!type1.typeType.equals(type2.typeType)) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_TYPE_CHANGED  + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
             if (!type1.getSuperclassName().equals("java.lang.Exception") && type2.getSuperclassName().equals("java.lang.Exception")) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION  + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
             if (!type1.getSuperclassName().equals(type2.getSuperclassName()) || !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames())) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, new TypeBreakingChange(type1)));
-                appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE + "\n");
+                breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+                typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
             }
 
         }
 
         if (type1.getVisibility().equals(AccessModifier.PUBLIC) && type2.getVisibility().equals(AccessModifier.PROTECTED)) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, new TypeBreakingChange(type1)));
-            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.TYPE_LESS_ACCESSIBLE + "\n");
+            breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+            typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
         }
 
         if (!type1.getReferencedTypes().equals(type2.getReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_GENERICS_CHANGED, new TypeBreakingChange(type1)));
-            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.TYPE_GENERICS_CHANGED  + "\n");
+            breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.TYPE_GENERICS_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+            typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.TYPE_GENERICS_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
         }
 
 
         if (type1.getFormalTypeParameters().size() > type2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED, new TypeBreakingChange(type1)));
-            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED  + "\n");
+            breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+            typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
         }
         if (type1.getFormalTypeParameters().size() < type2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED, new TypeBreakingChange(type1)));
-            appendToFile("New : " + type1.getName() + " breaking change kind is : " + BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED  + "\n");
+            breakingChanges.add(new TypeBreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+            typeBreakingChanges.add(new TypeBreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.MUTATION));
+
         }
     }
 
-    public void diffTesting() {
-        List<TypeDeclaration> removedTypes = checkingForRemovedTypes();
+    private void detectingBreakingChanges() {
+        checkingForRemovedTypes();
         List<List<TypeDeclaration>> commonTypes = getUnremovedTypes();
         List<TypeDeclaration> commonTypesInV1 = commonTypes.get(0);
         List<TypeDeclaration> commonTypesInV2 = commonTypes.get(1);
@@ -534,16 +596,16 @@ public class APIDiff {
 
                     typeComparison(commonTypesInV1.get(i), commonTypesInV2.get(i));
 
-                    List<FieldDeclaration> removedFields = checkingForRemovedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
-                    List<MethodDeclaration> removedMethods = checkingForRemovedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
-                    List<ConstructorDeclaration> removedConstructors = checkingForRemovedConstructors(commonTypesInV1.get(i), commonTypesInV2.get(i));
+                    checkingForRemovedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
+                    checkingForRemovedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
+                    checkingForRemovedConstructors(commonTypesInV1.get(i), commonTypesInV2.get(i));
 
                     List<List<MethodDeclaration>> remainingMethods = getUnremovedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
                     List<List<FieldDeclaration>> remainingFields = getUnremovedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
                     List<List<ConstructorDeclaration>> remainingConstructors = getUnremovedConstructors(commonTypes.get(0).get(i), commonTypes.get(1).get(i));
 
-                    List<MethodDeclaration> addedMethods = getAddedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
-                    List<FieldDeclaration> addedFields = getAddedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
+                    getAddedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
+                    getAddedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
 
                     IntStream.range(0, remainingMethods.get(0).size())
                             .forEach(j -> {
@@ -562,28 +624,293 @@ public class APIDiff {
 
 
                 });
+
+        breakingChangesPopulated = true;
     }
 
 
+    /**
+     * Retrieves the list of all the breaking changes detected between the two API versions.
 
-    public void diffPrinting() {
+     * @return List of all the breaking changes
+     */
+
+    public List<BreakingChange> getBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+
+        }
+        return breakingChanges;
+    }
+
+    /**
+     * Retrieves the list of method-related breaking changes detected between the two API versions.
+
+     * @return List of method-related breaking changes
+     */
+    public List<MethodBreakingChange> getMethodBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+
+        }
+        return methodBreakingChanges;
+    }
+
+    /**
+     * Retrieves the list of constructor-related breaking changes detected between the two API versions.
+
+     * @return List of constructor-related breaking changes
+     */
+    public List<ConstructorBreakingChange> getConstructorBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+
+        }
+        return constructorBreakingChanges;
+    }
+
+    /**
+     * Retrieves the list of type-related breaking changes detected between the two API versions.
+
+     * @return List of type-related breaking changes
+     */
+    public List<TypeBreakingChange> getTypeBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+
+        }
+        return typeBreakingChanges;
+    }
+
+    /**
+     * Retrieves the list of field-related breaking changes detected between the two API versions.
+
+     * @return List of field-related breaking changes
+     */
+    public List<FieldBreakingChange> getFieldBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return fieldBreakingChanges;
+    }
+
+
+    /**
+     * Retrieves a list containing all the kinds of breaking changes detected between the two API versions.
+
+     * @return List of all the kinds of breaking changes
+     */
+    public List<BreakingChangeKind> getBreakingChangesKinds() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return breakingChanges.stream()
+                .map(breakingChange -> breakingChange.breakingChangeKind)
+                .toList();
+    }
+
+    /**
+     * Retrieves a list containing all the positions where breaking changes were detected between the two API versions.
+
+     * @return List of all the breaking changes' positions
+     */
+    public List<String> getBreakingChangesPositions() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return breakingChanges.stream()
+                .map(breakingChange -> breakingChange.breakingChangePosition)
+                .toList();
+    }
+
+    /**
+     * Retrieves a list containing all the names of the types where breaking changes were detected between the two API versions.
+     *
+     * @return List of all the breaking changes' type names
+     */
+    public List<String> getBreakingChangesTypeDeclarationNames() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return breakingChanges.stream()
+                .map(breakingChange -> breakingChange.breakingChangeTypeDeclaration.getName())
+                .toList();
+    }
+
+    /**
+     * Retrieves a list containing the names of types causing type-related breaking changes.
+
+     * @return List of BC type names
+     */
+
+    public List<String> getTypeNamesForTypeBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return typeBreakingChanges.stream()
+                .map(typeBreakingChange -> typeBreakingChange.breakingChangeTypeDeclaration.getName())
+                .toList();
+    }
+
+    /**
+     * Retrieves a list containing the names of methods causing method-related breaking changes.
+
+     * @return List of BC method names
+     */
+    public List<String> getMethodNamesForMethodBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return methodBreakingChanges.stream()
+                .map(methodBreakingChange -> methodBreakingChange.getMethod().getName())
+                .toList();
+    }
+
+    /**
+     * Retrieves a list containing the names of fields causing field-related breaking changes.
+
+     * @return List of BC field names
+     */
+    public List<String> getFieldNamesForFieldBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return fieldBreakingChanges.stream()
+                .map(fieldBreakingChange -> fieldBreakingChange.getField().getName())
+                .toList();
+    }
+
+    /**
+     * Retrieves a list containing the names of constructors (type names) causing constructor-related breaking changes.
+
+     * @return List of BC constructor names
+     */
+    public List<String> getTypeNamesForConstructorBreakingChanges() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        return constructorBreakingChanges.stream()
+                .map(constructorBreakingChange -> constructorBreakingChange.getConstructor().getType().getName())
+                .toList();
+    }
+
+    /**
+     * Generates a report for the detected breaking changes. This report includes the kind, type name,
+     * position, associated element, and nature of each detected BC.
+     */
+
+    public void breakingChangesReport() {
+
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
         for (BreakingChange breakingChange : breakingChanges) {
             System.out.println("Breaking change kind: " + breakingChange.getBreakingChangeKind());
 
-            System.out.println("In type : " + breakingChange.getBreakingChangeElement().getElement().get(1));
-            System.out.println("In element : " + breakingChange.getBreakingChangeElement().getElement().get(0));
+            System.out.println("In type : " + breakingChange.getBreakingChangeTypeDeclaration().getName());
+            System.out.println("In position : " + breakingChange.getBreakingChangePosition());
+
+            if (breakingChange instanceof FieldBreakingChange) {
+                FieldDeclaration field = ((FieldBreakingChange) breakingChange).getField();
+                System.out.println("Field Name: " + field.getName());
+            } else if (breakingChange instanceof MethodBreakingChange) {
+                MethodDeclaration method = ((MethodBreakingChange) breakingChange).getMethod();
+                System.out.println("Method Name: " + method.getName());
+            } else if (breakingChange instanceof ConstructorBreakingChange) {
+                ConstructorDeclaration constructor = ((ConstructorBreakingChange) breakingChange).getConstructor();
+                System.out.println("Constructor Name: " + constructor.getName());
+            }
+
+            System.out.println("Breaking change nature: " + breakingChange.getBreakingChangeNature());
 
             System.out.println("---------------------------------");
         }
     }
 
+    /**
+     * Generates a report for the type-related breaking changes. It displays their kind, type name,
+     * position, and nature.
+     */
 
-    public void trying(){
+    public void typeBreakingChangesReport() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        for (TypeBreakingChange typeBreakingChange : typeBreakingChanges) {
+            System.out.println("Breaking change kind: " + typeBreakingChange.getBreakingChangeKind());
 
-        System.out.println(" (˘◡˘) ");
+            System.out.println("In type : " + typeBreakingChange.getBreakingChangeTypeDeclaration().getName());
+            System.out.println("In position : " + typeBreakingChange.getBreakingChangePosition());
+            System.out.println("Breaking change nature: " + typeBreakingChange.getBreakingChangeNature());
 
-
+            System.out.println("---------------------------------");
+        }
     }
+
+    /**
+     * Generates a report for the method-related breaking changes. It displays their kind, type,
+     * position, method name, and nature.
+     */
+    public void methodBreakingChangesReport() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        for (MethodBreakingChange methodBreakingChange : methodBreakingChanges) {
+            System.out.println("Breaking change kind: " + methodBreakingChange.getBreakingChangeKind());
+
+            System.out.println("In type : " + methodBreakingChange.getBreakingChangeTypeDeclaration().getName());
+            System.out.println("In position : " + methodBreakingChange.getBreakingChangePosition());
+            System.out.println("Method Name: " + methodBreakingChange.getMethod().getName());
+            System.out.println("Breaking change nature: " + methodBreakingChange.getBreakingChangeNature());
+
+
+            System.out.println("---------------------------------");
+        }
+    }
+
+    /**
+     * Generates a report for the field-related breaking changes. It displays their kind, type,
+     * position, field name, and nature.
+     */
+
+    public void fieldBreakingChangesReport() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        for (FieldBreakingChange fieldBreakingChange : fieldBreakingChanges) {
+            System.out.println("Breaking change kind: " + fieldBreakingChange.getBreakingChangeKind());
+
+
+            System.out.println("In type : " + fieldBreakingChange.getBreakingChangeTypeDeclaration().getName());
+            System.out.println("In position : " + fieldBreakingChange.getBreakingChangePosition());
+            System.out.println("Field Name: " + fieldBreakingChange.getField().getName());
+            System.out.println("Breaking change nature: " + fieldBreakingChange.getBreakingChangeNature());
+
+            System.out.println("---------------------------------");
+        }
+    }
+
+    /**
+     * Generates a report for the constructor-related breaking changes. It displays their kind, type,
+     * position, constructor name, and nature.
+     */
+    public void constructorBreakingChangesReport() {
+        if (!breakingChangesPopulated) {
+            detectingBreakingChanges();
+        }
+        for (ConstructorBreakingChange constructorBreakingChange : constructorBreakingChanges) {
+            System.out.println("Breaking change kind: " + constructorBreakingChange.getBreakingChangeKind());
+
+            System.out.println("In type : " + constructorBreakingChange.getBreakingChangeTypeDeclaration().getName());
+            System.out.println("In position : " + constructorBreakingChange.getBreakingChangePosition());
+            System.out.println("Constructor Name: " + constructorBreakingChange.getConstructor().getName());
+
+            System.out.println("Breaking change nature: " + constructorBreakingChange.getBreakingChangeNature());
+
+            System.out.println("---------------------------------");
+        }
+    }
+
 
 
 }

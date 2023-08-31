@@ -20,9 +20,7 @@ public class TopLevelClassPublic {
 
 		public void varargsMethod(int... number, String[] texts) {}
 
-		public int NumMethod1() {
-			return number;
-		}
+
 
 		public int NumMethod2(int number) {
 

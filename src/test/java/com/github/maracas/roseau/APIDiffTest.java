@@ -7,6 +7,7 @@ import spoon.MavenLauncher;
 
 import java.nio.file.Path;
 
+
 class APIDiffTest {
 
     APIDiff diff;
@@ -25,7 +26,7 @@ class APIDiffTest {
         launcher2.getEnvironment().setNoClasspath(true);
         APIExtractor  extractor2 = new APIExtractor(launcher2.buildModel());
 
-        diff = new APIDiff(extractor1.dataProcessing(extractor1), extractor2.dataProcessing(extractor2));
+        diff = new APIDiff(extractor1.extractingAPI(), extractor2.extractingAPI());
     }
 
 
@@ -33,13 +34,12 @@ class APIDiffTest {
     void breaking_changes_testing() {
 
         // Structuring the breaking changes
-        diff.diffTesting();
 
-        // Printing the breaking changes
-        //System.out.println("\nTHE BREAKING CHANGES LIST :\n");
-        diff.diffPrinting();
+        diff.breakingChangesReport();
 
-        // diff.trying();
+
+
+
 
     }
 

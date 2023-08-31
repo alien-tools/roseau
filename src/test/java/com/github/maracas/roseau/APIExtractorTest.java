@@ -29,11 +29,10 @@ class APIExtractorTest {
 	@Test
 	void write_some_interesting_tests_later() {
 		// Extracting data and processing it
-		API api = extractor.dataProcessing(extractor);
+		API api = extractor.extractingAPI();
 
 		// Printing the API for each type
-		//extractor.printingData(api);
-		//extractor.trying();
+
 	}
 
 
