@@ -5,87 +5,57 @@ import java.util.List;
 
 /**
  * Represents a type declaration in the library, such as a class, an interface, or an enum.
- * This class contains information about the type's kind, name, modifiers, fields, methods, constructors, and more.
+ * This class extends the {@link ElementDeclaration} class and contains information about the type's kind, fields, methods, constructors, and more.
  */
 
 
-public class TypeDeclaration {
+public class TypeDeclaration extends ElementDeclaration{
 
-    /** The qualified name of the type. */
-    public String name;
-
-    /** The visibility of the type. */
-    public AccessModifier visibility;
 
     /** The type of the declaration (e.g., class, interface, enum). */
-    public TypeType typeType;
+    private TypeType typeType;
 
     /** List of fields declared within the type. */
-    public List<FieldDeclaration> fields;
+    private List<FieldDeclaration> fields;
 
     /** List of methods declared within the type. */
-    public List<MethodDeclaration> methods;
+    private List<MethodDeclaration> methods;
 
     /** List of constructors declared within the type. */
-    public List<ConstructorDeclaration> constructors;
+    private List<ConstructorDeclaration> constructors;
 
-    /** List of non-access modifiers applied to the type. */
-    public List<NonAccessModifiers> Modifiers;
 
     /** The qualified name of the superclass ("None" if there isn't any). */
-    public String superclassName;
+    private String superclassName;
 
     /** The superclass as a type declaration (null if there isn't any). */
-    public TypeDeclaration superclass;
+    private TypeDeclaration superclass;
 
     /** The qualified names of the interfaces implemented by the type. */
-    public List<String> superinterfacesNames;
+    private List<String> superinterfacesNames;
 
-    /** List of types referenced by this type. */
-    public List<String> referencedTypes;
 
     /** List of formal type parameters for generic types. */
-    public List<String> formalTypeParameters;
+    private List<String> formalTypeParameters;
 
     /** A flag indicating whether the type is nested within another type. */
-    public boolean nested;
+    private boolean nested;
 
-    /** The exact position of the type declaration */
-    public String position;
 
 
 
 
     public TypeDeclaration(String name, AccessModifier visibility, TypeType typeType, List<NonAccessModifiers> Modifiers,String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, boolean nested, String position) {
-        this.name = name;
-        this.visibility = visibility;
+        super(name, visibility, Modifiers, referencedTypes, position);
         this.typeType = typeType;
-        this.Modifiers = Modifiers;
         this.superclassName = superclassName;
         this.superinterfacesNames = superinterfacesNames;
-        this.referencedTypes = referencedTypes;
         this.formalTypeParameters = formalTypeParameters;
         this.nested = nested;
-        this.position = position;
-
     }
 
 
-    /**
-     * Retrieves the qualified name of the type.
-     * @return Type's qualified name
-     */
-    public String getName() {
-        return name;
-    }
 
-    /**
-     * Retrieves the visibility of the type.
-     * @return Type's visibility
-     */
-    public AccessModifier getVisibility() {
-        return visibility;
-    }
 
     /**
      * Retrieves the type of the declaration (e.g., class, interface, enum).
@@ -119,13 +89,6 @@ public class TypeDeclaration {
         return constructors;
     }
 
-    /**
-     * Retrieves the list of non-access modifiers applied to the type.
-     * @return Type's non-access modifiers
-     */
-    public List<NonAccessModifiers> getModifiers() {
-        return Modifiers;
-    }
 
     /**
      * Retrieves the qualified name of the type's superclass ("None" if there isn't any).
@@ -151,13 +114,6 @@ public class TypeDeclaration {
         return superclass;
     }
 
-    /**
-     * Retrieves the list of types referenced by the type.
-     * @return List of referenced types
-     */
-    public List<String> getReferencedTypes() {
-        return referencedTypes;
-    }
 
     /**
      * Retrieves the list of formal type parameters for generic types.
@@ -175,13 +131,6 @@ public class TypeDeclaration {
         return nested;
     }
 
-    /**
-     * Retrieves the position of the type declaration.
-     * @return Type's position.
-     */
-    public String getPosition() {
-        return position;
-    }
 
     /**
      * Sets the superclass of the type.
@@ -216,9 +165,28 @@ public class TypeDeclaration {
         this.constructors = constructors;
     }
 
-    public void printType() {
-        System.out.println("Type: " + visibility + " " + typeType + " " + name);
+
+
+    /**
+     * Generates a string representation of the TypeDeclaration.
+     *
+     * @return A formatted string containing the type name, visibility, type kind,
+     * nesting status, position, fields, methods and constructors.
+     */
+    @Override
+    public String toString() {
+        return "Type Name: " + getName() + "\n" +
+                "Visibility: " + getVisibility() + "\n" +
+                "Type kind: " + getTypeType() + "\n" +
+                "Modifiers: " + getModifiers() + "\n" +
+                "Is Nested: " + isNested() + "\n" +
+                "Position: " + getPosition() + "\n\n" +
+                "Type's fields: " + getFields().toString() + "\n\n" +
+                "Type's Methods: " + getMethods().toString() + "\n\n" +
+                "Type's Constructors: " + getConstructors().toString() + "\n" ;
+
     }
+
 }
 
 

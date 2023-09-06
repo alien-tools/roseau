@@ -8,7 +8,7 @@ import java.util.List;
  */
 public class API {
     /** The list of TypeDeclarations representing all the types in the library's API. */
-    public List<TypeDeclaration> allTheTypes;
+    private List<TypeDeclaration> allTheTypes;
 
     /**
      * Constructs an API instance with the provided list of TypeDeclarations.
@@ -36,4 +36,23 @@ public class API {
     public void setAllTheTypes(List<TypeDeclaration> allTheTypes) {
         this.allTheTypes = allTheTypes;
     }
+
+
+    /**
+     * Generates a string representation of the library's API.
+     *
+     * @return A formatted string containing all the API elements structured.
+     */
+    @Override
+    public String toString() {
+        String result = "";
+
+        for (TypeDeclaration typeDeclaration : allTheTypes) {
+            result = result + typeDeclaration.toString() + "\n";
+            result = result + "    =========================\n\n";
+        }
+
+        return result.toString();
+    }
+
 }

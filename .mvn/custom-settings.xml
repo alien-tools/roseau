@@ -1,0 +1,14 @@
+<settings xmlns="http://maven.apache.org/SETTINGS/1.2.0"
+          xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+          xsi:schemaLocation="http://maven.apache.org/SETTINGS/1.2.0 http://maven.apache.org/xsd/settings-1.2.0.xsd">
+    <mirrors>
+        <mirror>
+            <id>insecure-repo</id>
+            <mirrorOf>external:http:*</mirrorOf>
+            <url>http://maven.inria.fr/artifactory/spoon-public-snapshot</url>
+            <blocked>false</blocked>
+        </mirror>
+
+    </mirrors>
+</settings>
+

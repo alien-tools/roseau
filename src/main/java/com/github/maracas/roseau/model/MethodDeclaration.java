@@ -1,82 +1,67 @@
 package com.github.maracas.roseau.model;
 
+import com.github.maracas.roseau.changes.BreakingChange;
+
 import java.util.List;
 
 /**
  * Represents a method declaration within a Java type.
- * This class contains information about the method's name, modifiers, parameters / return data types, and more.
+ * This class extends the {@link ElementDeclaration} class and contains information about the method's parameters, return type, thrown exceptions, and more.
  */
 
-public class MethodDeclaration {
-    /** The simple name of the method. */
-    public String name;
+
+
+public class MethodDeclaration extends ElementDeclaration{
+
 
     /** The type containing the method. */
-    public TypeDeclaration type;
+    private TypeDeclaration type;
 
-    /** The visibility of the method. */
-    public AccessModifier visibility;
 
     /** The return data type of the method. */
-    public String returnType;
+    private String returnType;
 
-    /** List of referenced types in the method's return type. */
-    public List<String> returnTypeReferencedType;
 
     /** List of the method's parameter data types. */
-    public List<String> parametersTypes;
+    private List<String> parametersTypes;
 
     /** List of referenced types for each parameter. */
-    public List<List<String>> parametersReferencedTypes;
+    private List<List<String>> parametersReferencedTypes;
 
     /** List of the method's formal type parameters. */
-    public List<String> formalTypeParameters;
+    private List<String> formalTypeParameters;
 
-    /** List of non-access modifiers applied to the method. */
-    public List<NonAccessModifiers> Modifiers;
 
     /** The method's signature. */
-    public Signature signature;
+    private Signature signature;
 
     /** List of exceptions thrown by the method. */
-    public List<String> exceptions;
+    private List<String> exceptions;
 
     /** List of boolean values indicating varargs status for each parameter. */
-    public List<Boolean> parametersVarargsCheck;
+    private List<Boolean> parametersVarargsCheck;
 
     /** A flag indicating whether the method is a default method. */
-    public boolean isDefault;
-
-    /** The exact position of the method declaration */
-    public String position;
+    private boolean isDefault;
 
 
-    public MethodDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> returnTypeReferencedType, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
-        this.name = name;
+
+    public MethodDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
+        super(name, visibility, Modifiers, referencedTypes, position);
         this.type = type;
-        this.visibility = visibility;
         this.returnType = returnType;
-        this.returnTypeReferencedType = returnTypeReferencedType;
         this.parametersTypes = parametersTypes;
         this.parametersReferencedTypes = parametersReferencedTypes;
         this.formalTypeParameters = formalTypeParameters;
-        this.Modifiers = Modifiers;
         this.signature = signature;
         this.exceptions = exceptions;
         this.parametersVarargsCheck = parametersVarargsCheck;
         this.isDefault = isDefault;
-        this.position = position;
+
 
 
     }
 
-    /**
-     * Retrieves the simple name of the method.
-     * @return Method's simple name
-     */
-    public String getName() {
-        return name;
-    }
 
     /**
      * Retrieves the TypeDeclaration containing the method.
@@ -86,13 +71,6 @@ public class MethodDeclaration {
         return type;
     }
 
-    /**
-     * Retrieves the visibility of the method.
-     * @return  Method's visibility
-     */
-    public AccessModifier getVisibility() {
-        return visibility;
-    }
 
     /**
      * Retrieves the return data type of the method.
@@ -102,13 +80,6 @@ public class MethodDeclaration {
         return returnType;
     }
 
-    /**
-     * Retrieves the list of referenced types in the return type of the method.
-     * @return List of referenced types in the return type
-     */
-    public List<String> getReturnTypeReferencedTypes() {
-        return returnTypeReferencedType;
-    }
 
     /**
      * Retrieves the list of parameter data types of the method.
@@ -134,13 +105,7 @@ public class MethodDeclaration {
         return formalTypeParameters;
     }
 
-    /**
-     * Retrieves the list of non-access modifiers applied to the method.
-     * @return List of non-access modifiers
-     */
-    public List<NonAccessModifiers> getModifiers() {
-        return Modifiers;
-    }
+
 
     /**
      * Retrieves the signature of the method.
@@ -174,16 +139,24 @@ public class MethodDeclaration {
         return isDefault;
     }
 
+
     /**
-     * Retrieves the position of the method declaration.
-     * @return Method's position.
+     * Generates a string representation of the MethodDeclaration.
+     *
+     * @return A formatted string containing the method's name, return type, parameter types,
+     * visibility, modifiers, type, exceptions, and position.
      */
-    public String getPosition() {
-        return position;
+    @Override
+    public String toString() {
+        return "Method Name: " + getName() + "\n" +
+                "Return Type: " + getReturnType() + "\n" +
+                "Parameter Types: " + getParametersTypes() + "\n" +
+                "Visibility: " + getVisibility() + "\n" +
+                "Modifiers: " + getModifiers() + "\n" +
+                "Type: " + getType().getName() + "\n" +
+                "Exceptions: " + getExceptions() + "\n" +
+                "Position: " + getPosition() + "\n\n" ;
     }
 
 
-    public void printMethod() {
-        System.out.println("Method: " + visibility + " " + returnType + " " + name);
-    }
 }

@@ -5,70 +5,48 @@ import java.util.List;
 
 /**
  * Represents a constructor declaration within a Java type.
- * This class contains information about the constructor's name, modifiers, parameters,
- * return data types (for constructor-like methods), and more.
+ * This class extends the {@link ElementDeclaration} class and contains information about the constructor's parameters, return type, class, and more.
  */
-public class ConstructorDeclaration {
-    /** The simple name of the constructor. */
-    public String name;
+public class ConstructorDeclaration extends ElementDeclaration {
 
     /** The type containing the constructor. */
-    public TypeDeclaration type;
-
-    /** The visibility of the constructor. */
-    public AccessModifier visibility;
+    private TypeDeclaration type;
 
     /** The return data type of the constructor. */
-    public String returnType;
+    private String returnType;
 
-    /** List of referenced types in the constructor's return type. */
-    public List<String> returnTypeReferencedType;
 
     /** List of the constructor's parameter data types. */
-    public List<String> parametersTypes;
+    private List<String> parametersTypes;
 
     /** List of referenced types for each constructor parameter. */
-    public List<List<String>> parametersReferencedTypes;
+    private List<List<String>> parametersReferencedTypes;
 
     /** List of the constructor's formal type parameters. */
-    public List<String> formalTypeParameters;
+    private List<String> formalTypeParameters;
 
-    /** List of non-access modifiers applied to the constructor. */
-    public List<NonAccessModifiers> Modifiers;
 
     /** The constructor's signature. */
-    public Signature signature;
+    private Signature signature;
 
     /** List of exceptions thrown by the constructor. */
-    public List<String> exceptions;
-
-    /** The exact position of the constructor declaration */
-    public String position;
+    private List<String> exceptions;
 
 
 
-    public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> returnTypeReferencedType, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, String position) {
-        this.name = name;
+
+    public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, String position) {
+        super(name, visibility, Modifiers, referencedTypes, position);
         this.type = type;
-        this.visibility = visibility;
         this.returnType = returnType;
-        this.returnTypeReferencedType = returnTypeReferencedType;
         this.parametersTypes = parametersTypes;
         this.parametersReferencedTypes = parametersReferencedTypes;
         this.formalTypeParameters = formalTypeParameters;
-        this.Modifiers = Modifiers;
         this.signature = signature;
         this.exceptions = exceptions;
-        this.position = position;
     }
 
-    /**
-     * Retrieves the simple name of the constructor.
-     * @return Constructor's simple name
-     */
-    public String getName() {
-        return name;
-    }
+
 
     /**
      * Retrieves the TypeDeclaration containing the constructor.
@@ -78,13 +56,6 @@ public class ConstructorDeclaration {
         return type;
     }
 
-    /**
-     * Retrieves the visibility of the constructor.
-     * @return Constructor's visibility
-     */
-    public AccessModifier getVisibility() {
-        return visibility;
-    }
 
     /**
      * Retrieves the return data type of the constructor.
@@ -94,13 +65,6 @@ public class ConstructorDeclaration {
         return returnType;
     }
 
-    /**
-     * Retrieves the list of referenced types in the return type of the constructor.
-     * @return List of referenced types in the return type
-     */
-    public List<String> getReturnTypeReferencedTypes() {
-        return returnTypeReferencedType;
-    }
 
     /**
      * Retrieves the list of parameter data types of the constructor.
@@ -126,13 +90,6 @@ public class ConstructorDeclaration {
         return formalTypeParameters;
     }
 
-    /**
-     * Retrieves the list of non-access modifiers applied to the constructor.
-     * @return List of non-access modifiers
-     */
-    public List<NonAccessModifiers> getModifiers() {
-        return Modifiers;
-    }
 
     /**
      * Retrieves the signature of the constructor.
@@ -151,14 +108,24 @@ public class ConstructorDeclaration {
     }
 
     /**
-     * Retrieves the position of the constructor declaration.
-     * @return Constructor's position.
+     * Generates a string representation of the ConstructorDeclaration.
+     *
+     * @return A formatted string containing the constructor's name, type, return type, parameter types,
+     * visibility, modifiers, exceptions, and position.
      */
-    public String getPosition() {
-        return position;
+    @Override
+    public String toString() {
+        return "Constructor Name: " + getName() + "\n" +
+                "Type: " + getType().getName() + "\n" +
+                "Return Type: " + getReturnType() + "\n" +
+                "Parameter Types: " + getParametersTypes() + "\n" +
+                "Visibility: " + getVisibility() + "\n" +
+                "Modifiers: " + getModifiers() + "\n" +
+                "Exceptions: " + getExceptions() + "\n" +
+                "Position: " + getPosition() + "\n\n" ;
     }
 
-    public void printConstructor() {
-        System.out.println("Constructor: " + visibility + " " + returnType + " " + name);
-    }
+
+
+
 }

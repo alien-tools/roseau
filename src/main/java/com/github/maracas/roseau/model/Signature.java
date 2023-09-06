@@ -42,5 +42,18 @@ public class Signature {
     public List<String> getParameterTypes() {
         return parameterTypes;
     }
+
+
+    /**
+     * Generates a string representation of the Signature.
+     *
+     * @return A formatted string containing the method's name and the list of parameter types.
+     */
+    @Override
+    public String toString() {
+        return "Method Name: " + getName() + "\n" +
+                "Parameter Types: " + getParameterTypes() + "\n";
+    }
+
 }
 

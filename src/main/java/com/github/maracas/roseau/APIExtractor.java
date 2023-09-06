@@ -94,8 +94,7 @@ public class APIExtractor {
 		return type.getFields().stream()
 				.filter(this::memberIsAccessible)
 				.peek(field -> {
-
-					//System.out.println("Field: " + field.getPosition().toString() );
+					//System.out.println("Field: " + field.getSimpleName().toString() );
 
 
 				})
@@ -326,7 +325,7 @@ public class APIExtractor {
 	}
 
 
-	// The API extraction function
+
 
 
 	/**
@@ -396,86 +395,8 @@ public class APIExtractor {
 
 	}
 
-	/**
-	 * Displays the API information provided in a structured format.
 
-	 * @param api The API containing the information to be displayed
-	 */
 
-	// A method for printing the library's API
-	public void displayingAPI(API api) {
-
-		List<TypeDeclaration> convertedTypes = api.getAllTheTypes();
-		for (TypeDeclaration typeDeclaration : convertedTypes) {
-			System.out.println("Type name: " + typeDeclaration.getName());
-			System.out.println("Visibility: " + typeDeclaration.getVisibility());
-			System.out.println("Type's Type: " + typeDeclaration.getTypeType());
-			System.out.println("Type's Modifiers: " + typeDeclaration.getModifiers());
-			System.out.println("Superclass name: " + typeDeclaration.getSuperclassName());
-			if (typeDeclaration.getSuperclass() != null) {
-				System.out.println("Superclass object name: " + typeDeclaration.getSuperclass().getName());
-			}
-
-			System.out.println("");
-			List<FieldDeclaration> fields = typeDeclaration.getFields();
-			if (fields != null) {
-				System.out.println("Fields: ");
-				for (FieldDeclaration field : fields) {
-					System.out.println("    Name: " + field.getName());
-					//System.out.println("    Type: " + field.getType().getName());
-					System.out.println("    Visibility: " + field.getVisibility());
-					System.out.println("    Data type: " + field.getDataType());
-					System.out.println("    Modifiers: " + field.getModifiers());
-					//System.out.println("    Referenced types : " + field.getReferencedTypes());
-					System.out.println("");
-				}
-			}
-
-			List<MethodDeclaration> methods = typeDeclaration.getMethods();
-			if (methods != null) {
-				System.out.println("Methods:");
-				for (MethodDeclaration method : methods) {
-					System.out.println("    Name: " + method.getName());
-					//System.out.println("    Type: " + method.getType().getName());
-					System.out.println("    Visibility: " + method.getVisibility());
-					System.out.println("    Return Type: " + method.getReturnType());
-					//System.out.println("    Return Type ref types: " + method.getReturnTypeReferencedTypes());
-					System.out.println("    Modifiers: " + method.getModifiers());
-					System.out.println("    Parameters: " + method.getParametersTypes());
-					//System.out.println("    Parameters ref types: " + method.getParametersReferencedTypes());
-					//System.out.println("    Signature: " + method.getSignature().getName() +  "  &  " + method.getSignature().getParameterTypes() );
-					System.out.println("    Exceptions: " + method.getExceptions());
-					System.out.println("    Parameters Varargs check : " + method.getParametersVarargsCheck());
-					System.out.println("    Is default check : " + method.isDefault());
-
-					System.out.println("");
-				}
-			}
-
-			List<ConstructorDeclaration> constructors = typeDeclaration.getConstructors();
-			if (constructors != null) {
-				System.out.println("Constructors:");
-				for (ConstructorDeclaration constructor : constructors) {
-					System.out.println("    Name: " + constructor.getName());
-					//System.out.println("    Type: " + constructor.getType().getName());
-					System.out.println("    Visibility: " + constructor.getVisibility());
-					System.out.println("    Return Type: " + constructor.getReturnType());
-					System.out.println("    Modifiers: " + constructor.getModifiers());
-					System.out.println("    Parameters: " + constructor.getParametersTypes());
-					//System.out.println("    Parameters ref types: " + constructor.getParametersReferencedTypes());
-					System.out.println("    Signature: " + constructor.getSignature().getName() +  "  &  " +constructor.getSignature().getParameterTypes());
-					System.out.println("    Exceptions: " + constructor.getExceptions());
-					System.out.println("");
-
-				}
-			}
-
-			System.out.println("\n  =====  NEEEEEEEEXT  =====\n\n");
-		}
-
-		System.out.println("  ๑(◕‿◕)๑ ");
-
-	}
 
 
 }

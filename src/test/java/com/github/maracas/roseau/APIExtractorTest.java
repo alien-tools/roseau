@@ -32,7 +32,7 @@ class APIExtractorTest {
 		API api = extractor.extractingAPI();
 
 		// Printing the API for each type
-
+		System.out.println(api.toString());
 	}
 
 

@@ -1,11 +1,13 @@
 package com.github.maracas.roseau;
 
+import com.github.maracas.roseau.model.TypeDeclaration;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;
 import spoon.MavenLauncher;
 
 import java.nio.file.Path;
+import java.util.List;
 
 
 class APIDiffTest {
@@ -35,7 +37,8 @@ class APIDiffTest {
 
         // Structuring the breaking changes
 
-        diff.breakingChangesReport();
+
+        System.out.println(diff.toString());
 
 
 

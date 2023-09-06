@@ -1,0 +1,178 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="AutoImportSettings">
+    <option name="autoReloadType" value="SELECTIVE" />
+  </component>
+  <component name="ChangeListManager">
+    <list default="true" id="17717dea-ac1a-4702-b2e3-e4afdc2ff11a" name="Changes" comment="">
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/ElementDeclaration.java" afterDir="false" />
+      <change afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/roseau.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/pom.xml" beforeDir="false" afterPath="$PROJECT_DIR$/pom.xml" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/APIDiff.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/APIDiff.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/APIExtractor.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/APIExtractor.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/changes/BreakingChange.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/changes/BreakingChange.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/changes/ConstructorBreakingChange.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/changes/FieldBreakingChange.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/changes/MethodBreakingChange.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/changes/TypeBreakingChange.java" beforeDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/API.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/API.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/ConstructorDeclaration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/ConstructorDeclaration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/FieldDeclaration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/FieldDeclaration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/MethodDeclaration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/MethodDeclaration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/Signature.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/Signature.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/TypeDeclaration.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/model/TypeDeclaration.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/package-info.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/package-info.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/github/maracas/roseau/APIDiffTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/github/maracas/roseau/APIDiffTest.java" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/src/test/java/com/github/maracas/roseau/APIExtractorTest.java" beforeDir="false" afterPath="$PROJECT_DIR$/src/test/java/com/github/maracas/roseau/APIExtractorTest.java" afterDir="false" />
+    </list>
+    <option name="SHOW_DIALOG" value="false" />
+    <option name="HIGHLIGHT_CONFLICTS" value="true" />
+    <option name="HIGHLIGHT_NON_ACTIVE_CHANGELIST" value="false" />
+    <option name="LAST_RESOLUTION" value="IGNORE" />
+  </component>
+  <component name="FileTemplateManagerImpl">
+    <option name="RECENT_TEMPLATES">
+      <list>
+        <option value="Class" />
+      </list>
+    </option>
+  </component>
+  <component name="Git.Settings">
+    <option name="RECENT_GIT_ROOT_PATH" value="$PROJECT_DIR$" />
+  </component>
+  <component name="MarkdownSettingsMigration">
+    <option name="stateVersion" value="1" />
+  </component>
+  <component name="MavenImportPreferences">
+    <option name="generalSettings">
+      <MavenGeneralSettings>
+        <option name="useMavenConfig" value="true" />
+      </MavenGeneralSettings>
+    </option>
+  </component>
+  <component name="ProjectId" id="2Ubl9pzALiu4cFP1I8uQa6D30gq" />
+  <component name="ProjectViewState">
+    <option name="hideEmptyMiddlePackages" value="true" />
+    <option name="showLibraryContents" value="true" />
+  </component>
+  <component name="PropertiesComponent">{
+  &quot;keyToString&quot;: {
+    &quot;RunOnceActivity.OpenProjectViewOnStart&quot;: &quot;true&quot;,
+    &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
+    &quot;project.structure.last.edited&quot;: &quot;Project&quot;,
+    &quot;project.structure.proportion&quot;: &quot;0.0&quot;,
+    &quot;project.structure.side.proportion&quot;: &quot;0.0&quot;,
+    &quot;run.code.analysis.last.selected.profile&quot;: &quot;pProject Default&quot;
+  }
+}</component>
+  <component name="RunManager" selected="JUnit.APIDiffTest.breaking_changes_testing">
+    <configuration name="roseau" type="Application" factoryName="Application" temporary="true" nameIsGenerated="true">
+      <option name="MAIN_CLASS_NAME" value="com.github.maracas.roseau.roseau" />
+      <module name="roseau" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.github.maracas.roseau.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="APIDiffTest.breaking_changes_testing" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="roseau" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.github.maracas.roseau.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.github.maracas.roseau" />
+      <option name="MAIN_CLASS_NAME" value="com.github.maracas.roseau.APIDiffTest" />
+      <option name="METHOD_NAME" value="breaking_changes_testing" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="APIExtractorTest" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="roseau" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.github.maracas.roseau.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.github.maracas.roseau" />
+      <option name="MAIN_CLASS_NAME" value="com.github.maracas.roseau.APIExtractorTest" />
+      <option name="TEST_OBJECT" value="class" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <configuration name="APIExtractorTest.write_some_interesting_tests_later" type="JUnit" factoryName="JUnit" temporary="true" nameIsGenerated="true">
+      <module name="roseau" />
+      <extension name="coverage">
+        <pattern>
+          <option name="PATTERN" value="com.github.maracas.roseau.*" />
+          <option name="ENABLED" value="true" />
+        </pattern>
+      </extension>
+      <option name="PACKAGE_NAME" value="com.github.maracas.roseau" />
+      <option name="MAIN_CLASS_NAME" value="com.github.maracas.roseau.APIExtractorTest" />
+      <option name="METHOD_NAME" value="write_some_interesting_tests_later" />
+      <option name="TEST_OBJECT" value="method" />
+      <method v="2">
+        <option name="Make" enabled="true" />
+      </method>
+    </configuration>
+    <recent_temporary>
+      <list>
+        <item itemvalue="JUnit.APIDiffTest.breaking_changes_testing" />
+        <item itemvalue="JUnit.APIExtractorTest.write_some_interesting_tests_later" />
+        <item itemvalue="Application.roseau" />
+        <item itemvalue="JUnit.APIExtractorTest" />
+      </list>
+    </recent_temporary>
+  </component>
+  <component name="SpellCheckerSettings" RuntimeDictionaries="0" Folders="0" CustomDictionaries="0" DefaultDictionary="application-level" UseSingleDictionary="true" transferred="true" />
+  <component name="TaskManager">
+    <task active="true" id="Default" summary="Default task">
+      <changelist id="17717dea-ac1a-4702-b2e3-e4afdc2ff11a" name="Changes" comment="" />
+      <created>1693216012178</created>
+      <option name="number" value="Default" />
+      <option name="presentableId" value="Default" />
+      <updated>1693216012178</updated>
+    </task>
+    <servers />
+  </component>
+  <component name="XDebuggerManager">
+    <breakpoint-manager>
+      <breakpoints>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/test/java/com/github/maracas/roseau/APIDiffTest.java</url>
+          <line>35</line>
+          <properties class="com.github.maracas.roseau.APIDiffTest" method="breaking_changes_testing">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="1" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-method">
+          <url>file://$PROJECT_DIR$/src/main/java/com/github/maracas/roseau/roseau.java</url>
+          <line>19</line>
+          <properties class="com.github.maracas.roseau.roseau" method="main">
+            <option name="EMULATED" value="true" />
+            <option name="WATCH_EXIT" value="false" />
+          </properties>
+          <option name="timeStamp" value="2" />
+        </line-breakpoint>
+        <line-breakpoint enabled="true" type="java-line">
+          <url>file://$PROJECT_DIR$/src/test/java/com/github/maracas/roseau/APIExtractorTest.java</url>
+          <line>28</line>
+          <option name="timeStamp" value="3" />
+        </line-breakpoint>
+      </breakpoints>
+    </breakpoint-manager>
+  </component>
+</project>

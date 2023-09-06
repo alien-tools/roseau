@@ -1,5 +1,6 @@
  package com.github.maracas.roseau.changes;
  import com.github.maracas.roseau.model.TypeDeclaration;
+ import com.github.maracas.roseau.model.ElementDeclaration;
 
  /**
   * Represents a breaking change identified during the comparison of APIs between the two library versions.
@@ -9,32 +10,38 @@
      /**
       * The kind of the breaking change.
       */
-     public BreakingChangeKind breakingChangeKind;
+     private BreakingChangeKind breakingChangeKind;
 
      /**
       * The type in which the breaking change is located.
       */
-     public TypeDeclaration breakingChangeTypeDeclaration;
+     private TypeDeclaration breakingChangeTypeDeclaration;
 
      /**
       * The exact position of the breaking change.
       */
-     public String breakingChangePosition;
+     private String breakingChangePosition;
 
      /**
       * The nature of the breaking change ( Addition / deletion / mutation ).
       */
-     public BreakingChangeNature breakingChangeNature;
+     private BreakingChangeNature breakingChangeNature;
+
+     /**
+      * The element associated with the breaking change.
+      */
+     private ElementDeclaration breakingChangeElement;
 
 
      public BreakingChange(BreakingChangeKind breakingChangeKind,
                            TypeDeclaration breakingChangeTypeDeclaration,
                            String breakingChangePosition,
-                           BreakingChangeNature breakingChangeNature) {
+                           BreakingChangeNature breakingChangeNature, ElementDeclaration breakingChangeElement) {
          this.breakingChangeKind = breakingChangeKind;
          this.breakingChangeTypeDeclaration = breakingChangeTypeDeclaration;
          this.breakingChangePosition = breakingChangePosition;
          this.breakingChangeNature = breakingChangeNature;
+         this.breakingChangeElement = breakingChangeElement;
      }
 
      /**
@@ -72,5 +79,30 @@
      public BreakingChangeNature getBreakingChangeNature() {
          return breakingChangeNature;
      }
+
+     /**
+      * Retrieves the element associated with the breaking change.
+      *
+      * @return Breaking change's element
+      */
+     public ElementDeclaration getBreakingChangeElement() { return breakingChangeElement; }
+
+
+     /**
+      * Generates a string representation of the BreakingChange.
+      *
+      * @return A formatted string containing the breaking change's kind, type declaration,
+      * position, nature, and associated element.
+      */
+
+     @Override
+     public String toString() {
+         return "Breaking Change Kind: " + getBreakingChangeKind() + "\n" +
+                 "Type Declaration: " + getBreakingChangeTypeDeclaration().getName() + "\n" +
+                 "Position: " + getBreakingChangePosition() + "\n" +
+                 "Nature: " + getBreakingChangeNature() + "\n" +
+                 "Element: " + getBreakingChangeElement().getName() + "\n";
+     }
+
 
  }
