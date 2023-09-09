@@ -91,7 +91,7 @@ or mutation). This detailed report will be both displayed in the terminal and or
 
 ## Tests
 Roseau's efficiency was evaluated using Kamil Jezek and Jens Dietrich's [API evolution data corpus](https://github.com/kjezek/api-evolution-data-corpus), a benchmark 
-renowned for evaluating API checkers and comparing them. Building upon this established tool,
+renowned for assessing API checkers and comparing them. Building upon this established tool,
 we introduced new features to enhance the evaluation process. In fact, we not only atomized all the breaking change
 files to ensure a more granular evaluation, but we also incorporated an assessment of precision, recall, 
 and performance.
