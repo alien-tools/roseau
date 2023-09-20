@@ -1,4 +1,3 @@
-from cProfile import label
 import matplotlib.pyplot as plt
 import csv
 import numpy as np
@@ -37,6 +36,8 @@ with open('revapi_library.csv', 'r') as csvfile:
         execution_times_revapi.append(float(row[1]))
 
 
+
+# Prepare data for the bar chart
 x = ['benchmark_libraries', 'revapi_library', 'spoon_library']
 spoon_model_execution_times = [
     execution_times_benchmark_libraries[0],

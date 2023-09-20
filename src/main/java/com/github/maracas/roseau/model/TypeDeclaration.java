@@ -29,7 +29,13 @@ public class TypeDeclaration extends ElementDeclaration{
     private String superclassName;
 
     /** The superclass as a type declaration (null if there isn't any). */
-    private TypeDeclaration superclass;
+    private List<TypeDeclaration> allSuperclasses;
+
+
+
+
+    private List<TypeDeclaration> superinterfaces;
+
 
     /** The qualified names of the interfaces implemented by the type. */
     private List<String> superinterfacesNames;
@@ -38,6 +44,9 @@ public class TypeDeclaration extends ElementDeclaration{
     /** List of formal type parameters for generic types. */
     private List<String> formalTypeParameters;
 
+
+    private List<List<String>> formalTypeParamsBounds;
+
     /** A flag indicating whether the type is nested within another type. */
     private boolean nested;
 
@@ -45,12 +54,13 @@ public class TypeDeclaration extends ElementDeclaration{
 
 
 
-    public TypeDeclaration(String name, AccessModifier visibility, TypeType typeType, List<NonAccessModifiers> Modifiers,String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, boolean nested, String position) {
+    public TypeDeclaration(String name, AccessModifier visibility, TypeType typeType, List<NonAccessModifiers> Modifiers,String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position) {
         super(name, visibility, Modifiers, referencedTypes, position);
         this.typeType = typeType;
         this.superclassName = superclassName;
         this.superinterfacesNames = superinterfacesNames;
         this.formalTypeParameters = formalTypeParameters;
+        this.formalTypeParamsBounds = formalTypeParamsBounds;
         this.nested = nested;
     }
 
@@ -107,11 +117,21 @@ public class TypeDeclaration extends ElementDeclaration{
     }
 
     /**
-     * Retrieves the superclass of the type as a typeDeclaration.
-     * @return Type's superclass as a typeDeclaration
+     * Retrieves all the superclasses of the type as typeDeclarations.
+     * @return Type's superclasses as typeDeclarations
      */
-    public TypeDeclaration getSuperclass() {
-        return superclass;
+    public List<TypeDeclaration> getAllSuperclasses() {
+        return allSuperclasses;
+    }
+
+
+
+    /**
+     * Retrieves the superinterfaces of the type as typeDeclarations.
+     * @return Type's superinterfaces as typeDeclarations
+     */
+    public List<TypeDeclaration> getSuperinterfaces() {
+        return superinterfaces;
     }
 
 
@@ -123,6 +143,16 @@ public class TypeDeclaration extends ElementDeclaration{
         return formalTypeParameters;
     }
 
+
+    /**
+     * Retrieves a list of lists containing the formal type parameters' bounds.
+     * @return formal type parameters bounds
+     */
+    public List<List<String>> getFormalTypeParamsBounds() {
+        return formalTypeParamsBounds;
+    }
+
+
     /**
      * Checks if the type is nested within another type.
      * @return True if the type is nested; false otherwise
@@ -132,14 +162,24 @@ public class TypeDeclaration extends ElementDeclaration{
     }
 
 
-    /**
-     * Sets the superclass of the type.
-     * @param superclass The superclass to be set
-     */
 
-    public void setSuperclass(TypeDeclaration superclass) {
-        this.superclass = superclass;
+
+    /**
+     * Sets the type's superclasses.
+     * @param  allSuperclasses The superclasses to be set
+     */
+    public void setAllSuperclasses(List<TypeDeclaration> allSuperclasses) {
+        this.allSuperclasses = allSuperclasses;
     }
+
+    /**
+     * Sets the type's superinterfaces.
+     * @param  superinterfaces The superinterfaces to be set
+     */
+    public void setSuperinterfaces(List<TypeDeclaration> superinterfaces) {
+        this.superinterfaces = superinterfaces;
+    }
+
 
     /**
      * Sets the list of fields declared within the type.

@@ -14,6 +14,7 @@ import spoon.reflect.CtModel;
 
 import spoon.reflect.declaration.*;
 import spoon.reflect.declaration.ModifierKind;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -67,7 +68,17 @@ public class APIExtractor {
 				.filter(this::typeIsAccessible)
 				.forEach(type -> {
 
-					//if (type.getSuperclass() != null) {
+					//type.getFormalCtTypeParameters().stream()
+							//.map(formalTypeParameter -> formalTypeParameter.getReferencedTypes())
+							//.peek(formalTypeParameter -> {
+								//System.out.println("Type param: " + formalTypeParameter);
+
+									//})
+
+
+							//.toList();
+
+					//if (type.getAllSuperclasses() != null) {
 						// System.out.println("Type: " + type.getPosition().toString());
 						// System.out.println("Type: " + type.getSuperInterfaces());
 					//}
@@ -83,6 +94,16 @@ public class APIExtractor {
 		parentType.getNestedTypes().stream()
 				.filter(this::typeIsAccessible)
 				.forEach(type -> {
+					//type.getFormalCtTypeParameters().stream()
+							//.map(formalTypeParameter -> formalTypeParameter.getReferencedTypes())
+							//.peek(formalTypeParameter -> {
+							//	System.out.println("Type param: " + formalTypeParameter);
+
+							//})
+
+
+							//.toList();
+
 					types.add(type);
 					extractingSpoonNestedTypes(type, types);
 				});
@@ -105,9 +126,7 @@ public class APIExtractor {
 	private List<CtMethod<?>> extractedSpoonMethods(CtType<?> type) {
 		return type.getMethods().stream()
 				.filter(this::memberIsAccessible)
-				.peek(method -> {
-					//System.out.println("Method: " + method.isDefaultMethod());
-				})
+
 				.toList();
 	}
 
@@ -218,13 +237,19 @@ public class APIExtractor {
 							.map(referencedType -> referencedType.toString())
 							.toList();
 					List<String> formalTypeParameters = spoonType.getFormalCtTypeParameters().stream()
-							.map(formalTypeParameter -> formalTypeParameter.toString())
+							.map(formalTypeParameter -> formalTypeParameter.getQualifiedName())
+							.toList();
+					List<List<String>> formalTypeParamsBounds = spoonType.getFormalCtTypeParameters().stream()
+							.map(formalTypeParameter -> formalTypeParameter.getReferencedTypes().stream()
+									.map(formalParamReferencedType -> formalParamReferencedType.toString())
+									.toList()
+							)
 							.toList();
 					boolean isNested = !spoonType.isTopLevel();
 					String position = spoonType.getPosition().toString();
 
 					// Creating a new TypeDeclaration object using the extracted information
-					return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames,referencedTypes, formalTypeParameters, isNested, position);
+					return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames,referencedTypes, formalTypeParameters, formalTypeParamsBounds, isNested, position);
 
 					})
 
@@ -272,19 +297,36 @@ public class APIExtractor {
 									.toList())
 							.toList();
 					List<String> formalTypeParameters = spoonMethod.getFormalCtTypeParameters().stream()
-							.map(formalTypeParameter -> formalTypeParameter.toString())
+							.map(formalTypeParameter -> formalTypeParameter.getQualifiedName())
+							.toList();
+					List<List<String>> formalTypeParamsBounds = spoonMethod.getFormalCtTypeParameters().stream()
+							.map(formalTypeParameter -> formalTypeParameter.getReferencedTypes().stream()
+									.map(formalParamReferencedType -> formalParamReferencedType.toString())
+									.toList()
+							)
 							.toList();
 					Signature signature = new Signature(name, parametersTypes);
-					List<String> exceptions = spoonMethod.getThrownTypes().stream()
-							.map(exception-> exception.getQualifiedName())
+
+					List<String> exceptions = spoonMethod.getThrownTypes()
+							.stream()
+							.filter(exception -> {
+
+								return !exception.getQualifiedName().equals("java.lang.RuntimeException")
+										&& (exception.getSuperclass() == null || !exception.getSuperclass().getQualifiedName().equals("java.lang.RuntimeException"));
+							})
+
+							.map(exception -> exception.getQualifiedName())
+
 							.toList();
+
+
 					List<Boolean> parametersVarargsCheck = spoonMethod.getParameters().stream()
 							.map(parameter -> parameter.isVarArgs())
 							.toList();
 					boolean isDefault = spoonMethod.isDefaultMethod();
 					String position = spoonMethod.getPosition().toString();
 					// Creating a new MethodDeclaration object using the extracted information
-					return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers, signature, exceptions, parametersVarargsCheck, isDefault, position);
+					return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers, signature, exceptions, parametersVarargsCheck, isDefault, position);
 				})
 
 				.toList();  // Adding it to the list of MethodDeclarations
@@ -309,16 +351,29 @@ public class APIExtractor {
 									.toList())
 							.toList();
 					List<String> formalTypeParameters = spoonConstructor.getFormalCtTypeParameters().stream()
-							.map(formalTypeParameter -> formalTypeParameter.toString())
+							.map(formalTypeParameter -> formalTypeParameter.getQualifiedName())
+							.toList();
+					List<List<String>> formalTypeParamsBounds = spoonConstructor.getFormalCtTypeParameters().stream()
+							.map(formalTypeParameter -> formalTypeParameter.getReferencedTypes().stream()
+									.map(formalParamReferencedType -> formalParamReferencedType.toString())
+									.toList()
+							)
 							.toList();
 					List<NonAccessModifiers> modifiers = filterNonAccessModifiers(spoonConstructor.getModifiers());
 					Signature signature = new Signature(name, parametersTypes);
 					List<String> exceptions = spoonConstructor.getThrownTypes().stream()
-							.map(exception-> exception.getQualifiedName())
+							.filter(exception -> {
+
+								return !exception.getQualifiedName().equals("java.lang.RuntimeException")
+										&& (exception.getSuperclass() == null || !exception.getSuperclass().getQualifiedName().equals("java.lang.RuntimeException"));
+							})
+
+							.map(exception -> exception.getQualifiedName())
+
 							.toList();
 					String position = type.getPosition().toString();
 					// Creating a new ConstructorDeclaration object using the extracted information
-					return new ConstructorDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, modifiers,signature, exceptions, position);
+					return new ConstructorDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers,signature, exceptions, position);
 				})
 
 				.toList();  // Adding it to the list of ConstructorDeclarations
@@ -326,6 +381,37 @@ public class APIExtractor {
 
 
 
+
+	// Get all the superclasses of a type, direct or not
+	private List<TypeDeclaration> getAllSuperclasses(String className, List<TypeDeclaration> allTypes) {
+		List<TypeDeclaration> superclasses = new ArrayList<>();
+		TypeDeclaration currentType = getTypeByName(className, allTypes);
+
+		if (currentType != null) {
+			String superclassName = currentType.getSuperclassName();
+			if (!superclassName.equals("None")) {
+				List<TypeDeclaration> directSuperclasses = getAllSuperclasses(superclassName, allTypes);
+				superclasses.add(currentType);
+				superclasses.addAll(directSuperclasses);
+			} else {
+				superclasses.add(currentType);
+			}
+		}
+
+		return superclasses;
+	}
+
+
+
+
+
+	// Helper to get a TypeDeclaration by name
+	private TypeDeclaration getTypeByName(String className, List<TypeDeclaration> allTypes) {
+		return allTypes.stream()
+				.filter(typeDeclaration -> typeDeclaration.getName().equals(className))
+				.findFirst()
+				.orElse(null);
+	}
 
 
 	/**
@@ -379,15 +465,31 @@ public class APIExtractor {
 
 		AllTheTypes.forEach(typeDeclaration -> {
 			String superclassName = typeDeclaration.getSuperclassName();
-			if (superclassName.equals("None")) {
-				typeDeclaration.setSuperclass(null);
-			} else {
-				TypeDeclaration superclass = AllTheTypes.stream()
-						.filter(superClassDec -> superClassDec.getName().equals(superclassName))
+			if (!superclassName.equals("None")) {
+				List<TypeDeclaration> superclasses = getAllSuperclasses(superclassName, AllTheTypes);
+				typeDeclaration.setAllSuperclasses(superclasses);
+
+			}
+
+
+            // Filling the superinterfaces too
+			List<String> superinterfaceNames = typeDeclaration.getSuperinterfacesNames();
+			List<TypeDeclaration> superinterfaces = new ArrayList<>();
+
+			for (String superinterfaceName : superinterfaceNames) {
+				TypeDeclaration superinterface = AllTheTypes.stream()
+						.filter(superInterfaceDec -> superInterfaceDec.getName().equals(superinterfaceName))
 						.findFirst()
 						.orElse(null);
-				typeDeclaration.setSuperclass(superclass);
+				if (superinterface != null) {
+					superinterfaces.add(superinterface);
+				}
 			}
+
+			typeDeclaration.setSuperinterfaces(superinterfaces);
+
+
+
 		});
 
 

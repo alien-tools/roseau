@@ -3,13 +3,11 @@ package com.github.maracas.roseau;
 
 import com.github.maracas.roseau.changes.*;
 import com.github.maracas.roseau.model.*;
-
-import java.util.List;
+import java.util.stream.Stream;
+import java.util.*;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.Objects;
 import java.util.stream.IntStream;
 
 /**
@@ -111,10 +109,50 @@ public class APIDiff {
                         .noneMatch(method1 -> method1.getSignature().getName().equals(method2.getSignature().getName()) && method1.getSignature().getParameterTypes().equals(method2.getSignature().getParameterTypes())))
                 .peek(removedMethod -> {
                     //System.out.println("Method removed: " + removedMethod.getName());
-                    breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+                    if (type2.getAllSuperclasses()!= null ) {
+                        List<MethodDeclaration> allSuperMethodsV2 = Stream.concat(
+                                        type2.getAllSuperclasses().stream().flatMap(superType -> superType.getMethods().stream()),
+                                        type2.getSuperinterfaces().stream().flatMap(superInterface -> superInterface.getMethods().stream())
+                                )
+                                .toList();
 
+                        boolean overriddenOrMovedMethodExists = allSuperMethodsV2.stream()
+                                .anyMatch(method -> method.getSignature().getName().equals(removedMethod.getSignature().getName()) &&
+                                        method.getSignature().getParameterTypes().equals(removedMethod.getSignature().getParameterTypes()));
+
+                        if (!overriddenOrMovedMethodExists) {
+                            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+                        }
+                    }
+
+                    else if (type2.getAllSuperclasses()== null && !type2.getSuperinterfaces().isEmpty() ) {
+                        List<MethodDeclaration>  allSuperMethods = type2.getSuperinterfaces().stream()
+                                .flatMap(superInterface -> superInterface.getMethods().stream())
+                                .toList();
+
+                        boolean overriddenOrMovedMethodExists = allSuperMethods.stream()
+                                .anyMatch(method -> method.getSignature().getName().equals(removedMethod.getSignature().getName()) &&
+                                        method.getSignature().getParameterTypes().equals(removedMethod.getSignature().getParameterTypes()));
+
+
+
+
+                        if (!overriddenOrMovedMethodExists) {
+                            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+                        }
+
+
+
+                    }
+
+
+                    else {
+                        breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+
+                    }
                 })
                 .toList();
+
 
     }
 
@@ -208,99 +246,25 @@ public class APIDiff {
                                 method1.getSignature().getParameterTypes().equals(method2.getSignature().getParameterTypes())))
                 .peek(addedMethod -> {
 
-                    if (type2.getTypeType().equals(TypeType.INTERFACE)) {
+                    if (type2.getTypeType().equals(TypeType.INTERFACE) && !addedMethod.isDefault()) {
                         breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 
 
                     }
+
                     if (type2.getTypeType().equals(TypeType.CLASS) && addedMethod.getModifiers().contains(NonAccessModifiers.ABSTRACT)) {
                         breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 
 
                     }
-                    if (type1.getSuperclass() != null && type2.getSuperclass() != null ){
-
-                        List<MethodDeclaration> superclassMethodsInV1 = type1.getSuperclass().getMethods();
-                        List<MethodDeclaration> superclassMethodsInV2 = type2.getSuperclass().getMethods();
-
-                        MethodDeclaration superMethodInV1 = superclassMethodsInV1.stream()
-                                .filter(method -> method.getSignature().getName().equals(addedMethod.getSignature().getName())
-                                        && method.getSignature().getParameterTypes().equals(addedMethod.getSignature().getParameterTypes()))
-                                .findFirst()
-                                .orElse(null);
-
-                        MethodDeclaration superMethodInV2 = superclassMethodsInV2.stream()
-                                .filter(method -> method.getSignature().getName().equals(addedMethod.getSignature().getName())
-                                        && method.getSignature().getParameterTypes().equals(addedMethod.getSignature().getParameterTypes()))
-                                .findFirst()
-                                .orElse(null);
-
-                        if (superMethodInV2 != null && superMethodInV1 != null){   // if the method actually overrides another
-                            if (addedMethod.getModifiers().contains(NonAccessModifiers.STATIC) && !superMethodInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_IS_STATIC_AND_OVERRIDES_NOT_STATIC, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 
 
-                            }
-                            if (!addedMethod.getModifiers().contains(NonAccessModifiers.STATIC) && superMethodInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_IS_NOT_STATIC_AND_OVERRIDES_STATIC, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
-
-
-                            }
-                            if (superMethodInV2.getVisibility().equals(AccessModifier.PUBLIC) && addedMethod.getVisibility().equals(AccessModifier.PROTECTED)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
-
-
-                            }
-                        }
-
-                    }
                 })
                 .toList();
 
     }
 
-    private List<FieldDeclaration> getAddedFields(TypeDeclaration type1, TypeDeclaration type2) {
-        return type2.getFields().stream()
-                .filter(field2 -> type1.getFields().stream()
-                        .noneMatch(field1 -> field1.getName().equals(field2.getName())))
-                .peek(addedField -> {
 
-                    if (type1.getSuperclass() != null && type2.getSuperclass() != null) {
-
-                        List<FieldDeclaration> superclassFieldsInV1 = type1.getSuperclass().getFields();
-                        List<FieldDeclaration> superclassFieldsInV2 = type2.getSuperclass().getFields();
-
-                        FieldDeclaration superFieldInV1 = superclassFieldsInV1.stream()
-                                .filter(field -> field.getName().equals(addedField.getName()))
-                                .findFirst()
-                                .orElse(null);
-
-                        FieldDeclaration superFieldInV2 = superclassFieldsInV2.stream()
-                                .filter(field -> field.getName().equals(addedField.getName()))
-                                .findFirst()
-                                .orElse(null);
-
-                        if (superFieldInV2 != null && superFieldInV1 != null) { // if the field exists in both superclasses
-                            if (addedField.getModifiers().contains(NonAccessModifiers.STATIC) && !superFieldInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_STATIC_AND_OVERRIDES_NON_STATIC, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
-
-
-                            }
-                            if (!addedField.getModifiers().contains(NonAccessModifiers.STATIC) && superFieldInV2.getModifiers().contains(NonAccessModifiers.STATIC)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NON_STATIC_AND_OVERRIDES_STATIC, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
-
-                            }
-                            if (superFieldInV2.getVisibility().equals(AccessModifier.PUBLIC) && addedField.getVisibility().equals(AccessModifier.PROTECTED)) {
-                                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE_THAN_IN_SUPERCLASS, addedField.getType(), addedField.getPosition(), BreakingChangeNature.ADDITION, addedField));
-
-                            }
-                        }
-                    }
-
-
-                })
-                .toList();
-    }
 
 
 
@@ -325,16 +289,23 @@ public class APIDiff {
 
         }
 
-
         if (field1.getVisibility().equals(AccessModifier.PUBLIC) && field2.getVisibility().equals(AccessModifier.PROTECTED)) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 
         }
 
-        if (field1.getDataType().equals(field2.getDataType()) && !field1.getReferencedTypes().equals(field2.getReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+        if (field1.getDataType().equals(field2.getDataType())) {
+            List<String> referencedTypes1 = field1.getReferencedTypes();
+            List<String> referencedTypes2 = field2.getReferencedTypes();
 
+            Set<String> set1 = new HashSet<>(referencedTypes1);
+            Set<String> set2 = new HashSet<>(referencedTypes2);
+
+            if (!set1.equals(set2)) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, field2.getType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+            }
         }
+
 
     }
 
@@ -388,15 +359,13 @@ public class APIDiff {
 
         }
 
-        if (method1.getReturnType().equals(method2.getReturnType()) && !method1.getReferencedTypes().equals(method2.getReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_GENERICS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
-
-        }
-
         if (!method1.getParametersReferencedTypes().equals(method2.getParametersReferencedTypes())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
         }
+
+
+
 
         List<String> additionalExceptions1 = method1.getExceptions().stream()
                 .filter(e -> !method2.getExceptions().contains(e))
@@ -428,17 +397,86 @@ public class APIDiff {
 
 
 
-        if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
+
+        // Handling the formal type parameters additions and deletions
+
+        // In classes
+        if (method1.getType().getTypeType().equals(TypeType.CLASS)) {
+             if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size() && !method2.getFormalTypeParameters().isEmpty()) {
+                 breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.DELETION, method2));
+
+             }
+
+
+             if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size() && !method1.getFormalTypeParameters().isEmpty()) {
+                 breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getType(), method2.getPosition(), BreakingChangeNature.ADDITION, method2));
+
+             }
+
 
         }
-        if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
+
+        // In interfaces
+        if (method1.getType().getTypeType().equals(TypeType.INTERFACE)) {
+            if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size() ) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.DELETION, method2));
+
+            }
+
+
+            if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size() && !method1.getFormalTypeParameters().isEmpty()) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getType(), method2.getPosition(), BreakingChangeNature.ADDITION, method2));
+
+            }
 
         }
 
 
+        // Handling changes in the formal type parameters' bounds
+        // The order of the FormalTypeParameters matters but the order of their bounds doesn't, this is why
+        // I'm transforming the bounds into hashsets
 
+        if (method1.getFormalTypeParameters().size() == method2.getFormalTypeParameters().size()) {
+            List<List<String>> boundsV1 = method1.getFormalTypeParamsBounds();
+            List<List<String>> boundsV2 = method2.getFormalTypeParamsBounds();
+
+            for (int i = 0; i < boundsV2.size(); i++) {
+                List<String> boundsOfTheFormalTypeParameterV1 = boundsV1.get(i);
+                List<String> boundsOfTheFormalTypeParameterV2 = boundsV2.get(i);
+
+                HashSet<String> boundsSetV1 = new HashSet<>(boundsOfTheFormalTypeParameterV1);
+                HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
+
+
+                // Every bound change is breaking in interfaces, no matter the nature
+                if (method1.getType().getTypeType().equals(TypeType.INTERFACE)) {
+
+                    if (!boundsSetV1.equals(boundsSetV2)) {
+                        breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+                    }
+
+                }
+
+                // In classes
+                if (method1.getType().getTypeType().equals(TypeType.CLASS)) {
+
+                    // If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
+                    if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size()) {
+                        breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+                    }
+
+                    // The addition of a bound is breaking
+                    if (boundsSetV1.size() < boundsSetV2.size()) {
+                        breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+                    }
+
+                }
+
+            }
+
+        }
 
     }
 
@@ -447,21 +485,45 @@ public class APIDiff {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
 
         }
-
         if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes())) {
             breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
 
         }
-        if (!constructor1.getReferencedTypes().equals(constructor2.getReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_GENERICS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+
+
+
+        if (constructor1.getFormalTypeParameters().size() == constructor2.getFormalTypeParameters().size()) {
+            List<List<String>> boundsV1 = constructor1.getFormalTypeParamsBounds();
+            List<List<String>> boundsV2 = constructor2.getFormalTypeParamsBounds();
+
+            for (int i = 0; i < boundsV2.size(); i++) {
+                List<String> boundsOfTheFormalTypeParameterV1 = boundsV1.get(i);
+                List<String> boundsOfTheFormalTypeParameterV2 = boundsV2.get(i);
+
+                HashSet<String> boundsSetV1 = new HashSet<>(boundsOfTheFormalTypeParameterV1);
+                HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
+
+
+                // If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
+                if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size()) {
+                    breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+                }
+
+                // The addition of a bound is breaking
+                if (boundsSetV1.size() < boundsSetV2.size()) {
+                    breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+                }
+
+            }
+        }
+
+
+        if (constructor1.getFormalTypeParameters().size() > constructor2.getFormalTypeParameters().size() && !constructor2.getFormalTypeParameters().isEmpty()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.DELETION, constructor2));
 
         }
-        if (constructor1.getFormalTypeParameters().size() > constructor2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
-
-        }
-        if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+        if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size() && !constructor1.getFormalTypeParameters().isEmpty()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getType(), constructor2.getPosition(), BreakingChangeNature.ADDITION, constructor2));
 
         }
 
@@ -491,20 +553,13 @@ public class APIDiff {
             }
 
 
-            if (!type1.getTypeType().equals(type2.getTypeType())) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-            }
 
             if (!type1.getSuperclassName().equals("java.lang.Exception") && type2.getSuperclassName().equals("java.lang.Exception")) {
                 breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
             }
 
-            if (!type1.getSuperclassName().equals(type2.getSuperclassName()) || !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames())) {
-                breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
-
-            }
 
         }
 
@@ -513,18 +568,84 @@ public class APIDiff {
 
         }
 
-        if (!type1.getReferencedTypes().equals(type2.getReferencedTypes())) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_GENERICS_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+
+
+
+        if (type1.getTypeType().equals(TypeType.CLASS)) {
+            if (!type1.getSuperclassName().equals("None") && type2.getSuperclassName().equals("None") ) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+
+
+            }
+            // Check for deleted superinterfaces
+            List<String> superinterfacesV1 = type1.getSuperinterfacesNames();
+            List<String> superinterfacesV2 = type2.getSuperinterfacesNames();
+
+            for (String superinterfaceV1 : superinterfacesV1) {
+                if (!superinterfacesV2.contains(superinterfaceV1)) {
+                    breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+
+                }
+            }
+        }
+
+
+        if (type1.getTypeType().equals(TypeType.INTERFACE)){
+
+            if (!type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames())) {
+                breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+
+            }
 
         }
+
+
+
+        if (!type1.getTypeType().equals(type2.getTypeType())) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+
+        }
+
+
+
+
+        if (type1.getFormalTypeParameters().size() == type2.getFormalTypeParameters().size()) {
+            List<List<String>> boundsV1 = type1.getFormalTypeParamsBounds();
+            List<List<String>> boundsV2 = type2.getFormalTypeParamsBounds();
+
+            for (int i = 0; i < boundsV2.size(); i++) {
+                List<String> boundsOfTheFormalTypeParameterV1 = boundsV1.get(i);
+                List<String> boundsOfTheFormalTypeParameterV2 = boundsV2.get(i);
+
+                HashSet<String> boundsSetV1 = new HashSet<>(boundsOfTheFormalTypeParameterV1);
+                HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
+
+                // If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
+                if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size()) {
+                    breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, type2,type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+                }
+                if (boundsSetV1.size() < boundsSetV2.size() && !boundsSetV1.isEmpty()) {
+                    breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
+
+                }
+
+
+            }
+        }
+
+
+
+
+
 
 
         if (type1.getFormalTypeParameters().size() > type2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_REMOVED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, type2, type2.getPosition(), BreakingChangeNature.DELETION, type2));
 
         }
-        if (type1.getFormalTypeParameters().size() < type2.getFormalTypeParameters().size()) {
-            breakingChanges.add(new BreakingChange(BreakingChangeKind.FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+
+        if (type1.getFormalTypeParameters().size() < type2.getFormalTypeParameters().size() && !type1.getFormalTypeParameters().isEmpty()) {
+            breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
 
         }
     }
@@ -549,7 +670,7 @@ public class APIDiff {
                     List<List<ConstructorDeclaration>> remainingConstructors = getUnremovedConstructors(commonTypes.get(0).get(i), commonTypes.get(1).get(i));
 
                     getAddedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
-                    getAddedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
+
 
                     IntStream.range(0, remainingMethods.get(0).size())
                             .forEach(j -> {

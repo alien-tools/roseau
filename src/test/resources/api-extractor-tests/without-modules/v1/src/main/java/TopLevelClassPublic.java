@@ -7,7 +7,8 @@ public class TopLevelClassPublic {
 	// Inner classes
 	class InnerClass {}
 
-	public class InnerClassPublic {
+	public class originalClass {}
+	public class InnerClassPublic extends originalClass {
 		public int number;
 		public List<String> text;
 
@@ -57,6 +58,18 @@ public class TopLevelClassPublic {
 		}
 	}
 	// Nested classes
+
+	public interface Interface1 {
+		void method1();
+	}
+
+	public interface Interface2 {
+		void method2();
+	}
+
+	public class InnerClassWithInterfaces implements Interface1, Interface2 {
+
+	}
 	static class NestedClass {}
 	public class NestedClassPublic extends InnerClassPublic {}
 	public class NestedClassProtected extends InnerClassProtected {}

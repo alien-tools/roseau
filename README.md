@@ -90,7 +90,7 @@ we introduced new features to enhance the evaluation process. In fact, we not on
 files to ensure a more granular evaluation, but we also incorporated an assessment of precision, recall, 
 and performance.
 
-With this [upgraded version of the benchmark](https://github.com/labri-progress/api-evolution-data-corpus), Roseau achieved a remarkable precision rate of 73.6% and a perfect recall rate of 100%. 
+With this [upgraded version of the benchmark](https://github.com/labri-progress/api-evolution-data-corpus), Roseau achieved a remarkable precision rate of 88.54% and a perfect recall rate of 100%. 
 In other words, it successfully identified **every single** breaking change in the corpus.
 
 ## License

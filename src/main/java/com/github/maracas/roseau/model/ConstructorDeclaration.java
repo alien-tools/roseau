@@ -26,6 +26,8 @@ public class ConstructorDeclaration extends ElementDeclaration {
     private List<String> formalTypeParameters;
 
 
+    private List<List<String>> formalTypeParamsBounds;
+
     /** The constructor's signature. */
     private Signature signature;
 
@@ -35,13 +37,14 @@ public class ConstructorDeclaration extends ElementDeclaration {
 
 
 
-    public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, String position) {
+    public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, String position) {
         super(name, visibility, Modifiers, referencedTypes, position);
         this.type = type;
         this.returnType = returnType;
         this.parametersTypes = parametersTypes;
         this.parametersReferencedTypes = parametersReferencedTypes;
         this.formalTypeParameters = formalTypeParameters;
+        this.formalTypeParamsBounds = formalTypeParamsBounds;
         this.signature = signature;
         this.exceptions = exceptions;
     }
@@ -89,6 +92,16 @@ public class ConstructorDeclaration extends ElementDeclaration {
     public List<String> getFormalTypeParameters() {
         return formalTypeParameters;
     }
+
+
+    /**
+     * Retrieves a list of lists containing the formal type parameters' bounds.
+     * @return formal type parameters bounds
+     */
+    public List<List<String>> getFormalTypeParamsBounds() {
+        return formalTypeParamsBounds;
+    }
+
 
 
     /**
