@@ -10,7 +10,7 @@ import com.github.maracas.roseau.model.FieldDeclaration;
 import com.github.maracas.roseau.model.MethodDeclaration;
 import com.github.maracas.roseau.model.NonAccessModifiers;
 import com.github.maracas.roseau.model.TypeDeclaration;
-import com.github.maracas.roseau.model.TypeType;
+import com.github.maracas.roseau.model.DeclarationType;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -29,17 +29,17 @@ public class APIDiff {
 	/**
 	 * The first version of the API to be compared.
 	 */
-	private API v1;
+	private final API v1;
 
 	/**
 	 * The second version of the API to be compared.
 	 */
-	private API v2;
+	private final API v2;
 
 	/**
 	 * List of all the breaking changes identified in the comparison.
 	 */
-	private List<BreakingChange> breakingChanges;
+	private final List<BreakingChange> breakingChanges;
 
 	private boolean breakingChangesPopulated = false;
 
@@ -56,24 +56,24 @@ public class APIDiff {
 	}
 
 	private List<TypeDeclaration> checkingForRemovedTypes() {
-		return v1.getAllTheTypes().stream()
-			.filter(type -> v2.getAllTheTypes().stream().noneMatch(t -> t.getName().equals(type.getName())))
+		return v1.allTheTypes().stream()
+			.filter(type -> v2.allTheTypes().stream().noneMatch(t -> t.getName().equals(type.getName())))
 			.peek(removedType -> {
-				if (removedType.getTypeType().equals(TypeType.CLASS))
+				if (removedType.getDeclarationType().equals(DeclarationType.CLASS))
 					breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION, removedType));
 
-				if (removedType.getTypeType().equals(TypeType.INTERFACE))
+				if (removedType.getDeclarationType().equals(DeclarationType.INTERFACE))
 					breakingChanges.add(new BreakingChange(BreakingChangeKind.INTERFACE_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION, removedType));
 			})
 			.toList();
 	}
 
 	private List<List<TypeDeclaration>> getUnremovedTypes() {
-		List<TypeDeclaration> unremovedTypes1 = v1.getAllTheTypes().stream()
-			.filter(type -> v2.getAllTheTypes().stream().anyMatch(t -> t.getName().equals(type.getName())))
+		List<TypeDeclaration> unremovedTypes1 = v1.allTheTypes().stream()
+			.filter(type -> v2.allTheTypes().stream().anyMatch(t -> t.getName().equals(type.getName())))
 			.toList();
 
-		List<TypeDeclaration> typesInParallelFrom2 = v2.getAllTheTypes().stream()
+		List<TypeDeclaration> typesInParallelFrom2 = v2.allTheTypes().stream()
 			.filter(type -> unremovedTypes1.stream().anyMatch(t -> t.getName().equals(type.getName())))
 			.toList();
 
@@ -203,10 +203,10 @@ public class APIDiff {
 				.noneMatch(method1 -> method1.getSignature().getName().equals(method2.getSignature().getName()) &&
 					method1.getSignature().getParameterTypes().equals(method2.getSignature().getParameterTypes())))
 			.peek(addedMethod -> {
-				if (type2.getTypeType().equals(TypeType.INTERFACE) && !addedMethod.isDefault())
+				if (type2.getDeclarationType().equals(DeclarationType.INTERFACE) && !addedMethod.isDefault())
 					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 
-				if (type2.getTypeType().equals(TypeType.CLASS) && addedMethod.getModifiers().contains(NonAccessModifiers.ABSTRACT))
+				if (type2.getDeclarationType().equals(DeclarationType.CLASS) && addedMethod.getModifiers().contains(NonAccessModifiers.ABSTRACT))
 					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, addedMethod.getType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 			})
 			.toList();
@@ -300,7 +300,7 @@ public class APIDiff {
 		// Handling the formal type parameters additions and deletions
 
 		// In classes
-		if (method1.getType().getTypeType().equals(TypeType.CLASS)) {
+		if (method1.getType().getDeclarationType().equals(DeclarationType.CLASS)) {
 			if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size() && !method2.getFormalTypeParameters().isEmpty())
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.DELETION, method2));
 
@@ -309,7 +309,7 @@ public class APIDiff {
 		}
 
 		// In interfaces
-		if (method1.getType().getTypeType().equals(TypeType.INTERFACE)) {
+		if (method1.getType().getDeclarationType().equals(DeclarationType.INTERFACE)) {
 			if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size())
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getType(), method2.getPosition(), BreakingChangeNature.DELETION, method2));
 
@@ -333,11 +333,11 @@ public class APIDiff {
 				HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
 
 				// Every bound change is breaking in interfaces, no matter the nature
-				if (method1.getType().getTypeType().equals(TypeType.INTERFACE) && !boundsSetV1.equals(boundsSetV2))
+				if (method1.getType().getDeclarationType().equals(DeclarationType.INTERFACE) && !boundsSetV1.equals(boundsSetV2))
 						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 				// In classes
-				if (method1.getType().getTypeType().equals(TypeType.CLASS)) {
+				if (method1.getType().getDeclarationType().equals(DeclarationType.CLASS)) {
 					// If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
 					if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size())
 						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
@@ -388,7 +388,7 @@ public class APIDiff {
 
 
 	private void typeComparison(TypeDeclaration type1, TypeDeclaration type2) {
-		if (type1.getTypeType().equals(TypeType.CLASS)) {
+		if (type1.getDeclarationType().equals(DeclarationType.CLASS)) {
 			if (!type1.getModifiers().contains(NonAccessModifiers.FINAL) && type2.getModifiers().contains(NonAccessModifiers.FINAL))
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
@@ -408,7 +408,7 @@ public class APIDiff {
 		if (type1.getVisibility().equals(AccessModifier.PUBLIC) && type2.getVisibility().equals(AccessModifier.PROTECTED))
 			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-		if (type1.getTypeType().equals(TypeType.CLASS)) {
+		if (type1.getDeclarationType().equals(DeclarationType.CLASS)) {
 			if (!type1.getSuperclassName().equals("None") && type2.getSuperclassName().equals("None"))
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
@@ -422,10 +422,10 @@ public class APIDiff {
 			}
 		}
 
-		if (type1.getTypeType().equals(TypeType.INTERFACE) && !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames()))
+		if (type1.getDeclarationType().equals(DeclarationType.INTERFACE) && !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames()))
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-		if (!type1.getTypeType().equals(type2.getTypeType()))
+		if (!type1.getDeclarationType().equals(type2.getDeclarationType()))
 			breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 		if (type1.getFormalTypeParameters().size() == type2.getFormalTypeParameters().size()) {
@@ -512,7 +512,7 @@ public class APIDiff {
 
 		return breakingChanges
 			.stream()
-			.filter(breakingChange -> breakingChange.getBreakingChangeElement() instanceof MethodDeclaration)
+			.filter(breakingChange -> breakingChange.breakingChangeElement() instanceof MethodDeclaration)
 			.toList();
 	}
 
@@ -527,7 +527,7 @@ public class APIDiff {
 
 		return breakingChanges
 			.stream()
-			.filter(breakingChange -> breakingChange.getBreakingChangeElement() instanceof ConstructorDeclaration)
+			.filter(breakingChange -> breakingChange.breakingChangeElement() instanceof ConstructorDeclaration)
 			.toList();
 	}
 
@@ -543,7 +543,7 @@ public class APIDiff {
 
 		return breakingChanges
 			.stream()
-			.filter(breakingChange -> breakingChange.getBreakingChangeElement() instanceof TypeDeclaration)
+			.filter(breakingChange -> breakingChange.breakingChangeElement() instanceof TypeDeclaration)
 			.toList();
 	}
 
@@ -558,7 +558,7 @@ public class APIDiff {
 
 		return breakingChanges
 			.stream()
-			.filter(breakingChange -> breakingChange.getBreakingChangeElement() instanceof FieldDeclaration)
+			.filter(breakingChange -> breakingChange.breakingChangeElement() instanceof FieldDeclaration)
 			.toList();
 	}
 
@@ -573,7 +573,7 @@ public class APIDiff {
 			detectingBreakingChanges();
 
 		return breakingChanges.stream()
-			.map(breakingChange -> breakingChange.getBreakingChangeTypeDeclaration())
+			.map(breakingChange -> breakingChange.breakingChangeTypeDeclaration())
 			.distinct()
 			.toList();
 	}
@@ -590,11 +590,11 @@ public class APIDiff {
 			writer.write("Kind,Type Declaration,Element,Nature,Position\n");
 
 			for (BreakingChange breakingChange : breakingChanges) {
-				String kind = breakingChange.getBreakingChangeKind().toString();
-				String typeDeclaration = breakingChange.getBreakingChangeTypeDeclaration().getName();
-				String element = breakingChange.getBreakingChangeElement().getName();
-				String nature = breakingChange.getBreakingChangeNature().toString();
-				String position = breakingChange.getBreakingChangePosition();
+				String kind = breakingChange.breakingChangeKind().toString();
+				String typeDeclaration = breakingChange.breakingChangeTypeDeclaration().getName();
+				String element = breakingChange.breakingChangeElement().getName();
+				String nature = breakingChange.breakingChangeNature().toString();
+				String position = breakingChange.breakingChangePosition();
 
 				writer.write(kind + "," + typeDeclaration + "," + element + "," + nature + "," + position + "\n");
 			}

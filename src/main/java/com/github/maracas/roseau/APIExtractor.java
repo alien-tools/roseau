@@ -8,7 +8,7 @@ import com.github.maracas.roseau.model.MethodDeclaration;
 import com.github.maracas.roseau.model.NonAccessModifiers;
 import com.github.maracas.roseau.model.Signature;
 import com.github.maracas.roseau.model.TypeDeclaration;
-import com.github.maracas.roseau.model.TypeType;
+import com.github.maracas.roseau.model.DeclarationType;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -226,17 +226,17 @@ public class APIExtractor {
 
 
 	// Returning the type's kind ( whether if it's a class/enum/interface/annotation/record )
-	private TypeType convertTypeType(CtType<?> type) {
+	private DeclarationType convertTypeType(CtType<?> type) {
 		if (type.isClass())
-			return TypeType.CLASS;
+			return DeclarationType.CLASS;
 		if (type.isInterface())
-			return TypeType.INTERFACE;
+			return DeclarationType.INTERFACE;
 		if (type.isEnum())
-			return TypeType.ENUM;
+			return DeclarationType.ENUM;
 		if (type.isAnnotationType())
-			return TypeType.ANNOTATION;
+			return DeclarationType.ANNOTATION;
 		else
-			return TypeType.RECORD;
+			return DeclarationType.RECORD;
 	}
 
 
@@ -247,7 +247,7 @@ public class APIExtractor {
 				// Extracting relevant information from the spoonType
 				String name = spoonType.getQualifiedName();
 				AccessModifier visibility = convertVisibility(spoonType.getVisibility());
-				TypeType typeType = convertTypeType(spoonType);
+				DeclarationType declarationType = convertTypeType(spoonType);
 				List<NonAccessModifiers> modifiers = filterNonAccessModifiers(spoonType.getModifiers());
 				String superclassName = "None";
 				if (spoonType.getSuperclass() != null) {
@@ -272,7 +272,7 @@ public class APIExtractor {
 				String position = spoonType.getPosition().toString();
 
 				// Creating a new TypeDeclaration object using the extracted information
-				return new TypeDeclaration(name, visibility, typeType, modifiers, superclassName, superinterfacesNames, referencedTypes, formalTypeParameters, formalTypeParamsBounds, isNested, position);
+				return new TypeDeclaration(name, visibility, declarationType, modifiers, superclassName, superinterfacesNames, referencedTypes, formalTypeParameters, formalTypeParamsBounds, isNested, position);
 			})
 			.toList(); // Adding it to the list of TypeDeclarations
 	}

@@ -10,7 +10,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	/**
 	 * The type of the declaration (e.g., class, interface, enum).
 	 */
-	private TypeType typeType;
+	private final DeclarationType declarationType;
 
 	/**
 	 * List of fields declared within the type.
@@ -30,7 +30,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	/**
 	 * The qualified name of the superclass ("None" if there isn't any).
 	 */
-	private String superclassName;
+	private final String superclassName;
 
 	/**
 	 * The superclass as a type declaration (null if there isn't any).
@@ -42,23 +42,23 @@ public class TypeDeclaration extends ElementDeclaration {
 	/**
 	 * The qualified names of the interfaces implemented by the type.
 	 */
-	private List<String> superinterfacesNames;
+	private final List<String> superinterfacesNames;
 
 	/**
 	 * List of formal type parameters for generic types.
 	 */
-	private List<String> formalTypeParameters;
+	private final List<String> formalTypeParameters;
 
-	private List<List<String>> formalTypeParamsBounds;
+	private final List<List<String>> formalTypeParamsBounds;
 
 	/**
 	 * A flag indicating whether the type is nested within another type.
 	 */
-	private boolean nested;
+	private final boolean nested;
 
-	public TypeDeclaration(String name, AccessModifier visibility, TypeType typeType, List<NonAccessModifiers> Modifiers, String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position) {
-		super(name, visibility, Modifiers, referencedTypes, position);
-		this.typeType = typeType;
+	public TypeDeclaration(String name, AccessModifier visibility, DeclarationType declarationType, List<NonAccessModifiers> modifiers, String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position) {
+		super(name, visibility, modifiers, referencedTypes, position);
+		this.declarationType = declarationType;
 		this.superclassName = superclassName;
 		this.superinterfacesNames = superinterfacesNames;
 		this.formalTypeParameters = formalTypeParameters;
@@ -71,8 +71,8 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type's kind
 	 */
-	public TypeType getTypeType() {
-		return typeType;
+	public DeclarationType getDeclarationType() {
+		return declarationType;
 	}
 
 	/**
@@ -220,7 +220,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	public String toString() {
 		return "Type Name: " + getName() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +
-			"Type kind: " + getTypeType() + "\n" +
+			"Type kind: " + getDeclarationType() + "\n" +
 			"Modifiers: " + getModifiers() + "\n" +
 			"Is Nested: " + isNested() + "\n" +
 			"Position: " + getPosition() + "\n\n" +

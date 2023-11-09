@@ -9,12 +9,12 @@ public class Signature {
 	/**
 	 * The simple name of the method.
 	 */
-	private String Name;
+	private final String name;
 
 	/**
 	 * The list of parameter types that the method accepts.
 	 */
-	private List<String> parameterTypes;
+	private final List<String> parameterTypes;
 
 	/**
 	 * Constructs a Signature object with the specified method name and parameter types.
@@ -23,7 +23,7 @@ public class Signature {
 	 * @param parameterTypes The list of parameter types that the method accepts.
 	 */
 	public Signature(String methodName, List<String> parameterTypes) {
-		this.Name = methodName;
+		this.name = methodName;
 		this.parameterTypes = parameterTypes;
 	}
 
@@ -33,7 +33,7 @@ public class Signature {
 	 * @return Method's simple name
 	 */
 	public String getName() {
-		return Name;
+		return name;
 	}
 
 	/**

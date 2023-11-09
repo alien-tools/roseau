@@ -10,52 +10,52 @@ public class MethodDeclaration extends ElementDeclaration {
 	/**
 	 * The type containing the method.
 	 */
-	private TypeDeclaration type;
+	private final TypeDeclaration type;
 
 	/**
 	 * The return data type of the method.
 	 */
-	private String returnType;
+	private final String returnType;
 
 	/**
 	 * List of the method's parameter data types.
 	 */
-	private List<String> parametersTypes;
+	private final List<String> parametersTypes;
 
 	/**
 	 * List of referenced types for each parameter.
 	 */
-	private List<List<String>> parametersReferencedTypes;
+	private final List<List<String>> parametersReferencedTypes;
 
 	/**
 	 * List of the method's formal type parameters.
 	 */
-	private List<String> formalTypeParameters;
+	private final List<String> formalTypeParameters;
 
-	private List<List<String>> formalTypeParamsBounds;
+	private final List<List<String>> formalTypeParamsBounds;
 
 	/**
 	 * The method's signature.
 	 */
-	private Signature signature;
+	private final Signature signature;
 
 	/**
 	 * List of exceptions thrown by the method.
 	 */
-	private List<String> exceptions;
+	private final List<String> exceptions;
 
 	/**
 	 * List of boolean values indicating varargs status for each parameter.
 	 */
-	private List<Boolean> parametersVarargsCheck;
+	private final List<Boolean> parametersVarargsCheck;
 
 	/**
 	 * A flag indicating whether the method is a default method.
 	 */
-	private boolean isDefault;
+	private final boolean isDefault;
 
-	public MethodDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
-		super(name, visibility, Modifiers, referencedTypes, position);
+	public MethodDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> exceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
+		super(name, visibility, modifiers, referencedTypes, position);
 		this.type = type;
 		this.returnType = returnType;
 		this.parametersTypes = parametersTypes;

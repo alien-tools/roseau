@@ -10,15 +10,15 @@ public class FieldDeclaration extends ElementDeclaration {
 	/**
 	 * The type containing the field.
 	 */
-	private TypeDeclaration type;
+	private final TypeDeclaration type;
 
 	/**
 	 * The data type of the field (e.g., int, double, class types, interface types).
 	 */
-	private String dataType;
+	private final String dataType;
 
-	public FieldDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String dataType, List<NonAccessModifiers> Modifiers, List<String> referencedTypes, String position) {
-		super(name, visibility, Modifiers, referencedTypes, position);
+	public FieldDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String dataType, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
+		super(name, visibility, modifiers, referencedTypes, position);
 		this.type = type;
 		this.dataType = dataType;
 	}

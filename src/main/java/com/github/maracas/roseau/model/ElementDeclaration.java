@@ -13,32 +13,32 @@ public abstract class ElementDeclaration {
 	/**
 	 * The name of the element.
 	 */
-	private String name;
+	private final String name;
 
 	/**
 	 * The visibility of the element.
 	 */
-	private AccessModifier visibility;
+	private final AccessModifier visibility;
 
 	/**
 	 * List of non-access modifiers applied to the element.
 	 */
-	private List<NonAccessModifiers> Modifiers;
+	private final List<NonAccessModifiers> modifiers;
 
 	/**
 	 * List of types referenced by the element.
 	 */
-	private List<String> referencedTypes;
+	private final List<String> referencedTypes;
 
 	/**
 	 * The exact position of the element declaration
 	 */
-	private String position;
+	private final String position;
 
-	public ElementDeclaration(String name, AccessModifier visibility, List<NonAccessModifiers> Modifiers, List<String> referencedTypes, String position) {
+	protected ElementDeclaration(String name, AccessModifier visibility, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
 		this.name = name;
 		this.visibility = visibility;
-		this.Modifiers = Modifiers;
+		this.modifiers = modifiers;
 		this.referencedTypes = referencedTypes;
 		this.position = position;
 	}
@@ -67,7 +67,7 @@ public abstract class ElementDeclaration {
 	 * @return Element's non-access modifiers
 	 */
 	public List<NonAccessModifiers> getModifiers() {
-		return Modifiers;
+		return modifiers;
 	}
 
 	/**

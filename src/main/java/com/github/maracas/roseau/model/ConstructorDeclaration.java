@@ -10,42 +10,42 @@ public class ConstructorDeclaration extends ElementDeclaration {
 	/**
 	 * The type containing the constructor.
 	 */
-	private TypeDeclaration type;
+	private final TypeDeclaration type;
 
 	/**
 	 * The return data type of the constructor.
 	 */
-	private String returnType;
+	private final String returnType;
 
 	/**
 	 * List of the constructor's parameter data types.
 	 */
-	private List<String> parametersTypes;
+	private final List<String> parametersTypes;
 
 	/**
 	 * List of referenced types for each constructor parameter.
 	 */
-	private List<List<String>> parametersReferencedTypes;
+	private final List<List<String>> parametersReferencedTypes;
 
 	/**
 	 * List of the constructor's formal type parameters.
 	 */
-	private List<String> formalTypeParameters;
+	private final List<String> formalTypeParameters;
 
-	private List<List<String>> formalTypeParamsBounds;
+	private final List<List<String>> formalTypeParamsBounds;
 
 	/**
 	 * The constructor's signature.
 	 */
-	private Signature signature;
+	private final Signature signature;
 
 	/**
 	 * List of exceptions thrown by the constructor.
 	 */
-	private List<String> exceptions;
+	private final List<String> exceptions;
 
-	public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> Modifiers, Signature signature, List<String> exceptions, String position) {
-		super(name, visibility, Modifiers, referencedTypes, position);
+	public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> exceptions, String position) {
+		super(name, visibility, modifiers, referencedTypes, position);
 		this.type = type;
 		this.returnType = returnType;
 		this.parametersTypes = parametersTypes;

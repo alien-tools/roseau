@@ -1,9 +1,9 @@
 package com.github.maracas.roseau.model;
 
 /**
- * Enumerates the possible types in Java.
+ * Java top-level declaration kinds
  */
-public enum TypeType {
+public enum DeclarationType {
 	/**
 	 * Class type
 	 */
