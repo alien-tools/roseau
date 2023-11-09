@@ -4,29 +4,28 @@ package com.github.maracas.roseau.model;
  * Enumerates the possible types in Java.
  */
 public enum TypeType {
+	/**
+	 * Class type
+	 */
+	CLASS,
 
-    /**
-     * Class type
-     */
-    CLASS,
+	/**
+	 * Interface type
+	 */
+	INTERFACE,
 
-    /**
-     * Interface type
-     */
-    INTERFACE,
+	/**
+	 * Record type
+	 */
+	RECORD,
 
-    /**
-     * Record type
-     */
-    RECORD,
+	/**
+	 * Enum type
+	 */
+	ENUM,
 
-    /**
-     * Enum type
-     */
-    ENUM,
-
-    /**
-     * Annotation type
-     */
-    ANNOTATION
+	/**
+	 * Annotation type
+	 */
+	ANNOTATION
 }

@@ -4,24 +4,23 @@ package com.github.maracas.roseau.model;
  * Enumerates the possible access modifiers in Java.
  */
 public enum AccessModifier {
+	/**
+	 * Private access modifier
+	 */
+	PRIVATE,
 
-    /**
-     * Private access modifier
-     */
-    PRIVATE,
+	/**
+	 * Protected access modifier
+	 */
+	PROTECTED,
 
-    /**
-     * Protected access modifier
-     */
-    PROTECTED,
+	/**
+	 * Public access modifier
+	 */
+	PUBLIC,
 
-    /**
-     * Public access modifier
-     */
-    PUBLIC,
-
-    /**
-     * Default access modifier
-     */
-    DEFAULT
+	/**
+	 * Default access modifier
+	 */
+	DEFAULT
 }
