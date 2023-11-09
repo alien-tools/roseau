@@ -4,23 +4,23 @@ import java.util.List;
 
 /**
  * Represents a field declaration in a Java type.
- * This class extends the {@link ElementDeclaration} class and contains information about the field's data type and the {@link TypeDeclaration} to which it belongs.
+ * This class extends the {@link Element} class and contains information about the field's data type and the {@link Type} to which it belongs.
  */
-public class FieldDeclaration extends ElementDeclaration {
+public class Field extends Element {
 	/**
 	 * The type containing the field.
 	 */
-	private final TypeDeclaration type;
+	private final Type declaringType;
 
 	/**
 	 * The data type of the field (e.g., int, double, class types, interface types).
 	 */
-	private final String dataType;
+	private final String type;
 
-	public FieldDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String dataType, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
+	public Field(String name, Type declaringType, AccessModifier visibility, String type, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
 		super(name, visibility, modifiers, referencedTypes, position);
+		this.declaringType = declaringType;
 		this.type = type;
-		this.dataType = dataType;
 	}
 
 	/**
@@ -28,8 +28,8 @@ public class FieldDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type containing the field
 	 */
-	public TypeDeclaration getType() {
-		return type;
+	public Type getDeclaringType() {
+		return declaringType;
 	}
 
 	/**
@@ -37,8 +37,8 @@ public class FieldDeclaration extends ElementDeclaration {
 	 *
 	 * @return Field's data type
 	 */
-	public String getDataType() {
-		return dataType;
+	public String getType() {
+		return type;
 	}
 
 	/**
@@ -50,8 +50,8 @@ public class FieldDeclaration extends ElementDeclaration {
 	@Override
 	public String toString() {
 		return "Field Name: " + getName() + "\n" +
-			"Data Type: " + getDataType() + "\n" +
-			"Type: " + getType().getName() + "\n" +
+			"Type: " + getType() + "\n" +
+			"Declaring Type: " + getDeclaringType().getName() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +
 			"Modifiers: " + getModifiers() + "\n" +
 			"Position: " + getPosition() + "\n\n";

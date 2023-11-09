@@ -3,7 +3,7 @@ package com.github.maracas.roseau.model;
 /**
  * Java top-level declaration kinds
  */
-public enum DeclarationType {
+public enum DeclarationKind {
 	/**
 	 * Class type
 	 */

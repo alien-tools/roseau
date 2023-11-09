@@ -4,28 +4,28 @@ import java.util.List;
 
 /**
  * Represents a type declaration in the library, such as a class, an interface, or an enum.
- * This class extends the {@link ElementDeclaration} class and contains information about the type's kind, fields, methods, constructors, and more.
+ * This class extends the {@link Element} class and contains information about the type's kind, fields, methods, constructors, and more.
  */
-public class TypeDeclaration extends ElementDeclaration {
+public class Type extends Element {
 	/**
 	 * The type of the declaration (e.g., class, interface, enum).
 	 */
-	private final DeclarationType declarationType;
+	private final DeclarationKind kind;
 
 	/**
 	 * List of fields declared within the type.
 	 */
-	private List<FieldDeclaration> fields;
+	private List<Field> fields;
 
 	/**
 	 * List of methods declared within the type.
 	 */
-	private List<MethodDeclaration> methods;
+	private List<Method> methods;
 
 	/**
 	 * List of constructors declared within the type.
 	 */
-	private List<ConstructorDeclaration> constructors;
+	private List<Constructor> constructors;
 
 	/**
 	 * The qualified name of the superclass ("None" if there isn't any).
@@ -35,9 +35,9 @@ public class TypeDeclaration extends ElementDeclaration {
 	/**
 	 * The superclass as a type declaration (null if there isn't any).
 	 */
-	private List<TypeDeclaration> allSuperclasses;
+	private List<Type> allSuperclasses;
 
-	private List<TypeDeclaration> superinterfaces;
+	private List<Type> superinterfaces;
 
 	/**
 	 * The qualified names of the interfaces implemented by the type.
@@ -56,9 +56,9 @@ public class TypeDeclaration extends ElementDeclaration {
 	 */
 	private final boolean nested;
 
-	public TypeDeclaration(String name, AccessModifier visibility, DeclarationType declarationType, List<NonAccessModifiers> modifiers, String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position) {
+	public Type(String name, AccessModifier visibility, DeclarationKind kind, List<NonAccessModifiers> modifiers, String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position) {
 		super(name, visibility, modifiers, referencedTypes, position);
-		this.declarationType = declarationType;
+		this.kind = kind;
 		this.superclassName = superclassName;
 		this.superinterfacesNames = superinterfacesNames;
 		this.formalTypeParameters = formalTypeParameters;
@@ -71,8 +71,8 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type's kind
 	 */
-	public DeclarationType getDeclarationType() {
-		return declarationType;
+	public DeclarationKind getDeclarationType() {
+		return kind;
 	}
 
 	/**
@@ -80,7 +80,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return List of fields declared within the type
 	 */
-	public List<FieldDeclaration> getFields() {
+	public List<Field> getFields() {
 		return fields;
 	}
 
@@ -89,7 +89,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return List of methods declared within the type
 	 */
-	public List<MethodDeclaration> getMethods() {
+	public List<Method> getMethods() {
 		return methods;
 	}
 
@@ -98,7 +98,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return List of constructors declared within the type
 	 */
-	public List<ConstructorDeclaration> getConstructors() {
+	public List<Constructor> getConstructors() {
 		return constructors;
 	}
 
@@ -125,7 +125,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type's superclasses as typeDeclarations
 	 */
-	public List<TypeDeclaration> getAllSuperclasses() {
+	public List<Type> getAllSuperclasses() {
 		return allSuperclasses;
 	}
 
@@ -134,7 +134,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type's superinterfaces as typeDeclarations
 	 */
-	public List<TypeDeclaration> getSuperinterfaces() {
+	public List<Type> getSuperinterfaces() {
 		return superinterfaces;
 	}
 
@@ -170,7 +170,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @param allSuperclasses The superclasses to be set
 	 */
-	public void setAllSuperclasses(List<TypeDeclaration> allSuperclasses) {
+	public void setAllSuperclasses(List<Type> allSuperclasses) {
 		this.allSuperclasses = allSuperclasses;
 	}
 
@@ -179,7 +179,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @param superinterfaces The superinterfaces to be set
 	 */
-	public void setSuperinterfaces(List<TypeDeclaration> superinterfaces) {
+	public void setSuperinterfaces(List<Type> superinterfaces) {
 		this.superinterfaces = superinterfaces;
 	}
 
@@ -188,7 +188,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @param fields List of fields to be set
 	 */
-	public void setFields(List<FieldDeclaration> fields) {
+	public void setFields(List<Field> fields) {
 		this.fields = fields;
 	}
 
@@ -197,7 +197,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @param methods List of methods to be set
 	 */
-	public void setMethods(List<MethodDeclaration> methods) {
+	public void setMethods(List<Method> methods) {
 		this.methods = methods;
 	}
 
@@ -206,7 +206,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	 *
 	 * @param constructors List of constructors to be set
 	 */
-	public void setConstructors(List<ConstructorDeclaration> constructors) {
+	public void setConstructors(List<Constructor> constructors) {
 		this.constructors = constructors;
 	}
 
@@ -220,7 +220,7 @@ public class TypeDeclaration extends ElementDeclaration {
 	public String toString() {
 		return "Type Name: " + getName() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +
-			"Type kind: " + getDeclarationType() + "\n" +
+			"Kind: " + getDeclarationType() + "\n" +
 			"Modifiers: " + getModifiers() + "\n" +
 			"Is Nested: " + isNested() + "\n" +
 			"Position: " + getPosition() + "\n\n" +

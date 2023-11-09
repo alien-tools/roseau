@@ -9,7 +9,7 @@ import java.util.List;
  * It provides information about the element's qualified name, visibility, non-access modifiers, referenced types,
  * and position within the source code.
  */
-public abstract class ElementDeclaration {
+public abstract class Element {
 	/**
 	 * The name of the element.
 	 */
@@ -35,7 +35,7 @@ public abstract class ElementDeclaration {
 	 */
 	private final String position;
 
-	protected ElementDeclaration(String name, AccessModifier visibility, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
+	protected Element(String name, AccessModifier visibility, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
 		this.name = name;
 		this.visibility = visibility;
 		this.modifiers = modifiers;

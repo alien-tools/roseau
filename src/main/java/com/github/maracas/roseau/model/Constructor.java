@@ -4,13 +4,13 @@ import java.util.List;
 
 /**
  * Represents a constructor declaration within a Java type.
- * This class extends the {@link ElementDeclaration} class and contains information about the constructor's parameters, return type, class, and more.
+ * This class extends the {@link Element} class and contains information about the constructor's parameters, return type, class, and more.
  */
-public class ConstructorDeclaration extends ElementDeclaration {
+public class Constructor extends Element {
 	/**
 	 * The type containing the constructor.
 	 */
-	private final TypeDeclaration type;
+	private final Type declaringType;
 
 	/**
 	 * The return data type of the constructor.
@@ -44,9 +44,9 @@ public class ConstructorDeclaration extends ElementDeclaration {
 	 */
 	private final List<String> exceptions;
 
-	public ConstructorDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> exceptions, String position) {
+	public Constructor(String name, Type declaringType, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> exceptions, String position) {
 		super(name, visibility, modifiers, referencedTypes, position);
-		this.type = type;
+		this.declaringType = declaringType;
 		this.returnType = returnType;
 		this.parametersTypes = parametersTypes;
 		this.parametersReferencedTypes = parametersReferencedTypes;
@@ -61,8 +61,8 @@ public class ConstructorDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type containing the constructor
 	 */
-	public TypeDeclaration getType() {
-		return type;
+	public Type getDeclaringType() {
+		return declaringType;
 	}
 
 	/**
@@ -137,7 +137,7 @@ public class ConstructorDeclaration extends ElementDeclaration {
 	@Override
 	public String toString() {
 		return "Constructor Name: " + getName() + "\n" +
-			"Type: " + getType().getName() + "\n" +
+			"Declaring type: " + getDeclaringType().getName() + "\n" +
 			"Return Type: " + getReturnType() + "\n" +
 			"Parameter Types: " + getParametersTypes() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +

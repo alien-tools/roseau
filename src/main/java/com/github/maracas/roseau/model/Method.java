@@ -4,13 +4,13 @@ import java.util.List;
 
 /**
  * Represents a method declaration within a Java type.
- * This class extends the {@link ElementDeclaration} class and contains information about the method's parameters, return type, thrown exceptions, and more.
+ * This class extends the {@link Element} class and contains information about the method's parameters, return type, thrown exceptions, and more.
  */
-public class MethodDeclaration extends ElementDeclaration {
+public class Method extends Element {
 	/**
 	 * The type containing the method.
 	 */
-	private final TypeDeclaration type;
+	private final Type declaringType;
 
 	/**
 	 * The return data type of the method.
@@ -42,7 +42,7 @@ public class MethodDeclaration extends ElementDeclaration {
 	/**
 	 * List of exceptions thrown by the method.
 	 */
-	private final List<String> exceptions;
+	private final List<String> thrownExceptions;
 
 	/**
 	 * List of boolean values indicating varargs status for each parameter.
@@ -54,16 +54,16 @@ public class MethodDeclaration extends ElementDeclaration {
 	 */
 	private final boolean isDefault;
 
-	public MethodDeclaration(String name, TypeDeclaration type, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> exceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
+	public Method(String name, Type declaringType, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> thrownExceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
 		super(name, visibility, modifiers, referencedTypes, position);
-		this.type = type;
+		this.declaringType = declaringType;
 		this.returnType = returnType;
 		this.parametersTypes = parametersTypes;
 		this.parametersReferencedTypes = parametersReferencedTypes;
 		this.formalTypeParameters = formalTypeParameters;
 		this.formalTypeParamsBounds = formalTypeParamsBounds;
 		this.signature = signature;
-		this.exceptions = exceptions;
+		this.thrownExceptions = thrownExceptions;
 		this.parametersVarargsCheck = parametersVarargsCheck;
 		this.isDefault = isDefault;
 	}
@@ -73,8 +73,8 @@ public class MethodDeclaration extends ElementDeclaration {
 	 *
 	 * @return Type containing the method
 	 */
-	public TypeDeclaration getType() {
-		return type;
+	public Type getDeclaringType() {
+		return declaringType;
 	}
 
 	/**
@@ -136,8 +136,8 @@ public class MethodDeclaration extends ElementDeclaration {
 	 *
 	 * @return List of exceptions thrown by the method
 	 */
-	public List<String> getExceptions() {
-		return exceptions;
+	public List<String> getThrownExceptions() {
+		return thrownExceptions;
 	}
 
 	/**
@@ -171,8 +171,8 @@ public class MethodDeclaration extends ElementDeclaration {
 			"Parameter Types: " + getParametersTypes() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +
 			"Modifiers: " + getModifiers() + "\n" +
-			"Type: " + getType().getName() + "\n" +
-			"Exceptions: " + getExceptions() + "\n" +
+			"Declaring Type: " + getDeclaringType().getName() + "\n" +
+			"Exceptions: " + getThrownExceptions() + "\n" +
 			"Position: " + getPosition() + "\n\n";
 	}
 }

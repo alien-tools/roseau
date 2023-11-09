@@ -2,13 +2,13 @@ package com.github.maracas.roseau;
 
 import com.github.maracas.roseau.model.API;
 import com.github.maracas.roseau.model.AccessModifier;
-import com.github.maracas.roseau.model.ConstructorDeclaration;
-import com.github.maracas.roseau.model.FieldDeclaration;
-import com.github.maracas.roseau.model.MethodDeclaration;
+import com.github.maracas.roseau.model.Constructor;
+import com.github.maracas.roseau.model.Field;
+import com.github.maracas.roseau.model.Method;
 import com.github.maracas.roseau.model.NonAccessModifiers;
 import com.github.maracas.roseau.model.Signature;
-import com.github.maracas.roseau.model.TypeDeclaration;
-import com.github.maracas.roseau.model.DeclarationType;
+import com.github.maracas.roseau.model.Type;
+import com.github.maracas.roseau.model.DeclarationKind;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -47,27 +47,27 @@ public class APIExtractor {
 	 */
 	public API extractingAPI() {
 		List<CtPackage> packages = rawSpoonPackages(); // Returning packages
-		List<TypeDeclaration> allTypes = new ArrayList<>();
+		List<Type> allTypes = new ArrayList<>();
 
 		for (CtPackage pkg : packages) {  // Looping over the packages to extract all the library's types
 			List<CtType<?>> types = extractedSpoonTypes(pkg); // Only returning the packages' accessible types
-			List<TypeDeclaration> typesConverted = convertingSpoonTypesToTypeDeclarations(types); // Transforming the spoon's CtTypes into TypeDeclarations
+			List<Type> typesConverted = convertingSpoonTypesToTypeDeclarations(types); // Transforming the spoon's CtTypes into TypeDeclarations
 
 			if (!typesConverted.isEmpty()) {
 				int i = 0;
 				for (CtType<?> type : types) {  // Looping over spoon's types to fill the TypeDeclarations' fields / methods / constructors
-					TypeDeclaration typeDeclaration = typesConverted.get(i);
+					Type typeDeclaration = typesConverted.get(i);
 					List<CtField<?>> fields = extractedSpoonFields(type); // Returning the accessible fields of accessible types
-					List<FieldDeclaration> fieldsConverted = convertingSpoonFieldsToFieldDeclarations(fields, typeDeclaration); // Transforming them into fieldDeclarations
+					List<Field> fieldsConverted = convertingSpoonFieldsToFieldDeclarations(fields, typeDeclaration); // Transforming them into fieldDeclarations
 					typeDeclaration.setFields(fieldsConverted);  // Adding them to the TypeDeclaration they belong to
 
 					// Doing the same thing for methods and constructors
 					List<CtMethod<?>> methods = extractedSpoonMethods(type);
-					List<MethodDeclaration> methodsConverted = convertingSpoonMethodsToMethodDeclarations(methods, typeDeclaration);
+					List<Method> methodsConverted = convertingSpoonMethodsToMethodDeclarations(methods, typeDeclaration);
 					typeDeclaration.setMethods(methodsConverted);
 
 					List<CtConstructor<?>> constructors = extractedSpoonConstructors(type);
-					List<ConstructorDeclaration> constructorsConverted = convertingSpoonConstructorsToConstructorDeclarations(constructors, typeDeclaration);
+					List<Constructor> constructorsConverted = convertingSpoonConstructorsToConstructorDeclarations(constructors, typeDeclaration);
 					typeDeclaration.setConstructors(constructorsConverted);
 
 					i++;
@@ -83,16 +83,16 @@ public class APIExtractor {
 		allTypes.forEach(typeDeclaration -> {
 			String superclassName = typeDeclaration.getSuperclassName();
 			if (!superclassName.equals("None")) {
-				List<TypeDeclaration> superclasses = getAllSuperclasses(superclassName, allTypes);
+				List<Type> superclasses = getAllSuperclasses(superclassName, allTypes);
 				typeDeclaration.setAllSuperclasses(superclasses);
 			}
 
 			// Filling the superinterfaces too
 			List<String> superinterfaceNames = typeDeclaration.getSuperinterfacesNames();
-			List<TypeDeclaration> superinterfaces = new ArrayList<>();
+			List<Type> superinterfaces = new ArrayList<>();
 
 			for (String superinterfaceName : superinterfaceNames) {
-				TypeDeclaration superinterface = allTypes.stream()
+				Type superinterface = allTypes.stream()
 					.filter(superInterfaceDec -> superInterfaceDec.getName().equals(superinterfaceName))
 					.findFirst()
 					.orElse(null);
@@ -226,28 +226,28 @@ public class APIExtractor {
 
 
 	// Returning the type's kind ( whether if it's a class/enum/interface/annotation/record )
-	private DeclarationType convertTypeType(CtType<?> type) {
+	private DeclarationKind convertTypeType(CtType<?> type) {
 		if (type.isClass())
-			return DeclarationType.CLASS;
+			return DeclarationKind.CLASS;
 		if (type.isInterface())
-			return DeclarationType.INTERFACE;
+			return DeclarationKind.INTERFACE;
 		if (type.isEnum())
-			return DeclarationType.ENUM;
+			return DeclarationKind.ENUM;
 		if (type.isAnnotationType())
-			return DeclarationType.ANNOTATION;
+			return DeclarationKind.ANNOTATION;
 		else
-			return DeclarationType.RECORD;
+			return DeclarationKind.RECORD;
 	}
 
 
 	// The conversion functions : Moving from spoon's Ct kinds to roseau's Declaration kinds
-	private List<TypeDeclaration> convertingSpoonTypesToTypeDeclarations(List<CtType<?>> spoonTypes) {
+	private List<Type> convertingSpoonTypesToTypeDeclarations(List<CtType<?>> spoonTypes) {
 		return spoonTypes.stream()
 			.map(spoonType -> {
 				// Extracting relevant information from the spoonType
 				String name = spoonType.getQualifiedName();
 				AccessModifier visibility = convertVisibility(spoonType.getVisibility());
-				DeclarationType declarationType = convertTypeType(spoonType);
+				DeclarationKind declarationKind = convertTypeType(spoonType);
 				List<NonAccessModifiers> modifiers = filterNonAccessModifiers(spoonType.getModifiers());
 				String superclassName = "None";
 				if (spoonType.getSuperclass() != null) {
@@ -272,12 +272,12 @@ public class APIExtractor {
 				String position = spoonType.getPosition().toString();
 
 				// Creating a new TypeDeclaration object using the extracted information
-				return new TypeDeclaration(name, visibility, declarationType, modifiers, superclassName, superinterfacesNames, referencedTypes, formalTypeParameters, formalTypeParamsBounds, isNested, position);
+				return new Type(name, visibility, declarationKind, modifiers, superclassName, superinterfacesNames, referencedTypes, formalTypeParameters, formalTypeParamsBounds, isNested, position);
 			})
 			.toList(); // Adding it to the list of TypeDeclarations
 	}
 
-	private List<FieldDeclaration> convertingSpoonFieldsToFieldDeclarations(List<CtField<?>> spoonFields, TypeDeclaration type) {
+	private List<Field> convertingSpoonFieldsToFieldDeclarations(List<CtField<?>> spoonFields, Type type) {
 		return spoonFields.stream()
 			.map(spoonField -> {
 				// Extracting relevant information from the spoonField
@@ -290,12 +290,12 @@ public class APIExtractor {
 					.toList();
 				String position = spoonField.getPosition().toString();
 				// Creating a new FieldDeclaration object using the extracted information
-				return new FieldDeclaration(name, type, visibility, dataType, modifiers, referencedTypes, position);
+				return new Field(name, type, visibility, dataType, modifiers, referencedTypes, position);
 			})
 			.toList();  // Adding it to the list of FieldDeclarations
 	}
 
-	private List<MethodDeclaration> convertingSpoonMethodsToMethodDeclarations(List<CtMethod<?>> spoonMethods, TypeDeclaration type) {
+	private List<Method> convertingSpoonMethodsToMethodDeclarations(List<CtMethod<?>> spoonMethods, Type type) {
 		return spoonMethods.stream()
 			.map(spoonMethod -> {
 				// Extracting relevant information from the spoonMethod
@@ -339,12 +339,12 @@ public class APIExtractor {
 				boolean isDefault = spoonMethod.isDefaultMethod();
 				String position = spoonMethod.getPosition().toString();
 				// Creating a new MethodDeclaration object using the extracted information
-				return new MethodDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers, signature, exceptions, parametersVarargsCheck, isDefault, position);
+				return new Method(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers, signature, exceptions, parametersVarargsCheck, isDefault, position);
 			})
 			.toList();  // Adding it to the list of MethodDeclarations
 	}
 
-	private List<ConstructorDeclaration> convertingSpoonConstructorsToConstructorDeclarations(List<CtConstructor<?>> spoonConstructors, TypeDeclaration type) {
+	private List<Constructor> convertingSpoonConstructorsToConstructorDeclarations(List<CtConstructor<?>> spoonConstructors, Type type) {
 		return spoonConstructors.stream()
 			.map(spoonConstructor -> {
 				// Extracting relevant information from the spoonConstructor
@@ -380,20 +380,20 @@ public class APIExtractor {
 					.toList();
 				String position = type.getPosition().toString();
 				// Creating a new ConstructorDeclaration object using the extracted information
-				return new ConstructorDeclaration(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers, signature, exceptions, position);
+				return new Constructor(name, type, visibility, returnType, returnTypeReferencedType, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers, signature, exceptions, position);
 			})
 			.toList();  // Adding it to the list of ConstructorDeclarations
 	}
 
 	// Get all the superclasses of a type, direct or not
-	private List<TypeDeclaration> getAllSuperclasses(String className, List<TypeDeclaration> allTypes) {
-		List<TypeDeclaration> superclasses = new ArrayList<>();
-		TypeDeclaration currentType = getTypeByName(className, allTypes);
+	private List<Type> getAllSuperclasses(String className, List<Type> allTypes) {
+		List<Type> superclasses = new ArrayList<>();
+		Type currentType = getTypeByName(className, allTypes);
 
 		if (currentType != null) {
 			String superclassName = currentType.getSuperclassName();
 			if (!superclassName.equals("None")) {
-				List<TypeDeclaration> directSuperclasses = getAllSuperclasses(superclassName, allTypes);
+				List<Type> directSuperclasses = getAllSuperclasses(superclassName, allTypes);
 				superclasses.add(currentType);
 				superclasses.addAll(directSuperclasses);
 			} else {
@@ -406,7 +406,7 @@ public class APIExtractor {
 
 
 	// Helper to get a TypeDeclaration by name
-	private TypeDeclaration getTypeByName(String className, List<TypeDeclaration> allTypes) {
+	private Type getTypeByName(String className, List<Type> allTypes) {
 		return allTypes.stream()
 			.filter(typeDeclaration -> typeDeclaration.getName().equals(className))
 			.findFirst()
