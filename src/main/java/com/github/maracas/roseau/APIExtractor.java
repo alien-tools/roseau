@@ -3,12 +3,12 @@ package com.github.maracas.roseau;
 import com.github.maracas.roseau.model.API;
 import com.github.maracas.roseau.model.AccessModifier;
 import com.github.maracas.roseau.model.Constructor;
+import com.github.maracas.roseau.model.DeclarationKind;
 import com.github.maracas.roseau.model.Field;
 import com.github.maracas.roseau.model.Method;
 import com.github.maracas.roseau.model.NonAccessModifiers;
 import com.github.maracas.roseau.model.Signature;
 import com.github.maracas.roseau.model.Type;
-import com.github.maracas.roseau.model.DeclarationKind;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * This class represents roseau's API extraction tool.
@@ -46,27 +47,27 @@ public class APIExtractor {
 	 * @return Library's (model's) API.
 	 */
 	public API extractingAPI() {
-		List<CtPackage> packages = rawSpoonPackages(); // Returning packages
+		List<CtPackage> allPackages = model.getAllPackages().stream().toList();
 		List<Type> allTypes = new ArrayList<>();
 
-		for (CtPackage pkg : packages) {  // Looping over the packages to extract all the library's types
-			List<CtType<?>> types = extractedSpoonTypes(pkg); // Only returning the packages' accessible types
+		for (CtPackage pkg : allPackages) {  // Looping over the packages to extract all the library's types
+			List<CtType<?>> types = getAccessibleTypes(pkg); // Only returning the packages' accessible types
 			List<Type> typesConverted = convertingSpoonTypesToTypeDeclarations(types); // Transforming the spoon's CtTypes into TypeDeclarations
 
 			if (!typesConverted.isEmpty()) {
 				int i = 0;
 				for (CtType<?> type : types) {  // Looping over spoon's types to fill the TypeDeclarations' fields / methods / constructors
 					Type typeDeclaration = typesConverted.get(i);
-					List<CtField<?>> fields = extractedSpoonFields(type); // Returning the accessible fields of accessible types
+					List<CtField<?>> fields = getAccessibleFields(type); // Returning the accessible fields of accessible types
 					List<Field> fieldsConverted = convertingSpoonFieldsToFieldDeclarations(fields, typeDeclaration); // Transforming them into fieldDeclarations
 					typeDeclaration.setFields(fieldsConverted);  // Adding them to the TypeDeclaration they belong to
 
 					// Doing the same thing for methods and constructors
-					List<CtMethod<?>> methods = extractedSpoonMethods(type);
+					List<CtMethod<?>> methods = getAccessibleMethods(type);
 					List<Method> methodsConverted = convertingSpoonMethodsToMethodDeclarations(methods, typeDeclaration);
 					typeDeclaration.setMethods(methodsConverted);
 
-					List<CtConstructor<?>> constructors = extractedSpoonConstructors(type);
+					List<CtConstructor<?>> constructors = getAccessibleConstructors(type);
 					List<Constructor> constructorsConverted = convertingSpoonConstructorsToConstructorDeclarations(constructors, typeDeclaration);
 					typeDeclaration.setConstructors(constructorsConverted);
 
@@ -107,72 +108,59 @@ public class APIExtractor {
 		return api;  // returning the library's API
 	}
 
-	// Returning the packages as spoon CtPackages
-	private List<CtPackage> rawSpoonPackages() {
-		return model.getAllPackages().stream().toList();
+	private boolean isAccessible(CtType<?> type) {
+		return type.isPublic() || (type.isProtected() && !isEffectivelyFinal(type));
 	}
 
-	private boolean typeIsAccessible(CtType<?> type) {
-		if (type.getVisibility() == ModifierKind.PUBLIC) {
-			return true;
-		} else if (type.getVisibility() == ModifierKind.PROTECTED) {
-			return !type.isFinal() && !type.getModifiers().contains(ModifierKind.SEALED);
-		} else {
-			return false;
-		}
-	}
-
-	private boolean memberIsAccessible(CtModifiable member) {
+	private boolean isAccessible(CtModifiable member) {
 		return member.isPublic() || member.isProtected();
 	}
 
-	// Returning the accessible types of a package as spoon CtTypes
-	private List<CtType<?>> extractedSpoonTypes(CtPackage pkg) {
-		List<CtType<?>> types = new ArrayList<>();
-		pkg.getTypes().stream()
-			.filter(this::typeIsAccessible)
-			.forEach(type -> {
-				types.add(type);
-				extractingSpoonNestedTypes(type, types);
-			});
-		return types;
+	private boolean isEffectivelyFinal(CtType<?> type) {
+		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
 	}
 
-	// Handling nested types
-	private void extractingSpoonNestedTypes(CtType<?> parentType, List<CtType<?>> types) {
-		parentType.getNestedTypes().stream()
-			.filter(this::typeIsAccessible)
-			.forEach(type -> {
-				types.add(type);
-				extractingSpoonNestedTypes(type, types);
-			});
+	// Returns all accessible types within a package
+	private List<CtType<?>> getAccessibleTypes(CtPackage pkg) {
+		return pkg.getTypes().stream()
+			.filter(this::isAccessible)
+			.flatMap(type -> Stream.concat(Stream.of(type), getAccessibleTypes(type).stream()))
+			.toList();
 	}
 
-	// Returning the accessible fields of a type as spoon CtFields
-	private List<CtField<?>> extractedSpoonFields(CtType<?> type) {
+	// Returns (recursively) the accessible nested types within a type
+	private List<CtType<?>> getAccessibleTypes(CtType<?> type) {
+		return type.getNestedTypes().stream()
+			.filter(this::isAccessible)
+			.flatMap(nestedType -> Stream.concat(Stream.of(nestedType), getAccessibleTypes(nestedType).stream()))
+			.toList();
+	}
+
+	// Returns the accessible fields of a type
+	private List<CtField<?>> getAccessibleFields(CtType<?> type) {
 		return type.getFields().stream()
-			.filter(this::memberIsAccessible)
+			.filter(this::isAccessible)
 			.toList();
 	}
 
-	// Returning the accessible methods of a type as spoon CtMethods
-	private List<CtMethod<?>> extractedSpoonMethods(CtType<?> type) {
+	// Returns the accessible methods of a type
+	private List<CtMethod<?>> getAccessibleMethods(CtType<?> type) {
 		return type.getMethods().stream()
-			.filter(this::memberIsAccessible)
+			.filter(this::isAccessible)
 			.toList();
 	}
 
-	// Returning the accessible constructors of a type as spoon CtConstructors
-	private List<CtConstructor<?>> extractedSpoonConstructors(CtType<?> type) {
+	// Returns the accessible constructors of a type
+	private List<CtConstructor<?>> getAccessibleConstructors(CtType<?> type) {
 		if (type instanceof CtClass<?> cls) {
 			return new ArrayList<>(cls.getConstructors().stream()
-				.filter(this::memberIsAccessible)
+				.filter(this::isAccessible)
 				.toList());
 		}
 		return Collections.emptyList();
 	}
 
-	// Converting spoon's access ModifierKind to roseau's enum : AccessModifier
+	// Converts Spoon's ModifierKind to Roseau's AccessModifier
 	private AccessModifier convertVisibility(ModifierKind visibility) {
 		if (visibility == ModifierKind.PUBLIC) {
 			return AccessModifier.PUBLIC;
@@ -185,7 +173,7 @@ public class APIExtractor {
 		}
 	}
 
-	// Converting spoon's Non-access ModifierKind to roseau's enum : NonAccessModifier
+	// Converts Spoon's non-access ModifierKind to Roseau's NonAccessModifier
 	private NonAccessModifiers convertNonAccessModifier(ModifierKind modifier) {
 		if (modifier == ModifierKind.STATIC) {
 			return NonAccessModifiers.STATIC;
@@ -224,7 +212,6 @@ public class APIExtractor {
 		return nonAccessModifiers;
 	}
 
-
 	// Returning the type's kind ( whether if it's a class/enum/interface/annotation/record )
 	private DeclarationKind convertTypeType(CtType<?> type) {
 		if (type.isClass())
@@ -238,7 +225,6 @@ public class APIExtractor {
 		else
 			return DeclarationKind.RECORD;
 	}
-
 
 	// The conversion functions : Moving from spoon's Ct kinds to roseau's Declaration kinds
 	private List<Type> convertingSpoonTypesToTypeDeclarations(List<CtType<?>> spoonTypes) {

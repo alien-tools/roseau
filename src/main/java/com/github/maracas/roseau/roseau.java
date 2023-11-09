@@ -44,6 +44,8 @@ public class roseau {
 				API apiV1 = extractor1.extractingAPI();
 				API apiV2 = extractor2.extractingAPI();
 
+				System.out.println(apiV1);
+
 				endTime = System.nanoTime();
 				duration = (endTime - startTime) / 1000000;
 				System.out.println(" API extraction : " + duration + "ms");
