@@ -1,7 +1,6 @@
 package com.github.maracas.roseau.changes;
 
-import com.github.maracas.roseau.model.Element;
-import com.github.maracas.roseau.model.Type;
+import com.github.maracas.roseau.model.Symbol;
 
 /**
  * Represents a breaking change identified during the comparison of APIs between the two library versions.
@@ -10,13 +9,13 @@ import com.github.maracas.roseau.model.Type;
  * @param kind            The kind of the breaking change.
  * @param position        The exact position of the breaking change.
  * @param nature          The nature of the breaking change ( Addition / deletion / mutation ).
- * @param impactedElement The element associated with the breaking change.
+ * @param impactedSymbol The element associated with the breaking change.
  */
 public record BreakingChange(
 	BreakingChangeKind kind,
 	String position,
 	BreakingChangeNature nature,
-	Element impactedElement
+	Symbol impactedSymbol
 ) {
 	/**
 	 * Generates a string representation of the BreakingChange.
@@ -29,6 +28,6 @@ public record BreakingChange(
 		return "Breaking Change Kind: " + kind() + "\n" +
 			"Position: " + position() + "\n" +
 			"Nature: " + nature() + "\n" +
-			"Element: " + impactedElement().getName() + "\n";
+			"Element: " + impactedSymbol().getQualifiedName() + "\n";
 	}
 }
