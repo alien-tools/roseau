@@ -11,6 +11,7 @@ import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.reference.CtTypeReference;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.Set;
@@ -32,11 +33,13 @@ class SpoonAPIExtractorTest {
 	}
 
 	@Test
-	void write_some_interesting_tests_later() {
+	void write_some_interesting_tests_later() throws IOException {
 		// Extracting data and processing it
 		API api = extractor.extractAPI();
 
 		// Printing the API for each type
-		System.out.println(api.toString());
+		//System.out.println(api.toString());
+
+		api.writeJson(Path.of("api.json"));
 	}
 }

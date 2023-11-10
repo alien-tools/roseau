@@ -10,4 +10,12 @@ public final class FormalTypeParameter {
 		this.name = name;
 		this.bounds = bounds;
 	}
+
+	public String getName() {
+		return name;
+	}
+
+	public List<TypeReference> getBounds() {
+		return bounds;
+	}
 }

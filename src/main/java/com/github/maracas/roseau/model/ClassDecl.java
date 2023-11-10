@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
 import java.util.stream.Stream;
 
@@ -25,12 +27,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return true;
 	}
 
+	@JsonIgnore
 	@Override
 	public boolean isCheckedException() {
 		return getAllSuperClasses().stream().anyMatch(cls -> cls.getQualifiedName().equals("java.lang.Exception"))
 			&& getAllSuperClasses().stream().noneMatch(cls -> cls.getQualifiedName().equals("java.lang.RuntimeException"));
 	}
 
+	@JsonIgnore
 	public List<TypeReference> getAllSuperClasses() {
 		return Stream.concat(
 			Stream.of(superClass), ((ClassDecl) superClass.getActualType()).getAllSuperClasses().stream()

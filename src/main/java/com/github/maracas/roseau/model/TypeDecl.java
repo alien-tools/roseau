@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.stream.Stream;
@@ -64,6 +66,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return false;
 	}
 
+	@JsonIgnore
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
 			methods.stream(),
