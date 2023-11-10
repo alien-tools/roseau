@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.model;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -28,21 +30,11 @@ public class Type extends Element {
 	private final List<Constructor> constructors;
 
 	/**
-	 * The qualified name of the superclass ("None" if there isn't any).
-	 */
-	private final String superclassName;
-
-	/**
 	 * The superclass as a type declaration (null if there isn't any).
 	 */
-	private List<Type> allSuperclasses;
+	private Type superClass;
 
-	private List<Type> superinterfaces;
-
-	/**
-	 * The qualified names of the interfaces implemented by the type.
-	 */
-	private final List<String> superinterfacesNames;
+	private List<Type> superInterfaces;
 
 	/**
 	 * List of formal type parameters for generic types.
@@ -54,22 +46,39 @@ public class Type extends Element {
 	/**
 	 * A flag indicating whether the type is nested within another type.
 	 */
-	private final boolean nested;
+	private final boolean isNested;
+
+	private final boolean isCheckedException;
 
 	public Type(String name, AccessModifier visibility, DeclarationKind kind, List<Modifier> modifiers,
-	            String superclassName, List<String> superinterfacesNames, List<String> referencedTypes,
-	            List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position,
+	            List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds,
+	            boolean isNested, boolean isCheckedException, String position,
 	            List<Field> fields, List<Method> methods, List<Constructor> constructors) {
 		super(name, visibility, modifiers, referencedTypes, position);
 		this.kind = kind;
-		this.superclassName = superclassName;
-		this.superinterfacesNames = superinterfacesNames;
 		this.formalTypeParameters = formalTypeParameters;
 		this.formalTypeParamsBounds = formalTypeParamsBounds;
-		this.nested = nested;
+		this.isNested = isNested;
+		this.isCheckedException = isCheckedException;
 		this.fields = fields;
 		this.methods = methods;
 		this.constructors = constructors;
+	}
+
+	public List<Method> getAllMethods() {
+		List<Method> all = new ArrayList<>();
+
+		all.addAll(methods);
+
+		if (superClass != null)
+			all.addAll(superClass.getAllMethods());
+
+		all.addAll(superInterfaces.stream()
+			.map(Type::getAllMethods)
+			.flatMap(Collection::stream)
+			.toList());
+
+		return all;
 	}
 
 	/**
@@ -109,30 +118,12 @@ public class Type extends Element {
 	}
 
 	/**
-	 * Retrieves the qualified name of the type's superclass ("None" if there isn't any).
-	 *
-	 * @return Superclass's qualified name
-	 */
-	public String getSuperclassName() {
-		return superclassName;
-	}
-
-	/**
-	 * Retrieves the qualified names of the interfaces implemented by the type.
-	 *
-	 * @return Qualified names of the interfaces implemented by the type
-	 */
-	public List<String> getSuperinterfacesNames() {
-		return superinterfacesNames;
-	}
-
-	/**
 	 * Retrieves all the superclasses of the type as typeDeclarations.
 	 *
 	 * @return Type's superclasses as typeDeclarations
 	 */
-	public List<Type> getAllSuperclasses() {
-		return allSuperclasses;
+	public Type getSuperclass() {
+		return superClass;
 	}
 
 	/**
@@ -140,8 +131,8 @@ public class Type extends Element {
 	 *
 	 * @return Type's superinterfaces as typeDeclarations
 	 */
-	public List<Type> getSuperinterfaces() {
-		return superinterfaces;
+	public List<Type> getSuperInterfaces() {
+		return superInterfaces;
 	}
 
 	/**
@@ -168,25 +159,27 @@ public class Type extends Element {
 	 * @return True if the type is nested; false otherwise
 	 */
 	public boolean isNested() {
-		return nested;
+		return isNested;
 	}
 
+	public boolean isCheckedException() { return isCheckedException; }
+
 	/**
-	 * Sets the type's superclasses.
+	 * Sets the type's superclass.
 	 *
-	 * @param allSuperclasses The superclasses to be set
+	 * @param superClass The superclass to be set
 	 */
-	public void setAllSuperclasses(List<Type> allSuperclasses) {
-		this.allSuperclasses = allSuperclasses;
+	public void setSuperClass(Type superClass) {
+		this.superClass = superClass;
 	}
 
 	/**
 	 * Sets the type's superinterfaces.
 	 *
-	 * @param superinterfaces The superinterfaces to be set
+	 * @param superInterfaces The superinterfaces to be set
 	 */
-	public void setSuperinterfaces(List<Type> superinterfaces) {
-		this.superinterfaces = superinterfaces;
+	public void setSuperInterfaces(List<Type> superInterfaces) {
+		this.superInterfaces = superInterfaces;
 	}
 
 	/**

@@ -20,7 +20,6 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 /**
  * This class represents Roseau's comparison tool for detecting breaking changes between two API versions.
@@ -84,63 +83,28 @@ public class APIDiff {
 		return result;
 	}
 
-	private List<Field> checkingForRemovedFields(Type type1, Type type2) {
-		return type1.getFields().stream()
+	private void checkRemovedFields(Type type1, Type type2) {
+		type1.getFields().stream()
 			.filter(field1 -> type2.getFields().stream().noneMatch(field2 -> field2.getName().equals(field1.getName())))
-			.peek(removedField -> {
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_REMOVED, removedField.getPosition(), BreakingChangeNature.DELETION, removedField));
-			})
-			.toList();
+			.forEach(removedField ->
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_REMOVED, removedField.getPosition(), BreakingChangeNature.DELETION, removedField))
+			);
 	}
 
-
-	private List<Method> checkingForRemovedMethods(Type type1, Type type2) {
-		return type1.getMethods().stream()
-			.filter(method2 -> type2.getMethods().stream()
-				.noneMatch(method1 -> method1.getSignature().getName().equals(method2.getSignature().getName()) && method1.getSignature().getParameterTypes().equals(method2.getSignature().getParameterTypes())))
-			.peek(removedMethod -> {
-				if (type2.getAllSuperclasses() != null) {
-					List<Method> allSuperMethodsV2 = Stream.concat(
-							type2.getAllSuperclasses().stream().flatMap(superType -> superType.getMethods().stream()),
-							type2.getSuperinterfaces().stream().flatMap(superInterface -> superInterface.getMethods().stream())
-						)
-						.toList();
-
-					boolean overriddenOrMovedMethodExists = allSuperMethodsV2.stream()
-						.anyMatch(method -> method.getSignature().getName().equals(removedMethod.getSignature().getName()) &&
-							method.getSignature().getParameterTypes().equals(removedMethod.getSignature().getParameterTypes()));
-
-					if (!overriddenOrMovedMethodExists) {
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
-					}
-				} else if (type2.getAllSuperclasses() == null && !type2.getSuperinterfaces().isEmpty()) {
-					List<Method> allSuperMethods = type2.getSuperinterfaces().stream()
-						.flatMap(superInterface -> superInterface.getMethods().stream())
-						.toList();
-
-					boolean overriddenOrMovedMethodExists = allSuperMethods.stream()
-						.anyMatch(method -> method.getSignature().getName().equals(removedMethod.getSignature().getName()) &&
-							method.getSignature().getParameterTypes().equals(removedMethod.getSignature().getParameterTypes()));
-
-					if (!overriddenOrMovedMethodExists) {
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
-					}
-				} else {
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
-				}
-			})
-			.toList();
+	private void checkRemovedMethods(Type type1, Type type2) {
+		type1.getMethods().stream()
+			.filter(method1 -> type2.getAllMethods().stream().noneMatch(method2 -> method2.hasSameSignature(method1)))
+			.forEach(removedMethod ->
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod))
+			);
 	}
 
-
-	private List<Constructor> checkingForRemovedConstructors(Type type1, Type type2) {
-		return type1.getConstructors().stream()
-			.filter(constructor1 -> type2.getConstructors().stream()
-				.noneMatch(constructor2 -> constructor2.getSignature().getName().equals(constructor1.getSignature().getName()) && constructor2.getSignature().getParameterTypes().equals(constructor1.getSignature().getParameterTypes())))
-			.peek(removedConstructor -> {
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, removedConstructor.getPosition(), BreakingChangeNature.DELETION, removedConstructor));
-			})
-			.toList();
+	private void checkRemovedConstructors(Type type1, Type type2) {
+		type1.getConstructors().stream()
+			.filter(cons1 -> type2.getConstructors().stream().noneMatch(cons2 -> cons2.hasSameSignature(cons1)))
+			.forEach(removedCons ->
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, removedCons.getPosition(), BreakingChangeNature.DELETION, removedCons))
+			);
 	}
 
 	private List<List<Field>> getUnremovedFields(Type type1, Type type2) {
@@ -387,7 +351,7 @@ public class APIDiff {
 	}
 
 
-	private void typeComparison(Type type1, Type type2) {
+	private void compareTypes(Type type1, Type type2) {
 		if (type1.getDeclarationType().equals(DeclarationKind.CLASS)) {
 			if (!type1.getModifiers().contains(Modifier.FINAL) && type2.getModifiers().contains(Modifier.FINAL))
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
@@ -401,7 +365,7 @@ public class APIDiff {
 			if (type1.getModifiers().contains(Modifier.STATIC) && !type2.getModifiers().contains(Modifier.STATIC) && type1.isNested() && type2.isNested())
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-			if (!type1.getSuperclassName().equals("java.lang.Exception") && type2.getSuperclassName().equals("java.lang.Exception"))
+			if (!type1.isCheckedException() && type2.isCheckedException())
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 		}
 
@@ -409,20 +373,17 @@ public class APIDiff {
 			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 		if (type1.getDeclarationType().equals(DeclarationKind.CLASS)) {
-			if (!type1.getSuperclassName().equals("None") && type2.getSuperclassName().equals("None"))
+			if (type1.getSuperclass() != null && type2.getSuperclass() == null)
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-			// Check for deleted superinterfaces
-			List<String> superinterfacesV1 = type1.getSuperinterfacesNames();
-			List<String> superinterfacesV2 = type2.getSuperinterfacesNames();
-
-			for (String superinterfaceV1 : superinterfacesV1) {
-				if (!superinterfacesV2.contains(superinterfaceV1))
+			// Check for deleted super-interfaces
+			if (type1.getSuperInterfaces().stream()
+				.anyMatch(intf1 -> type2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getName().equals(intf2.getName()))))
 					breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
-			}
 		}
 
-		if (type1.getDeclarationType().equals(DeclarationKind.INTERFACE) && !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames()))
+		if (type1.getDeclarationType().equals(DeclarationKind.INTERFACE) && type1.getSuperInterfaces().stream()
+			.anyMatch(intf1 -> type2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getName().equals(intf2.getName()))))
 				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 		if (!type1.getDeclarationType().equals(type2.getDeclarationType()))
@@ -466,11 +427,11 @@ public class APIDiff {
 				Type typeV1 = commonTypesInV1.get(i);
 				Type typeV2 = commonTypesInV2.get(i);
 
-				typeComparison(typeV1, typeV2);
+				compareTypes(typeV1, typeV2);
 
-				checkingForRemovedFields(typeV1, typeV2);
-				checkingForRemovedMethods(typeV1, typeV2);
-				checkingForRemovedConstructors(typeV1, typeV2);
+				checkRemovedFields(typeV1, typeV2);
+				checkRemovedMethods(typeV1, typeV2);
+				checkRemovedConstructors(typeV1, typeV2);
 
 				List<List<Method>> remainingMethods = getUnremovedMethods(typeV1, typeV2);
 				List<List<Field>> remainingFields = getUnremovedFields(typeV1, typeV2);

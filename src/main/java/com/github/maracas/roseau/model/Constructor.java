@@ -4,113 +4,11 @@ import java.util.List;
 
 /**
  * Represents a constructor declaration within a Java type.
- * This class extends the {@link Element} class and contains information about the constructor's parameters, return type, class, and more.
+ * This class extends the {@link Executable} class and contains information about the constructor's parameters, return type, class, and more.
  */
-public class Constructor extends Element {
-	/**
-	 * The return data type of the constructor.
-	 */
-	private final String returnType;
-
-	/**
-	 * List of the constructor's parameter data types.
-	 */
-	private final List<String> parametersTypes;
-
-	/**
-	 * List of referenced types for each constructor parameter.
-	 */
-	private final List<List<String>> parametersReferencedTypes;
-
-	/**
-	 * List of the constructor's formal type parameters.
-	 */
-	private final List<String> formalTypeParameters;
-
-	private final List<List<String>> formalTypeParamsBounds;
-
-	/**
-	 * The constructor's signature.
-	 */
-	private final Signature signature;
-
-	/**
-	 * List of exceptions thrown by the constructor.
-	 */
-	private final List<String> exceptions;
-
-	public Constructor(String name, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<Modifier> modifiers, Signature signature, List<String> exceptions, String position) {
-		super(name, visibility, modifiers, referencedTypes, position);
-		this.returnType = returnType;
-		this.parametersTypes = parametersTypes;
-		this.parametersReferencedTypes = parametersReferencedTypes;
-		this.formalTypeParameters = formalTypeParameters;
-		this.formalTypeParamsBounds = formalTypeParamsBounds;
-		this.signature = signature;
-		this.exceptions = exceptions;
-	}
-
-	/**
-	 * Retrieves the return data type of the constructor.
-	 *
-	 * @return Constructor's return data type
-	 */
-	public String getReturnType() {
-		return returnType;
-	}
-
-	/**
-	 * Retrieves the list of parameter data types of the constructor.
-	 *
-	 * @return List of parameter data types
-	 */
-	public List<String> getParametersTypes() {
-		return parametersTypes;
-	}
-
-	/**
-	 * Retrieves the list of referenced types for each parameter of the constructor.
-	 *
-	 * @return Lists of referenced types for parameters
-	 */
-	public List<List<String>> getParametersReferencedTypes() {
-		return parametersReferencedTypes;
-	}
-
-	/**
-	 * Retrieves the constructor's formal type parameters.
-	 *
-	 * @return List of formal type parameters
-	 */
-	public List<String> getFormalTypeParameters() {
-		return formalTypeParameters;
-	}
-
-	/**
-	 * Retrieves a list of lists containing the formal type parameters' bounds.
-	 *
-	 * @return formal type parameters bounds
-	 */
-	public List<List<String>> getFormalTypeParamsBounds() {
-		return formalTypeParamsBounds;
-	}
-
-	/**
-	 * Retrieves the signature of the constructor.
-	 *
-	 * @return The constructor's signature
-	 */
-	public Signature getSignature() {
-		return signature;
-	}
-
-	/**
-	 * Retrieves the list of exceptions thrown by the constructor.
-	 *
-	 * @return List of exceptions thrown by the constructor
-	 */
-	public List<String> getExceptions() {
-		return exceptions;
+public class Constructor extends Executable {
+	public Constructor(String name, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<Modifier> modifiers, Signature signature, List<String> thrownExceptions, List<Boolean> parametersVarargsCheck, String position) {
+		super(name, visibility, returnType, referencedTypes, parametersTypes, parametersReferencedTypes, formalTypeParameters, formalTypeParamsBounds, modifiers, signature, thrownExceptions, parametersVarargsCheck, position);
 	}
 
 	/**
@@ -126,7 +24,7 @@ public class Constructor extends Element {
 			"Parameter Types: " + getParametersTypes() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +
 			"Modifiers: " + getModifiers() + "\n" +
-			"Exceptions: " + getExceptions() + "\n" +
+			"Exceptions: " + getThrownExceptions() + "\n" +
 			"Position: " + getPosition() + "\n\n";
 	}
 }

@@ -1,4 +1,4 @@
-package otherpackage;
+package otherpkg;
 
 public class MyClass {
 

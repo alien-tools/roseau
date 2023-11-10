@@ -79,7 +79,7 @@ public class roseau {
 			launcher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE, new String[0]);
 		} else {
 			launcher = new Launcher();
-			launcher.getEnvironment().setComplianceLevel(11);
+			launcher.getEnvironment().setComplianceLevel(17);
 
 			launcher.addInputResource(location.toString());
 		}

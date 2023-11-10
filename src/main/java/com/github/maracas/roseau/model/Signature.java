@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.model;
 
 import java.util.List;
+import java.util.Objects;
 
 /**
  * Represents a method signature, consisting of a method name and its parameter's data types.
@@ -25,6 +26,19 @@ public class Signature {
 	public Signature(String methodName, List<String> parameterTypes) {
 		this.name = methodName;
 		this.parameterTypes = parameterTypes;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Signature signature = (Signature) o;
+		return Objects.equals(name, signature.name) && Objects.equals(parameterTypes, signature.parameterTypes);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(name, parameterTypes);
 	}
 
 	/**
