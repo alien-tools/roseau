@@ -8,7 +8,7 @@ import com.github.maracas.roseau.model.AccessModifier;
 import com.github.maracas.roseau.model.Constructor;
 import com.github.maracas.roseau.model.Field;
 import com.github.maracas.roseau.model.Method;
-import com.github.maracas.roseau.model.NonAccessModifiers;
+import com.github.maracas.roseau.model.Modifier;
 import com.github.maracas.roseau.model.Type;
 import com.github.maracas.roseau.model.DeclarationKind;
 
@@ -60,10 +60,10 @@ public class APIDiff {
 			.filter(type -> v2.types().stream().noneMatch(t -> t.getName().equals(type.getName())))
 			.peek(removedType -> {
 				if (removedType.getDeclarationType().equals(DeclarationKind.CLASS))
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION, removedType));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_REMOVED, removedType.getPosition(), BreakingChangeNature.DELETION, removedType));
 
 				if (removedType.getDeclarationType().equals(DeclarationKind.INTERFACE))
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.INTERFACE_REMOVED, removedType, removedType.getPosition(), BreakingChangeNature.DELETION, removedType));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.INTERFACE_REMOVED, removedType.getPosition(), BreakingChangeNature.DELETION, removedType));
 			})
 			.toList();
 	}
@@ -88,7 +88,7 @@ public class APIDiff {
 		return type1.getFields().stream()
 			.filter(field1 -> type2.getFields().stream().noneMatch(field2 -> field2.getName().equals(field1.getName())))
 			.peek(removedField -> {
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_REMOVED, removedField.getDeclaringType(), removedField.getPosition(), BreakingChangeNature.DELETION, removedField));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_REMOVED, removedField.getPosition(), BreakingChangeNature.DELETION, removedField));
 			})
 			.toList();
 	}
@@ -111,7 +111,7 @@ public class APIDiff {
 							method.getSignature().getParameterTypes().equals(removedMethod.getSignature().getParameterTypes()));
 
 					if (!overriddenOrMovedMethodExists) {
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getDeclaringType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
 					}
 				} else if (type2.getAllSuperclasses() == null && !type2.getSuperinterfaces().isEmpty()) {
 					List<Method> allSuperMethods = type2.getSuperinterfaces().stream()
@@ -123,10 +123,10 @@ public class APIDiff {
 							method.getSignature().getParameterTypes().equals(removedMethod.getSignature().getParameterTypes()));
 
 					if (!overriddenOrMovedMethodExists) {
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getDeclaringType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
 					}
 				} else {
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getDeclaringType(), removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_REMOVED, removedMethod.getPosition(), BreakingChangeNature.DELETION, removedMethod));
 				}
 			})
 			.toList();
@@ -138,7 +138,7 @@ public class APIDiff {
 			.filter(constructor1 -> type2.getConstructors().stream()
 				.noneMatch(constructor2 -> constructor2.getSignature().getName().equals(constructor1.getSignature().getName()) && constructor2.getSignature().getParameterTypes().equals(constructor1.getSignature().getParameterTypes())))
 			.peek(removedConstructor -> {
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, removedConstructor.getDeclaringType(), removedConstructor.getPosition(), BreakingChangeNature.DELETION, removedConstructor));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_REMOVED, removedConstructor.getPosition(), BreakingChangeNature.DELETION, removedConstructor));
 			})
 			.toList();
 	}
@@ -204,30 +204,30 @@ public class APIDiff {
 					method1.getSignature().getParameterTypes().equals(method2.getSignature().getParameterTypes())))
 			.peek(addedMethod -> {
 				if (type2.getDeclarationType().equals(DeclarationKind.INTERFACE) && !addedMethod.isDefault())
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, addedMethod.getDeclaringType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 
-				if (type2.getDeclarationType().equals(DeclarationKind.CLASS) && addedMethod.getModifiers().contains(NonAccessModifiers.ABSTRACT))
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, addedMethod.getDeclaringType(), addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
+				if (type2.getDeclarationType().equals(DeclarationKind.CLASS) && addedMethod.getModifiers().contains(Modifier.ABSTRACT))
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, addedMethod.getPosition(), BreakingChangeNature.ADDITION, addedMethod));
 			})
 			.toList();
 	}
 
 
 	private void fieldComparison(Field field1, Field field2) {
-		if (!field1.getModifiers().contains(NonAccessModifiers.FINAL) && field2.getModifiers().contains(NonAccessModifiers.FINAL))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, field2.getDeclaringType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+		if (!field1.getModifiers().contains(Modifier.FINAL) && field2.getModifiers().contains(Modifier.FINAL))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 
-		if (!field1.getModifiers().contains(NonAccessModifiers.STATIC) && field2.getModifiers().contains(NonAccessModifiers.STATIC))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_STATIC, field2.getDeclaringType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+		if (!field1.getModifiers().contains(Modifier.STATIC) && field2.getModifiers().contains(Modifier.STATIC))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_STATIC, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 
-		if (field1.getModifiers().contains(NonAccessModifiers.STATIC) && !field2.getModifiers().contains(NonAccessModifiers.STATIC))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NO_LONGER_STATIC, field2.getDeclaringType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+		if (field1.getModifiers().contains(Modifier.STATIC) && !field2.getModifiers().contains(Modifier.STATIC))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NO_LONGER_STATIC, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 
 		if (!field1.getType().equals(field2.getType()))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_TYPE_CHANGED, field2.getDeclaringType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_TYPE_CHANGED, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 
 		if (field1.getVisibility().equals(AccessModifier.PUBLIC) && field2.getVisibility().equals(AccessModifier.PROTECTED))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, field2.getDeclaringType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 
 		if (field1.getType().equals(field2.getType())) {
 			List<String> referencedTypes1 = field1.getReferencedTypes();
@@ -237,43 +237,43 @@ public class APIDiff {
 			Set<String> set2 = new HashSet<>(referencedTypes2);
 
 			if (!set1.equals(set2)) {
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, field2.getDeclaringType(), field2.getPosition(), BreakingChangeNature.MUTATION, field2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_GENERICS_CHANGED, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
 			}
 		}
 	}
 
-	private void methodComparison(Method method1, Method method2) {
-		if (!method1.getModifiers().contains(NonAccessModifiers.FINAL) && method2.getModifiers().contains(NonAccessModifiers.FINAL))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_FINAL, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+	private void methodComparison(Type type1, Type type2, Method method1, Method method2) {
+		if (!method1.getModifiers().contains(Modifier.FINAL) && method2.getModifiers().contains(Modifier.FINAL))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_FINAL, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
-		if (!method1.getModifiers().contains(NonAccessModifiers.STATIC) && method2.getModifiers().contains(NonAccessModifiers.STATIC))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_STATIC, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+		if (!method1.getModifiers().contains(Modifier.STATIC) && method2.getModifiers().contains(Modifier.STATIC))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_STATIC, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
-		if (!method1.getModifiers().contains(NonAccessModifiers.NATIVE) && method2.getModifiers().contains(NonAccessModifiers.NATIVE))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_NATIVE, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
-
-
-		if (method1.getModifiers().contains(NonAccessModifiers.STATIC) && !method2.getModifiers().contains(NonAccessModifiers.STATIC))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STATIC, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+		if (!method1.getModifiers().contains(Modifier.NATIVE) && method2.getModifiers().contains(Modifier.NATIVE))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_NATIVE, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 
-		if (method1.getModifiers().contains(NonAccessModifiers.STRICTFP) && !method2.getModifiers().contains(NonAccessModifiers.STRICTFP))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+		if (method1.getModifiers().contains(Modifier.STATIC) && !method2.getModifiers().contains(Modifier.STATIC))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STATIC, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
-		if (!method1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && method2.getModifiers().contains(NonAccessModifiers.ABSTRACT))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_ABSTRACT, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
-		if (method1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && method2.isDefault()) // Careful
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+		if (method1.getModifiers().contains(Modifier.STRICTFP) && !method2.getModifiers().contains(Modifier.STRICTFP))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
+		if (!method1.getModifiers().contains(Modifier.ABSTRACT) && method2.getModifiers().contains(Modifier.ABSTRACT))
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_ABSTRACT, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+
+		if (method1.getModifiers().contains(Modifier.ABSTRACT) && method2.isDefault()) // Careful
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		if (method1.getVisibility().equals(AccessModifier.PUBLIC) && method2.getVisibility().equals(AccessModifier.PROTECTED))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		if (!method1.getReturnType().equals(method2.getReturnType()))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		if (!method1.getParametersReferencedTypes().equals(method2.getParametersReferencedTypes()))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		List<String> additionalExceptions1 = method1.getThrownExceptions().stream()
 			.filter(e -> !method2.getThrownExceptions().contains(e))
@@ -284,37 +284,37 @@ public class APIDiff {
 			.toList();
 
 		if (!additionalExceptions1.isEmpty())
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		if (!additionalExceptions2.isEmpty())
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		IntStream.range(0, method1.getParametersVarargsCheck().size())
 			.filter(i -> method1.getParametersVarargsCheck().get(i) != method2.getParametersVarargsCheck().get(i))
 			.forEach(i -> {
 				boolean isNowVarargs = !method1.getParametersVarargsCheck().get(i) && method2.getParametersVarargsCheck().get(i);
 				BreakingChangeKind kind = isNowVarargs ? BreakingChangeKind.METHOD_NOW_VARARGS : BreakingChangeKind.METHOD_NO_LONGER_VARARGS;
-				breakingChanges.add(new BreakingChange(kind, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+				breakingChanges.add(new BreakingChange(kind, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 			});
 
 		// Handling the formal type parameters additions and deletions
 
 		// In classes
-		if (method1.getDeclaringType().getDeclarationType().equals(DeclarationKind.CLASS)) {
+		if (type1.getDeclarationType().equals(DeclarationKind.CLASS)) {
 			if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size() && !method2.getFormalTypeParameters().isEmpty())
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.DELETION, method2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getPosition(), BreakingChangeNature.DELETION, method2));
 
 			if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size() && !method1.getFormalTypeParameters().isEmpty())
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.ADDITION, method2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getPosition(), BreakingChangeNature.ADDITION, method2));
 		}
 
 		// In interfaces
-		if (method1.getDeclaringType().getDeclarationType().equals(DeclarationKind.INTERFACE)) {
+		if (type1.getDeclarationType().equals(DeclarationKind.INTERFACE)) {
 			if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size())
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.DELETION, method2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2.getPosition(), BreakingChangeNature.DELETION, method2));
 
 			if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size() && !method1.getFormalTypeParameters().isEmpty())
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.ADDITION, method2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2.getPosition(), BreakingChangeNature.ADDITION, method2));
 		}
 
 
@@ -333,18 +333,18 @@ public class APIDiff {
 				HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
 
 				// Every bound change is breaking in interfaces, no matter the nature
-				if (method1.getDeclaringType().getDeclarationType().equals(DeclarationKind.INTERFACE) && !boundsSetV1.equals(boundsSetV2))
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+				if (type1.getDeclarationType().equals(DeclarationKind.INTERFACE) && !boundsSetV1.equals(boundsSetV2))
+						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 				// In classes
-				if (method1.getDeclaringType().getDeclarationType().equals(DeclarationKind.CLASS)) {
+				if (type1.getDeclarationType().equals(DeclarationKind.CLASS)) {
 					// If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
 					if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size())
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 					// The addition of a bound is breaking
 					if (boundsSetV1.size() < boundsSetV2.size())
-						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getDeclaringType(), method2.getPosition(), BreakingChangeNature.MUTATION, method2));
+						breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 				}
 			}
 		}
@@ -352,10 +352,10 @@ public class APIDiff {
 
 	private void constructorComparison(Constructor constructor1, Constructor constructor2) {
 		if (constructor1.getVisibility().equals(AccessModifier.PUBLIC) && constructor2.getVisibility().equals(AccessModifier.PROTECTED))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, constructor2.getDeclaringType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
 
 		if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes()))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getDeclaringType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
 
 		if (constructor1.getFormalTypeParameters().size() == constructor2.getFormalTypeParameters().size()) {
 			List<List<String>> boundsV1 = constructor1.getFormalTypeParamsBounds();
@@ -370,47 +370,47 @@ public class APIDiff {
 
 				// If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
 				if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size())
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getDeclaringType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
 
 				// The addition of a bound is breaking
 				if (boundsSetV1.size() < boundsSetV2.size())
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getDeclaringType(), constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getPosition(), BreakingChangeNature.MUTATION, constructor2));
 			}
 		}
 
 
 		if (constructor1.getFormalTypeParameters().size() > constructor2.getFormalTypeParameters().size() && !constructor2.getFormalTypeParameters().isEmpty())
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getDeclaringType(), constructor2.getPosition(), BreakingChangeNature.DELETION, constructor2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getPosition(), BreakingChangeNature.DELETION, constructor2));
 
 		if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size() && !constructor1.getFormalTypeParameters().isEmpty())
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getDeclaringType(), constructor2.getPosition(), BreakingChangeNature.ADDITION, constructor2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getPosition(), BreakingChangeNature.ADDITION, constructor2));
 	}
 
 
 	private void typeComparison(Type type1, Type type2) {
 		if (type1.getDeclarationType().equals(DeclarationKind.CLASS)) {
-			if (!type1.getModifiers().contains(NonAccessModifiers.FINAL) && type2.getModifiers().contains(NonAccessModifiers.FINAL))
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+			if (!type1.getModifiers().contains(Modifier.FINAL) && type2.getModifiers().contains(Modifier.FINAL))
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_FINAL, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-			if (!type1.getModifiers().contains(NonAccessModifiers.ABSTRACT) && type2.getModifiers().contains(NonAccessModifiers.ABSTRACT))
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_ABSTRACT, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+			if (!type1.getModifiers().contains(Modifier.ABSTRACT) && type2.getModifiers().contains(Modifier.ABSTRACT))
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_ABSTRACT, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-			if (!type1.getModifiers().contains(NonAccessModifiers.STATIC) && type2.getModifiers().contains(NonAccessModifiers.STATIC) && type1.isNested() && type2.isNested())
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+			if (!type1.getModifiers().contains(Modifier.STATIC) && type2.getModifiers().contains(Modifier.STATIC) && type1.isNested() && type2.isNested())
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
-			if (type1.getModifiers().contains(NonAccessModifiers.STATIC) && !type2.getModifiers().contains(NonAccessModifiers.STATIC) && type1.isNested() && type2.isNested())
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+			if (type1.getModifiers().contains(Modifier.STATIC) && !type2.getModifiers().contains(Modifier.STATIC) && type1.isNested() && type2.isNested())
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 			if (!type1.getSuperclassName().equals("java.lang.Exception") && type2.getSuperclassName().equals("java.lang.Exception"))
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 		}
 
 		if (type1.getVisibility().equals(AccessModifier.PUBLIC) && type2.getVisibility().equals(AccessModifier.PROTECTED))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 		if (type1.getDeclarationType().equals(DeclarationKind.CLASS)) {
 			if (!type1.getSuperclassName().equals("None") && type2.getSuperclassName().equals("None"))
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 			// Check for deleted superinterfaces
 			List<String> superinterfacesV1 = type1.getSuperinterfacesNames();
@@ -418,15 +418,15 @@ public class APIDiff {
 
 			for (String superinterfaceV1 : superinterfacesV1) {
 				if (!superinterfacesV2.contains(superinterfaceV1))
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 			}
 		}
 
 		if (type1.getDeclarationType().equals(DeclarationKind.INTERFACE) && !type1.getSuperinterfacesNames().equals(type2.getSuperinterfacesNames()))
-				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+				breakingChanges.add(new BreakingChange(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 		if (!type1.getDeclarationType().equals(type2.getDeclarationType()))
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.CLASS_TYPE_CHANGED, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 		if (type1.getFormalTypeParameters().size() == type2.getFormalTypeParameters().size()) {
 			List<List<String>> boundsV1 = type1.getFormalTypeParamsBounds();
@@ -441,18 +441,18 @@ public class APIDiff {
 
 				// If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
 				if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size())
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, type2, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, type2.getPosition(), BreakingChangeNature.MUTATION, type2));
 
 				if (boundsSetV1.size() < boundsSetV2.size() && !boundsSetV1.isEmpty())
-					breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
+					breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
 			}
 		}
 
 		if (type1.getFormalTypeParameters().size() > type2.getFormalTypeParameters().size())
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, type2, type2.getPosition(), BreakingChangeNature.DELETION, type2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, type2.getPosition(), BreakingChangeNature.DELETION, type2));
 
 		if (type1.getFormalTypeParameters().size() < type2.getFormalTypeParameters().size() && !type1.getFormalTypeParameters().isEmpty())
-			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
+			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
 	}
 
 	private void detectingBreakingChanges() {
@@ -463,20 +463,23 @@ public class APIDiff {
 
 		IntStream.range(0, commonTypesInV1.size())
 			.forEach(i -> {
-				typeComparison(commonTypesInV1.get(i), commonTypesInV2.get(i));
+				Type typeV1 = commonTypesInV1.get(i);
+				Type typeV2 = commonTypesInV2.get(i);
 
-				checkingForRemovedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
-				checkingForRemovedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
-				checkingForRemovedConstructors(commonTypesInV1.get(i), commonTypesInV2.get(i));
+				typeComparison(typeV1, typeV2);
 
-				List<List<Method>> remainingMethods = getUnremovedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
-				List<List<Field>> remainingFields = getUnremovedFields(commonTypesInV1.get(i), commonTypesInV2.get(i));
+				checkingForRemovedFields(typeV1, typeV2);
+				checkingForRemovedMethods(typeV1, typeV2);
+				checkingForRemovedConstructors(typeV1, typeV2);
+
+				List<List<Method>> remainingMethods = getUnremovedMethods(typeV1, typeV2);
+				List<List<Field>> remainingFields = getUnremovedFields(typeV1, typeV2);
 				List<List<Constructor>> remainingConstructors = getUnremovedConstructors(commonTypes.get(0).get(i), commonTypes.get(1).get(i));
 
-				getAddedMethods(commonTypesInV1.get(i), commonTypesInV2.get(i));
+				getAddedMethods(typeV1, typeV2);
 
 				IntStream.range(0, remainingMethods.get(0).size())
-					.forEach(j -> methodComparison(remainingMethods.get(0).get(j), remainingMethods.get(1).get(j)));
+					.forEach(j -> methodComparison(typeV1, typeV2, remainingMethods.get(0).get(j), remainingMethods.get(1).get(j)));
 
 				IntStream.range(0, remainingConstructors.get(0).size())
 					.forEach(j -> constructorComparison(remainingConstructors.get(0).get(j), remainingConstructors.get(1).get(j)));
@@ -502,83 +505,6 @@ public class APIDiff {
 	}
 
 	/**
-	 * Retrieves the list of method-related breaking changes detected between the two API versions.
-	 *
-	 * @return List of method-related breaking changes
-	 */
-	public List<BreakingChange> getMethodBreakingChanges() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
-		return breakingChanges
-			.stream()
-			.filter(breakingChange -> breakingChange.impactedElement() instanceof Method)
-			.toList();
-	}
-
-	/**
-	 * Retrieves the list of constructor-related breaking changes detected between the two API versions.
-	 *
-	 * @return List of constructor-related breaking changes
-	 */
-	public List<BreakingChange> getConstructorBreakingChanges() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
-		return breakingChanges
-			.stream()
-			.filter(breakingChange -> breakingChange.impactedElement() instanceof Constructor)
-			.toList();
-	}
-
-
-	/**
-	 * Retrieves the list of type-related breaking changes detected between the two API versions.
-	 *
-	 * @return List of type-related breaking changes
-	 */
-	public List<BreakingChange> getTypeBreakingChanges() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
-		return breakingChanges
-			.stream()
-			.filter(breakingChange -> breakingChange.impactedElement() instanceof Type)
-			.toList();
-	}
-
-	/**
-	 * Retrieves the list of field-related breaking changes detected between the two API versions.
-	 *
-	 * @return List of field-related breaking changes
-	 */
-	public List<BreakingChange> getFieldBreakingChanges() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
-		return breakingChanges
-			.stream()
-			.filter(breakingChange -> breakingChange.impactedElement() instanceof Field)
-			.toList();
-	}
-
-
-	/**
-	 * Retrieves a list containing all the types inside which breaking changes were detected between the two API versions.
-	 *
-	 * @return List of all the breaking changes' types
-	 */
-	public List<Type> getBreakingChangesTypeDeclarations() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
-		return breakingChanges.stream()
-			.map(breakingChange -> breakingChange.impactedType())
-			.distinct()
-			.toList();
-	}
-
-	/**
 	 * Generates a csv report for the detected breaking changes. This report includes the kind, type name,
 	 * <p>
 	 * position, associated element, and nature of each detected BC.
@@ -591,12 +517,11 @@ public class APIDiff {
 
 			for (BreakingChange breakingChange : breakingChanges) {
 				String kind = breakingChange.kind().toString();
-				String typeDeclaration = breakingChange.impactedType().getName();
 				String element = breakingChange.impactedElement().getName();
 				String nature = breakingChange.nature().toString();
 				String position = breakingChange.position();
 
-				writer.write(kind + "," + typeDeclaration + "," + element + "," + nature + "," + position + "\n");
+				writer.write(kind + "," + element + "," + nature + "," + position + "\n");
 			}
 		} catch (IOException e) {
 			e.printStackTrace();

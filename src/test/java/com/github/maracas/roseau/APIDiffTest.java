@@ -42,14 +42,14 @@ class APIDiffTest {
         Path v1 = Path.of("src/test/resources/api-extractor-tests/without-modules/v1");
         Launcher launcher1 = launcherFor(v1);
 
-        APIExtractor extractor1 = new APIExtractor(launcher1.buildModel());
+        SpoonAPIExtractor extractor1 = new SpoonAPIExtractor(launcher1.buildModel());
 
         Path v2 = Path.of("src/test/resources/api-extractor-tests/without-modules/v2");
         Launcher launcher2 = launcherFor(v2);
 
-        APIExtractor  extractor2 = new APIExtractor(launcher2.buildModel());
+        SpoonAPIExtractor extractor2 = new SpoonAPIExtractor(launcher2.buildModel());
 
-        diff = new APIDiff(extractor1.extractingAPI(), extractor2.extractingAPI());
+        diff = new APIDiff(extractor1.extractAPI(), extractor2.extractAPI());
     }
 
 

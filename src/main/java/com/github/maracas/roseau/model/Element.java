@@ -23,7 +23,7 @@ public abstract class Element {
 	/**
 	 * List of non-access modifiers applied to the element.
 	 */
-	private final List<NonAccessModifiers> modifiers;
+	private final List<Modifier> modifiers;
 
 	/**
 	 * List of types referenced by the element.
@@ -35,7 +35,7 @@ public abstract class Element {
 	 */
 	private final String position;
 
-	protected Element(String name, AccessModifier visibility, List<NonAccessModifiers> modifiers, List<String> referencedTypes, String position) {
+	protected Element(String name, AccessModifier visibility, List<Modifier> modifiers, List<String> referencedTypes, String position) {
 		this.name = name;
 		this.visibility = visibility;
 		this.modifiers = modifiers;
@@ -66,7 +66,7 @@ public abstract class Element {
 	 *
 	 * @return Element's non-access modifiers
 	 */
-	public List<NonAccessModifiers> getModifiers() {
+	public List<Modifier> getModifiers() {
 		return modifiers;
 	}
 

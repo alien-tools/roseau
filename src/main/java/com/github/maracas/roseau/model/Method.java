@@ -8,11 +8,6 @@ import java.util.List;
  */
 public class Method extends Element {
 	/**
-	 * The type containing the method.
-	 */
-	private final Type declaringType;
-
-	/**
 	 * The return data type of the method.
 	 */
 	private final String returnType;
@@ -54,9 +49,8 @@ public class Method extends Element {
 	 */
 	private final boolean isDefault;
 
-	public Method(String name, Type declaringType, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> thrownExceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
+	public Method(String name, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<Modifier> modifiers, Signature signature, List<String> thrownExceptions, List<Boolean> parametersVarargsCheck, boolean isDefault, String position) {
 		super(name, visibility, modifiers, referencedTypes, position);
-		this.declaringType = declaringType;
 		this.returnType = returnType;
 		this.parametersTypes = parametersTypes;
 		this.parametersReferencedTypes = parametersReferencedTypes;
@@ -66,15 +60,6 @@ public class Method extends Element {
 		this.thrownExceptions = thrownExceptions;
 		this.parametersVarargsCheck = parametersVarargsCheck;
 		this.isDefault = isDefault;
-	}
-
-	/**
-	 * Retrieves the TypeDeclaration containing the method.
-	 *
-	 * @return Type containing the method
-	 */
-	public Type getDeclaringType() {
-		return declaringType;
 	}
 
 	/**
@@ -171,7 +156,6 @@ public class Method extends Element {
 			"Parameter Types: " + getParametersTypes() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +
 			"Modifiers: " + getModifiers() + "\n" +
-			"Declaring Type: " + getDeclaringType().getName() + "\n" +
 			"Exceptions: " + getThrownExceptions() + "\n" +
 			"Position: " + getPosition() + "\n\n";
 	}

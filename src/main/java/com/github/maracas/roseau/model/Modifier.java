@@ -3,7 +3,7 @@ package com.github.maracas.roseau.model;
 /**
  * Enumerates the possible non-access modifiers.
  */
-public enum NonAccessModifiers {
+public enum Modifier {
 	/**
 	 * Represents the "static" modifier
 	 */

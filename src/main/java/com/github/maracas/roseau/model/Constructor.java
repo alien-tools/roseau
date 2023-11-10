@@ -8,11 +8,6 @@ import java.util.List;
  */
 public class Constructor extends Element {
 	/**
-	 * The type containing the constructor.
-	 */
-	private final Type declaringType;
-
-	/**
 	 * The return data type of the constructor.
 	 */
 	private final String returnType;
@@ -44,9 +39,8 @@ public class Constructor extends Element {
 	 */
 	private final List<String> exceptions;
 
-	public Constructor(String name, Type declaringType, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<NonAccessModifiers> modifiers, Signature signature, List<String> exceptions, String position) {
+	public Constructor(String name, AccessModifier visibility, String returnType, List<String> referencedTypes, List<String> parametersTypes, List<List<String>> parametersReferencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, List<Modifier> modifiers, Signature signature, List<String> exceptions, String position) {
 		super(name, visibility, modifiers, referencedTypes, position);
-		this.declaringType = declaringType;
 		this.returnType = returnType;
 		this.parametersTypes = parametersTypes;
 		this.parametersReferencedTypes = parametersReferencedTypes;
@@ -54,15 +48,6 @@ public class Constructor extends Element {
 		this.formalTypeParamsBounds = formalTypeParamsBounds;
 		this.signature = signature;
 		this.exceptions = exceptions;
-	}
-
-	/**
-	 * Retrieves the TypeDeclaration containing the constructor.
-	 *
-	 * @return Type containing the constructor
-	 */
-	public Type getDeclaringType() {
-		return declaringType;
 	}
 
 	/**
@@ -137,7 +122,6 @@ public class Constructor extends Element {
 	@Override
 	public String toString() {
 		return "Constructor Name: " + getName() + "\n" +
-			"Declaring type: " + getDeclaringType().getName() + "\n" +
 			"Return Type: " + getReturnType() + "\n" +
 			"Parameter Types: " + getParametersTypes() + "\n" +
 			"Visibility: " + getVisibility() + "\n" +

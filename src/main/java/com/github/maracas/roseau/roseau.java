@@ -30,8 +30,8 @@ public class roseau {
 
 				long startTime = System.nanoTime();
 
-				APIExtractor extractor1 = new APIExtractor(launcher1.buildModel());
-				APIExtractor extractor2 = new APIExtractor(launcher2.buildModel());
+				SpoonAPIExtractor extractor1 = new SpoonAPIExtractor(launcher1.buildModel());
+				SpoonAPIExtractor extractor2 = new SpoonAPIExtractor(launcher2.buildModel());
 
 				long endTime = System.nanoTime();
 				long duration = (endTime - startTime) / 1000000;
@@ -41,8 +41,8 @@ public class roseau {
 
 				startTime = System.nanoTime();
 
-				API apiV1 = extractor1.extractingAPI();
-				API apiV2 = extractor2.extractingAPI();
+				API apiV1 = extractor1.extractAPI();
+				API apiV2 = extractor2.extractAPI();
 
 				System.out.println(apiV1);
 

@@ -15,17 +15,17 @@ public class Type extends Element {
 	/**
 	 * List of fields declared within the type.
 	 */
-	private List<Field> fields;
+	private final List<Field> fields;
 
 	/**
 	 * List of methods declared within the type.
 	 */
-	private List<Method> methods;
+	private final List<Method> methods;
 
 	/**
 	 * List of constructors declared within the type.
 	 */
-	private List<Constructor> constructors;
+	private final List<Constructor> constructors;
 
 	/**
 	 * The qualified name of the superclass ("None" if there isn't any).
@@ -56,7 +56,10 @@ public class Type extends Element {
 	 */
 	private final boolean nested;
 
-	public Type(String name, AccessModifier visibility, DeclarationKind kind, List<NonAccessModifiers> modifiers, String superclassName, List<String> superinterfacesNames, List<String> referencedTypes, List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position) {
+	public Type(String name, AccessModifier visibility, DeclarationKind kind, List<Modifier> modifiers,
+	            String superclassName, List<String> superinterfacesNames, List<String> referencedTypes,
+	            List<String> formalTypeParameters, List<List<String>> formalTypeParamsBounds, boolean nested, String position,
+	            List<Field> fields, List<Method> methods, List<Constructor> constructors) {
 		super(name, visibility, modifiers, referencedTypes, position);
 		this.kind = kind;
 		this.superclassName = superclassName;
@@ -64,6 +67,9 @@ public class Type extends Element {
 		this.formalTypeParameters = formalTypeParameters;
 		this.formalTypeParamsBounds = formalTypeParamsBounds;
 		this.nested = nested;
+		this.fields = fields;
+		this.methods = methods;
+		this.constructors = constructors;
 	}
 
 	/**
@@ -181,33 +187,6 @@ public class Type extends Element {
 	 */
 	public void setSuperinterfaces(List<Type> superinterfaces) {
 		this.superinterfaces = superinterfaces;
-	}
-
-	/**
-	 * Sets the list of fields declared within the type.
-	 *
-	 * @param fields List of fields to be set
-	 */
-	public void setFields(List<Field> fields) {
-		this.fields = fields;
-	}
-
-	/**
-	 * Sets the list of methods declared within the type.
-	 *
-	 * @param methods List of methods to be set
-	 */
-	public void setMethods(List<Method> methods) {
-		this.methods = methods;
-	}
-
-	/**
-	 * Sets the list of constructors declared within the type.
-	 *
-	 * @param constructors List of constructors to be set
-	 */
-	public void setConstructors(List<Constructor> constructors) {
-		this.constructors = constructors;
 	}
 
 	/**
