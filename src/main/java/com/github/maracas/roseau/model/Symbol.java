@@ -75,4 +75,8 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 	public String getPosition() {
 		return position;
 	}
+
+	public TypeReference getContainingType() {
+		return containingType;
+	}
 }

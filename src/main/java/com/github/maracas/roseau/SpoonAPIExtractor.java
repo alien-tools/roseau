@@ -15,10 +15,15 @@ import com.github.maracas.roseau.model.ParameterDecl;
 import com.github.maracas.roseau.model.RecordDecl;
 import com.github.maracas.roseau.model.TypeDecl;
 import com.github.maracas.roseau.model.TypeReference;
+import com.github.maracas.roseau.visit.TypeResolver;
+import com.github.maracas.roseau.visit.Visit;
 import spoon.reflect.CtModel;
+import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
+import spoon.reflect.declaration.CtEnum;
 import spoon.reflect.declaration.CtField;
+import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtModifiable;
 import spoon.reflect.declaration.CtPackage;
@@ -41,6 +46,9 @@ import java.util.stream.Stream;
 
 /**
  * This class represents roseau's API extraction tool.
+ * <br/>
+ * Types are resolved within the universe of API types (exported or not).
+ * We don't know anything about the outside world.
  */
 public class SpoonAPIExtractor implements APIExtractor {
 	private final CtModel model;
@@ -68,7 +76,12 @@ public class SpoonAPIExtractor implements APIExtractor {
 				t -> convertSpoonTypeToTypeDeclaration(t.getTypeDeclaration())
 			));
 
-		return new API(allTypes.values().stream().toList());
+		// Within-library type resolution
+		API api = new API(allTypes.values().stream().toList());
+		Visit v = new TypeResolver(api).$(api);
+		v.visit();
+
+		return api;
 	}
 
 	private boolean isExported(CtType<?> type) {
@@ -132,7 +145,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		} else if (visibility == ModifierKind.PROTECTED) {
 			return AccessModifier.PROTECTED;
 		} else {
-			return AccessModifier.DEFAULT;
+			return AccessModifier.PACKAGE_PRIVATE;
 		}
 	}
 
@@ -186,7 +199,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.toList();
 		TypeReference containingType = spoonType.getDeclaringType() != null
 			? makeTypeReference(spoonType.getDeclaringType().getReference())
-			: TypeReference.NULL;
+			: null;
 		String position = spoonType.getPosition().toString();
 		List<TypeReference> superInterfaces = spoonType.getSuperInterfaces().stream()
 			.map(this::makeTypeReference)
@@ -202,38 +215,31 @@ public class SpoonAPIExtractor implements APIExtractor {
 				.map(this::convertSpoonMethodToMethodDeclaration)
 				.toList();
 
-		if (spoonType.isAnnotationType()) {
-			return new AnnotationDecl(qualifiedName, visibility, modifiers, position, containingType, convertedFields, convertedMethods);
-		}
+		return switch (spoonType) {
+			case CtAnnotationType<?> a ->
+				new AnnotationDecl(qualifiedName, visibility, modifiers, position, containingType, convertedFields, convertedMethods);
+			case CtInterface<?> i ->
+				new InterfaceDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
+			case CtClass<?> c -> {
+				TypeReference superClass = spoonType.getSuperclass() != null
+					? makeTypeReference(spoonType.getSuperclass())
+					: null;
+				List<ConstructorDecl> convertedConstructors =
+					getExportedConstructors(spoonType).stream()
+						.map(this::convertSpoonConstructorToConstructorDeclaration)
+						.toList();
 
-		if (spoonType.isInterface()) {
-			return new InterfaceDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
-		}
-
-		if (spoonType.isClass() || spoonType.isEnum()) {
-			TypeReference superClass = spoonType.getSuperclass() != null
-				? makeTypeReference(spoonType.getSuperclass())
-				: TypeReference.NULL;
-			List<CtTypeReference<?>> allSuperClasses = getAllSuperclasses(spoonType.getReference());
-			List<ConstructorDecl> convertedConstructors =
-				getExportedConstructors(spoonType).stream()
-					.map(this::convertSpoonConstructorToConstructorDeclaration)
-					.toList();
-
-			if (spoonType.isEnum()) {
-				return new EnumDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
+				yield switch (c) {
+					case CtRecord r ->
+						new RecordDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
+					case CtEnum<?> e ->
+						new EnumDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
+					case CtClass<?> cc ->
+						new ClassDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
+				};
 			}
-
-			if (spoonType instanceof CtRecord) {
-				return new RecordDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
-			}
-
-			if (spoonType.isClass()) {
-				return new ClassDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
-			}
-		}
-
-		throw new IllegalStateException("Unknown type " + spoonType.getQualifiedName());
+			default -> throw new IllegalStateException("Unexpected value: " + spoonType);
+		};
 	}
 
 	// Converts a CtField to a Field declaration

@@ -20,7 +20,7 @@ public enum AccessModifier {
 	PUBLIC,
 
 	/**
-	 * Default access modifier
+	 * Package-private access modifier
 	 */
-	DEFAULT
+	PACKAGE_PRIVATE
 }

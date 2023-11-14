@@ -62,6 +62,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isCheckedException() {
 		return false;
 	}

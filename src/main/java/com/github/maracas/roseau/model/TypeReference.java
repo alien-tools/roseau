@@ -3,7 +3,6 @@ package com.github.maracas.roseau.model;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 public final class TypeReference {
-	public static final TypeReference NULL = new TypeReference("<null>");
 	private final String qualifiedName;
 	private TypeDecl actualType;
 
@@ -18,6 +17,10 @@ public final class TypeReference {
 
 	public TypeDecl getActualType() {
 		return actualType;
+	}
+
+	public void setActualType(TypeDecl type) {
+		this.actualType = type;
 	}
 
 	@Override

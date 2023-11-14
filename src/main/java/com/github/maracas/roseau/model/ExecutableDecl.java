@@ -44,7 +44,7 @@ public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, C
 
 			if (otherParameter.isVarargs() != thisParameter.isVarargs())
 				return false;
-			if (otherParameter.getType() != thisParameter.getType())
+			if (otherParameter.type() != thisParameter.type())
 				return false;
 		}
 

@@ -27,7 +27,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return true;
 	}
 
-	@JsonIgnore
+	@Override
+	public List<MethodDecl> getAllMethods() {
+		return Stream.concat(
+			super.getAllMethods().stream(),
+			superClass != null ? superClass.getActualType().getAllMethods().stream() : Stream.empty()
+		).toList();
+	}
+
 	@Override
 	public boolean isCheckedException() {
 		return getAllSuperClasses().stream().anyMatch(cls -> cls.getQualifiedName().equals("java.lang.Exception"))

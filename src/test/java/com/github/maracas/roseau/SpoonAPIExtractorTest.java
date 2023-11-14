@@ -24,8 +24,9 @@ class SpoonAPIExtractorTest {
 
 	@BeforeAll
 	static void setUp() {
-		Path sources = Path.of("src/test/resources/api-extractor-tests/without-modules/v1");
-		Launcher launcher = new MavenLauncher(sources.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE, new String[0]);
+		Path sources = Path.of("/home/dig/repositories/maracas/core/src/main/java");
+		Launcher launcher = new Launcher();
+		launcher.addInputResource(sources.toAbsolutePath().toString());
 		launcher.getEnvironment().setNoClasspath(true);
 		launcher.getEnvironment().setComplianceLevel(17);
 		model = launcher.buildModel();
