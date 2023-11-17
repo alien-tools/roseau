@@ -26,7 +26,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>com.github.maracas.roseau.roseau</mainClass>
+                            <mainClass>com.github.maracas.roseau.Roseau</mainClass>
                         </manifest>
                     </archive>
                     <descriptorRefs>
