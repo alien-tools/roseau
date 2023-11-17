@@ -39,8 +39,6 @@ public class APIDiff {
 	 */
 	private final List<BreakingChange> breakingChanges;
 
-	private boolean breakingChangesPopulated = false;
-
 	/**
 	 * Constructs an APIDiff instance to compare two API versions for breaking changes detection.
 	 *
@@ -51,6 +49,45 @@ public class APIDiff {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
 		this.breakingChanges = new ArrayList<>();
+	}
+
+	public List<BreakingChange> diff() {
+		checkingForRemovedTypes();
+		List<List<TypeDecl>> commonTypes = getUnremovedTypes();
+		List<TypeDecl> commonTypesInV1 = commonTypes.get(0);
+		List<TypeDecl> commonTypesInV2 = commonTypes.get(1);
+
+		IntStream.range(0, commonTypesInV1.size())
+			.forEach(i -> {
+				TypeDecl typeV1 = commonTypesInV1.get(i);
+				TypeDecl typeV2 = commonTypesInV2.get(i);
+
+				compareTypes(typeV1, typeV2);
+				checkRemovedFields(typeV1, typeV2);
+				checkRemovedMethods(typeV1, typeV2);
+
+				if (typeV1 instanceof ClassDecl clsV1 && typeV2 instanceof ClassDecl clsV2) {
+					checkRemovedConstructors(clsV1, clsV2);
+					List<List<ConstructorDecl>> remainingConstructors = getUnremovedConstructors((ClassDecl) commonTypes.get(0).get(i), (ClassDecl) commonTypes.get(1).get(i));
+					IntStream.range(0, remainingConstructors.get(0).size())
+						.forEach(j -> constructorComparison(remainingConstructors.get(0).get(j), remainingConstructors.get(1).get(j)));
+				}
+
+				List<List<MethodDecl>> remainingMethods = getUnremovedMethods(typeV1, typeV2);
+				List<List<FieldDecl>> remainingFields = getUnremovedFields(typeV1, typeV2);
+
+
+				getAddedMethods(typeV1, typeV2);
+
+				IntStream.range(0, remainingMethods.get(0).size())
+					.forEach(j -> methodComparison(typeV1, typeV2, remainingMethods.get(0).get(j), remainingMethods.get(1).get(j)));
+
+
+				IntStream.range(0, remainingFields.get(0).size())
+					.forEach(j -> fieldComparison(remainingFields.get(0).get(j), remainingFields.get(1).get(j)));
+			});
+
+		return breakingChanges;
 	}
 
 	private List<TypeDecl> checkingForRemovedTypes() {
@@ -172,10 +209,6 @@ public class APIDiff {
 			.toList();
 	}
 
-	class X<AA> {
-		List<AA> ff;
-	}
-
 	private void fieldComparison(FieldDecl field1, FieldDecl field2) {
 		if (!field1.getModifiers().contains(Modifier.FINAL) && field2.getModifiers().contains(Modifier.FINAL))
 			breakingChanges.add(new BreakingChange(BreakingChangeKind.FIELD_NOW_FINAL, field2.getPosition(), BreakingChangeNature.MUTATION, field2));
@@ -239,7 +272,7 @@ public class APIDiff {
 //			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
 		List<TypeReference<ClassDecl>> additionalExceptions1 = method1.getThrownExceptions().stream()
-			.filter(e -> e.isCheckedException())
+			.filter(TypeReference::isCheckedException)
 			.filter(e -> !method2.getThrownExceptions().contains(e))
 			.toList();
 
@@ -418,55 +451,12 @@ public class APIDiff {
 //			breakingChanges.add(new BreakingChange(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2.getPosition(), BreakingChangeNature.ADDITION, type2));
 	}
 
-	private void detectingBreakingChanges() {
-		checkingForRemovedTypes();
-		List<List<TypeDecl>> commonTypes = getUnremovedTypes();
-		List<TypeDecl> commonTypesInV1 = commonTypes.get(0);
-		List<TypeDecl> commonTypesInV2 = commonTypes.get(1);
-
-		IntStream.range(0, commonTypesInV1.size())
-			.forEach(i -> {
-				TypeDecl typeV1 = commonTypesInV1.get(i);
-				TypeDecl typeV2 = commonTypesInV2.get(i);
-
-				compareTypes(typeV1, typeV2);
-				checkRemovedFields(typeV1, typeV2);
-				checkRemovedMethods(typeV1, typeV2);
-
-				if (typeV1 instanceof ClassDecl clsV1 && typeV2 instanceof ClassDecl clsV2) {
-					checkRemovedConstructors(clsV1, clsV2);
-					List<List<ConstructorDecl>> remainingConstructors = getUnremovedConstructors((ClassDecl) commonTypes.get(0).get(i), (ClassDecl) commonTypes.get(1).get(i));
-					IntStream.range(0, remainingConstructors.get(0).size())
-						.forEach(j -> constructorComparison(remainingConstructors.get(0).get(j), remainingConstructors.get(1).get(j)));
-				}
-
-				List<List<MethodDecl>> remainingMethods = getUnremovedMethods(typeV1, typeV2);
-				List<List<FieldDecl>> remainingFields = getUnremovedFields(typeV1, typeV2);
-
-
-				getAddedMethods(typeV1, typeV2);
-
-				IntStream.range(0, remainingMethods.get(0).size())
-					.forEach(j -> methodComparison(typeV1, typeV2, remainingMethods.get(0).get(j), remainingMethods.get(1).get(j)));
-
-
-				IntStream.range(0, remainingFields.get(0).size())
-					.forEach(j -> fieldComparison(remainingFields.get(0).get(j), remainingFields.get(1).get(j)));
-			});
-
-		breakingChangesPopulated = true;
-	}
-
-
 	/**
 	 * Retrieves the list of all the breaking changes detected between the two API versions.
 	 *
 	 * @return List of all the breaking changes
 	 */
 	public List<BreakingChange> getBreakingChanges() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
 		return breakingChanges;
 	}
 
@@ -479,7 +469,7 @@ public class APIDiff {
 		List<BreakingChange> breakingChanges = getBreakingChanges();
 
 		try (FileWriter writer = new FileWriter("breaking_changes_report.csv")) {
-			writer.write("Kind,Type Declaration,Element,Nature,Position\n");
+			writer.write("Kind,Element,Nature,Position\n");
 
 			for (BreakingChange breakingChange : breakingChanges) {
 				String kind = breakingChange.kind().toString();
@@ -501,13 +491,10 @@ public class APIDiff {
 	 */
 	@Override
 	public String toString() {
-		if (!breakingChangesPopulated)
-			detectingBreakingChanges();
-
-		String result = "";
+		StringBuilder result = new StringBuilder();
 		for (BreakingChange breakingChange : breakingChanges) {
-			result = result + breakingChange.toString() + "\n";
-			result = result + "    =========================\n\n";
+			result.append(breakingChange.toString()).append("\n");
+			result.append("    =========================\n\n");
 		}
 
 		return result.toString();

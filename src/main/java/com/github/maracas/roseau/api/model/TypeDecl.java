@@ -3,7 +3,6 @@ package com.github.maracas.roseau.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 

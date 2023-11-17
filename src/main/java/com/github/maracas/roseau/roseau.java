@@ -56,7 +56,7 @@ public class roseau {
 				startTime = System.nanoTime();
 
 				APIDiff diff = new APIDiff(apiV1, apiV2);
-				List<BreakingChange> breakingChanges = diff.getBreakingChanges();
+				List<BreakingChange> breakingChanges = diff.diff();
 
 				endTime = System.nanoTime();
 				duration = (endTime - startTime) / 1000000;
@@ -65,7 +65,7 @@ public class roseau {
 				writer.write("DELTA model" + "," + duration + "\n");
 
 				diff.breakingChangesReport();
-				System.out.println(diff.toString());
+				System.out.println(diff);
 			} catch (IOException e) {
 				e.printStackTrace();
 			}
