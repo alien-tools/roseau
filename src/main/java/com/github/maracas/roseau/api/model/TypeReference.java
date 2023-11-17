@@ -77,6 +77,13 @@ public final class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
+	public Optional<FieldDecl> getField(String name) {
+		return actualType != null
+			? actualType.getField(name)
+			: Optional.empty();
+	}
+
+	@Override
 	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
 		return actualType != null
 			? actualType.getSuperInterfaces()

@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 /**
@@ -113,6 +114,13 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	@Override
 	public List<FieldDecl> getFields() {
 		return fields;
+	}
+
+	@Override
+	public Optional<FieldDecl> getField(String name) {
+		return fields.stream()
+			.filter(f -> f.getQualifiedName().equals(name))
+			.findFirst();
 	}
 
 	/**
