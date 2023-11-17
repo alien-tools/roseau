@@ -17,8 +17,8 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	 */
 	protected final List<ConstructorDecl> constructors;
 
-	public ClassDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, fields, methods);
+	public ClassDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
+		super(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, fields, methods);
 		this.superClass = superClass;
 		this.constructors = constructors;
 	}
@@ -67,6 +67,6 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			  Position: %s
 			  Fields: %s
 			  Methods: %s
-			""".formatted(qualifiedName, visibility, modifiers, containingType, position, fields, methods);
+			""".formatted(qualifiedName, visibility, modifiers, containingType, location, fields, methods);
 	}
 }

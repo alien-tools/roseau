@@ -1,4 +1,4 @@
-package com.github.maracas.roseau;
+package com.github.maracas.roseau.api;
 
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;

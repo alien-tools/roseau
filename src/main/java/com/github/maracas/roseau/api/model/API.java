@@ -15,40 +15,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
  * @param types The list of TypeDeclarations representing all the types in the library's API.
  */
 public record API(List<TypeDecl> types) {
-	public Optional<TypeDecl> getType(String qualifiedName) {
-		return getTypes().stream()
-			.filter(t -> Objects.equals(qualifiedName, t.qualifiedName))
-			.findFirst();
-	}
-
-	public Optional<ClassDecl> getClass(String qualifiedName) {
-		return getClasses().stream()
-			.filter(t -> Objects.equals(qualifiedName, t.qualifiedName))
-			.findFirst();
-	}
-
-	public Optional<InterfaceDecl> getInterface(String qualifiedName) {
-		return getInterfaces().stream()
-			.filter(t -> Objects.equals(qualifiedName, t.qualifiedName))
-			.findFirst();
-	}
-
-	public List<TypeDecl> getTypes() {
+	public List<TypeDecl> getAllTypes() {
 		return types;
-	}
-
-	public List<ClassDecl> getClasses() {
-		return types.stream()
-			.filter(ClassDecl.class::isInstance)
-			.map(ClassDecl.class::cast)
-			.toList();
-	}
-
-	public List<InterfaceDecl> getInterfaces() {
-		return types.stream()
-			.filter(InterfaceDecl.class::isInstance)
-			.map(InterfaceDecl.class::cast)
-			.toList();
 	}
 
 	public List<TypeDecl> getExportedTypes() {
@@ -57,15 +25,30 @@ public record API(List<TypeDecl> types) {
 			.toList();
 	}
 
+	public List<ClassDecl> getExportedClasses() {
+		return types.stream()
+			.filter(ClassDecl.class::isInstance)
+			.map(ClassDecl.class::cast)
+			.toList();
+	}
+
+	public List<InterfaceDecl> getExportedInterfaces() {
+		return types.stream()
+			.filter(InterfaceDecl.class::isInstance)
+			.map(InterfaceDecl.class::cast)
+			.toList();
+	}
+
+	public Optional<TypeDecl> getExportedType(String qualifiedName) {
+		return getExportedTypes().stream()
+			.filter(t -> Objects.equals(qualifiedName, t.qualifiedName))
+			.findFirst();
+	}
+
 	public void writeJson(Path jsonFile) throws IOException {
 		new ObjectMapper().writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
 	}
 
-	/**
-	 * Generates a string representation of the library's API.
-	 *
-	 * @return A formatted string containing all the API elements structured.
-	 */
 	@Override
 	public String toString() {
 		StringBuilder builder = new StringBuilder();

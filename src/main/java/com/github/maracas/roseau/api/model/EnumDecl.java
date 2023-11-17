@@ -4,8 +4,8 @@ import java.util.Collections;
 import java.util.List;
 
 public final class EnumDecl extends ClassDecl {
-	public EnumDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FieldDecl> fields, List<MethodDecl> methods, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, Collections.emptyList(), fields, methods, null, constructors);
+	public EnumDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FieldDecl> fields, List<MethodDecl> methods, List<ConstructorDecl> constructors) {
+		super(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, Collections.emptyList(), fields, methods, null, constructors);
 	}
 
 	@Override
@@ -21,6 +21,6 @@ public final class EnumDecl extends ClassDecl {
 			  Position: %s
 			  Fields: %s
 			  Methods: %s
-			""".formatted(qualifiedName, visibility, modifiers, containingType, position, fields, methods);
+			""".formatted(qualifiedName, visibility, modifiers, containingType, location, fields, methods);
 	}
 }

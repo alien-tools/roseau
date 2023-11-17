@@ -23,13 +23,13 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (it.getActualType().isPresent())
 				return;
 
-			Optional<TypeDecl> resolved = api.getTypes().stream()
+			Optional<TypeDecl> resolved = api.getAllTypes().stream()
 				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
 				.findFirst();
 
 			resolved.ifPresentOrElse(
 				it::setActualType,
-				() -> System.out.println("Couldn't resolve " + it.getQualifiedName())
+				() -> {}
 			);
 		};
 	}
@@ -40,13 +40,13 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (it.getActualType().isPresent())
 				return;
 
-			Optional<ClassDecl> resolved = api.getClasses().stream()
+			Optional<ClassDecl> resolved = api.getExportedClasses().stream()
 				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
 				.findFirst();
 
 			resolved.ifPresentOrElse(
 				it::setActualType,
-				() -> System.out.println("Couldn't resolve " + it.getQualifiedName())
+				() -> {}
 			);
 		};
 	}
@@ -57,13 +57,13 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (it.getActualType().isPresent())
 				return;
 
-			Optional<InterfaceDecl> resolved = api.getInterfaces().stream()
+			Optional<InterfaceDecl> resolved = api.getExportedInterfaces().stream()
 				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
 				.findFirst();
 
 			resolved.ifPresentOrElse(
 				it::setActualType,
-				() -> System.out.println("Couldn't resolve " + it.getQualifiedName())
+				() -> {}
 			);
 		};
 	}

@@ -12,8 +12,8 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	private final boolean isDefault;
 
-	public MethodDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions, boolean isDefault) {
-		super(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
+	public MethodDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions, boolean isDefault) {
+		super(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
 		this.isDefault = isDefault;
 	}
 
@@ -37,6 +37,6 @@ public final class MethodDecl extends ExecutableDecl {
 		return """
 			Method %s [%s] [%s]
 			  Position: %s
-			""".formatted(qualifiedName, visibility, modifiers, position);
+			""".formatted(qualifiedName, visibility, modifiers, location);
 	}
 }

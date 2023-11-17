@@ -29,7 +29,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 */
 	protected final List<MethodDecl> methods;
 
-	protected TypeDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position,
+	protected TypeDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation position,
 	                   TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods) {
 		super(qualifiedName, visibility, isExported, modifiers, position, containingType);

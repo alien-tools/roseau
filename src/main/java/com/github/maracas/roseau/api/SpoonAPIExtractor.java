@@ -13,10 +13,12 @@ import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.Modifier;
 import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
+import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.TypeReference;
 import com.github.maracas.roseau.visit.Visit;
 import spoon.reflect.CtModel;
+import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -33,6 +35,7 @@ import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtTypeReference;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -84,7 +87,9 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	private boolean isExported(CtType<?> type) {
-		return type.isPublic() || (type.isProtected() && !isEffectivelyFinal(type));
+		return
+			   (type.isPublic() || (type.isProtected() && !isEffectivelyFinal(type)))
+			&& (type.getDeclaringType() == null || isExported(type.getDeclaringType()));
 	}
 
 	private boolean isExported(CtModifiable member) {
@@ -194,6 +199,18 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new TypeReference<>(spoonType.getQualifiedName());
 	}
 
+	private SourceLocation convertSourcePosition(SourcePosition position) {
+		return !position.isValidPosition()
+			? SourceLocation.NO_LOCATION
+			: new SourceLocation(
+					position.getFile() != null ? position.getFile().toPath() : Path.of("<unknown>"),
+					position.getLine(),
+					position.getColumn(),
+					position.getEndLine(),
+					position.getEndColumn()
+				);
+	}
+
 	// Converts a CtType to a Type declaration
 	private TypeDecl convertSpoonTypeToTypeDeclaration(CtType<?> spoonType) {
 		String qualifiedName = spoonType.getQualifiedName();
@@ -206,6 +223,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		TypeReference<TypeDecl> containingType = spoonType.getDeclaringType() != null
 			? makeTypeReference(spoonType.getDeclaringType().getReference())
 			: null;
+		SourceLocation location = convertSourcePosition(spoonType.getPosition());
 		String position = spoonType.getPosition().toString();
 		List<TypeReference<InterfaceDecl>> superInterfaces = spoonType.getSuperInterfaces().stream()
 			.map(this::makeInterfaceReference)
@@ -223,9 +241,9 @@ public class SpoonAPIExtractor implements APIExtractor {
 
 		return switch (spoonType) {
 			case CtAnnotationType<?> a ->
-				new AnnotationDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, convertedFields, convertedMethods);
+				new AnnotationDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, convertedFields, convertedMethods);
 			case CtInterface<?> i ->
-				new InterfaceDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
+				new InterfaceDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
 			case CtClass<?> c -> {
 				TypeReference<ClassDecl> superClass = spoonType.getSuperclass() != null
 					? makeClassReference(spoonType.getSuperclass())
@@ -237,11 +255,11 @@ public class SpoonAPIExtractor implements APIExtractor {
 
 				yield switch (c) {
 					case CtRecord r ->
-						new RecordDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
+						new RecordDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
 					case CtEnum<?> e ->
-						new EnumDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
+						new EnumDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
 					case CtClass<?> cc ->
-						new ClassDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
+						new ClassDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
 				};
 			}
 			default -> throw new IllegalStateException("Unexpected value: " + spoonType);
@@ -254,11 +272,11 @@ public class SpoonAPIExtractor implements APIExtractor {
 		AccessModifier visibility = convertVisibility(spoonField.getVisibility());
 		boolean isExported = isExported(spoonField);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonField.getModifiers());
-		String position = spoonField.getPosition().toString();
+		SourceLocation location = convertSourcePosition(spoonField.getPosition());
 		TypeReference<TypeDecl> containingType = makeTypeReference(spoonField.getDeclaringType().getReference());
 		TypeReference<TypeDecl> type = makeTypeReference(spoonField.getType());
 
-		return new FieldDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, type);
+		return new FieldDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, type);
 	}
 
 	// Converts a CtMethod to a Method declaration
@@ -267,7 +285,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		AccessModifier visibility = convertVisibility(spoonMethod.getVisibility());
 		boolean isExported = isExported(spoonMethod);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonMethod.getModifiers());
-		String position = spoonMethod.getPosition().toString();
+		SourceLocation location = convertSourcePosition(spoonMethod.getPosition());
 		TypeReference<TypeDecl> containingType = makeTypeReference(spoonMethod.getDeclaringType().getReference());
 		TypeReference<TypeDecl> returnType = makeTypeReference(spoonMethod.getType());
 		List<ParameterDecl> parameters = spoonMethod.getParameters().stream()
@@ -284,7 +302,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.toList();
 		boolean isDefault = spoonMethod.isDefaultMethod();
 
-		return new MethodDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault);
+		return new MethodDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault);
 	}
 
 	// Converts a CtConstructor to a Constructor declaration
@@ -293,7 +311,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		AccessModifier visibility = convertVisibility(spoonConstructor.getVisibility());
 		boolean isExported = isExported(spoonConstructor);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonConstructor.getModifiers());
-		String position = spoonConstructor.getPosition().toString();
+		SourceLocation location = convertSourcePosition(spoonConstructor.getPosition());
 		TypeReference<TypeDecl> containingType = makeTypeReference(spoonConstructor.getDeclaringType().getReference());
 		TypeReference<TypeDecl> returnType = makeTypeReference(spoonConstructor.getType());
 		List<ParameterDecl> parameters = spoonConstructor.getParameters().stream()
@@ -309,7 +327,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.map(this::convertCtTypeParameter)
 			.toList();
 
-		return new ConstructorDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, exceptions);
+		return new ConstructorDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions);
 	}
 
 	private ParameterDecl convertSpoonParameterToParameter(CtParameter<?> parameter) {

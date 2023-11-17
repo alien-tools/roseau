@@ -23,8 +23,8 @@ public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, C
 	 */
 	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, isExported, modifiers, position, containingType);
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, isExported, modifiers, location, containingType);
 		this.returnType = returnType;
 		this.parameters = parameters;
 		this.formalTypeParameters = formalTypeParameters;

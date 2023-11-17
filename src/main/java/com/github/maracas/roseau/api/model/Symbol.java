@@ -31,18 +31,18 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 	protected final List<Modifier> modifiers;
 
 	/**
-	 * The exact position of the symbol
+	 * The exact location of the symbol
 	 */
-	protected final String position;
+	protected final SourceLocation location;
 
 	protected final TypeReference<TypeDecl> containingType;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType) {
+	protected Symbol(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType) {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
 		this.isExported = isExported;
 		this.modifiers = modifiers;
-		this.position = position;
+		this.location = location;
 		this.containingType = containingType;
 	}
 
@@ -87,8 +87,8 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 	 *
 	 * @return The symbol's position.
 	 */
-	public String getPosition() {
-		return position;
+	public SourceLocation getLocation() {
+		return location;
 	}
 
 	public TypeReference<TypeDecl> getContainingType() {

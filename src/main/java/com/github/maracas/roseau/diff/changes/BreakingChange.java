@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.diff.changes;
 
+import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.Symbol;
 
 /**
@@ -13,7 +14,7 @@ import com.github.maracas.roseau.api.model.Symbol;
  */
 public record BreakingChange(
 	BreakingChangeKind kind,
-	String position,
+	SourceLocation location,
 	BreakingChangeNature nature,
 	Symbol impactedSymbol
 ) {
@@ -26,7 +27,7 @@ public record BreakingChange(
 	@Override
 	public String toString() {
 		return "Breaking Change Kind: " + kind() + "\n" +
-			"Position: " + position() + "\n" +
+			"Location: " + location() + "\n" +
 			"Nature: " + nature() + "\n" +
 			"Element: " + impactedSymbol().getQualifiedName() + "\n";
 	}

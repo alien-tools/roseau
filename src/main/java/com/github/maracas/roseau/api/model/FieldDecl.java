@@ -12,8 +12,8 @@ public final class FieldDecl extends Symbol {
 	 */
 	private final TypeReference<TypeDecl> type;
 
-	public FieldDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> type) {
-		super(qualifiedName, visibility, isExported, modifiers, position, containingType);
+	public FieldDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> type) {
+		super(qualifiedName, visibility, isExported, modifiers, location, containingType);
 		this.type = type;
 	}
 
@@ -37,6 +37,6 @@ public final class FieldDecl extends Symbol {
 		return """
 			Field %s [%s] [%s]
 			  Position: %s
-			""".formatted(qualifiedName, visibility, modifiers, position);
+			""".formatted(qualifiedName, visibility, modifiers, location);
 	}
 }
