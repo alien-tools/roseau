@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.model;
+package com.github.maracas.roseau.api.model;
 
 import java.util.List;
 
@@ -12,8 +12,8 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	private final boolean isDefault;
 
-	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, String position, TypeReference containingType, TypeReference returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference> thrownExceptions, boolean isDefault) {
-		super(qualifiedName, visibility, modifiers, position, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
+	public MethodDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions, boolean isDefault) {
+		super(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
 		this.isDefault = isDefault;
 	}
 

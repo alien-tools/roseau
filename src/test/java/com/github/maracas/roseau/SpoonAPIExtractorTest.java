@@ -1,20 +1,14 @@
 package com.github.maracas.roseau;
 
-import com.github.maracas.roseau.model.API;
-import org.junit.jupiter.api.Assertions;
+import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.model.API;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;
-import spoon.MavenLauncher;
 import spoon.reflect.CtModel;
-import spoon.reflect.declaration.CtPackage;
-import spoon.reflect.declaration.CtType;
-import spoon.reflect.reference.CtTypeReference;
 
 import java.io.IOException;
 import java.nio.file.Path;
-import java.util.HashSet;
-import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 

@@ -1,7 +1,9 @@
 package com.github.maracas.roseau;
 
-import com.github.maracas.roseau.changes.BreakingChange;
-import com.github.maracas.roseau.model.API;
+import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.diff.changes.BreakingChange;
+import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.diff.APIDiff;
 import spoon.Launcher;
 import spoon.MavenLauncher;
 

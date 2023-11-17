@@ -1,23 +1,24 @@
-package com.github.maracas.roseau.model;
+package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	/**
-	 * The superclass as a type declaration (null if there isn't any).
+	 * The superclass as a type reference (null if there isn't any).
 	 */
-	protected final TypeReference superClass;
+	protected final TypeReference<ClassDecl> superClass;
 
 	/**
 	 * List of constructors declared within the class.
 	 */
 	protected final List<ConstructorDecl> constructors;
 
-	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, String position, TypeReference containingType, List<TypeReference> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference superClass, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, fields, methods);
+	public ClassDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
+		super(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, fields, methods);
 		this.superClass = superClass;
 		this.constructors = constructors;
 	}
@@ -30,8 +31,8 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
-			super.getAllMethods().stream(),
-			superClass != null ? superClass.getActualType().getAllMethods().stream() : Stream.empty()
+			superClass != null ? superClass.getAllMethods().stream() : Stream.empty(),
+			super.getAllMethods().stream()
 		).toList();
 	}
 
@@ -42,13 +43,15 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	@JsonIgnore
-	public List<TypeReference> getAllSuperClasses() {
-		return Stream.concat(
-			Stream.of(superClass), ((ClassDecl) superClass.getActualType()).getAllSuperClasses().stream()
-		).toList();
+	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
+		return superClass != null
+			? Stream.concat(
+					Stream.of(superClass), superClass.getActualType().map(c -> c.getAllSuperClasses().stream()).orElse(Stream.empty())
+				).toList()
+			: Collections.emptyList();
 	}
 
-	public TypeReference getSuperClass() {
+	public TypeReference<ClassDecl> getSuperClass() {
 		return superClass;
 	}
 

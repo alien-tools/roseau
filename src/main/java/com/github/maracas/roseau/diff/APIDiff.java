@@ -1,25 +1,23 @@
-package com.github.maracas.roseau;
+package com.github.maracas.roseau.diff;
 
-import com.github.maracas.roseau.changes.BreakingChange;
-import com.github.maracas.roseau.changes.BreakingChangeKind;
-import com.github.maracas.roseau.changes.BreakingChangeNature;
-import com.github.maracas.roseau.model.API;
-import com.github.maracas.roseau.model.AccessModifier;
-import com.github.maracas.roseau.model.ClassDecl;
-import com.github.maracas.roseau.model.ConstructorDecl;
-import com.github.maracas.roseau.model.FieldDecl;
-import com.github.maracas.roseau.model.MethodDecl;
-import com.github.maracas.roseau.model.Modifier;
-import com.github.maracas.roseau.model.TypeDecl;
-import com.github.maracas.roseau.model.TypeReference;
+import com.github.maracas.roseau.diff.changes.BreakingChange;
+import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
+import com.github.maracas.roseau.diff.changes.BreakingChangeNature;
+import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.AccessModifier;
+import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.ConstructorDecl;
+import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.Modifier;
+import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.TypeReference;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.stream.IntStream;
 
 /**
@@ -240,12 +238,12 @@ public class APIDiff {
 //		if (!method1.getParametersReferencedTypes().equals(method2.getParametersReferencedTypes()))
 //			breakingChanges.add(new BreakingChange(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, method2.getPosition(), BreakingChangeNature.MUTATION, method2));
 
-		List<TypeReference> additionalExceptions1 = method1.getThrownExceptions().stream()
-			.filter(e -> e.getActualType().isCheckedException())
+		List<TypeReference<ClassDecl>> additionalExceptions1 = method1.getThrownExceptions().stream()
+			.filter(e -> e.isCheckedException())
 			.filter(e -> !method2.getThrownExceptions().contains(e))
 			.toList();
 
-		List<TypeReference> additionalExceptions2 = method2.getThrownExceptions().stream()
+		List<TypeReference<ClassDecl>> additionalExceptions2 = method2.getThrownExceptions().stream()
 			.filter(e -> !method1.getThrownExceptions().contains(e))
 			.toList();
 
@@ -437,20 +435,20 @@ public class APIDiff {
 
 				if (typeV1 instanceof ClassDecl clsV1 && typeV2 instanceof ClassDecl clsV2) {
 					checkRemovedConstructors(clsV1, clsV2);
+					List<List<ConstructorDecl>> remainingConstructors = getUnremovedConstructors((ClassDecl) commonTypes.get(0).get(i), (ClassDecl) commonTypes.get(1).get(i));
+					IntStream.range(0, remainingConstructors.get(0).size())
+						.forEach(j -> constructorComparison(remainingConstructors.get(0).get(j), remainingConstructors.get(1).get(j)));
 				}
 
 				List<List<MethodDecl>> remainingMethods = getUnremovedMethods(typeV1, typeV2);
 				List<List<FieldDecl>> remainingFields = getUnremovedFields(typeV1, typeV2);
 
-				List<List<ConstructorDecl>> remainingConstructors = getUnremovedConstructors((ClassDecl) commonTypes.get(0).get(i), (ClassDecl) commonTypes.get(1).get(i));
 
 				getAddedMethods(typeV1, typeV2);
 
 				IntStream.range(0, remainingMethods.get(0).size())
 					.forEach(j -> methodComparison(typeV1, typeV2, remainingMethods.get(0).get(j), remainingMethods.get(1).get(j)));
 
-				IntStream.range(0, remainingConstructors.get(0).size())
-					.forEach(j -> constructorComparison(remainingConstructors.get(0).get(j), remainingConstructors.get(1).get(j)));
 
 				IntStream.range(0, remainingFields.get(0).size())
 					.forEach(j -> fieldComparison(remainingFields.get(0).get(j), remainingFields.get(1).get(j)));

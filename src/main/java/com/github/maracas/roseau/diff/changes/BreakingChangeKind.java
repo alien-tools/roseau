@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.changes;
+package com.github.maracas.roseau.diff.changes;
 
 /**
  * Enumerates the source and binary breaking changes taken into account.

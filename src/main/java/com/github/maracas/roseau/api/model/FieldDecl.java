@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.model;
+package com.github.maracas.roseau.api.model;
 
 import java.util.List;
 
@@ -10,10 +10,10 @@ public final class FieldDecl extends Symbol {
 	/**
 	 * The data type of the field (e.g., int, double, class types, interface types).
 	 */
-	private final TypeReference type;
+	private final TypeReference<TypeDecl> type;
 
-	public FieldDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, String position, TypeReference containingType, TypeReference type) {
-		super(qualifiedName, visibility, modifiers, position, containingType);
+	public FieldDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> type) {
+		super(qualifiedName, visibility, isExported, modifiers, position, containingType);
 		this.type = type;
 	}
 
@@ -22,7 +22,7 @@ public final class FieldDecl extends Symbol {
 	 *
 	 * @return Field's data type
 	 */
-	public TypeReference getType() {
+	public TypeReference<TypeDecl> getType() {
 		return type;
 	}
 

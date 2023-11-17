@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.model;
+package com.github.maracas.roseau.api.model;
 
 import java.util.List;
 
@@ -7,8 +7,8 @@ import java.util.List;
  * This class extends the {@link ExecutableDecl} class and contains information about the constructor's parameters, return type, class, and more.
  */
 public final class ConstructorDecl extends ExecutableDecl {
-	public ConstructorDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, String position, TypeReference containingType, TypeReference returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, position, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
+	public ConstructorDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
 	}
 
 	/**

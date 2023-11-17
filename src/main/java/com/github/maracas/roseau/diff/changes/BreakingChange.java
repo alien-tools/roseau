@@ -1,6 +1,6 @@
-package com.github.maracas.roseau.changes;
+package com.github.maracas.roseau.diff.changes;
 
-import com.github.maracas.roseau.model.Symbol;
+import com.github.maracas.roseau.api.model.Symbol;
 
 /**
  * Represents a breaking change identified during the comparison of APIs between the two library versions.

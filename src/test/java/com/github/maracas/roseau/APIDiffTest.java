@@ -1,5 +1,7 @@
 package com.github.maracas.roseau;
 
+import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.diff.APIDiff;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;

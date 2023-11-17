@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.model;
+package com.github.maracas.roseau.api.model;
 
 import java.util.List;
 
@@ -6,7 +6,7 @@ public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, C
 	/**
 	 * The return type of the executable.
 	 */
-	protected final TypeReference returnType;
+	protected final TypeReference<TypeDecl> returnType;
 
 	/**
 	 * List of the executable's parameter types.
@@ -21,10 +21,10 @@ public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, C
 	/**
 	 * List of exceptions thrown by the executable.
 	 */
-	protected final List<TypeReference> thrownExceptions;
+	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, String position, TypeReference containingType, TypeReference returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, position, containingType);
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, isExported, modifiers, position, containingType);
 		this.returnType = returnType;
 		this.parameters = parameters;
 		this.formalTypeParameters = formalTypeParameters;
@@ -56,7 +56,7 @@ public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, C
 	 *
 	 * @return executable's return data type
 	 */
-	public TypeReference getReturnType() {
+	public TypeReference<TypeDecl> getReturnType() {
 		return returnType;
 	}
 
@@ -87,7 +87,7 @@ public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, C
 	 *
 	 * @return List of exceptions thrown by the executable
 	 */
-	public List<TypeReference> getThrownExceptions() {
+	public List<TypeReference<ClassDecl>> getThrownExceptions() {
 		return thrownExceptions;
 	}
 }

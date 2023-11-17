@@ -1,21 +1,20 @@
-package com.github.maracas.roseau;
+package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.model.API;
-import com.github.maracas.roseau.model.AccessModifier;
-import com.github.maracas.roseau.model.AnnotationDecl;
-import com.github.maracas.roseau.model.ClassDecl;
-import com.github.maracas.roseau.model.ConstructorDecl;
-import com.github.maracas.roseau.model.EnumDecl;
-import com.github.maracas.roseau.model.FieldDecl;
-import com.github.maracas.roseau.model.FormalTypeParameter;
-import com.github.maracas.roseau.model.InterfaceDecl;
-import com.github.maracas.roseau.model.MethodDecl;
-import com.github.maracas.roseau.model.Modifier;
-import com.github.maracas.roseau.model.ParameterDecl;
-import com.github.maracas.roseau.model.RecordDecl;
-import com.github.maracas.roseau.model.TypeDecl;
-import com.github.maracas.roseau.model.TypeReference;
-import com.github.maracas.roseau.visit.TypeResolver;
+import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.AccessModifier;
+import com.github.maracas.roseau.api.model.AnnotationDecl;
+import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.ConstructorDecl;
+import com.github.maracas.roseau.api.model.EnumDecl;
+import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
+import com.github.maracas.roseau.api.model.InterfaceDecl;
+import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.Modifier;
+import com.github.maracas.roseau.api.model.ParameterDecl;
+import com.github.maracas.roseau.api.model.RecordDecl;
+import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.TypeReference;
 import com.github.maracas.roseau.visit.Visit;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtAnnotationType;
@@ -69,7 +68,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		List<CtPackage> allPackages = model.getAllPackages().stream().toList();
 
 		Map<CtTypeReference<?>, TypeDecl> allTypes = allPackages.stream()
-			.map(this::getExportedTypes)
+			.map(this::getAllTypes)
 			.flatMap(Collection::stream)
 			.collect(Collectors.toMap(
 				t -> t,
@@ -96,38 +95,36 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
 	}
 
-	// Returns all exported types within a package
-	private List<CtTypeReference<?>> getExportedTypes(CtPackage pkg) {
+	// Returns all types within a package
+	private List<CtTypeReference<?>> getAllTypes(CtPackage pkg) {
 		return pkg.getTypes().stream()
-			.filter(this::isExported)
-			.flatMap(type -> Stream.concat(Stream.of(type.getReference()), getExportedTypes(type).stream()))
+			.flatMap(type -> Stream.concat(Stream.of(type.getReference()), getAllTypes(type).stream()))
 			.toList();
 	}
 
-	// Returns (recursively) the exported nested types within a type
-	private List<CtTypeReference<?>> getExportedTypes(CtType<?> type) {
+	// Returns (recursively) nested types
+	private List<CtTypeReference<?>> getAllTypes(CtType<?> type) {
 		return type.getNestedTypes().stream()
-			.filter(this::isExported)
-			.flatMap(nestedType -> Stream.concat(Stream.of(nestedType.getReference()), getExportedTypes(nestedType).stream()))
+			.flatMap(nestedType -> Stream.concat(Stream.of(nestedType.getReference()), getAllTypes(nestedType).stream()))
 			.toList();
 	}
 
-	// Returns the exported fields of a type
-	private List<CtField<?>> getExportedFields(CtType<?> type) {
+	// Returns all fields in a type
+	private List<CtField<?>> getFields(CtType<?> type) {
 		return type.getFields().stream()
 			.filter(this::isExported)
 			.toList();
 	}
 
-	// Returns the exported methods of a type
-	private List<CtMethod<?>> getExportedMethods(CtType<?> type) {
+	// Returns all methods in a type
+	private List<CtMethod<?>> getMethods(CtType<?> type) {
 		return type.getMethods().stream()
 			.filter(this::isExported)
 			.toList();
 	}
 
-	// Returns the exported constructors of a type
-	private List<CtConstructor<?>> getExportedConstructors(CtType<?> type) {
+	// Returns all constructors in a type
+	private List<CtConstructor<?>> getConstructors(CtType<?> type) {
 		if (type instanceof CtClass<?> cls) {
 			return new ArrayList<>(cls.getConstructors().stream()
 				.filter(this::isExported)
@@ -185,57 +182,66 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.toList();
 	}
 
-	private TypeReference makeTypeReference(CtTypeReference<?> spoonType) {
-		return new TypeReference(spoonType.getQualifiedName());
+	private TypeReference<TypeDecl> makeTypeReference(CtTypeReference<?> spoonType) {
+		return new TypeReference<>(spoonType.getQualifiedName());
+	}
+
+	private TypeReference<ClassDecl> makeClassReference(CtTypeReference<?> spoonType) {
+		return new TypeReference<>(spoonType.getQualifiedName());
+	}
+
+	private TypeReference<InterfaceDecl> makeInterfaceReference(CtTypeReference<?> spoonType) {
+		return new TypeReference<>(spoonType.getQualifiedName());
 	}
 
 	// Converts a CtType to a Type declaration
 	private TypeDecl convertSpoonTypeToTypeDeclaration(CtType<?> spoonType) {
 		String qualifiedName = spoonType.getQualifiedName();
 		AccessModifier visibility = convertVisibility(spoonType.getVisibility());
+		boolean isExported = isExported(spoonType);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonType.getModifiers());
 		List<FormalTypeParameter> formalTypeParameters = spoonType.getFormalCtTypeParameters().stream()
 			.map(this::convertCtTypeParameter)
 			.toList();
-		TypeReference containingType = spoonType.getDeclaringType() != null
+		TypeReference<TypeDecl> containingType = spoonType.getDeclaringType() != null
 			? makeTypeReference(spoonType.getDeclaringType().getReference())
 			: null;
 		String position = spoonType.getPosition().toString();
-		List<TypeReference> superInterfaces = spoonType.getSuperInterfaces().stream()
-			.map(this::makeTypeReference)
+		List<TypeReference<InterfaceDecl>> superInterfaces = spoonType.getSuperInterfaces().stream()
+			.map(this::makeInterfaceReference)
 			.toList();
 
 		List<FieldDecl> convertedFields =
-			getExportedFields(spoonType).stream()
+			getFields(spoonType).stream()
 				.map(this::convertSpoonFieldToFieldDeclaration)
 				.toList();
 
 		List<MethodDecl> convertedMethods =
-			getExportedMethods(spoonType).stream()
+			getMethods(spoonType).stream()
 				.map(this::convertSpoonMethodToMethodDeclaration)
 				.toList();
 
 		return switch (spoonType) {
 			case CtAnnotationType<?> a ->
-				new AnnotationDecl(qualifiedName, visibility, modifiers, position, containingType, convertedFields, convertedMethods);
+				new AnnotationDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, convertedFields, convertedMethods);
 			case CtInterface<?> i ->
-				new InterfaceDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
+				new InterfaceDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
 			case CtClass<?> c -> {
-				TypeReference superClass = spoonType.getSuperclass() != null
-					? makeTypeReference(spoonType.getSuperclass())
+				TypeReference<ClassDecl> superClass = spoonType.getSuperclass() != null
+					? makeClassReference(spoonType.getSuperclass())
 					: null;
 				List<ConstructorDecl> convertedConstructors =
-					getExportedConstructors(spoonType).stream()
+					getConstructors(spoonType).stream()
 						.map(this::convertSpoonConstructorToConstructorDeclaration)
 						.toList();
 
 				yield switch (c) {
 					case CtRecord r ->
-						new RecordDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
+						new RecordDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
 					case CtEnum<?> e ->
-						new EnumDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
+						new EnumDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
 					case CtClass<?> cc ->
-						new ClassDecl(qualifiedName, visibility, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
+						new ClassDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
 				};
 			}
 			default -> throw new IllegalStateException("Unexpected value: " + spoonType);
@@ -246,29 +252,31 @@ public class SpoonAPIExtractor implements APIExtractor {
 	private FieldDecl convertSpoonFieldToFieldDeclaration(CtField<?> spoonField) {
 		String qualifiedName = spoonField.getDeclaringType().getQualifiedName() + "." + spoonField.getSimpleName();
 		AccessModifier visibility = convertVisibility(spoonField.getVisibility());
+		boolean isExported = isExported(spoonField);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonField.getModifiers());
 		String position = spoonField.getPosition().toString();
-		TypeReference containingType = makeTypeReference(spoonField.getDeclaringType().getReference());
-		TypeReference type = makeTypeReference(spoonField.getType());
+		TypeReference<TypeDecl> containingType = makeTypeReference(spoonField.getDeclaringType().getReference());
+		TypeReference<TypeDecl> type = makeTypeReference(spoonField.getType());
 
-		return new FieldDecl(qualifiedName, visibility, modifiers, position, containingType, type);
+		return new FieldDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, type);
 	}
 
 	// Converts a CtMethod to a Method declaration
 	private MethodDecl convertSpoonMethodToMethodDeclaration(CtMethod<?> spoonMethod) {
 		String qualifiedName = spoonMethod.getDeclaringType().getQualifiedName() + "." + spoonMethod.getSimpleName();
 		AccessModifier visibility = convertVisibility(spoonMethod.getVisibility());
+		boolean isExported = isExported(spoonMethod);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonMethod.getModifiers());
 		String position = spoonMethod.getPosition().toString();
-		TypeReference containingType = makeTypeReference(spoonMethod.getDeclaringType().getReference());
-		TypeReference returnType = makeTypeReference(spoonMethod.getType());
+		TypeReference<TypeDecl> containingType = makeTypeReference(spoonMethod.getDeclaringType().getReference());
+		TypeReference<TypeDecl> returnType = makeTypeReference(spoonMethod.getType());
 		List<ParameterDecl> parameters = spoonMethod.getParameters().stream()
 			.map(this::convertSpoonParameterToParameter)
 			.toList();
 
-		List<TypeReference> exceptions = spoonMethod.getThrownTypes()
+		List<TypeReference<ClassDecl>> exceptions = spoonMethod.getThrownTypes()
 			.stream()
-			.map(this::makeTypeReference)
+			.map(this::makeClassReference)
 			.toList();
 
 		List<FormalTypeParameter> formalTypeParameters = spoonMethod.getFormalCtTypeParameters().stream()
@@ -276,31 +284,32 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.toList();
 		boolean isDefault = spoonMethod.isDefaultMethod();
 
-		return new MethodDecl(qualifiedName, visibility, modifiers, position, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault);
+		return new MethodDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault);
 	}
 
 	// Converts a CtConstructor to a Constructor declaration
 	private ConstructorDecl convertSpoonConstructorToConstructorDeclaration(CtConstructor<?> spoonConstructor) {
 		String qualifiedName = spoonConstructor.getDeclaringType().getQualifiedName() + "." + spoonConstructor.getSimpleName();
 		AccessModifier visibility = convertVisibility(spoonConstructor.getVisibility());
+		boolean isExported = isExported(spoonConstructor);
 		List<Modifier> modifiers = convertNonAccessModifiers(spoonConstructor.getModifiers());
 		String position = spoonConstructor.getPosition().toString();
-		TypeReference containingType = makeTypeReference(spoonConstructor.getDeclaringType().getReference());
-		TypeReference returnType = makeTypeReference(spoonConstructor.getType());
+		TypeReference<TypeDecl> containingType = makeTypeReference(spoonConstructor.getDeclaringType().getReference());
+		TypeReference<TypeDecl> returnType = makeTypeReference(spoonConstructor.getType());
 		List<ParameterDecl> parameters = spoonConstructor.getParameters().stream()
 			.map(this::convertSpoonParameterToParameter)
 			.toList();
 
-		List<TypeReference> exceptions = spoonConstructor.getThrownTypes()
+		List<TypeReference<ClassDecl>> exceptions = spoonConstructor.getThrownTypes()
 			.stream()
-			.map(this::makeTypeReference)
+			.map(this::makeClassReference)
 			.toList();
 
 		List<FormalTypeParameter> formalTypeParameters = spoonConstructor.getFormalCtTypeParameters().stream()
 			.map(this::convertCtTypeParameter)
 			.toList();
 
-		return new ConstructorDecl(qualifiedName, visibility, modifiers, position, containingType, returnType, parameters, formalTypeParameters, exceptions);
+		return new ConstructorDecl(qualifiedName, visibility, isExported, modifiers, position, containingType, returnType, parameters, formalTypeParameters, exceptions);
 	}
 
 	private ParameterDecl convertSpoonParameterToParameter(CtParameter<?> parameter) {
@@ -314,11 +323,5 @@ public class SpoonAPIExtractor implements APIExtractor {
 				.map(this::makeTypeReference)
 				.toList()
 		);
-	}
-
-	private List<CtTypeReference<?>> getAllSuperclasses(CtTypeReference<?> type) {
-		if (type.getSuperclass() != null) {
-			return Stream.concat(Stream.of(type.getSuperclass()), getAllSuperclasses(type.getSuperclass()).stream()).toList();
-		} else return Collections.emptyList();
 	}
 }

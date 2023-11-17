@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.changes;
+package com.github.maracas.roseau.diff.changes;
 
 /**
  * Enumerates the three possible natures of a breaking change: ADDITION, MUTATION, and DELETION.

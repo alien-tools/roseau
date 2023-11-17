@@ -1,20 +1,21 @@
 package com.github.maracas.roseau.visit;
 
-import com.github.maracas.roseau.model.API;
-import com.github.maracas.roseau.model.AccessModifier;
-import com.github.maracas.roseau.model.AnnotationDecl;
-import com.github.maracas.roseau.model.ClassDecl;
-import com.github.maracas.roseau.model.ConstructorDecl;
-import com.github.maracas.roseau.model.EnumDecl;
-import com.github.maracas.roseau.model.FieldDecl;
-import com.github.maracas.roseau.model.FormalTypeParameter;
-import com.github.maracas.roseau.model.InterfaceDecl;
-import com.github.maracas.roseau.model.MethodDecl;
-import com.github.maracas.roseau.model.Modifier;
-import com.github.maracas.roseau.model.ParameterDecl;
-import com.github.maracas.roseau.model.RecordDecl;
-import com.github.maracas.roseau.model.Symbol;
-import com.github.maracas.roseau.model.TypeReference;
+import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.AccessModifier;
+import com.github.maracas.roseau.api.model.AnnotationDecl;
+import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.ConstructorDecl;
+import com.github.maracas.roseau.api.model.EnumDecl;
+import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
+import com.github.maracas.roseau.api.model.InterfaceDecl;
+import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.Modifier;
+import com.github.maracas.roseau.api.model.ParameterDecl;
+import com.github.maracas.roseau.api.model.RecordDecl;
+import com.github.maracas.roseau.api.model.Symbol;
+import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.TypeReference;
 
 public interface APIAlgebra<T> {
 	T api(API it);
@@ -28,7 +29,9 @@ public interface APIAlgebra<T> {
 	T fieldDecl(FieldDecl it);
 	T parameterDecl(ParameterDecl it);
 	T formalTypeParameter(FormalTypeParameter it);
-	T typeReference(TypeReference it);
+	T typeReference(TypeReference<TypeDecl> it);
+	T classReference(TypeReference<ClassDecl> it);
+	T interfaceReference(TypeReference<InterfaceDecl> it);
 	T accessModifier(AccessModifier it);
 	T modifier(Modifier it);
 
@@ -57,8 +60,17 @@ public interface APIAlgebra<T> {
 		return formalTypeParameter(it);
 	}
 
-	default T $(TypeReference it) {
+	// FIXME
+	default T type$Reference(TypeReference<TypeDecl> it) {
 		return typeReference(it);
+	}
+
+	default T class$Reference(TypeReference<ClassDecl> it) {
+		return classReference(it);
+	}
+
+	default T interface$Reference(TypeReference<InterfaceDecl> it) {
+		return interfaceReference(it);
 	}
 
 	default T $(AccessModifier it) {

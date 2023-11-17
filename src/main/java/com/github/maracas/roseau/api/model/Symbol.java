@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.model;
+package com.github.maracas.roseau.api.model;
 
 import java.util.List;
 
@@ -21,6 +21,11 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 	protected final AccessModifier visibility;
 
 	/**
+	 * Is the symbol accessible/exported?
+	 */
+	protected final boolean isExported;
+
+	/**
 	 * List of non-access modifiers applied to the symbol.
 	 */
 	protected final List<Modifier> modifiers;
@@ -30,11 +35,12 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 	 */
 	protected final String position;
 
-	protected final TypeReference containingType;
+	protected final TypeReference<TypeDecl> containingType;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, String position, TypeReference containingType) {
+	protected Symbol(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, String position, TypeReference<TypeDecl> containingType) {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
+		this.isExported = isExported;
 		this.modifiers = modifiers;
 		this.position = position;
 		this.containingType = containingType;
@@ -59,6 +65,15 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 	}
 
 	/**
+	 * Checks whether the symbol is accessible/exported
+	 *
+	 * @return exported or not
+	 */
+	public boolean isExported() {
+		return isExported;
+	}
+
+	/**
 	 * Retrieves the list of non-access modifiers applied to the symbol.
 	 *
 	 * @return The symbol's non-access modifiers
@@ -76,7 +91,7 @@ public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl 
 		return position;
 	}
 
-	public TypeReference getContainingType() {
+	public TypeReference<TypeDecl> getContainingType() {
 		return containingType;
 	}
 }
