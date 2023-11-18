@@ -12,9 +12,12 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	private final boolean isDefault;
 
-	public MethodDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions, boolean isDefault) {
+	private final boolean isAbstract;
+
+	public MethodDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions, boolean isDefault, boolean isAbstract) {
 		super(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
 		this.isDefault = isDefault;
+		this.isAbstract = isAbstract;
 	}
 
 	/**
@@ -24,6 +27,10 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	public boolean isDefault() {
 		return isDefault;
+	}
+
+	public boolean isAbstract() {
+		return isAbstract;
 	}
 
 	/**

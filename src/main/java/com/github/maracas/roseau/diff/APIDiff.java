@@ -54,75 +54,128 @@ public class APIDiff {
 		this.breakingChanges = new ArrayList<>();
 	}
 	
-	public void bc(BreakingChangeKind kind, Symbol impactedSymbol) {
-		breakingChanges.add(new BreakingChange(kind, impactedSymbol));
-	}
-
 	public List<BreakingChange> diff() {
 		v1.getExportedTypes().forEach(t1 -> {
-			Optional<TypeDecl> t2 = v2.getExportedType(t1.getQualifiedName());
+			Optional<TypeDecl> findT2 = v2.getExportedType(t1.getQualifiedName());
 
-			// Type has been removed
-			if (t2.isEmpty()) {
-				if (t1.isClass())
-					bc(BreakingChangeKind.CLASS_REMOVED, t1);
+			findT2.ifPresentOrElse(
+				// There is a matching type
+				t2 -> {
+					diffType(t1, t2);
+					diffFields(t1, t2);
+					diffMethods(t1, t2);
+					diffAddedMethods(t1, t2);
 
-				if (t1.isInterface())
-					bc(BreakingChangeKind.INTERFACE_REMOVED, t1);
-			}
-			// There is a matching type
-			else {
-				diffTypes(t1, t2.get());
-			}
+					if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2)
+						diffConstructors(c1, c2);
+				},
+				// Type has been removed
+				() -> bc(t1.isClass() ? BreakingChangeKind.CLASS_REMOVED : BreakingChangeKind.INTERFACE_REMOVED, t1)
+			);
 		});
 
 		return breakingChanges;
 	}
 
-	private void diffTypes(TypeDecl type1, TypeDecl type2) {
-		if (type1.isClass()) {
-			if (!type1.getModifiers().contains(Modifier.FINAL) && type2.getModifiers().contains(Modifier.FINAL))
-				bc(BreakingChangeKind.CLASS_NOW_FINAL, type2);
+	private void diffFields(TypeDecl t1, TypeDecl t2) {
+		t1.getFields().forEach(f1 -> {
+			Optional<FieldDecl> findF2 = t2.getField(f1.getQualifiedName());
 
-			if (!type1.getModifiers().contains(Modifier.ABSTRACT) && type2.getModifiers().contains(Modifier.ABSTRACT))
-				bc(BreakingChangeKind.CLASS_NOW_ABSTRACT, type2);
+			findF2.ifPresentOrElse(
+				// There is a matching field
+				f2 -> diffField(f1, f2),
+				// The field has been removed
+				() -> bc(BreakingChangeKind.FIELD_REMOVED, f1)
+			);
+		});
+	}
 
-			if (!type1.getModifiers().contains(Modifier.STATIC) && type2.getModifiers().contains(Modifier.STATIC) && type1.isNested() && type2.isNested())
-				bc(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, type2);
+	private void diffMethods(TypeDecl t1, TypeDecl t2) {
+		t1.getMethods().forEach(m1 -> {
+			Optional<MethodDecl> matchM2 = t2.getMethods().stream()
+				.filter(m -> m.hasSameSignature(m1))
+				.findFirst();
 
-			if (type1.getModifiers().contains(Modifier.STATIC) && !type2.getModifiers().contains(Modifier.STATIC) && type1.isNested() && type2.isNested())
-				bc(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, type2);
+			matchM2.ifPresentOrElse(
+				// There is a matching method
+				m2 -> diffMethod(t1, t2, m1, m2),
+				// The method has been removed
+				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1)
+			);
+		});
+	}
 
-			if (!type1.isCheckedException() && type2.isCheckedException())
-				bc(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, type2);
+	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
+		c1.getConstructors().forEach(cons1 -> {
+			Optional<ConstructorDecl> matchCons2 = c2.getConstructors().stream()
+				.filter(cons -> cons.hasSameSignature(cons1))
+				.findFirst();
+
+			matchCons2.ifPresentOrElse(
+				// There is a matching constructor
+				cons2 -> diffConstructor(cons1, cons2),
+				// The constructor has been removed
+				() -> bc(BreakingChangeKind.CONSTRUCTOR_REMOVED, cons1)
+			);
+		});
+	}
+
+	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
+		t2.getMethods().stream()
+			.filter(m2 -> t1.getMethods().stream().noneMatch(m1 -> m1.hasSameSignature(m2)))
+			.forEach(m2 -> {
+				if (t2.isInterface() && !m2.isDefault())
+					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1);
+
+				if (t2.isClass() && m2.isAbstract())
+					bc(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1);
+			});
+	}
+
+	private void diffType(TypeDecl t1, TypeDecl t2) {
+		if (t1.isClass()) {
+			if (!t1.getModifiers().contains(Modifier.FINAL) && t2.getModifiers().contains(Modifier.FINAL))
+				bc(BreakingChangeKind.CLASS_NOW_FINAL, t1);
+
+			if (!t1.getModifiers().contains(Modifier.ABSTRACT) && t2.getModifiers().contains(Modifier.ABSTRACT))
+				bc(BreakingChangeKind.CLASS_NOW_ABSTRACT, t1);
+
+			if (!t1.getModifiers().contains(Modifier.STATIC) && t2.getModifiers().contains(Modifier.STATIC) && t1.isNested() && t2.isNested())
+				bc(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, t1);
+
+			if (t1.getModifiers().contains(Modifier.STATIC) && !t2.getModifiers().contains(Modifier.STATIC) && t1.isNested() && t2.isNested())
+				bc(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, t1);
+
+			if (!t1.isCheckedException() && t2.isCheckedException())
+				bc(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, t1);
 		}
 
-		if (type1.getVisibility().equals(AccessModifier.PUBLIC) && type2.getVisibility().equals(AccessModifier.PROTECTED))
-			bc(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, type2);
+		if (t1.getVisibility().equals(AccessModifier.PUBLIC) && t2.getVisibility().equals(AccessModifier.PROTECTED))
+			bc(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, t1);
 
-		if (type1 instanceof ClassDecl cls1 && type2 instanceof ClassDecl cls2) {
+		if (t1 instanceof ClassDecl cls1 && t2 instanceof ClassDecl cls2) {
 			if (cls1.getSuperClass() != null && cls2.getSuperClass() == null)
-				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2);
+				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 
 			// Check for deleted super-interfaces
-			if (type1.getSuperInterfaces().stream()
-				.anyMatch(intf1 -> type2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
-					bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2);
+			if (t1.getSuperInterfaces().stream()
+				.anyMatch(intf1 -> t2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
+				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 		}
 
-		if (type1.isInterface() && type1.getSuperInterfaces().stream()
-			.anyMatch(intf1 -> type2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
-				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, type2);
+		if (t1.isInterface() && t1.getSuperInterfaces().stream()
+			.anyMatch(intf1 -> t2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
+			bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 
-		if (!type1.getClass().equals(type2.getClass()))
-			bc(BreakingChangeKind.CLASS_TYPE_CHANGED, type2);
+		if (!t1.getClass().equals(t2.getClass()))
+			bc(BreakingChangeKind.CLASS_TYPE_CHANGED, t1);
 
-		int formalParametersCount1 = type1.getFormalTypeParameters().size();
-		int formalParametersCount2 = type2.getFormalTypeParameters().size();
+		int formalParametersCount1 = t1.getFormalTypeParameters().size();
+		int formalParametersCount2 = t2.getFormalTypeParameters().size();
 		if (formalParametersCount1 == formalParametersCount2) {
 			for (int i = 0; i < formalParametersCount1; i++) {
-				FormalTypeParameter p1 = type1.getFormalTypeParameters().get(i);
-				FormalTypeParameter p2 = type2.getFormalTypeParameters().get(i);
+				FormalTypeParameter p1 = t1.getFormalTypeParameters().get(i);
+				FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
 
 				List<String> bounds1 = p1.bounds().stream()
 					.map(TypeReference::getQualifiedName)
@@ -133,137 +186,75 @@ public class APIDiff {
 
 				if (bounds1.size() != bounds2.size()
 					|| !(new HashSet<>(bounds1)).equals(new HashSet<>(bounds2))) {
-					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, type2);
+					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
 				}
 			}
 		} else if (formalParametersCount1 < formalParametersCount2) {
-			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, type2);
+			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1);
 		} else {
-			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, type2);
-		}
-
-		// Diffing fields
-		type1.getFields().forEach(f1 -> {
-			Optional<FieldDecl> f2 = type2.getField(f1.getQualifiedName());
-
-			// The field has been removed
-			if (f2.isEmpty()) {
-				bc(BreakingChangeKind.FIELD_REMOVED, f1);
-			}
-			// There is a matching field
-			else {
-				diffFields(f1, f2.get());
-			}
-		});
-
-		// Diffing methods
-		type1.getMethods().forEach(m1 -> {
-			Optional<MethodDecl> m2 = type2.getMethods().stream()
-				.filter(m -> m.hasSameSignature(m1))
-				.findFirst();
-
-			// The method has been removed
-			if (m2.isEmpty()) {
-				bc(BreakingChangeKind.METHOD_REMOVED, m1);
-			}
-			// There is a matching method
-			else {
-				diffMethods(type1, type2, m1, m2.get());
-			}
-		});
-
-		// Checking added methods
-		type2.getMethods().stream()
-			.filter(method2 -> type1.getMethods().stream()
-				.noneMatch(method1 -> method1.hasSameSignature(method2)))
-			.forEach(m2 -> {
-				if (type2.isInterface() && !m2.isDefault())
-					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, m2);
-
-				if (type2.isClass() && m2.getModifiers().contains(Modifier.ABSTRACT))
-					bc(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, m2);
-			});
-
-		// Diffing constructors
-		if (type1 instanceof ClassDecl c1 && type2 instanceof ClassDecl c2) {
-			c1.getConstructors().forEach(cons1 -> {
-				Optional<ConstructorDecl> cons2 = c2.getConstructors().stream()
-					.filter(cons -> cons.hasSameSignature(cons1))
-					.findFirst();
-
-				// The constructor has been removed
-				if (cons2.isEmpty()) {
-					bc(BreakingChangeKind.CONSTRUCTOR_REMOVED, cons1);
-				}
-				// There is a matching constructor
-				else {
-					diffConstructors(cons1, cons2.get());
-				}
-			});
+			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, t1);
 		}
 	}
 
-	private void diffFields(FieldDecl field1, FieldDecl field2) {
-		if (!field1.getModifiers().contains(Modifier.FINAL) && field2.getModifiers().contains(Modifier.FINAL))
-			bc(BreakingChangeKind.FIELD_NOW_FINAL, field2);
+	private void diffField(FieldDecl f1, FieldDecl f2) {
+		if (!f1.getModifiers().contains(Modifier.FINAL) && f2.getModifiers().contains(Modifier.FINAL))
+			bc(BreakingChangeKind.FIELD_NOW_FINAL, f1);
 
-		if (!field1.getModifiers().contains(Modifier.STATIC) && field2.getModifiers().contains(Modifier.STATIC))
-			bc(BreakingChangeKind.FIELD_NOW_STATIC, field2);
+		if (!f1.getModifiers().contains(Modifier.STATIC) && f2.getModifiers().contains(Modifier.STATIC))
+			bc(BreakingChangeKind.FIELD_NOW_STATIC, f1);
 
-		if (field1.getModifiers().contains(Modifier.STATIC) && !field2.getModifiers().contains(Modifier.STATIC))
-			bc(BreakingChangeKind.FIELD_NO_LONGER_STATIC, field2);
+		if (f1.getModifiers().contains(Modifier.STATIC) && !f2.getModifiers().contains(Modifier.STATIC))
+			bc(BreakingChangeKind.FIELD_NO_LONGER_STATIC, f1);
 
-		if (!field1.getType().equals(field2.getType()))
-			bc(BreakingChangeKind.FIELD_TYPE_CHANGED, field2);
+		if (!f1.getType().equals(f2.getType()))
+			bc(BreakingChangeKind.FIELD_TYPE_CHANGED, f1);
 
-		if (field1.getVisibility().equals(AccessModifier.PUBLIC) && field2.getVisibility().equals(AccessModifier.PROTECTED))
-			bc(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, field2);
+		if (f1.getVisibility().equals(AccessModifier.PUBLIC) && f2.getVisibility().equals(AccessModifier.PROTECTED))
+			bc(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, f1);
 	}
 
-	private void diffMethods(TypeDecl type1, TypeDecl type2, MethodDecl method1, MethodDecl method2) {
-		if (!method1.getModifiers().contains(Modifier.FINAL) && method2.getModifiers().contains(Modifier.FINAL))
-			bc(BreakingChangeKind.METHOD_NOW_FINAL, method2);
+	private void diffMethod(TypeDecl t1, TypeDecl t2, MethodDecl m1, MethodDecl m2) {
+		if (!m1.getModifiers().contains(Modifier.FINAL) && m2.getModifiers().contains(Modifier.FINAL))
+			bc(BreakingChangeKind.METHOD_NOW_FINAL, m1);
 
-		if (!method1.getModifiers().contains(Modifier.STATIC) && method2.getModifiers().contains(Modifier.STATIC))
-			bc(BreakingChangeKind.METHOD_NOW_STATIC, method2);
+		if (!m1.getModifiers().contains(Modifier.STATIC) && m2.getModifiers().contains(Modifier.STATIC))
+			bc(BreakingChangeKind.METHOD_NOW_STATIC, m1);
 
-		if (!method1.getModifiers().contains(Modifier.NATIVE) && method2.getModifiers().contains(Modifier.NATIVE))
-			bc(BreakingChangeKind.METHOD_NOW_NATIVE, method2);
+		if (!m1.getModifiers().contains(Modifier.NATIVE) && m2.getModifiers().contains(Modifier.NATIVE))
+			bc(BreakingChangeKind.METHOD_NOW_NATIVE, m1);
 
+		if (m1.getModifiers().contains(Modifier.STATIC) && !m2.getModifiers().contains(Modifier.STATIC))
+			bc(BreakingChangeKind.METHOD_NO_LONGER_STATIC, m1);
 
-		if (method1.getModifiers().contains(Modifier.STATIC) && !method2.getModifiers().contains(Modifier.STATIC))
-			bc(BreakingChangeKind.METHOD_NO_LONGER_STATIC, method2);
+		if (m1.getModifiers().contains(Modifier.STRICTFP) && !m2.getModifiers().contains(Modifier.STRICTFP))
+			bc(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, m1);
 
+		if (!m1.getModifiers().contains(Modifier.ABSTRACT) && m2.getModifiers().contains(Modifier.ABSTRACT))
+			bc(BreakingChangeKind.METHOD_NOW_ABSTRACT, m1);
 
-		if (method1.getModifiers().contains(Modifier.STRICTFP) && !method2.getModifiers().contains(Modifier.STRICTFP))
-			bc(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, method2);
+		if (m1.getModifiers().contains(Modifier.ABSTRACT) && m2.isDefault()) // Careful
+			bc(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, m1);
 
-		if (!method1.getModifiers().contains(Modifier.ABSTRACT) && method2.getModifiers().contains(Modifier.ABSTRACT))
-			bc(BreakingChangeKind.METHOD_NOW_ABSTRACT, method2);
+		if (m1.getVisibility().equals(AccessModifier.PUBLIC) && m2.getVisibility().equals(AccessModifier.PROTECTED))
+			bc(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, m1);
 
-		if (method1.getModifiers().contains(Modifier.ABSTRACT) && method2.isDefault()) // Careful
-			bc(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, method2);
+		if (!m1.getReturnType().equals(m2.getReturnType()))
+			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1);
 
-		if (method1.getVisibility().equals(AccessModifier.PUBLIC) && method2.getVisibility().equals(AccessModifier.PROTECTED))
-			bc(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, method2);
-
-		if (!method1.getReturnType().equals(method2.getReturnType()))
-			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, method2);
-
-		List<TypeReference<ClassDecl>> additionalExceptions1 = method1.getThrownExceptions().stream()
+		List<TypeReference<ClassDecl>> additionalExceptions1 = m1.getThrownExceptions().stream()
 			.filter(TypeReference::isCheckedException)
-			.filter(e -> !method2.getThrownExceptions().contains(e))
+			.filter(e -> !m2.getThrownExceptions().contains(e))
 			.toList();
 
-		List<TypeReference<ClassDecl>> additionalExceptions2 = method2.getThrownExceptions().stream()
-			.filter(e -> !method1.getThrownExceptions().contains(e))
+		List<TypeReference<ClassDecl>> additionalExceptions2 = m2.getThrownExceptions().stream()
+			.filter(e -> !m1.getThrownExceptions().contains(e))
 			.toList();
 
 		if (!additionalExceptions1.isEmpty())
-			bc(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, method2);
+			bc(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, m1);
 
 		if (!additionalExceptions2.isEmpty())
-			bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, method2);
+			bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, m1);
 
 		// JLS says only one vararg per method, in last position
 		/*IntStream.range(0, method1.getParametersVarargsCheck().size())
@@ -276,21 +267,21 @@ public class APIDiff {
 
 		// Handling the formal type parameters additions and deletions
 		// In classes
-		if (type1.isClass()) {
-			if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size() && !method2.getFormalTypeParameters().isEmpty())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2);
+		if (t1.isClass()) {
+			if (m1.getFormalTypeParameters().size() > m2.getFormalTypeParameters().size() && !m2.getFormalTypeParameters().isEmpty())
+				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, m1);
 
-			if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size() && !method1.getFormalTypeParameters().isEmpty())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2);
+			if (m1.getFormalTypeParameters().size() < m2.getFormalTypeParameters().size() && !m1.getFormalTypeParameters().isEmpty())
+				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, m1);
 		}
 
 		// In interfaces
-		if (type1.isInterface()) {
-			if (method1.getFormalTypeParameters().size() > method2.getFormalTypeParameters().size())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, method2);
+		if (t1.isInterface()) {
+			if (m1.getFormalTypeParameters().size() > m2.getFormalTypeParameters().size())
+				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, m1);
 
-			if (method1.getFormalTypeParameters().size() < method2.getFormalTypeParameters().size() && !method1.getFormalTypeParameters().isEmpty())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, method2);
+			if (m1.getFormalTypeParameters().size() < m2.getFormalTypeParameters().size() && !m1.getFormalTypeParameters().isEmpty())
+				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, m1);
 		}
 
 
@@ -326,9 +317,9 @@ public class APIDiff {
 //		}
 	}
 
-	private void diffConstructors(ConstructorDecl constructor1, ConstructorDecl constructor2) {
-		if (constructor1.getVisibility().equals(AccessModifier.PUBLIC) && constructor2.getVisibility().equals(AccessModifier.PROTECTED))
-			bc(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, constructor2);
+	private void diffConstructor(ConstructorDecl cons1, ConstructorDecl cons2) {
+		if (cons1.getVisibility().equals(AccessModifier.PUBLIC) && cons2.getVisibility().equals(AccessModifier.PROTECTED))
+			bc(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, cons1);
 
 //		if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes()))
 //			bc(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getLocation(), BreakingChangeNature.MUTATION, constructor2));
@@ -360,6 +351,10 @@ public class APIDiff {
 //
 //		if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size() && !constructor1.getFormalTypeParameters().isEmpty())
 //			bc(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getLocation(), BreakingChangeNature.ADDITION, constructor2));
+	}
+
+	private void bc(BreakingChangeKind kind, Symbol impactedSymbol) {
+		breakingChanges.add(new BreakingChange(kind, impactedSymbol));
 	}
 
 	/**

@@ -298,8 +298,9 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.map(this::convertCtTypeParameter)
 			.toList();
 		boolean isDefault = spoonMethod.isDefaultMethod();
+		boolean isAbstract = spoonMethod.isAbstract();
 
-		return new MethodDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault);
+		return new MethodDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault, isAbstract);
 	}
 
 	// Converts a CtConstructor to a Constructor declaration
