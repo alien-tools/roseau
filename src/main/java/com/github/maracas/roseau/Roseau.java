@@ -60,6 +60,7 @@ public class Roseau {
 			System.out.println("API diff: " + sw.elapsed().toSeconds());
 
 			diff.breakingChangesReport();
+			System.out.println(bcs);
 		}
 	}
 

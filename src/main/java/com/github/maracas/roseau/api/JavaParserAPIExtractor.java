@@ -41,6 +41,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+/**
+ * Not fully implemented yet; half of the info isn't extracted
+ */
 public class JavaParserAPIExtractor implements APIExtractor {
 	private final Path sources;
 
