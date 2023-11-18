@@ -1,34 +1,17 @@
 package com.github.maracas.roseau.diff.changes;
 
-import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.Symbol;
 
 /**
  * Represents a breaking change identified during the comparison of APIs between the two library versions.
- * This class encapsulates information about the breaking change's kind, position, nature, and more.
+ * This class encapsulates information about the breaking change's kind and impacted symbol.
  *
  * @param kind            The kind of the breaking change.
- * @param position        The exact position of the breaking change.
- * @param nature          The nature of the breaking change ( Addition / deletion / mutation ).
  * @param impactedSymbol The element associated with the breaking change.
  */
 public record BreakingChange(
 	BreakingChangeKind kind,
-	SourceLocation location,
-	BreakingChangeNature nature,
 	Symbol impactedSymbol
 ) {
-	/**
-	 * Generates a string representation of the BreakingChange.
-	 *
-	 * @return A formatted string containing the breaking change's kind, type declaration,
-	 * position, nature, and associated element.
-	 */
-	@Override
-	public String toString() {
-		return "Breaking Change Kind: " + kind() + "\n" +
-			"Location: " + location() + "\n" +
-			"Nature: " + nature() + "\n" +
-			"Element: " + impactedSymbol().getQualifiedName() + "\n";
-	}
+
 }
