@@ -204,10 +204,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 			? SourceLocation.NO_LOCATION
 			: new SourceLocation(
 					position.getFile() != null ? position.getFile().toPath() : Path.of("<unknown>"),
-					position.getLine(),
-					position.getColumn(),
-					position.getEndLine(),
-					position.getEndColumn()
+					position.getLine()
 				);
 	}
 

@@ -18,7 +18,7 @@ class DiffTestUtils {
 		Optional<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
 				   kind == bc.kind()
-				&& line == bc.location().beginLine()
+				&& line == bc.location().line()
 				&& symbol.equals(bc.impactedSymbol().getQualifiedName())
 			)
 			.findFirst();
@@ -26,8 +26,7 @@ class DiffTestUtils {
 		if (matches.isEmpty()) {
 			String desc = "[%s, %s, %d]".formatted(symbol, kind, line);
 			String found = bcs.stream()
-				.filter(bc -> bc.location().beginLine() == line)
-				.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.location().beginLine()))
+				.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.location().line()))
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("No breaking change", desc, found);
 		}
@@ -36,7 +35,7 @@ class DiffTestUtils {
 	static void assertNoBC(List<BreakingChange> bcs) {
 		if (!bcs.isEmpty()) {
 			String found = bcs.stream()
-				.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.location().beginLine()))
+				.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.location().line()))
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 		}

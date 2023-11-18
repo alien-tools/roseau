@@ -4,10 +4,7 @@ import java.nio.file.Path;
 
 public record SourceLocation(
 	Path file,
-	int beginLine,
-	int beginColumn,
-	int endLine,
-	int endColumn
+	int line
 ) {
-	public final static SourceLocation NO_LOCATION = new SourceLocation(Path.of("<unknown>"), -1, -1, -1, -1);
+	public static final SourceLocation NO_LOCATION = new SourceLocation(Path.of("<unknown>"), -1);
 }
