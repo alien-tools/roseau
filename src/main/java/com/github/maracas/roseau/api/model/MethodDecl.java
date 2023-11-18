@@ -41,9 +41,6 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	@Override
 	public String toString() {
-		return """
-			Method %s [%s] [%s]
-			  Position: %s
-			""".formatted(qualifiedName, visibility, modifiers, location);
+		return "method %s [%s] [%s] (%s)".formatted(qualifiedName, visibility, returnType, location);
 	}
 }

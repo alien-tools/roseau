@@ -70,13 +70,36 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
-	@JsonIgnore
 	public boolean isCheckedException() {
 		return false;
 	}
 
 	@Override
-	@JsonIgnore
+	public boolean isStatic() {
+		return modifiers.contains(Modifier.STATIC);
+	}
+
+	@Override
+	public boolean isFinal() {
+		return modifiers.contains(Modifier.STATIC) || modifiers.contains(Modifier.SEALED);
+	}
+
+	@Override
+	public boolean isPublic() {
+		return visibility == AccessModifier.PUBLIC;
+	}
+
+	@Override
+	public boolean isProtected() {
+		return visibility == AccessModifier.PROTECTED;
+	}
+
+	@Override
+	public boolean isAbstract() {
+		return modifiers.contains(Modifier.ABSTRACT);
+	}
+
+	@Override
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
 			methods.stream(),

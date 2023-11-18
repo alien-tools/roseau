@@ -34,9 +34,6 @@ public final class FieldDecl extends TypeMemberDecl {
 	 */
 	@Override
 	public String toString() {
-		return """
-			Field %s [%s] [%s]
-			  Position: %s
-			""".formatted(qualifiedName, visibility, modifiers, location);
+		return "field %s [%s] [%s] (%s)".formatted(qualifiedName, visibility, type, location);
 	}
 }

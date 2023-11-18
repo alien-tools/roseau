@@ -62,11 +62,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public String toString() {
 		return """
-			Class %s [%s] [%s]
-				Containing type: %s
-			  Position: %s
-			  Fields: %s
-			  Methods: %s
-			""".formatted(qualifiedName, visibility, modifiers, containingType, location, fields, methods);
+			class %s [%s] (%s)
+			  %s
+			  %s
+			""".formatted(qualifiedName, visibility, containingType, fields, methods);
 	}
 }

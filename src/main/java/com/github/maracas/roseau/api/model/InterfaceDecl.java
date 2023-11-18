@@ -15,11 +15,9 @@ public final class InterfaceDecl extends TypeDecl {
 	@Override
 	public String toString() {
 		return """
-			Interface %s [%s] [%s]
-				Containing type: %s
-			  Position: %s
-			  Fields: %s
-			  Methods: %s
-			""".formatted(qualifiedName, visibility, modifiers, containingType, location, fields, methods);
+			interface %s [%s] (%s)
+			  %s
+			  %s
+			""".formatted(qualifiedName, visibility, location, fields, methods);
 	}
 }

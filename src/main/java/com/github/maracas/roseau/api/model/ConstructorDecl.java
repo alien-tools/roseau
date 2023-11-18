@@ -19,9 +19,6 @@ public final class ConstructorDecl extends ExecutableDecl {
 	 */
 	@Override
 	public String toString() {
-		return """
-			Constructor %s [%s] [%s]
-			  Position: %s
-			""".formatted(qualifiedName, visibility, modifiers, location);
+		return "constructor %s [%s] (%s)".formatted(qualifiedName, visibility, location);
 	}
 }

@@ -1,13 +1,11 @@
 package com.github.maracas.roseau.diff;
 
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.AccessModifier;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.Modifier;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
@@ -134,23 +132,23 @@ public class APIDiff {
 
 	private void diffType(TypeDecl t1, TypeDecl t2) {
 		if (t1.isClass()) {
-			if (!t1.getModifiers().contains(Modifier.FINAL) && t2.getModifiers().contains(Modifier.FINAL))
+			if (!t1.isFinal() && t2.isFinal())
 				bc(BreakingChangeKind.CLASS_NOW_FINAL, t1);
 
-			if (!t1.getModifiers().contains(Modifier.ABSTRACT) && t2.getModifiers().contains(Modifier.ABSTRACT))
+			if (!t1.isAbstract() && t2.isAbstract())
 				bc(BreakingChangeKind.CLASS_NOW_ABSTRACT, t1);
 
-			if (!t1.getModifiers().contains(Modifier.STATIC) && t2.getModifiers().contains(Modifier.STATIC) && t1.isNested() && t2.isNested())
+			if (!t1.isStatic() && t2.isStatic() && t1.isNested() && t2.isNested())
 				bc(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, t1);
 
-			if (t1.getModifiers().contains(Modifier.STATIC) && !t2.getModifiers().contains(Modifier.STATIC) && t1.isNested() && t2.isNested())
+			if (t1.isStatic() && !t2.isStatic() && t1.isNested() && t2.isNested())
 				bc(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, t1);
 
 			if (!t1.isCheckedException() && t2.isCheckedException())
 				bc(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, t1);
 		}
 
-		if (t1.getVisibility().equals(AccessModifier.PUBLIC) && t2.getVisibility().equals(AccessModifier.PROTECTED))
+		if (t1.isPublic() && t2.isProtected())
 			bc(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, t1);
 
 		if (t1 instanceof ClassDecl cls1 && t2 instanceof ClassDecl cls2) {
@@ -197,45 +195,45 @@ public class APIDiff {
 	}
 
 	private void diffField(FieldDecl f1, FieldDecl f2) {
-		if (!f1.getModifiers().contains(Modifier.FINAL) && f2.getModifiers().contains(Modifier.FINAL))
+		if (!f1.isFinal() && f2.isFinal())
 			bc(BreakingChangeKind.FIELD_NOW_FINAL, f1);
 
-		if (!f1.getModifiers().contains(Modifier.STATIC) && f2.getModifiers().contains(Modifier.STATIC))
+		if (!f1.isStatic() && f2.isStatic())
 			bc(BreakingChangeKind.FIELD_NOW_STATIC, f1);
 
-		if (f1.getModifiers().contains(Modifier.STATIC) && !f2.getModifiers().contains(Modifier.STATIC))
+		if (f1.isStatic() && !f2.isStatic())
 			bc(BreakingChangeKind.FIELD_NO_LONGER_STATIC, f1);
 
 		if (!f1.getType().equals(f2.getType()))
 			bc(BreakingChangeKind.FIELD_TYPE_CHANGED, f1);
 
-		if (f1.getVisibility().equals(AccessModifier.PUBLIC) && f2.getVisibility().equals(AccessModifier.PROTECTED))
+		if (f1.isPublic() && f2.isProtected())
 			bc(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, f1);
 	}
 
 	private void diffMethod(TypeDecl t1, TypeDecl t2, MethodDecl m1, MethodDecl m2) {
-		if (!m1.getModifiers().contains(Modifier.FINAL) && m2.getModifiers().contains(Modifier.FINAL))
+		if (!m1.isFinal() && m2.isFinal())
 			bc(BreakingChangeKind.METHOD_NOW_FINAL, m1);
 
-		if (!m1.getModifiers().contains(Modifier.STATIC) && m2.getModifiers().contains(Modifier.STATIC))
+		if (!m1.isStatic() && m2.isStatic())
 			bc(BreakingChangeKind.METHOD_NOW_STATIC, m1);
 
-		if (!m1.getModifiers().contains(Modifier.NATIVE) && m2.getModifiers().contains(Modifier.NATIVE))
+		if (!m1.isNative() && m2.isNative())
 			bc(BreakingChangeKind.METHOD_NOW_NATIVE, m1);
 
-		if (m1.getModifiers().contains(Modifier.STATIC) && !m2.getModifiers().contains(Modifier.STATIC))
+		if (m1.isStatic() && !m2.isStatic())
 			bc(BreakingChangeKind.METHOD_NO_LONGER_STATIC, m1);
 
-		if (m1.getModifiers().contains(Modifier.STRICTFP) && !m2.getModifiers().contains(Modifier.STRICTFP))
+		if (m1.isStrictFp() && !m2.isStrictFp())
 			bc(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, m1);
 
-		if (!m1.getModifiers().contains(Modifier.ABSTRACT) && m2.getModifiers().contains(Modifier.ABSTRACT))
+		if (!m1.isAbstract() && m2.isAbstract())
 			bc(BreakingChangeKind.METHOD_NOW_ABSTRACT, m1);
 
-		if (m1.getModifiers().contains(Modifier.ABSTRACT) && m2.isDefault()) // Careful
+		if (m1.isAbstract() && m2.isDefault()) // Careful
 			bc(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, m1);
 
-		if (m1.getVisibility().equals(AccessModifier.PUBLIC) && m2.getVisibility().equals(AccessModifier.PROTECTED))
+		if (m1.isPublic() && m2.isProtected())
 			bc(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, m1);
 
 		if (!m1.getReturnType().equals(m2.getReturnType()))
@@ -318,7 +316,7 @@ public class APIDiff {
 	}
 
 	private void diffConstructor(ConstructorDecl cons1, ConstructorDecl cons2) {
-		if (cons1.getVisibility().equals(AccessModifier.PUBLIC) && cons2.getVisibility().equals(AccessModifier.PROTECTED))
+		if (cons1.isPublic() && cons2.isProtected())
 			bc(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, cons1);
 
 //		if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes()))

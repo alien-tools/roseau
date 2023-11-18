@@ -16,11 +16,9 @@ public final class AnnotationDecl extends TypeDecl {
 	@Override
 	public String toString() {
 		return """
-			Annotation %s [%s] [%s]
-				Containing type: %s
-			  Position: %s
-			  Fields: %s
-			  Methods: %s
-			""".formatted(qualifiedName, visibility, modifiers, containingType, location, fields, methods);
+			annotation %s [%s] (%s)
+			  %s
+			  %s
+			""".formatted(qualifiedName, visibility, location, fields, methods);
 	}
 }
