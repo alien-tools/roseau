@@ -9,6 +9,7 @@ import com.github.maracas.roseau.visit.Visit;
 import java.util.HashMap;
 import java.util.Map;
 
+// FIXME: Handle references to primitive types and the JDK
 public class TypeResolver extends AbstractAPIVisitor {
 	private final API api;
 	private final Map<String, TypeDecl> resolved;

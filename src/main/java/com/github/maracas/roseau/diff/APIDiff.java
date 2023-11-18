@@ -96,7 +96,7 @@ public class APIDiff {
 
 			matchM2.ifPresentOrElse(
 				// There is a matching method
-				m2 -> diffMethod(t1, t2, m1, m2),
+				m2 -> diffMethod(t1, m1, m2),
 				// The method has been removed
 				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1)
 			);
@@ -211,7 +211,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, f1);
 	}
 
-	private void diffMethod(TypeDecl t1, TypeDecl t2, MethodDecl m1, MethodDecl m2) {
+	private void diffMethod(TypeDecl t1, MethodDecl m1, MethodDecl m2) {
 		if (!m1.isFinal() && m2.isFinal())
 			bc(BreakingChangeKind.METHOD_NOW_FINAL, m1);
 
@@ -370,12 +370,12 @@ public class APIDiff {
 	 * position, associated element, and nature of each detected BC.
 	 */
 	public void breakingChangesReport() {
-		List<BreakingChange> breakingChanges = getBreakingChanges();
+		List<BreakingChange> bcs = getBreakingChanges();
 
 		try (FileWriter writer = new FileWriter("breaking_changes_report.csv")) {
 			writer.write("Kind,Element,Nature,Position\n");
 
-			for (BreakingChange breakingChange : breakingChanges) {
+			for (BreakingChange breakingChange : bcs) {
 				String kind = breakingChange.kind().toString();
 				String element = breakingChange.impactedSymbol().getQualifiedName();
 				String nature = breakingChange.kind().getNature().toString();

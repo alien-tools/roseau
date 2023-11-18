@@ -30,34 +30,8 @@ public final class API {
 		return types.values().stream().toList();
 	}
 
-	public List<ClassDecl> getAllClasses() {
-		return getAllTypes().stream()
-			.filter(ClassDecl.class::isInstance)
-			.map(ClassDecl.class::cast)
-			.toList();
-	}
-
-	public List<InterfaceDecl> getAllInterfaces() {
-		return getExportedTypes().stream()
-			.filter(InterfaceDecl.class::isInstance)
-			.map(InterfaceDecl.class::cast)
-			.toList();
-	}
-
 	public List<TypeDecl> getExportedTypes() {
 		return getAllTypes().stream()
-			.filter(Symbol::isExported)
-			.toList();
-	}
-
-	public List<ClassDecl> getExportedClasses() {
-		return getAllClasses().stream()
-			.filter(Symbol::isExported)
-			.toList();
-	}
-
-	public List<InterfaceDecl> getExportedInterfaces() {
-		return getAllInterfaces().stream()
 			.filter(Symbol::isExported)
 			.toList();
 	}
@@ -70,22 +44,6 @@ public final class API {
 
 	public Optional<TypeDecl> getType(String qualifiedName) {
 		return Optional.ofNullable(types.get(qualifiedName));
-	}
-
-	public Optional<ClassDecl> getClass(String qualifiedName) {
-		TypeDecl t = types.get(qualifiedName);
-
-		return t instanceof ClassDecl cls
-			? Optional.of(cls)
-			: Optional.empty();
-	}
-
-	public Optional<InterfaceDecl> getInterface(String qualifiedName) {
-		TypeDecl t = types.get(qualifiedName);
-
-		return t instanceof InterfaceDecl intf
-			? Optional.of(intf)
-			: Optional.empty();
 	}
 
 	public void writeJson(Path jsonFile) throws IOException {

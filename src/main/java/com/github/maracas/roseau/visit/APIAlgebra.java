@@ -1,16 +1,13 @@
 package com.github.maracas.roseau.visit;
 
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.AccessModifier;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
-import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.Modifier;
 import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.Symbol;
@@ -28,10 +25,7 @@ public interface APIAlgebra<T> {
 	T constructorDecl(ConstructorDecl it);
 	T fieldDecl(FieldDecl it);
 	T parameterDecl(ParameterDecl it);
-	T formalTypeParameter(FormalTypeParameter it);
 	<U extends TypeDecl> T typeReference(TypeReference<U> it);
-	T accessModifier(AccessModifier it);
-	T modifier(Modifier it);
 
 	default T $(API it) {
 		return api(it);
@@ -54,19 +48,7 @@ public interface APIAlgebra<T> {
 		return parameterDecl(it);
 	}
 
-	default T $(FormalTypeParameter it) {
-		return formalTypeParameter(it);
-	}
-
 	default <U extends TypeDecl> T $(TypeReference<U> it) {
 		return typeReference(it);
-	}
-
-	default T $(AccessModifier it) {
-		return accessModifier(it);
-	}
-
-	default T $(Modifier it) {
-		return modifier(it);
 	}
 }
