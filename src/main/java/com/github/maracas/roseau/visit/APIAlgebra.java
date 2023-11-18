@@ -29,9 +29,7 @@ public interface APIAlgebra<T> {
 	T fieldDecl(FieldDecl it);
 	T parameterDecl(ParameterDecl it);
 	T formalTypeParameter(FormalTypeParameter it);
-	T typeReference(TypeReference<TypeDecl> it);
-	T classReference(TypeReference<ClassDecl> it);
-	T interfaceReference(TypeReference<InterfaceDecl> it);
+	<U extends TypeDecl> T typeReference(TypeReference<U> it);
 	T accessModifier(AccessModifier it);
 	T modifier(Modifier it);
 
@@ -60,17 +58,8 @@ public interface APIAlgebra<T> {
 		return formalTypeParameter(it);
 	}
 
-	// FIXME
-	default T type$Reference(TypeReference<TypeDecl> it) {
+	default <U extends TypeDecl> T $(TypeReference<U> it) {
 		return typeReference(it);
-	}
-
-	default T class$Reference(TypeReference<ClassDecl> it) {
-		return classReference(it);
-	}
-
-	default T interface$Reference(TypeReference<InterfaceDecl> it) {
-		return interfaceReference(it);
 	}
 
 	default T $(AccessModifier it) {

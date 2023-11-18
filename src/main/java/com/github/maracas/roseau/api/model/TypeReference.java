@@ -70,6 +70,31 @@ public final class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
+	public boolean isStatic() {
+		return actualType != null && actualType.isStatic();
+	}
+
+	@Override
+	public boolean isFinal() {
+		return actualType != null && actualType.isFinal();
+	}
+
+	@Override
+	public boolean isPublic() {
+		return actualType != null && actualType.isPublic();
+	}
+
+	@Override
+	public boolean isProtected() {
+		return actualType != null && actualType.isProtected();
+	}
+
+	@Override
+	public boolean isAbstract() {
+		return actualType != null && actualType.isAbstract();
+	}
+
+	@Override
 	public List<MethodDecl> getAllMethods() {
 		return actualType != null
 			? actualType.getAllMethods()

@@ -28,7 +28,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {
 			typeDecl(it).visit();
 			if (it.getSuperClass() != null)
-				class$Reference(it.getSuperClass()).visit();
+				typeReference(it.getSuperClass()).visit();
 			it.getConstructors().forEach(c -> $(c).visit());
 		};
 	}
@@ -68,7 +68,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {
 			symbol(it).visit();
 			if (it.getType() != null)
-				type$Reference(it.getType()).visit();
+				typeReference(it.getType()).visit();
 		};
 	}
 
@@ -76,27 +76,17 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit parameterDecl(ParameterDecl it) {
 		return () -> {
 			if (it.type() != null)
-				type$Reference(it.type()).visit();
+				typeReference(it.type()).visit();
 		};
 	}
 
 	@Override
 	public Visit formalTypeParameter(FormalTypeParameter it) {
-		return () -> it.bounds().forEach(b -> type$Reference(b).visit());
+		return () -> it.bounds().forEach(b -> typeReference(b).visit());
 	}
 
 	@Override
-	public Visit typeReference(TypeReference<TypeDecl> it) {
-		return Visit.NOP;
-	}
-
-	@Override
-	public Visit classReference(TypeReference<ClassDecl> it) {
-		return Visit.NOP;
-	}
-
-	@Override
-	public Visit interfaceReference(TypeReference<InterfaceDecl> it) {
+	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
 		return Visit.NOP;
 	}
 
@@ -113,16 +103,15 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit symbol(Symbol it) {
 		return () -> {
 			$(it.getVisibility()).visit();
-			it.getModifiers().forEach(m -> $(m).visit());
 			if (it.getContainingType() != null)
-				type$Reference(it.getContainingType()).visit();
+				typeReference(it.getContainingType()).visit();
 		};
 	}
 
 	public Visit typeDecl(TypeDecl it) {
 		return () -> {
 			symbol(it).visit();
-			it.getSuperInterfaces().forEach(i -> interface$Reference(i).visit());
+			it.getSuperInterfaces().forEach(i -> typeReference(i).visit());
 			it.getFormalTypeParameters().forEach(p -> $(p).visit());
 			it.getFields().forEach(f -> $(f).visit());
 			it.getMethods().forEach(m -> $(m).visit());
@@ -133,10 +122,10 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {
 			symbol(it).visit();
 			if (it.getReturnType() != null)
-				type$Reference(it.getReturnType()).visit();
+				typeReference(it.getReturnType()).visit();
 			it.getParameters().forEach(p -> $(p).visit());
 			it.getFormalTypeParameters().forEach(p -> $(p).visit());
-			it.getThrownExceptions().forEach(e -> class$Reference(e).visit());
+			it.getThrownExceptions().forEach(e -> typeReference(e).visit());
 		};
 	}
 }
