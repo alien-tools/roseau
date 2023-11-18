@@ -2,7 +2,7 @@ package com.github.maracas.roseau.api.model;
 
 import java.util.List;
 
-public abstract sealed class ExecutableDecl extends Symbol permits MethodDecl, ConstructorDecl {
+public abstract sealed class ExecutableDecl extends TypeMemberDecl permits MethodDecl, ConstructorDecl {
 	/**
 	 * The return type of the executable.
 	 */

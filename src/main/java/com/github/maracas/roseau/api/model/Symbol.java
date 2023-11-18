@@ -9,7 +9,7 @@ import java.util.List;
  * It provides information about the symbol's qualified name, visibility, modifiers,
  * and position within the source code.
  */
-public abstract sealed class Symbol permits TypeDecl, ExecutableDecl, FieldDecl {
+public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
 	 * The name of the symbol.
 	 */

@@ -41,8 +41,6 @@ class ClassRemovedTest {
       package b;
       public class A {}""";
 
-		System.out.println(buildDiff(v1, v2));
-
 		assertBC("a.A", CLASS_REMOVED, 2, buildDiff(v1, v2));
 	}
 

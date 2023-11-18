@@ -27,10 +27,7 @@ public class TypeResolver extends AbstractAPIVisitor {
 				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
 				.findFirst();
 
-			resolved.ifPresentOrElse(
-				it::setActualType,
-				() -> {}
-			);
+			resolved.ifPresent(it::setActualType);
 		};
 	}
 
@@ -44,10 +41,7 @@ public class TypeResolver extends AbstractAPIVisitor {
 				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
 				.findFirst();
 
-			resolved.ifPresentOrElse(
-				it::setActualType,
-				() -> {}
-			);
+			resolved.ifPresent(it::setActualType);
 		};
 	}
 
@@ -61,10 +55,7 @@ public class TypeResolver extends AbstractAPIVisitor {
 				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
 				.findFirst();
 
-			resolved.ifPresentOrElse(
-				it::setActualType,
-				() -> {}
-			);
+			resolved.ifPresent(it::setActualType);
 		};
 	}
 }

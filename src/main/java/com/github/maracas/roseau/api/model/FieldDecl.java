@@ -6,7 +6,7 @@ import java.util.List;
  * Represents a field declaration in a Java type.
  * This class extends the {@link Symbol} class and contains information about the field's data type and the {@link TypeDecl} to which it belongs.
  */
-public final class FieldDecl extends Symbol {
+public final class FieldDecl extends TypeMemberDecl {
 	/**
 	 * The data type of the field (e.g., int, double, class types, interface types).
 	 */
