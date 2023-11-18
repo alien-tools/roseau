@@ -81,6 +81,8 @@ public class Roseau {
 		launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
 		// Ignore files with syntax/JLS violations and proceed
 		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
+		// Ignore comments
+		launcher.getEnvironment().setCommentEnabled(false);
 
 		return launcher;
 	}
