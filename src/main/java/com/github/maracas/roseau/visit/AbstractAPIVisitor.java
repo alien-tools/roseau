@@ -20,7 +20,7 @@ import com.github.maracas.roseau.api.model.TypeReference;
 
 public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit api(API it) {
-		return () -> it.types().forEach(t -> $(t).visit());
+		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}
 
 	@Override

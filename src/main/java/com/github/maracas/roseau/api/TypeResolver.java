@@ -8,13 +8,16 @@ import com.github.maracas.roseau.api.model.TypeReference;
 import com.github.maracas.roseau.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.visit.Visit;
 
-import java.util.Optional;
+import java.util.HashMap;
+import java.util.Map;
 
 public class TypeResolver extends AbstractAPIVisitor {
-	final API api;
+	private final API api;
+	private final Map<String, TypeDecl> resolved;
 
 	public TypeResolver(API api) {
 		this.api = api;
+		this.resolved = HashMap.newHashMap(api.getAllTypes().size());
 	}
 
 	@Override
@@ -23,11 +26,12 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (it.getActualType().isPresent())
 				return;
 
-			Optional<TypeDecl> resolved = api.getAllTypes().stream()
-				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
-				.findFirst();
+			// compute/putIfAbsent do not work with null values
+			String toResolve = it.getQualifiedName();
+			if (!resolved.containsKey(toResolve))
+				resolved.put(toResolve, api.getType(toResolve).orElse(null));
 
-			resolved.ifPresent(it::setActualType);
+			it.setActualType(resolved.get(toResolve));
 		};
 	}
 
@@ -37,11 +41,13 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (it.getActualType().isPresent())
 				return;
 
-			Optional<ClassDecl> resolved = api.getExportedClasses().stream()
-				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
-				.findFirst();
+			// compute/putIfAbsent do not work with null values
+			String toResolve = it.getQualifiedName();
+			if (!resolved.containsKey(toResolve))
+				resolved.put(toResolve, api.getClass(toResolve).orElse(null));
 
-			resolved.ifPresent(it::setActualType);
+			if (resolved.get(toResolve) instanceof ClassDecl cls)
+				it.setActualType(cls);
 		};
 	}
 
@@ -51,11 +57,13 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (it.getActualType().isPresent())
 				return;
 
-			Optional<InterfaceDecl> resolved = api.getExportedInterfaces().stream()
-				.filter(t -> t.getQualifiedName().equals(it.getQualifiedName()))
-				.findFirst();
+			// compute/putIfAbsent do not work with null values
+			String toResolve = it.getQualifiedName();
+			if (!resolved.containsKey(toResolve))
+				resolved.put(toResolve, api.getInterface(toResolve).orElse(null));
 
-			resolved.ifPresent(it::setActualType);
+			if (resolved.get(toResolve) instanceof InterfaceDecl intf)
+				it.setActualType(intf);
 		};
 	}
 }

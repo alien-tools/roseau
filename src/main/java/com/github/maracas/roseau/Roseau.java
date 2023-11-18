@@ -4,8 +4,10 @@ import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
+import com.google.common.base.Stopwatch;
 import spoon.Launcher;
 import spoon.MavenLauncher;
+import spoon.reflect.CtModel;
 
 import java.io.FileWriter;
 import java.io.IOException;
@@ -21,50 +23,43 @@ public class Roseau {
 		try (FileWriter writer = new FileWriter("durations_report.csv")) {
 			writer.write("Task,Duration\n");
 
-			String path1 = args[0];
-			String path2 = args[1];
+			Stopwatch sw = Stopwatch.createStarted();
 
-			Path v1 = Path.of(path1);
-			Launcher launcher1 = launcherFor(v1);
-			Path v2 = Path.of(path2);
-			Launcher launcher2 = launcherFor(v2);
+			// Spoon parsing
+			Launcher launcher1 = launcherFor(Path.of(args[0]));
+			Launcher launcher2 = launcherFor(Path.of(args[1]));
+			CtModel m1 = launcher1.buildModel();
+			CtModel m2 = launcher2.buildModel();
 
-			long startTime = System.nanoTime();
+			writer.write("Spoon model building," + sw.elapsed().toMillis() + "\n");
+			System.out.println("Spoon model building: " + sw.elapsed().toSeconds());
+			sw.reset(); sw.start();
 
-			SpoonAPIExtractor extractor1 = new SpoonAPIExtractor(launcher1.buildModel());
-			SpoonAPIExtractor extractor2 = new SpoonAPIExtractor(launcher2.buildModel());
-
-			long endTime = System.nanoTime();
-			long duration = (endTime - startTime) / 1000000;
-			writer.write("Spoon model building" + "," + duration + "\n");
-
-			System.out.println(" Spoon model building : " + duration + "ms");
-
-			startTime = System.nanoTime();
-
+			// API extraction
+			SpoonAPIExtractor extractor1 = new SpoonAPIExtractor(m1);
+			SpoonAPIExtractor extractor2 = new SpoonAPIExtractor(m2);
 			API apiV1 = extractor1.extractAPI();
 			API apiV2 = extractor2.extractAPI();
 
-			System.out.println(apiV1);
+			writer.write("API extraction," + sw.elapsed().toMillis() + "\n");
+			System.out.println("API extraction: " + sw.elapsed().toSeconds());
+			sw.reset(); sw.start();
 
-			endTime = System.nanoTime();
-			duration = (endTime - startTime) / 1000000;
-			System.out.println(" API extraction : " + duration + "ms");
-			writer.write("API extraction" + "," + duration + "\n");
+			// API serialization
+			apiV1.writeJson(Path.of("api-v1.json"));
+			apiV1.writeJson(Path.of("api-v2.json"));
 
-			startTime = System.nanoTime();
+			System.out.println("API serialization: " + sw.elapsed().toSeconds());
+			sw.reset(); sw.start();
 
+			// API diff
 			APIDiff diff = new APIDiff(apiV1, apiV2);
-			List<BreakingChange> breakingChanges = diff.diff();
+			List<BreakingChange> bcs = diff.diff();
 
-			endTime = System.nanoTime();
-			duration = (endTime - startTime) / 1000000;
-			System.out.println(" DELTA model : " + duration + "ms");
-
-			writer.write("DELTA model" + "," + duration + "\n");
+			writer.write("DELTA model," + sw.elapsed().toMillis() + "\n");
+			System.out.println("API diff: " + sw.elapsed().toSeconds());
 
 			diff.breakingChangesReport();
-			System.out.println(diff);
 		}
 	}
 

@@ -67,7 +67,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 	public API extractAPI() {
 		List<TypeDecl> allTypes =
 			model.getAllPackages().stream()
-				.flatMap(p -> getAllTypes(p).stream().map(t -> convertCtType(t.getTypeDeclaration())))
+				.flatMap(p -> getAllTypes(p).stream().map(this::convertCtType))
 				.toList();
 
 		API api = new API(allTypes);
@@ -79,20 +79,20 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	// Returns all types within a package
-	private List<CtTypeReference<?>> getAllTypes(CtPackage pkg) {
+	private List<CtType<?>> getAllTypes(CtPackage pkg) {
 		return pkg.getTypes().stream()
 			.flatMap(type -> Stream.concat(
-				Stream.of(type.getReference()),
+				Stream.of(type),
 				getNestedTypes(type).stream()
 			))
 			.toList();
 	}
 
 	// Returns (recursively) nested types within a type
-	private List<CtTypeReference<?>> getNestedTypes(CtType<?> type) {
+	private List<CtType<?>> getNestedTypes(CtType<?> type) {
 		return type.getNestedTypes().stream()
 			.flatMap(nestedType -> Stream.concat(
-				Stream.of(nestedType.getReference()),
+				Stream.of(nestedType),
 				getNestedTypes(nestedType).stream()
 			))
 			.toList();
