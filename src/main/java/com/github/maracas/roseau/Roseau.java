@@ -7,13 +7,19 @@ import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.google.common.base.Stopwatch;
 import spoon.Launcher;
 import spoon.MavenLauncher;
+import spoon.SpoonException;
 import spoon.reflect.CtModel;
+import spoon.support.compiler.SpoonProgress;
 
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 /**
  * The `roseau` class is the main entry point of the project.
@@ -26,14 +32,13 @@ public class Roseau {
 			Stopwatch sw = Stopwatch.createStarted();
 
 			// Spoon parsing
-			Launcher launcher1 = launcherFor(Path.of(args[0]));
-			Launcher launcher2 = launcherFor(Path.of(args[1]));
-			CtModel m1 = launcher1.buildModel();
-			CtModel m2 = launcher2.buildModel();
+			CtModel m1 = buildModel(Path.of(args[0]), 3);
+			CtModel m2 = buildModel(Path.of(args[1]), 3);
 
 			writer.write("Spoon model building," + sw.elapsed().toMillis() + "\n");
 			System.out.println("Spoon model building: " + sw.elapsed().toSeconds());
-			sw.reset(); sw.start();
+			sw.reset();
+			sw.start();
 
 			// API extraction
 			SpoonAPIExtractor extractor1 = new SpoonAPIExtractor(m1);
@@ -43,14 +48,16 @@ public class Roseau {
 
 			writer.write("API extraction," + sw.elapsed().toMillis() + "\n");
 			System.out.println("API extraction: " + sw.elapsed().toSeconds());
-			sw.reset(); sw.start();
+			sw.reset();
+			sw.start();
 
 			// API serialization
 			apiV1.writeJson(Path.of("api-v1.json"));
 			apiV1.writeJson(Path.of("api-v2.json"));
 
 			System.out.println("API serialization: " + sw.elapsed().toSeconds());
-			sw.reset(); sw.start();
+			sw.reset();
+			sw.start();
 
 			// API diff
 			APIDiff diff = new APIDiff(apiV1, apiV2);
@@ -61,6 +68,23 @@ public class Roseau {
 
 			diff.breakingChangesReport();
 			System.out.println(bcs);
+		}
+	}
+
+	public static CtModel buildModel(Path location) {
+		return buildModel(location, Integer.MAX_VALUE);
+	}
+
+	public static CtModel buildModel(Path location, int timeoutSeconds) {
+		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(() -> {
+			Launcher launcher = launcherFor(location);
+			return launcher.buildModel();
+		});
+
+		try {
+			return future.get(timeoutSeconds, TimeUnit.SECONDS);
+		} catch (TimeoutException | InterruptedException | ExecutionException e) {
+			return null;
 		}
 	}
 
@@ -84,6 +108,23 @@ public class Roseau {
 		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
 		// Ignore comments
 		launcher.getEnvironment().setCommentEnabled(false);
+
+		// Interruptible launcher: this is dirty.
+		// Spoon's compiler does two lengthy things: compile units with JDTs,
+		// turn these units into Spoon's model. In both cases it iterates
+		// over many CUs and reports progress.
+		// A simple dirty way to make the process interruptible is to look for
+		// interruptions when Spoon reports progress and throw an unchecked
+		// exception. The method is called very often, so we're likely to
+		// react quickly to external interruptions.
+		launcher.getEnvironment().setSpoonProgress(new SpoonProgress() {
+			@Override
+			public void step(Process process, String task, int taskId, int nbTask) {
+				if (Thread.interrupted()) {
+					throw new SpoonException("Process interrupted");
+				}
+			}
+		});
 
 		return launcher;
 	}
