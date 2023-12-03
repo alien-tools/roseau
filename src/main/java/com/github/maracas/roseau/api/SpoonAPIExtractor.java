@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AccessModifier;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
+import com.github.maracas.roseau.api.model.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.EnumDecl;
@@ -15,7 +16,11 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.TypeParameterReference;
 import com.github.maracas.roseau.api.model.TypeReference;
+import spoon.Launcher;
+import spoon.MavenLauncher;
+import spoon.SpoonException;
 import spoon.reflect.CtModel;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotationType;
@@ -34,14 +39,22 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeMember;
 import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.reference.CtArrayTypeReference;
+import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.support.compiler.SpoonProgress;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.stream.Stream;
 
 /**
@@ -58,6 +71,64 @@ public class SpoonAPIExtractor implements APIExtractor {
 	 */
 	public SpoonAPIExtractor(CtModel model) {
 		this.model = Objects.requireNonNull(model);
+	}
+
+	public static CtModel buildModel(Path location) {
+		return buildModel(location, Integer.MAX_VALUE);
+	}
+
+	public static CtModel buildModel(Path location, int timeoutSeconds) {
+		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(() -> {
+			Launcher launcher = launcherFor(location);
+			return launcher.buildModel();
+		});
+
+		try {
+			return future.get(timeoutSeconds, TimeUnit.SECONDS);
+		} catch (TimeoutException | InterruptedException | ExecutionException e) {
+			return null;
+		}
+	}
+
+	public static Launcher launcherFor(Path location) {
+		Launcher launcher;
+
+		if (Files.exists(location.resolve("pom.xml"))) {
+			launcher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE, new String[0]);
+		} else {
+			launcher = new Launcher();
+			launcher.getEnvironment().setComplianceLevel(17);
+
+			launcher.addInputResource(location.toString());
+		}
+
+		// Ignore missing types/classpath related errors
+		launcher.getEnvironment().setNoClasspath(true);
+		// Proceed even if we find the same type twice; affects the precision of the result
+		launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
+		// Ignore files with syntax/JLS violations and proceed
+		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
+		// Ignore comments
+		launcher.getEnvironment().setCommentEnabled(false);
+
+		// Interruptible launcher: this is dirty.
+		// Spoon's compiler does two lengthy things: compile units with JDTs,
+		// turn these units into Spoon's model. In both cases it iterates
+		// over many CUs and reports progress.
+		// A simple dirty way to make the process interruptible is to look for
+		// interruptions when Spoon reports progress and throw an unchecked
+		// exception. The method is called very often, so we're likely to
+		// react quickly to external interruptions.
+		launcher.getEnvironment().setSpoonProgress(new SpoonProgress() {
+			@Override
+			public void step(Process process, String task, int taskId, int nbTask) {
+				if (Thread.interrupted()) {
+					throw new SpoonException("Process interrupted");
+				}
+			}
+		});
+
+		return launcher;
 	}
 
 	/**
@@ -332,15 +403,21 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	private boolean isEffectivelyFinal(CtType<?> type) {
+		// FIXME A class is also effectively final if it does not have a public (possibly default) constructor
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
 	}
 
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtTypeReference<?> typeRef) {
-		return typeRef != null ? new TypeReference<>(typeRef.getQualifiedName()) : null;
+		return switch (typeRef) {
+			case CtArrayTypeReference<?> arrayRef -> new ArrayTypeReference<>(arrayRef.getComponentType().getQualifiedName());
+			case CtTypeParameterReference tpRef -> new TypeParameterReference<>(tpRef.getQualifiedName()); // FIXME
+			case null -> null;
+			default -> new TypeReference<>(typeRef.getQualifiedName());
+		};
 	}
 
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtType<?> type) {
-		return type != null ? new TypeReference<>(type.getQualifiedName()) : null;
+		return type != null ? makeTypeReference(type.getReference()) : null;
 	}
 
 	private <T extends TypeDecl> List<TypeReference<T>> makeTypeReferences(Collection<CtTypeReference<?>> typeRefs) {

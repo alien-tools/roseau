@@ -4,39 +4,32 @@ import java.util.List;
 import java.util.Optional;
 
 public interface Type {
-	boolean isNested();
-
+	// Type kinds
 	boolean isClass();
-
 	boolean isInterface();
-
 	boolean isEnum();
-
 	boolean isRecord();
-
 	boolean isAnnotation();
 
-	boolean isCheckedException();
+	// Visibility
+	boolean isPublic();
+	boolean isProtected();
+	boolean isPackagePrivate();
 
+	// Modifiers
 	boolean isStatic();
-
+	boolean isAbstract();
 	boolean isFinal();
 
-	boolean isPublic();
+	// Others
+	boolean isNested();
+	boolean isCheckedException();
 
-	boolean isProtected();
-
-	boolean isAbstract();
-
+	// Navigation
 	List<TypeReference<InterfaceDecl>> getSuperInterfaces();
-
 	List<FormalTypeParameter> getFormalTypeParameters();
-
 	List<FieldDecl> getFields();
-
 	List<MethodDecl> getMethods();
-
 	List<MethodDecl> getAllMethods();
-
 	Optional<FieldDecl> getField(String name);
 }

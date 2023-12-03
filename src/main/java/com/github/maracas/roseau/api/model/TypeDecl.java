@@ -93,6 +93,11 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
+	public boolean isPackagePrivate() {
+		return visibility == AccessModifier.PACKAGE_PRIVATE;
+	}
+
+	@Override
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
@@ -140,7 +145,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	@Override
 	public Optional<FieldDecl> getField(String name) {
 		return fields.stream()
-			.filter(f -> f.getQualifiedName().equals(name))
+			.filter(f -> f.getSimpleName().equals(name))
 			.findFirst();
 	}
 

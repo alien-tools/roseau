@@ -1,14 +1,18 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import spoon.reflect.declaration.CtRecord;
+import spoon.reflect.declaration.CtType;
+import spoon.reflect.reference.CtTypeReference;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 
-public final class TypeReference<T extends TypeDecl> implements Type {
+public class TypeReference<T extends TypeDecl> implements Type {
 	private final String qualifiedName;
-	private T actualType;
+	private T resolvedApiType;
+	private CtTypeReference<?> foreignTypeReference;
 
 	public TypeReference(String qualifiedName) {
 		this.qualifiedName = qualifiedName;
@@ -19,14 +23,20 @@ public final class TypeReference<T extends TypeDecl> implements Type {
 		return qualifiedName;
 	}
 
-	public Optional<T> getActualType() {
-		return actualType != null
-			? Optional.of(actualType)
-			: Optional.empty();
+	public Optional<T> getResolvedApiType() {
+		return Optional.ofNullable(resolvedApiType);
 	}
 
-	public void setActualType(T type) {
-		this.actualType = type;
+	public Optional<CtTypeReference<?>> getForeignTypeReference() {
+		return Optional.ofNullable(foreignTypeReference);
+	}
+
+	public void setResolvedApiType(T type) {
+		this.resolvedApiType = type;
+	}
+
+	public void setForeignTypeReference(CtTypeReference<?> ref) {
+		this.foreignTypeReference = ref;
 	}
 
 	@Override
@@ -36,103 +46,176 @@ public final class TypeReference<T extends TypeDecl> implements Type {
 
 	@Override
 	public boolean isNested() {
-		return actualType != null && actualType.isNested();
+		if (resolvedApiType != null)
+			return resolvedApiType.isNested();
+		else if (foreignTypeReference != null)
+			return !foreignTypeReference.getTypeDeclaration().isTopLevel();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isClass() {
-		return actualType != null && actualType.isClass();
+		if (resolvedApiType != null)
+			return resolvedApiType.isClass();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.isClass();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isInterface() {
-		return actualType != null && actualType.isInterface();
+		if (resolvedApiType != null)
+			return resolvedApiType.isInterface();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.isInterface();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isEnum() {
-		return actualType != null && actualType.isEnum();
+		if (resolvedApiType != null)
+			return resolvedApiType.isEnum();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.isEnum();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isRecord() {
-		return actualType != null && actualType.isRecord();
+		if (resolvedApiType != null)
+			return resolvedApiType.isRecord();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration() instanceof CtRecord;
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isAnnotation() {
-		return actualType != null && actualType.isAnnotation();
+		if (resolvedApiType != null)
+			return resolvedApiType.isAnnotation();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.isAnnotationType();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isCheckedException() {
-		return actualType != null && actualType.isCheckedException();
+		if (resolvedApiType != null)
+			return resolvedApiType.isCheckedException();
+		else if (foreignTypeReference != null) {
+			CtType<?> t = foreignTypeReference.getTypeDeclaration();
+
+			return t.isSubtypeOf(t.getFactory().Type().createReference(Exception.class))
+				&& !t.isSubtypeOf(t.getFactory().Type().createReference(RuntimeException.class));
+		}
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isStatic() {
-		return actualType != null && actualType.isStatic();
+		if (resolvedApiType != null)
+			return resolvedApiType.isStatic();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().isStatic();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isFinal() {
-		return actualType != null && actualType.isFinal();
+		if (resolvedApiType != null)
+			return resolvedApiType.isFinal();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().isFinal();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isPublic() {
-		return actualType != null && actualType.isPublic();
+		if (resolvedApiType != null)
+			return resolvedApiType.isPublic();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().isPublic();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isProtected() {
-		return actualType != null && actualType.isProtected();
+		if (resolvedApiType != null)
+			return resolvedApiType.isProtected();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().isProtected();
+		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
+	public boolean isPackagePrivate() {
+		if (resolvedApiType != null)
+			return resolvedApiType.isPackagePrivate();
+		else if (foreignTypeReference != null)
+			return !foreignTypeReference.getTypeDeclaration().isPublic() && !foreignTypeReference.getTypeDeclaration().isProtected() && !foreignTypeReference.getTypeDeclaration().isPrivate();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public boolean isAbstract() {
-		return actualType != null && actualType.isAbstract();
+		if (resolvedApiType != null)
+			return resolvedApiType.isAbstract();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().isAbstract();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public List<MethodDecl> getAllMethods() {
-		return actualType != null
-			? actualType.getAllMethods()
-			: Collections.emptyList();
+		if (resolvedApiType != null)
+			return resolvedApiType.getAllMethods();
+		else if (foreignTypeReference != null)
+			return Collections.emptyList();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public Optional<FieldDecl> getField(String name) {
-		return actualType != null
-			? actualType.getField(name)
-			: Optional.empty();
+		if (resolvedApiType != null)
+			return resolvedApiType.getField(name);
+		else if (foreignTypeReference != null)
+			return Optional.empty();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
-		return actualType != null
-			? actualType.getSuperInterfaces()
-			: Collections.emptyList();
+		if (resolvedApiType != null)
+			return resolvedApiType.getSuperInterfaces();
+		else if (foreignTypeReference != null)
+			return Collections.emptyList();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public List<FormalTypeParameter> getFormalTypeParameters() {
-		return actualType != null
-			? actualType.getFormalTypeParameters()
-			: Collections.emptyList();
+		if (resolvedApiType != null)
+			return resolvedApiType.getFormalTypeParameters();
+		else if (foreignTypeReference != null)
+			return Collections.emptyList();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public List<FieldDecl> getFields() {
-		return actualType != null
-			? actualType.getFields()
-			: Collections.emptyList();
+		if (resolvedApiType != null)
+			return resolvedApiType.getFields();
+		else if (foreignTypeReference != null)
+			return Collections.emptyList();
+		throw new RuntimeException("Unresolved reference");
 	}
 
 	@Override
 	public List<MethodDecl> getMethods() {
-		return actualType != null
-			? actualType.getMethods()
-			: Collections.emptyList();
+		if (resolvedApiType != null)
+			return resolvedApiType.getMethods();
+		else if (foreignTypeReference != null)
+			return Collections.emptyList();
+		throw new RuntimeException("Unresolved reference");
 	}
 }
