@@ -91,7 +91,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	public boolean isEffectivelyFinal() {
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
 		//        is explicitly marked as non-sealed
-		return isFinal() || isSealed();
+		return !modifiers.contains(Modifier.NON_SEALED) && (isFinal() || isSealed());
 	}
 
 	@Override

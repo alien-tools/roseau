@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Optional;
 import java.util.stream.Stream;
 
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
@@ -58,8 +59,8 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			: Collections.emptyList();
 	}
 
-	public TypeReference<ClassDecl> getSuperClass() {
-		return superClass;
+	public Optional<TypeReference<ClassDecl>> getSuperClass() {
+		return Optional.ofNullable(superClass);
 	}
 
 	public List<ConstructorDecl> getConstructors() {

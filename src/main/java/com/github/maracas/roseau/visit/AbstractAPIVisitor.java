@@ -24,8 +24,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit classDecl(ClassDecl it) {
 		return () -> {
 			typeDecl(it).visit();
-			if (it.getSuperClass() != null)
-				$(it.getSuperClass()).visit();
+			it.getSuperClass().ifPresent((sup) -> $(sup).visit());
 			it.getConstructors().forEach(c -> $(c).visit());
 		};
 	}

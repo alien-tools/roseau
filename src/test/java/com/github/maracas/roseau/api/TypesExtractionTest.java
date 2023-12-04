@@ -9,10 +9,7 @@ import static com.github.maracas.roseau.TestUtils.assertInterface;
 import static com.github.maracas.roseau.TestUtils.assertRecord;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -218,6 +215,41 @@ class TypesExtractionTest {
 		assertTrue(f.isFinal());
 		assertFalse(f.isSealed());
 		assertTrue(f.isEffectivelyFinal());
+	}
+
+	@Test
+	void sealed_interfaces() {
+		var api = buildAPI("""
+			interface A {}
+			sealed interface B permits C, D {}
+			sealed interface C extends B permits E {}
+			non-sealed interface D extends B {}
+			final class E implements C {}""");
+
+		var a = assertInterface(api, "A");
+		assertFalse(a.isFinal());
+		assertFalse(a.isSealed());
+		assertFalse(a.isEffectivelyFinal());
+
+		var b = assertInterface(api, "B");
+		assertFalse(b.isFinal());
+		assertTrue(b.isSealed());
+		assertTrue(b.isEffectivelyFinal());
+
+		var c = assertInterface(api, "C");
+		assertFalse(c.isFinal());
+		assertTrue(c.isSealed());
+		assertTrue(c.isEffectivelyFinal());
+
+		var d = assertInterface(api, "D");
+		assertFalse(d.isFinal());
+		assertFalse(d.isSealed());
+		assertFalse(d.isEffectivelyFinal());
+
+		var e = assertClass(api, "E");
+		assertTrue(e.isFinal());
+		assertFalse(e.isSealed());
+		assertTrue(e.isEffectivelyFinal());
 	}
 
 	@Test
