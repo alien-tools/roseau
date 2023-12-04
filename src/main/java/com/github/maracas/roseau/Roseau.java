@@ -51,6 +51,13 @@ public class Roseau {
 			sw.reset();
 			sw.start();
 
+			// Type resolution
+			apiV1.resolve();
+			apiV2.resolve();
+			System.out.println("Type resolution: " + sw.elapsed().toSeconds());
+			sw.reset();
+			sw.start();
+
 			// API serialization
 			apiV1.writeJson(Path.of("api-v1.json"));
 			apiV1.writeJson(Path.of("api-v2.json"));

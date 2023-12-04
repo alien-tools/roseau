@@ -40,6 +40,7 @@ import spoon.reflect.declaration.CtTypeMember;
 import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtArrayTypeReference;
+import spoon.reflect.reference.CtIntersectionTypeReference;
 import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.support.compiler.SpoonProgress;
@@ -48,6 +49,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -142,12 +144,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 				.flatMap(p -> getAllTypes(p).stream().map(this::convertCtType))
 				.toList();
 
-		API api = new API(allTypes);
-
-		// Within-library type resolution
-		new TypeResolver(api).$(api).visit();
-
-		return api;
+		return new API(allTypes);
 	}
 
 	// Returns all types within a package
@@ -334,10 +331,16 @@ public class SpoonAPIExtractor implements APIExtractor {
 	private FormalTypeParameter convertCtTypeParameter(CtTypeParameter parameter) {
 		return new FormalTypeParameter(
 			parameter.getSimpleName(),
-			parameter.getSuperInterfaces().stream()
-				.map(this::makeTypeReference)
-				.toList()
+			convertCtTypeParameterBounds(parameter.getSuperclass())
 		);
+	}
+
+	private List<TypeReference<TypeDecl>> convertCtTypeParameterBounds(CtTypeReference<?> ref) {
+		return switch (ref) {
+			case CtIntersectionTypeReference<?> intersection -> intersection.getBounds().stream().map(this::makeTypeReference).toList();
+			case CtTypeReference<?> reference -> List.of(makeTypeReference(reference));
+			case null -> Collections.emptyList();
+		};
 	}
 
 	private List<ParameterDecl> convertCtParameters(CtExecutable<?> executable) {

@@ -105,6 +105,11 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
+	public boolean isPrivate() {
+		return visibility == AccessModifier.PRIVATE;
+	}
+
+	@Override
 	public boolean isPackagePrivate() {
 		return visibility == AccessModifier.PACKAGE_PRIVATE;
 	}

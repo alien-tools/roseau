@@ -24,7 +24,7 @@ class FieldsExtractionTest {
         int d;
       }""");
 
-		var a = assertClass(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertClass(api, "A");
 		assertFalse(a.isExported());
 		assertThat(a.getFields(), is(empty()));
 	}
@@ -39,11 +39,13 @@ class FieldsExtractionTest {
         int d;
       }""");
 
-		var a = assertClass(api, "A", AccessModifier.PUBLIC);
+		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
 		assertNoField(a, "a");
-		assertField(a, "b", AccessModifier.PROTECTED);
-		assertField(a, "c", AccessModifier.PUBLIC);
+		var fb = assertField(a, "b");
+		assertTrue(fb.isProtected());
+		var fc = assertField(a, "c");
+		assertTrue(fc.isPublic());
 		assertNoField(a, "d");
 	}
 }

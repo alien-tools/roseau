@@ -14,6 +14,7 @@ public interface Type {
 	// Visibility
 	boolean isPublic();
 	boolean isProtected();
+	boolean isPrivate();
 	boolean isPackagePrivate();
 
 	// Modifiers

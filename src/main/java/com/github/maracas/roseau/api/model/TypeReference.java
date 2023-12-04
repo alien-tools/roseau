@@ -167,6 +167,15 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
+	public boolean isPrivate() {
+		if (resolvedApiType != null)
+			return resolvedApiType.isPrivate();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().isPrivate();
+		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
 	public boolean isPackagePrivate() {
 		if (resolvedApiType != null)
 			return resolvedApiType.isPackagePrivate();

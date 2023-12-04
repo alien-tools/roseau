@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.AccessModifier;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertAnnotation;
@@ -10,7 +9,10 @@ import static com.github.maracas.roseau.TestUtils.assertInterface;
 import static com.github.maracas.roseau.TestUtils.assertRecord;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -19,9 +21,10 @@ class TypesExtractionTest {
 	void package_private_class() {
 		var api = buildAPI("class A {}");
 
-		var a = assertClass(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertClass(api, "A");
 
 		assertFalse(a.isExported());
+		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -29,9 +32,10 @@ class TypesExtractionTest {
 	void public_class() {
 		var api = buildAPI("public class A {}");
 
-		var a = assertClass(api, "A", AccessModifier.PUBLIC);
+		var a = assertClass(api, "A");
 
 		assertTrue(a.isExported());
+		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -39,9 +43,10 @@ class TypesExtractionTest {
 	void package_private_interface() {
 		var api = buildAPI("interface A {}");
 
-		var a = assertInterface(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertInterface(api, "A");
 
 		assertFalse(a.isExported());
+		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -49,9 +54,10 @@ class TypesExtractionTest {
 	void public_interface() {
 		var api = buildAPI("public interface A {}");
 
-		var a = assertInterface(api, "A", AccessModifier.PUBLIC);
+		var a = assertInterface(api, "A");
 
 		assertTrue(a.isExported());
+		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -59,9 +65,10 @@ class TypesExtractionTest {
 	void package_private_record() {
 		var api = buildAPI("record A {}");
 
-		var a = assertRecord(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertRecord(api, "A");
 
 		assertFalse(a.isExported());
+		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -69,9 +76,10 @@ class TypesExtractionTest {
 	void public_record() {
 		var api = buildAPI("public record A {}");
 
-		var a = assertRecord(api, "A", AccessModifier.PUBLIC);
+		var a = assertRecord(api, "A");
 
 		assertTrue(a.isExported());
+		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -79,9 +87,10 @@ class TypesExtractionTest {
 	void package_private_enum() {
 		var api = buildAPI("enum A {}");
 
-		var a = assertEnum(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertEnum(api, "A");
 
 		assertFalse(a.isExported());
+		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -89,9 +98,10 @@ class TypesExtractionTest {
 	void public_enum() {
 		var api = buildAPI("public enum A {}");
 
-		var a = assertEnum(api, "A", AccessModifier.PUBLIC);
+		var a = assertEnum(api, "A");
 
 		assertTrue(a.isExported());
+		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -99,9 +109,10 @@ class TypesExtractionTest {
 	void package_private_annotation() {
 		var api = buildAPI("@interface A {}");
 
-		var a = assertAnnotation(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertAnnotation(api, "A");
 
 		assertFalse(a.isExported());
+		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -109,9 +120,10 @@ class TypesExtractionTest {
 	void public_annotation() {
 		var api = buildAPI("public @interface A {}");
 
-		var a = assertAnnotation(api, "A", AccessModifier.PUBLIC);
+		var a = assertAnnotation(api, "A");
 
 		assertTrue(a.isExported());
+		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -124,7 +136,7 @@ class TypesExtractionTest {
 				}
 			}""");
 
-		assertClass(api, "A", AccessModifier.PUBLIC);
+		assertClass(api, "A");
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -137,7 +149,7 @@ class TypesExtractionTest {
 				}
 			}""");
 
-		assertClass(api, "A", AccessModifier.PUBLIC);
+		assertClass(api, "A");
 		assertThat(api.getAllTypes(), hasSize(1));
 	}
 
@@ -147,10 +159,10 @@ class TypesExtractionTest {
         public class A {}
         public abstract class B {}""");
 
-		var a = assertClass(api, "A", AccessModifier.PUBLIC);
+		var a = assertClass(api, "A");
 		assertFalse(a.isAbstract());
 
-		var b = assertClass(api, "B", AccessModifier.PUBLIC);
+		var b = assertClass(api, "B");
 		assertTrue(b.isAbstract());
 	}
 
@@ -160,10 +172,10 @@ class TypesExtractionTest {
         public class A {}
         public final class B {}""");
 
-		var a = assertClass(api, "A", AccessModifier.PUBLIC);
+		var a = assertClass(api, "A");
 		assertFalse(a.isFinal());
 
-		var b = assertClass(api, "B", AccessModifier.PUBLIC);
+		var b = assertClass(api, "B");
 		assertTrue(b.isFinal());
 	}
 
@@ -177,32 +189,32 @@ class TypesExtractionTest {
 			non-sealed class E extends B {}
 			final class F extends C {}""");
 
-		var a = assertClass(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertClass(api, "A");
 		assertFalse(a.isFinal());
 		assertFalse(a.isSealed());
 		assertFalse(a.isEffectivelyFinal());
 
-		var b = assertClass(api, "B", AccessModifier.PACKAGE_PRIVATE);
+		var b = assertClass(api, "B");
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
 		assertTrue(b.isEffectivelyFinal());
 
-		var c = assertClass(api, "C", AccessModifier.PACKAGE_PRIVATE);
+		var c = assertClass(api, "C");
 		assertFalse(c.isFinal());
 		assertTrue(c.isSealed());
 		assertTrue(c.isEffectivelyFinal());
 
-		var d = assertClass(api, "D", AccessModifier.PACKAGE_PRIVATE);
+		var d = assertClass(api, "D");
 		assertTrue(d.isFinal());
 		assertFalse(d.isSealed());
 		assertTrue(d.isEffectivelyFinal());
 
-		var e = assertClass(api, "E", AccessModifier.PACKAGE_PRIVATE);
+		var e = assertClass(api, "E");
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
 		assertFalse(e.isEffectivelyFinal());
 
-		var f = assertClass(api, "F", AccessModifier.PACKAGE_PRIVATE);
+		var f = assertClass(api, "F");
 		assertTrue(f.isFinal());
 		assertFalse(f.isSealed());
 		assertTrue(f.isEffectivelyFinal());
@@ -217,19 +229,19 @@ class TypesExtractionTest {
 			class D extends B {}
 			class E extends C {}""");
 
-		var a = assertClass(api, "A", AccessModifier.PACKAGE_PRIVATE);
+		var a = assertClass(api, "A");
 		assertFalse(a.isCheckedException());
 
-		var b = assertClass(api, "B", AccessModifier.PACKAGE_PRIVATE);
+		var b = assertClass(api, "B");
 		assertTrue(b.isCheckedException());
 
-		var c = assertClass(api, "C", AccessModifier.PACKAGE_PRIVATE);
+		var c = assertClass(api, "C");
 		assertFalse(c.isCheckedException());
 
-		var d = assertClass(api, "D", AccessModifier.PACKAGE_PRIVATE);
+		var d = assertClass(api, "D");
 		assertTrue(d.isCheckedException());
 
-		var e = assertClass(api, "E", AccessModifier.PACKAGE_PRIVATE);
+		var e = assertClass(api, "E");
 		assertFalse(e.isCheckedException());
 	}
 }

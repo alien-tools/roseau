@@ -10,6 +10,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.github.maracas.roseau.api.TypeResolver;
 
 /**
  * Represents the API of a library containing all the types, each of which may have methods, fields, constructors, and more information about the type.
@@ -24,6 +25,11 @@ public final class API {
 				Symbol::getQualifiedName,
 				Function.identity()
 			));
+	}
+
+	public void resolve() {
+		// Within-library type resolution
+		new TypeResolver(this).$(this).visit();
 	}
 
 	public List<TypeDecl> getAllTypes() {
