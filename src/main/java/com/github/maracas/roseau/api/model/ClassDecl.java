@@ -42,6 +42,13 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			&& getAllSuperClasses().stream().noneMatch(cls -> cls.getQualifiedName().equals("java.lang.RuntimeException"));
 	}
 
+	@Override
+	public boolean isEffectivelyFinal() {
+		// A class without a subclass-accessible constructor cannot be extended
+		// If the class had a default constructor, it would be there
+		return super.isEffectivelyFinal() || constructors.isEmpty();
+	}
+
 	@JsonIgnore
 	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
 		return superClass != null

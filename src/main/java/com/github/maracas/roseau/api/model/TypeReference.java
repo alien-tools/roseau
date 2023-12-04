@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.fasterxml.jackson.annotation.JsonValue;
 import spoon.reflect.declaration.CtRecord;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.reference.CtTypeReference;
 
 import java.util.Collections;
@@ -126,6 +127,24 @@ public class TypeReference<T extends TypeDecl> implements Type {
 			return resolvedApiType.isFinal();
 		else if (foreignTypeReference != null)
 			return foreignTypeReference.getTypeDeclaration().isFinal();
+		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
+	public boolean isSealed() {
+		if (resolvedApiType != null)
+			return resolvedApiType.isSealed();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().hasModifier(ModifierKind.SEALED);
+		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
+	public boolean isEffectivelyFinal() {
+		if (resolvedApiType != null)
+			return resolvedApiType.isEffectivelyFinal();
+		else if (foreignTypeReference != null)
+			return foreignTypeReference.getTypeDeclaration().hasModifier(ModifierKind.FINAL) || foreignTypeReference.getTypeDeclaration().hasModifier(ModifierKind.SEALED);
 		throw new RuntimeException("Unresolved reference");
 	}
 

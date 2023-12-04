@@ -27,7 +27,7 @@ public final class FieldDecl extends TypeMemberDecl {
 	}
 
 	public String getSimpleName() {
-		return qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1)
+		return qualifiedName.substring(qualifiedName.lastIndexOf(".") + 1);
 	}
 
 	/**

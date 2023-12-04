@@ -2,9 +2,9 @@ package com.github.maracas.roseau.diff;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.maracas.roseau.diff.DiffTestUtils.assertBC;
-import static com.github.maracas.roseau.diff.DiffTestUtils.assertNoBC;
-import static com.github.maracas.roseau.diff.DiffTestUtils.buildDiff;
+import static com.github.maracas.roseau.TestUtils.assertBC;
+import static com.github.maracas.roseau.TestUtils.assertNoBC;
+import static com.github.maracas.roseau.TestUtils.buildDiff;
 import static com.github.maracas.roseau.diff.changes.BreakingChangeKind.CLASS_REMOVED;
 
 class ClassRemovedTest {

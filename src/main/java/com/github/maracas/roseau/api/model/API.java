@@ -30,6 +30,13 @@ public final class API {
 		return types.values().stream().toList();
 	}
 
+	public List<ClassDecl> getAllClasses() {
+		return types.values().stream()
+			.filter(ClassDecl.class::isInstance)
+			.map(ClassDecl.class::cast)
+			.toList();
+	}
+
 	public List<TypeDecl> getExportedTypes() {
 		return getAllTypes().stream()
 			.filter(Symbol::isExported)
@@ -44,6 +51,12 @@ public final class API {
 
 	public Optional<TypeDecl> getType(String qualifiedName) {
 		return Optional.ofNullable(types.get(qualifiedName));
+	}
+
+	public Optional<ClassDecl> getClass(String qualifiedName) {
+		return getAllClasses().stream()
+			.filter(cls -> cls.getQualifiedName().equals(qualifiedName))
+			.findFirst();
 	}
 
 	public void writeJson(Path jsonFile) throws IOException {

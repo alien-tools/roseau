@@ -20,6 +20,8 @@ public interface Type {
 	boolean isStatic();
 	boolean isAbstract();
 	boolean isFinal();
+	boolean isSealed();
+	boolean isEffectivelyFinal();
 
 	// Others
 	boolean isNested();

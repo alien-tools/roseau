@@ -316,8 +316,11 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	private List<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
+		// We need to keep track of default constructors in the API model.
+		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null
+		// so we need to handle it separately.
 		return cls.getConstructors().stream()
-			.filter(this::isExported)
+			.filter(cons -> isExported(cons) || cons.isImplicit())
 			.map(this::convertCtConstructor)
 			.toList();
 	}
@@ -395,11 +398,15 @@ public class SpoonAPIExtractor implements APIExtractor {
 	private boolean isExported(CtType<?> type) {
 		return
 			   (type.isPublic() || (type.isProtected() && !isEffectivelyFinal(type)))
-			&& (type.getDeclaringType() == null || isExported(type.getDeclaringType()));
+			&& isParentExported(type);
 	}
 
 	private boolean isExported(CtTypeMember member) {
-		return member.isPublic() || member.isProtected();
+		return (member.isPublic() || member.isProtected()) && isParentExported(member);
+	}
+
+	private boolean isParentExported(CtTypeMember member) {
+		return member.getDeclaringType() == null || isExported(member.getDeclaringType());
 	}
 
 	private boolean isEffectivelyFinal(CtType<?> type) {
