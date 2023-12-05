@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
+import com.google.common.base.Objects;
 import spoon.reflect.declaration.CtRecord;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.ModifierKind;
@@ -212,9 +213,18 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
-	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
+	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
 		if (resolvedApiType != null)
-			return resolvedApiType.getSuperInterfaces();
+			return resolvedApiType.getAllImplementedInterfaces();
+		else if (foreignTypeReference != null)
+			return Collections.emptyList();
+		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
+	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
+		if (resolvedApiType != null)
+			return resolvedApiType.getImplementedInterfaces();
 		else if (foreignTypeReference != null)
 			return Collections.emptyList();
 		throw new RuntimeException("Unresolved reference");
@@ -245,5 +255,18 @@ public class TypeReference<T extends TypeDecl> implements Type {
 		else if (foreignTypeReference != null)
 			return Collections.emptyList();
 		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		TypeReference<?> that = (TypeReference<?>) o;
+		return Objects.equal(qualifiedName, that.qualifiedName);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hashCode(qualifiedName);
 	}
 }

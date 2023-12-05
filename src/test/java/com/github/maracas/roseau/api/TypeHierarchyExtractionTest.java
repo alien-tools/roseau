@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.TypeReference;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertAnnotation;
@@ -11,6 +12,7 @@ import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -24,7 +26,7 @@ class TypeHierarchyExtractionTest {
 
 		var s = assertClass(api, "S");
 		var a = assertClass(api, "A");
-		assertThat(a.getSuperInterfaces(), is(empty()));
+		assertThat(a.getImplementedInterfaces(), is(empty()));
 		assertThat(a.getSuperClass().get().getResolvedApiType().get(), is(equalTo(s)));
 	}
 
@@ -37,9 +39,9 @@ class TypeHierarchyExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.getSuperClass().isEmpty());
-		assertThat(a.getSuperInterfaces(), hasSize(2));
-		assertThat(a.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
-		assertThat(a.getSuperInterfaces().get(1).getQualifiedName(), is(equalTo("J")));
+		assertThat(a.getImplementedInterfaces(), hasSize(2));
+		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+		assertThat(a.getImplementedInterfaces().get(1).getQualifiedName(), is(equalTo("J")));
 	}
 
 	// Surprisingly allowed
@@ -56,8 +58,8 @@ class TypeHierarchyExtractionTest {
 
 		assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
-		assertThat(c.getSuperInterfaces(), hasSize(1));
-		assertThat(c.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("A")));
+		assertThat(c.getImplementedInterfaces(), hasSize(1));
+		assertThat(c.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("A")));
 		assertTrue(c.getSuperClass().isEmpty());
 	}
 
@@ -70,8 +72,8 @@ class TypeHierarchyExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("S")));
-		assertThat(a.getSuperInterfaces(), hasSize(1));
-		assertThat(a.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+		assertThat(a.getImplementedInterfaces(), hasSize(1));
+		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
 	@Test
@@ -82,9 +84,9 @@ class TypeHierarchyExtractionTest {
 			interface A extends I, J {}""");
 
 		var a = assertInterface(api, "A");
-		assertThat(a.getSuperInterfaces(), hasSize(2));
-		assertThat(a.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
-		assertThat(a.getSuperInterfaces().get(1).getQualifiedName(), is(equalTo("J")));
+		assertThat(a.getImplementedInterfaces(), hasSize(2));
+		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+		assertThat(a.getImplementedInterfaces().get(1).getQualifiedName(), is(equalTo("J")));
 	}
 
 	// Surprisingly allowed
@@ -95,8 +97,8 @@ class TypeHierarchyExtractionTest {
 			interface A extends I {}""");
 
 		var a = assertInterface(api, "A");
-		assertThat(a.getSuperInterfaces(), hasSize(1));
-		assertThat(a.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+		assertThat(a.getImplementedInterfaces(), hasSize(1));
+		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
 	@Test
@@ -107,8 +109,8 @@ class TypeHierarchyExtractionTest {
 
 		var e = assertEnum(api, "E");
 		assertTrue(e.getSuperClass().isEmpty());
-		assertThat(e.getSuperInterfaces(), hasSize(1));
-		assertThat(e.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+		assertThat(e.getImplementedInterfaces(), hasSize(1));
+		assertThat(e.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
 	@Test
@@ -119,7 +121,61 @@ class TypeHierarchyExtractionTest {
 
 		var r = assertRecord(api, "R");
 		assertTrue(r.getSuperClass().isEmpty());
-		assertThat(r.getSuperInterfaces(), hasSize(1));
-		assertThat(r.getSuperInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+		assertThat(r.getImplementedInterfaces(), hasSize(1));
+		assertThat(r.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
+	}
+
+	@Test
+	void class_implements_hierarchy() {
+		var api = buildAPI("""
+			interface I {}
+			interface J {}
+			interface K {}
+			interface L {}
+			interface M extends I {}
+			interface N extends J, K {}
+			class C {}
+			class D extends C implements L {}
+			class E extends D {}
+			class A extends E implements M, N {}""");
+
+		var a = assertClass(api, "A");
+
+		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("E")));
+		assertThat(a.getAllSuperClasses(), hasSize(3));
+		assertThat(a.getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList(),
+			hasItems(equalTo("C"), equalTo("D"), equalTo("E")));
+
+		assertThat(a.getImplementedInterfaces(), hasSize(2));
+		assertThat(a.getAllImplementedInterfaces(), hasSize(6));
+		assertThat(a.getAllImplementedInterfaces().stream().map(TypeReference::getQualifiedName).toList(),
+			hasItems(equalTo("I"), equalTo("J"), equalTo("K"), equalTo("L"), equalTo("M"), equalTo("N")));
+	}
+
+	@Test
+	void class_implements_jdk_hierarchy() {
+		var api = buildAPI("""
+			interface M extends Runnable {}
+			interface N extends Comparable<String>, Cloneable {}
+			class D extends Thread implements M {}
+			class E extends D {}
+			class A extends E implements M, N {
+				@Override
+				public int compareTo(String o) {
+					return 0;
+				}
+			}""");
+
+		var a = assertClass(api, "A");
+
+		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("E")));
+		assertThat(a.getAllSuperClasses(), hasSize(3));
+		assertThat(a.getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList(),
+			hasItems(equalTo("E"), equalTo("D"), equalTo("java.lang.Thread")));
+
+		assertThat(a.getImplementedInterfaces(), hasSize(2));
+		assertThat(a.getAllImplementedInterfaces(), hasSize(5));
+		assertThat(a.getAllImplementedInterfaces().stream().map(TypeReference::getQualifiedName).toList(),
+			hasItems(equalTo("M"), equalTo("N"), equalTo("java.lang.Comparable"), equalTo("java.lang.Runnable"), equalTo("java.lang.Cloneable")));
 	}
 }

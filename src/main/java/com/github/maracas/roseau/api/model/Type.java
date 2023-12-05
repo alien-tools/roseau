@@ -22,17 +22,20 @@ public interface Type {
 	boolean isAbstract();
 	boolean isFinal();
 	boolean isSealed();
-	boolean isEffectivelyFinal();
-
 	// Others
+
 	boolean isNested();
 	boolean isCheckedException();
+	boolean isEffectivelyFinal();
 
 	// Navigation
-	List<TypeReference<InterfaceDecl>> getSuperInterfaces();
+	List<TypeReference<InterfaceDecl>> getImplementedInterfaces();
 	List<FormalTypeParameter> getFormalTypeParameters();
 	List<FieldDecl> getFields();
 	List<MethodDecl> getMethods();
-	List<MethodDecl> getAllMethods();
 	Optional<FieldDecl> getField(String name);
+
+	// Transitive navigations
+	List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces();
+	List<MethodDecl> getAllMethods();
 }

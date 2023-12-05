@@ -135,7 +135,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 * @return Type's superinterfaces as typeDeclarations
 	 */
 	@Override
-	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
+	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
 		return superInterfaces;
 	}
 
@@ -164,6 +164,17 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 		return fields.stream()
 			.filter(f -> f.getSimpleName().equals(name))
 			.findFirst();
+	}
+
+	@Override
+	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
+		return Stream.concat(
+			superInterfaces.stream(),
+			superInterfaces.stream()
+				.map(Type::getAllImplementedInterfaces)
+				.flatMap(Collection::stream)
+				.distinct()
+		).toList();
 	}
 
 	/**

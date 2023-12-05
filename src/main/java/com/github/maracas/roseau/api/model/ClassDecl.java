@@ -50,17 +50,26 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return super.isEffectivelyFinal() || constructors.isEmpty();
 	}
 
+	public Optional<TypeReference<ClassDecl>> getSuperClass() {
+		return Optional.ofNullable(superClass);
+	}
+
 	@JsonIgnore
 	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
 		return superClass != null
 			? Stream.concat(
-					Stream.of(superClass), superClass.getResolvedApiType().map(c -> c.getAllSuperClasses().stream()).orElse(Stream.empty())
+					Stream.of(superClass),
+					superClass.getResolvedApiType().map(c -> c.getAllSuperClasses().stream()).orElse(Stream.empty())
 				).toList()
 			: Collections.emptyList();
 	}
 
-	public Optional<TypeReference<ClassDecl>> getSuperClass() {
-		return Optional.ofNullable(superClass);
+	@Override
+	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
+		return Stream.concat(
+			super.getAllImplementedInterfaces().stream(),
+			superClass != null ? superClass.getAllImplementedInterfaces().stream() : Stream.empty()
+		).distinct().toList();
 	}
 
 	public List<ConstructorDecl> getConstructors() {

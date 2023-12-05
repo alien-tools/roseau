@@ -156,13 +156,13 @@ public class APIDiff {
 				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 
 			// Check for deleted super-interfaces
-			if (t1.getSuperInterfaces().stream()
-				.anyMatch(intf1 -> t2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
+			if (t1.getImplementedInterfaces().stream()
+				.anyMatch(intf1 -> t2.getImplementedInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
 				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 		}
 
-		if (t1.isInterface() && t1.getSuperInterfaces().stream()
-			.anyMatch(intf1 -> t2.getSuperInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
+		if (t1.isInterface() && t1.getImplementedInterfaces().stream()
+			.anyMatch(intf1 -> t2.getImplementedInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
 			bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 
 		if (!t1.getClass().equals(t2.getClass()))

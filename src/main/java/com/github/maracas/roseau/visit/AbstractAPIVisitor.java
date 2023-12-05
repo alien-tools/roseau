@@ -91,7 +91,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit typeDecl(TypeDecl it) {
 		return () -> {
 			symbol(it).visit();
-			it.getSuperInterfaces().forEach(i -> $(i).visit());
+			it.getImplementedInterfaces().forEach(i -> $(i).visit());
 			it.getFields().forEach(f -> $(f).visit());
 			it.getMethods().forEach(m -> $(m).visit());
 		};
