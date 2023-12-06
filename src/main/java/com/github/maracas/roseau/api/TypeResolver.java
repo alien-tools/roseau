@@ -9,6 +9,7 @@ import com.github.maracas.roseau.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.visit.Visit;
 import spoon.reflect.factory.FactoryImpl;
 import spoon.reflect.factory.TypeFactory;
+import spoon.reflect.reference.CtTypeReference;
 import spoon.support.DefaultCoreFactory;
 import spoon.support.StandardEnvironment;
 
@@ -21,10 +22,10 @@ public class TypeResolver extends AbstractAPIVisitor {
 	private final Map<String, TypeDecl> resolved;
 	private final TypeFactory typeFactory;
 
-	public TypeResolver(API api) {
+	public TypeResolver(API api, TypeFactory typeFactory) {
 		this.api = api;
+		this.typeFactory = typeFactory;
 		this.resolved = HashMap.newHashMap(api.getAllTypes().size());
-		this.typeFactory = new FactoryImpl(new DefaultCoreFactory(), new StandardEnvironment()).Type();
 	}
 
 	@Override
@@ -41,11 +42,16 @@ public class TypeResolver extends AbstractAPIVisitor {
 				if (withinAPI.isPresent()) {
 					resolved.put(toResolve, withinAPI.get());
 				} else {
-					it.setForeignTypeReference(switch (it) {
+					CtTypeReference<?> spoonTypeRef = switch (it) {
 						case ArrayTypeReference<U> arrayRef -> typeFactory.createArrayReference(toResolve);
 						case TypeParameterReference<U> tpRef -> typeFactory.createTypeParameterReference(tpRef.getQualifiedName()); // FIXME
 						default -> typeFactory.createReference(toResolve);
-					});
+					};
+
+					if (spoonTypeRef.getTypeDeclaration() == null)
+						throw new IllegalStateException("Couldn't resolve " + spoonTypeRef + "; is classpath properly set?")
+
+					it.setForeignTypeReference(spoonTypeRef);
 				}
 			}
 

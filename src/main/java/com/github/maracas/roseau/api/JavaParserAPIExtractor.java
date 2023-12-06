@@ -79,12 +79,7 @@ public class JavaParserAPIExtractor implements APIExtractor {
 			.flatMap(cu -> getAllTypes(cu).stream().map(this::convertTypeDeclaration))
 			.toList();
 
-		API api = new API(allTypes);
-
-		// Within-library type resolution
-		new TypeResolver(api).$(api).visit();
-
-		return api;
+		return new API(allTypes);
 	}
 
 	private List<TypeDeclaration<?>> getAllTypes(CompilationUnit cu) {

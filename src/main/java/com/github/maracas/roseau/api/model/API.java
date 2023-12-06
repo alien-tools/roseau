@@ -7,6 +7,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.github.maracas.roseau.api.TypeResolver;
+import spoon.reflect.factory.TypeFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -33,9 +34,9 @@ public final class API {
 			));
 	}
 
-	public void resolve() {
+	public void resolve(TypeFactory factory) {
 		// Within-library type resolution
-		new TypeResolver(this).$(this).visit();
+		new TypeResolver(this, factory).$(this).visit();
 	}
 
 	public List<TypeDecl> getAllTypes() {
