@@ -88,6 +88,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		try {
 			return future.get(timeoutSeconds, TimeUnit.SECONDS);
 		} catch (TimeoutException | InterruptedException | ExecutionException e) {
+			e.printStackTrace();
 			return null;
 		}
 	}
@@ -96,11 +97,9 @@ public class SpoonAPIExtractor implements APIExtractor {
 		Launcher launcher;
 
 		if (Files.exists(location.resolve("pom.xml"))) {
-			launcher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE, new String[0]);
+			launcher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
 		} else {
 			launcher = new Launcher();
-			launcher.getEnvironment().setComplianceLevel(17);
-
 			launcher.addInputResource(location.toString());
 		}
 
@@ -112,6 +111,9 @@ public class SpoonAPIExtractor implements APIExtractor {
 		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
 		// Ignore comments
 		launcher.getEnvironment().setCommentEnabled(false);
+		// Set Java version
+		// Note: even when using the MavenLauncher, it's sometimes not properly inferred, better be safe
+		launcher.getEnvironment().setComplianceLevel(17);
 
 		// Interruptible launcher: this is dirty.
 		// Spoon's compiler does two lengthy things: compile units with JDTs,
