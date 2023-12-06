@@ -2,9 +2,7 @@ package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.common.base.Objects;
-import spoon.reflect.declaration.CtRecord;
-import spoon.reflect.declaration.CtType;
-import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtTypeReference;
 
 import java.util.Collections;
@@ -13,11 +11,20 @@ import java.util.Optional;
 
 public class TypeReference<T extends TypeDecl> implements Type {
 	private final String qualifiedName;
+	private TypeFactory typeFactory;
 	private T resolvedApiType;
-	private CtTypeReference<?> foreignTypeReference;
 
 	public TypeReference(String qualifiedName) {
 		this.qualifiedName = qualifiedName;
+	}
+
+	public TypeReference(String qualifiedName, TypeFactory typeFactory) {
+		this.qualifiedName = qualifiedName;
+		this.typeFactory = typeFactory;
+	}
+
+	public void setTypeFactory(TypeFactory typeFactory) {
+		this.typeFactory = typeFactory;
 	}
 
 	@JsonValue
@@ -26,19 +33,18 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	public Optional<T> getResolvedApiType() {
-		return Optional.ofNullable(resolvedApiType);
-	}
+		if (resolvedApiType == null && typeFactory != null) {
+			CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
 
-	public Optional<CtTypeReference<?>> getForeignTypeReference() {
-		return Optional.ofNullable(foreignTypeReference);
+			if (ref.getTypeDeclaration() != null)
+				resolvedApiType = (T) new SpoonAPIFactory(typeFactory).convertCtType(ref.getTypeDeclaration());
+		}
+
+		return Optional.ofNullable(resolvedApiType);
 	}
 
 	public void setResolvedApiType(T type) {
 		this.resolvedApiType = type;
-	}
-
-	public void setForeignTypeReference(CtTypeReference<?> ref) {
-		this.foreignTypeReference = ref;
 	}
 
 	@Override
@@ -48,222 +54,122 @@ public class TypeReference<T extends TypeDecl> implements Type {
 
 	@Override
 	public boolean isNested() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isNested();
-		else if (foreignTypeReference != null)
-			return !foreignTypeReference.getTypeDeclaration().isTopLevel();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isNested).orElse(false);
 	}
 
 	@Override
 	public boolean isClass() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isClass();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.isClass();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isClass).orElse(false);
 	}
 
 	@Override
 	public boolean isInterface() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isInterface();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.isInterface();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isInterface).orElse(false);
 	}
 
 	@Override
 	public boolean isEnum() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isEnum();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.isEnum();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isEnum).orElse(false);
 	}
 
 	@Override
 	public boolean isRecord() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isRecord();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration() instanceof CtRecord;
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isRecord).orElse(false);
 	}
 
 	@Override
 	public boolean isAnnotation() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isAnnotation();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.isAnnotationType();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isAnnotation).orElse(false);
 	}
 
 	@Override
 	public boolean isCheckedException() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isCheckedException();
-		else if (foreignTypeReference != null) {
-			CtType<?> t = foreignTypeReference.getTypeDeclaration();
-
-			return t.isSubtypeOf(t.getFactory().Type().createReference(Exception.class))
-				&& !t.isSubtypeOf(t.getFactory().Type().createReference(RuntimeException.class));
-		}
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isCheckedException).orElse(false);
 	}
 
 	@Override
 	public boolean isStatic() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isStatic();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().isStatic();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isStatic).orElse(false);
 	}
 
 	@Override
 	public boolean isFinal() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isFinal();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().isFinal();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isFinal).orElse(false);
 	}
 
 	@Override
 	public boolean isSealed() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isSealed();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().hasModifier(ModifierKind.SEALED);
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isSealed).orElse(false);
 	}
 
 	@Override
 	public boolean isEffectivelyFinal() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isEffectivelyFinal();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().hasModifier(ModifierKind.FINAL) || foreignTypeReference.getTypeDeclaration().hasModifier(ModifierKind.SEALED);
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(false);
 	}
 
 	@Override
 	public boolean isPublic() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isPublic();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().isPublic();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isPublic).orElse(false);
 	}
 
 	@Override
 	public boolean isProtected() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isProtected();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().isProtected();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isProtected).orElse(false);
 	}
 
 	@Override
 	public boolean isPrivate() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isPrivate();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().isPrivate();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isPrivate).orElse(false);
 	}
 
 	@Override
 	public boolean isPackagePrivate() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isPackagePrivate();
-		else if (foreignTypeReference != null)
-			return !foreignTypeReference.getTypeDeclaration().isPublic() && !foreignTypeReference.getTypeDeclaration().isProtected() && !foreignTypeReference.getTypeDeclaration().isPrivate();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isPackagePrivate).orElse(false);
 	}
 
 	@Override
 	public boolean isExported() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isExported();
-		else if (foreignTypeReference != null)
-			return false; // FIXME
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isExported).orElse(false);
 	}
 
 	@Override
 	public boolean isAbstract() {
-		if (resolvedApiType != null)
-			return resolvedApiType.isAbstract();
-		else if (foreignTypeReference != null)
-			return foreignTypeReference.getTypeDeclaration().isAbstract();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::isAbstract).orElse(false);
 	}
 
 	@Override
 	public List<MethodDecl> getAllMethods() {
-		if (resolvedApiType != null)
-			return resolvedApiType.getAllMethods();
-		else if (foreignTypeReference != null)
-			return Collections.emptyList();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::getAllMethods).orElse(Collections.emptyList());
 	}
 
 	@Override
 	public Optional<FieldDecl> getField(String name) {
-		if (resolvedApiType != null)
-			return resolvedApiType.getField(name);
-		else if (foreignTypeReference != null)
-			return Optional.empty();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().flatMap(t -> t.getField(name));
 	}
 
 	@Override
 	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
-		if (resolvedApiType != null)
-			return resolvedApiType.getAllImplementedInterfaces();
-		else if (foreignTypeReference != null)
-			return Collections.emptyList();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::getAllImplementedInterfaces).orElse(Collections.emptyList());
 	}
 
 	@Override
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
-		if (resolvedApiType != null)
-			return resolvedApiType.getImplementedInterfaces();
-		else if (foreignTypeReference != null)
-			return Collections.emptyList();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::getImplementedInterfaces).orElse(Collections.emptyList());
 	}
 
 	@Override
 	public List<FormalTypeParameter> getFormalTypeParameters() {
-		if (resolvedApiType != null)
-			return resolvedApiType.getFormalTypeParameters();
-		else if (foreignTypeReference != null)
-			return Collections.emptyList();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::getFormalTypeParameters).orElse(Collections.emptyList());
 	}
 
 	@Override
 	public List<FieldDecl> getFields() {
-		if (resolvedApiType != null)
-			return resolvedApiType.getFields();
-		else if (foreignTypeReference != null)
-			return Collections.emptyList();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::getFields).orElse(Collections.emptyList());
 	}
 
 	@Override
 	public List<MethodDecl> getMethods() {
-		if (resolvedApiType != null)
-			return resolvedApiType.getMethods();
-		else if (foreignTypeReference != null)
-			return Collections.emptyList();
-		throw new RuntimeException("Unresolved reference");
+		return getResolvedApiType().map(TypeDecl::getMethods).orElse(Collections.emptyList());
 	}
 
 	@Override

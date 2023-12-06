@@ -7,11 +7,8 @@ import com.github.maracas.roseau.api.model.TypeParameterReference;
 import com.github.maracas.roseau.api.model.TypeReference;
 import com.github.maracas.roseau.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.visit.Visit;
-import spoon.reflect.factory.FactoryImpl;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtTypeReference;
-import spoon.support.DefaultCoreFactory;
-import spoon.support.StandardEnvironment;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -31,7 +28,9 @@ public class TypeResolver extends AbstractAPIVisitor {
 	@Override
 	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
 		return () -> {
-			if (it.getResolvedApiType().isPresent() || it.getForeignTypeReference().isPresent())
+			it.setTypeFactory(typeFactory);
+
+			if (it.getResolvedApiType().isPresent())
 				return;
 
 			// compute/putIfAbsent do not work with null values
@@ -39,20 +38,7 @@ public class TypeResolver extends AbstractAPIVisitor {
 			if (!resolved.containsKey(toResolve)) {
 				Optional<TypeDecl> withinAPI = api.findType(toResolve);
 
-				if (withinAPI.isPresent()) {
-					resolved.put(toResolve, withinAPI.get());
-				} else {
-					CtTypeReference<?> spoonTypeRef = switch (it) {
-						case ArrayTypeReference<U> arrayRef -> typeFactory.createArrayReference(toResolve);
-						case TypeParameterReference<U> tpRef -> typeFactory.createTypeParameterReference(tpRef.getQualifiedName()); // FIXME
-						default -> typeFactory.createReference(toResolve);
-					};
-
-					if (spoonTypeRef.getTypeDeclaration() == null)
-						throw new IllegalStateException("Couldn't resolve " + spoonTypeRef + "; is classpath properly set?");
-
-					it.setForeignTypeReference(spoonTypeRef);
-				}
+				withinAPI.ifPresent(typeDecl -> resolved.put(toResolve, typeDecl));
 			}
 
 			it.setResolvedApiType((U) resolved.get(toResolve));

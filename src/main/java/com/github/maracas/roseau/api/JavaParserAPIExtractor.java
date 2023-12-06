@@ -244,6 +244,6 @@ public class JavaParserAPIExtractor implements APIExtractor {
 	}
 
 	private TypeReference<TypeDecl> makeTypeReference(String fqn) {
-		return new TypeReference<>(fqn);
+		return null;//new TypeReference<>(fqn);
 	}
 }
