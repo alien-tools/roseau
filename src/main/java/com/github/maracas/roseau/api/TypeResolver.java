@@ -49,7 +49,7 @@ public class TypeResolver extends AbstractAPIVisitor {
 					};
 
 					if (spoonTypeRef.getTypeDeclaration() == null)
-						throw new IllegalStateException("Couldn't resolve " + spoonTypeRef + "; is classpath properly set?")
+						throw new IllegalStateException("Couldn't resolve " + spoonTypeRef + "; is classpath properly set?");
 
 					it.setForeignTypeReference(spoonTypeRef);
 				}

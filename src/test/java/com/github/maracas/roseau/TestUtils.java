@@ -119,9 +119,10 @@ public class TestUtils {
 	}
 
 	public static API buildAPI(String sources) {
-		APIExtractor extractor = new SpoonAPIExtractor(buildModel(sources));
+		CtModel m = buildModel(sources);
+		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API api = extractor.extractAPI();
-		api.resolve();
+		api.resolve(m.getRootPackage().getFactory().Type());
 		return api;
 	}
 
