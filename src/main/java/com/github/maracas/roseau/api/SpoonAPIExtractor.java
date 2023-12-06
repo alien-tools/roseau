@@ -383,7 +383,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return !position.isValidPosition()
 			? SourceLocation.NO_LOCATION
 			: new SourceLocation(
-				position.getFile().toPath(),
+				position.getFile() != null ? position.getFile().toPath() : null,
 				position.getLine()
 			);
 	}

@@ -2,26 +2,15 @@ package com.github.maracas.roseau;
 
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.google.common.base.Stopwatch;
-import spoon.Launcher;
-import spoon.MavenLauncher;
-import spoon.SpoonException;
 import spoon.reflect.CtModel;
-import spoon.reflect.declaration.CtType;
-import spoon.support.compiler.SpoonProgress;
 
 import java.io.FileWriter;
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
 /**
  * The `roseau` class is the main entry point of the project.

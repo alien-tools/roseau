@@ -152,7 +152,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, t1);
 
 		if (t1 instanceof ClassDecl cls1 && t2 instanceof ClassDecl cls2) {
-			if (cls1.getSuperClass() != null && cls2.getSuperClass() == null)
+			if (cls1.getSuperClass().isPresent() && cls2.getSuperClass().isEmpty())
 				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 
 			// Check for deleted super-interfaces
