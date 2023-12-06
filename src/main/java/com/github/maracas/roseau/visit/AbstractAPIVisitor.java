@@ -100,8 +100,8 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit executableDecl(ExecutableDecl it) {
 		return () -> {
 			symbol(it).visit();
-			if (it.getReturnType() != null)
-				$(it.getReturnType()).visit();
+			if (it.getType() != null)
+				$(it.getType()).visit();
 			it.getParameters().forEach(p -> $(p).visit());
 			it.getThrownExceptions().forEach(e -> $(e).visit());
 		};

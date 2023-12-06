@@ -1,6 +1,9 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
+import java.util.Objects;
 
 /**
  * This abstract class represents a symbol in the library, which can be a type,
@@ -21,11 +24,6 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	protected final AccessModifier visibility;
 
 	/**
-	 * Is the symbol accessible/exported?
-	 */
-	protected final boolean isExported;
-
-	/**
 	 * List of non-access modifiers applied to the symbol.
 	 */
 	protected final List<Modifier> modifiers;
@@ -37,10 +35,9 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	protected final TypeReference<TypeDecl> containingType;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType) {
+	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType) {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
-		this.isExported = isExported;
 		this.modifiers = modifiers;
 		this.location = location;
 		this.containingType = containingType;
@@ -69,9 +66,8 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	 *
 	 * @return exported or not
 	 */
-	public boolean isExported() {
-		return isExported;
-	}
+	@JsonIgnore
+	public abstract boolean isExported();
 
 	/**
 	 * Retrieves the list of non-access modifiers applied to the symbol.
@@ -93,5 +89,18 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public TypeReference<TypeDecl> getContainingType() {
 		return containingType;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		Symbol symbol = (Symbol) o;
+		return Objects.equals(qualifiedName, symbol.qualifiedName) && visibility == symbol.visibility && Objects.equals(modifiers, symbol.modifiers) && Objects.equals(location, symbol.location) && Objects.equals(containingType, symbol.containingType);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(qualifiedName, visibility, modifiers, location, containingType);
 	}
 }

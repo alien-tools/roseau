@@ -236,7 +236,7 @@ public class APIDiff {
 		if (m1.isPublic() && m2.isProtected())
 			bc(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, m1);
 
-		if (!m1.getReturnType().equals(m2.getReturnType()))
+		if (!m1.getType().equals(m2.getType()))
 			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1);
 
 		List<TypeReference<ClassDecl>> additionalExceptions1 = m1.getThrownExceptions().stream()

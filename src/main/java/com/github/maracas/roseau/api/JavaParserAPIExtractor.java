@@ -126,7 +126,6 @@ public class JavaParserAPIExtractor implements APIExtractor {
 	private TypeDecl convertTypeDeclaration(TypeDeclaration<?> type) {
 		String qualifiedName = type.getFullyQualifiedName().orElse("<null>");
 		AccessModifier visibility = convertAccessSpecifier(type.getAccessSpecifier());
-		boolean isExported = isExported(type);
 		List<Modifier> modifiers = Collections.emptyList();
 		List<FormalTypeParameter> formalTypeParameters = Collections.emptyList();
 		TypeReference<TypeDecl> containingType = type.getParentNode().orElse(null) instanceof TypeDeclaration<?> parent
@@ -143,28 +142,28 @@ public class JavaParserAPIExtractor implements APIExtractor {
 
 		return switch (type) {
 			case AnnotationDeclaration a ->
-				new AnnotationDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, convertedFields, convertedMethods);
+				new AnnotationDecl(qualifiedName, visibility, modifiers, location, containingType, convertedFields, convertedMethods);
 			case EnumDeclaration e -> {
 				List<ConstructorDecl> convertedConstructors = e.getConstructors().stream()
 					.map(this::convertConstructorDeclaration)
 					.toList();
-				yield new EnumDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
+				yield new EnumDecl(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, convertedFields, convertedMethods, convertedConstructors);
 			}
 			case RecordDeclaration r -> {
 				List<ConstructorDecl> convertedConstructors = r.getConstructors().stream()
 					.map(this::convertConstructorDeclaration)
 					.toList();
-				yield new RecordDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
+				yield new RecordDecl(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, convertedConstructors);
 			}
 			case ClassOrInterfaceDeclaration c -> {
 				if (c.isInterface())
-					yield new InterfaceDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
+					yield new InterfaceDecl(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods);
 				else {
 					TypeReference<ClassDecl> superClass = null;
 					List<ConstructorDecl> convertedConstructors = c.getConstructors().stream()
 						.map(this::convertConstructorDeclaration)
 						.toList();
-					yield new ClassDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
+					yield new ClassDecl(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters, convertedFields, convertedMethods, superClass, convertedConstructors);
 				}
 			}
 			default -> throw new IllegalStateException("Unknown type kind: " + type);
@@ -186,7 +185,6 @@ public class JavaParserAPIExtractor implements APIExtractor {
 	private FieldDecl convertFieldDeclaration(FieldDeclaration field) {
 		String qualifiedName = field.getVariables().get(0).getNameAsString();
 		AccessModifier visibility = convertAccessSpecifier(field.getAccessSpecifier());
-		boolean isExported = isExported(field);
 		List<Modifier> modifiers = Collections.emptyList();
 		SourceLocation location = convertPosition(field.getBegin().orElse(null));
 		TypeReference<TypeDecl> containingType = field.getParentNode().orElse(null) instanceof TypeDeclaration<?> parent
@@ -194,13 +192,12 @@ public class JavaParserAPIExtractor implements APIExtractor {
 			: null;
 		TypeReference<TypeDecl> type = null;
 
-		return new FieldDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, type);
+		return new FieldDecl(qualifiedName, visibility, modifiers, location, containingType, type);
 	}
 
 	private MethodDecl convertMethodDeclaration(MethodDeclaration method) {
 		String qualifiedName = method.getNameAsString();
 		AccessModifier visibility = convertAccessSpecifier(method.getAccessSpecifier());
-		boolean isExported = isExported(method);
 		List<Modifier> modifiers = Collections.emptyList();
 		SourceLocation location = convertPosition(method.getBegin().orElse(null));
 		TypeReference<TypeDecl> containingType = method.getParentNode().orElse(null) instanceof TypeDeclaration<?> parent
@@ -213,13 +210,12 @@ public class JavaParserAPIExtractor implements APIExtractor {
 		List<ParameterDecl> parameters = Collections.emptyList();
 		List<TypeReference<ClassDecl>> exceptions = Collections.emptyList();
 
-		return new MethodDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions, isDefault, isAbstract);
+		return new MethodDecl(qualifiedName, visibility, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions);
 	}
 
 	private ConstructorDecl convertConstructorDeclaration(ConstructorDeclaration cons) {
 		String qualifiedName = cons.getNameAsString();
 		AccessModifier visibility = convertAccessSpecifier(cons.getAccessSpecifier());
-		boolean isExported = isExported(cons);
 		List<Modifier> modifiers = Collections.emptyList();
 		SourceLocation location = convertPosition(cons.getBegin().orElse(null));
 		TypeReference<TypeDecl> containingType = cons.getParentNode().orElse(null) instanceof TypeDeclaration<?> parent
@@ -230,7 +226,7 @@ public class JavaParserAPIExtractor implements APIExtractor {
 		List<ParameterDecl> parameters = Collections.emptyList();
 		List<TypeReference<ClassDecl>> exceptions = Collections.emptyList();
 
-		return new ConstructorDecl(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions);
+		return new ConstructorDecl(qualifiedName, visibility, modifiers, location, containingType, returnType, parameters, formalTypeParameters, exceptions);
 	}
 
 	private SourceLocation convertPosition(Position pos) {

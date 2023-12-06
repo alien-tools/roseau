@@ -1,9 +1,11 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
@@ -18,8 +20,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	 */
 	protected final List<ConstructorDecl> constructors;
 
-	public ClassDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, isExported, modifiers, location, containingType, superInterfaces, formalTypeParameters, fields, methods);
+	@JsonCreator
+	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
+		super(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters, fields, methods);
 		this.superClass = superClass;
 		this.constructors = constructors;
 	}
@@ -83,5 +86,19 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			  %s
 			  %s
 			""".formatted(qualifiedName, visibility, containingType, fields, methods);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		if (!super.equals(o)) return false;
+		ClassDecl classDecl = (ClassDecl) o;
+		return Objects.equals(superClass, classDecl.superClass) && Objects.equals(constructors, classDecl.constructors);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), superClass, constructors);
 	}
 }

@@ -1,13 +1,9 @@
 package com.github.maracas.roseau.api.model;
 
 import java.util.List;
+import java.util.Objects;
 
 public abstract sealed class ExecutableDecl extends TypeMemberDecl permits MethodDecl, ConstructorDecl {
-	/**
-	 * The return type of the executable.
-	 */
-	protected final TypeReference<TypeDecl> returnType;
-
 	/**
 	 * List of the executable's parameter types.
 	 */
@@ -23,9 +19,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, isExported, modifiers, location, containingType);
-		this.returnType = returnType;
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> meow, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, modifiers, location, containingType, meow);
 		this.parameters = parameters;
 		this.formalTypeParameters = formalTypeParameters;
 		this.thrownExceptions = thrownExceptions;
@@ -52,15 +47,6 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	/**
-	 * Retrieves the return data type of the executable.
-	 *
-	 * @return executable's return data type
-	 */
-	public TypeReference<TypeDecl> getReturnType() {
-		return returnType;
-	}
-
-	/**
 	 * Retrieves the list of parameters
 	 *
 	 * @return List of parameters
@@ -78,6 +64,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return formalTypeParameters;
 	}
 
+	@Override
 	public String getSimpleName() {
 		return getQualifiedName().substring(getQualifiedName().lastIndexOf('.') + 1);
 	}
@@ -89,5 +76,19 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public List<TypeReference<ClassDecl>> getThrownExceptions() {
 		return thrownExceptions;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		if (!super.equals(o)) return false;
+		ExecutableDecl that = (ExecutableDecl) o;
+		return Objects.equals(parameters, that.parameters) && Objects.equals(formalTypeParameters, that.formalTypeParameters) && Objects.equals(thrownExceptions, that.thrownExceptions);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), parameters, formalTypeParameters, thrownExceptions);
 	}
 }

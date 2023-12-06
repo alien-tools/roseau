@@ -182,7 +182,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new ClassDecl(
 			cls.getQualifiedName(),
 			convertSpoonVisibility(cls.getVisibility()),
-			isExported(cls),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonPosition(cls.getPosition()),
 			makeTypeReference(cls.getDeclaringType()),
@@ -199,7 +198,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new InterfaceDecl(
 			intf.getQualifiedName(),
 			convertSpoonVisibility(intf.getVisibility()),
-			isExported(intf),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonPosition(intf.getPosition()),
 			makeTypeReference(intf.getDeclaringType()),
@@ -214,7 +212,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new AnnotationDecl(
 			annotation.getQualifiedName(),
 			convertSpoonVisibility(annotation.getVisibility()),
-			isExported(annotation),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
 			convertSpoonPosition(annotation.getPosition()),
 			makeTypeReference(annotation.getDeclaringType()),
@@ -227,7 +224,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new EnumDecl(
 			enm.getQualifiedName(),
 			convertSpoonVisibility(enm.getVisibility()),
-			isExported(enm),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonPosition(enm.getPosition()),
 			makeTypeReference(enm.getDeclaringType()),
@@ -242,7 +238,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new RecordDecl(
 			record.getQualifiedName(),
 			convertSpoonVisibility(record.getVisibility()),
-			isExported(record),
 			convertSpoonNonAccessModifiers(record.getModifiers()),
 			convertSpoonPosition(record.getPosition()),
 			makeTypeReference(record.getDeclaringType()),
@@ -258,7 +253,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new FieldDecl(
 			makeQualifiedName(field),
 			convertSpoonVisibility(field.getVisibility()),
-			isExported(field),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
 			convertSpoonPosition(field.getPosition()),
 			makeTypeReference(field.getDeclaringType()),
@@ -270,16 +264,13 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new MethodDecl(
 			makeQualifiedName(method),
 			convertSpoonVisibility(method.getVisibility()),
-			isExported(method),
 			convertSpoonNonAccessModifiers(method.getModifiers()),
 			convertSpoonPosition(method.getPosition()),
 			makeTypeReference(method.getDeclaringType()),
 			makeTypeReference(method.getType()),
 			convertCtParameters(method),
 			convertCtFormalTypeParameters(method),
-			makeTypeReferences(new ArrayList<>(method.getThrownTypes())),
-			method.isDefaultMethod(),
-			method.isAbstract()
+			makeTypeReferences(new ArrayList<>(method.getThrownTypes()))
 		);
 	}
 
@@ -287,7 +278,6 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new ConstructorDecl(
 			makeQualifiedName(cons),
 			convertSpoonVisibility(cons.getVisibility()),
-			isExported(cons),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
 			convertSpoonPosition(cons.getPosition()),
 			makeTypeReference(cons.getDeclaringType()),
@@ -393,7 +383,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return !position.isValidPosition()
 			? SourceLocation.NO_LOCATION
 			: new SourceLocation(
-				position.getFile() != null ? position.getFile().toPath() : Path.of("<unknown>"),
+				position.getFile().toPath(),
 				position.getLine()
 			);
 	}

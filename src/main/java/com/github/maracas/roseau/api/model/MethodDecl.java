@@ -1,5 +1,8 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.List;
 
 /**
@@ -7,17 +10,9 @@ import java.util.List;
  * This class extends the {@link ExecutableDecl} class and complements it with method-specific information
  */
 public final class MethodDecl extends ExecutableDecl {
-	/**
-	 * A flag indicating whether the method is a default method.
-	 */
-	private final boolean isDefault;
-
-	private final boolean isAbstract;
-
-	public MethodDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions, boolean isDefault, boolean isAbstract) {
-		super(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
-		this.isDefault = isDefault;
-		this.isAbstract = isAbstract;
+	@JsonCreator
+	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, modifiers, location, containingType, type, parameters, formalTypeParameters, thrownExceptions);
 	}
 
 	/**
@@ -25,12 +20,14 @@ public final class MethodDecl extends ExecutableDecl {
 	 *
 	 * @return True if the method is a default method, false otherwise
 	 */
+	@JsonIgnore
 	public boolean isDefault() {
-		return isDefault;
+		return modifiers.contains(Modifier.DEFAULT);
 	}
 
+	@JsonIgnore
 	public boolean isAbstract() {
-		return isAbstract;
+		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
 	/**
@@ -41,6 +38,6 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	@Override
 	public String toString() {
-		return "method %s [%s] [%s] (%s)".formatted(qualifiedName, visibility, returnType, location);
+		return "method %s [%s] [%s]".formatted(qualifiedName, visibility, type);
 	}
 }

@@ -51,7 +51,7 @@ public class TestUtils {
 	}
 
 	public static TypeDecl assertType(API api, String name, String kind) {
-		Optional<TypeDecl> findType = api.getType(name);
+		Optional<TypeDecl> findType = api.findType(name);
 
 		if (findType.isEmpty())
 			throw new AssertionFailedError("No such type", kind + " " + name, "No such type");

@@ -6,5 +6,5 @@ public record SourceLocation(
 	Path file,
 	int line
 ) {
-	public static final SourceLocation NO_LOCATION = new SourceLocation(Path.of("<unknown>"), -1);
+	public static final SourceLocation NO_LOCATION = new SourceLocation(null, -1);
 }

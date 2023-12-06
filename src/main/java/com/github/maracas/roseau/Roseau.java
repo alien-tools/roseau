@@ -2,6 +2,7 @@ package com.github.maracas.roseau;
 
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.google.common.base.Stopwatch;
@@ -9,6 +10,7 @@ import spoon.Launcher;
 import spoon.MavenLauncher;
 import spoon.SpoonException;
 import spoon.reflect.CtModel;
+import spoon.reflect.declaration.CtType;
 import spoon.support.compiler.SpoonProgress;
 
 import java.io.FileWriter;
@@ -60,7 +62,7 @@ public class Roseau {
 
 			// API serialization
 			apiV1.writeJson(Path.of("api-v1.json"));
-			apiV1.writeJson(Path.of("api-v2.json"));
+			apiV2.writeJson(Path.of("api-v2.json"));
 
 			System.out.println("API serialization: " + sw.elapsed().toSeconds());
 			sw.reset();

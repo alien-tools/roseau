@@ -53,4 +53,9 @@ public enum Modifier {
 	 * Represents the "non-sealed" modifier
 	 */
 	NON_SEALED,
+
+	/**
+	 * Represents the "default" modifier
+	 */
+	DEFAULT
 }

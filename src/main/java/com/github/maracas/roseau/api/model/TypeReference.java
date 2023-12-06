@@ -186,6 +186,15 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
+	public boolean isExported() {
+		if (resolvedApiType != null)
+			return resolvedApiType.isExported();
+		else if (foreignTypeReference != null)
+			return false; // FIXME
+		throw new RuntimeException("Unresolved reference");
+	}
+
+	@Override
 	public boolean isAbstract() {
 		if (resolvedApiType != null)
 			return resolvedApiType.isAbstract();

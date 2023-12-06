@@ -1,5 +1,8 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.util.List;
 
 /**
@@ -7,8 +10,9 @@ import java.util.List;
  * This class extends the {@link ExecutableDecl} class and contains information about the constructor's parameters, return type, class, and more.
  */
 public final class ConstructorDecl extends ExecutableDecl {
-	public ConstructorDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> returnType, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, isExported, modifiers, location, containingType, returnType, parameters, formalTypeParameters, thrownExceptions);
+	@JsonCreator
+	public ConstructorDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, modifiers, location, containingType, type, parameters, formalTypeParameters, thrownExceptions);
 	}
 
 	/**

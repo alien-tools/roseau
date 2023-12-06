@@ -1,16 +1,31 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonSubTypes;
+import com.fasterxml.jackson.annotation.JsonTypeInfo;
+
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
+
 
 /**
  * Represents a type declaration in the library.
  * This class extends the {@link Symbol} class and contains information about the type's kind, fields, methods, constructors, and more.
  */
+@JsonTypeInfo(
+	use = JsonTypeInfo.Id.NAME,
+	property = "type")
+@JsonSubTypes({
+	@JsonSubTypes.Type(value = ClassDecl.class, name = "ClassDecl"),
+	@JsonSubTypes.Type(value = InterfaceDecl.class, name = "InterfaceDecl"),
+	@JsonSubTypes.Type(value = AnnotationDecl.class, name = "AnnotationDecl"),
+	@JsonSubTypes.Type(value = EnumDecl.class, name = "EnumDecl"),
+	@JsonSubTypes.Type(value = RecordDecl.class, name = "RecordDecl")
+})
 public abstract sealed class TypeDecl extends Symbol implements Type permits ClassDecl, InterfaceDecl, AnnotationDecl {
-	protected final List<TypeReference<InterfaceDecl>> superInterfaces;
+	protected final List<TypeReference<InterfaceDecl>> implementedInterfaces;
 
 	/**
 	 * List of formal type parameters for generic types.
@@ -27,14 +42,26 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 */
 	protected final List<MethodDecl> methods;
 
-	protected TypeDecl(String qualifiedName, AccessModifier visibility, boolean isExported, List<Modifier> modifiers, SourceLocation position,
-	                   TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces,
-	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods) {
-		super(qualifiedName, visibility, isExported, modifiers, position, containingType);
-		this.superInterfaces = superInterfaces;
+	protected TypeDecl(String qualifiedName,
+	                   AccessModifier visibility,
+	                   List<Modifier> modifiers,
+	                   SourceLocation position,
+	                   TypeReference<TypeDecl> containingType,
+	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                   List<FormalTypeParameter> formalTypeParameters,
+	                   List<FieldDecl> fields,
+	                   List<MethodDecl> methods) {
+		super(qualifiedName, visibility, modifiers, position, containingType);
+		this.implementedInterfaces = implementedInterfaces;
 		this.formalTypeParameters = formalTypeParameters;
 		this.fields = fields;
 		this.methods = methods;
+	}
+
+	@Override
+	public boolean isExported() {
+		return (isPublic() || (isProtected() && !isEffectivelyFinal()))
+			&& (containingType == null || containingType.isExported());
 	}
 
 	@Override
@@ -123,7 +150,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
 			methods.stream(),
-			superInterfaces.stream()
+			implementedInterfaces.stream()
 				.map(TypeReference::getAllMethods)
 				.flatMap(Collection::stream)
 		).toList();
@@ -136,7 +163,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 */
 	@Override
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
-		return superInterfaces;
+		return implementedInterfaces;
 	}
 
 	/**
@@ -160,6 +187,11 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
+	public List<MethodDecl> getMethods() {
+		return methods;
+	}
+
+	@Override
 	public Optional<FieldDecl> getField(String name) {
 		return fields.stream()
 			.filter(f -> f.getSimpleName().equals(name))
@@ -169,21 +201,25 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	@Override
 	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
 		return Stream.concat(
-			superInterfaces.stream(),
-			superInterfaces.stream()
+			implementedInterfaces.stream(),
+			implementedInterfaces.stream()
 				.map(Type::getAllImplementedInterfaces)
 				.flatMap(Collection::stream)
 				.distinct()
 		).toList();
 	}
 
-	/**
-	 * Retrieves the list of methods declared within the type.
-	 *
-	 * @return List of methods declared within the type
-	 */
 	@Override
-	public List<MethodDecl> getMethods() {
-		return methods;
+	public boolean equals(Object o) {
+		if (this == o) return true;
+		if (o == null || getClass() != o.getClass()) return false;
+		if (!super.equals(o)) return false;
+		TypeDecl typeDecl = (TypeDecl) o;
+		return Objects.equals(implementedInterfaces, typeDecl.implementedInterfaces) && Objects.equals(formalTypeParameters, typeDecl.formalTypeParameters) && Objects.equals(fields, typeDecl.fields) && Objects.equals(methods, typeDecl.methods);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods);
 	}
 }

@@ -36,13 +36,11 @@ public class TypeResolver extends AbstractAPIVisitor {
 			// compute/putIfAbsent do not work with null values
 			String toResolve = it.getQualifiedName();
 			if (!resolved.containsKey(toResolve)) {
-				Optional<TypeDecl> withinAPI = api.getType(toResolve);
+				Optional<TypeDecl> withinAPI = api.findType(toResolve);
 
 				if (withinAPI.isPresent()) {
 					resolved.put(toResolve, withinAPI.get());
 				} else {
-					System.out.println("Looking for " + toResolve);
-
 					it.setForeignTypeReference(switch (it) {
 						case ArrayTypeReference<U> arrayRef -> typeFactory.createArrayReference(toResolve);
 						case TypeParameterReference<U> tpRef -> typeFactory.createTypeParameterReference(tpRef.getQualifiedName()); // FIXME
