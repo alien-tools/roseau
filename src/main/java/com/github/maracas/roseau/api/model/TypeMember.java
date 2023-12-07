@@ -1,9 +1,10 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 
 public interface TypeMember {
-	TypeReference<TypeDecl> getType();
+	ITypeReference getType();
 	@JsonIgnore
 	String getSimpleName();
 	@JsonIgnore

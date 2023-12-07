@@ -2,6 +2,8 @@ package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
@@ -35,7 +37,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
-			superClass != null ? superClass.getAllMethods().stream() : Stream.empty(),
+			getSuperClass().map(sup -> sup.getResolvedApiType().map(cls -> cls.getAllMethods().stream()).orElse(Stream.empty())).orElse(Stream.empty()),
 			super.getAllMethods().stream()
 		).toList();
 	}
@@ -43,7 +45,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public List<FieldDecl> getAllFields() {
 		return Stream.concat(
-			superClass != null ? superClass.getAllFields().stream() : Stream.empty(),
+			getSuperClass().map(sup -> sup.getResolvedApiType().map(cls -> cls.getAllFields().stream()).orElse(Stream.empty())).orElse(Stream.empty()),
 			super.getAllFields().stream()
 		).toList();
 	}
@@ -79,7 +81,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
 		return Stream.concat(
 			super.getAllImplementedInterfaces().stream(),
-			superClass != null ? superClass.getAllImplementedInterfaces().stream() : Stream.empty()
+			superClass != null ? superClass.getResolvedApiType().map(cls -> cls.getAllImplementedInterfaces().stream()).orElse(Stream.empty()) : Stream.empty()
 		).distinct().toList();
 	}
 

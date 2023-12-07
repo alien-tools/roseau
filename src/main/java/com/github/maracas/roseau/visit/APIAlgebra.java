@@ -12,7 +12,11 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.TypeReference;
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 public interface APIAlgebra<T> {
 	T api(API it);
@@ -26,6 +30,9 @@ public interface APIAlgebra<T> {
 	T fieldDecl(FieldDecl it);
 	T parameterDecl(ParameterDecl it);
 	<U extends TypeDecl> T typeReference(TypeReference<U> it);
+	T primitiveTypeReference(PrimitiveTypeReference it);
+	T arrayTypeReference(ArrayTypeReference it);
+	T typeParameterReference(TypeParameterReference it);
 
 	default T $(API it) {
 		return api(it);
@@ -48,7 +55,12 @@ public interface APIAlgebra<T> {
 		return parameterDecl(it);
 	}
 
-	default <U extends TypeDecl> T $(TypeReference<U> it) {
-		return typeReference(it);
+	default T $(ITypeReference it) {
+		return switch (it) {
+			case TypeReference<?> typeRef -> typeReference(typeRef);
+			case PrimitiveTypeReference primitiveRef -> primitiveTypeReference(primitiveRef);
+			case ArrayTypeReference arrayRef -> arrayTypeReference(arrayRef);
+			case TypeParameterReference tpRef -> typeParameterReference(tpRef);
+		};
 	}
 }

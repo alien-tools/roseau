@@ -9,7 +9,8 @@ import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.TypeReference;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 
@@ -176,10 +177,10 @@ public class APIDiff {
 				FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
 
 				List<String> bounds1 = p1.bounds().stream()
-					.map(TypeReference::getQualifiedName)
+					.map(ITypeReference::getQualifiedName)
 					.toList();
 				List<String> bounds2 = p2.bounds().stream()
-					.map(TypeReference::getQualifiedName)
+					.map(ITypeReference::getQualifiedName)
 					.toList();
 
 				if (bounds1.size() != bounds2.size()
@@ -240,7 +241,6 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1);
 
 		List<TypeReference<ClassDecl>> additionalExceptions1 = m1.getThrownExceptions().stream()
-			.filter(TypeReference::isCheckedException)
 			.filter(e -> !m2.getThrownExceptions().contains(e))
 			.toList();
 

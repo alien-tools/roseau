@@ -2,7 +2,7 @@ package com.github.maracas.roseau.api;
 
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.TypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.visit.Visit;
 import spoon.reflect.factory.TypeFactory;

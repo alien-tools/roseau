@@ -1,6 +1,8 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Objects;

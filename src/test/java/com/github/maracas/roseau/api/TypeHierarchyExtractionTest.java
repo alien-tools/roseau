@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.TypeReference;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertAnnotation;
@@ -143,12 +143,12 @@ class TypeHierarchyExtractionTest {
 
 		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("E")));
 		assertThat(a.getAllSuperClasses(), hasSize(3));
-		assertThat(a.getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList(),
+		assertThat(a.getAllSuperClasses().stream().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("C"), equalTo("D"), equalTo("E")));
 
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getAllImplementedInterfaces(), hasSize(6));
-		assertThat(a.getAllImplementedInterfaces().stream().map(TypeReference::getQualifiedName).toList(),
+		assertThat(a.getAllImplementedInterfaces().stream().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("I"), equalTo("J"), equalTo("K"), equalTo("L"), equalTo("M"), equalTo("N")));
 	}
 
@@ -170,12 +170,12 @@ class TypeHierarchyExtractionTest {
 
 		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("E")));
 		assertThat(a.getAllSuperClasses(), hasSize(3));
-		assertThat(a.getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList(),
+		assertThat(a.getAllSuperClasses().stream().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("E"), equalTo("D"), equalTo("java.lang.Thread")));
 
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getAllImplementedInterfaces(), hasSize(5));
-		assertThat(a.getAllImplementedInterfaces().stream().map(TypeReference::getQualifiedName).toList(),
+		assertThat(a.getAllImplementedInterfaces().stream().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("M"), equalTo("N"), equalTo("java.lang.Comparable"), equalTo("java.lang.Runnable"), equalTo("java.lang.Cloneable")));
 	}
 }

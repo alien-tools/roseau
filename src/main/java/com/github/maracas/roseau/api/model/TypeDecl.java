@@ -2,6 +2,8 @@ package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collection;
 import java.util.List;
@@ -61,7 +63,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	@Override
 	public boolean isExported() {
 		return (isPublic() || (isProtected() && !isEffectivelyFinal()))
-			&& (containingType == null || containingType.isExported());
+			&& (containingType == null || containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true));
 	}
 
 	@Override
@@ -156,7 +158,9 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 		return Stream.concat(
 			methods.stream(),
 			implementedInterfaces.stream()
-				.map(TypeReference::getAllMethods)
+				.map(TypeReference::getResolvedApiType)
+				.flatMap(Optional::stream)
+				.map(InterfaceDecl::getAllMethods)
 				.flatMap(Collection::stream)
 		).toList();
 	}
@@ -166,7 +170,9 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 		return Stream.concat(
 			fields.stream(),
 			implementedInterfaces.stream()
-				.map(TypeReference::getAllFields)
+				.map(TypeReference::getResolvedApiType)
+				.flatMap(Optional::stream)
+				.map(InterfaceDecl::getAllFields)
 				.flatMap(Collection::stream)
 		).toList();
 	}
@@ -202,7 +208,7 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
-	public Optional<MethodDecl> findMethod(String name, List<TypeReference<TypeDecl>> parameterTypes) {
+	public Optional<MethodDecl> findMethod(String name, List<ITypeReference> parameterTypes) {
 		return methods.stream()
 			.filter(m -> m.hasSignature(name, parameterTypes))
 			.findFirst();
@@ -225,7 +231,9 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 		return Stream.concat(
 			implementedInterfaces.stream(),
 			implementedInterfaces.stream()
-				.map(Type::getAllImplementedInterfaces)
+				.map(TypeReference::getResolvedApiType)
+				.flatMap(Optional::stream)
+				.map(InterfaceDecl::getAllImplementedInterfaces)
 				.flatMap(Collection::stream)
 				.distinct()
 		).toList();

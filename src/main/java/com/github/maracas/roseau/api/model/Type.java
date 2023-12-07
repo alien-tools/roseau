@@ -1,6 +1,8 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Optional;
@@ -57,7 +59,7 @@ public interface Type {
 	List<FieldDecl> getFields();
 
 	// Search
-	Optional<MethodDecl> findMethod(String name, List<TypeReference<TypeDecl>> parameterTypes);
+	Optional<MethodDecl> findMethod(String name, List<ITypeReference> parameterTypes);
 	Optional<FieldDecl> findField(String name);
 
 	// Transitive navigations

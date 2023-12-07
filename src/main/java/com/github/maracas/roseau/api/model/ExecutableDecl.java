@@ -1,5 +1,8 @@
 package com.github.maracas.roseau.api.model;
 
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
+
 import java.util.List;
 import java.util.Objects;
 
@@ -19,8 +22,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> meow, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, location, containingType, meow);
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, modifiers, location, containingType, type);
 		this.parameters = parameters;
 		this.formalTypeParameters = formalTypeParameters;
 		this.thrownExceptions = thrownExceptions;
@@ -46,7 +49,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return true;
 	}
 
-	public boolean hasSignature(String name, List<TypeReference<TypeDecl>> parameterTypes) {
+	public boolean hasSignature(String name, List<ITypeReference> parameterTypes) {
 		if (!name.equals(getSimpleName()))
 			return false;
 
@@ -54,8 +57,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			return false;
 
 		for (int i = 0; i < parameterTypes.size(); i++) {
-			TypeReference<TypeDecl> otherParameter = parameterTypes.get(i);
-			TypeReference<TypeDecl> thisParameter = parameters.get(i).type();
+			ITypeReference otherParameter = parameterTypes.get(i);
+			ITypeReference thisParameter = parameters.get(i).type();
 
 //			if (otherParameter.isVarargs() != thisParameter.isVarargs())
 //				return false;

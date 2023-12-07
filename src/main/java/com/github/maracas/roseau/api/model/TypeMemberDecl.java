@@ -1,25 +1,28 @@
 package com.github.maracas.roseau.api.model;
 
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
+
 import java.util.List;
 import java.util.Objects;
 
 public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl {
-	protected final TypeReference<TypeDecl> type;
+	protected final ITypeReference type;
 
-	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, TypeReference<TypeDecl> type) {
+	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, location, containingType);
 		this.type = type;
 	}
 
 	@Override
-	public TypeReference<TypeDecl> getType() {
+	public ITypeReference getType() {
 		return type;
 	}
 
 	@Override
 	public boolean isExported() {
-		return (isPublic() || (isProtected() && !containingType.isEffectivelyFinal()))
-			&& containingType.isExported();
+		return (isPublic() || (isProtected() && !containingType.getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(true)))
+			&& containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true);
 	}
 
 	@Override

@@ -27,7 +27,7 @@ class TypeReferenceTest {
 			.get();
 
 		System.out.println("chars="+chars);
-		System.out.println("transitiveRef="+chars.getType().getAllMethods());
+		System.out.println("transitiveRef="+chars.getType());
 	}
 
 	@Test

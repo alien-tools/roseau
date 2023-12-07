@@ -13,7 +13,10 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.TypeReference;
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
+import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit api(API it) {
@@ -24,7 +27,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit classDecl(ClassDecl it) {
 		return () -> {
 			typeDecl(it).visit();
-			it.getSuperClass().ifPresent((sup) -> $(sup).visit());
+			it.getSuperClass().ifPresent(sup -> $(sup).visit());
 			it.getConstructors().forEach(c -> $(c).visit());
 		};
 	}
@@ -78,7 +81,22 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-		return Visit.NOP;
+		return () -> {};
+	}
+
+	@Override
+	public Visit primitiveTypeReference(PrimitiveTypeReference it) {
+		return () -> {};
+	}
+
+	@Override
+	public Visit arrayTypeReference(ArrayTypeReference it) {
+		return () -> {};
+	}
+
+	@Override
+	public Visit typeParameterReference(TypeParameterReference it) {
+		return () -> {};
 	}
 
 	public Visit symbol(Symbol it) {
