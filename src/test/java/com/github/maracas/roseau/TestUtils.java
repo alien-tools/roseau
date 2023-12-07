@@ -74,19 +74,12 @@ public class TestUtils {
 	}
 
 	public static FieldDecl assertField(TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = decl.getField(name);
+		Optional<FieldDecl> findField = decl.findField(name);
 
 		if (findField.isEmpty())
 			throw new AssertionFailedError("No such field", name, "No such field");
 		else
 			return findField.get();
-	}
-
-	public static void assertNoField(TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = decl.getField(name);
-
-		if (findField.isPresent())
-			throw new AssertionFailedError("Unexpected field", "No such field", findField.get());
 	}
 
 	public static ClassDecl assertClass(API api, String name) {

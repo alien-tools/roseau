@@ -46,6 +46,26 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return true;
 	}
 
+	public boolean hasSignature(String name, List<TypeReference<TypeDecl>> parameterTypes) {
+		if (!name.equals(getSimpleName()))
+			return false;
+
+		if (parameterTypes.size() != parameters.size())
+			return false;
+
+		for (int i = 0; i < parameterTypes.size(); i++) {
+			TypeReference<TypeDecl> otherParameter = parameterTypes.get(i);
+			TypeReference<TypeDecl> thisParameter = parameters.get(i).type();
+
+//			if (otherParameter.isVarargs() != thisParameter.isVarargs())
+//				return false;
+			if (otherParameter != thisParameter)
+				return false;
+		}
+
+		return true;
+	}
+
 	/**
 	 * Retrieves the list of parameters
 	 *

@@ -95,6 +95,11 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
+	public boolean isPrimitive() {
+		return false;
+	}
+
+	@Override
 	public boolean isCheckedException() {
 		return false;
 	}
@@ -156,6 +161,16 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 		).toList();
 	}
 
+	@Override
+	public List<FieldDecl> getAllFields() {
+		return Stream.concat(
+			fields.stream(),
+			implementedInterfaces.stream()
+				.map(TypeReference::getAllFields)
+				.flatMap(Collection::stream)
+		).toList();
+	}
+
 	/**
 	 * Retrieves the superinterfaces of the type as typeDeclarations.
 	 *
@@ -187,12 +202,19 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	}
 
 	@Override
+	public Optional<MethodDecl> findMethod(String name, List<TypeReference<TypeDecl>> parameterTypes) {
+		return methods.stream()
+			.filter(m -> m.hasSignature(name, parameterTypes))
+			.findFirst();
+	}
+
+	@Override
 	public List<MethodDecl> getMethods() {
 		return methods;
 	}
 
 	@Override
-	public Optional<FieldDecl> getField(String name) {
+	public Optional<FieldDecl> findField(String name) {
 		return fields.stream()
 			.filter(f -> f.getSimpleName().equals(name))
 			.findFirst();

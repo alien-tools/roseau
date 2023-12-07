@@ -77,7 +77,7 @@ public class APIDiff {
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
 		t1.getFields().forEach(f1 -> {
-			Optional<FieldDecl> findF2 = t2.getField(f1.getQualifiedName());
+			Optional<FieldDecl> findF2 = t2.findField(f1.getQualifiedName());
 
 			findF2.ifPresentOrElse(
 				// There is a matching field

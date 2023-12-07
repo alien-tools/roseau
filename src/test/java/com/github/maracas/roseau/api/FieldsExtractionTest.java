@@ -1,14 +1,13 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.AccessModifier;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertClass;
 import static com.github.maracas.roseau.TestUtils.assertField;
-import static com.github.maracas.roseau.TestUtils.assertNoField;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -41,11 +40,44 @@ class FieldsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertNoField(a, "a");
+		assertThat(a.getFields(), hasSize(2));
 		var fb = assertField(a, "b");
 		assertTrue(fb.isProtected());
 		var fc = assertField(a, "c");
 		assertTrue(fc.isPublic());
-		assertNoField(a, "d");
+	}
+
+	@Test
+	void final_fields() {
+		var api = buildAPI("""
+      public class A {
+        public int a;
+        public final int b;
+      }""");
+
+		var a = assertClass(api, "A");
+		assertTrue(a.isExported());
+		assertThat(a.getFields(), hasSize(2));
+		var fa = assertField(a, "a");
+		assertFalse(fa.isFinal());
+		var fb = assertField(a, "b");
+		assertTrue(fb.isFinal());
+	}
+
+	@Test
+	void static_fields() {
+		var api = buildAPI("""
+      public class A {
+        public int a;
+        public static int b;
+      }""");
+
+		var a = assertClass(api, "A");
+		assertTrue(a.isExported());
+		assertThat(a.getFields(), hasSize(2));
+		var fa = assertField(a, "a");
+		assertFalse(fa.isStatic());
+		var fb = assertField(a, "b");
+		assertTrue(fb.isStatic());
 	}
 }

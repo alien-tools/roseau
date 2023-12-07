@@ -41,6 +41,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	@Override
+	public List<FieldDecl> getAllFields() {
+		return Stream.concat(
+			superClass != null ? superClass.getAllFields().stream() : Stream.empty(),
+			super.getAllFields().stream()
+		).toList();
+	}
+
+	@Override
 	public boolean isCheckedException() {
 		return getAllSuperClasses().stream().anyMatch(cls -> cls.getQualifiedName().equals("java.lang.Exception"))
 			&& getAllSuperClasses().stream().noneMatch(cls -> cls.getQualifiedName().equals("java.lang.RuntimeException"));

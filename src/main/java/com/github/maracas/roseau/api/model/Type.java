@@ -17,6 +17,8 @@ public interface Type {
 	boolean isRecord();
 	@JsonIgnore
 	boolean isAnnotation();
+	@JsonIgnore
+	boolean isPrimitive();
 
 	// Visibility
 	@JsonIgnore
@@ -51,13 +53,18 @@ public interface Type {
 	// Navigation
 	List<TypeReference<InterfaceDecl>> getImplementedInterfaces();
 	List<FormalTypeParameter> getFormalTypeParameters();
-	List<FieldDecl> getFields();
 	List<MethodDecl> getMethods();
-	Optional<FieldDecl> getField(String name);
+	List<FieldDecl> getFields();
+
+	// Search
+	Optional<MethodDecl> findMethod(String name, List<TypeReference<TypeDecl>> parameterTypes);
+	Optional<FieldDecl> findField(String name);
 
 	// Transitive navigations
 	@JsonIgnore
 	List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces();
 	@JsonIgnore
 	List<MethodDecl> getAllMethods();
+	@JsonIgnore
+	List<FieldDecl> getAllFields();
 }

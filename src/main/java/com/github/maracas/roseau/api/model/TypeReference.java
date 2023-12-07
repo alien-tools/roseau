@@ -83,6 +83,11 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
+	public boolean isPrimitive() {
+		return false;
+	}
+
+	@Override
 	public boolean isCheckedException() {
 		return getResolvedApiType().map(TypeDecl::isCheckedException).orElse(false);
 	}
@@ -143,8 +148,13 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	}
 
 	@Override
-	public Optional<FieldDecl> getField(String name) {
-		return getResolvedApiType().flatMap(t -> t.getField(name));
+	public List<FieldDecl> getAllFields() {
+		return getResolvedApiType().map(TypeDecl::getAllFields).orElse(Collections.emptyList());
+	}
+
+	@Override
+	public Optional<FieldDecl> findField(String name) {
+		return getResolvedApiType().flatMap(t -> t.findField(name));
 	}
 
 	@Override
@@ -165,6 +175,11 @@ public class TypeReference<T extends TypeDecl> implements Type {
 	@Override
 	public List<FieldDecl> getFields() {
 		return getResolvedApiType().map(TypeDecl::getFields).orElse(Collections.emptyList());
+	}
+
+	@Override
+	public Optional<MethodDecl> findMethod(String name, List<TypeReference<TypeDecl>> parameterTypes) {
+		return getResolvedApiType().flatMap(t -> t.findMethod(name, parameterTypes));
 	}
 
 	@Override
