@@ -20,13 +20,13 @@ import java.util.stream.Stream;
 	use = JsonTypeInfo.Id.NAME,
 	property = "type")
 @JsonSubTypes({
-	@JsonSubTypes.Type(value = ClassDecl.class, name = "ClassDecl"),
-	@JsonSubTypes.Type(value = InterfaceDecl.class, name = "InterfaceDecl"),
-	@JsonSubTypes.Type(value = AnnotationDecl.class, name = "AnnotationDecl"),
-	@JsonSubTypes.Type(value = EnumDecl.class, name = "EnumDecl"),
-	@JsonSubTypes.Type(value = RecordDecl.class, name = "RecordDecl")
+	@JsonSubTypes.Type(value = ClassDecl.class),
+	@JsonSubTypes.Type(value = InterfaceDecl.class),
+	@JsonSubTypes.Type(value = AnnotationDecl.class),
+	@JsonSubTypes.Type(value = EnumDecl.class),
+	@JsonSubTypes.Type(value = RecordDecl.class)
 })
-public abstract sealed class TypeDecl extends Symbol implements Type permits ClassDecl, InterfaceDecl, AnnotationDecl {
+public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl, AnnotationDecl {
 	protected final List<TypeReference<InterfaceDecl>> implementedInterfaces;
 
 	/**
@@ -66,94 +66,72 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 			&& (containingType == null || containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true));
 	}
 
-	@Override
 	public boolean isNested() {
 		return containingType != null;
 	}
 
-	@Override
 	public boolean isClass() {
 		return false;
 	}
 
-	@Override
 	public boolean isInterface() {
 		return false;
 	}
 
-	@Override
 	public boolean isEnum() {
 		return false;
 	}
 
-	@Override
 	public boolean isRecord() {
 		return false;
 	}
 
-	@Override
 	public boolean isAnnotation() {
 		return false;
 	}
 
-	@Override
-	public boolean isPrimitive() {
-		return false;
-	}
-
-	@Override
 	public boolean isCheckedException() {
 		return false;
 	}
 
-	@Override
 	public boolean isStatic() {
 		return modifiers.contains(Modifier.STATIC);
 	}
 
-	@Override
 	public boolean isFinal() {
 		return modifiers.contains(Modifier.FINAL);
 	}
 
-	@Override
 	public boolean isSealed() {
 		return modifiers.contains(Modifier.SEALED);
 	}
 
-	@Override
 	public boolean isEffectivelyFinal() {
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
 		//        is explicitly marked as non-sealed
 		return !modifiers.contains(Modifier.NON_SEALED) && (isFinal() || isSealed());
 	}
 
-	@Override
 	public boolean isPublic() {
 		return visibility == AccessModifier.PUBLIC;
 	}
 
-	@Override
 	public boolean isProtected() {
 		return visibility == AccessModifier.PROTECTED;
 	}
 
-	@Override
 	public boolean isPrivate() {
 		return visibility == AccessModifier.PRIVATE;
 	}
 
-	@Override
 	public boolean isPackagePrivate() {
 		return visibility == AccessModifier.PACKAGE_PRIVATE;
 	}
 
-	@Override
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	@Override
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
 			methods.stream(),
@@ -165,7 +143,6 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 		).toList();
 	}
 
-	@Override
 	public List<FieldDecl> getAllFields() {
 		return Stream.concat(
 			fields.stream(),
@@ -182,7 +159,6 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 *
 	 * @return Type's superinterfaces as typeDeclarations
 	 */
-	@Override
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
 		return implementedInterfaces;
 	}
@@ -192,7 +168,6 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 *
 	 * @return List of formal type parameters
 	 */
-	@Override
 	public List<FormalTypeParameter> getFormalTypeParameters() {
 		return formalTypeParameters;
 	}
@@ -202,31 +177,20 @@ public abstract sealed class TypeDecl extends Symbol implements Type permits Cla
 	 *
 	 * @return List of fields declared within the type
 	 */
-	@Override
 	public List<FieldDecl> getFields() {
 		return fields;
 	}
 
-	@Override
-	public Optional<MethodDecl> findMethod(String name, List<ITypeReference> parameterTypes) {
-		return methods.stream()
-			.filter(m -> m.hasSignature(name, parameterTypes))
-			.findFirst();
-	}
-
-	@Override
 	public List<MethodDecl> getMethods() {
 		return methods;
 	}
 
-	@Override
 	public Optional<FieldDecl> findField(String name) {
 		return fields.stream()
 			.filter(f -> f.getSimpleName().equals(name))
 			.findFirst();
 	}
 
-	@Override
 	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
 		return Stream.concat(
 			implementedInterfaces.stream(),
