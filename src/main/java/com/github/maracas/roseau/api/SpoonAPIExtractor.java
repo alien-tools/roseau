@@ -15,6 +15,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -37,21 +38,19 @@ public class SpoonAPIExtractor implements APIExtractor {
 		this.model = Objects.requireNonNull(model);
 	}
 
-	public static CtModel buildModel(Path location) {
-		return buildModel(location, Integer.MAX_VALUE);
-	}
-
-	public static CtModel buildModel(Path location, int timeoutSeconds) {
-		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(() -> {
+	public static Optional<CtModel> buildModel(Path location, int timeoutSeconds) {
+		CompletableFuture<Optional<CtModel>> future = CompletableFuture.supplyAsync(() -> {
 			Launcher launcher = launcherFor(location);
-			return launcher.buildModel();
+			return Optional.of(launcher.buildModel());
 		});
 
 		try {
 			return future.get(timeoutSeconds, TimeUnit.SECONDS);
-		} catch (TimeoutException | InterruptedException | ExecutionException e) {
-			e.printStackTrace();
-			return null;
+		} catch (TimeoutException | ExecutionException e) {
+			return Optional.empty();
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			return Optional.empty();
 		}
 	}
 

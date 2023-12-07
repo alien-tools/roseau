@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
@@ -49,26 +50,6 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return true;
 	}
 
-	public boolean hasSignature(String name, List<ITypeReference> parameterTypes) {
-		if (!name.equals(getSimpleName()))
-			return false;
-
-		if (parameterTypes.size() != parameters.size())
-			return false;
-
-		for (int i = 0; i < parameterTypes.size(); i++) {
-			ITypeReference otherParameter = parameterTypes.get(i);
-			ITypeReference thisParameter = parameters.get(i).type();
-
-//			if (otherParameter.isVarargs() != thisParameter.isVarargs())
-//				return false;
-			if (otherParameter != thisParameter)
-				return false;
-		}
-
-		return true;
-	}
-
 	/**
 	 * Retrieves the list of parameters
 	 *
@@ -99,6 +80,16 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public List<TypeReference<ClassDecl>> getThrownExceptions() {
 		return thrownExceptions;
+	}
+
+	@JsonIgnore
+	public boolean isNative() {
+		return modifiers.contains(Modifier.NATIVE);
+	}
+
+	@JsonIgnore
+	public boolean isStrictFp() {
+		return modifiers.contains(Modifier.STRICTFP);
 	}
 
 	@Override

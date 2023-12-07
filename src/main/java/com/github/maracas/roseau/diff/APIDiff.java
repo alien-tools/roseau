@@ -369,7 +369,7 @@ public class APIDiff {
 	 * <p>
 	 * position, associated element, and nature of each detected BC.
 	 */
-	public void breakingChangesReport() {
+	public void breakingChangesReport() throws IOException {
 		List<BreakingChange> bcs = getBreakingChanges();
 
 		try (FileWriter writer = new FileWriter("breaking_changes_report.csv")) {
@@ -383,8 +383,6 @@ public class APIDiff {
 
 				writer.write(kind + "," + element + "," + nature + "," + location + "\n");
 			}
-		} catch (IOException e) {
-			e.printStackTrace();
 		}
 	}
 

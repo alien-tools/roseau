@@ -80,12 +80,6 @@ public final class API {
 		mapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
 	}
 
-	public String toJson() throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new Jdk8Module());
-		return mapper.writeValueAsString(this);
-	}
-
 	public static API fromJson(Path jsonFile) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new Jdk8Module()); // For Optional<>

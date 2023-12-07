@@ -15,8 +15,4 @@ public interface TypeMember {
 	boolean isProtected();
 	@JsonIgnore
 	boolean isFinal();
-	@JsonIgnore
-	boolean isNative();
-	@JsonIgnore
-	boolean isStrictFp();
 }

@@ -12,6 +12,7 @@ public class TypeResolver extends AbstractAPIVisitor {
 	private final TypeFactory typeFactory;
 
 	public TypeResolver(API api, TypeFactory typeFactory) {
+		super();
 		this.api = api;
 		this.typeFactory = typeFactory;
 	}

@@ -23,8 +23,10 @@ public class Roseau {
 			Stopwatch sw = Stopwatch.createStarted();
 
 			// Spoon parsing
-			CtModel m1 = SpoonAPIExtractor.buildModel(Path.of(args[0]), 60);
-			CtModel m2 = SpoonAPIExtractor.buildModel(Path.of(args[1]), 60);
+			CtModel m1 = SpoonAPIExtractor.buildModel(Path.of(args[0]), 60)
+				.orElseThrow(() -> new RuntimeException("Couldn't build in < 60s"));
+			CtModel m2 = SpoonAPIExtractor.buildModel(Path.of(args[1]), 60)
+				.orElseThrow(() -> new RuntimeException("Couldn't build in < 60s"));
 
 			writer.write("Spoon model building," + sw.elapsed().toMillis() + "\n");
 			System.out.println("Spoon model building: " + sw.elapsed().toSeconds());

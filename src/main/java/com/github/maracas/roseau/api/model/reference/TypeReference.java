@@ -1,17 +1,12 @@
 package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.github.maracas.roseau.api.model.FieldDecl;
-import com.github.maracas.roseau.api.model.InterfaceDecl;
-import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.google.common.base.Objects;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtTypeReference;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {

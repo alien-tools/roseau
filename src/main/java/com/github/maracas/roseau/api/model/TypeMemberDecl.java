@@ -46,16 +46,6 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 	}
 
 	@Override
-	public boolean isNative() {
-		return modifiers.contains(Modifier.NATIVE);
-	}
-
-	@Override
-	public boolean isStrictFp() {
-		return modifiers.contains(Modifier.STRICTFP);
-	}
-
-	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;

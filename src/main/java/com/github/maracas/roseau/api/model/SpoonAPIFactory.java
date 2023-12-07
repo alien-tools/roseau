@@ -177,7 +177,7 @@ public class SpoonAPIFactory {
 
 	private List<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
 		// We need to keep track of default constructors in the API model.
-		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null
+		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
 		return cls.getConstructors().stream()
 			.filter(cons -> isExported(cons) || cons.isImplicit())
@@ -297,10 +297,6 @@ public class SpoonAPIFactory {
 
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtTypeReference<?> typeRef) {
 		return typeRef != null ? new TypeReference<>(typeRef.getQualifiedName(), typeFactory) : null;
-	}
-
-	private ITypeReference makeITypeReference(CtType<?> type) {
-		return type != null ? makeITypeReference(type.getReference()) : null;
 	}
 
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtType<?> type) {

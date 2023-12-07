@@ -2,7 +2,6 @@ package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -52,8 +51,8 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	@Override
 	public boolean isCheckedException() {
-		return getAllSuperClasses().stream().anyMatch(cls -> cls.getQualifiedName().equals("java.lang.Exception"))
-			&& getAllSuperClasses().stream().noneMatch(cls -> cls.getQualifiedName().equals("java.lang.RuntimeException"));
+		return getAllSuperClasses().stream().anyMatch(cls -> "java.lang.Exception".equals(cls.getQualifiedName()))
+			&& getAllSuperClasses().stream().noneMatch(cls -> "java.lang.RuntimeException".equals(cls.getQualifiedName()));
 	}
 
 	@Override
