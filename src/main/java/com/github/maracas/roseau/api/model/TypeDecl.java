@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
@@ -16,16 +17,7 @@ import java.util.stream.Stream;
  * Represents a type declaration in the library.
  * This class extends the {@link Symbol} class and contains information about the type's kind, fields, methods, constructors, and more.
  */
-@JsonTypeInfo(
-	use = JsonTypeInfo.Id.NAME,
-	property = "type")
-@JsonSubTypes({
-	@JsonSubTypes.Type(value = ClassDecl.class),
-	@JsonSubTypes.Type(value = InterfaceDecl.class),
-	@JsonSubTypes.Type(value = AnnotationDecl.class),
-	@JsonSubTypes.Type(value = EnumDecl.class),
-	@JsonSubTypes.Type(value = RecordDecl.class)
-})
+@JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "typeKind")
 public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl, AnnotationDecl {
 	protected final List<TypeReference<InterfaceDecl>> implementedInterfaces;
 
@@ -60,78 +52,96 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		this.methods = methods;
 	}
 
+	@JsonIgnore
 	@Override
 	public boolean isExported() {
 		return (isPublic() || (isProtected() && !isEffectivelyFinal()))
 			&& (containingType == null || containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true));
 	}
 
+	@JsonIgnore
 	public boolean isNested() {
 		return containingType != null;
 	}
 
+	@JsonIgnore
 	public boolean isClass() {
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isInterface() {
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isEnum() {
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isRecord() {
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isAnnotation() {
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isCheckedException() {
 		return false;
 	}
 
+	@JsonIgnore
 	public boolean isStatic() {
 		return modifiers.contains(Modifier.STATIC);
 	}
 
+	@JsonIgnore
 	public boolean isFinal() {
 		return modifiers.contains(Modifier.FINAL);
 	}
 
+	@JsonIgnore
 	public boolean isSealed() {
 		return modifiers.contains(Modifier.SEALED);
 	}
 
+	@JsonIgnore
 	public boolean isEffectivelyFinal() {
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
 		//        is explicitly marked as non-sealed
 		return !modifiers.contains(Modifier.NON_SEALED) && (isFinal() || isSealed());
 	}
 
+	@JsonIgnore
 	public boolean isPublic() {
 		return visibility == AccessModifier.PUBLIC;
 	}
 
+	@JsonIgnore
 	public boolean isProtected() {
 		return visibility == AccessModifier.PROTECTED;
 	}
 
+	@JsonIgnore
 	public boolean isPrivate() {
 		return visibility == AccessModifier.PRIVATE;
 	}
 
+	@JsonIgnore
 	public boolean isPackagePrivate() {
 		return visibility == AccessModifier.PACKAGE_PRIVATE;
 	}
 
+	@JsonIgnore
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
+	@JsonIgnore
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
 			methods.stream(),
@@ -143,6 +153,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		).toList();
 	}
 
+	@JsonIgnore
 	public List<FieldDecl> getAllFields() {
 		return Stream.concat(
 			fields.stream(),
@@ -191,6 +202,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
+	@JsonIgnore
 	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
 		return Stream.concat(
 			implementedInterfaces.stream(),
