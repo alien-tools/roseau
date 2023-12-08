@@ -1,5 +1,6 @@
 package com.github.maracas.roseau;
 
+import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
@@ -36,8 +37,8 @@ public class Roseau {
 			sw.start();
 
 			// API extraction
-			SpoonAPIExtractor extractor1 = new SpoonAPIExtractor(m1);
-			SpoonAPIExtractor extractor2 = new SpoonAPIExtractor(m2);
+			APIExtractor extractor1 = new SpoonAPIExtractor(m1);
+			APIExtractor extractor2 = new SpoonAPIExtractor(m2);
 			API apiV1 = extractor1.extractAPI();
 			API apiV2 = extractor2.extractAPI();
 

@@ -34,12 +34,12 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 
 	@Override
 	public boolean isPublic() {
-		return visibility == AccessModifier.PUBLIC;
+		return AccessModifier.PUBLIC == visibility;
 	}
 
 	@Override
 	public boolean isProtected() {
-		return visibility == AccessModifier.PROTECTED;
+		return AccessModifier.PROTECTED == visibility;
 	}
 
 	@Override
@@ -52,8 +52,8 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		if (!super.equals(o)) return false;
-		TypeMemberDecl that = (TypeMemberDecl) o;
-		return Objects.equals(type, that.type);
+		TypeMemberDecl other = (TypeMemberDecl) o;
+		return Objects.equals(type, other.type);
 	}
 
 	@Override

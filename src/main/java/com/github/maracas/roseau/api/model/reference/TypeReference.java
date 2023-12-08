@@ -45,7 +45,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public void setResolvedApiType(T type) {
-		this.resolvedApiType = type;
+		resolvedApiType = type;
 	}
 
 	@Override
@@ -57,8 +57,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
-		TypeReference<?> that = (TypeReference<?>) o;
-		return Objects.equal(qualifiedName, that.qualifiedName);
+		TypeReference<?> other = (TypeReference<?>) o;
+		return Objects.equal(qualifiedName, other.qualifiedName);
 	}
 
 	@Override

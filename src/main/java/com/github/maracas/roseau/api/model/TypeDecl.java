@@ -2,6 +2,7 @@ package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collection;
@@ -37,13 +38,13 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	protected TypeDecl(String qualifiedName,
 	                   AccessModifier visibility,
 	                   List<Modifier> modifiers,
-	                   SourceLocation position,
+	                   SourceLocation location,
 	                   TypeReference<TypeDecl> containingType,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters,
 	                   List<FieldDecl> fields,
 	                   List<MethodDecl> methods) {
-		super(qualifiedName, visibility, modifiers, position, containingType);
+		super(qualifiedName, visibility, modifiers, location, containingType);
 		this.implementedInterfaces = implementedInterfaces;
 		this.formalTypeParameters = formalTypeParameters;
 		this.fields = fields;
@@ -116,22 +117,22 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	@JsonIgnore
 	public boolean isPublic() {
-		return visibility == AccessModifier.PUBLIC;
+		return AccessModifier.PUBLIC == visibility;
 	}
 
 	@JsonIgnore
 	public boolean isProtected() {
-		return visibility == AccessModifier.PROTECTED;
+		return AccessModifier.PROTECTED == visibility;
 	}
 
 	@JsonIgnore
 	public boolean isPrivate() {
-		return visibility == AccessModifier.PRIVATE;
+		return AccessModifier.PRIVATE == visibility;
 	}
 
 	@JsonIgnore
 	public boolean isPackagePrivate() {
-		return visibility == AccessModifier.PACKAGE_PRIVATE;
+		return AccessModifier.PACKAGE_PRIVATE == visibility;
 	}
 
 	@JsonIgnore
@@ -197,6 +198,18 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	public Optional<FieldDecl> findField(String name) {
 		return fields.stream()
 			.filter(f -> f.getSimpleName().equals(name))
+			.findFirst();
+	}
+
+	public Optional<MethodDecl> findMethod(String name, List<ITypeReference> parameterTypes) {
+		return methods.stream()
+			.filter(m -> m.hasSignature(name, parameterTypes))
+			.findFirst();
+	}
+
+	public Optional<MethodDecl> findMethod(String name) {
+		return methods.stream()
+			.filter(m -> m.getSimpleName().equals(name))
 			.findFirst();
 	}
 

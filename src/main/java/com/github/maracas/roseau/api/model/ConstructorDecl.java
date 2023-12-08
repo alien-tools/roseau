@@ -23,7 +23,7 @@ public final class ConstructorDecl extends ExecutableDecl {
 	/**
 	 * Generates a string representation of the ConstructorDeclaration.
 	 *
-	 * @return A formatted string containing the constructor's name, type, return type, parameter types,
+	 * @return A formatted string containing the constructor's qualifiedName, type, return type, parameter types,
 	 * visibility, modifiers, exceptions, and position.
 	 */
 	@Override

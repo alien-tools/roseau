@@ -8,6 +8,7 @@ import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
+import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
@@ -58,15 +59,15 @@ public class TestUtils {
 		else {
 			TypeDecl cls = findType.get();
 
-			if (kind.equals("class") && !cls.isClass())
+			if ("class".equals(kind) && !cls.isClass())
 				throw new AssertionFailedError("Wrong kind", "class " + name, cls.getClass().getSimpleName() + " " + name);
-			if (kind.equals("annotation") && !cls.isAnnotation())
+			if ("annotation".equals(kind) && !cls.isAnnotation())
 				throw new AssertionFailedError("Wrong kind", "annotation " + name, cls.getClass().getSimpleName() + " " + name);
-			if (kind.equals("interface") && !cls.isInterface())
+			if ("interface".equals(kind) && !cls.isInterface())
 				throw new AssertionFailedError("Wrong kind", "interface " + name, cls.getClass().getSimpleName() + " " + name);
-			if (kind.equals("enum") && !cls.isEnum())
+			if ("enum".equals(kind) && !cls.isEnum())
 				throw new AssertionFailedError("Wrong kind", "enum " + name, cls.getClass().getSimpleName() + " " + name);
-			if (kind.equals("record") && !cls.isRecord())
+			if ("record".equals(kind) && !cls.isRecord())
 				throw new AssertionFailedError("Wrong kind", "record " + name, cls.getClass().getSimpleName() + " " + name);
 
 			return cls;
@@ -80,6 +81,15 @@ public class TestUtils {
 			throw new AssertionFailedError("No such field", name, "No such field");
 		else
 			return findField.get();
+	}
+
+	public static MethodDecl assertMethod(TypeDecl decl, String name) {
+		Optional<MethodDecl> findMethod = decl.findMethod(name);
+
+		if (findMethod.isEmpty())
+			throw new AssertionFailedError("No such method", name, "No such method");
+		else
+			return findMethod.get();
 	}
 
 	public static ClassDecl assertClass(API api, String name) {

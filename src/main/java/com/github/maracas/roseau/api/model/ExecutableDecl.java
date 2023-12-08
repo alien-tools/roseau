@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -47,6 +48,25 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			if (otherParameter.isVarargs() != thisParameter.isVarargs())
 				return false;
 			if (otherParameter.type() != thisParameter.type())
+				return false;
+		}
+
+		return true;
+	}
+
+	public boolean hasSignature(String name, List<ITypeReference> parameterTypes) {
+		// FIXME: varargs + merge with above
+		if (!getSimpleName().equals(name))
+			return false;
+
+		if (parameters.size() != parameterTypes.size())
+			return false;
+
+		for (int i = 0; i < parameterTypes.size(); i++) {
+			ITypeReference otherParameter = parameterTypes.get(i);
+			ITypeReference thisParameter = parameters.get(i).type();
+
+			if (!otherParameter.equals(thisParameter))
 				return false;
 		}
 
@@ -100,10 +120,10 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		if (!super.equals(o)) return false;
-		ExecutableDecl that = (ExecutableDecl) o;
-		return Objects.equals(parameters, that.parameters)
-			&& Objects.equals(formalTypeParameters, that.formalTypeParameters)
-			&& Objects.equals(thrownExceptions, that.thrownExceptions);
+		ExecutableDecl other = (ExecutableDecl) o;
+		return Objects.equals(parameters, other.parameters)
+			&& Objects.equals(formalTypeParameters, other.formalTypeParameters)
+			&& Objects.equals(thrownExceptions, other.thrownExceptions);
 	}
 
 	@Override

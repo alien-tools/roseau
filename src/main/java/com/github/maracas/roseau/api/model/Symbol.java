@@ -10,12 +10,12 @@ import java.util.Objects;
  * This abstract class represents a symbol in the library, which can be a type,
  * a method, a constructor, or a field.
  * <p>
- * It provides information about the symbol's qualified name, visibility, modifiers,
+ * It provides information about the symbol's qualified qualifiedName, visibility, modifiers,
  * and position within the source code.
  */
 public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
-	 * The name of the symbol.
+	 * The qualifiedName of the symbol.
 	 */
 	protected final String qualifiedName;
 
@@ -46,9 +46,9 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	/**
-	 * Retrieves the name of the symbol.
+	 * Retrieves the qualifiedName of the symbol.
 	 *
-	 * @return The symbol's name
+	 * @return The symbol's qualifiedName
 	 */
 	public String getQualifiedName() {
 		return qualifiedName;

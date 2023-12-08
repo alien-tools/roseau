@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -38,7 +39,7 @@ public final class MethodDecl extends ExecutableDecl {
 	/**
 	 * Generates a string representation of the MethodDeclaration.
 	 *
-	 * @return A formatted string containing the method's name, return type, parameter types,
+	 * @return A formatted string containing the method's qualifiedName, return type, parameter types,
 	 * visibility, modifiers, type, exceptions, and position.
 	 */
 	@Override

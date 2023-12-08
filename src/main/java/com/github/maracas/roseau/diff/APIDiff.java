@@ -50,7 +50,7 @@ public class APIDiff {
 	public APIDiff(API v1, API v2) {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
-		this.breakingChanges = new ArrayList<>();
+		breakingChanges = new ArrayList<>();
 	}
 	
 	public List<BreakingChange> diff() {
@@ -365,17 +365,15 @@ public class APIDiff {
 	}
 
 	/**
-	 * Generates a csv report for the detected breaking changes. This report includes the kind, type name,
+	 * Generates a csv report for the detected breaking changes. This report includes the kind, type qualifiedName,
 	 * <p>
 	 * position, associated element, and nature of each detected BC.
 	 */
 	public void breakingChangesReport() throws IOException {
-		List<BreakingChange> bcs = getBreakingChanges();
-
 		try (FileWriter writer = new FileWriter("breaking_changes_report.csv")) {
 			writer.write("Kind,Element,Nature,Position\n");
 
-			for (BreakingChange breakingChange : bcs) {
+			for (BreakingChange breakingChange : breakingChanges) {
 				String kind = breakingChange.kind().toString();
 				String element = breakingChange.impactedSymbol().getQualifiedName();
 				String nature = breakingChange.kind().getNature().toString();

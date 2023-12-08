@@ -31,7 +31,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
@@ -242,23 +241,22 @@ public class SpoonAPIFactory {
 		};
 	}
 
-	private List<Modifier> convertSpoonNonAccessModifiers(Set<ModifierKind> modifiers) {
+	private List<Modifier> convertSpoonNonAccessModifiers(Collection<ModifierKind> modifiers) {
 		return modifiers.stream()
 			.filter(mod ->
-				mod != ModifierKind.PUBLIC
-					&& mod != ModifierKind.PROTECTED
-					&& mod != ModifierKind.PRIVATE)
+				     ModifierKind.PUBLIC != mod
+					&& ModifierKind.PROTECTED != mod
+					&& ModifierKind.PRIVATE != mod)
 			.map(this::convertSpoonModifier)
 			.toList();
 	}
 
 	private SourceLocation convertSpoonPosition(SourcePosition position) {
-		return !position.isValidPosition()
-			? SourceLocation.NO_LOCATION
-			: new SourceLocation(
-			position.getFile() != null ? position.getFile().toPath() : null,
-			position.getLine()
-		);
+		return position.isValidPosition()
+			? new SourceLocation(
+				position.getFile() != null ? position.getFile().toPath() : null,
+				position.getLine())
+			: SourceLocation.NO_LOCATION;
 	}
 
 	private boolean isExported(CtType<?> type) {
@@ -268,7 +266,8 @@ public class SpoonAPIFactory {
 	}
 
 	private boolean isExported(CtTypeMember member) {
-		return (member.isPublic() || member.isProtected()) && isParentExported(member);
+		return (member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType())))
+			&& isParentExported(member);
 	}
 
 	private boolean isParentExported(CtTypeMember member) {
@@ -276,7 +275,11 @@ public class SpoonAPIFactory {
 	}
 
 	private boolean isEffectivelyFinal(CtType<?> type) {
-		// FIXME A class is also effectively final if it does not have a public (possibly default) constructor
+		if (type instanceof CtClass<?> cls)
+			if (!cls.getConstructors().isEmpty()
+				&& cls.getConstructors().stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()))
+				return true;
+
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
 	}
 
@@ -303,14 +306,14 @@ public class SpoonAPIFactory {
 		return type != null ? makeTypeReference(type.getReference()) : null;
 	}
 
-	private List<ITypeReference> makeITypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+	private List<ITypeReference> makeITypeReferences(Collection<? extends CtTypeReference<?>> typeRefs) {
 		return typeRefs.stream()
 			.map(this::makeITypeReference)
 			.filter(java.util.Objects::nonNull)
 			.toList();
 	}
 
-	private <T extends TypeDecl> List<TypeReference<T>> makeTypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+	private <T extends TypeDecl> List<TypeReference<T>> makeTypeReferences(Collection<? extends CtTypeReference<?>> typeRefs) {
 		return typeRefs.stream()
 			.map(this::<T>makeTypeReference)
 			.filter(java.util.Objects::nonNull)

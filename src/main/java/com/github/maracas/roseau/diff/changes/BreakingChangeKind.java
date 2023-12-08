@@ -83,6 +83,6 @@ public enum BreakingChangeKind {
 	}
 
 	public BreakingChangeNature getNature() {
-		return this.nature;
+		return nature;
 	}
 }

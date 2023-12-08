@@ -9,10 +9,10 @@ public final class InterfaceDecl extends TypeDecl {
 	@JsonCreator
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
 	                     SourceLocation location, TypeReference<TypeDecl> containingType,
-	                     List<TypeReference<InterfaceDecl>> superInterfaces,
+	                     List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                     List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields,
 	                     List<MethodDecl> methods) {
-		super(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters,
+		super(qualifiedName, visibility, modifiers, location, containingType, implementedInterfaces, formalTypeParameters,
 			fields, methods);
 	}
 
