@@ -13,8 +13,11 @@ import java.util.List;
  */
 public final class MethodDecl extends ExecutableDecl {
 	@JsonCreator
-	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type, parameters, formalTypeParameters, thrownExceptions);
+	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
+	                  TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
+	                  List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, modifiers, location, containingType, type, parameters,
+			formalTypeParameters, thrownExceptions);
 	}
 
 	/**

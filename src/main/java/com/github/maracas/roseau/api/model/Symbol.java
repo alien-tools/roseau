@@ -36,7 +36,8 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	protected final TypeReference<TypeDecl> containingType;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType) {
+	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
+	                 TypeReference<TypeDecl> containingType) {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
 		this.modifiers = modifiers;
@@ -97,7 +98,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		Symbol symbol = (Symbol) o;
-		return Objects.equals(qualifiedName, symbol.qualifiedName) && visibility == symbol.visibility && Objects.equals(modifiers, symbol.modifiers) && Objects.equals(location, symbol.location) && Objects.equals(containingType, symbol.containingType);
+		return Objects.equals(qualifiedName, symbol.qualifiedName)
+			&& visibility == symbol.visibility
+			&& Objects.equals(modifiers, symbol.modifiers)
+			&& Objects.equals(location, symbol.location)
+			&& Objects.equals(containingType, symbol.containingType);
 	}
 
 	@Override

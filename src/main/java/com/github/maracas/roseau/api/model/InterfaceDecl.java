@@ -7,8 +7,13 @@ import java.util.List;
 
 public final class InterfaceDecl extends TypeDecl {
 	@JsonCreator
-	public InterfaceDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods) {
-		super(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters, fields, methods);
+	public InterfaceDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                     SourceLocation location, TypeReference<TypeDecl> containingType,
+	                     List<TypeReference<InterfaceDecl>> superInterfaces,
+	                     List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields,
+	                     List<MethodDecl> methods) {
+		super(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters,
+			fields, methods);
 	}
 
 	@Override

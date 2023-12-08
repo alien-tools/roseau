@@ -57,9 +57,9 @@ public class SpoonAPIExtractor implements APIExtractor {
 	public static Launcher launcherFor(Path location) {
 		Launcher launcher;
 
-		if (Files.exists(location.resolve("pom.xml"))) {
+		if (Files.exists(location.resolve("pom.xml")))
 			launcher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
-		} else {
+		else {
 			launcher = new Launcher();
 			launcher.addInputResource(location.toString());
 		}

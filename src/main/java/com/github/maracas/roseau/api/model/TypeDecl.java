@@ -219,7 +219,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		if (o == null || getClass() != o.getClass()) return false;
 		if (!super.equals(o)) return false;
 		TypeDecl typeDecl = (TypeDecl) o;
-		return Objects.equals(implementedInterfaces, typeDecl.implementedInterfaces) && Objects.equals(formalTypeParameters, typeDecl.formalTypeParameters) && Objects.equals(fields, typeDecl.fields) && Objects.equals(methods, typeDecl.methods);
+		return Objects.equals(implementedInterfaces, typeDecl.implementedInterfaces)
+			&& Objects.equals(formalTypeParameters, typeDecl.formalTypeParameters)
+			&& Objects.equals(fields, typeDecl.fields)
+			&& Objects.equals(methods, typeDecl.methods);
 	}
 
 	@Override

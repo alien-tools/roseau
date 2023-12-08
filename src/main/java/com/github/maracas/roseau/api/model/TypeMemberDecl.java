@@ -9,7 +9,8 @@ import java.util.Objects;
 public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl {
 	protected final ITypeReference type;
 
-	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
+	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                         SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, location, containingType);
 		this.type = type;
 	}
@@ -21,7 +22,8 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 
 	@Override
 	public boolean isExported() {
-		return (isPublic() || (isProtected() && !containingType.getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(true)))
+		return (isPublic()
+			|| (isProtected() && !containingType.getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(true)))
 			&& containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true);
 	}
 

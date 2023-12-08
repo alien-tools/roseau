@@ -19,8 +19,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * Represents the API of a library containing all the types, each of which may have methods, fields, constructors, and more information about the type.
- * This class encapsulates a list of {@link TypeDecl} instances, each representing distinct types identified by their respective qualified names.
+ * Represents the API of a library containing all the types, each of which may have methods, fields, constructors, and
+ * more information about the type. This class encapsulates a list of {@link TypeDecl} instances, each representing
+ * distinct types identified by their respective qualified names.
  */
 public final class API {
 	private final Map<String, TypeDecl> types;

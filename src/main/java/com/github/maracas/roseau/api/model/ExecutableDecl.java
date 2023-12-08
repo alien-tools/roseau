@@ -23,7 +23,10 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                         SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type,
+	                         List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
+	                         List<TypeReference<ClassDecl>> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, location, containingType, type);
 		this.parameters = parameters;
 		this.formalTypeParameters = formalTypeParameters;
@@ -98,7 +101,9 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		if (o == null || getClass() != o.getClass()) return false;
 		if (!super.equals(o)) return false;
 		ExecutableDecl that = (ExecutableDecl) o;
-		return Objects.equals(parameters, that.parameters) && Objects.equals(formalTypeParameters, that.formalTypeParameters) && Objects.equals(thrownExceptions, that.thrownExceptions);
+		return Objects.equals(parameters, that.parameters)
+			&& Objects.equals(formalTypeParameters, that.formalTypeParameters)
+			&& Objects.equals(thrownExceptions, that.thrownExceptions);
 	}
 
 	@Override

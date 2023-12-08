@@ -16,16 +16,18 @@ import java.util.List;
  * The `roseau` class is the main entry point of the project.
  */
 public class Roseau {
-	public static void main(String[] args) throws IOException {
+	public static final int SPOON_TIMEOUT = 60;
+
+	public static void main(String[] args) {
 		try (FileWriter writer = new FileWriter("durations_report.csv")) {
 			writer.write("Task,Duration\n");
 
 			Stopwatch sw = Stopwatch.createStarted();
 
 			// Spoon parsing
-			CtModel m1 = SpoonAPIExtractor.buildModel(Path.of(args[0]), 60)
+			CtModel m1 = SpoonAPIExtractor.buildModel(Path.of(args[0]), SPOON_TIMEOUT)
 				.orElseThrow(() -> new RuntimeException("Couldn't build in < 60s"));
-			CtModel m2 = SpoonAPIExtractor.buildModel(Path.of(args[1]), 60)
+			CtModel m2 = SpoonAPIExtractor.buildModel(Path.of(args[1]), SPOON_TIMEOUT)
 				.orElseThrow(() -> new RuntimeException("Couldn't build in < 60s"));
 
 			writer.write("Spoon model building," + sw.elapsed().toMillis() + "\n");
@@ -68,6 +70,9 @@ public class Roseau {
 
 			diff.breakingChangesReport();
 			System.out.println(bcs);
+		} catch (IOException e) {
+			e.printStackTrace();
+			System.exit(1);
 		}
 	}
 }

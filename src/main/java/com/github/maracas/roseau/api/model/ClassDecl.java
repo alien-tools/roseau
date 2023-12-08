@@ -22,8 +22,12 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final List<ConstructorDecl> constructors;
 
 	@JsonCreator
-	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location, TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces, List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods, TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, modifiers, location, containingType, superInterfaces, formalTypeParameters, fields, methods);
+	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
+	                 TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> superInterfaces,
+	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
+	                 TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
+		super(qualifiedName, visibility, modifiers, location, containingType,
+			superInterfaces, formalTypeParameters, fields, methods);
 		this.superClass = superClass;
 		this.constructors = constructors;
 	}
@@ -36,7 +40,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public List<MethodDecl> getAllMethods() {
 		return Stream.concat(
-			getSuperClass().map(sup -> sup.getResolvedApiType().map(cls -> cls.getAllMethods().stream()).orElse(Stream.empty())).orElse(Stream.empty()),
+			superClass != null
+				? superClass.getResolvedApiType().map(cls -> cls.getAllMethods().stream()).orElse(Stream.empty())
+				: Stream.empty(),
 			super.getAllMethods().stream()
 		).toList();
 	}
@@ -44,7 +50,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public List<FieldDecl> getAllFields() {
 		return Stream.concat(
-			getSuperClass().map(sup -> sup.getResolvedApiType().map(cls -> cls.getAllFields().stream()).orElse(Stream.empty())).orElse(Stream.empty()),
+			superClass != null
+				? superClass.getResolvedApiType().map(cls -> cls.getAllFields().stream()).orElse(Stream.empty())
+				: Stream.empty(),
 			super.getAllFields().stream()
 		).toList();
 	}
@@ -80,7 +88,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
 		return Stream.concat(
 			super.getAllImplementedInterfaces().stream(),
-			superClass != null ? superClass.getResolvedApiType().map(cls -> cls.getAllImplementedInterfaces().stream()).orElse(Stream.empty()) : Stream.empty()
+			superClass != null
+				? superClass.getResolvedApiType().map(cls -> cls.getAllImplementedInterfaces().stream()).orElse(Stream.empty())
+				: Stream.empty()
 		).distinct().toList();
 	}
 
