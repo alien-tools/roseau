@@ -1,7 +1,6 @@
-package com.github.maracas.roseau.api.model;
+package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.APIExtractor;
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.model.API;
 import org.junit.jupiter.api.Test;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -13,7 +12,7 @@ import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-class APITest {
+class JSONSerializationTest {
 	@Test
 	void api_json_round_trip() throws IOException {
 		Launcher l = new Launcher();

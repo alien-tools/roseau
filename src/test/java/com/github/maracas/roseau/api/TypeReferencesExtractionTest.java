@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
@@ -12,14 +11,8 @@ import static com.github.maracas.roseau.TestUtils.assertField;
 import static com.github.maracas.roseau.TestUtils.assertInterface;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeReferencesExtractionTest {
 	@Test
@@ -39,6 +32,40 @@ class TypeReferencesExtractionTest {
 				public List<I> apiGeneric;
 				public List<T> typeParameterGeneric;
 			}""");
+	}
+
+	@Test
+	void jdk_type() {
+		var api = buildAPI("""
+			class A extends String {}""");
+
+		var a = assertClass(api, "A");
+		var sup = a.getSuperClass();
+
+		System.out.println("sup="+sup);
+		System.out.println(a.getAllMethods());
+		System.out.println(a.getAllImplementedInterfaces());
+
+		var chars = a.getAllMethods().stream()
+			.filter(m -> "java.lang.String.chars".equals(m.getQualifiedName()))
+			.findFirst()
+			.get();
+
+		System.out.println("chars="+chars);
+		System.out.println("transitiveRef="+chars.getType());
+	}
+
+	@Test
+	void unknown_type() {
+		var api = buildAPI("""
+			class A extends Unknown {}""");
+
+		var a = assertClass(api, "A");
+		var sup = a.getSuperClass();
+
+		System.out.println("sup="+sup);
+		System.out.println(a.getAllMethods());
+		System.out.println(a.getAllImplementedInterfaces());
 	}
 
 	@Test
