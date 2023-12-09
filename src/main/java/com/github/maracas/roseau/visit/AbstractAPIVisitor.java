@@ -100,10 +100,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	}
 
 	public Visit symbol(Symbol it) {
-		return () -> {
-			if (it.getContainingType() != null)
-				$(it.getContainingType()).visit();
-		};
+		return () -> {};
 	}
 
 	public Visit typeDecl(TypeDecl it) {

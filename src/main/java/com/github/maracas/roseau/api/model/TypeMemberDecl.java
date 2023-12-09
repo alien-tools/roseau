@@ -7,12 +7,19 @@ import java.util.List;
 import java.util.Objects;
 
 public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl {
+	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
 	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
 	                         SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
-		super(qualifiedName, visibility, modifiers, location, containingType);
+		super(qualifiedName, visibility, modifiers, location);
+		this.containingType = containingType;
 		this.type = type;
+	}
+
+	@Override
+	public TypeReference<TypeDecl> getContainingType() {
+		return containingType;
 	}
 
 	@Override
@@ -33,6 +40,11 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 	}
 
 	@Override
+	public boolean isFinal() {
+		return modifiers.contains(Modifier.FINAL);
+	}
+
+	@Override
 	public boolean isPublic() {
 		return AccessModifier.PUBLIC == visibility;
 	}
@@ -40,11 +52,6 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 	@Override
 	public boolean isProtected() {
 		return AccessModifier.PROTECTED == visibility;
-	}
-
-	@Override
-	public boolean isFinal() {
-		return modifiers.contains(Modifier.FINAL);
 	}
 
 	@Override

@@ -23,11 +23,12 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	@JsonCreator
 	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                 TypeReference<TypeDecl> containingType, List<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
+	                 TypeReference<TypeDecl> enclosingType,
 	                 TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, modifiers, location, containingType,
-			implementedInterfaces, formalTypeParameters, fields, methods);
+		super(qualifiedName, visibility, modifiers, location,
+			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		this.superClass = superClass;
 		this.constructors = constructors;
 	}
@@ -104,7 +105,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			class %s [%s] (%s)
 			  %s
 			  %s
-			""".formatted(qualifiedName, visibility, containingType, fields, methods);
+			""".formatted(qualifiedName, visibility, enclosingType, fields, methods);
 	}
 
 	@Override

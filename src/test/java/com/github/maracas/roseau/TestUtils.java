@@ -10,6 +10,7 @@ import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
+import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
@@ -19,6 +20,7 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.VirtualFile;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;

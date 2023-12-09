@@ -1,7 +1,6 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,15 +33,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	 */
 	protected final SourceLocation location;
 
-	protected final TypeReference<TypeDecl> containingType;
-
-	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                 TypeReference<TypeDecl> containingType) {
+	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location) {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
 		this.modifiers = modifiers;
 		this.location = location;
-		this.containingType = containingType;
 	}
 
 	/**
@@ -89,10 +84,6 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return location;
 	}
 
-	public TypeReference<TypeDecl> getContainingType() {
-		return containingType;
-	}
-
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -101,12 +92,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return Objects.equals(qualifiedName, symbol.qualifiedName)
 			&& visibility == symbol.visibility
 			&& Objects.equals(modifiers, symbol.modifiers)
-			&& Objects.equals(location, symbol.location)
-			&& Objects.equals(containingType, symbol.containingType);
+			&& Objects.equals(location, symbol.location);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qualifiedName, visibility, modifiers, location, containingType);
+		return Objects.hash(qualifiedName, visibility, modifiers, location);
 	}
 }

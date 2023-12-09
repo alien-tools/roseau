@@ -1,10 +1,8 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
 
@@ -103,16 +101,6 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public List<TypeReference<ClassDecl>> getThrownExceptions() {
 		return thrownExceptions;
-	}
-
-	@JsonIgnore
-	public boolean isNative() {
-		return modifiers.contains(Modifier.NATIVE);
-	}
-
-	@JsonIgnore
-	public boolean isStrictFp() {
-		return modifiers.contains(Modifier.STRICTFP);
 	}
 
 	@Override

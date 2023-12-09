@@ -31,6 +31,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.stream.Stream;
 
 public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
@@ -56,11 +57,11 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonPosition(cls.getPosition()),
-			makeTypeReference(cls.getDeclaringType()),
 			makeTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
 			convertCtFields(cls),
 			convertCtMethods(cls),
+			makeTypeReference(cls.getDeclaringType()),
 			makeTypeReference(cls.getSuperclass()),
 			convertCtConstructors(cls)
 		);
@@ -72,12 +73,12 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonPosition(intf.getPosition()),
-			makeTypeReference(intf.getDeclaringType()),
 			makeTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
-			convertCtMethods(intf)
-		);
+			convertCtMethods(intf),
+			makeTypeReference(intf.getDeclaringType())
+			);
 	}
 
 	private AnnotationDecl convertCtAnnotationType(CtAnnotationType<?> annotation) {
@@ -86,10 +87,10 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(annotation.getVisibility()),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
 			convertSpoonPosition(annotation.getPosition()),
-			makeTypeReference(annotation.getDeclaringType()),
 			convertCtFields(annotation),
-			convertCtMethods(annotation)
-		);
+			convertCtMethods(annotation),
+			makeTypeReference(annotation.getDeclaringType())
+			);
 	}
 
 	private EnumDecl convertCtEnum(CtEnum<?> enm) {
@@ -98,10 +99,10 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonPosition(enm.getPosition()),
-			makeTypeReference(enm.getDeclaringType()),
 			makeTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
 			convertCtMethods(enm),
+			makeTypeReference(enm.getDeclaringType()),
 			convertCtConstructors(enm)
 		);
 	}
@@ -112,11 +113,11 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(record.getVisibility()),
 			convertSpoonNonAccessModifiers(record.getModifiers()),
 			convertSpoonPosition(record.getPosition()),
-			makeTypeReference(record.getDeclaringType()),
 			makeTypeReferences(record.getSuperInterfaces()),
 			convertCtFormalTypeParameters(record),
 			convertCtFields(record),
 			convertCtMethods(record),
+			makeTypeReference(record.getDeclaringType()),
 			convertCtConstructors(record)
 		);
 	}
@@ -133,10 +134,16 @@ public class SpoonAPIFactory {
 	}
 
 	private MethodDecl convertCtMethod(CtMethod<?> method) {
+		// Spoon does not store 'default' information as modifier, but we do
+		List<Modifier> modifiers = Stream.concat(
+			convertSpoonNonAccessModifiers(method.getModifiers()).stream(),
+			method.isDefaultMethod() ? Stream.of(Modifier.DEFAULT) : Stream.empty()
+		).toList();
+
 		return new MethodDecl(
 			makeQualifiedName(method),
 			convertSpoonVisibility(method.getVisibility()),
-			convertSpoonNonAccessModifiers(method.getModifiers()),
+			modifiers,
 			convertSpoonPosition(method.getPosition()),
 			makeTypeReference(method.getDeclaringType()),
 			makeITypeReference(method.getType()),
@@ -298,8 +305,16 @@ public class SpoonAPIFactory {
 		};
 	}
 
+	public <T extends TypeDecl> TypeReference<T> makeTypeReference(String qualifiedName) {
+		return qualifiedName != null ? new TypeReference<>(qualifiedName, typeFactory) : null;
+	}
+
+	public ITypeReference makePrimitiveTypeReference(String name) {
+		return name != null ? new PrimitiveTypeReference(name) : null;
+	}
+
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtTypeReference<?> typeRef) {
-		return typeRef != null ? new TypeReference<>(typeRef.getQualifiedName(), typeFactory) : null;
+		return typeRef != null ? makeTypeReference(typeRef.getQualifiedName()) : null;
 	}
 
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtType<?> type) {

@@ -3,73 +3,110 @@ package com.github.maracas.roseau.api;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertClass;
-import static com.github.maracas.roseau.TestUtils.assertField;
+import static com.github.maracas.roseau.TestUtils.assertInterface;
 import static com.github.maracas.roseau.TestUtils.assertMethod;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MethodsExtractionTest {
 	@Test
-	void methods_within_package_private_class() {
+	void default_methods() {
 		var api = buildAPI("""
-      class A {
-        private void m1() {}
-        protected void m2() {}
-        public void m3() {}
-        void m4();
-      }""");
+			public interface I {
+			  void m1();
+			  default void m2() {}
+			}""");
 
-		var a = assertClass(api, "A");
-		assertFalse(a.isExported());
-		assertThat(a.getMethods(), is(empty()));
+		var i = assertInterface(api, "I");
+		var m1 = assertMethod(i, "m1");
+		var m2 = assertMethod(i, "m2");
+
+		assertFalse(m1.isDefault());
+		assertTrue(m2.isDefault());
 	}
 
 	@Test
-	void methods_within_public_class() {
+	void abstract_methods() {
 		var api = buildAPI("""
-      public class A {
-        private void m1() {}
-        protected void m2() {}
-        public void m3() {}
-        void m4();
-      }""");
+			public abstract class A {
+			  public void m1() {}
+			  public abstract void m2();
+			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(a.isExported());
-		assertThat(a.getMethods(), hasSize(2));
+		var m1 = assertMethod(a, "m1");
 		var m2 = assertMethod(a, "m2");
-		assertTrue(m2.isProtected());
-		assertThat(m2.getContainingType().getResolvedApiType().get(), is(a));
-		var m3 = assertMethod(a, "m3");
-		assertTrue(m3.isPublic());
-		assertThat(m3.getContainingType().getResolvedApiType().get(), is(a));
+
+		assertFalse(m1.isAbstract());
+		assertTrue(m2.isAbstract());
 	}
 
 	@Test
-	void methods_within_nested_class() {
+	void strictfp_methods() {
 		var api = buildAPI("""
-      public class B {
-        protected class A {
-          private void m1() {}
-          protected void m2() {}
-          public void m3() {}
-          void m4();
-        }
-       }""");
+			public class A {
+			  public void m1() {}
+			  public strictfp void m2() {}
+			}""");
 
-		var a = assertClass(api, "B$A");
-		assertTrue(a.isExported());
-		assertThat(a.getMethods(), hasSize(2));
+		var a = assertClass(api, "A");
+		var m1 = assertMethod(a, "m1");
 		var m2 = assertMethod(a, "m2");
-		assertTrue(m2.isProtected());
-		assertThat(m2.getContainingType().getResolvedApiType().get(), is(a));
-		var m3 = assertMethod(a, "m3");
-		assertTrue(m3.isPublic());
-		assertThat(m3.getContainingType().getResolvedApiType().get(), is(a));
+
+		assertFalse(m1.isStrictFp());
+		assertTrue(m2.isStrictFp());
+	}
+
+	@Test
+	void native_methods() {
+		var api = buildAPI("""
+			public class A {
+			  public void m1() {}
+			  public native void m2();
+			}""");
+
+		var a = assertClass(api, "A");
+		var m1 = assertMethod(a, "m1");
+		var m2 = assertMethod(a, "m2");
+
+		assertFalse(m1.isNative());
+		assertTrue(m2.isNative());
+	}
+
+	@Test
+	void overloading_methods() {
+		var api = buildAPI("""
+			public interface I {
+				void m1(int a);
+				void m1(String b);
+				void m1(A a);
+				void m1(C c);
+				void m1(int a, String b);
+			}
+			public abstract class A implements I {
+				public abstract void m1(int a);
+				public abstract void m1(String b);
+				public abstract void m1(A a);
+				public abstract void m1(C c);
+				public abstract void m1(int a, String b);
+			}
+			public class C extends A {
+				public void m1(int a) {}
+				public void m1(String b) {}
+				public void m1(A a) {}
+				public void m1(C c) {}
+			  public void m1(int a, String b) {}
+			}""");
+
+		var i = assertInterface(api, "I");
+		var a = assertClass(api, "A");
+		var c = assertClass(api, "C");
+
+		assertThat(i.getMethods(), hasSize(5));
+		assertThat(a.getMethods(), hasSize(5));
+		assertThat(c.getMethods(), hasSize(5));
 	}
 }

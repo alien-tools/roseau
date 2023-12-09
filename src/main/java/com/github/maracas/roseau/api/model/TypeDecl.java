@@ -35,32 +35,35 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 */
 	protected final List<MethodDecl> methods;
 
+	protected final Optional<TypeReference<TypeDecl>> enclosingType;
+
 	protected TypeDecl(String qualifiedName,
 	                   AccessModifier visibility,
 	                   List<Modifier> modifiers,
 	                   SourceLocation location,
-	                   TypeReference<TypeDecl> containingType,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters,
 	                   List<FieldDecl> fields,
-	                   List<MethodDecl> methods) {
-		super(qualifiedName, visibility, modifiers, location, containingType);
+	                   List<MethodDecl> methods,
+	                   TypeReference<TypeDecl> enclosingType) {
+		super(qualifiedName, visibility, modifiers, location);
 		this.implementedInterfaces = implementedInterfaces;
 		this.formalTypeParameters = formalTypeParameters;
 		this.fields = fields;
 		this.methods = methods;
+		this.enclosingType = Optional.ofNullable(enclosingType);
 	}
 
 	@JsonIgnore
 	@Override
 	public boolean isExported() {
 		return (isPublic() || (isProtected() && !isEffectivelyFinal()))
-			&& (containingType == null || containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true));
+			&& enclosingType.map(t -> t.getResolvedApiType().map(TypeDecl::isExported).orElse(true)).orElse(true);
 	}
 
 	@JsonIgnore
 	public boolean isNested() {
-		return containingType != null;
+		return enclosingType.isPresent();
 	}
 
 	@JsonIgnore
@@ -193,6 +196,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	public List<MethodDecl> getMethods() {
 		return methods;
+	}
+
+	public Optional<TypeReference<TypeDecl>> getEnclosingType() {
+		return enclosingType;
 	}
 
 	public Optional<FieldDecl> findField(String name) {
