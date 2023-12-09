@@ -5,9 +5,9 @@ import org.junit.jupiter.api.Test;
 import static com.github.maracas.roseau.TestUtils.assertBC;
 import static com.github.maracas.roseau.TestUtils.assertNoBC;
 import static com.github.maracas.roseau.TestUtils.buildDiff;
-import static com.github.maracas.roseau.diff.changes.BreakingChangeKind.CLASS_REMOVED;
+import static com.github.maracas.roseau.diff.changes.BreakingChangeKind.TYPE_REMOVED;
 
-class ClassRemovedTest {
+class TypeRemovedTest {
 	@Test
 	void class_private_removed() {
 		String v1 = "class A {}";
@@ -21,7 +21,7 @@ class ClassRemovedTest {
 		String v1 = "public class A {}";
 		String v2 = "public class B {}";
 
-		assertBC("A", CLASS_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -41,7 +41,7 @@ class ClassRemovedTest {
       package b;
       public class A {}""";
 
-		assertBC("a.A", CLASS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("a.A", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -69,7 +69,7 @@ class ClassRemovedTest {
         protected class J {}
       }""";
 
-		assertBC("A$I", CLASS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -83,7 +83,7 @@ class ClassRemovedTest {
         public class J {}
       }""";
 
-		assertBC("A$I", CLASS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -111,7 +111,7 @@ class ClassRemovedTest {
         static protected class J {}
       }""";
 
-		assertBC("A$I", CLASS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -125,7 +125,7 @@ class ClassRemovedTest {
         public static class J {}
       }""";
 
-		assertBC("A$I", CLASS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

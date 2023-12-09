@@ -3,6 +3,7 @@ package com.github.maracas.roseau.diff;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
+import com.github.maracas.roseau.api.model.ExecutableDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.MethodDecl;
@@ -69,7 +70,7 @@ public class APIDiff {
 						diffConstructors(c1, c2);
 				},
 				// Type has been removed
-				() -> bc(t1.isClass() ? BreakingChangeKind.CLASS_REMOVED : BreakingChangeKind.INTERFACE_REMOVED, t1)
+				() -> bc(BreakingChangeKind.TYPE_REMOVED, t1)
 			);
 		});
 
@@ -78,7 +79,7 @@ public class APIDiff {
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
 		t1.getFields().forEach(f1 -> {
-			Optional<FieldDecl> findF2 = t2.findField(f1.getQualifiedName());
+			Optional<FieldDecl> findF2 = t2.findField(f1.getSimpleName());
 
 			findF2.ifPresentOrElse(
 				// There is a matching field
@@ -136,6 +137,9 @@ public class APIDiff {
 			if (!t1.isFinal() && t2.isFinal())
 				bc(BreakingChangeKind.CLASS_NOW_FINAL, t1);
 
+			if (!t1.isSealed() && t2.isSealed())
+				bc(BreakingChangeKind.CLASS_NOW_FINAL, t1);
+
 			if (!t1.isAbstract() && t2.isAbstract())
 				bc(BreakingChangeKind.CLASS_NOW_ABSTRACT, t1);
 
@@ -150,20 +154,17 @@ public class APIDiff {
 		}
 
 		if (t1.isPublic() && t2.isProtected())
-			bc(BreakingChangeKind.TYPE_LESS_ACCESSIBLE, t1);
+			bc(BreakingChangeKind.TYPE_NOW_PROTECTED, t1);
 
 		if (t1 instanceof ClassDecl cls1 && t2 instanceof ClassDecl cls2) {
 			if (cls1.getSuperClass().isPresent() && cls2.getSuperClass().isEmpty())
 				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
-
-			// Check for deleted super-interfaces
-			if (t1.getImplementedInterfaces().stream()
-				.anyMatch(intf1 -> t2.getImplementedInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
-				bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 		}
 
-		if (t1.isInterface() && t1.getImplementedInterfaces().stream()
-			.anyMatch(intf1 -> t2.getImplementedInterfaces().stream().noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
+		// Deleted super-interfaces
+		if (t1.getImplementedInterfaces().stream()
+			.anyMatch(intf1 -> t2.getImplementedInterfaces().stream()
+				.noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))))
 			bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
 
 		if (!t1.getClass().equals(t2.getClass()))
@@ -255,100 +256,44 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, m1);
 
 		// JLS says only one vararg per method, in last position
-		/*IntStream.range(0, method1.getParametersVarargsCheck().size())
-			.filter(i -> method1.getParametersVarargsCheck().get(i) != method2.getParametersVarargsCheck().get(i))
-			.forEach(i -> {
-				boolean isNowVarargs = !method1.getParametersVarargsCheck().get(i) && method2.getParametersVarargsCheck().get(i);
-				BreakingChangeKind kind = isNowVarargs ? BreakingChangeKind.METHOD_NOW_VARARGS : BreakingChangeKind.METHOD_NO_LONGER_VARARGS;
-				bc(kind, method2.getLocation(), BreakingChangeNature.MUTATION, method2));
-			});*/
+		if (!m1.getParameters().isEmpty() && m1.getParameters().getLast().isVarargs()
+			&& (m2.getParameters().isEmpty() || !m2.getParameters().getLast().isVarargs()))
+			bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, m1);
 
-		// Handling the formal type parameters additions and deletions
-		// In classes
-		if (t1.isClass()) {
-			if (m1.getFormalTypeParameters().size() > m2.getFormalTypeParameters().size() && !m2.getFormalTypeParameters().isEmpty())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, m1);
+		if (!m2.getParameters().isEmpty() && m2.getParameters().getLast().isVarargs()
+			&& (m1.getParameters().isEmpty() || !m1.getParameters().getLast().isVarargs()))
+			bc(BreakingChangeKind.METHOD_NOW_VARARGS, m1);
 
-			if (m1.getFormalTypeParameters().size() < m2.getFormalTypeParameters().size() && !m1.getFormalTypeParameters().isEmpty())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, m1);
-		}
+		// FIXME: no checks for parameters???
 
-		// In interfaces
-		if (t1.isInterface()) {
-			if (m1.getFormalTypeParameters().size() > m2.getFormalTypeParameters().size())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, m1);
-
-			if (m1.getFormalTypeParameters().size() < m2.getFormalTypeParameters().size() && !m1.getFormalTypeParameters().isEmpty())
-				bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, m1);
-		}
-
-
-		// Handling changes in the formal type parameters' bounds
-		// The order of the FormalTypeParameters matters but the order of their bounds doesn't, this is why
-		// I'm transforming the bounds into hashsets
-//		if (method1.getFormalTypeParameters().size() == method2.getFormalTypeParameters().size()) {
-//			List<List<String>> boundsV1 = method1.getFormalTypeParamsBounds();
-//			List<List<String>> boundsV2 = method2.getFormalTypeParamsBounds();
-//
-//			for (int i = 0; i < boundsV2.size(); i++) {
-//				List<String> boundsOfTheFormalTypeParameterV1 = boundsV1.get(i);
-//				List<String> boundsOfTheFormalTypeParameterV2 = boundsV2.get(i);
-//
-//				HashSet<String> boundsSetV1 = new HashSet<>(boundsOfTheFormalTypeParameterV1);
-//				HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
-//
-//				// Every bound change is breaking in interfaces, no matter the nature
-//				if (type1.getDeclarationType().equals(TypeKind.INTERFACE) && !boundsSetV1.equals(boundsSetV2))
-//						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getLocation(), BreakingChangeNature.MUTATION, method2));
-//
-//				// In classes
-//				if (type1.getDeclarationType().equals(TypeKind.CLASS)) {
-//					// If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
-//					if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size())
-//						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getLocation(), BreakingChangeNature.MUTATION, method2));
-//
-//					// The addition of a bound is breaking
-//					if (boundsSetV1.size() < boundsSetV2.size())
-//						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, method2.getLocation(), BreakingChangeNature.MUTATION, method2));
-//				}
-//			}
-//		}
+		diffFormalTypeParameters(m1, m2);
 	}
 
 	private void diffConstructor(ConstructorDecl cons1, ConstructorDecl cons2) {
 		if (cons1.isPublic() && cons2.isProtected())
 			bc(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, cons1);
 
-//		if (!constructor1.getParametersReferencedTypes().equals(constructor2.getParametersReferencedTypes()))
-//			bc(BreakingChangeKind.CONSTRUCTOR_PARAMS_GENERICS_CHANGED, constructor2.getLocation(), BreakingChangeNature.MUTATION, constructor2));
+		diffFormalTypeParameters(cons1, cons2);
+	}
 
-//		if (constructor1.getFormalTypeParameters().size() == constructor2.getFormalTypeParameters().size()) {
-//			List<List<String>> boundsV1 = constructor1.getFormalTypeParamsBounds();
-//			List<List<String>> boundsV2 = constructor2.getFormalTypeParamsBounds();
-//
-//			for (int i = 0; i < boundsV2.size(); i++) {
-//				List<String> boundsOfTheFormalTypeParameterV1 = boundsV1.get(i);
-//				List<String> boundsOfTheFormalTypeParameterV2 = boundsV2.get(i);
-//
-//				HashSet<String> boundsSetV1 = new HashSet<>(boundsOfTheFormalTypeParameterV1);
-//				HashSet<String> boundsSetV2 = new HashSet<>(boundsOfTheFormalTypeParameterV2);
-//
-//				// If the sets have equal sizes but are not equal themselves, it means that an element changed within them, which is breaking
-//				if (!boundsSetV1.equals(boundsSetV2) && boundsSetV1.size() == boundsSetV2.size())
-//					bc(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getLocation(), BreakingChangeNature.MUTATION, constructor2));
-//
-//				// The addition of a bound is breaking
-//				if (boundsSetV1.size() < boundsSetV2.size())
-//					bc(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_CHANGED, constructor2.getLocation(), BreakingChangeNature.MUTATION, constructor2));
-//			}
-//		}
+	private void diffFormalTypeParameters(ExecutableDecl e1, ExecutableDecl e2) {
+		if (e1.getFormalTypeParameters().size() > e2.getFormalTypeParameters().size())
+			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1);
 
+		if (e1.getFormalTypeParameters().size() < e2.getFormalTypeParameters().size())
+			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, e1);
 
-//		if (constructor1.getFormalTypeParameters().size() > constructor2.getFormalTypeParameters().size() && !constructor2.getFormalTypeParameters().isEmpty())
-//			bc(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_REMOVED, constructor2.getLocation(), BreakingChangeNature.DELETION, constructor2));
-//
-//		if (constructor1.getFormalTypeParameters().size() < constructor2.getFormalTypeParameters().size() && !constructor1.getFormalTypeParameters().isEmpty())
-//			bc(BreakingChangeKind.CONSTRUCTOR_FORMAL_TYPE_PARAMETERS_ADDED, constructor2.getLocation(), BreakingChangeNature.ADDITION, constructor2));
+		for (int i = 0; i < e1.getFormalTypeParameters().size(); i++) {
+			List<TypeReference<TypeDecl>> bounds1 = e1.getFormalTypeParameters().get(i).bounds();
+
+			if (i < e2.getFormalTypeParameters().size()) {
+				List<TypeReference<TypeDecl>> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
+
+				if (bounds1.size() != bounds2.size()
+					|| !new HashSet<>(bounds1).equals(new HashSet<>(bounds2)))
+					bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1);
+			}
+		}
 	}
 
 	private void bc(BreakingChangeKind kind, Symbol impactedSymbol) {

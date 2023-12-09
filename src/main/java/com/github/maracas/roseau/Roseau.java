@@ -12,6 +12,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * The `roseau` class is the main entry point of the project.
@@ -70,7 +71,7 @@ public class Roseau {
 			System.out.println("API diff: " + sw.elapsed().toSeconds());
 
 			diff.breakingChangesReport();
-			System.out.println(bcs);
+			System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
 		} catch (IOException e) {
 			e.printStackTrace();
 			System.exit(1);

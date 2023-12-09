@@ -13,5 +13,8 @@ public record BreakingChange(
 	BreakingChangeKind kind,
 	Symbol impactedSymbol
 ) {
-
+	@Override
+	public String toString() {
+		return "BC[kind=%s, symbol=%s]".formatted(kind, impactedSymbol.getQualifiedName());
+	}
 }
