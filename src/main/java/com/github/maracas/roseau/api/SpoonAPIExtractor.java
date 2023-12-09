@@ -1,7 +1,7 @@
 package com.github.maracas.roseau.api;
 
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
+import com.github.maracas.roseau.api.model.APIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import spoon.Launcher;
 import spoon.MavenLauncher;
@@ -102,14 +102,14 @@ public class SpoonAPIExtractor implements APIExtractor {
 	 * @return Library's (model's) API.
 	 */
 	public API extractAPI() {
-		SpoonAPIFactory factory = new SpoonAPIFactory(model.getRootPackage().getFactory().Type());
+		APIFactory factory = new APIFactory(model.getRootPackage().getFactory().Type());
 
 		List<TypeDecl> allTypes =
 			model.getAllPackages().stream()
 				.flatMap(p -> getAllTypes(p).stream().map(factory::convertCtType))
 				.toList();
 
-		return new API(allTypes);
+		return new API(allTypes, factory);
 	}
 
 	// Returns all types within a package

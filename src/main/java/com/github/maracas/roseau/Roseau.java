@@ -48,8 +48,8 @@ public class Roseau {
 			sw.start();
 
 			// Type resolution
-			apiV1.resolve(m1.getRootPackage().getFactory().Type());
-			apiV2.resolve(m2.getRootPackage().getFactory().Type());
+			apiV1.resolve();
+			apiV2.resolve();
 			System.out.println("Type resolution: " + sw.elapsed().toSeconds());
 			sw.reset();
 			sw.start();

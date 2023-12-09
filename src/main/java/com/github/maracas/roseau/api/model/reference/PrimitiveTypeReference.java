@@ -5,4 +5,9 @@ public record PrimitiveTypeReference(String qualifiedName) implements ITypeRefer
 	public String getQualifiedName() {
 		return qualifiedName;
 	}
+
+	@Override
+	public String toString() {
+		return qualifiedName;
+	}
 }

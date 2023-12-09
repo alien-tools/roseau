@@ -1,5 +1,9 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
+import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertClass;
@@ -9,7 +13,9 @@ import static com.github.maracas.roseau.TestUtils.assertMethod;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -253,5 +259,221 @@ class TypeMemberExtractionTest {
 		assertTrue(f2.isStatic());
 		assertFalse(m1.isStatic());
 		assertTrue(m2.isStatic());
+	}
+
+	@Test
+	void void_members() {
+		var api = buildAPI("""
+			public interface A {
+				void m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var m = assertMethod(a, "m");
+
+		assertThat(m.getType(), is(instanceOf(PrimitiveTypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("void")));
+	}
+
+	@Test
+	void primitive_members() {
+		var api = buildAPI("""
+			public interface A {
+				int f = 2;
+				int m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(PrimitiveTypeReference.class)));
+		assertThat(f.getType().getQualifiedName(), is(equalTo("int")));
+
+		assertThat(m.getType(), is(instanceOf(PrimitiveTypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("int")));
+	}
+
+	@Test
+	void jdk_members() {
+		var api = buildAPI("""
+			public interface A {
+				String f = 2;
+				String m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
+		assertThat(f.getType().getQualifiedName(), is(equalTo("java.lang.String")));
+
+		assertThat(m.getType(), is(instanceOf(TypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("java.lang.String")));
+	}
+
+	@Test
+	void api_members() {
+		var api = buildAPI("""
+			public interface I {}
+			public interface A {
+				I f = null;
+				I m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
+		assertThat(f.getType().getQualifiedName(), is(equalTo("I")));
+
+		assertThat(m.getType(), is(instanceOf(TypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("I")));
+	}
+
+	@Test
+	void unknown_members() {
+		var api = buildAPI("""
+			public interface A {
+				U f = null;
+				U m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
+		assertThat(f.getType().getQualifiedName(), is(equalTo("U")));
+
+		assertThat(m.getType(), is(instanceOf(TypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("U")));
+	}
+
+	@Test
+	void array_members() {
+		var api = buildAPI("""
+			public interface A {
+				int[] f = {};
+				int[] m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(ArrayTypeReference.class)));
+		assertThat(f.getType().getQualifiedName(), is(equalTo("int[]")));
+
+		if (f.getType() instanceof ArrayTypeReference(var componentType))
+			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
+
+		assertThat(m.getType(), is(instanceOf(ArrayTypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("int[]")));
+
+		if (m.getType() instanceof ArrayTypeReference(var componentType))
+			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
+	}
+
+	@Test
+	void multidimensional_array_members() {
+		var api = buildAPI("""
+			public interface A {
+				int[][] f = {{}};
+				int[][] m();
+			}""");
+
+		var a = assertInterface(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(ArrayTypeReference.class)));
+		assertThat(f.getType().getQualifiedName(), is(equalTo("int[][]")));
+
+		if (f.getType() instanceof ArrayTypeReference(var componentType)) {
+			assertThat(componentType, is(instanceOf(ArrayTypeReference.class)));
+			assertThat(componentType.getQualifiedName(), is(equalTo("int[]")));
+			if (componentType instanceof ArrayTypeReference(var subcomponentType)) {
+				assertThat(subcomponentType, is(instanceOf(PrimitiveTypeReference.class)));
+				assertThat(subcomponentType.getQualifiedName(), is(equalTo("int")));
+			}
+		}
+
+		assertThat(m.getType(), is(instanceOf(ArrayTypeReference.class)));
+		assertThat(m.getType().getQualifiedName(), is(equalTo("int[][]")));
+
+		if (m.getType() instanceof ArrayTypeReference(var componentType)) {
+			assertThat(componentType, is(instanceOf(ArrayTypeReference.class)));
+			assertThat(componentType.getQualifiedName(), is(equalTo("int[]")));
+			if (componentType instanceof ArrayTypeReference(var subcomponentType)) {
+				assertThat(subcomponentType, is(instanceOf(PrimitiveTypeReference.class)));
+				assertThat(subcomponentType.getQualifiedName(), is(equalTo("int")));
+			}
+		}
+	}
+
+	@Test
+	void generic_members() {
+		var api = buildAPI("""
+			public class A<T> {
+				public T f = null;
+				public T m1() { return null; }
+				public <U> U m2() { return null; }
+			}""");
+
+		var a = assertClass(api, "A");
+		var f = assertField(a, "f");
+		var m1 = assertMethod(a, "m1");
+		var m2 = assertMethod(a, "m2");
+
+		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
+		if (f.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
+			assertThat(fqn, is(equalTo("T")));
+			assertThat(bounds, hasSize(1));
+			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
+		}
+
+		assertThat(m1.getType(), is(instanceOf(TypeParameterReference.class)));
+		if (m1.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
+			assertThat(fqn, is(equalTo("T")));
+			assertThat(bounds, hasSize(1));
+			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
+		}
+
+		assertThat(m2.getType(), is(instanceOf(TypeParameterReference.class)));
+		if (m2.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
+			assertThat(fqn, is(equalTo("U")));
+			assertThat(bounds, hasSize(1));
+			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
+		}
+	}
+
+	@Test
+	void generic_members_with_bounds() {
+		var api = buildAPI("""
+				public class A<T extends String> {
+					public T f = null;
+					public <U extends T> U m() { return null; }
+				}""");
+
+		var a = assertClass(api, "A");
+		var f = assertField(a, "f");
+		var m = assertMethod(a, "m");
+
+		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
+		if (f.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
+			assertThat(fqn, is(equalTo("T")));
+			assertThat(bounds, hasSize(1));
+			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
+		}
+
+		assertThat(m.getType(), is(instanceOf(TypeParameterReference.class)));
+		if (m.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
+			assertThat(fqn, is(equalTo("U")));
+			assertThat(bounds, hasSize(1));
+			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("T")));
+		}
 	}
 }

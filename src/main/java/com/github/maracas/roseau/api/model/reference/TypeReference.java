@@ -1,7 +1,7 @@
 package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
+import com.github.maracas.roseau.api.model.APIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.google.common.base.Objects;
 import spoon.reflect.factory.TypeFactory;
@@ -38,7 +38,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 			CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
 
 			if (ref.getTypeDeclaration() != null)
-				resolvedApiType = (T) new SpoonAPIFactory(typeFactory).convertCtType(ref.getTypeDeclaration());
+				resolvedApiType = (T) new APIFactory(typeFactory).convertCtType(ref.getTypeDeclaration());
 		}
 
 		return Optional.ofNullable(resolvedApiType);
@@ -46,6 +46,14 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	public void setResolvedApiType(T type) {
 		resolvedApiType = type;
+	}
+
+	public boolean isSubtypeOf(TypeReference<T> other) {
+		return this.equals(other) || getResolvedApiType().map(t -> t.getAllSuperTypes().contains(other)).orElse(false);
+	}
+
+	public boolean sameHierarchy(TypeReference<T> other) {
+		return isSubtypeOf(other) || other.isSubtypeOf(this);
 	}
 
 	@Override

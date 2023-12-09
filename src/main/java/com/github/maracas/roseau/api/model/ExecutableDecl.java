@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Objects;
 
@@ -45,7 +46,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 			if (otherParameter.isVarargs() != thisParameter.isVarargs())
 				return false;
-			if (otherParameter.type() != thisParameter.type())
+			if (!otherParameter.type().equals(thisParameter.type()))
 				return false;
 		}
 
@@ -69,6 +70,25 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		}
 
 		return true;
+	}
+
+	/**
+	 * We assume that input source code compiles, so we won't have two methods
+	 * with same name and parameters but different return types.
+	 * Executable do not overload themselves.
+	 */
+	public boolean isOverloading(ExecutableDecl other) {
+		return getSimpleName().equals(other.getSimpleName())
+			&& !hasSameSignature(other)
+			&& containingType.sameHierarchy(other.getContainingType());
+	}
+
+	/**
+	 * Executables override themselves
+	 */
+	public boolean isOverriding(ExecutableDecl other) {
+		return hasSameSignature(other)
+			&& containingType.isSubtypeOf(other.getContainingType());
 	}
 
 	/**

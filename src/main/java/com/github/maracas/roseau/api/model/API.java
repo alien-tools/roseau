@@ -25,23 +25,30 @@ import java.util.stream.Collectors;
  */
 public final class API {
 	private final Map<String, TypeDecl> types;
+	@JsonIgnore
+	private final APIFactory factory;
 
 	@JsonCreator
-	public API(@JsonProperty("allTypes") List<TypeDecl> types) {
+	public API(@JsonProperty("allTypes") List<TypeDecl> types, APIFactory factory) {
 		this.types = types.stream()
 			.collect(Collectors.toMap(
 				Symbol::getQualifiedName,
 				Function.identity()
 			));
+		this.factory = factory;
 	}
 
-	public void resolve(TypeFactory factory) {
+	public void resolve() {
 		// Within-library type resolution
-		new TypeResolver(this, factory).$(this).visit();
+		new TypeResolver(this, factory.getTypeFactory()).$(this).visit();
 	}
 
 	public List<TypeDecl> getAllTypes() {
 		return types.values().stream().toList();
+	}
+
+	public APIFactory getFactory() {
+		return factory;
 	}
 
 	@JsonIgnore

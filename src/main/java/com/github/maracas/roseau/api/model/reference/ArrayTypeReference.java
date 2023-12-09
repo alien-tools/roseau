@@ -8,4 +8,9 @@ public record ArrayTypeReference(ITypeReference componentType) implements ITypeR
 	public String getQualifiedName() {
 		return componentType().getQualifiedName() + "[]";
 	}
+
+	@Override
+	public String toString() {
+		return getQualifiedName();
+	}
 }

@@ -6,8 +6,6 @@ import static com.github.maracas.roseau.TestUtils.assertClass;
 import static com.github.maracas.roseau.TestUtils.assertInterface;
 import static com.github.maracas.roseau.TestUtils.assertMethod;
 import static com.github.maracas.roseau.TestUtils.buildAPI;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -74,39 +72,5 @@ class MethodsExtractionTest {
 
 		assertFalse(m1.isNative());
 		assertTrue(m2.isNative());
-	}
-
-	@Test
-	void overloading_methods() {
-		var api = buildAPI("""
-			public interface I {
-				void m1(int a);
-				void m1(String b);
-				void m1(A a);
-				void m1(C c);
-				void m1(int a, String b);
-			}
-			public abstract class A implements I {
-				public abstract void m1(int a);
-				public abstract void m1(String b);
-				public abstract void m1(A a);
-				public abstract void m1(C c);
-				public abstract void m1(int a, String b);
-			}
-			public class C extends A {
-				public void m1(int a) {}
-				public void m1(String b) {}
-				public void m1(A a) {}
-				public void m1(C c) {}
-			  public void m1(int a, String b) {}
-			}""");
-
-		var i = assertInterface(api, "I");
-		var a = assertClass(api, "A");
-		var c = assertClass(api, "C");
-
-		assertThat(i.getMethods(), hasSize(5));
-		assertThat(a.getMethods(), hasSize(5));
-		assertThat(c.getMethods(), hasSize(5));
 	}
 }

@@ -10,8 +10,8 @@ import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
@@ -20,7 +20,6 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.VirtualFile;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -94,6 +93,15 @@ public class TestUtils {
 			return findMethod.get();
 	}
 
+	public static MethodDecl assertMethod(TypeDecl decl, String name, ITypeReference... typeFqns) {
+		Optional<MethodDecl> findMethod = decl.findMethod(name, typeFqns);
+
+		if (findMethod.isEmpty())
+			throw new AssertionFailedError("No such method", name, "No such method");
+		else
+			return findMethod.get();
+	}
+
 	public static ClassDecl assertClass(API api, String name) {
 		return (ClassDecl) assertType(api, name, "class");
 	}
@@ -127,7 +135,7 @@ public class TestUtils {
 		CtModel m = buildModel(sources);
 		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API api = extractor.extractAPI();
-		api.resolve(m.getRootPackage().getFactory().Type());
+		api.resolve();
 		return api;
 	}
 

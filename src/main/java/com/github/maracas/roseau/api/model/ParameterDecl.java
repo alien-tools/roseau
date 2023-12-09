@@ -7,5 +7,8 @@ public record ParameterDecl(
 	ITypeReference type,
 	boolean isVarargs
 ) {
-
+	@Override
+	public String toString() {
+		return "%s%s %s".formatted(type, isVarargs ? "..." : "", name);
+	}
 }

@@ -33,11 +33,15 @@ import java.util.Collections;
 import java.util.List;
 import java.util.stream.Stream;
 
-public class SpoonAPIFactory {
+public class APIFactory {
 	private final TypeFactory typeFactory;
 
-	public SpoonAPIFactory(TypeFactory typeFactory) {
+	public APIFactory(TypeFactory typeFactory) {
 		this.typeFactory = typeFactory;
+	}
+
+	public TypeFactory getTypeFactory() {
+		return typeFactory;
 	}
 
 	public TypeDecl convertCtType(CtType<?> type) {
@@ -292,16 +296,16 @@ public class SpoonAPIFactory {
 
 	private ITypeReference makeITypeReference(CtTypeReference<?> typeRef) {
 		return switch (typeRef) {
-			case CtArrayTypeReference<?> arrayRef -> new ArrayTypeReference(makeITypeReference(arrayRef.getComponentType()));
+			case CtArrayTypeReference<?> arrayRef -> makeArrayTypeReference(makeITypeReference(arrayRef.getComponentType()));
 			case CtTypeParameterReference tpRef -> {
 				if (tpRef.getBoundingType() instanceof CtIntersectionTypeReference<?> intersection)
-					yield new TypeParameterReference(tpRef.getQualifiedName(), makeITypeReferences(intersection.getBounds()));
+					yield makeTypeParameterReference(tpRef.getQualifiedName(), makeITypeReferences(intersection.getBounds()));
 				else
-					yield new TypeParameterReference(tpRef.getQualifiedName(), List.of(makeITypeReference(tpRef.getBoundingType())));
+					yield makeTypeParameterReference(tpRef.getQualifiedName(), List.of(makeITypeReference(tpRef.getBoundingType())));
 			}
-			case CtTypeReference<?> ref when ref.isPrimitive() -> new PrimitiveTypeReference(ref.getQualifiedName());
+			case CtTypeReference<?> ref when ref.isPrimitive() -> makePrimitiveTypeReference(ref.getQualifiedName());
 			case null -> null;
-			default -> new TypeReference<>(typeRef.getQualifiedName(), typeFactory);
+			default -> makeTypeReference(typeRef.getQualifiedName());
 		};
 	}
 
@@ -309,8 +313,16 @@ public class SpoonAPIFactory {
 		return qualifiedName != null ? new TypeReference<>(qualifiedName, typeFactory) : null;
 	}
 
-	public ITypeReference makePrimitiveTypeReference(String name) {
-		return name != null ? new PrimitiveTypeReference(name) : null;
+	public PrimitiveTypeReference makePrimitiveTypeReference(String qualifiedName) {
+		return qualifiedName != null ? new PrimitiveTypeReference(qualifiedName) : null;
+	}
+
+	public TypeParameterReference makeTypeParameterReference(String qualifiedName, List<ITypeReference> bounds) {
+		return qualifiedName != null ? new TypeParameterReference(qualifiedName, bounds) : null;
+	}
+
+	public ArrayTypeReference makeArrayTypeReference(ITypeReference componentType) {
+		return componentType != null ? new ArrayTypeReference(componentType) : null;
 	}
 
 	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtTypeReference<?> typeRef) {

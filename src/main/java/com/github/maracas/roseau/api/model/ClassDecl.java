@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -39,13 +40,13 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	@Override
-	public List<MethodDecl> getAllMethods() {
+	protected List<MethodDecl> getSuperMethods() {
 		return Stream.concat(
 			superClass != null
 				? superClass.getResolvedApiType().map(cls -> cls.getAllMethods().stream()).orElse(Stream.empty())
 				: Stream.empty(),
-			super.getAllMethods().stream()
-		).toList();
+			super.getSuperMethods().stream()
+			).toList();
 	}
 
 	@Override
@@ -69,6 +70,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		// A class without a subclass-accessible constructor cannot be extended
 		// If the class had a default constructor, it would be there
 		return super.isEffectivelyFinal() || constructors.isEmpty();
+	}
+
+	@Override
+	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+		return Stream.concat(
+			super.getAllSuperTypes().stream(),
+			getAllSuperClasses().stream()
+		).toList();
 	}
 
 	public Optional<TypeReference<ClassDecl>> getSuperClass() {

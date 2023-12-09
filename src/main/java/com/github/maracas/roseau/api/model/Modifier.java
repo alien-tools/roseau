@@ -57,5 +57,10 @@ public enum Modifier {
 	/**
 	 * Represents the "default" modifier
 	 */
-	DEFAULT
+	DEFAULT;
+
+	@Override
+	public String toString() {
+		return name().toLowerCase();
+	}
 }

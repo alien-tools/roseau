@@ -4,16 +4,15 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
-import spoon.reflect.declaration.CtMethod;
 
 import java.util.List;
+import java.util.stream.Collectors;
 
 /**
  * Represents a method declaration within a Java type.
  * This class extends the {@link ExecutableDecl} class and complements it with method-specific information
  */
 public final class MethodDecl extends ExecutableDecl {
-
 	@JsonCreator
 	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
 	                  TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
@@ -48,16 +47,6 @@ public final class MethodDecl extends ExecutableDecl {
 	}
 
 	/**
-	 * We assume we're dealing with compilable code, so we do not need to check for
-	 * overloading rules: two methods with the same name within the same type hierarchy
-	 * do overload each other
-	 */
-	public boolean isOverloading(MethodDecl other) {
-		// FIXME
-		return other.getSimpleName().equals(getSimpleName());
-	}
-
-	/**
 	 * Generates a string representation of the MethodDeclaration.
 	 *
 	 * @return A formatted string containing the method's qualifiedName, return type, parameter types,
@@ -65,6 +54,8 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	@Override
 	public String toString() {
-		return "method %s [%s] [%s]".formatted(qualifiedName, visibility, type);
+		return "%s %s %s %s(%s)".formatted(
+			modifiers.stream().map(Object::toString).collect(Collectors.joining(", ")), visibility, type, getSimpleName(),
+			parameters.stream().map(Object::toString).collect(Collectors.joining(", ")));
 	}
 }

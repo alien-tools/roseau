@@ -22,5 +22,10 @@ public enum AccessModifier {
 	/**
 	 * Package-private access modifier
 	 */
-	PACKAGE_PRIVATE
+	PACKAGE_PRIVATE;
+
+	@Override
+	public String toString() {
+		return name().toLowerCase();
+	}
 }

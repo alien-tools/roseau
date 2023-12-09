@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Objects;
@@ -35,7 +37,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 */
 	protected final List<MethodDecl> methods;
 
-	protected final Optional<TypeReference<TypeDecl>> enclosingType;
+	protected final TypeReference<TypeDecl> enclosingType;
 
 	protected TypeDecl(String qualifiedName,
 	                   AccessModifier visibility,
@@ -51,19 +53,19 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		this.formalTypeParameters = formalTypeParameters;
 		this.fields = fields;
 		this.methods = methods;
-		this.enclosingType = Optional.ofNullable(enclosingType);
+		this.enclosingType = enclosingType;
 	}
 
 	@JsonIgnore
 	@Override
 	public boolean isExported() {
 		return (isPublic() || (isProtected() && !isEffectivelyFinal()))
-			&& enclosingType.map(t -> t.getResolvedApiType().map(TypeDecl::isExported).orElse(true)).orElse(true);
+			&& (enclosingType == null || enclosingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true));
 	}
 
 	@JsonIgnore
 	public boolean isNested() {
-		return enclosingType.isPresent();
+		return enclosingType != null;
 	}
 
 	@JsonIgnore
@@ -145,14 +147,28 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	@JsonIgnore
 	public List<MethodDecl> getAllMethods() {
-		return Stream.concat(
+		List<MethodDecl> allMethods = Stream.concat(
 			methods.stream(),
-			implementedInterfaces.stream()
-				.map(TypeReference::getResolvedApiType)
-				.flatMap(Optional::stream)
-				.map(InterfaceDecl::getAllMethods)
-				.flatMap(Collection::stream)
+			getSuperMethods().stream()
 		).toList();
+
+		return allMethods.stream()
+			.filter(m -> allMethods.stream().noneMatch(m2 -> !m2.equals(m) && m2.isOverriding(m)))
+			.toList();
+	}
+
+	@JsonIgnore
+	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+		return new ArrayList<>(getAllImplementedInterfaces());
+	}
+
+	protected List<MethodDecl> getSuperMethods() {
+		return implementedInterfaces.stream()
+			.map(TypeReference::getResolvedApiType)
+			.flatMap(Optional::stream)
+			.map(InterfaceDecl::getAllMethods)
+			.flatMap(Collection::stream)
+			.toList();
 	}
 
 	@JsonIgnore
@@ -199,7 +215,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	public Optional<TypeReference<TypeDecl>> getEnclosingType() {
-		return enclosingType;
+		return Optional.ofNullable(enclosingType);
 	}
 
 	public Optional<FieldDecl> findField(String name) {
@@ -208,9 +224,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
-	public Optional<MethodDecl> findMethod(String name, List<ITypeReference> parameterTypes) {
+	public Optional<MethodDecl> findMethod(String name, ITypeReference... parameterTypes) {
 		return methods.stream()
-			.filter(m -> m.hasSignature(name, parameterTypes))
+			.filter(m -> m.hasSignature(name, Arrays.asList(parameterTypes)))
 			.findFirst();
 	}
 
@@ -229,8 +245,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				.flatMap(Optional::stream)
 				.map(InterfaceDecl::getAllImplementedInterfaces)
 				.flatMap(Collection::stream)
-				.distinct()
-		).toList();
+		).distinct().toList();
 	}
 
 	@Override
