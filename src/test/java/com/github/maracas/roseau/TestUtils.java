@@ -20,11 +20,15 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.VirtualFile;
 
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
 public class TestUtils {
+	private TestUtils() {
+	}
+
 	public static void assertBC(String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
 		Optional<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
@@ -94,7 +98,7 @@ public class TestUtils {
 	}
 
 	public static MethodDecl assertMethod(TypeDecl decl, String name, ITypeReference... typeFqns) {
-		Optional<MethodDecl> findMethod = decl.findMethod(name, typeFqns);
+		Optional<MethodDecl> findMethod = decl.findMethod(name, Arrays.asList(typeFqns));
 
 		if (findMethod.isEmpty())
 			throw new AssertionFailedError("No such method", name, "No such method");

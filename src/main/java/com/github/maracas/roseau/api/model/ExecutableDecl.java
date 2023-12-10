@@ -3,7 +3,6 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.lang.reflect.Executable;
 import java.util.List;
 import java.util.Objects;
 
@@ -34,31 +33,19 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	public boolean hasSameSignature(ExecutableDecl other) {
-		if (!other.getSimpleName().equals(getSimpleName()))
-			return false;
-
-		if (other.parameters.size() != parameters.size())
-			return false;
-
-		for (int i = 0; i < other.parameters.size(); i++) {
-			ParameterDecl otherParameter = other.parameters.get(i);
-			ParameterDecl thisParameter = parameters.get(i);
-
-			if (otherParameter.isVarargs() != thisParameter.isVarargs())
-				return false;
-			if (!otherParameter.type().equals(thisParameter.type()))
-				return false;
-		}
-
-		return true;
+		return hasSignature(other.getSimpleName(),
+			other.getParameters().stream().map(ParameterDecl::type).toList(),
+			!other.getParameters().isEmpty() && other.getParameters().getLast().isVarargs());
 	}
 
-	public boolean hasSignature(String name, List<ITypeReference> parameterTypes) {
-		// FIXME: varargs + merge with above
-		if (!getSimpleName().equals(name))
+	boolean hasSignature(String simpleName, List<? extends ITypeReference> parameterTypes, boolean varargs) {
+		if (!getSimpleName().equals(simpleName))
 			return false;
 
 		if (parameters.size() != parameterTypes.size())
+			return false;
+
+		if (varargs && (parameters.isEmpty() || !parameters.getLast().isVarargs()))
 			return false;
 
 		for (int i = 0; i < parameterTypes.size(); i++) {
@@ -80,7 +67,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	public boolean isOverloading(ExecutableDecl other) {
 		return getSimpleName().equals(other.getSimpleName())
 			&& !hasSameSignature(other)
-			&& containingType.sameHierarchy(other.getContainingType());
+			&& containingType.isSameHierarchy(other.getContainingType());
 	}
 
 	/**

@@ -1,7 +1,7 @@
 package com.github.maracas.roseau.api;
 
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.APIFactory;
+import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import spoon.Launcher;
 import spoon.MavenLauncher;
@@ -9,6 +9,7 @@ import spoon.SpoonException;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
+import spoon.reflect.factory.TypeFactory;
 import spoon.support.compiler.SpoonProgress;
 
 import java.nio.file.Files;
@@ -29,6 +30,7 @@ import java.util.stream.Stream;
  * We don't know anything about the outside world.
  */
 public class SpoonAPIExtractor implements APIExtractor {
+	private static final int JAVA_VERSION = 17;
 	private final CtModel model;
 
 	/**
@@ -54,7 +56,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		}
 	}
 
-	public static Launcher launcherFor(Path location) {
+	private static Launcher launcherFor(Path location) {
 		Launcher launcher;
 
 		if (Files.exists(location.resolve("pom.xml")))
@@ -74,7 +76,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 		launcher.getEnvironment().setCommentEnabled(false);
 		// Set Java version
 		// Note: even when using the MavenLauncher, it's sometimes not properly inferred, better be safe
-		launcher.getEnvironment().setComplianceLevel(17);
+		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
 
 		// Interruptible launcher: this is dirty.
 		// Spoon's compiler does two lengthy things: compile units with JDTs,
@@ -102,7 +104,8 @@ public class SpoonAPIExtractor implements APIExtractor {
 	 * @return Library's (model's) API.
 	 */
 	public API extractAPI() {
-		APIFactory factory = new APIFactory(model.getRootPackage().getFactory().Type());
+		TypeFactory typeFactory = model.getRootPackage().getFactory().Type();
+		SpoonAPIFactory factory = new SpoonAPIFactory(typeFactory);
 
 		List<TypeDecl> allTypes =
 			model.getAllPackages().stream()

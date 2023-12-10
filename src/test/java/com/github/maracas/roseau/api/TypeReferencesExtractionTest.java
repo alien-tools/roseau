@@ -42,17 +42,10 @@ class TypeReferencesExtractionTest {
 		var a = assertClass(api, "A");
 		var sup = a.getSuperClass();
 
-		System.out.println("sup="+sup);
-		System.out.println(a.getAllMethods());
-		System.out.println(a.getAllImplementedInterfaces());
-
 		var chars = a.getAllMethods().stream()
 			.filter(m -> "java.lang.String.chars".equals(m.getQualifiedName()))
 			.findFirst()
 			.get();
-
-		System.out.println("chars="+chars);
-		System.out.println("transitiveRef="+chars.getType());
 	}
 
 	@Test
@@ -62,10 +55,6 @@ class TypeReferencesExtractionTest {
 
 		var a = assertClass(api, "A");
 		var sup = a.getSuperClass();
-
-		System.out.println("sup="+sup);
-		System.out.println(a.getAllMethods());
-		System.out.println(a.getAllImplementedInterfaces());
 	}
 
 	@Test
@@ -110,10 +99,6 @@ class TypeReferencesExtractionTest {
 		var f = assertField(a, "f");
 		var t = f.getType();
 
-		if (t instanceof TypeReference<?> tt) {
-			System.out.println(tt.getResolvedApiType().map(TypeDecl::getMethods).orElse(Collections.emptyList()));
-		}
-
 //		assertTrue(t.isInterface());
 //		assertThat(t.getAllImplementedInterfaces(), is(empty()));
 //		assertThat(t.getFormalTypeParameters(), is(empty()));
@@ -143,8 +128,6 @@ class TypeReferencesExtractionTest {
 		var a = assertClass(api, "A");
 		var f = assertField(a, "f");
 		var t = f.getType();
-
-		System.out.println(t);
 
 //		assertFalse(t.isClass());
 //		assertFalse(t.isInterface());
@@ -209,9 +192,5 @@ class TypeReferencesExtractionTest {
 			}""");
 
 		var i = assertInterface(api, "I");
-
-		System.out.println(i.getImplementedInterfaces());
-		System.out.println(i.getAllMethods());
-		System.out.println(i.getFields());
 	}
 }

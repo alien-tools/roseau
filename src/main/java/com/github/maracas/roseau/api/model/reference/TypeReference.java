@@ -1,26 +1,24 @@
 package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import com.github.maracas.roseau.api.model.APIFactory;
+import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.google.common.base.Objects;
-import spoon.reflect.factory.TypeFactory;
-import spoon.reflect.reference.CtTypeReference;
 
 import java.util.Optional;
 
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
-	private TypeFactory typeFactory;
+	private SpoonAPIFactory factory;
 	private T resolvedApiType;
 
 	public TypeReference(String qualifiedName) {
 		this.qualifiedName = qualifiedName;
 	}
 
-	public TypeReference(String qualifiedName, TypeFactory typeFactory) {
+	public TypeReference(String qualifiedName, SpoonAPIFactory factory) {
 		this.qualifiedName = qualifiedName;
-		this.typeFactory = typeFactory;
+		this.factory = factory;
 	}
 
 	@JsonValue
@@ -29,17 +27,13 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		return qualifiedName;
 	}
 
-	public void setTypeFactory(TypeFactory typeFactory) {
-		this.typeFactory = typeFactory;
+	public void setFactory(SpoonAPIFactory factory) {
+		this.factory = factory;
 	}
 
 	public Optional<T> getResolvedApiType() {
-		if (resolvedApiType == null && typeFactory != null) {
-			CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
-
-			if (ref.getTypeDeclaration() != null)
-				resolvedApiType = (T) new APIFactory(typeFactory).convertCtType(ref.getTypeDeclaration());
-		}
+		if (resolvedApiType == null && factory != null)
+			resolvedApiType = (T) factory.convertCtType(qualifiedName);
 
 		return Optional.ofNullable(resolvedApiType);
 	}
@@ -49,10 +43,10 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public boolean isSubtypeOf(TypeReference<T> other) {
-		return this.equals(other) || getResolvedApiType().map(t -> t.getAllSuperTypes().contains(other)).orElse(false);
+		return equals(other) || getResolvedApiType().map(t -> t.getAllSuperTypes().contains(other)).orElse(false);
 	}
 
-	public boolean sameHierarchy(TypeReference<T> other) {
+	public boolean isSameHierarchy(TypeReference<T> other) {
 		return isSubtypeOf(other) || other.isSubtypeOf(this);
 	}
 

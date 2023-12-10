@@ -7,7 +7,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.github.maracas.roseau.api.TypeResolver;
-import spoon.reflect.factory.TypeFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -26,10 +25,10 @@ import java.util.stream.Collectors;
 public final class API {
 	private final Map<String, TypeDecl> types;
 	@JsonIgnore
-	private final APIFactory factory;
+	private final SpoonAPIFactory factory;
 
 	@JsonCreator
-	public API(@JsonProperty("allTypes") List<TypeDecl> types, APIFactory factory) {
+	public API(@JsonProperty("allTypes") List<TypeDecl> types, SpoonAPIFactory factory) {
 		this.types = types.stream()
 			.collect(Collectors.toMap(
 				Symbol::getQualifiedName,
@@ -40,14 +39,14 @@ public final class API {
 
 	public void resolve() {
 		// Within-library type resolution
-		new TypeResolver(this, factory.getTypeFactory()).$(this).visit();
+		new TypeResolver(this, factory).$(this).visit();
 	}
 
 	public List<TypeDecl> getAllTypes() {
 		return types.values().stream().toList();
 	}
 
-	public APIFactory getFactory() {
+	public SpoonAPIFactory getFactory() {
 		return factory;
 	}
 
@@ -68,7 +67,7 @@ public final class API {
 
 	public Optional<TypeDecl> getExportedType(String qualifiedName) {
 		return getExportedTypes().stream()
-			.filter(t -> Objects.equals(qualifiedName, t.qualifiedName))
+			.filter(t -> Objects.equals(qualifiedName, t.getQualifiedName()))
 			.findFirst();
 	}
 

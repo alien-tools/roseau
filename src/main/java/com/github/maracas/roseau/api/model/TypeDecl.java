@@ -224,10 +224,14 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
-	public Optional<MethodDecl> findMethod(String name, ITypeReference... parameterTypes) {
+	public Optional<MethodDecl> findMethod(String name, List<? extends ITypeReference> parameterTypes, boolean varargs) {
 		return methods.stream()
-			.filter(m -> m.hasSignature(name, Arrays.asList(parameterTypes)))
+			.filter(m -> m.hasSignature(name, parameterTypes, varargs))
 			.findFirst();
+	}
+
+	public Optional<MethodDecl> findMethod(String name, List<? extends ITypeReference> parameterTypes) {
+		return findMethod(name, parameterTypes, false);
 	}
 
 	public Optional<MethodDecl> findMethod(String name) {

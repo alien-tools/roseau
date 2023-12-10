@@ -1,10 +1,9 @@
 package com.github.maracas.roseau.api.model;
 
-import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
-import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
-import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
+import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
@@ -31,17 +30,59 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Stream;
 
-public class APIFactory {
+public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
+	private final TypeReferenceFactory typeReferenceFactory;
 
-	public APIFactory(TypeFactory typeFactory) {
+	public SpoonAPIFactory(TypeFactory typeFactory) {
 		this.typeFactory = typeFactory;
+		this.typeReferenceFactory = new SpoonTypeReferenceFactory(this);
 	}
 
-	public TypeFactory getTypeFactory() {
-		return typeFactory;
+	public TypeReferenceFactory getTypeReferenceFactory() {
+		return typeReferenceFactory;
+	}
+
+	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {
+		if (typeRef == null)
+			return null;
+
+		return switch (typeRef) {
+			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getComponentType()));
+			case CtTypeParameterReference tpRef -> {
+				if (tpRef.getBoundingType() instanceof CtIntersectionTypeReference<?> intersection)
+					yield typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName(), createITypeReferences(intersection.getBounds()));
+				else
+					yield typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName(), List.of(createITypeReference(tpRef.getBoundingType())));
+			}
+			case CtTypeReference<?> ref when ref.isPrimitive() -> typeReferenceFactory.createPrimitiveTypeReference(ref.getQualifiedName());
+			default -> createTypeReference(typeRef);
+		};
+	}
+
+	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtTypeReference<?> typeRef) {
+		return typeRef != null ? typeReferenceFactory.createTypeReference(typeRef.getQualifiedName()) : null;
+	}
+
+	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtType<?> type) {
+		return type != null ? createTypeReference(type.getReference()) : null;
+	}
+
+	private List<ITypeReference> createITypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+		return typeRefs.stream()
+			.map(this::createITypeReference)
+			.filter(Objects::nonNull)
+			.toList();
+	}
+
+	private <T extends TypeDecl> List<TypeReference<T>> createTypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+		return typeRefs.stream()
+			.map(this::<T>createTypeReference)
+			.filter(Objects::nonNull)
+			.toList();
 	}
 
 	public TypeDecl convertCtType(CtType<?> type) {
@@ -55,18 +96,26 @@ public class APIFactory {
 		};
 	}
 
+	public TypeDecl convertCtType(String qualifiedName) {
+		CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
+
+		return ref.getTypeDeclaration() != null
+			? convertCtType(ref.getTypeDeclaration())
+			: null;
+	}
+
 	private ClassDecl convertCtClass(CtClass<?> cls) {
 		return new ClassDecl(
 			cls.getQualifiedName(),
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonPosition(cls.getPosition()),
-			makeTypeReferences(cls.getSuperInterfaces()),
+			createTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
 			convertCtFields(cls),
 			convertCtMethods(cls),
-			makeTypeReference(cls.getDeclaringType()),
-			makeTypeReference(cls.getSuperclass()),
+			createTypeReference(cls.getDeclaringType()),
+			createTypeReference(cls.getSuperclass()),
 			convertCtConstructors(cls)
 		);
 	}
@@ -77,11 +126,11 @@ public class APIFactory {
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonPosition(intf.getPosition()),
-			makeTypeReferences(intf.getSuperInterfaces()),
+			createTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
 			convertCtMethods(intf),
-			makeTypeReference(intf.getDeclaringType())
+			createTypeReference(intf.getDeclaringType())
 			);
 	}
 
@@ -93,7 +142,7 @@ public class APIFactory {
 			convertSpoonPosition(annotation.getPosition()),
 			convertCtFields(annotation),
 			convertCtMethods(annotation),
-			makeTypeReference(annotation.getDeclaringType())
+			createTypeReference(annotation.getDeclaringType())
 			);
 	}
 
@@ -103,10 +152,10 @@ public class APIFactory {
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonPosition(enm.getPosition()),
-			makeTypeReferences(enm.getSuperInterfaces()),
+			createTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
 			convertCtMethods(enm),
-			makeTypeReference(enm.getDeclaringType()),
+			createTypeReference(enm.getDeclaringType()),
 			convertCtConstructors(enm)
 		);
 	}
@@ -117,11 +166,11 @@ public class APIFactory {
 			convertSpoonVisibility(record.getVisibility()),
 			convertSpoonNonAccessModifiers(record.getModifiers()),
 			convertSpoonPosition(record.getPosition()),
-			makeTypeReferences(record.getSuperInterfaces()),
+			createTypeReferences(record.getSuperInterfaces()),
 			convertCtFormalTypeParameters(record),
 			convertCtFields(record),
 			convertCtMethods(record),
-			makeTypeReference(record.getDeclaringType()),
+			createTypeReference(record.getDeclaringType()),
 			convertCtConstructors(record)
 		);
 	}
@@ -132,8 +181,8 @@ public class APIFactory {
 			convertSpoonVisibility(field.getVisibility()),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
 			convertSpoonPosition(field.getPosition()),
-			makeTypeReference(field.getDeclaringType()),
-			makeITypeReference(field.getType())
+			createTypeReference(field.getDeclaringType()),
+			createITypeReference(field.getType())
 		);
 	}
 
@@ -149,11 +198,11 @@ public class APIFactory {
 			convertSpoonVisibility(method.getVisibility()),
 			modifiers,
 			convertSpoonPosition(method.getPosition()),
-			makeTypeReference(method.getDeclaringType()),
-			makeITypeReference(method.getType()),
+			createTypeReference(method.getDeclaringType()),
+			createITypeReference(method.getType()),
 			convertCtParameters(method),
 			convertCtFormalTypeParameters(method),
-			makeTypeReferences(new ArrayList<>(method.getThrownTypes()))
+			createTypeReferences(new ArrayList<>(method.getThrownTypes()))
 		);
 	}
 
@@ -163,11 +212,11 @@ public class APIFactory {
 			convertSpoonVisibility(cons.getVisibility()),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
 			convertSpoonPosition(cons.getPosition()),
-			makeTypeReference(cons.getDeclaringType()),
-			makeITypeReference(cons.getType()),
+			createTypeReference(cons.getDeclaringType()),
+			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
 			convertCtFormalTypeParameters(cons),
-			makeTypeReferences(new ArrayList<>(cons.getThrownTypes()))
+			createTypeReferences(new ArrayList<>(cons.getThrownTypes()))
 		);
 	}
 
@@ -208,10 +257,10 @@ public class APIFactory {
 		);
 	}
 
-	private List<TypeReference<TypeDecl>> convertCtTypeParameterBounds(CtTypeReference<?> ref) {
+	private List<ITypeReference> convertCtTypeParameterBounds(CtTypeReference<?> ref) {
 		return switch (ref) {
-			case CtIntersectionTypeReference<?> intersection -> intersection.getBounds().stream().map(this::makeTypeReference).toList();
-			case CtTypeReference<?> reference -> List.of(makeTypeReference(reference));
+			case CtIntersectionTypeReference<?> intersection -> intersection.getBounds().stream().map(this::createITypeReference).toList();
+			case CtTypeReference<?> reference -> List.of(createTypeReference(reference));
 			case null -> Collections.emptyList();
 		};
 	}
@@ -223,7 +272,7 @@ public class APIFactory {
 	}
 
 	private ParameterDecl convertCtParameter(CtParameter<?> parameter) {
-		return new ParameterDecl(parameter.getSimpleName(), makeITypeReference(parameter.getType()), parameter.isVarArgs());
+		return new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), parameter.isVarArgs());
 	}
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {
@@ -292,59 +341,6 @@ public class APIFactory {
 				return true;
 
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
-	}
-
-	private ITypeReference makeITypeReference(CtTypeReference<?> typeRef) {
-		return switch (typeRef) {
-			case CtArrayTypeReference<?> arrayRef -> makeArrayTypeReference(makeITypeReference(arrayRef.getComponentType()));
-			case CtTypeParameterReference tpRef -> {
-				if (tpRef.getBoundingType() instanceof CtIntersectionTypeReference<?> intersection)
-					yield makeTypeParameterReference(tpRef.getQualifiedName(), makeITypeReferences(intersection.getBounds()));
-				else
-					yield makeTypeParameterReference(tpRef.getQualifiedName(), List.of(makeITypeReference(tpRef.getBoundingType())));
-			}
-			case CtTypeReference<?> ref when ref.isPrimitive() -> makePrimitiveTypeReference(ref.getQualifiedName());
-			case null -> null;
-			default -> makeTypeReference(typeRef.getQualifiedName());
-		};
-	}
-
-	public <T extends TypeDecl> TypeReference<T> makeTypeReference(String qualifiedName) {
-		return qualifiedName != null ? new TypeReference<>(qualifiedName, typeFactory) : null;
-	}
-
-	public PrimitiveTypeReference makePrimitiveTypeReference(String qualifiedName) {
-		return qualifiedName != null ? new PrimitiveTypeReference(qualifiedName) : null;
-	}
-
-	public TypeParameterReference makeTypeParameterReference(String qualifiedName, List<ITypeReference> bounds) {
-		return qualifiedName != null ? new TypeParameterReference(qualifiedName, bounds) : null;
-	}
-
-	public ArrayTypeReference makeArrayTypeReference(ITypeReference componentType) {
-		return componentType != null ? new ArrayTypeReference(componentType) : null;
-	}
-
-	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtTypeReference<?> typeRef) {
-		return typeRef != null ? makeTypeReference(typeRef.getQualifiedName()) : null;
-	}
-
-	private <T extends TypeDecl> TypeReference<T> makeTypeReference(CtType<?> type) {
-		return type != null ? makeTypeReference(type.getReference()) : null;
-	}
-
-	private List<ITypeReference> makeITypeReferences(Collection<? extends CtTypeReference<?>> typeRefs) {
-		return typeRefs.stream()
-			.map(this::makeITypeReference)
-			.filter(java.util.Objects::nonNull)
-			.toList();
-	}
-
-	private <T extends TypeDecl> List<TypeReference<T>> makeTypeReferences(Collection<? extends CtTypeReference<?>> typeRefs) {
-		return typeRefs.stream()
-			.map(this::<T>makeTypeReference)
-			.filter(java.util.Objects::nonNull)
-			.toList();
 	}
 
 	private String makeQualifiedName(CtTypeMember member) {

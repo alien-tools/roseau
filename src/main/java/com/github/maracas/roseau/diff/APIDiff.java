@@ -18,6 +18,7 @@ import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -284,10 +285,10 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, e1);
 
 		for (int i = 0; i < e1.getFormalTypeParameters().size(); i++) {
-			List<TypeReference<TypeDecl>> bounds1 = e1.getFormalTypeParameters().get(i).bounds();
+			List<ITypeReference> bounds1 = e1.getFormalTypeParameters().get(i).bounds();
 
 			if (i < e2.getFormalTypeParameters().size()) {
-				List<TypeReference<TypeDecl>> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
+				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
 
 				if (bounds1.size() != bounds2.size()
 					|| !new HashSet<>(bounds1).equals(new HashSet<>(bounds2)))

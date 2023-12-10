@@ -17,8 +17,12 @@ import java.util.stream.Collectors;
 /**
  * The `roseau` class is the main entry point of the project.
  */
-public class Roseau {
-	public static final int SPOON_TIMEOUT = 60;
+final class Roseau {
+	private static final int SPOON_TIMEOUT = 60;
+
+	private Roseau() {
+
+	}
 
 	public static void main(String[] args) {
 		try (FileWriter writer = new FileWriter("durations_report.csv")) {

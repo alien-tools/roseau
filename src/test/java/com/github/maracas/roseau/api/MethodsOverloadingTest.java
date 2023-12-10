@@ -27,12 +27,12 @@ class MethodsOverloadingTest {
 
 		for (var m : a.getMethods()) {
 			for (var n : a.getMethods()) {
-				if (m != n) {
-					assertTrue(m.isOverloading(n), m + " does not overload " + n);
-					assertFalse(m.isOverriding(n), m + " does override " + n);
-				} else {
+				if (m == n) {
 					assertFalse(m.isOverloading(n), m + " does overload " + n);
 					assertTrue(m.isOverriding(n), m + " does not override " + n);
+				} else {
+					assertTrue(m.isOverloading(n), m + " does not overload " + n);
+					assertFalse(m.isOverriding(n), m + " does override " + n);
 				}
 			}
 		}
@@ -67,9 +67,9 @@ class MethodsOverloadingTest {
 		assertThat(c.getAllMethods(), hasSize(4));
 
 		var factory = api.getFactory();
-		var intRef = factory.makePrimitiveTypeReference("int");
-		var doubleRef = factory.makePrimitiveTypeReference("double");
-		var stringRef = factory.makeTypeReference("java.lang.String");
+		var intRef = factory.getTypeReferenceFactory().createPrimitiveTypeReference("int");
+		var doubleRef = factory.getTypeReferenceFactory().createPrimitiveTypeReference("double");
+		var stringRef = factory.getTypeReferenceFactory().createTypeReference("java.lang.String");
 
 		var im = assertMethod(i, "m");
 		var amInt = assertMethod(a, "m", intRef);

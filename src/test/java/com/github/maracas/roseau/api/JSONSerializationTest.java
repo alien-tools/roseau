@@ -15,11 +15,8 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class JSONSerializationTest {
 	@Test
 	void api_json_round_trip() throws IOException {
-		Launcher l = new Launcher();
-		l.addInputResource("/home/dig/repositories/maracas/forges/src/main/java/com/github/maracas/");
-		l.getEnvironment().setIgnoreDuplicateDeclarations(true);
-		l.getEnvironment().setComplianceLevel(17);
-		CtModel m = l.buildModel();
+		Path sources = Path.of("/home/dig/repositories/maracas/forges/src/main/java/com/github/maracas/");
+		CtModel m = SpoonAPIExtractor.buildModel(sources, 10).orElseThrow();
 		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API orig = extractor.extractAPI();
 
