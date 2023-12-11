@@ -3,8 +3,8 @@ package com.github.maracas.roseau.api.model.reference;
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.google.common.base.Objects;
 
+import java.util.Objects;
 import java.util.Optional;
 
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
@@ -60,7 +60,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		TypeReference<?> other = (TypeReference<?>) o;
-		return Objects.equal(qualifiedName, other.qualifiedName);
+		return Objects.equals(qualifiedName, other.qualifiedName);
 	}
 
 	@Override
