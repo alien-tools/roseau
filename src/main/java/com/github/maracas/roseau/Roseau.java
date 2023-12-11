@@ -9,10 +9,10 @@ import com.google.common.base.Stopwatch;
 import picocli.CommandLine;
 import spoon.reflect.CtModel;
 
-import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.concurrent.Callable;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 /**
@@ -35,15 +35,17 @@ final class Roseau implements Callable<Integer>  {
 
 	private static final int SPOON_TIMEOUT = 60;
 
-	private void inferAPI(Path sources, Path jsonOutput) throws IOException {
+	private API buildAPI(Path sources) {
 		Stopwatch sw = Stopwatch.createStarted();
-		CtModel m = SpoonAPIExtractor.buildModel(sources, SPOON_TIMEOUT)
-			.orElseThrow(() -> new RuntimeException("Couldn't build in < 60s"));
 
-		System.out.println("Spoon model building: " + sw.elapsed().toMillis());
+		CtModel m = SpoonAPIExtractor.buildModel(sources, SPOON_TIMEOUT)
+			.orElseThrow(() -> new RuntimeException("Couldn't build in < " + SPOON_TIMEOUT));
+
+		System.out.println("Parsing: " + sw.elapsed().toMillis());
 		sw.reset();
 		sw.start();
 
+		// API extraction
 		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API api = extractor.extractAPI();
 
@@ -51,44 +53,22 @@ final class Roseau implements Callable<Integer>  {
 		sw.reset();
 		sw.start();
 
+		// API resolution
 		api.resolve();
-		System.out.println("Type resolution: " + sw.elapsed().toMillis());
-		sw.reset();
-		sw.start();
-
-		// API serialization
-		api.writeJson(jsonOutput);
-		System.out.println("JSON serialization: " + sw.elapsed().toMillis());
+		System.out.println("API resolution: " + sw.elapsed().toMillis());
+		return api;
 	}
 
-	private void diff(Path v1, Path v2, Path report) throws IOException {
+	private void diff(Path v1, Path v2, Path report) throws Exception {
 		Stopwatch sw = Stopwatch.createStarted();
 
-		CtModel m1 = SpoonAPIExtractor.buildModel(v1, SPOON_TIMEOUT)
-			.orElseThrow(() -> new RuntimeException("Couldn't build in < 60" + SPOON_TIMEOUT));
-		CtModel m2 = SpoonAPIExtractor.buildModel(v2, SPOON_TIMEOUT)
-			.orElseThrow(() -> new RuntimeException("Couldn't build in < " + SPOON_TIMEOUT));
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2));
 
-		System.out.println("Spoon model building: " + sw.elapsed().toMillis());
-		sw.reset();
-		sw.start();
+		CompletableFuture.allOf(futureV1, futureV2).join();
 
-		// API extraction
-		APIExtractor extractor1 = new SpoonAPIExtractor(m1);
-		APIExtractor extractor2 = new SpoonAPIExtractor(m2);
-		API apiV1 = extractor1.extractAPI();
-		API apiV2 = extractor2.extractAPI();
-
-		System.out.println("API extraction: " + sw.elapsed().toMillis());
-		sw.reset();
-		sw.start();
-
-		// Type resolution
-		apiV1.resolve();
-		apiV2.resolve();
-		System.out.println("Type resolution: " + sw.elapsed().toMillis());
-		sw.reset();
-		sw.start();
+		API apiV1 = futureV1.get();
+		API apiV2 = futureV2.get();
 
 		// API diff
 		APIDiff diff = new APIDiff(apiV1, apiV2);
@@ -102,8 +82,10 @@ final class Roseau implements Callable<Integer>  {
 
 	@Override
 	public Integer call() throws Exception {
-		if (apiMode)
-			inferAPI(libraryV1, jsonOutput != null ? jsonOutput : Path.of("api.json"));
+		if (apiMode) {
+			API api = buildAPI(libraryV1);
+			api.writeJson(jsonOutput != null ? jsonOutput : Path.of("api.json"));
+		}
 
 		if (diffMode)
 			diff(libraryV1, libraryV2, report);

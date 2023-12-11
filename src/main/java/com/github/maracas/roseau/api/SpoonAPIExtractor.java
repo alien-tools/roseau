@@ -109,7 +109,10 @@ public class SpoonAPIExtractor implements APIExtractor {
 
 		List<TypeDecl> allTypes =
 			model.getAllPackages().stream()
-				.flatMap(p -> getAllTypes(p).stream().map(factory::convertCtType))
+				.parallel()
+				.flatMap(p -> getAllTypes(p).stream()
+					.parallel()
+					.map(factory::convertCtType))
 				.toList();
 
 		return new API(allTypes, factory);
