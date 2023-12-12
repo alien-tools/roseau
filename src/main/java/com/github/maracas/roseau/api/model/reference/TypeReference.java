@@ -21,6 +21,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		this.factory = factory;
 	}
 
+	public SpoonAPIFactory getFactory() { return factory; }
+
 	@JsonValue
 	@Override
 	public String getQualifiedName() {

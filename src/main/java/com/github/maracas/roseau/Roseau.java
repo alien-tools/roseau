@@ -48,20 +48,12 @@ final class Roseau implements Callable<Integer>  {
 		// API extraction
 		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API api = extractor.extractAPI();
-
 		System.out.println("API extraction: " + sw.elapsed().toMillis());
-		sw.reset();
-		sw.start();
 
-		// API resolution
-		api.resolve();
-		System.out.println("API resolution: " + sw.elapsed().toMillis());
 		return api;
 	}
 
 	private void diff(Path v1, Path v2, Path report) throws Exception {
-		Stopwatch sw = Stopwatch.createStarted();
-
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2));
 
@@ -71,9 +63,9 @@ final class Roseau implements Callable<Integer>  {
 		API apiV2 = futureV2.get();
 
 		// API diff
+		Stopwatch sw = Stopwatch.createStarted();
 		APIDiff diff = new APIDiff(apiV1, apiV2);
 		List<BreakingChange> bcs = diff.diff();
-
 		System.out.println("API diff: " + sw.elapsed().toMillis());
 
 		diff.breakingChangesReport();

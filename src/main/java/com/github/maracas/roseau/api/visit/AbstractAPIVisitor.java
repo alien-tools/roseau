@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.visit;
+package com.github.maracas.roseau.api.visit;
 
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;

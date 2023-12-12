@@ -18,7 +18,6 @@ import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -57,7 +56,7 @@ public class APIDiff {
 	
 	public List<BreakingChange> diff() {
 		v1.getExportedTypes().forEach(t1 -> {
-			Optional<TypeDecl> findT2 = v2.getExportedType(t1.getQualifiedName());
+			Optional<TypeDecl> findT2 = v2.findExportedType(t1.getQualifiedName());
 
 			findT2.ifPresentOrElse(
 				// There is a matching type

@@ -26,7 +26,7 @@ import java.util.stream.Stream;
 /**
  * This class represents roseau's API extraction tool.
  * <br/>
- * Types are resolved within the universe of API types (exported or not).
+ * Types are resolved within the universe of library types (exported or not).
  * We don't know anything about the outside world.
  */
 public class SpoonAPIExtractor implements APIExtractor {
