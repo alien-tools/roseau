@@ -36,7 +36,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public List<ITypeReference> getTypeArguments() {
-		System.out.println("ta="+typeArguments);
 		return typeArguments;
 	}
 

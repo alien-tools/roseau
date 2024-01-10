@@ -105,4 +105,46 @@ class JezekTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Test
+	void exceptionClazzMethodThrowUncheckedMutation() {
+		String v1 = """
+			public class A {
+				public void m() throws RuntimeException {}
+			}""";
+		String v2 = """
+			public class A {
+				public void m() throws Exception {}
+			}""";
+
+		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void modifierClazzEffectivelyFinalToFinal() {
+		String v1 = """
+			public class A {
+				private A() {}
+			}""";
+		String v2 = """
+			public final class A {
+				private A() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void modifierClazzFinalToEffectivelyFinal() {
+		String v1 = """
+			public final class A {
+				private A() {}
+			}""";
+		String v2 = """
+			public class A {
+				private A() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

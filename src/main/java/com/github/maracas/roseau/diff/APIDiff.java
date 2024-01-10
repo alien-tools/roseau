@@ -134,7 +134,7 @@ public class APIDiff {
 
 	private void diffType(TypeDecl t1, TypeDecl t2) {
 		if (t1.isClass()) {
-			if (!t1.isFinal() && t2.isFinal())
+			if (!t1.isEffectivelyFinal() && t2.isEffectivelyFinal())
 				bc(BreakingChangeKind.CLASS_NOW_FINAL, t1);
 
 			if (!t1.isSealed() && t2.isSealed())
