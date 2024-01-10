@@ -60,6 +60,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	@Override
 	public boolean isCheckedException() {
+		if ("java.lang.Exception".equals(qualifiedName))
+			return true;
+		if ("java.lang.RuntimeException".equals(qualifiedName))
+			return false;
+
 		return getAllSuperClasses().stream().anyMatch(cls -> "java.lang.Exception".equals(cls.getQualifiedName()))
 			&& getAllSuperClasses().stream().noneMatch(cls -> "java.lang.RuntimeException".equals(cls.getQualifiedName()));
 	}

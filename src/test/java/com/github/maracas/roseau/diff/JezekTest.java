@@ -35,4 +35,74 @@ class JezekTest {
 
 		assertBC("A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
 	}
+
+	@Test
+	void dataTypeIfazeConstantNarrowing() {
+		String v1 = """
+			public class A {
+			  public double f;
+			}""";
+		String v2 = """
+			public class A {
+			  public int f;
+			}""";
+
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void exceptionClazzMethodThrowUncheckedAdd() {
+		String v1 = """
+			public class A {
+				public void m() {}
+			}""";
+		String v2 = """
+			public class A {
+				public void m() throws RuntimeException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void exceptionClazzMethodThrowUncheckedDelete() {
+		String v1 = """
+			public class A {
+				public void m() throws RuntimeException {}
+			}""";
+		String v2 = """
+			public class A {
+				public void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void exceptionClazzMethodThrowUncheckedGeneralization() {
+		String v1 = """
+			public class A {
+				public void m() throws IllegalArgumentException {}
+			}""";
+		String v2 = """
+			public class A {
+				public void m() throws RuntimeException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void exceptionClazzMethodThrowUncheckedSpecialization() {
+		String v1 = """
+			public class A {
+				public void m() throws RuntimeException {}
+			}""";
+		String v2 = """
+			public class A {
+				public void m() throws IllegalArgumentException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }
