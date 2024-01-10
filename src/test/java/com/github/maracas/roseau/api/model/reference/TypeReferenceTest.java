@@ -16,11 +16,4 @@ class TypeReferenceTest {
 	void setUp() {
 		factory = new SpoonAPIFactory(new Launcher().createFactory().Type());
 	}
-
-	@Test
-	void foo() {
-		TypeReference<ClassDecl> x = new TypeReference<>("java.lang.String", factory);
-
-		System.out.println(x.getResolvedApiType());
-	}
 }

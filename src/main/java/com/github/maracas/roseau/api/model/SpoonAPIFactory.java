@@ -47,24 +47,17 @@ public class SpoonAPIFactory {
 	}
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {
-		if (typeRef == null)
-			return null;
-
 		return switch (typeRef) {
 			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getComponentType()));
-			case CtTypeParameterReference tpRef -> {
-				if (tpRef.getBoundingType() instanceof CtIntersectionTypeReference<?> intersection)
-					yield typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName(), createITypeReferences(intersection.getBounds()));
-				else
-					yield typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName(), List.of(createITypeReference(tpRef.getBoundingType())));
-			}
+			case CtTypeParameterReference tpRef -> typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName());
 			case CtTypeReference<?> ref when ref.isPrimitive() -> typeReferenceFactory.createPrimitiveTypeReference(ref.getQualifiedName());
+			case null -> null;
 			default -> createTypeReference(typeRef);
 		};
 	}
 
 	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtTypeReference<?> typeRef) {
-		return typeRef != null ? typeReferenceFactory.createTypeReference(typeRef.getQualifiedName()) : null;
+		return typeRef != null ? typeReferenceFactory.createTypeReference(typeRef.getQualifiedName(), createITypeReferences(typeRef.getActualTypeArguments())) : null;
 	}
 
 	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtType<?> type) {

@@ -429,25 +429,13 @@ class TypeMemberExtractionTest {
 		var m2 = assertMethod(a, "m2");
 
 		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
-		if (f.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
-			assertThat(fqn, is(equalTo("T")));
-			assertThat(bounds, hasSize(1));
-			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
-		}
+		assertThat(f.getType().getQualifiedName(), is(equalTo("T")));
 
 		assertThat(m1.getType(), is(instanceOf(TypeParameterReference.class)));
-		if (m1.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
-			assertThat(fqn, is(equalTo("T")));
-			assertThat(bounds, hasSize(1));
-			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
-		}
+		assertThat(m1.getType().getQualifiedName(), is(equalTo("T")));
 
 		assertThat(m2.getType(), is(instanceOf(TypeParameterReference.class)));
-		if (m2.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
-			assertThat(fqn, is(equalTo("U")));
-			assertThat(bounds, hasSize(1));
-			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
-		}
+		assertThat(m2.getType().getQualifiedName(), is(equalTo("U")));
 	}
 
 	@Test
@@ -463,17 +451,9 @@ class TypeMemberExtractionTest {
 		var m = assertMethod(a, "m");
 
 		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
-		if (f.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
-			assertThat(fqn, is(equalTo("T")));
-			assertThat(bounds, hasSize(1));
-			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
-		}
+		assertThat(f.getType().getQualifiedName(), is(equalTo("T")));
 
 		assertThat(m.getType(), is(instanceOf(TypeParameterReference.class)));
-		if (m.getType() instanceof TypeParameterReference(var fqn, var bounds)) {
-			assertThat(fqn, is(equalTo("U")));
-			assertThat(bounds, hasSize(1));
-			assertThat(bounds.getFirst().getQualifiedName(), is(equalTo("T")));
-		}
+		assertThat(m.getType().getQualifiedName(), is(equalTo("U")));
 	}
 }

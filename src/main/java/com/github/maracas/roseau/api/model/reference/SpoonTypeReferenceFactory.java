@@ -13,8 +13,8 @@ public class SpoonTypeReferenceFactory implements TypeReferenceFactory {
 	}
 
 	@Override
-	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName) {
-		return new TypeReference<>(qualifiedName, apiFactory);
+	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
+		return new TypeReference<>(qualifiedName, typeArguments, apiFactory);
 	}
 
 	@Override
@@ -28,7 +28,7 @@ public class SpoonTypeReferenceFactory implements TypeReferenceFactory {
 	}
 
 	@Override
-	public TypeParameterReference createTypeParameterReference(String qualifiedName, List<ITypeReference> bounds) {
-		return new TypeParameterReference(qualifiedName, bounds);
+	public TypeParameterReference createTypeParameterReference(String qualifiedName) {
+		return new TypeParameterReference(qualifiedName);
 	}
 }
