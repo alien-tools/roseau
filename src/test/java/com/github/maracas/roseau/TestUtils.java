@@ -61,7 +61,9 @@ public class TestUtils {
 			.filter(bc -> bc.impactedSymbol().getLocation().line() == line)
 			.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))
 			.collect(Collectors.joining(", "));
-		throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
+
+		if (!found.isEmpty())
+			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 	}
 
 	public static TypeDecl assertType(API api, String name, String kind) {

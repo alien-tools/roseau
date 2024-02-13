@@ -186,4 +186,38 @@ class JezekTest {
 		assertBC("S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, bcs);
 		assertNoBC(3, bcs);
 	}
+
+	@Test
+	void inheritanceFieldMovedFromSuperClass() {
+		String v1 = """
+			public class S {
+				public int f;
+			}
+			public class C extends S {}""";
+		String v2 = """
+			public class S {}
+			public class C extends S {
+				public int f;
+			}""";
+
+		var bcs = buildDiff(v1, v2);
+		assertBC("S.f", BreakingChangeKind.FIELD_REMOVED, 2, bcs);
+		assertNoBC(4, bcs);
+	}
+
+	@Test
+	void inheritanceFieldMovedToSuperClass() {
+		String v1 = """
+			public class S {}
+			public class C extends S {
+				public int f;
+			}""";
+		String v2 = """
+			public class S {
+				public int f;
+			}
+			public class C extends S {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

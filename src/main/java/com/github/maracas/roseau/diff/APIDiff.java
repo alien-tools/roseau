@@ -79,7 +79,9 @@ public class APIDiff {
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
 		t1.getFields().forEach(f1 -> {
-			Optional<FieldDecl> findF2 = t2.findField(f1.getSimpleName());
+			Optional<FieldDecl> findF2 = t2.getAllFields().stream()
+				.filter(f -> f.getSimpleName().equals(f1.getSimpleName()))
+				.findFirst();
 
 			findF2.ifPresentOrElse(
 				// There is a matching field
@@ -92,7 +94,7 @@ public class APIDiff {
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
 		t1.getMethods().forEach(m1 -> {
-			Optional<MethodDecl> matchM2 = t2.getMethods().stream()
+			Optional<MethodDecl> matchM2 = t2.getAllMethods().stream()
 				.filter(m -> m.hasSameSignature(m1))
 				.findFirst();
 
@@ -122,7 +124,7 @@ public class APIDiff {
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
 		t2.getMethods().stream()
-			.filter(m2 -> t1.getMethods().stream().noneMatch(m1 -> m1.hasSameSignature(m2)))
+			.filter(m2 -> t1.getAllMethods().stream().noneMatch(m1 -> m1.hasSameSignature(m2)))
 			.forEach(m2 -> {
 				if (t2.isInterface() && !m2.isDefault())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1);
