@@ -33,4 +33,15 @@ class ClassNowFinalTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Test
+	void class_now_effectively_final() {
+		String v1 = "public class A {}";
+		String v2 = """
+			public class A {
+				private A() {}
+			}""";
+
+		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+	}
 }

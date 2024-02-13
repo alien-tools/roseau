@@ -1,7 +1,10 @@
 package com.github.maracas.roseau.diff;
 
+import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static com.github.maracas.roseau.TestUtils.assertBC;
 import static com.github.maracas.roseau.TestUtils.assertNoBC;
@@ -146,5 +149,41 @@ class JezekTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void inheritanceIfazeMethodMovedFromSuperInterface() {
+		String v1 = """
+			public interface S {
+				void m();
+			}
+			public interface I extends S {}""";
+		String v2 = """
+			public interface S {}
+			public interface I extends S {
+				void m();
+			}""";
+
+		var bcs = buildDiff(v1, v2);
+		assertBC("S.m", BreakingChangeKind.METHOD_REMOVED, 2, bcs);
+		assertNoBC(4, bcs);
+	}
+
+	@Test
+	void inheritanceIfazeMethodMovedToSuperInterface() {
+		String v1 = """
+			public interface S {}
+			public interface I extends S {
+				void m();
+			}""";
+		String v2 = """
+			public interface S {
+				void m();
+			}
+			public interface I extends S {}""";
+
+		var bcs = buildDiff(v1, v2);
+		assertBC("S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, bcs);
+		assertNoBC(3, bcs);
 	}
 }
