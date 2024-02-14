@@ -17,6 +17,8 @@ import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 
 import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -316,8 +318,8 @@ public class APIDiff {
 	 * <p>
 	 * position, associated element, and nature of each detected BC.
 	 */
-	public void breakingChangesReport() throws IOException {
-		try (FileWriter writer = new FileWriter("breaking_changes_report.csv")) {
+	public void breakingChangesReport(Path report) throws IOException {
+		try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
 			writer.write("Kind,Element,Nature,Position\n");
 
 			for (BreakingChange breakingChange : breakingChanges) {

@@ -15,23 +15,24 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-/**
- * The `roseau` class is the main entry point of the project.
- */
 @CommandLine.Command(name = "roseau")
 final class Roseau implements Callable<Integer>  {
-	@CommandLine.Option(names = "--api")
+	@CommandLine.Option(names = "--api", description = "Build and serialize the API model of --v1")
 	private boolean apiMode;
-	@CommandLine.Option(names = "--diff")
+	@CommandLine.Option(names = "--diff", description = "Compute the breaking changes between versions --v1 and --v2")
 	private boolean diffMode;
-	@CommandLine.Option(names = "--v1", required = true)
+	@CommandLine.Option(names = "--v1", description = "Path to the sources of the first version of the library", required = true)
 	private Path libraryV1;
-	@CommandLine.Option(names = "--v2")
+	@CommandLine.Option(names = "--v2", description = "Path to the sources of the second version of the library")
 	private Path libraryV2;
-	@CommandLine.Option(names = "--json")
-	private Path jsonOutput;
-	@CommandLine.Option(names = "--report")
-	private Path report;
+	@CommandLine.Option(names = "--json",
+		description = "Where to serialize the JSON API model of --v1; defaults to api.json",
+		defaultValue = "api.json")
+	private Path apiPath;
+	@CommandLine.Option(names = "--report",
+		description = "Where to write the breaking changes report; defaults to report.json",
+		defaultValue = "report.json")
+	private Path reportPath;
 
 	private static final int SPOON_TIMEOUT = 60;
 
@@ -68,7 +69,7 @@ final class Roseau implements Callable<Integer>  {
 		List<BreakingChange> bcs = diff.diff();
 		System.out.println("API diff: " + sw.elapsed().toMillis());
 
-		diff.breakingChangesReport();
+		diff.breakingChangesReport(report);
 		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
 	}
 
@@ -76,11 +77,11 @@ final class Roseau implements Callable<Integer>  {
 	public Integer call() throws Exception {
 		if (apiMode) {
 			API api = buildAPI(libraryV1);
-			api.writeJson(jsonOutput != null ? jsonOutput : Path.of("api.json"));
+			api.writeJson(apiPath);
 		}
 
 		if (diffMode)
-			diff(libraryV1, libraryV2, report);
+			diff(libraryV1, libraryV2, reportPath);
 
 		return 0;
 	}

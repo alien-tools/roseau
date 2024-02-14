@@ -39,14 +39,20 @@ java -jar target/roseau-0.0.2-SNAPSHOT-jar-with-dependencies.jar --v1 /path/to/v
 
 ```
 $ java -jar target/roseau-0.0.2-SNAPSHOT-jar-with-dependencies.jar
-Usage: roseau [--api] [--diff] [--json=<jsonOutput>] [--report=<report>]
+Missing required option: '--v1=<libraryV1>'
+Usage: roseau [--api] [--diff] [--json=<apiPath>] [--report=<reportPath>]
               --v1=<libraryV1> [--v2=<libraryV2>]
-      --api
-      --diff
-      --json=<jsonOutput>
-      --report=<report>
-      --v1=<libraryV1>
-      --v2=<libraryV2>
+      --api              Build and serialize the API model of --v1
+      --diff             Compute the breaking changes between versions --v1 and
+                           --v2
+      --json=<apiPath>   Where to serialize the JSON API model of --v1;
+                           defaults to api.json
+      --report=<reportPath>
+                         Where to write the breaking changes report; defaults
+                           to report.json
+      --v1=<libraryV1>   Path to the sources of the first version of the library
+      --v2=<libraryV2>   Path to the sources of the second version of the
+                           library
 ```
 
 ## Tests
