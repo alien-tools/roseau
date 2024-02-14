@@ -40,7 +40,5 @@ class JSONSerializationTest {
 				};
 			}
 		}.$(res).visit();
-
-		System.out.println(res);
 	}
 }
