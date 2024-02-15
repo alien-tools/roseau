@@ -21,7 +21,7 @@ class JSONSerializationTest {
 	@Test
 	void api_json_round_trip() throws IOException {
 		Path sources = Path.of("/home/dig/repositories/maracas/forges/src/main/java/com/github/maracas/");
-		CtModel m = SpoonAPIExtractor.buildModel(sources, 10).orElseThrow();
+		CtModel m = SpoonAPIExtractor.buildModel(sources, 10);
 		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API orig = extractor.extractAPI();
 

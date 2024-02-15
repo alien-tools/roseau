@@ -57,8 +57,7 @@ final class Roseau implements Callable<Integer>  {
 	private API buildAPI(Path sources) {
 		Stopwatch sw = Stopwatch.createStarted();
 
-		CtModel m = SpoonAPIExtractor.buildModel(sources, SPOON_TIMEOUT)
-			.orElseThrow(() -> new RuntimeException("Couldn't build in < " + SPOON_TIMEOUT));
+		CtModel m = SpoonAPIExtractor.buildModel(sources, SPOON_TIMEOUT);
 
 		logger.debug("Parsing: " + sw.elapsed().toMillis());
 		sw.reset();
