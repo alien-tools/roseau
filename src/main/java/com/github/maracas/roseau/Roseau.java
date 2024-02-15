@@ -19,6 +19,9 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static com.diogonunes.jcolor.Ansi.colorize;
+import static com.diogonunes.jcolor.Attribute.*;
+
 @CommandLine.Command(name = "roseau")
 final class Roseau implements Callable<Integer>  {
 	@CommandLine.Option(names = "--api",
@@ -87,12 +90,20 @@ final class Roseau implements Callable<Integer>  {
 		logger.debug("API diff: " + sw.elapsed().toMillis());
 
 		diff.breakingChangesReport(report);
-		System.out.println(bcs.stream().map(BreakingChange::format).collect(Collectors.joining("\n")));
+		System.out.println(bcs.stream().map(bc -> this.format(bc)).collect(Collectors.joining("\n")));
 
 		if (failMode && !bcs.isEmpty())
 			return 1;
 		else
 			return 0;
+	}
+
+	private String format(BreakingChange bc) {
+		return String.format("%s %s\n\t%s:%s",
+				colorize(bc.kind().toString(), RED_TEXT(), BOLD()),
+				colorize(bc.impactedSymbol().getQualifiedName(), UNDERLINE()),
+				libraryV1.relativize(bc.impactedSymbol().getLocation().file()),
+				bc.impactedSymbol().getLocation().line());
 	}
 
 	@Override
