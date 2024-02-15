@@ -84,7 +84,7 @@ final class Roseau implements Callable<Integer>  {
 		logger.debug("API diff: " + sw.elapsed().toMillis());
 
 		diff.breakingChangesReport(report);
-		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
+		System.out.println(bcs.stream().map(BreakingChange::format).collect(Collectors.joining("\n")));
 	}
 
 	@Override
