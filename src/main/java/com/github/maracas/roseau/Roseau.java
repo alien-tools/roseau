@@ -38,8 +38,8 @@ final class Roseau implements Callable<Integer>  {
 		defaultValue = "api.json")
 	private Path apiPath;
 	@CommandLine.Option(names = "--report",
-		description = "Where to write the breaking changes report; defaults to report.json",
-		defaultValue = "report.json")
+		description = "Where to write the breaking changes report; defaults to report.csv",
+		defaultValue = "report.csv")
 	private Path reportPath;
 	@CommandLine.Option(names = "--verbose",
 		description = "Print debug information",
