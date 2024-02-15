@@ -45,6 +45,10 @@ final class Roseau implements Callable<Integer>  {
 		description = "Print debug information",
 		defaultValue = "false")
 	private boolean verbose;
+	@CommandLine.Option(names = "--fail",
+			description = "Command returns an error when there are breaking changes detected",
+			defaultValue = "false")
+	private boolean failMode;
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
@@ -68,7 +72,7 @@ final class Roseau implements Callable<Integer>  {
 		return api;
 	}
 
-	private void diff(Path v1, Path v2, Path report) throws Exception {
+	private int diff(Path v1, Path v2, Path report) throws Exception {
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2));
 
@@ -85,10 +89,17 @@ final class Roseau implements Callable<Integer>  {
 
 		diff.breakingChangesReport(report);
 		System.out.println(bcs.stream().map(BreakingChange::format).collect(Collectors.joining("\n")));
+
+		if (failMode && !bcs.isEmpty())
+			return 1;
+		else
+			return 0;
 	}
 
 	@Override
 	public Integer call() throws Exception {
+		int returnCode = 0;
+
 		if (verbose) {
 			Configurator.setLevel(logger, Level.DEBUG);
 		}
@@ -98,10 +109,11 @@ final class Roseau implements Callable<Integer>  {
 			api.writeJson(apiPath);
 		}
 
-		if (diffMode)
-			diff(libraryV1, libraryV2, reportPath);
+		if (diffMode) {
+			returnCode = diff(libraryV1, libraryV2, reportPath);
+		}
 
-		return 0;
+		return returnCode;
 	}
 
 	public static void main(String[] args) {
