@@ -89,11 +89,8 @@ final class Roseau implements Callable<Integer>  {
 
 		List<Pattern> ignorePatterns = List.of();
 		Path config = v2.resolve(ROSEAU_IGNORE);
-		System.out.println(config.toFile().getAbsolutePath());
-		if (config.toFile().exists()) {
+		if (config.toFile().exists())
 			ignorePatterns = Files.readAllLines(config).stream().map(this::globToRegexp).toList();
-			System.out.println(ignorePatterns);
-		}
 
 		// API diff
 		Stopwatch sw = Stopwatch.createStarted();
