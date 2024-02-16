@@ -62,12 +62,12 @@ The following minimal `.gitconfig` registers Roseau as a difftool aliased to `bc
 Then, Roseau can be invoked on Git objects using the usual syntax, for example:
 
 ```
-$ git bc # BCs in unstaged changes
-$ git bc HEAD # BCs in uncommitted changes (including staged ones)
-$ git bc --staged # BCs in staged changes
+$ git bc                   # BCs in unstaged changes
+$ git bc HEAD              # BCs in uncommitted changes (including staged ones)
+$ git bc --staged          # BCs in staged changes
 $ git bc path/to/File.java # BCs in specific file
-$ git bc main..feature # BCs between two branches
-$ git bc HEAD~2 HEAD # BCs between two commits
+$ git bc main..feature     # BCs between two branches
+$ git bc HEAD~2 HEAD       # BCs between two commits
 ```
 
 ## Tests
