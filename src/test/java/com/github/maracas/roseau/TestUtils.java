@@ -23,6 +23,7 @@ import spoon.support.compiler.VirtualFile;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class TestUtils {
@@ -153,6 +154,12 @@ public class TestUtils {
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		APIDiff apiDiff = new APIDiff(buildAPI(sourcesV1), buildAPI(sourcesV2));
+		apiDiff.diff();
+		return apiDiff.getBreakingChanges();
+	}
+
+	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2, List<Pattern> ignorePatterns) {
+		APIDiff apiDiff = new APIDiff(buildAPI(sourcesV1), buildAPI(sourcesV2), ignorePatterns);
 		apiDiff.diff();
 		return apiDiff.getBreakingChanges();
 	}

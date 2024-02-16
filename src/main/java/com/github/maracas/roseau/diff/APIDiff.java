@@ -24,6 +24,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 
 /**
  * This class represents Roseau's comparison tool for detecting breaking changes between two API versions.
@@ -44,20 +45,30 @@ public class APIDiff {
 	 */
 	private final List<BreakingChange> breakingChanges;
 
+	private final List<Pattern> ignorePatterns;
+
 	/**
 	 * Constructs an APIDiff instance to compare two API versions for breaking changes detection.
 	 *
 	 * @param v1 The first version of the API to compare.
 	 * @param v2 The second version of the API to compare.
 	 */
+	public APIDiff(API v1, API v2, List<Pattern> ignorePatterns) {
+		this.v1 = Objects.requireNonNull(v1);
+		this.v2 = Objects.requireNonNull(v2);
+		this.ignorePatterns = ignorePatterns;
+		breakingChanges = new ArrayList<>();
+	}
+
 	public APIDiff(API v1, API v2) {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
+		this.ignorePatterns = List.of();
 		breakingChanges = new ArrayList<>();
 	}
 	
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().forEach(t1 -> {
+		v1.getExportedTypes().stream().filter(t -> !ignorePatterns.stream().anyMatch(p -> p.matcher(t.getQualifiedName()).matches())).forEach(t1 -> {
 			Optional<TypeDecl> findT2 = v2.findExportedType(t1.getQualifiedName());
 
 			findT2.ifPresentOrElse(
