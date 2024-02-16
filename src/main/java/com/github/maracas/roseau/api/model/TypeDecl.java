@@ -41,13 +41,14 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	protected TypeDecl(String qualifiedName,
 	                   AccessModifier visibility,
 	                   List<Modifier> modifiers,
+										 List<Annotation> annotations,
 	                   SourceLocation location,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters,
 	                   List<FieldDecl> fields,
 	                   List<MethodDecl> methods,
 	                   TypeReference<TypeDecl> enclosingType) {
-		super(qualifiedName, visibility, modifiers, location);
+		super(qualifiedName, visibility, modifiers, annotations, location);
 		this.implementedInterfaces = implementedInterfaces;
 		this.formalTypeParameters = formalTypeParameters;
 		this.fields = fields;

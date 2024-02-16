@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.api.visit;
 
 import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.Annotation;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
@@ -100,7 +101,9 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	}
 
 	public Visit symbol(Symbol it) {
-		return () -> {};
+		return () -> {
+			it.getAnnotations().forEach(ann -> $(ann).visit());
+		};
 	}
 
 	public Visit typeDecl(TypeDecl it) {
@@ -119,6 +122,12 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 				$(it.getType()).visit();
 			it.getParameters().forEach(p -> $(p).visit());
 			it.getThrownExceptions().forEach(e -> $(e).visit());
+		};
+	}
+
+	public Visit annotation(Annotation it) {
+		return () -> {
+			$(it.getActualAnnotation()).visit();
 		};
 	}
 }

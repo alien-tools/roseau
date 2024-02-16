@@ -29,14 +29,20 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	protected final List<Modifier> modifiers;
 
 	/**
+	 * Symbol annotations
+	 */
+	protected final List<Annotation> annotations;
+
+	/**
 	 * The exact location of the symbol
 	 */
 	protected final SourceLocation location;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location) {
+	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations, SourceLocation location) {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
 		this.modifiers = modifiers;
+		this.annotations = annotations;
 		this.location = location;
 	}
 
@@ -76,6 +82,13 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	/**
+	 * Retrieves the list of annotations on this symbol
+	 *
+	 * @return the list of annotations
+	 */
+	public List<Annotation> getAnnotations() { return annotations; }
+
+	/**
 	 * Retrieves the position of the symbol.
 	 *
 	 * @return The symbol's position.
@@ -92,11 +105,12 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return Objects.equals(qualifiedName, symbol.qualifiedName)
 			&& visibility == symbol.visibility
 			&& Objects.equals(modifiers, symbol.modifiers)
+			&& Objects.equals(annotations, symbol.annotations)
 			&& Objects.equals(location, symbol.location);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qualifiedName, visibility, modifiers, location);
+		return Objects.hash(qualifiedName, visibility, modifiers, annotations, location);
 	}
 }

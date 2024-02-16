@@ -22,11 +22,11 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                         SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type,
 	                         List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
 	                         List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type);
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		this.parameters = parameters;
 		this.formalTypeParameters = formalTypeParameters;
 		this.thrownExceptions = thrownExceptions;

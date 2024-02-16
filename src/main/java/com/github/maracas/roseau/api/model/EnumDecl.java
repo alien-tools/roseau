@@ -8,10 +8,10 @@ import java.util.List;
 
 public final class EnumDecl extends ClassDecl {
 	@JsonCreator
-	public EnumDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                List<TypeReference<InterfaceDecl>> implementedInterfaces, List<FieldDecl> fields,
+	public EnumDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
+	                SourceLocation location, List<TypeReference<InterfaceDecl>> implementedInterfaces, List<FieldDecl> fields,
 	                List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, modifiers, location, implementedInterfaces, Collections.emptyList(),
+		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
 			fields, methods, enclosingType, null, constructors);
 	}
 

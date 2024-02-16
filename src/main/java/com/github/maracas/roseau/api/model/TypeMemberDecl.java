@@ -10,9 +10,9 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
-	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                         SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
-		super(qualifiedName, visibility, modifiers, location);
+		super(qualifiedName, visibility, modifiers, annotations, location);
 		this.containingType = containingType;
 		this.type = type;
 	}

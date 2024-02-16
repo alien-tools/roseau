@@ -5,6 +5,7 @@ import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import spoon.reflect.cu.SourcePosition;
+import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -102,6 +103,7 @@ public class SpoonAPIFactory {
 			cls.getQualifiedName(),
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
+			convertSpoonAnnotations(cls.getAnnotations()),
 			convertSpoonPosition(cls.getPosition()),
 			createTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
@@ -118,6 +120,7 @@ public class SpoonAPIFactory {
 			intf.getQualifiedName(),
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
+			convertSpoonAnnotations(intf.getAnnotations()),
 			convertSpoonPosition(intf.getPosition()),
 			createTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
@@ -132,6 +135,7 @@ public class SpoonAPIFactory {
 			annotation.getQualifiedName(),
 			convertSpoonVisibility(annotation.getVisibility()),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
+			convertSpoonAnnotations(annotation.getAnnotations()),
 			convertSpoonPosition(annotation.getPosition()),
 			convertCtFields(annotation),
 			convertCtMethods(annotation),
@@ -144,6 +148,7 @@ public class SpoonAPIFactory {
 			enm.getQualifiedName(),
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
+			convertSpoonAnnotations(enm.getAnnotations()),
 			convertSpoonPosition(enm.getPosition()),
 			createTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
@@ -158,6 +163,7 @@ public class SpoonAPIFactory {
 			record.getQualifiedName(),
 			convertSpoonVisibility(record.getVisibility()),
 			convertSpoonNonAccessModifiers(record.getModifiers()),
+			convertSpoonAnnotations(record.getAnnotations()),
 			convertSpoonPosition(record.getPosition()),
 			createTypeReferences(record.getSuperInterfaces()),
 			convertCtFormalTypeParameters(record),
@@ -173,6 +179,7 @@ public class SpoonAPIFactory {
 			makeQualifiedName(field),
 			convertSpoonVisibility(field.getVisibility()),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
+			convertSpoonAnnotations(field.getAnnotations()),
 			convertSpoonPosition(field.getPosition()),
 			createTypeReference(field.getDeclaringType()),
 			createITypeReference(field.getType())
@@ -190,6 +197,7 @@ public class SpoonAPIFactory {
 			makeQualifiedName(method),
 			convertSpoonVisibility(method.getVisibility()),
 			modifiers,
+			convertSpoonAnnotations(method.getAnnotations()),
 			convertSpoonPosition(method.getPosition()),
 			createTypeReference(method.getDeclaringType()),
 			createITypeReference(method.getType()),
@@ -204,6 +212,7 @@ public class SpoonAPIFactory {
 			makeQualifiedName(cons),
 			convertSpoonVisibility(cons.getVisibility()),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
+			convertSpoonAnnotations(cons.getAnnotations()),
 			convertSpoonPosition(cons.getPosition()),
 			createTypeReference(cons.getDeclaringType()),
 			createITypeReference(cons.getType()),
@@ -302,6 +311,16 @@ public class SpoonAPIFactory {
 					&& ModifierKind.PRIVATE != mod)
 			.map(this::convertSpoonModifier)
 			.toList();
+	}
+
+	private List<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
+		return annotations.stream()
+			.map(this::convertSpoonAnnotation)
+			.toList();
+	}
+
+	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
+		return new Annotation(createTypeReference(annotation.getAnnotationType()));
 	}
 
 	private SourceLocation convertSpoonPosition(SourcePosition position) {

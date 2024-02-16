@@ -29,6 +29,7 @@ class JSONSerializationTest {
 		orig.writeJson(p);
 
 		API res = API.fromJson(p, orig.getFactory());
+		res.writeJson(Path.of("roundtrip2.json"));
 
 		assertThat(res, is(equalTo(orig)));
 

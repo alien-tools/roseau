@@ -7,11 +7,11 @@ import java.util.List;
 
 public final class RecordDecl extends ClassDecl {
 	@JsonCreator
-	public RecordDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                  List<TypeReference<InterfaceDecl>> implementedInterfaces,
+	public RecordDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
+	                  SourceLocation location, List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                  List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
 	                  TypeReference<TypeDecl> enclosingType, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, modifiers, location, implementedInterfaces, formalTypeParameters,
+		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType, null, constructors);
 	}
 

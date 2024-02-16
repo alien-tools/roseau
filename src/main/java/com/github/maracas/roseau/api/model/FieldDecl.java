@@ -12,9 +12,9 @@ import java.util.List;
  */
 public final class FieldDecl extends TypeMemberDecl {
 	@JsonCreator
-	public FieldDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                 TypeReference<TypeDecl> containingType, ITypeReference type) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type);
+	public FieldDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
+	                 SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 	}
 
 	@Override

@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.api.visit;
 
 import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.Annotation;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
@@ -33,6 +34,7 @@ public interface APIAlgebra<T> {
 	T primitiveTypeReference(PrimitiveTypeReference it);
 	T arrayTypeReference(ArrayTypeReference it);
 	T typeParameterReference(TypeParameterReference it);
+	T annotation(Annotation it);
 
 	default T $(API it) {
 		return api(it);
@@ -62,5 +64,9 @@ public interface APIAlgebra<T> {
 			case ArrayTypeReference arrayRef -> arrayTypeReference(arrayRef);
 			case TypeParameterReference tpRef -> typeParameterReference(tpRef);
 		};
+	}
+
+	default T $(Annotation it) {
+		return annotation(it);
 	}
 }

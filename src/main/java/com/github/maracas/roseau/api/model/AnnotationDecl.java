@@ -8,10 +8,10 @@ import java.util.List;
 
 public final class AnnotationDecl extends TypeDecl {
 	@JsonCreator
-	public AnnotationDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	public AnnotationDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                      SourceLocation location, List<FieldDecl> fields, List<MethodDecl> methods,
 	                      TypeReference<TypeDecl> enclosingType) {
-		super(qualifiedName, visibility, modifiers, location, Collections.emptyList(),
+		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),
 			Collections.emptyList(), fields, methods, enclosingType);
 	}
 

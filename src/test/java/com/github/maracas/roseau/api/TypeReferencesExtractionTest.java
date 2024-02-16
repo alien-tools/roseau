@@ -1,10 +1,6 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
-
-import java.util.Collections;
 
 import static com.github.maracas.roseau.TestUtils.assertClass;
 import static com.github.maracas.roseau.TestUtils.assertField;

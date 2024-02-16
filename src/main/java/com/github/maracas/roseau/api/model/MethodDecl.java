@@ -14,10 +14,10 @@ import java.util.stream.Collectors;
  */
 public final class MethodDecl extends ExecutableDecl {
 	@JsonCreator
-	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                  TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
+	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
+	                  SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                  List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type, parameters,
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type, parameters,
 			formalTypeParameters, thrownExceptions);
 	}
 

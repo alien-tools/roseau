@@ -12,11 +12,11 @@ import java.util.List;
  */
 public final class ConstructorDecl extends ExecutableDecl {
 	@JsonCreator
-	public ConstructorDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	public ConstructorDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                       SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type,
 	                       List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
 	                       List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type,
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type,
 			parameters, formalTypeParameters, thrownExceptions);
 	}
 
