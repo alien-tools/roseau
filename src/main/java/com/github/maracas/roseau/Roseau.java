@@ -3,6 +3,7 @@ package com.github.maracas.roseau;
 import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.google.common.base.Stopwatch;
@@ -99,17 +100,15 @@ final class Roseau implements Callable<Integer>  {
 	}
 
 	private String format(BreakingChange bc) {
-		return String.format("%s %s\n\t%s:%s",
-				colorize(bc.kind().toString(), RED_TEXT(), BOLD()),
-				colorize(bc.impactedSymbol().getQualifiedName(), UNDERLINE()),
-				libraryV1.relativize(bc.impactedSymbol().getLocation().file()),
-				bc.impactedSymbol().getLocation().line());
+		return String.format("%s %s%n\t%s:%s",
+			colorize(bc.kind().toString(), RED_TEXT(), BOLD()),
+			colorize(bc.impactedSymbol().getQualifiedName(), UNDERLINE()),
+			bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION ? "unknown" : libraryV1.toAbsolutePath().relativize(bc.impactedSymbol().getLocation().file()),
+			bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION ? "unknown" : bc.impactedSymbol().getLocation().line());
 	}
 
 	@Override
 	public Integer call() throws Exception {
-		int returnCode = 0;
-
 		if (verbose) {
 			Configurator.setLevel(logger, Level.DEBUG);
 		}
@@ -120,10 +119,10 @@ final class Roseau implements Callable<Integer>  {
 		}
 
 		if (diffMode) {
-			returnCode = diff(libraryV1, libraryV2, reportPath);
+			return diff(libraryV1, libraryV2, reportPath);
 		}
 
-		return returnCode;
+		return 0;
 	}
 
 	public static void main(String[] args) {
