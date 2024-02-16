@@ -61,14 +61,11 @@ public class APIDiff {
 	}
 
 	public APIDiff(API v1, API v2) {
-		this.v1 = Objects.requireNonNull(v1);
-		this.v2 = Objects.requireNonNull(v2);
-		this.ignorePatterns = List.of();
-		breakingChanges = new ArrayList<>();
+		this(v1, v2, List.of());
 	}
 	
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().stream().filter(t -> !ignorePatterns.stream().anyMatch(p -> p.matcher(t.getQualifiedName()).matches())).forEach(t1 -> {
+		v1.getExportedTypes().stream().filter(t -> ignorePatterns.stream().noneMatch(p -> p.matcher(t.getQualifiedName()).matches())).forEach(t1 -> {
 			Optional<TypeDecl> findT2 = v2.findExportedType(t1.getQualifiedName());
 
 			findT2.ifPresentOrElse(
