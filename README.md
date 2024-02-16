@@ -19,40 +19,55 @@ We consider both source and binary compatibility changes.
 
 ## Usage
 
-### As a CLI tool
-To use Roseau, follow these steps:
-
-1. Clone the repository:
+### As a standalone CLI tool
 
 ```
-git clone https://github.com/alien-tools/roseau.git
-```
-2. Navigate to the project directory and build it using Maven:
-```
-mvn package
-```
-
-3. Compute the breaking changes between two library versions using the following command:
-```
-java -jar target/roseau-0.0.2-SNAPSHOT-jar-with-dependencies.jar --v1 /path/to/version1 --v2 /path/to/version2 --diff
+$ git clone https://github.com/alien-tools/roseau.git
+$ mvn package appassembler:assemble
+$ target/appassembler/bin/roseau --diff --v1 /path/to/version1 --v2 /path/to/version2
 ```
 
 ```
-$ java -jar target/roseau-0.0.2-SNAPSHOT-jar-with-dependencies.jar
-Usage: roseau [--api] [--diff] [--verbose] [--json=<apiPath>]
+$ target/appassembler/bin/roseau
+Usage: roseau [--api] [--diff] [--fail] [--verbose] [--json=<apiPath>]
               [--report=<reportPath>] --v1=<libraryV1> [--v2=<libraryV2>]
       --api              Build and serialize the API model of --v1
       --diff             Compute the breaking changes between versions --v1 and
                            --v2
+      --fail             Command returns an error when there are breaking
+                           changes detected
       --json=<apiPath>   Where to serialize the JSON API model of --v1;
                            defaults to api.json
       --report=<reportPath>
                          Where to write the breaking changes report; defaults
-                           to report.json
+                           to report.csv
       --v1=<libraryV1>   Path to the sources of the first version of the library
       --v2=<libraryV2>   Path to the sources of the second version of the
                            library
       --verbose          Print debug information
+```
+
+### Git Integration
+
+Roseau can easily be integrated with Git to compare arbitrary commits, refs, branches, etc.
+The following minimal `.gitconfig` registers Roseau as a difftool aliased to `bc`:
+
+```
+[difftool "roseau"]
+  cmd = /path/to/roseau --diff --v1 "$LOCAL" --v2 "$REMOTE"
+[alias]
+  bc = difftool -d -t roseau
+```
+
+Then, Roseau can be invoked on Git objects using the usual syntax, for example:
+
+```
+$ git bc # BCs in unstaged changes
+$ git bc HEAD # BCs in uncommitted changes (including staged ones)
+$ git bc --staged # BCs in staged changes
+$ git bc path/to/File.java # BCs in specific file
+$ git bc main..feature # BCs between two branches
+$ git bc HEAD~2 HEAD # BCs between two commits
 ```
 
 ## Tests
