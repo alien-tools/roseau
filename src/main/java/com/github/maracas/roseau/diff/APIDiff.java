@@ -174,30 +174,7 @@ public class APIDiff {
 		if (!t1.getClass().equals(t2.getClass()))
 			bc(BreakingChangeKind.CLASS_TYPE_CHANGED, t1);
 
-		int formalParametersCount1 = t1.getFormalTypeParameters().size();
-		int formalParametersCount2 = t2.getFormalTypeParameters().size();
-		if (formalParametersCount1 == formalParametersCount2) {
-			for (int i = 0; i < formalParametersCount1; i++) {
-				FormalTypeParameter p1 = t1.getFormalTypeParameters().get(i);
-				FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
-
-				List<String> bounds1 = p1.bounds().stream()
-					.map(ITypeReference::getQualifiedName)
-					.toList();
-				List<String> bounds2 = p2.bounds().stream()
-					.map(ITypeReference::getQualifiedName)
-					.toList();
-
-				if (bounds1.size() != bounds2.size()
-					|| !(new HashSet<>(bounds1)).equals(new HashSet<>(bounds2))) {
-					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
-				}
-			}
-		} else if (formalParametersCount1 < formalParametersCount2) {
-			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1);
-		} else {
-			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, t1);
-		}
+		diffFormalTypeParameters(t1, t2);
 	}
 
 	private void diffField(FieldDecl f1, FieldDecl f2) {
@@ -280,11 +257,40 @@ public class APIDiff {
 		diffFormalTypeParameters(cons1, cons2);
 	}
 
+	private void diffFormalTypeParameters(TypeDecl t1, TypeDecl t2) {
+		int formalParametersCount1 = t1.getFormalTypeParameters().size();
+		int formalParametersCount2 = t2.getFormalTypeParameters().size();
+		if (formalParametersCount1 == formalParametersCount2) {
+			for (int i = 0; i < formalParametersCount1; i++) {
+				FormalTypeParameter p1 = t1.getFormalTypeParameters().get(i);
+				FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
+
+				List<String> bounds1 = p1.bounds().stream()
+					.map(ITypeReference::getQualifiedName)
+					.toList();
+				List<String> bounds2 = p2.bounds().stream()
+					.map(ITypeReference::getQualifiedName)
+					.toList();
+
+				if (bounds1.size() != bounds2.size()
+					|| !(new HashSet<>(bounds1)).equals(new HashSet<>(bounds2))) {
+					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
+				}
+			}
+		} else if (formalParametersCount1 > formalParametersCount2) {
+			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1);
+		} else if (formalParametersCount1 > 0) {
+			// Only breaking if there was already one type parameter
+			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, t1);
+		}
+	}
+
 	private void diffFormalTypeParameters(ExecutableDecl e1, ExecutableDecl e2) {
 		if (e1.getFormalTypeParameters().size() > e2.getFormalTypeParameters().size())
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1);
 
-		if (e1.getFormalTypeParameters().size() < e2.getFormalTypeParameters().size())
+		// Adding a type parameter is only breaking if there was already some
+		if (!e1.getFormalTypeParameters().isEmpty() && e1.getFormalTypeParameters().size() < e2.getFormalTypeParameters().size())
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, e1);
 
 		for (int i = 0; i < e1.getFormalTypeParameters().size(); i++) {

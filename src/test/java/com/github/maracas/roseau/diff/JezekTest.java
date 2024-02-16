@@ -1,10 +1,7 @@
 package com.github.maracas.roseau.diff;
 
-import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
-
-import java.util.List;
 
 import static com.github.maracas.roseau.TestUtils.assertBC;
 import static com.github.maracas.roseau.TestUtils.assertNoBC;
@@ -217,6 +214,64 @@ class JezekTest {
 				public int f;
 			}
 			public class C extends S {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeAddN() {
+		String v1 = """
+			public class C {
+				public C() {}
+			}""";
+		String v2 = """
+			public class C {
+				public <T> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzMethodTypeAddN() {
+		String v1 = """
+			public class C {
+				public void m() {}
+			}""";
+		String v2 = """
+			public class C {
+				public <T> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzTypeAddN() {
+		String v1 = "public class C {}";
+		String v2 = "public class C<T> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeMethodTypeAddN() {
+		String v1 = """
+			public interface I {
+				public void m();
+			}""";
+		String v2 = """
+			public interface I {
+				public <T> void m();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeAddN() {
+		String v1 = "public interface I {}";
+		String v2 = "public interface I<T> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
