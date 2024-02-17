@@ -74,7 +74,7 @@ $ git bc HEAD~2 HEAD       # BCs between two commits
 Roseau's efficiency was evaluated using Kamil Jezek and Jens Dietrich's [API evolution data corpus](https://github.com/kjezek/api-evolution-data-corpus), a benchmark for evaluating the accuracy of breaking change detection tools.
 We introduced new features to enhance the evaluation process. In fact, we not only atomized all the breaking change files to ensure a more granular evaluation, but we also incorporated an assessment of precision, recall, 
 and performance.
-With this [upgraded version of the benchmark](https://github.com/labri-progress/api-evolution-data-corpus), Roseau currently achieves a precision of 85% and a recall of 91%.
+With this [upgraded version of the benchmark](https://github.com/labri-progress/api-evolution-data-corpus), Roseau currently achieves a precision of 85% and a recall of 100%.
 
 ## License
 This repository—and all its content—is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).  („• ‿ •„) 

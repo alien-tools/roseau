@@ -125,7 +125,7 @@ public class APIDiff {
 	}
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
-		t2.getMethods().stream()
+		t2.getAllMethods().stream()
 			.filter(m2 -> t1.getAllMethods().stream().noneMatch(m1 -> m1.hasSameSignature(m2)))
 			.forEach(m2 -> {
 				if (t2.isInterface() && !m2.isDefault())

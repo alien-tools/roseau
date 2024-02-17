@@ -289,4 +289,17 @@ class JezekTest {
 
 		assertBC("C.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
+
+	@Test
+	void inheritanceIfazeStartInherite() {
+		String v1 = """
+			public interface I {}""";
+		String v2 = """
+			public interface J {
+				void m();
+			}
+			public interface I extends J {}""";
+
+		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
+	}
 }
