@@ -121,6 +121,20 @@ class JezekTest {
 	}
 
 	@Test
+	void exceptionClazzMethodThrowCheckedSpecialization() {
+		String v1 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+		String v2 = """
+			public class A {
+				public void m() throws java.io.FileNotFoundException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
 	void modifierClazzEffectivelyFinalToFinal() {
 		String v1 = """
 			public class A {

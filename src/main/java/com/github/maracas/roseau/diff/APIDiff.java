@@ -223,11 +223,15 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1);
 
 		List<TypeReference<ClassDecl>> additionalExceptions1 = m1.getThrownCheckedExceptions().stream()
-			.filter(e -> !m2.getThrownCheckedExceptions().contains(e))
+			.filter(e1 ->
+				m2.getThrownCheckedExceptions().stream()
+					.noneMatch(e2 -> e2.isSubtypeOf(e1)))
 			.toList();
 
 		List<TypeReference<ClassDecl>> additionalExceptions2 = m2.getThrownCheckedExceptions().stream()
-			.filter(e -> !m1.getThrownCheckedExceptions().contains(e))
+			.filter(e2 ->
+				m1.getThrownCheckedExceptions().stream()
+					.noneMatch(e1 -> e2.isSubtypeOf(e1)))
 			.toList();
 
 		if (!additionalExceptions1.isEmpty())
