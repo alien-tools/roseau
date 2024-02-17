@@ -15,6 +15,7 @@ import picocli.CommandLine;
 import spoon.reflect.CtModel;
 
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +57,7 @@ final class Roseau implements Callable<Integer>  {
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
-	private static final int SPOON_TIMEOUT = 60;
+	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(60);
 
 	private API buildAPI(Path sources) {
 		Stopwatch sw = Stopwatch.createStarted();

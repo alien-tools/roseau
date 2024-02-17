@@ -10,6 +10,7 @@ import spoon.reflect.CtModel;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.time.Duration;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -21,7 +22,7 @@ class JSONSerializationTest {
 	@Test
 	void api_json_round_trip() throws IOException {
 		Path sources = Path.of("/home/dig/repositories/maracas/forges/src/main/java/com/github/maracas/");
-		CtModel m = SpoonAPIExtractor.buildModel(sources, 10);
+		CtModel m = SpoonAPIExtractor.buildModel(sources, Duration.ofSeconds(10));
 		APIExtractor extractor = new SpoonAPIExtractor(m);
 		API orig = extractor.extractAPI();
 

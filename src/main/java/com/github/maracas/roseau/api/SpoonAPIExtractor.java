@@ -14,6 +14,7 @@ import spoon.support.compiler.SpoonProgress;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -39,14 +40,14 @@ public class SpoonAPIExtractor implements APIExtractor {
 		this.model = Objects.requireNonNull(model);
 	}
 
-	public static CtModel buildModel(Path location, int timeoutSeconds) throws RuntimeException {
+	public static CtModel buildModel(Path location, Duration timeout) throws RuntimeException {
 		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(() -> {
 			Launcher launcher = launcherFor(location);
 			return launcher.buildModel();
 		});
 
 		try {
-			return future.get(timeoutSeconds, TimeUnit.SECONDS);
+			return future.get(timeout.getSeconds(), TimeUnit.SECONDS);
 		} catch (ExecutionException | InterruptedException | TimeoutException e) {
 			throw new RuntimeException("Couldn't build Spoon model from " + location, e);
 		}
