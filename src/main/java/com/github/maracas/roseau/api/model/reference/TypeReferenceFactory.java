@@ -10,6 +10,7 @@ public interface TypeReferenceFactory {
 	PrimitiveTypeReference createPrimitiveTypeReference(String name);
 	ArrayTypeReference createArrayTypeReference(ITypeReference componentType);
 	TypeParameterReference createTypeParameterReference(String qualifiedName);
+	WildcardTypeReference createWildcardTypeReference(List<ITypeReference> bounds, boolean upper);
 
 	default <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName) {
 		return createTypeReference(qualifiedName, Collections.emptyList());

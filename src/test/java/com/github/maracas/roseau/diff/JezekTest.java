@@ -275,4 +275,18 @@ class JezekTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Test
+	void genericsWildcardsClazzConstructorParamLowerBoundsAdd2() {
+		String v1 = """
+			public class C {
+				public void m(ArrayList<?> al) {}
+			}""";
+		String v2 = """
+			public class C {
+				public void m(ArrayList<? extends Number> al) {}
+			}""";
+
+		assertBC("C.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+	}
 }

@@ -31,4 +31,9 @@ public class SpoonTypeReferenceFactory implements TypeReferenceFactory {
 	public TypeParameterReference createTypeParameterReference(String qualifiedName) {
 		return new TypeParameterReference(qualifiedName);
 	}
+
+	@Override
+	public WildcardTypeReference createWildcardTypeReference(List<ITypeReference> bounds, boolean upper) {
+		return new WildcardTypeReference(bounds, upper);
+	}
 }

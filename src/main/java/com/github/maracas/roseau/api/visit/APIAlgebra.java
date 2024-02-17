@@ -18,6 +18,7 @@ import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
 public interface APIAlgebra<T> {
 	T api(API it);
@@ -34,6 +35,7 @@ public interface APIAlgebra<T> {
 	T primitiveTypeReference(PrimitiveTypeReference it);
 	T arrayTypeReference(ArrayTypeReference it);
 	T typeParameterReference(TypeParameterReference it);
+	T wildcardTypeReference(WildcardTypeReference it);
 	T annotation(Annotation it);
 
 	default T $(API it) {
@@ -63,6 +65,7 @@ public interface APIAlgebra<T> {
 			case PrimitiveTypeReference primitiveRef -> primitiveTypeReference(primitiveRef);
 			case ArrayTypeReference arrayRef -> arrayTypeReference(arrayRef);
 			case TypeParameterReference tpRef -> typeParameterReference(tpRef);
+			case WildcardTypeReference wcRef -> wildcardTypeReference(wcRef);
 		};
 	}
 

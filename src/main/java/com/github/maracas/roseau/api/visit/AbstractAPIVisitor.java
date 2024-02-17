@@ -18,6 +18,7 @@ import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
 public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit api(API it) {
@@ -97,6 +98,11 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit typeParameterReference(TypeParameterReference it) {
+		return () -> {};
+	}
+
+	@Override
+	public Visit wildcardTypeReference(WildcardTypeReference it) {
 		return () -> {};
 	}
 

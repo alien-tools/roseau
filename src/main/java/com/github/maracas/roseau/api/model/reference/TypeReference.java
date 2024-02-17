@@ -78,6 +78,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(qualifiedName);
+		return Objects.hash(qualifiedName, typeArguments);
 	}
 }
