@@ -272,8 +272,9 @@ public class APIDiff {
 					.map(ITypeReference::getQualifiedName)
 					.toList();
 
-				if (bounds1.size() != bounds2.size()
-					|| !(new HashSet<>(bounds1)).equals(new HashSet<>(bounds2))) {
+				// Removing an existing bound is fine, adding isn't, existing bounds should stay
+				if (bounds1.size() < bounds2.size()
+					|| (bounds1.size() == bounds2.size() && !(new HashSet<>(bounds1)).equals(new HashSet<>(bounds2)))) {
 					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
 				}
 			}

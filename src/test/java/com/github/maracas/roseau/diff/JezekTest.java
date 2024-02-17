@@ -302,4 +302,20 @@ class JezekTest {
 
 		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
 	}
+
+	@Test
+	void genericsIfazeTypeBoundsAdd() {
+		String v1 = "public interface I<T> {}";
+		String v2 = "public interface I<T extends Number> {}";
+
+		assertBC("I", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeBoundsDelete() {
+		String v1 = "public interface I<T extends Number> {}";
+		String v2 = "public interface I<T> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }
