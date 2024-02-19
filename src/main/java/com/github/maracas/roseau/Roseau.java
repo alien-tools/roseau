@@ -14,11 +14,13 @@ import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import spoon.reflect.CtModel;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.diogonunes.jcolor.Ansi.colorize;
@@ -59,6 +61,8 @@ final class Roseau implements Callable<Integer>  {
 
 	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(60);
 
+	private static final String ROSEAU_IGNORE = ".roseau_ignore";
+
 	private API buildAPI(Path sources) {
 		Stopwatch sw = Stopwatch.createStarted();
 
@@ -85,9 +89,14 @@ final class Roseau implements Callable<Integer>  {
 		API apiV1 = futureV1.get();
 		API apiV2 = futureV2.get();
 
+		List<Pattern> ignorePatterns = List.of();
+		Path config = v2.resolve(ROSEAU_IGNORE);
+		if (config.toFile().exists())
+			ignorePatterns = Files.readAllLines(config).stream().map(this::globToRegexp).toList();
+
 		// API diff
 		Stopwatch sw = Stopwatch.createStarted();
-		APIDiff diff = new APIDiff(apiV1, apiV2);
+		APIDiff diff = new APIDiff(apiV1, apiV2, ignorePatterns);
 		List<BreakingChange> bcs = diff.diff();
 		logger.debug("API diff: " + sw.elapsed().toMillis());
 
@@ -129,5 +138,93 @@ final class Roseau implements Callable<Integer>  {
 	public static void main(String[] args) {
 		int exitCode = new CommandLine(new Roseau()).execute(args);
 		System.exit(exitCode);
+	}
+
+	private Pattern globToRegexp(String line) {
+		line = line.trim();
+		int strLen = line.length();
+		StringBuilder sb = new StringBuilder(strLen);
+		if (line.startsWith("*")) {
+			line = line.substring(1);
+			strLen--;
+		}
+		if (line.endsWith("*")) {
+			line = line.substring(0, strLen-1);
+			strLen--;
+		}
+		boolean escaping = false;
+		int inCurlies = 0;
+		for (char currentChar : line.toCharArray()) {
+			switch (currentChar) {
+				case '*':
+					if (escaping)
+						sb.append("\\*");
+					else
+						sb.append(".*");
+					escaping = false;
+					break;
+				case '?':
+					if (escaping)
+						sb.append("\\?");
+					else
+						sb.append('.');
+					escaping = false;
+					break;
+				case '.':
+				case '(':
+				case ')':
+				case '+':
+				case '|':
+				case '^':
+				case '$':
+				case '@':
+				case '%':
+					sb.append('\\');
+					sb.append(currentChar);
+					escaping = false;
+					break;
+				case '\\':
+					if (escaping) {
+						sb.append("\\\\");
+						escaping = false;
+					}
+					else
+						escaping = true;
+					break;
+				case '{':
+					if (escaping)
+						sb.append("\\{");
+					else {
+						sb.append('(');
+						inCurlies++;
+					}
+					escaping = false;
+					break;
+				case '}':
+					if (inCurlies > 0 && !escaping) {
+						sb.append(')');
+						inCurlies--;
+					}
+					else if (escaping)
+						sb.append("\\}");
+					else
+						sb.append("}");
+					escaping = false;
+					break;
+				case ',':
+					if (inCurlies > 0 && !escaping) {
+						sb.append('|');
+					}
+					else if (escaping)
+						sb.append("\\,");
+					else
+						sb.append(",");
+					break;
+				default:
+					escaping = false;
+					sb.append(currentChar);
+			}
+		}
+		return Pattern.compile(sb.toString());
 	}
 }
