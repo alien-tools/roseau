@@ -19,7 +19,7 @@ class JezekTest {
 			  public A(List<A> l) {}
 			}""";
 
-		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A.<init>", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -301,7 +301,7 @@ class JezekTest {
 				public void m(ArrayList<? extends Number> al) {}
 			}""";
 
-		assertBC("C.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -326,9 +326,79 @@ class JezekTest {
 	}
 
 	@Test
-	void genericsIfazeTypeBoundsDelete() {
+	void genericsIfazeTypeBoundsDeleteN() {
 		String v1 = "public interface I<T extends Number> {}";
 		String v2 = "public interface I<T> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeBoundsDeleteN() {
+		String v1 = """
+			public class C {
+				public <T extends Number> C() {}
+			}""";
+		String v2 = """
+			public class C {
+				public <T> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeBoundsDeleteSecond() {
+		String v1 = """
+			public class C {
+				public <T extends Number & Comparable<T>> C() {}
+			}""";
+		String v2 = """
+			public class C {
+				public <T extends Number> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeBoundsGeneralization() {
+		String v1 = """
+			public class C {
+				public <T extends Integer> C() {}
+			}""";
+		String v2 = """
+			public class C {
+				public <T extends Number> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeDeleteN() {
+		String v1 = """
+			public class C {
+				public <T> C() {}
+			}""";
+		String v2 = """
+			public class C {
+				public C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzConstructorParamAdd() {
+		String v1 = """
+			public class C {
+				public C(ArrayList<Integer> l) {}
+			}""";
+		String v2 = """
+			public class C {
+				public C(ArrayList<?> l) {}
+			}""";
 
 		assertNoBC(buildDiff(v1, v2));
 	}

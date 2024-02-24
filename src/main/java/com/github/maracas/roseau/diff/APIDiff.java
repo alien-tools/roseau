@@ -7,11 +7,13 @@ import com.github.maracas.roseau.api.model.ExecutableDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 
@@ -249,8 +251,8 @@ public class APIDiff {
 			&& (m1.getParameters().isEmpty() || !m1.getParameters().getLast().isVarargs()))
 			bc(BreakingChangeKind.METHOD_NOW_VARARGS, m1);
 
-		// FIXME: no checks for parameters???
 
+		diffParametersGenerics(m1, m2);
 		diffFormalTypeParameters(m1, m2);
 	}
 
@@ -258,7 +260,29 @@ public class APIDiff {
 		if (cons1.isPublic() && cons2.isProtected())
 			bc(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, cons1);
 
+		diffParametersGenerics(cons1, cons2);
 		diffFormalTypeParameters(cons1, cons2);
+	}
+
+	private void diffParametersGenerics(ExecutableDecl e1, ExecutableDecl e2) {
+		for (int i = 0; i < e1.getParameters().size(); i++) {
+			ParameterDecl p1 = e1.getParameters().get(i);
+			ParameterDecl p2 = e2.getParameters().get(i);
+
+			// We checked executable signatures so we know params are equals modulo type arguments
+			if (p1.type() instanceof TypeReference<?> t1 && p2.type() instanceof TypeReference<?> t2) {
+				if (t1.getTypeArguments().size() != t2.getTypeArguments().size())
+					bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1);
+				else
+					for (int j = 0; j < t1.getTypeArguments().size(); j++) {
+						ITypeReference ta1 = t1.getTypeArguments().get(j);
+						ITypeReference ta2 = t2.getTypeArguments().get(j);
+
+						if (!ta1.equals(ta2) && !(ta2 instanceof WildcardTypeReference wtr && wtr.isObjectBounded()))
+							bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1);
+					}
+			}
+		}
 	}
 
 	private void diffFormalTypeParameters(TypeDecl t1, TypeDecl t2) {
@@ -290,23 +314,55 @@ public class APIDiff {
 		}
 	}
 
-	private void diffFormalTypeParameters(ExecutableDecl e1, ExecutableDecl e2) {
-		if (e1.getFormalTypeParameters().size() > e2.getFormalTypeParameters().size())
-			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1);
+	private void diffFormalTypeParameters(ConstructorDecl cons1, ConstructorDecl cons2) {
+		// Removing a type parameter is only breaking if there was more than one
+		if (cons1.getFormalTypeParameters().size() > 1 && cons1.getFormalTypeParameters().size() > cons2.getFormalTypeParameters().size())
+			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, cons1);
 
 		// Adding a type parameter is only breaking if there was already some
-		if (!e1.getFormalTypeParameters().isEmpty() && e1.getFormalTypeParameters().size() < e2.getFormalTypeParameters().size())
-			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, e1);
+		if (!cons1.getFormalTypeParameters().isEmpty() && cons1.getFormalTypeParameters().size() < cons2.getFormalTypeParameters().size())
+			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, cons1);
 
-		for (int i = 0; i < e1.getFormalTypeParameters().size(); i++) {
-			List<ITypeReference> bounds1 = e1.getFormalTypeParameters().get(i).bounds();
+		for (int i = 0; i < cons1.getFormalTypeParameters().size(); i++) {
+			List<ITypeReference> bounds1 = cons1.getFormalTypeParameters().get(i).bounds();
 
-			if (i < e2.getFormalTypeParameters().size()) {
-				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
+			if (i < cons2.getFormalTypeParameters().size()) {
+				List<ITypeReference> bounds2 = cons2.getFormalTypeParameters().get(i).bounds();
+
+				// Adding bounds is potentially breaking
+				if (bounds1.size() < bounds2.size())
+					bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, cons1);
+
+				if (bounds1.size() == bounds2.size() && bounds1.stream()
+					.filter(TypeReference.class::isInstance)
+					.map(TypeReference.class::cast)
+					.anyMatch(b1 -> bounds2.stream().noneMatch(b2 ->
+						switch (b2) {
+							case TypeReference tr -> b1.isSubtypeOf(tr);
+							default -> false;
+						})))
+					bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, cons1);
+			}
+		}
+	}
+
+	private void diffFormalTypeParameters(MethodDecl m1, MethodDecl m2) {
+		if (m1.getFormalTypeParameters().size() > m2.getFormalTypeParameters().size())
+			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, m1);
+
+		// Adding a type parameter is only breaking if there was already some
+		if (!m1.getFormalTypeParameters().isEmpty() && m1.getFormalTypeParameters().size() < m2.getFormalTypeParameters().size())
+			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, m1);
+
+		for (int i = 0; i < m1.getFormalTypeParameters().size(); i++) {
+			List<ITypeReference> bounds1 = m1.getFormalTypeParameters().get(i).bounds();
+
+			if (i < m2.getFormalTypeParameters().size()) {
+				List<ITypeReference> bounds2 = m2.getFormalTypeParameters().get(i).bounds();
 
 				if (bounds1.size() != bounds2.size()
 					|| !new HashSet<>(bounds1).equals(new HashSet<>(bounds2)))
-					bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1);
+					bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, m1);
 			}
 		}
 	}

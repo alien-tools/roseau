@@ -7,4 +7,8 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 	public String getQualifiedName() {
 		return "?";
 	}
+
+	public boolean isObjectBounded() {
+		return bounds().size() == 1 && bounds().getFirst().getQualifiedName().equals("java.lang.Object");
+	}
 }
