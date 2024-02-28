@@ -3,6 +3,8 @@ package com.github.maracas.roseau.diff;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayList;
+
 import static com.github.maracas.roseau.TestUtils.assertBC;
 import static com.github.maracas.roseau.TestUtils.assertNoBC;
 import static com.github.maracas.roseau.TestUtils.buildDiff;
@@ -370,6 +372,42 @@ class JezekTest {
 		String v2 = """
 			public class C {
 				public <T extends Number> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeBoundsGeneralization() {
+		String v1 = "public interface I<T extends Integer> {}";
+		String v2 = "public interface I<T extends Number> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzMethodParamAdd() {
+		String v1 = """
+			public class C {
+				public void m(List<String> l) {}
+			}""";
+		String v2 = """
+			public class C {
+				public void m(List<?> l) {}
+			}""";
+
+		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzConstructorParamLowerBoundsSpecialization() {
+		String v1 = """
+			public class C {
+				public C(List<? super Number> l) {}
+			}""";
+		String v2 = """
+			public class C {
+				public C(List<? super Integer> l) {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));

@@ -10,6 +10,11 @@ public record ArrayTypeReference(ITypeReference componentType) implements ITypeR
 	}
 
 	@Override
+	public boolean isSubtypeOf(ITypeReference other) {
+		return false;
+	}
+
+	@Override
 	public String toString() {
 		return getQualifiedName();
 	}

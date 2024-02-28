@@ -264,6 +264,13 @@ public class APIDiff {
 		diffFormalTypeParameters(cons1, cons2);
 	}
 
+	/**
+	 * In general, we need to distinguish how formal type parameters and parameter generics
+	 * are handled between methods and constructors: the former can be overridden (so parameters
+	 * are immutable so that signatures in sub/super-classes match)) and the latter cannot
+	 * (so parameters can follow co/contra-variance rules).
+	 */
+
 	private void diffParametersGenerics(ExecutableDecl e1, ExecutableDecl e2) {
 		for (int i = 0; i < e1.getParameters().size(); i++) {
 			ParameterDecl p1 = e1.getParameters().get(i);
@@ -278,8 +285,26 @@ public class APIDiff {
 						ITypeReference ta1 = t1.getTypeArguments().get(j);
 						ITypeReference ta2 = t2.getTypeArguments().get(j);
 
-						if (!ta1.equals(ta2) && !(ta2 instanceof WildcardTypeReference wtr && wtr.isObjectBounded()))
-							bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1);
+						if (!ta1.equals(ta2)) {
+							// Immutable for methods
+							if (e1 instanceof MethodDecl) {
+								bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1);
+							} else {
+								// Changing to unbounded is fine
+								if (ta2 instanceof WildcardTypeReference wtr && wtr.isUnbounded())
+									continue;
+								if (ta1 instanceof WildcardTypeReference wtr1 && ta2 instanceof WildcardTypeReference wtr2 && wtr1.upper() == wtr2.upper()) {
+									// Changing upper bound to supertype is fine
+									if (wtr1.upper() && wtr1.bounds().getFirst().isSubtypeOf(wtr2.bounds().getFirst()))
+										continue;
+									// Changing lower bound to subtype is fine
+									if (!wtr1.upper() && wtr2.bounds().getFirst().isSubtypeOf(wtr1.bounds().getFirst()))
+										continue;
+								}
+
+								bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1);
+							}
+						}
 					}
 			}
 		}
@@ -300,11 +325,17 @@ public class APIDiff {
 					.map(ITypeReference::getQualifiedName)
 					.toList();
 
-				// Removing an existing bound is fine, adding isn't, existing bounds should stay
-				if (bounds1.size() < bounds2.size()
-					|| (bounds1.size() == bounds2.size() && !(new HashSet<>(bounds1)).equals(new HashSet<>(bounds2)))) {
+				// Removing an existing bound is fine, adding isn't
+				if (bounds1.size() < bounds2.size())
 					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
-				}
+
+				// Each bound in the new version should either pre-exist or be a supertype of an existing one
+				if (!p2.bounds().stream()
+					.allMatch(b2 ->
+						p1.bounds().stream()
+							.anyMatch(b1 -> b1.equals(b2) || b1.isSubtypeOf(b2))
+					))
+					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
 			}
 		} else if (formalParametersCount1 > formalParametersCount2) {
 			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1);

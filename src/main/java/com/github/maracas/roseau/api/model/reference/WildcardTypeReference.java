@@ -8,7 +8,12 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 		return "?";
 	}
 
-	public boolean isObjectBounded() {
+	@Override
+	public boolean isSubtypeOf(ITypeReference other) {
+		return false;
+	}
+
+	public boolean isUnbounded() {
 		return bounds().size() == 1 && bounds().getFirst().getQualifiedName().equals("java.lang.Object");
 	}
 }
