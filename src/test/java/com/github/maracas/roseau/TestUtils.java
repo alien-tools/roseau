@@ -56,6 +56,16 @@ public class TestUtils {
 		}
 	}
 
+	public static void assertNoBC(BreakingChangeKind kind, List<BreakingChange> bcs) {
+		String found = bcs.stream()
+			.filter(bc -> bc.kind() == kind)
+			.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))
+			.collect(Collectors.joining(", "));
+
+		if (!found.isEmpty())
+			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
+	}
+
 	public static void assertNoBC(int line, List<BreakingChange> bcs) {
 		String found = bcs.stream()
 			.filter(bc -> bc.impactedSymbol().getLocation().line() == line)

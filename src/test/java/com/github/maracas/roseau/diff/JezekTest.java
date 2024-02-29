@@ -39,7 +39,7 @@ class JezekTest {
 	}
 
 	@Test
-	void dataTypeIfazeConstantNarrowing() {
+	void dataTypeClazzFieldNarrowing() {
 		String v1 = """
 			public class A {
 			  public double f;
@@ -50,6 +50,20 @@ class JezekTest {
 			}""";
 
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void dataTypeIfazeConstantNarrowing() {
+		String v1 = """
+			public interface I {
+			  public double f = 5;
+			}""";
+		String v2 = """
+			public interface I {
+			  public int f = 5;
+			}""";
+
+		assertBC("I.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

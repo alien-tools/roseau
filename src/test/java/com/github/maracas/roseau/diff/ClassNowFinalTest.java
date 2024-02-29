@@ -27,6 +27,14 @@ class ClassNowFinalTest {
 	}
 
 	@Test
+	void class_now_record() {
+		String v1 = "public class A {}";
+		String v2 = "public record A() {}";
+
+		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+	}
+
+	@Test
 	void record_now_final() {
 		String v1 = "record A() {}";
 		String v2 = "final record A() {}";
@@ -43,5 +51,19 @@ class ClassNowFinalTest {
 			}""";
 
 		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void nested_class_now_final() {
+		String v1 ="""
+			public class A {
+				static public class B {}
+			}""";
+		String v2 ="""
+			public class A {
+				static public final class B {}
+			}""";
+
+		assertBC("A$B", BreakingChangeKind.CLASS_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 }
