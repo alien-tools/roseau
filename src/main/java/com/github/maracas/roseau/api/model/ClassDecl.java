@@ -58,15 +58,17 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		).toList();
 	}
 
-	@Override
 	public boolean isCheckedException() {
-		if ("java.lang.Exception".equals(qualifiedName))
-			return true;
-		if ("java.lang.RuntimeException".equals(qualifiedName))
-			return false;
+		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
 
-		return getAllSuperClasses().stream().anyMatch(cls -> "java.lang.Exception".equals(cls.getQualifiedName()))
-			&& getAllSuperClasses().stream().noneMatch(cls -> "java.lang.RuntimeException".equals(cls.getQualifiedName()));
+		return "java.lang.Exception".equals(qualifiedName) || superClasses.contains("java.lang.Exception") && !isUncheckedException();
+	}
+
+	public boolean isUncheckedException() {
+		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
+
+		return "java.lang.RuntimeException".equals(qualifiedName)
+			|| superClasses.contains("java.lang.RuntimeException");
 	}
 
 	@Override

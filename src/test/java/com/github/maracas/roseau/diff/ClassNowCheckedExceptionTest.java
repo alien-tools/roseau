@@ -13,7 +13,7 @@ class ClassNowCheckedExceptionTest {
 		String v1 = "public class A {}";
 		String v2 = "public class A extends Exception {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
@@ -21,7 +21,7 @@ class ClassNowCheckedExceptionTest {
 		String v1 = "public class A {}";
 		String v2 = "public class A extends java.io.IOException {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
@@ -61,6 +61,6 @@ class ClassNowCheckedExceptionTest {
 		String v1 = "public class A {}";
 		String v2 = "public class A extends RuntimeException {}";
 
-		assertNoBC(buildDiff(v1, v2)); // Becoming a RuntimeException does not make it a checked exception.
+		assertNoBC(buildDiff(v1, v2));
 	}
 }

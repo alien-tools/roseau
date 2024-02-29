@@ -116,7 +116,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	public List<TypeReference<ClassDecl>> getThrownCheckedExceptions() {
 		return thrownExceptions.stream()
-			.filter(e -> e.getResolvedApiType().map(TypeDecl::isCheckedException).orElse(false))
+			.filter(e -> e.getResolvedApiType().map(ClassDecl::isCheckedException).orElse(false))
 			.toList();
 	}
 

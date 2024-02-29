@@ -166,7 +166,7 @@ public class APIDiff {
 		if (c1.isStatic() && !c2.isStatic() && c1.isNested() && c2.isNested())
 			bc(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, c1);
 
-		if (!c1.isCheckedException() && c2.isCheckedException())
+		if (c1.isUncheckedException() && c2.isCheckedException())
 			bc(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, c1);
 
 		if (c1.getSuperClass().isPresent() && c2.getSuperClass().isEmpty())
@@ -217,7 +217,7 @@ public class APIDiff {
 		if (m1.isPublic() && m2.isProtected())
 			bc(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, m1);
 
-		if (!m1.getType().equals(m2.getType()))
+		if (!Objects.equals(m1.getType(), m2.getType()))
 			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1);
 
 		diffThrownExceptions(m1, m2);

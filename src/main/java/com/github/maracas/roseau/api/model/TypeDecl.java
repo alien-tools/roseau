@@ -94,11 +94,6 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	@JsonIgnore
-	public boolean isCheckedException() {
-		return false;
-	}
-
-	@JsonIgnore
 	public boolean isStatic() {
 		return modifiers.contains(Modifier.STATIC);
 	}
