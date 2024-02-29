@@ -59,7 +59,7 @@ public class APIDiff {
 	}
 	
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().forEach(t1 -> {
+		v1.getExportedTypes().stream().parallel().forEach(t1 -> {
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
 				t2 -> {
