@@ -219,7 +219,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	public Optional<FieldDecl> findField(String name) {
-		return fields.stream()
+		return getAllFields().stream()
 			.filter(f -> f.getSimpleName().equals(name))
 			.findFirst();
 	}

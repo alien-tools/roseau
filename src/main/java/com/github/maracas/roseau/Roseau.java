@@ -91,7 +91,7 @@ final class Roseau implements Callable<Integer>  {
 		List<BreakingChange> bcs = diff.diff();
 		logger.debug("API diff: " + sw.elapsed().toMillis());
 
-		diff.breakingChangesReport(report);
+		diff.writeReport(report);
 		System.out.println(bcs.stream().map(bc -> this.format(bc)).collect(Collectors.joining("\n")));
 
 		if (failMode && !bcs.isEmpty())

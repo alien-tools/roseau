@@ -442,6 +442,20 @@ class JezekTest {
 	}
 
 	@Test
+	void genericsClazzMethodTypeDeleteN() {
+		String v1 = """
+			public class C {
+				public <T> void m() {}
+			}""";
+		String v2 = """
+			public class C {
+				public void m() {}
+			}""";
+
+		assertBC("C.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
 	void genericsWildcardsClazzConstructorParamAdd() {
 		String v1 = """
 			public class C {
