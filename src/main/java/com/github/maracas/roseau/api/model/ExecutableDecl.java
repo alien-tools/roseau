@@ -33,7 +33,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	public boolean hasSameSignature(ExecutableDecl other) {
-		return hasSignature(other.getSimpleName(),
+		return hasSignature(
+			other.getSimpleName(),
 			other.getParameters().stream().map(ParameterDecl::type).toList(),
 			!other.getParameters().isEmpty() && other.getParameters().getLast().isVarargs());
 	}
@@ -49,10 +50,13 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			return false;
 
 		for (int i = 0; i < parameterTypes.size(); i++) {
-			ITypeReference otherParameter = parameterTypes.get(i);
-			ITypeReference thisParameter = parameters.get(i).type();
+			ITypeReference otherType = parameterTypes.get(i);
+			ITypeReference thisType = parameters.get(i).type();
 
-			if (!otherParameter.equals(thisParameter))
+			if (!otherType.getClass().equals(thisType.getClass()))
+				return false;
+
+			if (!otherType.getQualifiedName().equals(thisType.getQualifiedName()))
 				return false;
 		}
 
