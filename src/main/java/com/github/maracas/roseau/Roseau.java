@@ -1,7 +1,7 @@
 package com.github.maracas.roseau;
 
-import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.SpoonUtils;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
@@ -14,15 +14,20 @@ import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import spoon.reflect.CtModel;
 
+import java.io.IOException;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 import java.util.stream.Collectors;
 
 import static com.diogonunes.jcolor.Ansi.colorize;
-import static com.diogonunes.jcolor.Attribute.*;
+import static com.diogonunes.jcolor.Attribute.BOLD;
+import static com.diogonunes.jcolor.Attribute.RED_TEXT;
+import static com.diogonunes.jcolor.Attribute.UNDERLINE;
 
 @CommandLine.Command(name = "roseau")
 final class Roseau implements Callable<Integer>  {
@@ -57,47 +62,51 @@ final class Roseau implements Callable<Integer>  {
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
-	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(60);
+	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(60L);
 
 	private API buildAPI(Path sources) {
 		Stopwatch sw = Stopwatch.createStarted();
 
-		CtModel m = SpoonAPIExtractor.buildModel(sources, SPOON_TIMEOUT);
-
-		logger.debug("Parsing: " + sw.elapsed().toMillis());
+		// Parsing
+		CtModel model = SpoonUtils.buildModel(sources, SPOON_TIMEOUT);
+		logger.info("Parsing {} took {}ms", sources, sw.elapsed().toMillis());
 		sw.reset();
 		sw.start();
 
 		// API extraction
-		APIExtractor extractor = new SpoonAPIExtractor(m);
-		API api = extractor.extractAPI();
-		logger.debug("API extraction: " + sw.elapsed().toMillis());
+		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
+		API api = extractor.extractAPI(model);
+		logger.info("Extracting API for {} took {}ms", sources, sw.elapsed().toMillis());
 
 		return api;
 	}
 
-	private int diff(Path v1, Path v2, Path report) throws Exception {
+	private List<BreakingChange> diff(Path v1, Path v2, Path report) {
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2));
 
 		CompletableFuture.allOf(futureV1, futureV2).join();
 
-		API apiV1 = futureV1.get();
-		API apiV2 = futureV2.get();
+		try {
+			API apiV1 = futureV1.get();
+			API apiV2 = futureV2.get();
 
-		// API diff
-		Stopwatch sw = Stopwatch.createStarted();
-		APIDiff diff = new APIDiff(apiV1, apiV2);
-		List<BreakingChange> bcs = diff.diff();
-		logger.debug("API diff: " + sw.elapsed().toMillis());
+			// API diff
+			Stopwatch sw = Stopwatch.createStarted();
+			APIDiff diff = new APIDiff(apiV1, apiV2);
+			List<BreakingChange> bcs = diff.diff();
+			logger.info("API diff took {}ms", sw.elapsed().toMillis());
 
-		diff.writeReport(report);
-		System.out.println(bcs.stream().map(bc -> this.format(bc)).collect(Collectors.joining("\n")));
+			diff.writeReport(report);
+			return bcs;
+		} catch (InterruptedException | ExecutionException e) {
+			Thread.currentThread().interrupt();
+			logger.error("Couldn't compute diff");
+		} catch (IOException e) {
+			logger.error("Couldn't write diff to {}", report);
+		}
 
-		if (failMode && !bcs.isEmpty())
-			return 1;
-		else
-			return 0;
+		return Collections.emptyList();
 	}
 
 	private String format(BreakingChange bc) {
@@ -109,18 +118,32 @@ final class Roseau implements Callable<Integer>  {
 	}
 
 	@Override
-	public Integer call() throws Exception {
+	public Integer call() {
 		if (verbose) {
-			Configurator.setLevel(logger, Level.DEBUG);
+			Configurator.setLevel(logger, Level.INFO);
 		}
 
 		if (apiMode) {
-			API api = buildAPI(libraryV1);
-			api.writeJson(apiPath);
+			try {
+				API api = buildAPI(libraryV1);
+				api.writeJson(apiPath);
+			} catch (IOException e) {
+				logger.error("Couldn't write API to {}", apiPath);
+			}
 		}
 
 		if (diffMode) {
-			return diff(libraryV1, libraryV2, reportPath);
+			List<BreakingChange> bcs = diff(libraryV1, libraryV2, reportPath);
+
+			System.out.println(
+				bcs.stream()
+					.map(this::format)
+					.collect(Collectors.joining(System.lineSeparator()))
+			);
+
+			if (failMode && !bcs.isEmpty()) {
+				return 1;
+			}
 		}
 
 		return 0;

@@ -161,8 +161,8 @@ public class TestUtils {
 
 	public static API buildAPI(String sources) {
 		CtModel m = buildModel(sources);
-		APIExtractor extractor = new SpoonAPIExtractor(m);
-		return extractor.extractAPI();
+		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
+		return extractor.extractAPI(m);
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
