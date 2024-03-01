@@ -39,7 +39,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			!other.getParameters().isEmpty() && other.getParameters().getLast().isVarargs());
 	}
 
-	boolean hasSignature(String simpleName, List<? extends ITypeReference> parameterTypes, boolean varargs) {
+	public boolean hasSignature(String simpleName, List<? extends ITypeReference> parameterTypes, boolean varargs) {
 		if (!getSimpleName().equals(simpleName))
 			return false;
 

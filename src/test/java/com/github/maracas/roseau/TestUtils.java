@@ -109,7 +109,9 @@ public class TestUtils {
 	}
 
 	public static MethodDecl assertMethod(TypeDecl decl, String name) {
-		Optional<MethodDecl> findMethod = decl.findMethod(name);
+		Optional<MethodDecl> findMethod = decl.getMethods().stream()
+			.filter(m -> m.getSimpleName().equals(name))
+			.findFirst();
 
 		if (findMethod.isEmpty())
 			throw new AssertionFailedError("No such method", name, "No such method");
@@ -118,7 +120,9 @@ public class TestUtils {
 	}
 
 	public static MethodDecl assertMethod(TypeDecl decl, String name, ITypeReference... typeFqns) {
-		Optional<MethodDecl> findMethod = decl.findMethod(name, Arrays.asList(typeFqns));
+		Optional<MethodDecl> findMethod = decl.getMethods().stream()
+			.filter(m -> m.hasSignature(name, Arrays.asList(typeFqns), false))
+			.findFirst();
 
 		if (findMethod.isEmpty())
 			throw new AssertionFailedError("No such method", name, "No such method");

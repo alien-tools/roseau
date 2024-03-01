@@ -4,6 +4,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
@@ -38,26 +39,6 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return true;
 	}
 
-	@Override
-	protected List<MethodDecl> getSuperMethods() {
-		return Stream.concat(
-			superClass != null
-				? superClass.getResolvedApiType().map(cls -> cls.getAllMethods().stream()).orElse(Stream.empty())
-				: Stream.empty(),
-			super.getSuperMethods().stream()
-			).toList();
-	}
-
-	@Override
-	public List<FieldDecl> getAllFields() {
-		return Stream.concat(
-			superClass != null
-				? superClass.getResolvedApiType().map(cls -> cls.getAllFields().stream()).orElse(Stream.empty())
-				: Stream.empty(),
-			super.getAllFields().stream()
-		).toList();
-	}
-
 	public boolean isCheckedException() {
 		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
 
@@ -80,10 +61,17 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	@Override
 	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
-		return Stream.concat(
-			super.getAllSuperTypes().stream(),
-			getAllSuperClasses().stream()
-		).toList();
+		Stream<TypeReference<? extends TypeDecl>> interfaceHierarchy = super.getAllSuperTypes().stream();
+		Stream<TypeReference<? extends TypeDecl>> superClassHierarchy = Stream.concat(
+		getAllSuperClasses().stream(),
+		getAllSuperClasses().stream()
+			.map(TypeReference::getResolvedApiType)
+			.flatMap(Optional::stream)
+			.map(ClassDecl::getAllSuperTypes)
+			.flatMap(Collection::stream)
+		);
+
+		return Stream.concat(interfaceHierarchy, superClassHierarchy).toList();
 	}
 
 	public Optional<TypeReference<ClassDecl>> getSuperClass() {
@@ -92,22 +80,12 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	@JsonIgnore
 	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
-		return superClass != null
-			? Stream.concat(
-					Stream.of(superClass),
-					superClass.getResolvedApiType().map(c -> c.getAllSuperClasses().stream()).orElse(Stream.empty())
-				).toList()
-			: Collections.emptyList();
-	}
-
-	@Override
-	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
-		return Stream.concat(
-			super.getAllImplementedInterfaces().stream(),
-			superClass != null
-				? superClass.getResolvedApiType().map(cls -> cls.getAllImplementedInterfaces().stream()).orElse(Stream.empty())
-				: Stream.empty()
-		).distinct().toList();
+		return superClass == null
+			? Collections.emptyList()
+			: Stream.concat(
+				Stream.of(superClass),
+				superClass.getResolvedApiType().map(sup -> sup.getAllSuperClasses().stream()).orElse(Stream.empty())
+			).distinct().toList();
 	}
 
 	public List<ConstructorDecl> getConstructors() {
