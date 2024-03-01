@@ -148,7 +148,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				.flatMap(t -> t.map(TypeDecl::getMethods).orElseGet(Collections::emptyList).stream())
 		).distinct().toList();
 
-		// Huge performance bottleneck
+		// FIXME: Huge performance bottleneck
 		return allMethods.stream()
 			.filter(m1 -> allMethods.stream().noneMatch(m2 -> !m2.equals(m1) && m2.isOverriding(m1)));
 	}

@@ -119,12 +119,12 @@ public class APIDiff {
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
 		t2.getAllMethods()
-			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
+			.filter(m2 -> m2.isAbstract() && t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
 			.forEach(m2 -> {
-				if (t2.isInterface() && !m2.isDefault())
+				if (t2.isInterface())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1);
 
-				if (t2.isClass() && m2.isAbstract())
+				if (t2.isClass())
 					bc(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1);
 			});
 	}
