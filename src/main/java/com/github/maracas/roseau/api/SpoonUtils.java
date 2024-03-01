@@ -58,8 +58,10 @@ public final class SpoonUtils {
 
 		// Ignore missing types/classpath related errors
 		launcher.getEnvironment().setNoClasspath(true);
-		// Proceed even if we find the same type twice; affects the precision of the result
-		launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
+		// Proceed even if we find the same type twice; affects the precision of the result.
+		// Caution: this will make the not-so-safe generics typecasts break if two types
+		// of different kinds (eg. class vs interface) exist in our sources
+		// launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
 		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
 		// Ignore files with syntax/JLS violations and proceed
 		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
