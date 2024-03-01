@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
@@ -11,7 +10,6 @@ import java.util.List;
  * contains information about the constructor's parameters, return type, class, and more.
  */
 public final class ConstructorDecl extends ExecutableDecl {
-	@JsonCreator
 	public ConstructorDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                       SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type,
 	                       List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,

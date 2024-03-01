@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
@@ -11,7 +10,6 @@ import java.util.List;
  * about the field's data type and the {@link TypeDecl} to which it belongs.
  */
 public final class FieldDecl extends TypeMemberDecl {
-	@JsonCreator
 	public FieldDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                 SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);

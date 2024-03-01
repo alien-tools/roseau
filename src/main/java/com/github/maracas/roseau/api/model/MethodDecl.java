@@ -1,7 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
@@ -13,7 +11,6 @@ import java.util.stream.Collectors;
  * This class extends the {@link ExecutableDecl} class and complements it with method-specific information
  */
 public final class MethodDecl extends ExecutableDecl {
-	@JsonCreator
 	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                  SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                  List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
@@ -26,22 +23,18 @@ public final class MethodDecl extends ExecutableDecl {
 	 *
 	 * @return True if the method is a default method, false otherwise
 	 */
-	@JsonIgnore
 	public boolean isDefault() {
 		return modifiers.contains(Modifier.DEFAULT);
 	}
 
-	@JsonIgnore
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	@JsonIgnore
 	public boolean isNative() {
 		return modifiers.contains(Modifier.NATIVE);
 	}
 
-	@JsonIgnore
 	public boolean isStrictFp() {
 		return modifiers.contains(Modifier.STRICTFP);
 	}

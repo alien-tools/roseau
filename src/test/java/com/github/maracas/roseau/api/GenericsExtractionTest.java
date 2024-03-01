@@ -21,8 +21,10 @@ class GenericsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().getFirst().name(), is(equalTo("T")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds(), is(empty()));
+
+		var t = a.getFormalTypeParameters().getFirst();
+		assertThat(t.name(), is(equalTo("T")));
+		assertThat(t.bounds(), is(empty()));
 	}
 
 	@Test
@@ -31,9 +33,11 @@ class GenericsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().getFirst().name(), is(equalTo("T")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
+
+		var t = a.getFormalTypeParameters().getFirst();
+		assertThat(t.name(), is(equalTo("T")));
+		assertThat(t.bounds(), hasSize(1));
+		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
 	}
 
 	@Test
@@ -42,9 +46,11 @@ class GenericsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().getFirst().name(), is(equalTo("T")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Runnable")));
+
+		var t = a.getFormalTypeParameters().getFirst();
+		assertThat(t.name(), is(equalTo("T")));
+		assertThat(t.bounds(), hasSize(1));
+		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Runnable")));
 	}
 
 	@Test
@@ -53,10 +59,12 @@ class GenericsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().getFirst().name(), is(equalTo("T")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds(), hasSize(2));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds().get(1).getQualifiedName(), is(equalTo("java.lang.Runnable")));
+
+		var t = a.getFormalTypeParameters().getFirst();
+		assertThat(t.name(), is(equalTo("T")));
+		assertThat(t.bounds(), hasSize(2));
+		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
+		assertThat(t.bounds().get(1).getQualifiedName(), is(equalTo("java.lang.Runnable")));
 	}
 
 	@Test
@@ -65,11 +73,14 @@ class GenericsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(2));
-		assertThat(a.getFormalTypeParameters().getFirst().name(), is(equalTo("T")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds(), is(empty()));
-		assertThat(a.getFormalTypeParameters().get(1).name(), is(equalTo("U")));
-		assertThat(a.getFormalTypeParameters().get(1).bounds(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().get(1).bounds().getFirst().getQualifiedName(), is(equalTo("T")));
+
+		var t = a.getFormalTypeParameters().getFirst();
+		var u = a.getFormalTypeParameters().get(1);
+		assertThat(t.name(), is(equalTo("T")));
+		assertThat(t.bounds(), is(empty()));
+		assertThat(u.name(), is(equalTo("U")));
+		assertThat(u.bounds(), hasSize(1));
+		assertThat(u.bounds().getFirst().getQualifiedName(), is(equalTo("T")));
 	}
 
 	@Test
@@ -80,11 +91,14 @@ class GenericsExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(2));
-		assertThat(a.getFormalTypeParameters().getFirst().name(), is(equalTo("T")));
-		assertThat(a.getFormalTypeParameters().getFirst().bounds(), is(empty()));
-		assertThat(a.getFormalTypeParameters().get(1).name(), is(equalTo("U")));
-		assertThat(a.getFormalTypeParameters().get(1).bounds(), hasSize(1));
-		assertThat(a.getFormalTypeParameters().get(1).bounds().getFirst().getQualifiedName(), is(equalTo("X")));
+
+		var t = a.getFormalTypeParameters().getFirst();
+		var u = a.getFormalTypeParameters().get(1);
+		assertThat(t.name(), is(equalTo("T")));
+		assertThat(t.bounds(), is(empty()));
+		assertThat(u.name(), is(equalTo("U")));
+		assertThat(u.bounds(), hasSize(1));
+		assertThat(u.bounds().getFirst().getQualifiedName(), is(equalTo("X")));
 	}
 
 	@Test

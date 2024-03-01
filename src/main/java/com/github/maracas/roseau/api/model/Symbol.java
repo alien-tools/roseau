@@ -1,7 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-
 import java.util.List;
 import java.util.Objects;
 
@@ -69,7 +67,6 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	 *
 	 * @return exported or not
 	 */
-	@JsonIgnore
 	public abstract boolean isExported();
 
 	/**

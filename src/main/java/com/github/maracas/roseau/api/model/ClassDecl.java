@@ -1,7 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collection;
@@ -22,7 +20,6 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	 */
 	protected final List<ConstructorDecl> constructors;
 
-	@JsonCreator
 	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
 	                 SourceLocation location, List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
@@ -39,14 +36,12 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return true;
 	}
 
-	@JsonIgnore
 	public boolean isCheckedException() {
 		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
 
 		return "java.lang.Exception".equals(qualifiedName) || superClasses.contains("java.lang.Exception") && !isUncheckedException();
 	}
 
-	@JsonIgnore
 	public boolean isUncheckedException() {
 		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
 
@@ -80,7 +75,6 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return Optional.ofNullable(superClass);
 	}
 
-	@JsonIgnore
 	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
 		return superClass == null
 			? Collections.emptyList()

@@ -1,9 +1,10 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JacksonInject;
-import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
@@ -39,7 +40,6 @@ public final class API {
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 * @param factory Passed around to every type reference for later {@link TypeDecl} inference and resolution
 	 */
-	@JsonCreator
 	public API(@JsonProperty("allTypes") List<TypeDecl> types, @JacksonInject SpoonAPIFactory factory) {
 		this.allTypes = Objects.requireNonNull(types).stream()
 			.collect(Collectors.toMap(
@@ -67,7 +67,6 @@ public final class API {
 	 *
 	 * @return The list of exported {@link TypeDecl}
 	 */
-	@JsonIgnore
 	public List<TypeDecl> getExportedTypes() {
 		return getAllTypes().stream()
 			.filter(Symbol::isExported)
@@ -91,7 +90,6 @@ public final class API {
 	 *
 	 * @return The list of exported {@link ClassDecl}
 	 */
-	@JsonIgnore
 	public List<ClassDecl> getExportedClasses() {
 		return getExportedTypes().stream()
 			.filter(ClassDecl.class::isInstance)
@@ -104,7 +102,6 @@ public final class API {
 	 *
 	 * @return The list of exported {@link InterfaceDecl}
 	 */
-	@JsonIgnore
 	public List<InterfaceDecl> getExportedInterfaces() {
 		return getExportedTypes().stream()
 			.filter(InterfaceDecl.class::isInstance)
@@ -119,6 +116,7 @@ public final class API {
 	 * @return The list of *all* {@link TypeDecl}
 	 * @see    #getExportedTypes() 
 	 */
+	@JsonProperty("allTypes")
 	public List<TypeDecl> getAllTypes() {
 		return allTypes.values().stream().toList();
 	}
@@ -151,6 +149,9 @@ public final class API {
 	 */
 	public void writeJson(Path jsonFile) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
+		mapper.setVisibility(PropertyAccessor.ALL,     JsonAutoDetect.Visibility.NONE);
+		mapper.setVisibility(PropertyAccessor.FIELD,   JsonAutoDetect.Visibility.ANY);
+		mapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
 		mapper.registerModule(new Jdk8Module());
 		mapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
 	}

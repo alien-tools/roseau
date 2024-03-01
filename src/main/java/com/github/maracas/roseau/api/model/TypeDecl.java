@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
@@ -53,7 +52,6 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		this.enclosingType = enclosingType;
 	}
 
-	@JsonIgnore
 	@Override
 	public boolean isExported() {
 		boolean isExported = isPublic() || (isProtected() && !isEffectivelyFinal());
@@ -63,84 +61,68 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return isExported && isParentExported;
 	}
 
-	@JsonIgnore
 	public boolean isNested() {
 		return enclosingType != null;
 	}
 
-	@JsonIgnore
 	public boolean isClass() {
 		return false;
 	}
 
-	@JsonIgnore
 	public boolean isInterface() {
 		return false;
 	}
 
-	@JsonIgnore
 	public boolean isEnum() {
 		return false;
 	}
 
-	@JsonIgnore
 	public boolean isRecord() {
 		return false;
 	}
 
-	@JsonIgnore
 	public boolean isAnnotation() {
 		return false;
 	}
 
-	@JsonIgnore
 	public boolean isStatic() {
 		return modifiers.contains(Modifier.STATIC);
 	}
 
-	@JsonIgnore
 	public boolean isFinal() {
 		return modifiers.contains(Modifier.FINAL);
 	}
 
-	@JsonIgnore
 	public boolean isSealed() {
 		return modifiers.contains(Modifier.SEALED);
 	}
 
-	@JsonIgnore
 	public boolean isEffectivelyFinal() {
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
 		//        is explicitly marked as non-sealed
 		return (isFinal() || isSealed()) && !modifiers.contains(Modifier.NON_SEALED);
 	}
 
-	@JsonIgnore
 	public boolean isPublic() {
 		return AccessModifier.PUBLIC == visibility;
 	}
 
-	@JsonIgnore
 	public boolean isProtected() {
 		return AccessModifier.PROTECTED == visibility;
 	}
 
-	@JsonIgnore
 	public boolean isPrivate() {
 		return AccessModifier.PRIVATE == visibility;
 	}
 
-	@JsonIgnore
 	public boolean isPackagePrivate() {
 		return AccessModifier.PACKAGE_PRIVATE == visibility;
 	}
 
-	@JsonIgnore
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	@JsonIgnore
 	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return Stream.concat(
 			implementedInterfaces.stream(),
@@ -152,14 +134,12 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		).distinct().toList();
 	}
 
-	@JsonIgnore
 	public List<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces() {
 		return getAllSuperTypes().stream()
 			.filter(ref -> ref.getResolvedApiType().map(TypeDecl::isInterface).orElse(false))
 			.distinct().toList();
 	}
 
-	@JsonIgnore
 	public List<MethodDecl> getAllMethods() {
 		List<MethodDecl> allMethods = Stream.concat(
 			methods.stream(),
@@ -175,7 +155,6 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.toList();
 	}
 
-	@JsonIgnore
 	public List<FieldDecl> getAllFields() {
 		return Stream.concat(
 			fields.stream(),
