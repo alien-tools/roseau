@@ -22,7 +22,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -33,7 +33,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -44,7 +44,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -55,7 +55,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -66,7 +66,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -77,7 +77,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -88,7 +88,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -99,7 +99,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -110,7 +110,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -121,7 +121,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -134,7 +134,7 @@ class TypesExtractionTest {
 			}""");
 
 		assertClass(api, "A");
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -147,7 +147,7 @@ class TypesExtractionTest {
 			}""");
 
 		assertClass(api, "A");
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test

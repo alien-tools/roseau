@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.ExecutableDecl;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertClass;
@@ -38,7 +39,7 @@ class TypeReferencesExtractionTest {
 		var a = assertClass(api, "A");
 		var sup = a.getSuperClass();
 
-		var chars = a.getAllMethods().stream()
+		var chars = a.getAllMethods()
 			.filter(m -> "java.lang.String.chars".equals(m.getQualifiedName()))
 			.findFirst()
 			.get();

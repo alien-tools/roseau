@@ -21,6 +21,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A representation of all types contained in a given library, including those
@@ -67,10 +68,9 @@ public final class API {
 	 *
 	 * @return The list of exported {@link TypeDecl}
 	 */
-	public List<TypeDecl> getExportedTypes() {
-		return getAllTypes().stream()
-			.filter(Symbol::isExported)
-			.toList();
+	public Stream<TypeDecl> getExportedTypes() {
+		return getAllTypes()
+			.filter(Symbol::isExported);
 	}
 
 	/**
@@ -90,11 +90,10 @@ public final class API {
 	 *
 	 * @return The list of exported {@link ClassDecl}
 	 */
-	public List<ClassDecl> getExportedClasses() {
-		return getExportedTypes().stream()
+	public Stream<ClassDecl> getExportedClasses() {
+		return getExportedTypes()
 			.filter(ClassDecl.class::isInstance)
-			.map(ClassDecl.class::cast)
-			.toList();
+			.map(ClassDecl.class::cast);
 	}
 
 	/**
@@ -102,11 +101,10 @@ public final class API {
 	 *
 	 * @return The list of exported {@link InterfaceDecl}
 	 */
-	public List<InterfaceDecl> getExportedInterfaces() {
-		return getExportedTypes().stream()
+	public Stream<InterfaceDecl> getExportedInterfaces() {
+		return getExportedTypes()
 			.filter(InterfaceDecl.class::isInstance)
-			.map(InterfaceDecl.class::cast)
-			.toList();
+			.map(InterfaceDecl.class::cast);
 	}
 
 	/**
@@ -117,8 +115,8 @@ public final class API {
 	 * @see    #getExportedTypes() 
 	 */
 	@JsonProperty("allTypes")
-	public List<TypeDecl> getAllTypes() {
-		return allTypes.values().stream().toList();
+	public Stream<TypeDecl> getAllTypes() {
+		return allTypes.values().stream();
 	}
 
 	/**
@@ -174,7 +172,7 @@ public final class API {
 
 	@Override
 	public String toString() {
-		return getExportedTypes().stream()
+		return getExportedTypes()
 			.map(TypeDecl::toString)
 			.collect(Collectors.joining(System.lineSeparator()));
 	}

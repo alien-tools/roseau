@@ -76,7 +76,7 @@ final class Roseau implements Callable<Integer>  {
 		// API extraction
 		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
 		API api = extractor.extractAPI(model);
-		logger.info("Extracting API for {} took {}ms ({} types)", sources, sw.elapsed().toMillis(), api.getExportedTypes().size());
+		logger.info("Extracting API for {} took {}ms ({} types)", sources, sw.elapsed().toMillis(), api.getExportedTypes().count());
 
 		return api;
 	}

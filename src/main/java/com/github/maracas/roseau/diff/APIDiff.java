@@ -59,7 +59,7 @@ public class APIDiff {
 	}
 	
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().stream().parallel().forEach(t1 ->
+		v1.getExportedTypes().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
 				t2 -> {
@@ -89,7 +89,7 @@ public class APIDiff {
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
 		t1.getMethods().forEach(m1 -> {
-			Optional<MethodDecl> matchM2 = t2.getAllMethods().stream()
+			Optional<MethodDecl> matchM2 = t2.getAllMethods()
 				.filter(m -> m.hasSameSignature(m1))
 				.findFirst();
 
@@ -118,8 +118,8 @@ public class APIDiff {
 	}
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
-		t2.getAllMethods().stream()
-			.filter(m2 -> t1.getAllMethods().stream().noneMatch(m1 -> m1.hasSameSignature(m2)))
+		t2.getAllMethods()
+			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
 			.forEach(m2 -> {
 				if (t2.isInterface() && !m2.isDefault())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1);
@@ -138,10 +138,10 @@ public class APIDiff {
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		if (t1.getAllSuperTypes().stream()
+		if (t1.getAllSuperTypes()
 				.anyMatch(superType1 ->
 					superType1.getResolvedApiType().map(TypeDecl::isExported).orElse(false) &&
-					t2.getAllSuperTypes().stream()
+					t2.getAllSuperTypes()
 						.noneMatch(superType2 -> superType1.getQualifiedName().equals(superType2.getQualifiedName()))
 				))
 			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1);

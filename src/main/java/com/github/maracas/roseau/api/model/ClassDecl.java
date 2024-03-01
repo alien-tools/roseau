@@ -2,8 +2,6 @@ package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.util.Collection;
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,13 +35,13 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public boolean isCheckedException() {
-		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
+		List<String> superClasses = getAllSuperClasses().map(TypeReference::getQualifiedName).toList();
 
 		return "java.lang.Exception".equals(qualifiedName) || superClasses.contains("java.lang.Exception") && !isUncheckedException();
 	}
 
 	public boolean isUncheckedException() {
-		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
+		List<String> superClasses = getAllSuperClasses().map(TypeReference::getQualifiedName).toList();
 
 		return "java.lang.RuntimeException".equals(qualifiedName)
 			|| superClasses.contains("java.lang.RuntimeException");
@@ -57,31 +55,29 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	@Override
-	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
-		Stream<TypeReference<? extends TypeDecl>> interfaceHierarchy = super.getAllSuperTypes().stream();
-		Stream<TypeReference<? extends TypeDecl>> superClassHierarchy = Stream.concat(
-		getAllSuperClasses().stream(),
-		getAllSuperClasses().stream()
-			.map(TypeReference::getResolvedApiType)
-			.flatMap(Optional::stream)
-			.map(ClassDecl::getAllSuperTypes)
-			.flatMap(Collection::stream)
-		);
-
-		return Stream.concat(interfaceHierarchy, superClassHierarchy).toList();
+	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+		return Stream.concat(
+			super.getAllSuperTypes(),
+			getAllSuperClasses()
+				.flatMap(ref -> Stream.concat(
+					Stream.of(ref),
+					ref.getResolvedApiType()
+						.map(ClassDecl::getAllSuperTypes)
+						.orElseGet(Stream::empty)))
+		).distinct();
 	}
 
 	public Optional<TypeReference<ClassDecl>> getSuperClass() {
 		return Optional.ofNullable(superClass);
 	}
 
-	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
+	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
 		return superClass == null
-			? Collections.emptyList()
+			? Stream.empty()
 			: Stream.concat(
 				Stream.of(superClass),
-				superClass.getResolvedApiType().map(sup -> sup.getAllSuperClasses().stream()).orElse(Stream.empty())
-			).distinct().toList();
+				superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty)
+			).distinct();
 	}
 
 	public List<ConstructorDecl> getConstructors() {

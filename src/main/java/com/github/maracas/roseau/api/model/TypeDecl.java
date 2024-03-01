@@ -3,7 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -123,47 +123,43 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
-		return Stream.concat(
-			implementedInterfaces.stream(),
-			implementedInterfaces.stream()
-				.map(TypeReference::getResolvedApiType)
-				.flatMap(Optional::stream)
-				.map(TypeDecl::getAllSuperTypes)
-				.flatMap(Collection::stream)
-		).distinct().toList();
+	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+		return implementedInterfaces.stream()
+			.flatMap(ref -> Stream.concat(
+					Stream.of(ref),
+					ref.getResolvedApiType()
+						.map(TypeDecl::getAllSuperTypes)
+						.orElseGet(Stream::empty)
+			))
+			.distinct();
 	}
 
-	public List<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces() {
-		return getAllSuperTypes().stream()
+	public Stream<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces() {
+		return getAllSuperTypes()
 			.filter(ref -> ref.getResolvedApiType().map(TypeDecl::isInterface).orElse(false))
-			.distinct().toList();
+			.distinct();
 	}
 
-	public List<MethodDecl> getAllMethods() {
+	public Stream<MethodDecl> getAllMethods() {
 		List<MethodDecl> allMethods = Stream.concat(
 			methods.stream(),
-			getAllSuperTypes().stream()
+			getAllSuperTypes()
 				.map(TypeReference::getResolvedApiType)
-				.flatMap(Optional::stream)
-				.map(TypeDecl::getAllMethods)
-				.flatMap(Collection::stream)
+				.flatMap(t -> t.map(TypeDecl::getMethods).orElseGet(Collections::emptyList).stream())
 		).distinct().toList();
 
+		// Huge performance bottleneck
 		return allMethods.stream()
-			.filter(m -> allMethods.stream().noneMatch(m2 -> !m2.equals(m) && m2.isOverriding(m)))
-			.toList();
+			.filter(m1 -> allMethods.stream().noneMatch(m2 -> !m2.equals(m1) && m2.isOverriding(m1)));
 	}
 
-	public List<FieldDecl> getAllFields() {
+	public Stream<FieldDecl> getAllFields() {
 		return Stream.concat(
 			fields.stream(),
-			getAllSuperTypes().stream()
+			getAllSuperTypes()
 				.map(TypeReference::getResolvedApiType)
-				.flatMap(Optional::stream)
-				.map(TypeDecl::getAllFields)
-				.flatMap(Collection::stream)
-		).distinct().toList();
+				.flatMap(t -> t.map(TypeDecl::getFields).orElseGet(Collections::emptyList).stream())
+		).distinct();
 	}
 
 	/**
@@ -202,7 +198,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	public Optional<FieldDecl> findField(String name) {
-		return getAllFields().stream()
+		return getAllFields()
 			.filter(f -> f.getSimpleName().equals(name))
 			.findFirst();
 	}

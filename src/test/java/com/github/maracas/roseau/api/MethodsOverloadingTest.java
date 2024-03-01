@@ -62,9 +62,9 @@ class MethodsOverloadingTest {
 		assertThat(a.getMethods(), hasSize(2));
 		assertThat(c.getMethods(), hasSize(3));
 
-		assertThat(i.getAllMethods(), hasSize(1));
-		assertThat(a.getAllMethods(), hasSize(3));
-		assertThat(c.getAllMethods(), hasSize(4));
+		assertThat(i.getAllMethods().toList(), hasSize(1));
+		assertThat(a.getAllMethods().toList(), hasSize(3));
+		assertThat(c.getAllMethods().toList(), hasSize(4));
 
 		var factory = api.getFactory();
 		var intRef = factory.getTypeReferenceFactory().createPrimitiveTypeReference("int");

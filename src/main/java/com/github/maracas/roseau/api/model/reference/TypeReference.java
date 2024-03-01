@@ -55,7 +55,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public boolean isSubtypeOf(ITypeReference other) {
-		return equals(other) || getResolvedApiType().map(t -> t.getAllSuperTypes().contains(other)).orElse(false);
+		return equals(other)
+			|| getResolvedApiType().map(t -> t.getAllSuperTypes().anyMatch(sup -> sup.equals(other))).orElse(false);
 	}
 
 	public boolean isSameHierarchy(TypeReference<T> other) {
