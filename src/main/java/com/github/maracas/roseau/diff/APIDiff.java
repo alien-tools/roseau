@@ -59,7 +59,7 @@ public class APIDiff {
 	}
 	
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().stream().parallel().forEach(t1 -> {
+		v1.getExportedTypes().stream().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
 				t2 -> {
@@ -70,21 +70,21 @@ public class APIDiff {
 				},
 				// Type has been removed
 				() -> bc(BreakingChangeKind.TYPE_REMOVED, t1)
-			);
-		});
+			)
+		);
 
 		return breakingChanges;
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
-		t1.getFields().forEach(f1 -> {
+		t1.getFields().forEach(f1 ->
 			t2.findField(f1.getSimpleName()).ifPresentOrElse(
 				// There is a matching field
 				f2 -> diffField(f1, f2),
 				// The field has been removed
 				() -> bc(BreakingChangeKind.FIELD_REMOVED, f1)
-			);
-		});
+			)
+		);
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
@@ -95,7 +95,7 @@ public class APIDiff {
 
 			matchM2.ifPresentOrElse(
 				// There is a matching method
-				m2 -> diffMethod(t1, m1, m2),
+				m2 -> diffMethod(m1, m2),
 				// The method has been removed
 				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1)
 			);
@@ -136,13 +136,15 @@ public class APIDiff {
 		if (!t1.getClass().equals(t2.getClass()))
 			bc(BreakingChangeKind.CLASS_TYPE_CHANGED, t1);
 
-		// Deleted super-interfaces
-		if (t1.getImplementedInterfaces().stream()
-				.anyMatch(intf1 ->
-					t2.getImplementedInterfaces().stream()
-						.noneMatch(intf2 -> intf1.getQualifiedName().equals(intf2.getQualifiedName()))
+		// If a supertype that was exported has been removed,
+		// it may have been used in client code for casts
+		if (t1.getAllSuperTypes().stream()
+				.anyMatch(superType1 ->
+					superType1.getResolvedApiType().map(TypeDecl::isExported).orElse(false) &&
+					t2.getAllSuperTypes().stream()
+						.noneMatch(superType2 -> superType1.getQualifiedName().equals(superType2.getQualifiedName()))
 				))
-			bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, t1);
+			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1);
 
 		diffFormalTypeParameters(t1, t2);
 
@@ -169,9 +171,6 @@ public class APIDiff {
 		if (c1.isUncheckedException() && c2.isCheckedException())
 			bc(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, c1);
 
-		if (c1.getSuperClass().isPresent() && c2.getSuperClass().isEmpty())
-			bc(BreakingChangeKind.SUPERCLASS_MODIFIED_INCOMPATIBLE, c1);
-
 		diffConstructors(c1, c2);
 	}
 
@@ -192,7 +191,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, f1);
 	}
 
-	private void diffMethod(TypeDecl t1, MethodDecl m1, MethodDecl m2) {
+	private void diffMethod(MethodDecl m1, MethodDecl m2) {
 		if (!m1.isFinal() && m2.isFinal())
 			bc(BreakingChangeKind.METHOD_NOW_FINAL, m1);
 
@@ -371,7 +370,9 @@ public class APIDiff {
 	}
 
 	private void bc(BreakingChangeKind kind, Symbol impactedSymbol) {
-		breakingChanges.add(new BreakingChange(kind, impactedSymbol));
+		BreakingChange bc = new BreakingChange(kind, impactedSymbol);
+		if (!breakingChanges.contains(bc))
+			breakingChanges.add(bc);
 	}
 
 	/**

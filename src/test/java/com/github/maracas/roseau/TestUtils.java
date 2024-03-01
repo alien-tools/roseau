@@ -30,15 +30,14 @@ public class TestUtils {
 	}
 
 	public static void assertBC(String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
-		Optional<BreakingChange> matches = bcs.stream()
+		List<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
 				   kind == bc.kind()
 				&& line == bc.impactedSymbol().getLocation().line()
 				&& symbol.equals(bc.impactedSymbol().getQualifiedName())
-			)
-			.findFirst();
+			).toList();
 
-		if (matches.isEmpty()) {
+		if (matches.size() != 1) {
 			String desc = "[%s, %s, %d]".formatted(symbol, kind, line);
 			String found = bcs.stream()
 				.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))

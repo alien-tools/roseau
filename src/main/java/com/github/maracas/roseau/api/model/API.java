@@ -176,7 +176,7 @@ public final class API {
 	public String toString() {
 		return getExportedTypes().stream()
 			.map(TypeDecl::toString)
-			.collect(Collectors.joining("\n"));
+			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 	@Override

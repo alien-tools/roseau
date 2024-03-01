@@ -76,7 +76,7 @@ final class Roseau implements Callable<Integer>  {
 		// API extraction
 		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
 		API api = extractor.extractAPI(model);
-		logger.info("Extracting API for {} took {}ms", sources, sw.elapsed().toMillis());
+		logger.info("Extracting API for {} took {}ms ({} types)", sources, sw.elapsed().toMillis(), api.getExportedTypes().size());
 
 		return api;
 	}
@@ -95,7 +95,7 @@ final class Roseau implements Callable<Integer>  {
 			Stopwatch sw = Stopwatch.createStarted();
 			APIDiff diff = new APIDiff(apiV1, apiV2);
 			List<BreakingChange> bcs = diff.diff();
-			logger.info("API diff took {}ms", sw.elapsed().toMillis());
+			logger.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
 			diff.writeReport(report);
 			return bcs;

@@ -53,7 +53,7 @@ class ClassNowCheckedExceptionTest {
 		String v1 = "public class A extends java.io.IOException {}";
 		String v2 = "public class A extends Exception {}";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertNoBC(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, buildDiff(v1, v2));
 	}
 
 	@Test

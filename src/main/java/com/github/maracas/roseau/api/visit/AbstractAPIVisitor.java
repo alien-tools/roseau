@@ -107,9 +107,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	}
 
 	public Visit symbol(Symbol it) {
-		return () -> {
-			it.getAnnotations().forEach(ann -> $(ann).visit());
-		};
+		return () -> it.getAnnotations().forEach(ann -> $(ann).visit());
 	}
 
 	public Visit typeDecl(TypeDecl it) {
@@ -132,8 +130,6 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	}
 
 	public Visit annotation(Annotation it) {
-		return () -> {
-			$(it.actualAnnotation()).visit();
-		};
+		return () -> $(it.actualAnnotation()).visit();
 	}
 }
