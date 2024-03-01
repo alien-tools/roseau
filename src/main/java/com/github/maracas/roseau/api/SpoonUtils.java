@@ -41,12 +41,18 @@ public final class SpoonUtils {
 		if (!location.toFile().exists())
 			throw new IllegalArgumentException(location + " does not exist");
 
-		Launcher launcher;
-		if (Files.exists(location.resolve("pom.xml")))
-			launcher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
-		else {
-			launcher = new Launcher();
-			launcher.addInputResource(location.toString());
+		// Default launcher
+		Launcher launcher = new Launcher();
+		launcher.addInputResource(location.toString());
+		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
+
+		// If we manage to successfully parse it as a Maven project, use that instead
+		if (Files.exists(location.resolve("pom.xml"))) {
+			MavenLauncher mavenLauncher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
+
+			if (!mavenLauncher.getPomFile().getSourceDirectories().isEmpty()) {
+				launcher = mavenLauncher;
+			}
 		}
 
 		// Ignore missing types/classpath related errors
@@ -59,7 +65,6 @@ public final class SpoonUtils {
 		launcher.getEnvironment().setCommentEnabled(false);
 		// Set Java version
 		// Note: even when using the MavenLauncher, it's sometimes not properly inferred, better be safe
-		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
 
 		// Interruptible launcher: this is dirty.
 		// Spoon's compiler does two lengthy things: compile units with JDTs,
