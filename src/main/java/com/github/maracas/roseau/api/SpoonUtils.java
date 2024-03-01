@@ -44,21 +44,23 @@ public final class SpoonUtils {
 		// Default launcher
 		Launcher launcher = new Launcher();
 		launcher.addInputResource(location.toString());
-		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
 
 		// If we manage to successfully parse it as a Maven project, use that instead
 		if (Files.exists(location.resolve("pom.xml"))) {
 			MavenLauncher mavenLauncher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
 
-			if (!mavenLauncher.getPomFile().getSourceDirectories().isEmpty()) {
-				launcher = mavenLauncher;
-			}
+			// Fallback if we don't find those
+			if (mavenLauncher.getPomFile().getSourceDirectories().isEmpty())
+				launcher.addInputResource(location.toString());
+
+			launcher = mavenLauncher;
 		}
 
 		// Ignore missing types/classpath related errors
 		launcher.getEnvironment().setNoClasspath(true);
 		// Proceed even if we find the same type twice; affects the precision of the result
 		launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
+		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
 		// Ignore files with syntax/JLS violations and proceed
 		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
 		// Ignore comments
