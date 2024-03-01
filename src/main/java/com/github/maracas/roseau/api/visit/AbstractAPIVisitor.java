@@ -133,7 +133,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	public Visit annotation(Annotation it) {
 		return () -> {
-			$(it.getActualAnnotation()).visit();
+			$(it.actualAnnotation()).visit();
 		};
 	}
 }

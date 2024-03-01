@@ -20,7 +20,7 @@ class AnnotationsExtractionTest {
 		var c = assertClass(api, "C");
 
 		assertThat(c.getAnnotations(), hasSize(1));
-		assertThat(c.getAnnotations().getFirst().getActualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
+		assertThat(c.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
 	}
 
 	@Test
@@ -34,7 +34,7 @@ class AnnotationsExtractionTest {
 		var c = assertClass(api, "C");
 
 		assertThat(c.getAnnotations(), hasSize(1));
-		assertThat(c.getAnnotations().getFirst().getActualAnnotation().getQualifiedName(), is(equalTo("A")));
+		assertThat(c.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
 	}
 
 	@Test
@@ -48,7 +48,7 @@ class AnnotationsExtractionTest {
 		var m = assertMethod(c, "m");
 
 		assertThat(m.getAnnotations(), hasSize(1));
-		assertThat(m.getAnnotations().getFirst().getActualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
+		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
 	}
 
 	@Test
@@ -64,7 +64,7 @@ class AnnotationsExtractionTest {
 		var m = assertMethod(c, "m");
 
 		assertThat(m.getAnnotations(), hasSize(1));
-		assertThat(m.getAnnotations().getFirst().getActualAnnotation().getQualifiedName(), is(equalTo("A")));
+		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
 	}
 
 	@Test
@@ -78,7 +78,7 @@ class AnnotationsExtractionTest {
 		var f = assertField(c, "f");
 
 		assertThat(f.getAnnotations(), hasSize(1));
-		assertThat(f.getAnnotations().getFirst().getActualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
+		assertThat(f.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
 	}
 
 	@Test
@@ -94,6 +94,6 @@ class AnnotationsExtractionTest {
 		var f = assertField(c, "f");
 
 		assertThat(f.getAnnotations(), hasSize(1));
-		assertThat(f.getAnnotations().getFirst().getActualAnnotation().getQualifiedName(), is(equalTo("A")));
+		assertThat(f.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
 	}
 }

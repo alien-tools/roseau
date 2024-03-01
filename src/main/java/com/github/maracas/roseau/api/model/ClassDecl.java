@@ -39,12 +39,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return true;
 	}
 
+	@JsonIgnore
 	public boolean isCheckedException() {
 		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
 
 		return "java.lang.Exception".equals(qualifiedName) || superClasses.contains("java.lang.Exception") && !isUncheckedException();
 	}
 
+	@JsonIgnore
 	public boolean isUncheckedException() {
 		List<String> superClasses = getAllSuperClasses().stream().map(TypeReference::getQualifiedName).toList();
 
