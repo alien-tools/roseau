@@ -6,11 +6,10 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
 import org.junit.jupiter.api.Test;
-import spoon.reflect.CtModel;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -20,16 +19,15 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class JSONSerializationTest {
 	@Test
 	void api_json_round_trip() throws IOException {
-		Path sources = Path.of("/home/dig/repositories/maracas/forges/");
-		CtModel m = SpoonUtils.buildModel(sources, Duration.ofSeconds(10));
+		Path sources = Path.of("src/test/resources/api-showcase");
 		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
-		API orig = extractor.extractAPI(m);
+		API orig = extractor.extractAPI(sources);
 
-		Path p = Path.of("roundtrip.json");
-		orig.writeJson(p);
+		Path json = Path.of("roundtrip.json");
+		orig.writeJson(json);
 
-		API res = API.fromJson(p, orig.getFactory());
-		res.writeJson(Path.of("roundtrip2.json"));
+		API res = API.fromJson(json, orig.getFactory());
+		Files.delete(json);
 
 		assertThat(res, is(equalTo(orig)));
 
