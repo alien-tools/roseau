@@ -55,7 +55,7 @@ public class SpoonAPIFactory {
 	private final TypeReferenceFactory typeReferenceFactory;
 
 	public SpoonAPIFactory(TypeFactory typeFactory) {
-		this.typeFactory = typeFactory;
+		this.typeFactory = Objects.requireNonNull(typeFactory);
 		this.typeReferenceFactory = new SpoonTypeReferenceFactory(this);
 	}
 
@@ -65,7 +65,7 @@ public class SpoonAPIFactory {
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {
 		return switch (typeRef) {
-			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getComponentType()));
+			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getArrayType()), arrayRef.getDimensionCount());
 			case CtWildcardReference wcRef -> typeReferenceFactory.createWildcardTypeReference(convertCtTypeParameterBounds(wcRef.getBoundingType()), wcRef.isUpper());
 			case CtTypeParameterReference tpRef -> typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName());
 			case CtTypeReference<?> ref when ref.isPrimitive() -> typeReferenceFactory.createPrimitiveTypeReference(ref.getQualifiedName());

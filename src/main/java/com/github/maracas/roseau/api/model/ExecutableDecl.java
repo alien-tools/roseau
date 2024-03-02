@@ -63,6 +63,9 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			ITypeReference otherType = parameterTypes.get(i);
 			ITypeReference thisType = parameters.get(i).type();
 
+			// otherType.equals(thisType) wouldn't work as it also compares
+			// type parameters and we're just comparing (erased) signatures here
+
 			if (!otherType.getClass().equals(thisType.getClass()))
 				return false;
 

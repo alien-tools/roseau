@@ -367,50 +367,58 @@ class TypeMemberExtractionTest {
 		assertThat(f.getType(), is(instanceOf(ArrayTypeReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("int[]")));
 
-		if (f.getType() instanceof ArrayTypeReference(var componentType))
+		if (f.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
 			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
+			assertThat(dimension, is(equalTo(1)));
+		}
 
 		assertThat(m.getType(), is(instanceOf(ArrayTypeReference.class)));
 		assertThat(m.getType().getQualifiedName(), is(equalTo("int[]")));
 
-		if (m.getType() instanceof ArrayTypeReference(var componentType))
+		if (m.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
 			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
+			assertThat(dimension, is(equalTo(1)));
+		}
 	}
 
 	@Test
 	void multidimensional_array_members() {
 		var api = buildAPI("""
 			public interface A {
-				int[][] f = {{}};
+				String[][] f1 = {{""}};
+				int[][] f2 = {{}};
 				int[][] m();
 			}""");
 
 		var a = assertInterface(api, "A");
-		var f = assertField(a, "f");
+		var f1 = assertField(a, "f1");
+		var f2 = assertField(a, "f2");
 		var m = assertMethod(a, "m");
 
-		assertThat(f.getType(), is(instanceOf(ArrayTypeReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("int[][]")));
+		assertThat(f1.getType(), is(instanceOf(ArrayTypeReference.class)));
+		assertThat(f1.getType().getQualifiedName(), is(equalTo("java.lang.String[][]")));
+		assertThat(f2.getType(), is(instanceOf(ArrayTypeReference.class)));
+		assertThat(f2.getType().getQualifiedName(), is(equalTo("int[][]")));
 
-		if (f.getType() instanceof ArrayTypeReference(var componentType)) {
-			assertThat(componentType, is(instanceOf(ArrayTypeReference.class)));
-			assertThat(componentType.getQualifiedName(), is(equalTo("int[]")));
-			if (componentType instanceof ArrayTypeReference(var subcomponentType)) {
-				assertThat(subcomponentType, is(instanceOf(PrimitiveTypeReference.class)));
-				assertThat(subcomponentType.getQualifiedName(), is(equalTo("int")));
-			}
+		if (f1.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
+			assertThat(componentType, is(instanceOf(TypeReference.class)));
+			assertThat(dimension, is(equalTo(2)));
+			assertThat(componentType.getQualifiedName(), is(equalTo("java.lang.String")));
+		}
+
+		if (f2.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
+			assertThat(componentType, is(instanceOf(PrimitiveTypeReference.class)));
+			assertThat(dimension, is(equalTo(2)));
+			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
 		}
 
 		assertThat(m.getType(), is(instanceOf(ArrayTypeReference.class)));
 		assertThat(m.getType().getQualifiedName(), is(equalTo("int[][]")));
 
-		if (m.getType() instanceof ArrayTypeReference(var componentType)) {
-			assertThat(componentType, is(instanceOf(ArrayTypeReference.class)));
-			assertThat(componentType.getQualifiedName(), is(equalTo("int[]")));
-			if (componentType instanceof ArrayTypeReference(var subcomponentType)) {
-				assertThat(subcomponentType, is(instanceOf(PrimitiveTypeReference.class)));
-				assertThat(subcomponentType.getQualifiedName(), is(equalTo("int")));
-			}
+		if (m.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
+			assertThat(componentType, is(instanceOf(PrimitiveTypeReference.class)));
+			assertThat(dimension, is(equalTo(2)));
+			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
 		}
 	}
 

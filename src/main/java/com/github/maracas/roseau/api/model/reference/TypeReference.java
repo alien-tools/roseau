@@ -8,6 +8,7 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
@@ -19,16 +20,14 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	@JsonCreator
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
-		this.qualifiedName = qualifiedName;
-		this.typeArguments = typeArguments;
+		this.qualifiedName = Objects.requireNonNull(qualifiedName);
+		this.typeArguments = Objects.requireNonNull(typeArguments);
 	}
 
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
 		this(qualifiedName, typeArguments);
-		this.factory = factory;
+		this.factory = Objects.requireNonNull(factory);
 	}
-
-	public SpoonAPIFactory getFactory() { return factory; }
 
 	@Override
 	public String getQualifiedName() {
@@ -39,23 +38,27 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		return typeArguments;
 	}
 
+	public SpoonAPIFactory getFactory() { return factory; }
+
 	public void setFactory(SpoonAPIFactory factory) {
-		this.factory = factory;
+		this.factory = Objects.requireNonNull(factory);
 	}
 
 	public Optional<T> getResolvedApiType() {
 		if (resolvedApiType == null && factory != null)
+			// Safe as long as we don't have two types with same FQN of different kinds (e.g. class vs interface)
 			resolvedApiType = (T) factory.convertCtType(qualifiedName);
 
 		return Optional.ofNullable(resolvedApiType);
 	}
 
 	public void setResolvedApiType(T type) {
-		resolvedApiType = type;
+		resolvedApiType = Objects.requireNonNull(type);
 	}
 
 	public boolean isSubtypeOf(ITypeReference other) {
 		return equals(other)
+			|| "java.lang.Object".equals(other.getQualifiedName())
 			|| getResolvedApiType().map(t -> t.getAllSuperTypes().anyMatch(sup -> sup.equals(other))).orElse(false);
 	}
 
@@ -73,7 +76,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	@Override
 	public String toString() {
-		return qualifiedName;
+		return "%s<%s>".formatted(qualifiedName,
+			typeArguments.stream().map(Object::toString).collect(Collectors.joining(",")));
 	}
 
 	@Override

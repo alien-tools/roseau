@@ -1,18 +1,24 @@
 package com.github.maracas.roseau.api.model.reference;
 
-public record PrimitiveTypeReference(String name) implements ITypeReference {
+import java.util.Objects;
+
+public record PrimitiveTypeReference(String qualifiedName) implements ITypeReference {
+	public PrimitiveTypeReference {
+		Objects.requireNonNull(qualifiedName);
+	}
+
 	@Override
 	public String getQualifiedName() {
-		return name;
+		return qualifiedName;
 	}
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return false; // FIXME
+		return false;
 	}
 
 	@Override
 	public String toString() {
-		return name;
+		return qualifiedName;
 	}
 }

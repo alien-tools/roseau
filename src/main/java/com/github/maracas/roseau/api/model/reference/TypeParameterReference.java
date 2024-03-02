@@ -1,9 +1,9 @@
 package com.github.maracas.roseau.api.model.reference;
 
-public record TypeParameterReference(String name) implements ITypeReference {
+public record TypeParameterReference(String qualifiedName) implements ITypeReference {
 	@Override
 	public String getQualifiedName() {
-		return name;
+		return qualifiedName;
 	}
 
 	@Override
@@ -13,6 +13,6 @@ public record TypeParameterReference(String name) implements ITypeReference {
 
 	@Override
 	public String toString() {
-		return name;
+		return qualifiedName;
 	}
 }
