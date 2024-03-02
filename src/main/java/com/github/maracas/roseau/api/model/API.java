@@ -9,9 +9,7 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
-import com.github.maracas.roseau.api.model.reference.TypeReference;
-import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
-import com.github.maracas.roseau.api.visit.Visit;
+import com.github.maracas.roseau.api.visit.APITypeResolver;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -51,16 +49,7 @@ public final class API {
 
 		// Whenever we create an API instance, we need to make sure to resolve within-library types and to pass
 		// the factory around to lazily resolve type references later
-		new AbstractAPIVisitor() {
-			@Override
-			public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-				return () -> {
-					it.setFactory(factory);
-					if (allTypes.containsKey(it.getQualifiedName()))
-						it.setResolvedApiType((U) allTypes.get(it.getQualifiedName()));
-				};
-			}
-		}.$(this).visit();
+		new APITypeResolver(this, factory).resolve();
 	}
 
 	/**

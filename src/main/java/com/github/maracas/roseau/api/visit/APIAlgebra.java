@@ -20,6 +20,9 @@ import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
+/**
+ * Eating our own dog food with <a href="https://dx.doi.org/10.1109/MODELS.2017.23">Revisitors</a> ;)
+ */
 public interface APIAlgebra<T> {
 	T api(API it);
 	T classDecl(ClassDecl it);
