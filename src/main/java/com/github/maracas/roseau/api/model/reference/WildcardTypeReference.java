@@ -10,10 +10,10 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return false;
+		return false; // FIXME
 	}
 
 	public boolean isUnbounded() {
-		return bounds().size() == 1 && "java.lang.Object".equals(bounds().getFirst().getQualifiedName());
+		return upper() && bounds().size() == 1 && "java.lang.Object".equals(bounds().getFirst().getQualifiedName());
 	}
 }

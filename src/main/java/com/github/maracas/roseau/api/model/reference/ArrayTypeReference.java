@@ -8,7 +8,7 @@ public record ArrayTypeReference(ITypeReference componentType) implements ITypeR
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return false;
+		return componentType.isSubtypeOf(other);
 	}
 
 	@Override

@@ -8,7 +8,7 @@ public record PrimitiveTypeReference(String name) implements ITypeReference {
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return false;
+		return false; // FIXME
 	}
 
 	@Override

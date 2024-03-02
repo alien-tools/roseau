@@ -5,7 +5,7 @@ import static com.github.maracas.roseau.diff.changes.BreakingChangeNature.DELETI
 import static com.github.maracas.roseau.diff.changes.BreakingChangeNature.MUTATION;
 
 /**
- * Enumerates the source and binary breaking changes taken into account.
+ * Kinds of breaking changes that can be detected.
  */
 public enum BreakingChangeKind {
 	TYPE_REMOVED(DELETION),

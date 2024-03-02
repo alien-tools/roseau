@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.api.model.reference;
 
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
+import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 
 import java.util.List;

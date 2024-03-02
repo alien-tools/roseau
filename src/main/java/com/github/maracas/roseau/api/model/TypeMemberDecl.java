@@ -6,15 +6,20 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A member of a type declaration, either a {@link FieldDecl} or {@link ExecutableDecl}.
+ * Type members have a type and belong to some containing type.
+ */
 public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl {
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
-	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
-	                         SourceLocation location, TypeReference<TypeDecl> containingType, ITypeReference type) {
+	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                         List<Annotation> annotations, SourceLocation location,
+	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
-		this.containingType = containingType;
-		this.type = type;
+		this.containingType = Objects.requireNonNull(containingType);
+		this.type = Objects.requireNonNull(type);
 	}
 
 	@Override
@@ -29,9 +34,7 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 
 	@Override
 	public boolean isExported() {
-		return (isPublic()
-			|| (isProtected() && !containingType.getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(true)))
-			&& containingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true);
+		return containingType.isExported() && (isPublic() || (isProtected() && !containingType.isEffectivelyFinal()));
 	}
 
 	@Override
@@ -60,11 +63,11 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 		if (o == null || getClass() != o.getClass()) return false;
 		if (!super.equals(o)) return false;
 		TypeMemberDecl other = (TypeMemberDecl) o;
-		return Objects.equals(type, other.type);
+		return Objects.equals(type, other.type) && Objects.equals(containingType, other.containingType);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), type);
+		return Objects.hash(super.hashCode(), type, containingType);
 	}
 }

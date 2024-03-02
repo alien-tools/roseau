@@ -2,31 +2,30 @@ package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+/**
+ * A class declaration is a {@link TypeDecl} with an optional superclass and list of {@link ConstructorDecl}.
+ */
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
-	/**
-	 * The superclass as a type reference (null if there isn't any).
-	 */
 	protected final TypeReference<ClassDecl> superClass;
 
-	/**
-	 * List of constructors declared within the class.
-	 */
 	protected final List<ConstructorDecl> constructors;
 
-	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations,
-	                 SourceLocation location, List<TypeReference<InterfaceDecl>> implementedInterfaces,
+	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                 List<Annotation> annotations, SourceLocation location,
+	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                 TypeReference<TypeDecl> enclosingType,
-	                 TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
+	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
+	                 List<ConstructorDecl> constructors) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		this.superClass = superClass;
-		this.constructors = constructors;
+		this.constructors = Objects.requireNonNull(constructors);
 	}
 
 	@Override
@@ -37,14 +36,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	public boolean isCheckedException() {
 		List<String> superClasses = getAllSuperClasses().map(TypeReference::getQualifiedName).toList();
 
-		return "java.lang.Exception".equals(qualifiedName) || superClasses.contains("java.lang.Exception") && !isUncheckedException();
+		return "java.lang.Exception".equals(qualifiedName)
+			|| (superClasses.contains("java.lang.Exception") && !isUncheckedException());
 	}
 
 	public boolean isUncheckedException() {
 		List<String> superClasses = getAllSuperClasses().map(TypeReference::getQualifiedName).toList();
 
-		return "java.lang.RuntimeException".equals(qualifiedName)
-			|| superClasses.contains("java.lang.RuntimeException");
+		return "java.lang.RuntimeException".equals(qualifiedName) || superClasses.contains("java.lang.RuntimeException");
 	}
 
 	@Override
@@ -67,30 +66,31 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		).distinct();
 	}
 
-	public Optional<TypeReference<ClassDecl>> getSuperClass() {
-		return Optional.ofNullable(superClass);
-	}
-
 	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
 		return superClass == null
 			? Stream.empty()
 			: Stream.concat(
 				Stream.of(superClass),
 				superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty)
-			).distinct();
+			);
+	}
+
+	public Optional<TypeReference<ClassDecl>> getSuperClass() {
+		return Optional.ofNullable(superClass);
 	}
 
 	public List<ConstructorDecl> getConstructors() {
-		return constructors;
+		return Collections.unmodifiableList(constructors);
 	}
 
 	@Override
 	public String toString() {
 		return """
-			class %s [%s] (%s)
+			%s class %s
 			  %s
 			  %s
-			""".formatted(qualifiedName, visibility, enclosingType, fields, methods);
+			  %s
+			""".formatted(visibility, qualifiedName, constructors, fields, methods);
 	}
 
 	@Override

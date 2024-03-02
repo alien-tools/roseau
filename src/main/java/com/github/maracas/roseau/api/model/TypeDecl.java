@@ -1,17 +1,21 @@
 package com.github.maracas.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Represents a type declaration in the library.
- * This class extends the {@link Symbol} class and contains information about the type's kind, fields, methods, constructors, and more.
+ * Represents a type declaration in the API, either a {@link ClassDecl}, {@link InterfaceDecl}
+ * or {@link AnnotationDecl}.
+ * Type declarations may implement interfaces, declare formal type parameters, contain fields and methods,
+ * and be nested within other type declarations.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "typeKind")
 public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl, AnnotationDecl {
@@ -34,29 +38,23 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	protected final TypeReference<TypeDecl> enclosingType;
 
-	protected TypeDecl(String qualifiedName,
-	                   AccessModifier visibility,
-	                   List<Modifier> modifiers,
-										 List<Annotation> annotations,
-	                   SourceLocation location,
+	protected TypeDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                   List<Annotation> annotations, SourceLocation location,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                   List<FormalTypeParameter> formalTypeParameters,
-	                   List<FieldDecl> fields,
-	                   List<MethodDecl> methods,
+	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
 	                   TypeReference<TypeDecl> enclosingType) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
-		this.implementedInterfaces = implementedInterfaces;
-		this.formalTypeParameters = formalTypeParameters;
-		this.fields = fields;
-		this.methods = methods;
+		this.implementedInterfaces = Objects.requireNonNull(implementedInterfaces);
+		this.formalTypeParameters = Objects.requireNonNull(formalTypeParameters);
+		this.fields = Objects.requireNonNull(fields);
+		this.methods = Objects.requireNonNull(methods);
 		this.enclosingType = enclosingType;
 	}
 
 	@Override
 	public boolean isExported() {
 		boolean isExported = isPublic() || (isProtected() && !isEffectivelyFinal());
-		boolean isParentExported = !isNested()
-			|| enclosingType.getResolvedApiType().map(TypeDecl::isExported).orElse(true);
+		boolean isParentExported = !isNested() || enclosingType.isExported();
 
 		return isExported && isParentExported;
 	}
@@ -97,10 +95,18 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return modifiers.contains(Modifier.SEALED);
 	}
 
+	public boolean isNonSealed() { return modifiers.contains(Modifier.NON_SEALED); }
+
+	/**
+	 * Checks whether this type is effectively final, i.e. if it cannot be extended regardless
+	 * of its {@code final} modifier.
+	 *
+	 * @return whether the type is effectively final
+	 */
 	public boolean isEffectivelyFinal() {
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
-		//        is explicitly marked as non-sealed
-		return (isFinal() || isSealed()) && !modifiers.contains(Modifier.NON_SEALED);
+		//        is explicitly marked as non-sealed...
+		return (isFinal() || isSealed()) && !isNonSealed();
 	}
 
 	public boolean isPublic() {
@@ -123,6 +129,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
+	/**
+	 * Returns every super type in the hierarchy starting from this type, excluded.
+	 */
 	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return implementedInterfaces.stream()
 			.flatMap(ref -> Stream.concat(
@@ -134,12 +143,18 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.distinct();
 	}
 
+	/**
+	 * Returns every interface implemented by this type, directly or indirectly, this type excluded.
+	 */
 	public Stream<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces() {
 		return getAllSuperTypes()
 			.filter(ref -> ref.getResolvedApiType().map(TypeDecl::isInterface).orElse(false))
 			.distinct();
 	}
 
+	/**
+	 * Returns all methods that can be invoked on this type, including those declared in its super types.
+	 */
 	public Stream<MethodDecl> getAllMethods() {
 		List<MethodDecl> allMethods = Stream.concat(
 			methods.stream(),
@@ -153,6 +168,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.filter(m1 -> allMethods.stream().noneMatch(m2 -> !m2.equals(m1) && m2.isOverriding(m1)));
 	}
 
+	/**
+	 * Returns all fields declared by this type, including those of its super types.
+	 */
 	public Stream<FieldDecl> getAllFields() {
 		return Stream.concat(
 			fields.stream(),
@@ -162,35 +180,20 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		).distinct();
 	}
 
-	/**
-	 * Retrieves the superinterfaces of the type as typeDeclarations.
-	 *
-	 * @return Type's superinterfaces as typeDeclarations
-	 */
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
-		return implementedInterfaces;
+		return Collections.unmodifiableList(implementedInterfaces);
 	}
 
-	/**
-	 * Retrieves the list of formal type parameters for generic types.
-	 *
-	 * @return List of formal type parameters
-	 */
 	public List<FormalTypeParameter> getFormalTypeParameters() {
-		return formalTypeParameters;
+		return Collections.unmodifiableList(formalTypeParameters);
 	}
 
-	/**
-	 * Retrieves the list of fields declared within the type.
-	 *
-	 * @return List of fields declared within the type
-	 */
 	public List<FieldDecl> getFields() {
-		return fields;
+		return Collections.unmodifiableList(fields);
 	}
 
 	public List<MethodDecl> getMethods() {
-		return methods;
+		return Collections.unmodifiableList(methods);
 	}
 
 	public Optional<TypeReference<TypeDecl>> getEnclosingType() {
@@ -203,6 +206,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
+	public boolean isSubtypeOf(ITypeReference other) {
+		return getAllSuperTypes().anyMatch(sup -> Objects.equals(sup, other));
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
@@ -212,11 +219,12 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return Objects.equals(implementedInterfaces, typeDecl.implementedInterfaces)
 			&& Objects.equals(formalTypeParameters, typeDecl.formalTypeParameters)
 			&& Objects.equals(fields, typeDecl.fields)
-			&& Objects.equals(methods, typeDecl.methods);
+			&& Objects.equals(methods, typeDecl.methods)
+			&& Objects.equals(enclosingType, typeDecl.enclosingType);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods);
+		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 	}
 }

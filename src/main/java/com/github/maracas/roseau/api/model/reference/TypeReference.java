@@ -2,7 +2,7 @@ package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
+import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 
 import java.util.List;
@@ -61,6 +61,14 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	public boolean isSameHierarchy(TypeReference<T> other) {
 		return isSubtypeOf(other) || other.isSubtypeOf(this);
+	}
+
+	public boolean isExported() {
+		return getResolvedApiType().map(TypeDecl::isExported).orElse(false);
+	}
+
+	public boolean isEffectivelyFinal() {
+		return getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(false);
 	}
 
 	@Override

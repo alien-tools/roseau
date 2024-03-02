@@ -1,14 +1,12 @@
 package com.github.maracas.roseau.api.model;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
 /**
- * This abstract class represents a symbol in the library, which can be a type,
- * a method, a constructor, or a field.
- * <p>
- * It provides information about the symbol's qualified qualifiedName, visibility, modifiers,
- * and position within the source code.
+ * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}.
+ * Symbols have a fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated.
  */
 public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
@@ -32,67 +30,41 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	protected final List<Annotation> annotations;
 
 	/**
-	 * The exact location of the symbol
+	 * The exact physical location of the symbol
 	 */
 	protected final SourceLocation location;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, List<Annotation> annotations, SourceLocation location) {
-		this.qualifiedName = qualifiedName;
-		this.visibility = visibility;
-		this.modifiers = modifiers;
-		this.annotations = annotations;
-		this.location = location;
+	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                 List<Annotation> annotations, SourceLocation location) {
+		this.qualifiedName = Objects.requireNonNull(qualifiedName);
+		this.visibility = Objects.requireNonNull(visibility);
+		this.modifiers = Objects.requireNonNull(modifiers);
+		this.annotations = Objects.requireNonNull(annotations);
+		this.location = Objects.requireNonNull(location);
 	}
 
-	/**
-	 * Retrieves the qualifiedName of the symbol.
-	 *
-	 * @return The symbol's qualifiedName
-	 */
 	public String getQualifiedName() {
 		return qualifiedName;
 	}
 
-	/**
-	 * Retrieves the visibility of the symbol.
-	 *
-	 * @return The symbol's visibility
-	 */
 	public AccessModifier getVisibility() {
 		return visibility;
 	}
 
-	/**
-	 * Checks whether the symbol is accessible/exported
-	 *
-	 * @return exported or not
-	 */
-	public abstract boolean isExported();
-
-	/**
-	 * Retrieves the list of non-access modifiers applied to the symbol.
-	 *
-	 * @return The symbol's non-access modifiers
-	 */
 	public List<Modifier> getModifiers() {
-		return modifiers;
+		return Collections.unmodifiableList(modifiers);
 	}
 
-	/**
-	 * Retrieves the list of annotations on this symbol
-	 *
-	 * @return the list of annotations
-	 */
-	public List<Annotation> getAnnotations() { return annotations; }
+	public List<Annotation> getAnnotations() { return Collections.unmodifiableList(annotations); }
 
-	/**
-	 * Retrieves the position of the symbol.
-	 *
-	 * @return The symbol's position.
-	 */
 	public SourceLocation getLocation() {
 		return location;
 	}
+
+	/**
+	 * Checks whether the symbol is accessible/exported in the API
+	 */
+	public abstract boolean isExported();
 
 	@Override
 	public boolean equals(Object o) {
@@ -100,7 +72,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		if (o == null || getClass() != o.getClass()) return false;
 		Symbol symbol = (Symbol) o;
 		return Objects.equals(qualifiedName, symbol.qualifiedName)
-			&& visibility == symbol.visibility
+			&& Objects.equals(visibility, symbol.visibility)
 			&& Objects.equals(modifiers, symbol.modifiers)
 			&& Objects.equals(annotations, symbol.annotations)
 			&& Objects.equals(location, symbol.location);

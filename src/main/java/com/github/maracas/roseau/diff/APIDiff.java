@@ -21,6 +21,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
@@ -28,7 +29,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * This class represents Roseau's comparison tool for detecting breaking changes between two API versions.
+ * Computes the list of breaking changes between two {@link API}s.
  */
 public class APIDiff {
 	/**
@@ -55,9 +56,14 @@ public class APIDiff {
 	public APIDiff(API v1, API v2) {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
-		breakingChanges = new ArrayList<>();
+		breakingChanges = Collections.synchronizedList(new ArrayList<>());
 	}
 	
+	/**
+	 * Diff the two APIs to detect breaking changes.
+	 *
+	 * @return List of all the breaking changes detected
+	 */
 	public List<BreakingChange> diff() {
 		v1.getExportedTypes().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
@@ -119,7 +125,8 @@ public class APIDiff {
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
 		t2.getAllMethods()
-			.filter(m2 -> m2.isAbstract() && t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
+			.filter(MethodDecl::isAbstract)
+			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
 			.forEach(m2 -> {
 				if (t2.isInterface())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1);
@@ -138,12 +145,7 @@ public class APIDiff {
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		if (t1.getAllSuperTypes()
-				.anyMatch(superType1 ->
-					superType1.getResolvedApiType().map(TypeDecl::isExported).orElse(false) &&
-					t2.getAllSuperTypes()
-						.noneMatch(superType2 -> superType1.getQualifiedName().equals(superType2.getQualifiedName()))
-				))
+		if (t1.getAllSuperTypes().anyMatch(sup -> sup.isExported() && !t2.isSubtypeOf(sup)))
 			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1);
 
 		diffFormalTypeParameters(t1, t2);
@@ -234,22 +236,12 @@ public class APIDiff {
 	}
 
 	private void diffThrownExceptions(ExecutableDecl e1, ExecutableDecl e2) {
-		List<TypeReference<ClassDecl>> thrown1 = e1.getThrownCheckedExceptions().stream()
-			.filter(exc1 ->
-				e2.getThrownCheckedExceptions().stream()
-					.noneMatch(exc2 -> exc2.isSubtypeOf(exc1)))
-			.toList();
-
-		List<TypeReference<ClassDecl>> thrown2 = e2.getThrownCheckedExceptions().stream()
-			.filter(exc2 ->
-				e1.getThrownCheckedExceptions().stream()
-					.noneMatch(exc1 -> exc2.isSubtypeOf(exc1)))
-			.toList();
-
-		if (!thrown1.isEmpty())
+		if (e1.getThrownCheckedExceptions().stream()
+			.anyMatch(exc1 -> e2.getThrownCheckedExceptions().stream().noneMatch(exc2 -> exc2.isSubtypeOf(exc1))))
 			bc(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, e1);
 
-		if (!thrown2.isEmpty())
+		if (e2.getThrownCheckedExceptions().stream()
+			.anyMatch(exc2 -> e1.getThrownCheckedExceptions().stream().noneMatch(exc1 -> exc2.isSubtypeOf(exc1))))
 			bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, e1);
 	}
 
@@ -280,89 +272,96 @@ public class APIDiff {
 	 * parameters can follow variance rules).
 	 */
 	private void diffParameterGenerics(ExecutableDecl e, TypeReference<?> t1, TypeReference<?> t2) {
-		if (t1.getTypeArguments().size() == t2.getTypeArguments().size()) {
-			for (int j = 0; j < t1.getTypeArguments().size(); j++) {
-				ITypeReference ta1 = t1.getTypeArguments().get(j);
-				ITypeReference ta2 = t2.getTypeArguments().get(j);
-
-				if (!ta1.equals(ta2)) { // No match
-					if (e instanceof MethodDecl) // Invariant
-						bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
-					else { // Variance
-						if (ta2 instanceof WildcardTypeReference wtr && wtr.isUnbounded()) // Unbounded wildcard is always fine
-							continue;
-						if (ta1 instanceof WildcardTypeReference wtr1 && ta2 instanceof WildcardTypeReference wtr2 && wtr1.upper() == wtr2.upper()) {
-							// Changing upper bound to supertype is fine
-							if (wtr1.upper() && wtr1.bounds().getFirst().isSubtypeOf(wtr2.bounds().getFirst()))
-								continue;
-							// Changing lower bound to subtype is fine
-							if (!wtr1.upper() && wtr2.bounds().getFirst().isSubtypeOf(wtr1.bounds().getFirst()))
-								continue;
-						}
-
-						// Other cases break
-						bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
-					}
-				}
-			}
-		} else
+		if (t1.getTypeArguments().size() != t2.getTypeArguments().size()) {
 			bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
+			return;
+		}
+
+		for (int j = 0; j < t1.getTypeArguments().size(); j++) {
+			ITypeReference ta1 = t1.getTypeArguments().get(j);
+			ITypeReference ta2 = t2.getTypeArguments().get(j);
+
+			if (ta1.equals(ta2))
+				continue;
+
+			if (e instanceof MethodDecl) // Should be invariant, but they're not equal
+				bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
+			else if (!isMoreGenericTypeArgument(ta1, ta2)) // Constructor aren't overridable, so variance is allowed
+				bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
+		}
+	}
+
+	private boolean isMoreGenericTypeArgument(ITypeReference ta1, ITypeReference ta2) {
+		if (ta2 instanceof WildcardTypeReference wtr && wtr.isUnbounded()) // Unbounded wildcard is always fine
+			return true;
+		if (ta1 instanceof WildcardTypeReference wtr1 && ta2 instanceof WildcardTypeReference wtr2) {
+			// Changing upper bound to supertype is fine
+			if (wtr1.upper() && wtr2.upper() && wtr1.bounds().getFirst().isSubtypeOf(wtr2.bounds().getFirst()))
+				return true;
+			// Changing lower bound to subtype is fine
+			if (!wtr1.upper() && !wtr2.upper() && wtr2.bounds().getFirst().isSubtypeOf(wtr1.bounds().getFirst()))
+				return true;
+		}
+
+		return false;
 	}
 
 	private void diffFormalTypeParameters(TypeDecl t1, TypeDecl t2) {
 		int paramsCount1 = t1.getFormalTypeParameters().size();
 		int paramsCount2 = t2.getFormalTypeParameters().size();
-		if (paramsCount1 == paramsCount2) {
-			for (int i = 0; i < paramsCount1; i++) {
-				FormalTypeParameter p1 = t1.getFormalTypeParameters().get(i);
-				FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
 
-				// Removing an existing bound is fine, adding isn't
-				if (p1.bounds().size() < p2.bounds().size())
-					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
-
-				// Each bound in the new version should either pre-exist or be a supertype of an existing one
-				if (
-					!p2.bounds().stream()
-						.allMatch(b2 -> p1.bounds().stream().anyMatch(b1 -> b1.equals(b2) || b1.isSubtypeOf(b2)))
-				)
-					bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
-			}
-		} else if (paramsCount1 > paramsCount2) { // Removing formal type parameters always breaks
+		// Removing formal type parameters always breaks
+		if (paramsCount1 > paramsCount2) {
 			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1);
-		} else if (paramsCount1 > 0) { // Adding formal type parameters only breaks if it's not the first
+			return;
+		}
+
+		// Adding formal type parameters only breaks if it's not the first
+		if (paramsCount2 > paramsCount1 && paramsCount1 > 0) {
 			bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, t1);
+			return;
+		}
+
+		for (int i = 0; i < paramsCount1; i++) {
+			FormalTypeParameter p1 = t1.getFormalTypeParameters().get(i);
+			FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
+
+			// Removing an existing bound is fine, adding isn't
+			if (p1.bounds().size() < p2.bounds().size())
+				bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
+
+			// Each bound in the new version should be a supertype of an existing one (or the same)
+			if (!p2.bounds().stream().allMatch(b2 -> p1.bounds().stream().anyMatch(b1 -> b1.isSubtypeOf(b2))))
+				bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
 		}
 	}
 
 	private void diffFormalTypeParameters(ExecutableDecl e1, ExecutableDecl e2) {
+		int paramsCount1 = e1.getFormalTypeParameters().size();
+		int paramsCount2 = e2.getFormalTypeParameters().size();
+
 		// Ok, well. Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
 		//  - it's a constructor and there were more than one
-		if (e1.getFormalTypeParameters().size() > e2.getFormalTypeParameters().size()
-			&& (e1 instanceof MethodDecl || e1.getFormalTypeParameters().size() > 1))
+		if (paramsCount1 > paramsCount2	&& (e1 instanceof MethodDecl || paramsCount1 > 1))
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1);
 
 		// Adding a type parameter is only breaking if there was already some
-		if (!e1.getFormalTypeParameters().isEmpty() && e1.getFormalTypeParameters().size() < e2.getFormalTypeParameters().size())
+		if (paramsCount1 > 0 && paramsCount1 < paramsCount2)
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, e1);
 
-		for (int i = 0; i < e1.getFormalTypeParameters().size(); i++) {
+		for (int i = 0; i < paramsCount1; i++) {
 			List<ITypeReference> bounds1 = e1.getFormalTypeParameters().get(i).bounds();
 
-			if (i < e2.getFormalTypeParameters().size()) {
+			if (i < paramsCount2) {
 				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
 
 				if (e1 instanceof MethodDecl) { // Invariant
-					if (bounds1.size() != bounds2.size()
-						|| !new HashSet<>(bounds1).equals(new HashSet<>(bounds2)))
+					if (!new HashSet<>(bounds1).equals(new HashSet<>(bounds2)))
 						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1);
 				} else { // Variance
 					// Any new bound that's not a supertype of an existing bound is breaking
-					if (
-						bounds2.stream()
-							.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> b1.isSubtypeOf(b2)))
-					)
+					if (bounds2.stream().anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> b1.isSubtypeOf(b2))))
 						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1);
 				}
 			}
@@ -375,38 +374,26 @@ public class APIDiff {
 			breakingChanges.add(bc);
 	}
 
-	/**
-	 * Retrieves the list of all the breaking changes detected between the two API versions.
-	 *
-	 * @return List of all the breaking changes
-	 */
 	public List<BreakingChange> getBreakingChanges() {
 		return breakingChanges;
 	}
 
 	/**
-	 * Generates a csv report for the detected breaking changes. This report includes the kind, type qualifiedName,
-	 * <p>
-	 * position, associated element, and nature of each detected BC.
+	 * Generates a CSV report at {@code report} for the detected breaking changes.
 	 */
 	public void writeReport(Path report) throws IOException {
 		try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
-			writer.write("kind,element,nature,position" + System.lineSeparator());
+			writer.write("element,position,kind,nature" + System.lineSeparator());
 			writer.write(breakingChanges.stream()
 				.map(bc -> "%s,%s,%s,%s%n".formatted(
-					bc.kind(),
 					bc.impactedSymbol().getQualifiedName(),
-					bc.kind().getNature(),
-					bc.impactedSymbol().getLocation())
+					bc.impactedSymbol().getLocation(),
+					bc.kind(),
+					bc.kind().getNature())
 				).collect(Collectors.joining(System.lineSeparator())));
 			}
 	}
 
-	/**
-	 * Generates a string representation of the breaking changes list.
-	 *
-	 * @return A formatted string containing all the breaking changes and their info.
-	 */
 	@Override
 	public String toString() {
 		return breakingChanges.stream()

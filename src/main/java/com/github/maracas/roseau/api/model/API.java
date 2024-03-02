@@ -9,6 +9,7 @@ import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
+import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.visit.APITypeResolver;
 
 import java.io.IOException;

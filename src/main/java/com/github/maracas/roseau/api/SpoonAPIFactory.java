@@ -1,5 +1,20 @@
-package com.github.maracas.roseau.api.model;
+package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.AccessModifier;
+import com.github.maracas.roseau.api.model.Annotation;
+import com.github.maracas.roseau.api.model.AnnotationDecl;
+import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.ConstructorDecl;
+import com.github.maracas.roseau.api.model.EnumDecl;
+import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
+import com.github.maracas.roseau.api.model.InterfaceDecl;
+import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.Modifier;
+import com.github.maracas.roseau.api.model.ParameterDecl;
+import com.github.maracas.roseau.api.model.RecordDecl;
+import com.github.maracas.roseau.api.model.SourceLocation;
+import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;

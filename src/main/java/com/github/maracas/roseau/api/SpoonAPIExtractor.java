@@ -1,7 +1,6 @@
 package com.github.maracas.roseau.api;
 
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
@@ -33,34 +32,22 @@ public class SpoonAPIExtractor implements APIExtractor {
 		TypeFactory typeFactory = model.getRootPackage().getFactory().Type();
 		SpoonAPIFactory factory = new SpoonAPIFactory(typeFactory);
 
-		List<TypeDecl> allTypes =
-			model.getAllPackages().stream()
-				.parallel()
-				.flatMap(p -> getAllTypes(p).stream()
-					.parallel()
-					.map(factory::convertCtType))
-				.toList();
+		List<TypeDecl> allTypes = model.getAllPackages().stream().parallel()
+			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
+			.toList();
 
 		return new API(allTypes, factory);
 	}
 
 	// Returns all types within a package
-	private List<CtType<?>> getAllTypes(CtPackage pkg) {
+	private Stream<CtType<?>> getAllTypes(CtPackage pkg) {
 		return pkg.getTypes().stream()
-			.flatMap(type -> Stream.concat(
-				Stream.of(type),
-				getNestedTypes(type).stream()
-			))
-			.toList();
+			.flatMap(type -> Stream.concat(Stream.of(type), getNestedTypes(type)));
 	}
 
 	// Returns (recursively) nested types within a type
-	private List<CtType<?>> getNestedTypes(CtType<?> type) {
+	private Stream<CtType<?>> getNestedTypes(CtType<?> type) {
 		return type.getNestedTypes().stream()
-			.flatMap(nestedType -> Stream.concat(
-				Stream.of(nestedType),
-				getNestedTypes(nestedType).stream()
-			))
-			.toList();
+			.flatMap(nestedType -> Stream.concat(Stream.of(nestedType), getNestedTypes(nestedType)));
 	}
 }

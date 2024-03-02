@@ -21,6 +21,14 @@ public final class SpoonUtils {
 
 	}
 
+	/**
+	 * Builds a Spoon model from the source code located at the given path, with a specified timeout.
+	 *
+	 * @param location The path to the source code
+	 * @param timeout  The maximum duration to wait for the model to be built
+	 * @return The built Spoon model
+	 * @throws SpoonException If there is an error in building the Spoon model
+	 */
 	public static CtModel buildModel(Path location, Duration timeout) {
 		long timeoutSeconds = timeout != null ? timeout.getSeconds() : Long.MAX_VALUE;
 		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(() -> launcherFor(location).buildModel());
@@ -37,6 +45,13 @@ public final class SpoonUtils {
 		}
 	}
 
+	/**
+	 * Creates a Spoon Launcher for the given location. The resulting launcher is interruptible.
+	 *
+	 * @param location The path to the source code
+	 * @return The created Spoon Launcher, either regular or Maven-specific
+	 * @throws IllegalArgumentException if the specified location does not exist
+	 */
 	public static Launcher launcherFor(Path location) {
 		if (!location.toFile().exists())
 			throw new IllegalArgumentException(location + " does not exist");
@@ -60,7 +75,7 @@ public final class SpoonUtils {
 		launcher.getEnvironment().setNoClasspath(true);
 		// Proceed even if we find the same type twice; affects the precision of the result.
 		// Caution: this will make the not-so-safe generics typecasts break if two types
-		// of different kinds (eg. class vs interface) exist in our sources
+		// of different kinds (e.g. class vs interface) exist in our sources
 		// launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
 		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
 		// Ignore files with syntax/JLS violations and proceed
