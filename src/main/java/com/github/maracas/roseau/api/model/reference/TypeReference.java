@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.TypeDecl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -17,6 +18,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private SpoonAPIFactory factory;
 	@JsonIgnore
 	private T resolvedApiType;
+
+	public static final TypeReference OBJECT_REF = new TypeReference<>("java.lang.Object", Collections.emptyList());
 
 	@JsonCreator
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
@@ -57,8 +60,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public boolean isSubtypeOf(ITypeReference other) {
-		return equals(other)
-			|| "java.lang.Object".equals(other.getQualifiedName())
+		return equals(OBJECT_REF) || equals(other)
 			|| getResolvedApiType().map(t -> t.getAllSuperTypes().anyMatch(sup -> sup.equals(other))).orElse(false);
 	}
 

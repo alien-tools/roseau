@@ -127,7 +127,7 @@ class GenericsExtractionTest {
 			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
-				assertThat(wcRef.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
+				assertThat(wcRef.bounds().getFirst(), is(equalTo(TypeReference.OBJECT_REF)));
 				assertThat(wcRef.upper(), is(true));
 			}
 		}
@@ -160,7 +160,7 @@ class GenericsExtractionTest {
 			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
-				assertThat(wcRef.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Object")));
+				assertThat(wcRef.bounds().getFirst(), is(equalTo(TypeReference.OBJECT_REF)));
 				assertThat(wcRef.upper(), is(true));
 			}
 		}
