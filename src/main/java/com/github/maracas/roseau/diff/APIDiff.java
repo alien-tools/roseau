@@ -277,33 +277,11 @@ public class APIDiff {
 			return;
 		}
 
-		for (int j = 0; j < t1.getTypeArguments().size(); j++) {
-			ITypeReference ta1 = t1.getTypeArguments().get(j);
-			ITypeReference ta2 = t2.getTypeArguments().get(j);
+		if (e.isMethod() && !t1.equals(t2)) // Should be invariant, but they're not equal
+			bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
 
-			if (ta1.equals(ta2))
-				continue;
-
-			if (e instanceof MethodDecl) // Should be invariant, but they're not equal
-				bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
-			else if (!isMoreGenericTypeArgument(ta1, ta2)) // Constructor aren't overridable, so variance is allowed
-				bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
-		}
-	}
-
-	private boolean isMoreGenericTypeArgument(ITypeReference ta1, ITypeReference ta2) {
-		if (ta2 instanceof WildcardTypeReference wtr && wtr.isUnbounded()) // Unbounded wildcard is always fine
-			return true;
-		if (ta1 instanceof WildcardTypeReference wtr1 && ta2 instanceof WildcardTypeReference wtr2) {
-			// Changing upper bound to supertype is fine
-			if (wtr1.upper() && wtr2.upper() && wtr1.bounds().getFirst().isSubtypeOf(wtr2.bounds().getFirst()))
-				return true;
-			// Changing lower bound to subtype is fine
-			if (!wtr1.upper() && !wtr2.upper() && wtr2.bounds().getFirst().isSubtypeOf(wtr1.bounds().getFirst()))
-				return true;
-		}
-
-		return false;
+		if (e.isConstructor() && !t1.isSubtypeOf(t2))
+			bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e);
 	}
 
 	private void diffFormalTypeParameters(TypeDecl t1, TypeDecl t2) {
@@ -342,7 +320,7 @@ public class APIDiff {
 		// Ok, well. Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
 		//  - it's a constructor and there were more than one
-		if (paramsCount1 > paramsCount2	&& (e1 instanceof MethodDecl || paramsCount1 > 1))
+		if (paramsCount1 > paramsCount2	&& (e1.isMethod() || paramsCount1 > 1))
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1);
 
 		// Adding a type parameter is only breaking if there was already some
@@ -355,12 +333,14 @@ public class APIDiff {
 			if (i < paramsCount2) {
 				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
 
-				if (e1 instanceof MethodDecl) { // Invariant
+				if (e1.isMethod()) { // Invariant
 					if (!new HashSet<>(bounds1).equals(new HashSet<>(bounds2)))
 						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1);
 				} else { // Variance
 					// Any new bound that's not a supertype of an existing bound is breaking
-					if (bounds2.stream().anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> b1.isSubtypeOf(b2))))
+					if (bounds2.stream()
+						.filter(b2 -> !b2.equals(TypeReference.OBJECT)) // We can safely ignore this bound
+						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> b1.isSubtypeOf(b2))))
 						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1);
 				}
 			}

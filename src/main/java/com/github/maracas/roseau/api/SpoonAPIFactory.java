@@ -278,7 +278,7 @@ public class SpoonAPIFactory {
 	private List<ITypeReference> convertCtTypeParameterBounds(CtTypeReference<?> ref) {
 		return switch (ref) {
 			case CtIntersectionTypeReference<?> intersection -> intersection.getBounds().stream().map(this::createITypeReference).toList();
-			case CtTypeReference<?> reference -> List.of(createTypeReference(reference));
+			case CtTypeReference<?> reference -> List.of(createITypeReference(reference));
 			case null -> Collections.emptyList();
 		};
 	}

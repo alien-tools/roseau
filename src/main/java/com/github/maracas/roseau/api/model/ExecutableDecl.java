@@ -29,6 +29,14 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		this.thrownExceptions = Objects.requireNonNull(thrownExceptions);
 	}
 
+	public boolean isMethod() {
+		return false;
+	}
+
+	public boolean isConstructor() {
+		return false;
+	}
+
 	/**
 	 * Checks whether the given ExecutableDecl has the same signature as the current instance.
 	 *

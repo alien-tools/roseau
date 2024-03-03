@@ -17,6 +17,11 @@ public final class ConstructorDecl extends ExecutableDecl {
 	}
 
 	@Override
+	public boolean isConstructor() {
+		return true;
+	}
+
+	@Override
 	public String toString() {
 		return "%s %s(%s)".formatted(visibility, getSimpleName(),
 			parameters.stream().map(Object::toString).collect(Collectors.joining(", ")));

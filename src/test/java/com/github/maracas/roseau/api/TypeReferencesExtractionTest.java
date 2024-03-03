@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.ExecutableDecl;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.TestUtils.assertClass;

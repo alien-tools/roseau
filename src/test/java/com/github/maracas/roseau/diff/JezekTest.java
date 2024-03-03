@@ -3,8 +3,6 @@ package com.github.maracas.roseau.diff;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
-import java.util.ArrayList;
-
 import static com.github.maracas.roseau.TestUtils.assertBC;
 import static com.github.maracas.roseau.TestUtils.assertNoBC;
 import static com.github.maracas.roseau.TestUtils.buildDiff;
@@ -14,11 +12,11 @@ class JezekTest {
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd() {
 		String v1 = """
 			public class A {
-			  public A(List<?> l) {}
+			  public A(java.util.List<?> l) {}
 			}""";
 		String v2 = """
 			public class A {
-			  public A(List<A> l) {}
+			  public A(java.util.List<A> l) {}
 			}""";
 
 		assertBC("A.<init>", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
@@ -32,7 +30,7 @@ class JezekTest {
 			}""";
 		String v2 = """
 			public class A {
-			  public <T extends Number & List<T>> void m() {}
+			  public <T extends Number & java.util.List<T>> void m() {}
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
@@ -310,11 +308,11 @@ class JezekTest {
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd2() {
 		String v1 = """
 			public class C {
-				public void m(ArrayList<?> al) {}
+				public void m(java.util.ArrayList<?> al) {}
 			}""";
 		String v2 = """
 			public class C {
-				public void m(ArrayList<? extends Number> al) {}
+				public void m(java.util.ArrayList<? extends Number> al) {}
 			}""";
 
 		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
@@ -403,11 +401,11 @@ class JezekTest {
 	void genericsWildcardsClazzMethodParamAdd() {
 		String v1 = """
 			public class C {
-				public void m(List<String> l) {}
+				public void m(java.util.List<String> l) {}
 			}""";
 		String v2 = """
 			public class C {
-				public void m(List<?> l) {}
+				public void m(java.util.List<?> l) {}
 			}""";
 
 		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
@@ -417,11 +415,11 @@ class JezekTest {
 	void genericsWildcardsClazzConstructorParamLowerBoundsSpecialization() {
 		String v1 = """
 			public class C {
-				public C(List<? super Number> l) {}
+				public C(java.util.List<? super Number> l) {}
 			}""";
 		String v2 = """
 			public class C {
-				public C(List<? super Integer> l) {}
+				public C(java.util.List<? super Integer> l) {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
@@ -459,11 +457,11 @@ class JezekTest {
 	void genericsWildcardsClazzConstructorParamAdd() {
 		String v1 = """
 			public class C {
-				public C(ArrayList<Integer> l) {}
+				public C(java.util.ArrayList<Integer> l) {}
 			}""";
 		String v2 = """
 			public class C {
-				public C(ArrayList<?> l) {}
+				public C(java.util.ArrayList<?> l) {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));

@@ -11,6 +11,8 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
@@ -66,9 +68,31 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		resolvedApiType = Objects.requireNonNull(type);
 	}
 
+	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return equals(OBJECT) || equals(other)
-			|| getResolvedApiType().map(t -> t.getAllSuperTypes().anyMatch(sup -> sup.equals(other))).orElse(false);
+		// Always a subtype of Object
+		if (other.equals(OBJECT))
+			return true;
+
+		// Subtype of a wildcard if bounds are compatible
+		// FIXME: what if upper() or !upper()?
+		if (other instanceof WildcardTypeReference wtr && wtr.bounds().stream().allMatch(this::isSubtypeOf))
+			return true;
+
+		// Subtype of another type if it's a super type (or self) and type parameters are compatible
+		if (other instanceof TypeReference<?> tr)
+			return Stream.concat(Stream.of(this), getAllSuperTypes())
+				.anyMatch(sup -> Objects.equals(sup.qualifiedName, tr.qualifiedName) && typeParametersCompatible(tr));
+
+		return false;
+	}
+
+	private boolean typeParametersCompatible(TypeReference<?> other) {
+		if (typeArguments.size() != other.typeArguments.size())
+			return false;
+
+		return IntStream.range(0, typeArguments.size())
+			.allMatch(i -> typeArguments.get(i).isSubtypeOf(other.typeArguments.get(i)));
 	}
 
 	public boolean isSameHierarchy(TypeReference<T> other) {
@@ -83,10 +107,14 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		return getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(false);
 	}
 
+	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+		return getResolvedApiType().map(TypeDecl::getAllSuperTypes).orElseGet(Stream::empty);
+	}
+
 	@Override
 	public String toString() {
-		return "%s<%s>".formatted(qualifiedName,
-			typeArguments.stream().map(Object::toString).collect(Collectors.joining(",")));
+		return "%s%s".formatted(qualifiedName, typeArguments.isEmpty() ? ""
+			: "<%s>".formatted(typeArguments.stream().map(Object::toString).collect(Collectors.joining(","))));
 	}
 
 	@Override

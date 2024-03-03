@@ -19,6 +19,11 @@ public final class MethodDecl extends ExecutableDecl {
 			formalTypeParameters, thrownExceptions);
 	}
 
+	@Override
+	public boolean isMethod() {
+		return true;
+	}
+
 	public boolean isDefault() {
 		return modifiers.contains(Modifier.DEFAULT);
 	}
