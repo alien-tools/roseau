@@ -33,7 +33,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_added() {
+	void bound_added() {
 		String v1 = "public class A<T> {}";
 		String v2 = "public class A<T extends String> {}";
 
@@ -41,7 +41,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_object_added() {
+	void bound_object_added() {
 		String v1 = "public class A<T> {}";
 		String v2 = "public class A<T extends Object> {}";
 
@@ -49,7 +49,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_removed() {
+	void bound_removed() {
 		String v1 = "public class A<T extends String> {}";
 		String v2 = "public class A<T> {}";
 
@@ -57,7 +57,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void second_upper_bound_removed() {
+	void second_bound_removed() {
 		String v1 = "public class A<T extends String & Runnable> {}";
 		String v2 = "public class A<T extends String> {}";
 
@@ -65,7 +65,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_param_removed() {
+	void bound_param_removed() {
 		String v1 = "public class A<T extends U, U> {}";
 		String v2 = "public class A<T, U> {}";
 
@@ -73,7 +73,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_param_added() {
+	void bound_param_added() {
 		String v1 = "public class A<T, U> {}";
 		String v2 = "public class A<T, U extends T> {}";
 
@@ -81,7 +81,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_modified_compatible() {
+	void bound_modified_compatible() {
 		String v1 = "public class A<T extends String> {}";
 		String v2 = "public class A<T extends CharSequence> {}";
 
@@ -89,7 +89,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_modified_incompatible() {
+	void bound_modified_incompatible() {
 		String v1 = "public class A<T extends CharSequence> {}";
 		String v2 = "public class A<T extends String> {}";
 
@@ -97,7 +97,8 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_modified_compatible_param() {
+	void bound_modified_incompatible_param_1() {
+		// Still breaking if client chooses a U that is not a subtype of T
 		String v1 = "public class A<T extends String, U extends CharSequence, V extends T> {}";
 		String v2 = "public class A<T extends String, U extends CharSequence, V extends U> {}";
 
@@ -105,7 +106,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_modified_incompatible_param() {
+	void bound_modified_incompatible_param_2() {
 		String v1 = "public class A<T extends String, U extends CharSequence, V extends U> {}";
 		String v2 = "public class A<T extends String, U extends CharSequence, V extends T> {}";
 
@@ -113,7 +114,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void second_upper_bound_added_compatible() {
+	void second_bound_added_compatible() {
 		String v1 = "public class A<T extends String> {}";
 		String v2 = "public class A<T extends String & CharSequence> {}";
 
@@ -121,7 +122,7 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void second_upper_bound_added_incompatible() {
+	void second_bound_added_incompatible() {
 		String v1 = "public class A<T extends String> {}";
 		String v2 = "public class A<T extends String & Runnable> {}";
 
@@ -129,89 +130,129 @@ class TypeFormalTypeParameterChangedTest {
 	}
 
 	@Test
-	void upper_bound_generic_extends_changed_bound_compatible() {
-		String v1 = "public class A<T extends java.util.List<? extends String> {}";
-		String v2 = "public class A<T extends java.util.List<? extends CharSequence> {}";
+	void bound_changed_to_compatible_generic() {
+		String v1 = "public class A<T extends java.util.List<? extends String>> {}";
+		String v2 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_extends_changed_bound_incompatible() {
-		String v1 = "public class A<T extends java.util.List<? extends CharSequence> {}";
-		String v2 = "public class A<T extends java.util.List<? extends String> {}";
+	void bound_changed_to_incompatible_generic() {
+		String v1 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.List<? extends String>> {}";
 
 		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_extends_changed_type_compatible() {
-		String v1 = "public class A<T extends java.util.ArrayList<? extends String> {}";
-		String v2 = "public class A<T extends java.util.List<? extends CharSequence> {}";
+	void bound_changed_to_generic_supertype() {
+		String v1 = "public class A<T extends java.util.ArrayList<? extends String>> {}";
+		String v2 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_extends_changed_type_incompatible() {
-		String v1 = "public class A<T extends java.util.List<? extends String> {}";
-		String v2 = "public class A<T extends java.util.ArrayList<? extends CharSequence> {}";
+	void bound_changed_to_generic_subtype() {
+		String v1 = "public class A<T extends java.util.List<? extends String>> {}";
+		String v2 = "public class A<T extends java.util.ArrayList<? extends CharSequence>> {}";
 
 		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_super_changed_bound_compatible() {
-		String v1 = "public class A<T extends java.util.List<? super CharSequence> {}";
-		String v2 = "public class A<T extends java.util.List<? super String> {}";
+	void bound_changed_to_compatible_generic_super() {
+		String v1 = "public class A<T extends java.util.List<? super CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.List<? super String>> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_super_changed_bound_incompatible() {
-		String v1 = "public class A<T extends java.util.List<? super String> {}";
-		String v2 = "public class A<T extends java.util.List<? super CharSequence> {}";
+	void bound_changed_to_incompatible_generic_super() {
+		String v1 = "public class A<T extends java.util.List<? super String>> {}";
+		String v2 = "public class A<T extends java.util.List<? super CharSequence>> {}";
 
 		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_super_changed_type_compatible() {
-		String v1 = "public class A<T extends java.util.ArrayList<? super CharSequence> {}";
-		String v2 = "public class A<T extends java.util.List<? super String> {}";
+	void bound_changed_to_incompatible_type_super() {
+		String v1 = "public class A<T extends java.util.ArrayList<? super CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.List<? super String>> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_super_changed_type_incompatible() {
-		String v1 = "public class A<T extends java.util.List<? super CharSequence> {}";
-		String v2 = "public class A<T extends java.util.ArrayListList<? super String> {}";
+	void bound_changed_to_incompatible_subtype_super() {
+		String v1 = "public class A<T extends java.util.List<? super CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.ArrayList<? super String>> {}";
 
 		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_to_wildcard() {
-		String v1 = "public class A<T extends java.util.List<? extends CharSequence> {}";
-		String v2 = "public class A<T extends java.util.List<?> {}";
+	void bound_changed_to_generic_wildcard_extends() {
+		String v1 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.List<?>> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
-	void upper_bound_generic_from_wildcard() {
-		String v1 = "public class A<T extends java.util.List<?> {}";
-		String v2 = "public class A<T extends java.util.List<? extends CharSequence> {}";
+	void bound_changed_from_generic_wildcard_extends() {
+		String v1 = "public class A<T extends java.util.List<?>> {}";
+		String v2 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
+
+		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void bound_changed_to_generic_wildcard_super() {
+		String v1 = "public class A<T extends java.util.List<? super CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.List<?>> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void bound_changed_from_generic_wildcard_super() {
+		String v1 = "public class A<T extends java.util.List<?>> {}";
+		String v2 = "public class A<T extends java.util.List<? super CharSequence>> {}";
+
+		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void bound_generic_wildcard_to_type() {
+		String v1 = "public class A<T extends java.util.List<? extends String>> {}";
+		String v2 = "public class A<T extends java.util.List<String>> {}";
+
+		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void bound_type_to_compatible_wildcard() {
+		String v1 = "public class A<T extends java.util.List<String>> {}";
+		String v2 = "public class A<T extends java.util.List<? extends String>> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void bound_type_to_incompatible_wildcard() {
+		String v1 = "public class A<T extends java.util.List<CharSequence>> {}";
+		String v2 = "public class A<T extends java.util.List<? extends String>> {}";
 
 		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
 	void unchanged_type_params_bounds() {
-		String v1 = "public class A<T extends java.util.List<? super U>, U> {}";
-		String v2 = "public class A<T extends java.util.List<? super U>, U> {}";
+		String v1 = "public class A<T extends java.util.List<? super U>, U>> {}";
+		String v2 = "public class A<T extends java.util.List<? super U>, U>> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
