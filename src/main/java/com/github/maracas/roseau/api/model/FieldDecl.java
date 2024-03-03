@@ -15,11 +15,6 @@ public final class FieldDecl extends TypeMemberDecl {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 	}
 
-	@Override
-	public String getSimpleName() {
-		return qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
-	}
-
 	/**
 	 * Generates a string representation of the FieldDeclaration.
 	 *

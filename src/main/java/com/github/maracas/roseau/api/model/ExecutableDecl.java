@@ -107,11 +107,6 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return Collections.unmodifiableList(formalTypeParameters);
 	}
 
-	@Override
-	public String getSimpleName() {
-		return getQualifiedName().substring(getQualifiedName().lastIndexOf('.') + 1);
-	}
-
 	public List<TypeReference<ClassDecl>> getThrownExceptions() {
 		return Collections.unmodifiableList(thrownExceptions);
 	}

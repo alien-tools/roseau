@@ -34,6 +34,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	 */
 	protected final SourceLocation location;
 
+	/**
+	 * The simple (unqualified) name of the symbol
+	 */
+	protected final String simpleName;
+
 	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
@@ -41,6 +46,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		this.modifiers = Objects.requireNonNull(modifiers);
 		this.annotations = Objects.requireNonNull(annotations);
 		this.location = Objects.requireNonNull(location);
+		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
 
 	public String getQualifiedName() {
@@ -55,10 +61,16 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return Collections.unmodifiableList(modifiers);
 	}
 
-	public List<Annotation> getAnnotations() { return Collections.unmodifiableList(annotations); }
+	public List<Annotation> getAnnotations() {
+		return Collections.unmodifiableList(annotations);
+	}
 
 	public SourceLocation getLocation() {
 		return location;
+	}
+
+	public String getSimpleName() {
+		return simpleName;
 	}
 
 	/**
