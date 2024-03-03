@@ -6,11 +6,11 @@ import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
 
-import static com.github.maracas.roseau.TestUtils.assertClass;
-import static com.github.maracas.roseau.TestUtils.assertField;
-import static com.github.maracas.roseau.TestUtils.assertInterface;
-import static com.github.maracas.roseau.TestUtils.assertMethod;
-import static com.github.maracas.roseau.TestUtils.buildAPI;
+import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.assertField;
+import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
+import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
+import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;

@@ -2,12 +2,12 @@ package com.github.maracas.roseau.api;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.maracas.roseau.TestUtils.assertAnnotation;
-import static com.github.maracas.roseau.TestUtils.assertClass;
-import static com.github.maracas.roseau.TestUtils.assertEnum;
-import static com.github.maracas.roseau.TestUtils.assertInterface;
-import static com.github.maracas.roseau.TestUtils.assertRecord;
-import static com.github.maracas.roseau.TestUtils.buildAPI;
+import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
+import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
+import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
+import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
+import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;

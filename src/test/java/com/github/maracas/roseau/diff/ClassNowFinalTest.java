@@ -3,9 +3,9 @@ package com.github.maracas.roseau.diff;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
-import static com.github.maracas.roseau.TestUtils.assertBC;
-import static com.github.maracas.roseau.TestUtils.assertNoBC;
-import static com.github.maracas.roseau.TestUtils.buildDiff;
+import static com.github.maracas.roseau.utils.TestUtils.assertBC;
+import static com.github.maracas.roseau.utils.TestUtils.assertNoBC;
+import static com.github.maracas.roseau.utils.TestUtils.buildDiff;
 
 class ClassNowFinalTest {
 	@Test
