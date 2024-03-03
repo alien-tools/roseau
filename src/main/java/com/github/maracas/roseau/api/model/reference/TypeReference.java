@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model.reference;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
+import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 
 import java.util.Collections;
@@ -19,7 +20,9 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	@JsonIgnore
 	private T resolvedApiType;
 
-	public static final TypeReference OBJECT_REF = new TypeReference<>("java.lang.Object", Collections.emptyList());
+	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
+	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
+	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
 
 	@JsonCreator
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
@@ -30,6 +33,10 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
 		this(qualifiedName, typeArguments);
 		this.factory = Objects.requireNonNull(factory);
+	}
+
+	public TypeReference(String qualifiedName) {
+		this(qualifiedName, Collections.emptyList());
 	}
 
 	@Override
@@ -60,7 +67,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public boolean isSubtypeOf(ITypeReference other) {
-		return equals(OBJECT_REF) || equals(other)
+		return equals(OBJECT) || equals(other)
 			|| getResolvedApiType().map(t -> t.getAllSuperTypes().anyMatch(sup -> sup.equals(other))).orElse(false);
 	}
 

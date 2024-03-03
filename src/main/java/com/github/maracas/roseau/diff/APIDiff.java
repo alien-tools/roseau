@@ -329,7 +329,7 @@ public class APIDiff {
 			// Each bound in the new version should be a supertype of an existing one (or the same)
 			// even if there are more bounds in the new version (in which case they're redundant but okay)
 			if (!p2.bounds().stream()
-				.filter(b2 -> !b2.equals(TypeReference.OBJECT_REF)) // We can safely ignore this bound
+				.filter(b2 -> !b2.equals(TypeReference.OBJECT)) // We can safely ignore this bound
 				.allMatch(b2 -> p1.bounds().stream().anyMatch(b1 -> b1.isSubtypeOf(b2))))
 				bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1);
 		}

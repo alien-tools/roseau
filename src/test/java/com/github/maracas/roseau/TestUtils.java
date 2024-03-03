@@ -9,6 +9,7 @@ import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
@@ -120,7 +121,7 @@ public class TestUtils {
 
 	public static MethodDecl assertMethod(TypeDecl decl, String name, ITypeReference... typeFqns) {
 		Optional<MethodDecl> findMethod = decl.getMethods().stream()
-			.filter(m -> m.hasSignature(name, Arrays.asList(typeFqns), false))
+			.filter(m -> m.getSimpleName().equals(name) && Arrays.asList(typeFqns).equals(m.getParameters().stream().map(ParameterDecl::type).toList()))
 			.findFirst();
 
 		if (findMethod.isEmpty())

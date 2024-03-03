@@ -36,31 +36,20 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @return true if they have the same signature, false otherwise
 	 */
 	public boolean hasSameSignature(ExecutableDecl other) {
-		return hasSignature(other.getSimpleName(),
-			other.parameters.stream().map(ParameterDecl::type).toList(),
-			other.isVarargs());
-	}
-
-	/**
-	 * Checks whether this executable matches the given signature
-	 *
-	 * @param simpleName      The simple name of the method.
-	 * @param parameterTypes  The list of parameter types of the method.
-	 * @param varargs         Indicates whether the method is a varargs method.
-	 * @return true if the method has the specified signature, false otherwise.
-	 */
-	public boolean hasSignature(String simpleName, List<? extends ITypeReference> parameterTypes, boolean varargs) {
-		if (!Objects.equals(simpleName, getSimpleName()))
+		if (other == null)
 			return false;
 
-		if (parameters.size() != parameterTypes.size())
+		if (!Objects.equals(other.getSimpleName(), getSimpleName()))
 			return false;
 
-		if (varargs && !isVarargs())
+		if (other.parameters.size() != parameters.size())
 			return false;
 
-		for (int i = 0; i < parameterTypes.size(); i++) {
-			ITypeReference otherType = parameterTypes.get(i);
+		if (other.isVarargs() != isVarargs())
+			return false;
+
+		for (int i = 0; i < parameters.size(); i++) {
+			ITypeReference otherType = other.parameters.get(i).type();
 			ITypeReference thisType = parameters.get(i).type();
 
 			// otherType.equals(thisType) wouldn't work as it also compares

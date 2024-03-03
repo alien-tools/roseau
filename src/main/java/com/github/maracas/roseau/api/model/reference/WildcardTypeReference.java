@@ -15,7 +15,7 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 	}
 
 	public boolean isUnbounded() {
-		return upper() && bounds().size() == 1 && bounds.getFirst().equals(TypeReference.OBJECT_REF);
+		return upper() && bounds().size() == 1 && bounds.getFirst().equals(TypeReference.OBJECT);
 	}
 
 	@Override

@@ -34,16 +34,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public boolean isCheckedException() {
-		List<String> superClasses = getAllSuperClasses().map(TypeReference::getQualifiedName).toList();
-
-		return "java.lang.Exception".equals(qualifiedName)
-			|| (superClasses.contains("java.lang.Exception") && !isUncheckedException());
+		return isSubtypeOf(TypeReference.EXCEPTION) && !isUncheckedException();
 	}
 
 	public boolean isUncheckedException() {
-		List<String> superClasses = getAllSuperClasses().map(TypeReference::getQualifiedName).toList();
-
-		return "java.lang.RuntimeException".equals(qualifiedName) || superClasses.contains("java.lang.RuntimeException");
+		return isSubtypeOf(TypeReference.RUNTIME_EXCEPTION);
 	}
 
 	@Override
