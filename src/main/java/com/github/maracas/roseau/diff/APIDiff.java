@@ -362,7 +362,7 @@ public class APIDiff {
 		try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
 			writer.write("element,position,kind,nature" + System.lineSeparator());
 			writer.write(breakingChanges.stream()
-				.map(bc -> "%s,%s,%s,%s%n".formatted(
+				.map(bc -> "%s,%s,%s,%s".formatted(
 					bc.impactedSymbol().getQualifiedName(),
 					bc.impactedSymbol().getLocation(),
 					bc.kind(),

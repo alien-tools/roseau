@@ -13,4 +13,9 @@ public record SourceLocation(
 	 * An unknown location for symbols that exist but are not in source code (e.g. default constructors)
 	 */
 	public static final SourceLocation NO_LOCATION = new SourceLocation(null, -1);
+
+	@Override
+	public String toString() {
+		return "%s:%s".formatted(file().toAbsolutePath(), line);
+	}
 }
