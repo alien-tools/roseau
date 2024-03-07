@@ -16,6 +16,6 @@ public record SourceLocation(
 
 	@Override
 	public String toString() {
-		return "%s:%s".formatted(file().toAbsolutePath(), line);
+		return "%s:%s".formatted(file != null ? file.toAbsolutePath().toString() : "<unknown>", line);
 	}
 }
