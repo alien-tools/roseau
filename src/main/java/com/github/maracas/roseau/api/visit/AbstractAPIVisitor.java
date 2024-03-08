@@ -116,6 +116,7 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 			it.getImplementedInterfaces().forEach(intf -> $(intf).visit());
 			it.getFields().forEach(field -> $(field).visit());
 			it.getMethods().forEach(meth -> $(meth).visit());
+			it.getEnclosingType().ifPresent(t -> $(t).visit());
 		};
 	}
 
