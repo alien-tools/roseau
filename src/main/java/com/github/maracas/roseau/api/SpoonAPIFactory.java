@@ -19,6 +19,7 @@ import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import spoon.Launcher;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtAnnotationType;
@@ -54,8 +55,8 @@ public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
 	private final TypeReferenceFactory typeReferenceFactory;
 
-	public SpoonAPIFactory(TypeFactory typeFactory) {
-		this.typeFactory = Objects.requireNonNull(typeFactory);
+	public SpoonAPIFactory() {
+		this.typeFactory = new Launcher().createFactory().Type();
 		this.typeReferenceFactory = new SpoonTypeReferenceFactory(this);
 	}
 

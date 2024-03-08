@@ -5,7 +5,6 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
-import spoon.reflect.factory.TypeFactory;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -29,8 +28,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	public API extractAPI(CtModel model) {
-		TypeFactory typeFactory = model.getRootPackage().getFactory().Type();
-		SpoonAPIFactory factory = new SpoonAPIFactory(typeFactory);
+		SpoonAPIFactory factory = new SpoonAPIFactory();
 
 		List<TypeDecl> allTypes = model.getAllPackages().stream().parallel()
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
