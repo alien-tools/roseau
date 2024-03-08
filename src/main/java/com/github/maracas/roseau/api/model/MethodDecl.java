@@ -4,6 +4,7 @@ import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
@@ -38,6 +39,28 @@ public final class MethodDecl extends ExecutableDecl {
 
 	public boolean isStrictFp() {
 		return modifiers.contains(Modifier.STRICTFP);
+	}
+
+	/**
+	 * Checks whether the current method overrides the supplied method.
+	 * A method overrides itself.
+	 *
+	 * @param other The other method
+	 * @return whether this overrides other
+	 */
+	public boolean isOverriding(MethodDecl other) {
+		Objects.requireNonNull(other);
+		if (equals(other))
+			return true;
+		if (hasSameSignature(other)) {
+			if (getContainingType().isSubtypeOf(other.getContainingType()))
+				return true;
+			if (!isAbstract() && other.isAbstract())
+				return true;
+			if (!isDefault() && !isAbstract() && other.isDefault())
+				return true;
+		}
+		return false;
 	}
 
 	@Override

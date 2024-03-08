@@ -466,4 +466,15 @@ class JezekTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Test
+	void membersIfazeNestedIfazeDelete() {
+		String v1 = """
+			public interface I1 {
+				public interface I2 {}
+			}""";
+		String v2 = "public interface I1 {}";
+
+		assertBC("I1$I2", BreakingChangeKind.TYPE_REMOVED, 2, buildDiff(v1, v2));
+	}
 }

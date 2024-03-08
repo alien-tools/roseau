@@ -44,33 +44,25 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @return true if they have the same signature, false otherwise
 	 */
 	public boolean hasSameSignature(ExecutableDecl other) {
-		if (other == null)
-			return false;
+		return equals(other) || Objects.equals(getSignature(), other.getSignature());
+	}
 
-		if (!Objects.equals(other.getSimpleName(), getSimpleName()))
-			return false;
-
-		if (other.parameters.size() != parameters.size())
-			return false;
-
-		if (other.isVarargs() != isVarargs())
-			return false;
-
+	public String getSignature() {
+		StringBuilder signature = new StringBuilder();
+		signature.append(getSimpleName());
+		signature.append("(");
 		for (int i = 0; i < parameters.size(); i++) {
-			ITypeReference otherType = other.parameters.get(i).type();
-			ITypeReference thisType = parameters.get(i).type();
-
-			// otherType.equals(thisType) wouldn't work as it also compares
-			// type parameters and we're just comparing (erased) signatures here
-
-			if (!otherType.getClass().equals(thisType.getClass()))
-				return false;
-
-			if (!Objects.equals(otherType.getQualifiedName(), thisType.getQualifiedName()))
-				return false;
+			ParameterDecl parameter = parameters.get(i);
+			signature.append(parameter.type().getQualifiedName());
+			if (parameter.isVarargs()) {
+				signature.append("...");
+			}
+			if (i < parameters.size() - 1) {
+				signature.append(", ");
+			}
 		}
-
-		return true;
+		signature.append(")");
+		return signature.toString();
 	}
 
 	/**
@@ -86,18 +78,6 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return Objects.equals(getSimpleName(), other.getSimpleName())
 			&& !hasSameSignature(other)
 			&& containingType.isSameHierarchy(other.getContainingType());
-	}
-
-	/**
-	 * Checks whether the current instance overrides the supplied executable.
-	 * An executable overrides itself.
-	 *
-	 * @param other The other executable
-	 * @return whether this overrides other
-	 */
-	public boolean isOverriding(ExecutableDecl other) {
-		return equals(other)
-			|| (hasSameSignature(other) && containingType.isSubtypeOf(other.getContainingType()));
 	}
 
 	/**

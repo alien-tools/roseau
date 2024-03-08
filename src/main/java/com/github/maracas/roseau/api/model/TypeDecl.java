@@ -8,6 +8,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -148,18 +150,19 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	/**
 	 * Returns all methods that can be invoked on this type, including those declared in its super types.
+	 * Returns the most concrete implementation for each unique method signature.
 	 */
 	public Stream<MethodDecl> getAllMethods() {
-		List<MethodDecl> allMethods = Stream.concat(
-			methods.stream(),
-			getAllSuperTypes()
-				.map(TypeReference::getResolvedApiType)
-				.flatMap(t -> t.map(TypeDecl::getMethods).orElseGet(Collections::emptyList).stream())
-		).distinct().toList();
-
-		// FIXME: Huge performance bottleneck
-		return allMethods.stream()
-			.filter(m1 -> allMethods.stream().noneMatch(m2 -> !m2.equals(m1) && m2.isOverriding(m1)));
+		return Stream.concat(
+				methods.stream(),
+				getAllSuperTypes()
+					.map(TypeReference::getResolvedApiType)
+					.flatMap(t -> t.map(TypeDecl::getMethods).orElseGet(Collections::emptyList).stream())
+			).collect(Collectors.toMap(
+				MethodDecl::getSignature,
+				Function.identity(),
+				(m1, m2) -> m1.isOverriding(m2) ? m1 : m2
+			)).values().stream();
 	}
 
 	/**

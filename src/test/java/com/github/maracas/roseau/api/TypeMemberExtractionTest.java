@@ -37,8 +37,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertFalse(a.isExported());
-		assertThat(a.getFields(), is(empty()));
-		assertThat(a.getMethods(), is(empty()));
+		assertThat(a.getFields(), hasSize(1));
+		assertThat(a.getMethods(), hasSize(1));
 	}
 
 	@Test

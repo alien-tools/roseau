@@ -51,8 +51,8 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return Stream.concat(
-			super.getAllSuperTypes(),
-			getAllSuperClasses().flatMap(ref -> Stream.concat(Stream.of(ref), ref.getAllSuperTypes()))
+			getAllSuperClasses().flatMap(ref -> Stream.concat(Stream.of(ref), ref.getAllSuperTypes())),
+			super.getAllSuperTypes()
 		).distinct();
 	}
 

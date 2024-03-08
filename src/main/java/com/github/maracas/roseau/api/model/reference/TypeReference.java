@@ -56,6 +56,10 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		this.factory = Objects.requireNonNull(factory);
 	}
 
+	/**
+	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary,
+	 * or {@link Optional<T>.empty()} if it cannot be resolved.
+	 */
 	public Optional<T> getResolvedApiType() {
 		if (resolvedApiType == null && factory != null)
 			// Safe as long as we don't have two types with same FQN of different kinds (e.g. class vs interface)

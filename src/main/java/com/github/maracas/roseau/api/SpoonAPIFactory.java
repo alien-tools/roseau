@@ -109,10 +109,7 @@ public class SpoonAPIFactory {
 
 	public TypeDecl convertCtType(String qualifiedName) {
 		CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
-
-		return ref.getTypeDeclaration() != null
-			? convertCtType(ref.getTypeDeclaration())
-			: null;
+		return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
 	}
 
 	private ClassDecl convertCtClass(CtClass<?> cls) {
@@ -144,7 +141,7 @@ public class SpoonAPIFactory {
 			convertCtFields(intf),
 			convertCtMethods(intf),
 			createTypeReference(intf.getDeclaringType())
-			);
+		);
 	}
 
 	private AnnotationDecl convertCtAnnotationType(CtAnnotationType<?> annotation) {
@@ -157,7 +154,7 @@ public class SpoonAPIFactory {
 			convertCtFields(annotation),
 			convertCtMethods(annotation),
 			createTypeReference(annotation.getDeclaringType())
-			);
+		);
 	}
 
 	private EnumDecl convertCtEnum(CtEnum<?> enm) {
@@ -355,8 +352,14 @@ public class SpoonAPIFactory {
 	}
 
 	private boolean isExported(CtTypeMember member) {
-		return (member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType())))
-			&& isParentExported(member);
+		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
+		/**
+		 * We have to include public members in private types, e.g.
+		 * class A { public void m() {} }
+		 * public class B extends A { public void m2() {} }
+		 * B effectively has m1() and m2()
+		 */
+		//	&& isParentExported(member);
 	}
 
 	private boolean isParentExported(CtTypeMember member) {

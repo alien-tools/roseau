@@ -8,6 +8,7 @@ import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -119,5 +120,46 @@ class MethodsOverloadingTest {
 		assertTrue(cmDouble.isOverloading(cm));
 		assertTrue(cmDouble.isOverloading(cmInt));
 		assertFalse(cmDouble.isOverloading(cmDouble));
+	}
+
+	@Test
+	void overriding_multiple_sources() {
+		var api = buildAPI("""
+			public interface I { void m(); }
+			public interface J { void m(); }
+			public interface K extends I { default void m() {} }
+			public class A { public void m() {} }
+			public class B extends A implements J, K { }
+			public class C extends A implements J, K { public void m() {} }
+			public abstract class D implements K { public abstract void (); }""");
+
+		var i = assertInterface(api, "I");
+		var j = assertInterface(api, "J");
+		var k = assertInterface(api, "K");
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "B");
+		var c = assertClass(api, "C");
+		var d = assertClass(api, "D");
+
+		assertThat(i.getAllMethods().toList(), hasSize(1));
+		assertEquals("I.m", i.getAllMethods().toList().getFirst().getQualifiedName());
+
+		assertThat(j.getAllMethods().toList(), hasSize(1));
+		assertEquals("J.m", j.getAllMethods().toList().getFirst().getQualifiedName());
+
+		assertThat(k.getAllMethods().toList(), hasSize(1));
+		assertEquals("K.m", k.getAllMethods().toList().getFirst().getQualifiedName());
+
+		assertThat(a.getAllMethods().toList(), hasSize(1));
+		assertEquals("A.m", a.getAllMethods().toList().getFirst().getQualifiedName());
+
+		assertThat(b.getAllMethods().toList(), hasSize(1));
+		assertEquals("A.m", b.getAllMethods().toList().getFirst().getQualifiedName());
+
+		assertThat(c.getAllMethods().toList(), hasSize(1));
+		assertEquals("C.m", c.getAllMethods().toList().getFirst().getQualifiedName());
+
+		assertThat(d.getAllMethods().toList(), hasSize(1));
+		assertEquals("K.m", d.getAllMethods().toList().getFirst().getQualifiedName());
 	}
 }

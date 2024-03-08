@@ -93,7 +93,7 @@ public class APIDiff {
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
-		t1.getMethods().forEach(m1 -> {
+		t1.getAllMethods().forEach(m1 -> {
 			Optional<MethodDecl> matchM2 = t2.getAllMethods()
 				.filter(m -> m.hasSameSignature(m1))
 				.findFirst();
