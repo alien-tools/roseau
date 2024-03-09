@@ -62,7 +62,7 @@ final class Roseau implements Callable<Integer>  {
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
-	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(99L);
+	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(60L);
 
 	private API buildAPI(Path sources) {
 		Stopwatch sw = Stopwatch.createStarted();
