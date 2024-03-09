@@ -45,7 +45,7 @@ class AnnotationsExtractionTest {
 			}""");
 
 		var c = assertClass(api, "C");
-		var m = assertMethod(c, "m");
+		var m = assertMethod(c, "m()");
 
 		assertThat(m.getAnnotations(), hasSize(1));
 		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
@@ -61,7 +61,7 @@ class AnnotationsExtractionTest {
 			}""");
 
 		var c = assertClass(api, "C");
-		var m = assertMethod(c, "m");
+		var m = assertMethod(c, "m()");
 
 		assertThat(m.getAnnotations(), hasSize(1));
 		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));

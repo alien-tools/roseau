@@ -12,7 +12,6 @@ import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
@@ -37,8 +36,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertFalse(a.isExported());
-		assertThat(a.getFields(), hasSize(1));
-		assertThat(a.getMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields(), hasSize(2));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
 	}
 
 	@Test
@@ -57,13 +56,13 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(2));
-		assertThat(a.getMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields(), hasSize(2));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
 
 		var f2 = assertField(a, "f2");
 		var f3 = assertField(a, "f3");
-		var m2 = assertMethod(a, "m2");
-		var m3 = assertMethod(a, "m3");
+		var m2 = assertMethod(a, "m2()");
+		var m3 = assertMethod(a, "m3()");
 
 		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
@@ -83,13 +82,13 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(2));
-		assertThat(a.getMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields(), hasSize(2));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
 
 		var f1 = assertField(a, "f1");
 		var f2 = assertField(a, "f2");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertTrue(f1.isPublic());
 		assertTrue(f2.isPublic());
@@ -115,13 +114,13 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "B$A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(2));
-		assertThat(a.getMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields(), hasSize(2));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
 
 		var f2 = assertField(a, "f2");
 		var f3 = assertField(a, "f3");
-		var m2 = assertMethod(a, "m2");
-		var m3 = assertMethod(a, "m3");
+		var m2 = assertMethod(a, "m2()");
+		var m3 = assertMethod(a, "m3()");
 
 		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
@@ -145,11 +144,11 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(1));
-		assertThat(a.getMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields(), hasSize(1));
+		assertThat(a.getDeclaredMethods(), hasSize(1));
 
 		var f3 = assertField(a, "f3");
-		var m3 = assertMethod(a, "m3");
+		var m3 = assertMethod(a, "m3()");
 
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
@@ -172,11 +171,11 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(1));
-		assertThat(a.getMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields(), hasSize(1));
+		assertThat(a.getDeclaredMethods(), hasSize(1));
 
 		var f3 = assertField(a, "f3");
-		var m3 = assertMethod(a, "m3");
+		var m3 = assertMethod(a, "m3()");
 
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
@@ -186,7 +185,7 @@ class TypeMemberExtractionTest {
 	void members_within_effectively_final_class() {
 		var api = buildAPI("""
 			public class A {
-			  A() {} // subclass-inaccessible constructor
+			  private A() {} // subclass-inaccessible constructor
 				private int f1;
 			  protected int f2;
 			  public int f3;
@@ -199,11 +198,11 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(1));
-		assertThat(a.getMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields(), hasSize(1));
+		assertThat(a.getDeclaredMethods(), hasSize(1));
 
 		var f3 = assertField(a, "f3");
-		var m3 = assertMethod(a, "m3");
+		var m3 = assertMethod(a, "m3()");
 
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
@@ -221,13 +220,13 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(2));
-		assertThat(a.getMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields(), hasSize(2));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
 
 		var f1 = assertField(a, "f1");
 		var f2 = assertField(a, "f2");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertFalse(f1.isFinal());
 		assertTrue(f2.isFinal());
@@ -247,13 +246,13 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		assertThat(a.getFields(), hasSize(2));
-		assertThat(a.getMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields(), hasSize(2));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
 
 		var f1 = assertField(a, "f1");
 		var f2 = assertField(a, "f2");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertFalse(f1.isStatic());
 		assertTrue(f2.isStatic());
@@ -269,7 +268,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertInterface(api, "A");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(m.getType(), is(instanceOf(PrimitiveTypeReference.class)));
 		assertThat(m.getType().getQualifiedName(), is(equalTo("void")));
@@ -285,7 +284,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		var f = assertField(a, "f");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f.getType(), is(instanceOf(PrimitiveTypeReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("int")));
@@ -304,7 +303,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		var f = assertField(a, "f");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("java.lang.String")));
@@ -324,7 +323,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		var f = assertField(a, "f");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("I")));
@@ -343,7 +342,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		var f = assertField(a, "f");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("U")));
@@ -362,7 +361,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		var f = assertField(a, "f");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f.getType(), is(instanceOf(ArrayTypeReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("int[]")));
@@ -393,7 +392,7 @@ class TypeMemberExtractionTest {
 		var a = assertInterface(api, "A");
 		var f1 = assertField(a, "f1");
 		var f2 = assertField(a, "f2");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f1.getType(), is(instanceOf(ArrayTypeReference.class)));
 		assertThat(f1.getType().getQualifiedName(), is(equalTo("java.lang.String[][]")));
@@ -433,8 +432,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		var f = assertField(a, "f");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("T")));
@@ -456,7 +455,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		var f = assertField(a, "f");
-		var m = assertMethod(a, "m");
+		var m = assertMethod(a, "m()");
 
 		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
 		assertThat(f.getType().getQualifiedName(), is(equalTo("T")));

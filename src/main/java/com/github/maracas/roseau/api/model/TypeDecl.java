@@ -157,7 +157,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				methods.stream(),
 				getAllSuperTypes()
 					.map(TypeReference::getResolvedApiType)
-					.flatMap(t -> t.map(TypeDecl::getMethods).orElseGet(Collections::emptyList).stream())
+					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
 			).collect(Collectors.toMap(
 				MethodDecl::getSignature,
 				Function.identity(),
@@ -173,7 +173,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			fields.stream(),
 			getAllSuperTypes()
 				.map(TypeReference::getResolvedApiType)
-				.flatMap(t -> t.map(TypeDecl::getFields).orElseGet(Collections::emptyList).stream())
+				.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
 		).distinct();
 	}
 
@@ -185,11 +185,11 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return Collections.unmodifiableList(formalTypeParameters);
 	}
 
-	public List<FieldDecl> getFields() {
+	public List<FieldDecl> getDeclaredFields() {
 		return Collections.unmodifiableList(fields);
 	}
 
-	public List<MethodDecl> getMethods() {
+	public List<MethodDecl> getDeclaredMethods() {
 		return Collections.unmodifiableList(methods);
 	}
 

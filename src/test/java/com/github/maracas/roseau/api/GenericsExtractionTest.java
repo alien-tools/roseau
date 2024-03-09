@@ -108,18 +108,18 @@ class GenericsExtractionTest {
 				public List<?> m1() { return null; }
 				public List<? extends Number> m2() { return null; }
 				public List<? super Number> m3() { return null; }
-				public void m4(List<?> p) {}
-				public void m5(List<? extends Number> p) {}
-				public void m6(List<? super Number> p) {}
+				public void m4(java.util.List<?> p) {}
+				public void m5(java.util.List<? extends Number> p) {}
+				public void m6(java.util.List<? super Number> p) {}
 			}""");
 
 		var c = assertClass(api, "C");
-		var m1 = assertMethod(c, "m1");
-		var m2 = assertMethod(c, "m2");
-		var m3 = assertMethod(c, "m3");
-		var m4 = assertMethod(c, "m4");
-		var m5 = assertMethod(c, "m5");
-		var m6 = assertMethod(c, "m6");
+		var m1 = assertMethod(c, "m1()");
+		var m2 = assertMethod(c, "m2()");
+		var m3 = assertMethod(c, "m3()");
+		var m4 = assertMethod(c, "m4(java.util.List)");
+		var m5 = assertMethod(c, "m5(java.util.List)");
+		var m6 = assertMethod(c, "m6(java.util.List)");
 
 		assertThat(m1.getType(), instanceOf(TypeReference.class));
 		if (m1.getType() instanceof TypeReference<?> typeRef) {

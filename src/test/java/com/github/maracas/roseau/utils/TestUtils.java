@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.utils;
 
-import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
@@ -9,10 +8,8 @@ import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
@@ -21,7 +18,6 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.VirtualFile;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
@@ -108,26 +104,14 @@ public class TestUtils {
 			return findField.get();
 	}
 
-	public static MethodDecl assertMethod(TypeDecl decl, String name) {
-		Optional<MethodDecl> findMethod = decl.getMethods().stream()
-			.filter(m -> m.getSimpleName().equals(name))
-			.findFirst();
+	public static MethodDecl assertMethod(TypeDecl decl, String signature) {
+		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
+			.filter(m -> m.getSignature().equals(signature))
+			.toList();
 
 		if (findMethod.isEmpty())
-			throw new AssertionFailedError("No such method", name, "No such method");
-		else
-			return findMethod.get();
-	}
-
-	public static MethodDecl assertMethod(TypeDecl decl, String name, ITypeReference... typeFqns) {
-		Optional<MethodDecl> findMethod = decl.getMethods().stream()
-			.filter(m -> m.getSimpleName().equals(name) && Arrays.asList(typeFqns).equals(m.getParameters().stream().map(ParameterDecl::type).toList()))
-			.findFirst();
-
-		if (findMethod.isEmpty())
-			throw new AssertionFailedError("No such method", name, "No such method");
-		else
-			return findMethod.get();
+			throw new AssertionFailedError("No such method", signature, "No such method");
+		return findMethod.getFirst();
 	}
 
 	public static ClassDecl assertClass(API api, String name) {

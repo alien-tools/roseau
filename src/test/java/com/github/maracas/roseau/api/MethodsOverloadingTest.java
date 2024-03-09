@@ -24,10 +24,10 @@ class MethodsOverloadingTest {
 				public void m(String s, int a) {}
 			}""");
 		var a = assertClass(api, "A");
-		assertThat(a.getMethods(), hasSize(5));
+		assertThat(a.getDeclaredMethods(), hasSize(5));
 
-		for (var m : a.getMethods()) {
-			for (var n : a.getMethods()) {
+		for (var m : a.getDeclaredMethods()) {
+			for (var n : a.getDeclaredMethods()) {
 				if (m == n) {
 					assertFalse(m.isOverloading(n), m + " does overload " + n);
 					assertTrue(m.isOverriding(n), m + " does not override " + n);
@@ -59,9 +59,9 @@ class MethodsOverloadingTest {
 		var a = assertClass(api, "A");
 		var c = assertClass(api, "C");
 
-		assertThat(i.getMethods(), hasSize(1));
-		assertThat(a.getMethods(), hasSize(2));
-		assertThat(c.getMethods(), hasSize(3));
+		assertThat(i.getDeclaredMethods(), hasSize(1));
+		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(c.getDeclaredMethods(), hasSize(3));
 
 		assertThat(i.getAllMethods().toList(), hasSize(1));
 		assertThat(a.getAllMethods().toList(), hasSize(3));
@@ -72,12 +72,12 @@ class MethodsOverloadingTest {
 		var doubleRef = factory.getTypeReferenceFactory().createPrimitiveTypeReference("double");
 		var stringRef = factory.getTypeReferenceFactory().createTypeReference("java.lang.String");
 
-		var im = assertMethod(i, "m");
-		var amInt = assertMethod(a, "m", intRef);
-		var amString = assertMethod(a, "m", stringRef);
-		var cm = assertMethod(c, "m");
-		var cmInt = assertMethod(c, "m", intRef);
-		var cmDouble = assertMethod(c, "m", doubleRef);
+		var im = assertMethod(i, "m()");
+		var amInt = assertMethod(a, "m(int)");
+		var amString = assertMethod(a, "m(java.lang.String)");
+		var cm = assertMethod(c, "m()");
+		var cmInt = assertMethod(c, "m(int)");
+		var cmDouble = assertMethod(c, "m(double)");
 
 		assertFalse(im.isOverloading(im));
 		assertTrue(im.isOverloading(amInt));

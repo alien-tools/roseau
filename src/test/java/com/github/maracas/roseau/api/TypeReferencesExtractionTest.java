@@ -7,13 +7,11 @@ import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertField;
-import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
@@ -109,7 +107,7 @@ class TypeReferencesExtractionTest {
 		var b = assertClass(api, "B");
 
 		assertTrue(b.getSuperClass().isPresent());
-		assertThat(b.getMethods(), hasSize(1));
+		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(2));
 
 		if (b.getSuperClass().get() instanceof TypeReference<?> ref) {
@@ -130,7 +128,7 @@ class TypeReferencesExtractionTest {
 		var b = assertClass(api, "B");
 
 		assertTrue(b.getSuperClass().isPresent());
-		assertThat(b.getMethods(), hasSize(1));
+		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(2));
 
 		if (b.getSuperClass().get() instanceof TypeReference<?> ref) {
@@ -148,7 +146,7 @@ class TypeReferencesExtractionTest {
 		var b = assertClass(api, "B");
 
 		assertTrue(b.getSuperClass().isPresent());
-		assertThat(b.getMethods(), hasSize(1));
+		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(1));
 
 		if (b.getSuperClass().get() instanceof TypeReference<?> ref) {

@@ -31,6 +31,7 @@ import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtFormalTypeDeclarer;
 import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
+import spoon.reflect.declaration.CtModifiable;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtRecord;
 import spoon.reflect.declaration.CtType;
@@ -352,24 +353,38 @@ public class SpoonAPIFactory {
 	}
 
 	private boolean isExported(CtTypeMember member) {
-		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
-		/**
-		 * We have to include public members in private types, e.g.
-		 * class A { public void m() {} }
-		 * public class B extends A { public void m2() {} }
-		 * B effectively has m1() and m2()
+		/*
+		 * This is kinda tricky due to API types leaking internal types. In the following,
+		 * A itself and anything it declares cannot be accessed outside 'pkg'.
+		 * However, B re-opens A through subclassing and effectively re-exports the declarations
+		 * it sees through its own public visibility. A client class C extending B would see m().
+		 * So we have to keep A's potentially-leaked declarations to mark them later as part of B's API.
+		 * It's possible to re-open and leak a type within the API if:
+		 *   - It has a non-private constructor (package-private can be re-opened within the same package)
+		 *   - It is not explicitly 'final' or 'sealed' (sealed subclasses can attempt to leak but they're final
+		 *    themselves so they won't leak to clients)
+		 *
+		 * class A { // package 'pkg'
+		 *   A() {}
+		 *   protected void m() {}
+		 * }
+		 * public class B extends A {} // package 'pkg'
 		 */
-		//	&& isParentExported(member);
+		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
 	}
 
 	private boolean isParentExported(CtTypeMember member) {
 		return member.getDeclaringType() == null || isExported(member.getDeclaringType());
 	}
 
+	/**
+	 * Checks whether the given type is effectively final _within the API_. While package-private constructors
+	 * cannot be accessed from client code, they can be from the API itself, and sub-classes can leak internals.
+	 */
 	private boolean isEffectivelyFinal(CtType<?> type) {
 		if (type instanceof CtClass<?> cls)
 			if (!cls.getConstructors().isEmpty()
-				&& cls.getConstructors().stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()))
+				&& cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
 				return true;
 
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);

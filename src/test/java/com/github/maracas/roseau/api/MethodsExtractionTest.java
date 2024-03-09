@@ -19,8 +19,8 @@ class MethodsExtractionTest {
 			}""");
 
 		var i = assertInterface(api, "I");
-		var m1 = assertMethod(i, "m1");
-		var m2 = assertMethod(i, "m2");
+		var m1 = assertMethod(i, "m1()");
+		var m2 = assertMethod(i, "m2()");
 
 		assertFalse(m1.isDefault());
 		assertTrue(m2.isDefault());
@@ -35,8 +35,8 @@ class MethodsExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertFalse(m1.isAbstract());
 		assertTrue(m2.isAbstract());
@@ -51,8 +51,8 @@ class MethodsExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertFalse(m1.isStrictFp());
 		assertTrue(m2.isStrictFp());
@@ -67,8 +67,8 @@ class MethodsExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		var m1 = assertMethod(a, "m1");
-		var m2 = assertMethod(a, "m2");
+		var m1 = assertMethod(a, "m1()");
+		var m2 = assertMethod(a, "m2()");
 
 		assertFalse(m1.isNative());
 		assertTrue(m2.isNative());
