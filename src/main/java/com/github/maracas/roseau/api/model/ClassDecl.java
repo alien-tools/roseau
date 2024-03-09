@@ -48,6 +48,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return super.isEffectivelyFinal() || constructors.isEmpty();
 	}
 
+	public boolean isEffectivelyAbstract() {
+		return isAbstract() ||
+			(constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()));
+	}
+
 	@Override
 	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return Stream.concat(

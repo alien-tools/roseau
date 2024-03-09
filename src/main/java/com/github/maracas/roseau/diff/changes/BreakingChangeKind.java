@@ -6,6 +6,12 @@ import static com.github.maracas.roseau.diff.changes.BreakingChangeNature.MUTATI
 
 /**
  * Kinds of breaking changes that can be detected.
+ *
+ * FIXME: we're currently mostly focused on binary compatibility without
+ * much thought given to source compatibility except for generics.
+ * We'll probably have to map BCs to their impact on binary/source compatibility
+ * and refine some (e.g., METHOD_RETURN_TYPE_CHANGED is too broad: every return
+ * type change is binary-incompatible, only some are source-incompatible).
  */
 public enum BreakingChangeKind {
 	TYPE_REMOVED(DELETION),
@@ -22,7 +28,7 @@ public enum BreakingChangeKind {
 	TYPE_FORMAL_TYPE_PARAMETERS_CHANGED(MUTATION),
 
 	METHOD_REMOVED(DELETION),
-	METHOD_LESS_ACCESSIBLE(MUTATION),
+	METHOD_NOW_PROTECTED(MUTATION),
 	METHOD_RETURN_TYPE_CHANGED(MUTATION),
 	METHOD_NOW_ABSTRACT(MUTATION),
 	METHOD_NOW_FINAL(MUTATION),
@@ -46,10 +52,10 @@ public enum BreakingChangeKind {
 	FIELD_NO_LONGER_STATIC(MUTATION),
 	FIELD_TYPE_CHANGED(MUTATION),
 	FIELD_REMOVED(DELETION),
-	FIELD_LESS_ACCESSIBLE(MUTATION),
+	FIELD_NOW_PROTECTED(MUTATION),
 
 	CONSTRUCTOR_REMOVED(DELETION),
-	CONSTRUCTOR_LESS_ACCESSIBLE(MUTATION),
+	CONSTRUCTOR_NOW_PROTECTED(MUTATION),
 
 	METHOD_PARAMETER_GENERICS_CHANGED(MUTATION);
 

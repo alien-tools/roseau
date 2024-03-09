@@ -160,7 +160,7 @@ public class APIDiff {
 		if (!c1.isSealed() && c2.isSealed())
 			bc(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
 
-		if (!c1.isAbstract() && c2.isAbstract())
+		if (!c1.isEffectivelyAbstract() && c2.isEffectivelyAbstract())
 			bc(BreakingChangeKind.CLASS_NOW_ABSTRACT, c1, c2);
 
 		if (!c1.isStatic() && c2.isStatic() && c1.isNested() && c2.isNested())
@@ -189,7 +189,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.FIELD_TYPE_CHANGED, f1, f2);
 
 		if (f1.isPublic() && f2.isProtected())
-			bc(BreakingChangeKind.FIELD_LESS_ACCESSIBLE, f1, f2);
+			bc(BreakingChangeKind.FIELD_NOW_PROTECTED, f1, f2);
 	}
 
 	private void diffMethod(MethodDecl m1, MethodDecl m2) {
@@ -215,7 +215,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, m1, m2);
 
 		if (m1.isPublic() && m2.isProtected())
-			bc(BreakingChangeKind.METHOD_LESS_ACCESSIBLE, m1, m2);
+			bc(BreakingChangeKind.METHOD_NOW_PROTECTED, m1, m2);
 
 		if (!Objects.equals(m1.getType(), m2.getType()))
 			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2);
@@ -227,7 +227,7 @@ public class APIDiff {
 
 	private void diffConstructor(ConstructorDecl cons1, ConstructorDecl cons2) {
 		if (cons1.isPublic() && cons2.isProtected())
-			bc(BreakingChangeKind.CONSTRUCTOR_LESS_ACCESSIBLE, cons1, cons2);
+			bc(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cons1, cons2);
 
 		diffThrownExceptions(cons1, cons2);
 		diffFormalTypeParameters(cons1, cons2);
