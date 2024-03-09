@@ -297,7 +297,7 @@ class TypeMemberExtractionTest {
 	void jdk_members() {
 		var api = buildAPI("""
 			public interface A {
-				String f = 2;
+				String f = null;
 				String m();
 			}""");
 

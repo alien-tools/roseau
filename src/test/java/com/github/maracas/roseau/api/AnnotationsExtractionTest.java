@@ -26,7 +26,7 @@ class AnnotationsExtractionTest {
 	@Test
 	void type_custom_annotation() {
 		var api = buildAPI("""
-			@Target(ElementType.TYPE)
+			@Target(java.lang.annotation.ElementType.TYPE)
 			public @interface A {}
 			@A public class C {}""");
 
@@ -54,7 +54,7 @@ class AnnotationsExtractionTest {
 	@Test
 	void method_custom_annotation() {
 		var api = buildAPI("""
-			@Target(ElementType.METHOD)
+			@Target(java.lang.annotation.ElementType.METHOD)
 			public @interface A {}
 			public class C {
 				@A public void m() {}
@@ -84,7 +84,7 @@ class AnnotationsExtractionTest {
 	@Test
 	void field_custom_annotation() {
 		var api = buildAPI("""
-			@Target(ElementType.FIELD)
+			@Target(java.lang.annotation.ElementType.FIELD)
 			public @interface A {}
 			public class C {
 				@A public int f;

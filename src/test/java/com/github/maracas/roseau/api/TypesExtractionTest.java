@@ -60,7 +60,7 @@ class TypesExtractionTest {
 
 	@Test
 	void package_private_record() {
-		var api = buildAPI("record A {}");
+		var api = buildAPI("record A() {}");
 
 		var a = assertRecord(api, "A");
 
@@ -71,7 +71,7 @@ class TypesExtractionTest {
 
 	@Test
 	void public_record() {
-		var api = buildAPI("public record A {}");
+		var api = buildAPI("public record A() {}");
 
 		var a = assertRecord(api, "A");
 

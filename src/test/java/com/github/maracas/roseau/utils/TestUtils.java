@@ -137,8 +137,9 @@ public class TestUtils {
 	public static CtModel buildModel(String sources) {
 		Launcher launcher = new Launcher();
 
-		launcher.addInputResource(new VirtualFile(sources));
+		launcher.addInputResource(new VirtualFile(sources, "A.java"));
 		launcher.getEnvironment().setComplianceLevel(17);
+		launcher.getEnvironment().setLevel("TRACE");
 
 		return launcher.buildModel();
 	}

@@ -251,8 +251,8 @@ class TypeFormalTypeParameterChangedTest {
 
 	@Test
 	void unchanged_type_params_bounds() {
-		String v1 = "public class A<T extends java.util.List<? super U>, U>> {}";
-		String v2 = "public class A<T extends java.util.List<? super U>, U>> {}";
+		String v1 = "public class A<T extends java.util.List<? super U>, U> {}";
+		String v2 = "public class A<T extends java.util.List<? super U>, U> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}

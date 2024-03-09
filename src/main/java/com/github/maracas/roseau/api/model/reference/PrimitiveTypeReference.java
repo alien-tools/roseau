@@ -14,7 +14,7 @@ public record PrimitiveTypeReference(String qualifiedName) implements ITypeRefer
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return false;
+		return equals(other); // FIXME
 	}
 
 	@Override

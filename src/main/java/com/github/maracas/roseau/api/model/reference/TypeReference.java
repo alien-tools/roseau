@@ -65,6 +65,9 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 			// Safe as long as we don't have two types with same FQN of different kinds (e.g. class vs interface)
 			resolvedApiType = (T) factory.convertCtType(qualifiedName);
 
+		if (resolvedApiType == null)
+			System.err.printf("Warning: %s couldn't be resolved, results may be innacurate%n", qualifiedName);
+
 		return Optional.ofNullable(resolvedApiType);
 	}
 

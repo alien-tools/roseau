@@ -131,7 +131,7 @@ class MethodsOverloadingTest {
 			public class A { public void m() {} }
 			public class B extends A implements J, K { }
 			public class C extends A implements J, K { public void m() {} }
-			public abstract class D implements K { public abstract void (); }""");
+			public abstract class D implements K { }""");
 
 		var i = assertInterface(api, "I");
 		var j = assertInterface(api, "J");
