@@ -39,6 +39,11 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	protected final TypeReference<TypeDecl> enclosingType;
 
+	/**
+	 * It kinda sucks having to cache that, but it really makes a huge difference
+	 */
+	protected List<MethodDecl> allMethods;
+
 	protected TypeDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
 	                   List<Annotation> annotations, SourceLocation location,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
@@ -153,7 +158,8 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 * Returns the most concrete implementation for each unique method signature.
 	 */
 	public Stream<MethodDecl> getAllMethods() {
-		return Stream.concat(
+		if (allMethods == null) {
+			allMethods = Stream.concat(
 				methods.stream(),
 				getAllSuperTypes()
 					.map(TypeReference::getResolvedApiType)
@@ -162,7 +168,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				MethodDecl::getSignature,
 				Function.identity(),
 				(m1, m2) -> m1.isOverriding(m2) ? m1 : m2
-			)).values().stream();
+			)).values().stream().toList();
+		}
+
+		return allMethods.stream();
 	}
 
 	/**
