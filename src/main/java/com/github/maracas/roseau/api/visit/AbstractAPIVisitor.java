@@ -8,12 +8,14 @@ import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.ExecutableDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.TypeMemberDecl;
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
@@ -66,19 +68,12 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit fieldDecl(FieldDecl it) {
-		return () -> {
-			symbol(it).visit();
-			if (it.getType() != null)
-				$(it.getType()).visit();
-		};
+		return typeMemberDecl(it);
 	}
 
 	@Override
 	public Visit parameterDecl(ParameterDecl it) {
-		return () -> {
-			if (it.type() != null)
-				$(it.type()).visit();
-		};
+		return () -> $(it.type()).visit();
 	}
 
 	@Override
@@ -106,6 +101,16 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {};
 	}
 
+	@Override
+	public Visit annotation(Annotation it) {
+		return () -> $(it.actualAnnotation()).visit();
+	}
+
+	@Override
+	public Visit formalTypeParameter(FormalTypeParameter it) {
+		return () -> it.bounds().forEach(b -> $(b).visit());
+	}
+
 	public Visit symbol(Symbol it) {
 		return () -> it.getAnnotations().forEach(ann -> $(ann).visit());
 	}
@@ -113,24 +118,28 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit typeDecl(TypeDecl it) {
 		return () -> {
 			symbol(it).visit();
+			it.getFormalTypeParameters().forEach(ftp -> $(ftp).visit());
 			it.getImplementedInterfaces().forEach(intf -> $(intf).visit());
-			it.getFields().forEach(field -> $(field).visit());
-			it.getMethods().forEach(meth -> $(meth).visit());
+			it.getDeclaredFields().forEach(field -> $(field).visit());
+			it.getDeclaredMethods().forEach(meth -> $(meth).visit());
 			it.getEnclosingType().ifPresent(t -> $(t).visit());
+		};
+	}
+
+	public Visit typeMemberDecl(TypeMemberDecl it) {
+		return () -> {
+			symbol(it).visit();
+			$(it.getType()).visit();
+			$(it.getContainingType()).visit();
 		};
 	}
 
 	public Visit executableDecl(ExecutableDecl it) {
 		return () -> {
-			symbol(it).visit();
-			if (it.getType() != null)
-				$(it.getType()).visit();
+			typeMemberDecl(it).visit();
 			it.getParameters().forEach(p -> $(p).visit());
 			it.getThrownExceptions().forEach(e -> $(e).visit());
+			it.getFormalTypeParameters().forEach(ftp -> $(ftp).visit());
 		};
-	}
-
-	public Visit annotation(Annotation it) {
-		return () -> $(it.actualAnnotation()).visit();
 	}
 }

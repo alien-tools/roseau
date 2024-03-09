@@ -7,6 +7,7 @@ import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.ParameterDecl;
@@ -40,6 +41,7 @@ public interface APIAlgebra<T> {
 	T typeParameterReference(TypeParameterReference it);
 	T wildcardTypeReference(WildcardTypeReference it);
 	T annotation(Annotation it);
+	T formalTypeParameter(FormalTypeParameter it);
 
 	default T $(API it) {
 		return api(it);
@@ -47,14 +49,14 @@ public interface APIAlgebra<T> {
 
 	default T $(Symbol it) {
 		return switch (it) {
-			case RecordDecl r -> recordDecl(r);
-			case EnumDecl e -> enumDecl(e);
-			case ClassDecl c -> classDecl(c);
-			case InterfaceDecl i -> interfaceDecl(i);
-			case AnnotationDecl a -> annotationDecl(a);
-			case MethodDecl m -> methodDecl(m);
+			case RecordDecl r      -> recordDecl(r);
+			case EnumDecl e        -> enumDecl(e);
+			case ClassDecl c       -> classDecl(c);
+			case InterfaceDecl i   -> interfaceDecl(i);
+			case AnnotationDecl a  -> annotationDecl(a);
+			case MethodDecl m      -> methodDecl(m);
 			case ConstructorDecl c -> constructorDecl(c);
-			case FieldDecl f -> fieldDecl(f);
+			case FieldDecl f       -> fieldDecl(f);
 		};
 	}
 
@@ -64,15 +66,17 @@ public interface APIAlgebra<T> {
 
 	default T $(ITypeReference it) {
 		return switch (it) {
-			case TypeReference<?> typeRef -> typeReference(typeRef);
-			case PrimitiveTypeReference primitiveRef -> primitiveTypeReference(primitiveRef);
-			case ArrayTypeReference arrayRef -> arrayTypeReference(arrayRef);
+			case TypeReference<?> typeRef     -> typeReference(typeRef);
+			case PrimitiveTypeReference pRef  -> primitiveTypeReference(pRef);
+			case ArrayTypeReference aRef      -> arrayTypeReference(aRef);
 			case TypeParameterReference tpRef -> typeParameterReference(tpRef);
-			case WildcardTypeReference wcRef -> wildcardTypeReference(wcRef);
+			case WildcardTypeReference wcRef  -> wildcardTypeReference(wcRef);
 		};
 	}
 
 	default T $(Annotation it) {
 		return annotation(it);
 	}
+
+	default T $(FormalTypeParameter it) { return formalTypeParameter(it); }
 }
