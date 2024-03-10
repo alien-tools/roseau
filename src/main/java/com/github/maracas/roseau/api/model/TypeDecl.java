@@ -208,7 +208,13 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	public Optional<FieldDecl> findField(String name) {
 		return getAllFields()
-			.filter(f -> f.getSimpleName().equals(name))
+			.filter(f -> Objects.equals(f.getSimpleName(), name))
+			.findFirst();
+	}
+
+	public Optional<MethodDecl> findMethod(String signature) {
+		return getAllMethods()
+			.filter(m -> Objects.equals(m.getSignature(), signature))
 			.findFirst();
 	}
 
