@@ -34,4 +34,32 @@ class MethodNoLongerVarargsTest {
 
 		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_VARARGS, 2, buildDiff(v1, v2));
 	}
+
+	@Test
+	void constructor_no_longer_varargs_first() {
+		var v1 = """
+			public class A {
+				public A(int... i) {}
+			}""";
+		var v2 = """
+			public class A {
+				public A(int i) {}
+			}""";
+
+		assertBC("A.<init>", BreakingChangeKind.METHOD_NO_LONGER_VARARGS, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void constructor_no_longer_varargs_last() {
+		var v1 = """
+			public class A {
+				public A(String s, int... i) {}
+			}""";
+		var v2 = """
+			public class A {
+				public A(String s, int i) {}
+			}""";
+
+		assertBC("A.<init>", BreakingChangeKind.METHOD_NO_LONGER_VARARGS, 2, buildDiff(v1, v2));
+	}
 }
