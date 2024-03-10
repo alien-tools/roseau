@@ -123,10 +123,10 @@ public class APIDiff {
 			.filter(MethodDecl::isAbstract)
 			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
 			.forEach(m2 -> {
-				if (t2.isInterface())
+				if (t1.isInterface())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
 
-				if (t2.isClass())
+				if (t1.isClass())
 					bc(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1, m2);
 			});
 	}
@@ -189,26 +189,17 @@ public class APIDiff {
 	}
 
 	private void diffMethod(MethodDecl m1, MethodDecl m2) {
-		if (!m1.isFinal() && m2.isFinal())
+		if (!m1.isEffectivelyFinal() && m2.isEffectivelyFinal())
 			bc(BreakingChangeKind.METHOD_NOW_FINAL, m1, m2);
 
 		if (!m1.isStatic() && m2.isStatic())
 			bc(BreakingChangeKind.METHOD_NOW_STATIC, m1, m2);
 
-		if (!m1.isNative() && m2.isNative())
-			bc(BreakingChangeKind.METHOD_NOW_NATIVE, m1, m2);
-
 		if (m1.isStatic() && !m2.isStatic())
 			bc(BreakingChangeKind.METHOD_NO_LONGER_STATIC, m1, m2);
 
-		if (m1.isStrictFp() && !m2.isStrictFp())
-			bc(BreakingChangeKind.METHOD_NO_LONGER_STRICTFP, m1, m2);
-
 		if (!m1.isAbstract() && m2.isAbstract())
 			bc(BreakingChangeKind.METHOD_NOW_ABSTRACT, m1, m2);
-
-		if (m1.isAbstract() && m2.isDefault())
-			bc(BreakingChangeKind.METHOD_ABSTRACT_NOW_DEFAULT, m1, m2);
 
 		if (m1.isPublic() && m2.isProtected())
 			bc(BreakingChangeKind.METHOD_NOW_PROTECTED, m1, m2);
@@ -246,10 +237,6 @@ public class APIDiff {
 			&& (e2.getParameters().isEmpty() || !e2.getParameters().getLast().isVarargs()))
 			bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, e1, e2);
 
-		if (!e2.getParameters().isEmpty() && e2.getParameters().getLast().isVarargs()
-			&& (e1.getParameters().isEmpty() || !e1.getParameters().getLast().isVarargs()))
-			bc(BreakingChangeKind.METHOD_NOW_VARARGS, e1, e2);
-		
 		// We checked executable signatures, so we know params are equals modulo type arguments
 		for (int i = 0; i < e1.getParameters().size(); i++) {
 			ParameterDecl p1 = e1.getParameters().get(i);

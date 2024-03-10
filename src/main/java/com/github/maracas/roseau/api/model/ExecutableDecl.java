@@ -6,6 +6,7 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}.
@@ -47,22 +48,12 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return equals(other) || Objects.equals(getSignature(), other.getSignature());
 	}
 
+	/**
+	 * Varargs and generics not included
+	 */
 	public String getSignature() {
-		StringBuilder signature = new StringBuilder();
-		signature.append(getSimpleName());
-		signature.append("(");
-		for (int i = 0; i < parameters.size(); i++) {
-			ParameterDecl parameter = parameters.get(i);
-			signature.append(parameter.type().getQualifiedName());
-			if (parameter.isVarargs()) {
-				signature.append("...");
-			}
-			if (i < parameters.size() - 1) {
-				signature.append(", ");
-			}
-		}
-		signature.append(")");
-		return signature.toString();
+		return "%s(%s)".formatted(simpleName,
+			parameters.stream().map(p -> p.type().getQualifiedName()).collect(Collectors.joining(", ")));
 	}
 
 	/**

@@ -289,7 +289,10 @@ public class SpoonAPIFactory {
 	}
 
 	private ParameterDecl convertCtParameter(CtParameter<?> parameter) {
-		return new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), parameter.isVarArgs());
+		// Spoon treats varargs as arrays, which is correct but not what we want to properly match signatures
+		return parameter.isVarArgs() && parameter.getType() instanceof CtArrayTypeReference<?> atr
+			? new ParameterDecl(parameter.getSimpleName(), createITypeReference(atr.getComponentType()), true)
+			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
 	}
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {

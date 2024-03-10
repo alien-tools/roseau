@@ -23,6 +23,6 @@ public record BreakingChange(
 	@Override
 	public String toString() {
 		return "BC[kind=%s, impactedSymbol=%s, newSymbol=%s]".formatted(kind, impactedSymbol.getQualifiedName(),
-			newSymbol.getQualifiedName());
+			newSymbol != null ? newSymbol.getQualifiedName() : "");
 	}
 }

@@ -41,6 +41,10 @@ public final class MethodDecl extends ExecutableDecl {
 		return modifiers.contains(Modifier.STRICTFP);
 	}
 
+	public boolean isEffectivelyFinal() {
+		return isFinal() || containingType.isEffectivelyFinal();
+	}
+
 	/**
 	 * Checks whether the current method overrides the supplied method.
 	 * A method overrides itself.
