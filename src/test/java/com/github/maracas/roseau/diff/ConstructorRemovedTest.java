@@ -10,8 +10,8 @@ import static com.github.maracas.roseau.utils.TestUtils.buildDiff;
 class ConstructorRemovedTest {
 	@Test
 	void class_default_constructor_removed() {
-		String v1 = "public class A {}";
-		String v2 = """
+		var v1 = "public class A {}";
+		var v2 = """
 			public class A {
 				public A(int i) {}
 			}""";
@@ -21,8 +21,8 @@ class ConstructorRemovedTest {
 
 	@Test
 	void class_default_constructor_now_explicit() {
-		String v1 = "public class A {}";
-		String v2 = """
+		var v1 = "public class A {}";
+		var v2 = """
 			public class A {
 				public A() {}
 			}""";
@@ -32,19 +32,19 @@ class ConstructorRemovedTest {
 
 	@Test
 	void class_explicit_constructor_now_default() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public A() {}
 			}""";
-		String v2 = "public class A {}";
+		var v2 = "public class A {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
 	void class_constructor_now_private() {
-		String v1 = "public class A {}";
-		String v2 = """
+		var v1 = "public class A {}";
+		var v2 = """
 			public class A {
 				private A() {}
 			}""";
@@ -53,31 +53,49 @@ class ConstructorRemovedTest {
 	}
 
 	@Test
+	void class_constructor_now_protected_default() {
+		var v1 = """
+			public class A {
+				public A(int i) {}
+			}""";
+		var v2 = """
+			public class A {
+				protected A(int i) {}
+			}""";
+
+		var diff = buildDiff(v1, v2);
+		assertNoBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, diff);
+		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, 2, diff);
+	}
+
+	@Test
 	void class_constructor_now_protected() {
-		String v1 = "public class A {}";
-		String v2 = """
+		var v1 = "public class A {}";
+		var v2 = """
 			public class A {
 				protected A() {}
 			}""";
 
-		assertNoBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, buildDiff(v1, v2));
+		var diff = buildDiff(v1, v2);
+		assertNoBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, diff);
+		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, -1, diff);
 	}
 
 	@Test
 	void record_constructor_changed() {
-		String v1 = "public record A(int i) {}";
-		String v2 = "public record A(float f) {}";
+		var v1 = "public record A(int i) {}";
+		var v2 = "public record A(float f) {}";
 
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
 	}
 
 	@Test
 	void class_constructor_changed() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public A(int i) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public A(float f) {}
 			}""";
@@ -87,12 +105,12 @@ class ConstructorRemovedTest {
 
 	@Test
 	void overloaded_constructor_removed() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public A(int i) {}
 				public A(float f) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public A(int i) {}
 			}""";

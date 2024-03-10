@@ -10,11 +10,11 @@ import static com.github.maracas.roseau.utils.TestUtils.buildDiff;
 class JezekTest {
 	@Test
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd() {
-		String v1 = """
+		var v1 = """
 			public class A {
 			  public A(java.util.List<?> l) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 			  public A(java.util.List<A> l) {}
 			}""";
@@ -24,11 +24,11 @@ class JezekTest {
 
 	@Test
 	void circular() {
-		String v1 = """
+		var v1 = """
 			public class A {
 			  public <T extends Number & Comparable<T>> void m() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 			  public <T extends Number & java.util.List<T>> void m() {}
 			}""";
@@ -38,11 +38,11 @@ class JezekTest {
 
 	@Test
 	void dataTypeClazzFieldNarrowing() {
-		String v1 = """
+		var v1 = """
 			public class A {
 			  public double f;
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 			  public int f;
 			}""";
@@ -52,11 +52,11 @@ class JezekTest {
 
 	@Test
 	void dataTypeIfazeConstantNarrowing() {
-		String v1 = """
+		var v1 = """
 			public interface I {
 			  public double f = 5;
 			}""";
-		String v2 = """
+		var v2 = """
 			public interface I {
 			  public int f = 5;
 			}""";
@@ -66,11 +66,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedAdd() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
@@ -80,11 +80,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedDelete() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() {}
 			}""";
@@ -94,11 +94,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedGeneralization() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws IllegalArgumentException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
@@ -108,11 +108,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedSpecialization() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws IllegalArgumentException {}
 			}""";
@@ -122,11 +122,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedMutation() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws Exception {}
 			}""";
@@ -136,11 +136,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowCheckedSpecialization() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws java.io.IOException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws java.io.FileNotFoundException {}
 			}""";
@@ -150,11 +150,11 @@ class JezekTest {
 
 	@Test
 	void modifierClazzEffectivelyFinalToFinal() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				private A() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public final class A {
 				private A() {}
 			}""";
@@ -164,11 +164,11 @@ class JezekTest {
 
 	@Test
 	void modifierClazzFinalToEffectivelyFinal() {
-		String v1 = """
+		var v1 = """
 			public final class A {
 				private A() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				private A() {}
 			}""";
@@ -178,12 +178,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceIfazeMethodMovedFromSuperInterface() {
-		String v1 = """
+		var v1 = """
 			public interface S {
 				void m();
 			}
 			public interface I extends S {}""";
-		String v2 = """
+		var v2 = """
 			public interface S {}
 			public interface I extends S {
 				void m();
@@ -196,12 +196,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceIfazeMethodMovedToSuperInterface() {
-		String v1 = """
+		var v1 = """
 			public interface S {}
 			public interface I extends S {
 				void m();
 			}""";
-		String v2 = """
+		var v2 = """
 			public interface S {
 				void m();
 			}
@@ -214,12 +214,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceFieldMovedFromSuperClass() {
-		String v1 = """
+		var v1 = """
 			public class S {
 				public int f;
 			}
 			public class C extends S {}""";
-		String v2 = """
+		var v2 = """
 			public class S {}
 			public class C extends S {
 				public int f;
@@ -232,12 +232,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceFieldMovedToSuperClass() {
-		String v1 = """
+		var v1 = """
 			public class S {}
 			public class C extends S {
 				public int f;
 			}""";
-		String v2 = """
+		var v2 = """
 			public class S {
 				public int f;
 			}
@@ -248,11 +248,11 @@ class JezekTest {
 
 	@Test
 	void genericsClazzConstructorTypeAddN() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public C() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public <T> C() {}
 			}""";
@@ -262,11 +262,11 @@ class JezekTest {
 
 	@Test
 	void genericsClazzMethodTypeAddN() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public void m() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public <T> void m() {}
 			}""";
@@ -276,19 +276,19 @@ class JezekTest {
 
 	@Test
 	void genericsClazzTypeAddN() {
-		String v1 = "public class C {}";
-		String v2 = "public class C<T> {}";
+		var v1 = "public class C {}";
+		var v2 = "public class C<T> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
 	void genericsIfazeMethodTypeAddN() {
-		String v1 = """
+		var v1 = """
 			public interface I {
 				public void m();
 			}""";
-		String v2 = """
+		var v2 = """
 			public interface I {
 				public <T> void m();
 			}""";
@@ -298,19 +298,19 @@ class JezekTest {
 
 	@Test
 	void genericsIfazeTypeAddN() {
-		String v1 = "public interface I {}";
-		String v2 = "public interface I<T> {}";
+		var v1 = "public interface I {}";
+		var v2 = "public interface I<T> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd2() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public void m(java.util.ArrayList<?> al) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public void m(java.util.ArrayList<? extends Number> al) {}
 			}""";
@@ -320,9 +320,9 @@ class JezekTest {
 
 	@Test
 	void inheritanceIfazeStartInherite() {
-		String v1 = """
+		var v1 = """
 			public interface I {}""";
-		String v2 = """
+		var v2 = """
 			public interface J {
 				void m();
 			}
@@ -333,27 +333,27 @@ class JezekTest {
 
 	@Test
 	void genericsIfazeTypeBoundsAdd() {
-		String v1 = "public interface I<T> {}";
-		String v2 = "public interface I<T extends Number> {}";
+		var v1 = "public interface I<T> {}";
+		var v2 = "public interface I<T extends Number> {}";
 
 		assertBC("I", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
 	void genericsIfazeTypeBoundsDeleteN() {
-		String v1 = "public interface I<T extends Number> {}";
-		String v2 = "public interface I<T> {}";
+		var v1 = "public interface I<T extends Number> {}";
+		var v2 = "public interface I<T> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
 	void genericsClazzConstructorTypeBoundsDeleteN() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public <T extends Number> C() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public <T> C() {}
 			}""";
@@ -363,11 +363,11 @@ class JezekTest {
 
 	@Test
 	void genericsClazzConstructorTypeBoundsDeleteSecond() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public <T extends Number & Comparable<T>> C() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public <T extends Number> C() {}
 			}""";
@@ -377,11 +377,11 @@ class JezekTest {
 
 	@Test
 	void genericsClazzConstructorTypeBoundsGeneralization() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public <T extends Integer> C() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public <T extends Number> C() {}
 			}""";
@@ -391,19 +391,19 @@ class JezekTest {
 
 	@Test
 	void genericsIfazeTypeBoundsGeneralization() {
-		String v1 = "public interface I<T extends Integer> {}";
-		String v2 = "public interface I<T extends Number> {}";
+		var v1 = "public interface I<T extends Integer> {}";
+		var v2 = "public interface I<T extends Number> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
 	void genericsWildcardsClazzMethodParamAdd() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public void m(java.util.List<String> l) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public void m(java.util.List<?> l) {}
 			}""";
@@ -413,11 +413,11 @@ class JezekTest {
 
 	@Test
 	void genericsWildcardsClazzConstructorParamLowerBoundsSpecialization() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public C(java.util.List<? super Number> l) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public C(java.util.List<? super Integer> l) {}
 			}""";
@@ -427,11 +427,11 @@ class JezekTest {
 
 	@Test
 	void genericsClazzConstructorTypeDeleteN() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public <T> C() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public C() {}
 			}""";
@@ -441,11 +441,11 @@ class JezekTest {
 
 	@Test
 	void genericsClazzMethodTypeDeleteN() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public <T> void m() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public void m() {}
 			}""";
@@ -455,11 +455,11 @@ class JezekTest {
 
 	@Test
 	void genericsWildcardsClazzConstructorParamAdd() {
-		String v1 = """
+		var v1 = """
 			public class C {
 				public C(java.util.ArrayList<Integer> l) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class C {
 				public C(java.util.ArrayList<?> l) {}
 			}""";
@@ -469,11 +469,11 @@ class JezekTest {
 
 	@Test
 	void membersIfazeNestedIfazeDelete() {
-		String v1 = """
+		var v1 = """
 			public interface I1 {
 				public interface I2 {}
 			}""";
-		String v2 = "public interface I1 {}";
+		var v2 = "public interface I1 {}";
 
 		assertBC("I1$I2", BreakingChangeKind.TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}

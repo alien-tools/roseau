@@ -10,8 +10,8 @@ import static com.github.maracas.roseau.diff.changes.BreakingChangeKind.TYPE_NOW
 class TypeNowProtectedTest {
 	@Test
 	void public_nested_type_now_protected() {
-		String v1 = "public class A { public class B {} }";
-		String v2 = "public class A { protected class B {} }";
+		var v1 = "public class A { public class B {} }";
+		var v2 = "public class A { protected class B {} }";
 
 		assertBC("A$B", TYPE_NOW_PROTECTED, 1, buildDiff(v1, v2));
 	}
