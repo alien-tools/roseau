@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.differential;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
+/*import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
@@ -26,7 +26,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.stream.Collectors;
 
-/*class JapicmpTest {
+class JapicmpTest {
 	Path jarV1 = Path.of("/home/dig/repositories/japicmp/japicmp-testbase/" +
 		"japicmp-test-v1/target/japicmp-test-v1-0.20.1-SNAPSHOT.jar");
 	Path jarV2 = Path.of("/home/dig/repositories/japicmp/japicmp-testbase/" +
