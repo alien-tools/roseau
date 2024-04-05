@@ -5,7 +5,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import static com.github.maracas.roseau.TestUtils.*;
+import static com.github.maracas.roseau.utils.TestUtils.*;
 import static com.github.maracas.roseau.diff.changes.BreakingChangeKind.METHOD_REMOVED;
 import static com.github.maracas.roseau.diff.changes.BreakingChangeKind.TYPE_REMOVED;
 
