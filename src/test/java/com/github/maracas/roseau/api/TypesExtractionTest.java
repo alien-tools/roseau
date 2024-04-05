@@ -2,12 +2,12 @@ package com.github.maracas.roseau.api;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.maracas.roseau.TestUtils.assertAnnotation;
-import static com.github.maracas.roseau.TestUtils.assertClass;
-import static com.github.maracas.roseau.TestUtils.assertEnum;
-import static com.github.maracas.roseau.TestUtils.assertInterface;
-import static com.github.maracas.roseau.TestUtils.assertRecord;
-import static com.github.maracas.roseau.TestUtils.buildAPI;
+import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
+import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
+import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
+import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
+import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -22,7 +22,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -33,7 +33,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -44,7 +44,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -55,29 +55,29 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
 	void package_private_record() {
-		var api = buildAPI("record A {}");
+		var api = buildAPI("record A() {}");
 
 		var a = assertRecord(api, "A");
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
 	void public_record() {
-		var api = buildAPI("public record A {}");
+		var api = buildAPI("public record A() {}");
 
 		var a = assertRecord(api, "A");
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -88,7 +88,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -99,7 +99,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -110,7 +110,7 @@ class TypesExtractionTest {
 
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -121,7 +121,7 @@ class TypesExtractionTest {
 
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -134,7 +134,7 @@ class TypesExtractionTest {
 			}""");
 
 		assertClass(api, "A");
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test
@@ -147,7 +147,7 @@ class TypesExtractionTest {
 			}""");
 
 		assertClass(api, "A");
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
 	@Test

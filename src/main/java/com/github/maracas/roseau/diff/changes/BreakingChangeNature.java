@@ -5,17 +5,17 @@ package com.github.maracas.roseau.diff.changes;
  */
 public enum BreakingChangeNature {
 	/**
-	 * Indicates that the breaking change is a result of an addition to the API.
+	 * Indicates that the breaking change results from an addition to the API.
 	 */
 	ADDITION,
 
 	/**
-	 * Indicates that the breaking change results from an alteration of existing elements within the API.
+	 * Indicates that the breaking change results from changing an exiting API element.
 	 */
 	MUTATION,
 
 	/**
-	 * Indicates that the breaking change is a result of a deletion from the API.
+	 * Indicates that the breaking change results from a deletion from the API.
 	 */
 	DELETION
 }

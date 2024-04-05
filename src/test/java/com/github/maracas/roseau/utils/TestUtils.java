@@ -1,6 +1,5 @@
-package com.github.maracas.roseau;
+package com.github.maracas.roseau.utils;
 
-import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
@@ -11,7 +10,6 @@ import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
@@ -20,7 +18,6 @@ import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.VirtualFile;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.regex.Pattern;
@@ -31,15 +28,14 @@ public class TestUtils {
 	}
 
 	public static void assertBC(String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
-		Optional<BreakingChange> matches = bcs.stream()
+		List<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
 				   kind == bc.kind()
 				&& line == bc.impactedSymbol().getLocation().line()
 				&& symbol.equals(bc.impactedSymbol().getQualifiedName())
-			)
-			.findFirst();
+			).toList();
 
-		if (matches.isEmpty()) {
+		if (matches.size() != 1) {
 			String desc = "[%s, %s, %d]".formatted(symbol, kind, line);
 			String found = bcs.stream()
 				.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))
@@ -55,6 +51,16 @@ public class TestUtils {
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 		}
+	}
+
+	public static void assertNoBC(BreakingChangeKind kind, List<BreakingChange> bcs) {
+		String found = bcs.stream()
+			.filter(bc -> bc.kind() == kind)
+			.map(bc -> "[%s, %s, %d]".formatted(bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))
+			.collect(Collectors.joining(", "));
+
+		if (!found.isEmpty())
+			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 	}
 
 	public static void assertNoBC(int line, List<BreakingChange> bcs) {
@@ -99,22 +105,14 @@ public class TestUtils {
 			return findField.get();
 	}
 
-	public static MethodDecl assertMethod(TypeDecl decl, String name) {
-		Optional<MethodDecl> findMethod = decl.findMethod(name);
+	public static MethodDecl assertMethod(TypeDecl decl, String signature) {
+		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
+			.filter(m -> m.getSignature().equals(signature))
+			.toList();
 
 		if (findMethod.isEmpty())
-			throw new AssertionFailedError("No such method", name, "No such method");
-		else
-			return findMethod.get();
-	}
-
-	public static MethodDecl assertMethod(TypeDecl decl, String name, ITypeReference... typeFqns) {
-		Optional<MethodDecl> findMethod = decl.findMethod(name, Arrays.asList(typeFqns));
-
-		if (findMethod.isEmpty())
-			throw new AssertionFailedError("No such method", name, "No such method");
-		else
-			return findMethod.get();
+			throw new AssertionFailedError("No such method", signature, "No such method");
+		return findMethod.getFirst();
 	}
 
 	public static ClassDecl assertClass(API api, String name) {
@@ -140,16 +138,17 @@ public class TestUtils {
 	public static CtModel buildModel(String sources) {
 		Launcher launcher = new Launcher();
 
-		launcher.addInputResource(new VirtualFile(sources));
+		launcher.addInputResource(new VirtualFile(sources, "A.java"));
 		launcher.getEnvironment().setComplianceLevel(17);
+		launcher.getEnvironment().setLevel("TRACE");
 
 		return launcher.buildModel();
 	}
 
 	public static API buildAPI(String sources) {
 		CtModel m = buildModel(sources);
-		APIExtractor extractor = new SpoonAPIExtractor(m);
-		return extractor.extractAPI();
+		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
+		return extractor.extractAPI(m);
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {

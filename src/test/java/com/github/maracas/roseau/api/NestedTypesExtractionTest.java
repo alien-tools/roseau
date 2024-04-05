@@ -2,8 +2,8 @@ package com.github.maracas.roseau.api;
 
 import org.junit.jupiter.api.Test;
 
-import static com.github.maracas.roseau.TestUtils.assertClass;
-import static com.github.maracas.roseau.TestUtils.buildAPI;
+import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 

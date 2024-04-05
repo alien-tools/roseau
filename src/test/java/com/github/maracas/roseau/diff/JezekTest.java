@@ -1,51 +1,48 @@
 package com.github.maracas.roseau.diff;
 
-import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
-
-import static com.github.maracas.roseau.TestUtils.assertBC;
-import static com.github.maracas.roseau.TestUtils.assertNoBC;
-import static com.github.maracas.roseau.TestUtils.buildDiff;
+import static com.github.maracas.roseau.utils.TestUtils.assertBC;
+import static com.github.maracas.roseau.utils.TestUtils.assertNoBC;
+import static com.github.maracas.roseau.utils.TestUtils.buildDiff;
 
 class JezekTest {
 	@Test
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd() {
-		String v1 = """
+		var v1 = """
 			public class A {
-			  public A(List<?> l) {}
+			  public A(java.util.List<?> l) {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
-			  public A(List<A> l) {}
+			  public A(java.util.List<A> l) {}
 			}""";
 
-		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A.<init>", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
 	void circular() {
-		String v1 = """
+		var v1 = """
 			public class A {
 			  public <T extends Number & Comparable<T>> void m() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
-			  public <T extends Number & List<T>> void m() {}
+			  public <T extends Number & java.util.List<T>> void m() {}
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
-	void dataTypeIfazeConstantNarrowing() {
-		String v1 = """
+	void dataTypeClazzFieldNarrowing() {
+		var v1 = """
 			public class A {
 			  public double f;
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 			  public int f;
 			}""";
@@ -54,12 +51,26 @@ class JezekTest {
 	}
 
 	@Test
+	void dataTypeIfazeConstantNarrowing() {
+		var v1 = """
+			public interface I {
+			  public double f = 5;
+			}""";
+		var v2 = """
+			public interface I {
+			  public int f = 5;
+			}""";
+
+		assertBC("I.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
 	void exceptionClazzMethodThrowUncheckedAdd() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
@@ -69,11 +80,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedDelete() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() {}
 			}""";
@@ -83,11 +94,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedGeneralization() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws IllegalArgumentException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
@@ -97,11 +108,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedSpecialization() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws IllegalArgumentException {}
 			}""";
@@ -111,11 +122,11 @@ class JezekTest {
 
 	@Test
 	void exceptionClazzMethodThrowUncheckedMutation() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				public void m() throws RuntimeException {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				public void m() throws Exception {}
 			}""";
@@ -124,12 +135,26 @@ class JezekTest {
 	}
 
 	@Test
+	void exceptionClazzMethodThrowCheckedSpecialization() {
+		var v1 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws java.io.FileNotFoundException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
 	void modifierClazzEffectivelyFinalToFinal() {
-		String v1 = """
+		var v1 = """
 			public class A {
 				private A() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public final class A {
 				private A() {}
 			}""";
@@ -139,11 +164,11 @@ class JezekTest {
 
 	@Test
 	void modifierClazzFinalToEffectivelyFinal() {
-		String v1 = """
+		var v1 = """
 			public final class A {
 				private A() {}
 			}""";
-		String v2 = """
+		var v2 = """
 			public class A {
 				private A() {}
 			}""";
@@ -153,12 +178,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceIfazeMethodMovedFromSuperInterface() {
-		String v1 = """
+		var v1 = """
 			public interface S {
 				void m();
 			}
 			public interface I extends S {}""";
-		String v2 = """
+		var v2 = """
 			public interface S {}
 			public interface I extends S {
 				void m();
@@ -171,12 +196,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceIfazeMethodMovedToSuperInterface() {
-		String v1 = """
+		var v1 = """
 			public interface S {}
 			public interface I extends S {
 				void m();
 			}""";
-		String v2 = """
+		var v2 = """
 			public interface S {
 				void m();
 			}
@@ -189,12 +214,12 @@ class JezekTest {
 
 	@Test
 	void inheritanceFieldMovedFromSuperClass() {
-		String v1 = """
+		var v1 = """
 			public class S {
 				public int f;
 			}
 			public class C extends S {}""";
-		String v2 = """
+		var v2 = """
 			public class S {}
 			public class C extends S {
 				public int f;
@@ -207,17 +232,249 @@ class JezekTest {
 
 	@Test
 	void inheritanceFieldMovedToSuperClass() {
-		String v1 = """
+		var v1 = """
 			public class S {}
 			public class C extends S {
 				public int f;
 			}""";
-		String v2 = """
+		var v2 = """
 			public class S {
 				public int f;
 			}
 			public class C extends S {}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeAddN() {
+		var v1 = """
+			public class C {
+				public C() {}
+			}""";
+		var v2 = """
+			public class C {
+				public <T> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzMethodTypeAddN() {
+		var v1 = """
+			public class C {
+				public void m() {}
+			}""";
+		var v2 = """
+			public class C {
+				public <T> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzTypeAddN() {
+		var v1 = "public class C {}";
+		var v2 = "public class C<T> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeMethodTypeAddN() {
+		var v1 = """
+			public interface I {
+				public void m();
+			}""";
+		var v2 = """
+			public interface I {
+				public <T> void m();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeAddN() {
+		var v1 = "public interface I {}";
+		var v2 = "public interface I<T> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzConstructorParamLowerBoundsAdd2() {
+		var v1 = """
+			public class C {
+				public void m(java.util.ArrayList<?> al) {}
+			}""";
+		var v2 = """
+			public class C {
+				public void m(java.util.ArrayList<? extends Number> al) {}
+			}""";
+
+		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void inheritanceIfazeStartInherite() {
+		var v1 = """
+			public interface I {}""";
+		var v2 = """
+			public interface J {
+				void m();
+			}
+			public interface I extends J {}""";
+
+		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeBoundsAdd() {
+		var v1 = "public interface I<T> {}";
+		var v2 = "public interface I<T extends Number> {}";
+
+		assertBC("I", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeBoundsDeleteN() {
+		var v1 = "public interface I<T extends Number> {}";
+		var v2 = "public interface I<T> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeBoundsDeleteN() {
+		var v1 = """
+			public class C {
+				public <T extends Number> C() {}
+			}""";
+		var v2 = """
+			public class C {
+				public <T> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeBoundsDeleteSecond() {
+		var v1 = """
+			public class C {
+				public <T extends Number & Comparable<T>> C() {}
+			}""";
+		var v2 = """
+			public class C {
+				public <T extends Number> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeBoundsGeneralization() {
+		var v1 = """
+			public class C {
+				public <T extends Integer> C() {}
+			}""";
+		var v2 = """
+			public class C {
+				public <T extends Number> C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsIfazeTypeBoundsGeneralization() {
+		var v1 = "public interface I<T extends Integer> {}";
+		var v2 = "public interface I<T extends Number> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzMethodParamAdd() {
+		var v1 = """
+			public class C {
+				public void m(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class C {
+				public void m(java.util.List<?> l) {}
+			}""";
+
+		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzConstructorParamLowerBoundsSpecialization() {
+		var v1 = """
+			public class C {
+				public C(java.util.List<? super Number> l) {}
+			}""";
+		var v2 = """
+			public class C {
+				public C(java.util.List<? super Integer> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzConstructorTypeDeleteN() {
+		var v1 = """
+			public class C {
+				public <T> C() {}
+			}""";
+		var v2 = """
+			public class C {
+				public C() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsClazzMethodTypeDeleteN() {
+		var v1 = """
+			public class C {
+				public <T> void m() {}
+			}""";
+		var v2 = """
+			public class C {
+				public void m() {}
+			}""";
+
+		assertBC("C.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void genericsWildcardsClazzConstructorParamAdd() {
+		var v1 = """
+			public class C {
+				public C(java.util.ArrayList<Integer> l) {}
+			}""";
+		var v2 = """
+			public class C {
+				public C(java.util.ArrayList<?> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void membersIfazeNestedIfazeDelete() {
+		var v1 = """
+			public interface I1 {
+				public interface I2 {}
+			}""";
+		var v2 = "public interface I1 {}";
+
+		assertBC("I1$I2", BreakingChangeKind.TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 }

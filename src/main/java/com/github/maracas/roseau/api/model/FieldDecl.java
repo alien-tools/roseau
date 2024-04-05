@@ -1,25 +1,18 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 
 /**
- * Represents a field declaration in a Java type. This class extends the {@link Symbol} class and contains information
- * about the field's data type and the {@link TypeDecl} to which it belongs.
+ * A field declaration in a {@link TypeDecl}.
  */
 public final class FieldDecl extends TypeMemberDecl {
-	@JsonCreator
-	public FieldDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                 TypeReference<TypeDecl> containingType, ITypeReference type) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type);
-	}
-
-	@Override
-	public String getSimpleName() {
-		return qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
+	public FieldDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                 List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
+	                 ITypeReference type) {
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 	}
 
 	/**
@@ -30,6 +23,6 @@ public final class FieldDecl extends TypeMemberDecl {
 	 */
 	@Override
 	public String toString() {
-		return "field %s [%s] [%s]".formatted(qualifiedName, visibility, type);
+		return "%s %s %s".formatted(visibility, type, qualifiedName);
 	}
 }

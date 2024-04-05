@@ -2,12 +2,17 @@ package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.maracas.roseau.api.model.SpoonAPIFactory;
+import com.github.maracas.roseau.api.SpoonAPIFactory;
+import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
+import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
@@ -17,18 +22,24 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	@JsonIgnore
 	private T resolvedApiType;
 
+	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
+	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
+	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
+
 	@JsonCreator
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
-		this.qualifiedName = qualifiedName;
-		this.typeArguments = typeArguments;
+		this.qualifiedName = Objects.requireNonNull(qualifiedName);
+		this.typeArguments = Objects.requireNonNull(typeArguments);
 	}
 
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
 		this(qualifiedName, typeArguments);
-		this.factory = factory;
+		this.factory = Objects.requireNonNull(factory);
 	}
 
-	public SpoonAPIFactory getFactory() { return factory; }
+	public TypeReference(String qualifiedName) {
+		this(qualifiedName, Collections.emptyList());
+	}
 
 	@Override
 	public String getQualifiedName() {
@@ -39,32 +50,78 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		return typeArguments;
 	}
 
+	public SpoonAPIFactory getFactory() { return factory; }
+
 	public void setFactory(SpoonAPIFactory factory) {
-		this.factory = factory;
+		this.factory = Objects.requireNonNull(factory);
 	}
 
+	/**
+	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary,
+	 * or {@link Optional<T>.empty()} if it cannot be resolved.
+	 */
 	public Optional<T> getResolvedApiType() {
 		if (resolvedApiType == null && factory != null)
+			// Safe as long as we don't have two types with same FQN of different kinds (e.g. class vs interface)
 			resolvedApiType = (T) factory.convertCtType(qualifiedName);
+
+		if (resolvedApiType == null)
+			System.err.printf("Warning: %s couldn't be resolved, results may be innacurate%n", qualifiedName);
 
 		return Optional.ofNullable(resolvedApiType);
 	}
 
 	public void setResolvedApiType(T type) {
-		resolvedApiType = type;
+		resolvedApiType = Objects.requireNonNull(type);
 	}
 
-	public boolean isSubtypeOf(TypeReference<T> other) {
-		return equals(other) || getResolvedApiType().map(t -> t.getAllSuperTypes().contains(other)).orElse(false);
+	@Override
+	public boolean isSubtypeOf(ITypeReference other) {
+		// Always a subtype of Object
+		if (other.equals(OBJECT))
+			return true;
+
+		// Subtype of a wildcard if bounds are compatible
+		// FIXME: what if upper() or !upper()?
+		if (other instanceof WildcardTypeReference wtr && wtr.bounds().stream().allMatch(this::isSubtypeOf))
+			return true;
+
+		// Subtype of another type if it's a super type (or self) and type parameters are compatible
+		if (other instanceof TypeReference<?> tr)
+			return Stream.concat(Stream.of(this), getAllSuperTypes())
+				.anyMatch(sup -> Objects.equals(sup.qualifiedName, tr.qualifiedName) && typeParametersCompatible(tr));
+
+		return false;
+	}
+
+	private boolean typeParametersCompatible(TypeReference<?> other) {
+		if (typeArguments.size() != other.typeArguments.size())
+			return false;
+
+		return IntStream.range(0, typeArguments.size())
+			.allMatch(i -> typeArguments.get(i).isSubtypeOf(other.typeArguments.get(i)));
 	}
 
 	public boolean isSameHierarchy(TypeReference<T> other) {
 		return isSubtypeOf(other) || other.isSubtypeOf(this);
 	}
 
+	public boolean isExported() {
+		return getResolvedApiType().map(TypeDecl::isExported).orElse(false);
+	}
+
+	public boolean isEffectivelyFinal() {
+		return getResolvedApiType().map(TypeDecl::isEffectivelyFinal).orElse(false);
+	}
+
+	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+		return getResolvedApiType().map(TypeDecl::getAllSuperTypes).orElseGet(Stream::empty);
+	}
+
 	@Override
 	public String toString() {
-		return qualifiedName;
+		return "%s%s".formatted(qualifiedName, typeArguments.isEmpty() ? ""
+			: "<%s>".formatted(typeArguments.stream().map(Object::toString).collect(Collectors.joining(","))));
 	}
 
 	@Override
@@ -78,6 +135,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	@Override
 	public int hashCode() {
-		return Objects.hashCode(qualifiedName);
+		return Objects.hash(qualifiedName, typeArguments);
 	}
 }

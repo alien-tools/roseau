@@ -1,10 +1,27 @@
-package com.github.maracas.roseau.api.model;
+package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.AccessModifier;
+import com.github.maracas.roseau.api.model.Annotation;
+import com.github.maracas.roseau.api.model.AnnotationDecl;
+import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.ConstructorDecl;
+import com.github.maracas.roseau.api.model.EnumDecl;
+import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
+import com.github.maracas.roseau.api.model.InterfaceDecl;
+import com.github.maracas.roseau.api.model.MethodDecl;
+import com.github.maracas.roseau.api.model.Modifier;
+import com.github.maracas.roseau.api.model.ParameterDecl;
+import com.github.maracas.roseau.api.model.RecordDecl;
+import com.github.maracas.roseau.api.model.SourceLocation;
+import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import spoon.Launcher;
 import spoon.reflect.cu.SourcePosition;
+import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -14,6 +31,7 @@ import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtFormalTypeDeclarer;
 import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
+import spoon.reflect.declaration.CtModifiable;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtRecord;
 import spoon.reflect.declaration.CtType;
@@ -25,6 +43,7 @@ import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtIntersectionTypeReference;
 import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
+import spoon.reflect.reference.CtWildcardReference;
 
 import java.util.ArrayList;
 import java.util.Collection;
@@ -37,8 +56,8 @@ public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
 	private final TypeReferenceFactory typeReferenceFactory;
 
-	public SpoonAPIFactory(TypeFactory typeFactory) {
-		this.typeFactory = typeFactory;
+	public SpoonAPIFactory() {
+		this.typeFactory = new Launcher().createFactory().Type();
 		this.typeReferenceFactory = new SpoonTypeReferenceFactory(this);
 	}
 
@@ -48,10 +67,10 @@ public class SpoonAPIFactory {
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {
 		return switch (typeRef) {
-			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getComponentType()));
+			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getArrayType()), arrayRef.getDimensionCount());
+			case CtWildcardReference wcRef -> typeReferenceFactory.createWildcardTypeReference(convertCtTypeParameterBounds(wcRef.getBoundingType()), wcRef.isUpper());
 			case CtTypeParameterReference tpRef -> typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName());
 			case CtTypeReference<?> ref when ref.isPrimitive() -> typeReferenceFactory.createPrimitiveTypeReference(ref.getQualifiedName());
-			case null -> null;
 			default -> createTypeReference(typeRef);
 		};
 	}
@@ -91,10 +110,7 @@ public class SpoonAPIFactory {
 
 	public TypeDecl convertCtType(String qualifiedName) {
 		CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
-
-		return ref.getTypeDeclaration() != null
-			? convertCtType(ref.getTypeDeclaration())
-			: null;
+		return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
 	}
 
 	private ClassDecl convertCtClass(CtClass<?> cls) {
@@ -102,6 +118,7 @@ public class SpoonAPIFactory {
 			cls.getQualifiedName(),
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
+			convertSpoonAnnotations(cls.getAnnotations()),
 			convertSpoonPosition(cls.getPosition()),
 			createTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
@@ -118,13 +135,14 @@ public class SpoonAPIFactory {
 			intf.getQualifiedName(),
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
+			convertSpoonAnnotations(intf.getAnnotations()),
 			convertSpoonPosition(intf.getPosition()),
 			createTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
 			convertCtMethods(intf),
 			createTypeReference(intf.getDeclaringType())
-			);
+		);
 	}
 
 	private AnnotationDecl convertCtAnnotationType(CtAnnotationType<?> annotation) {
@@ -132,11 +150,12 @@ public class SpoonAPIFactory {
 			annotation.getQualifiedName(),
 			convertSpoonVisibility(annotation.getVisibility()),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
+			convertSpoonAnnotations(annotation.getAnnotations()),
 			convertSpoonPosition(annotation.getPosition()),
 			convertCtFields(annotation),
 			convertCtMethods(annotation),
 			createTypeReference(annotation.getDeclaringType())
-			);
+		);
 	}
 
 	private EnumDecl convertCtEnum(CtEnum<?> enm) {
@@ -144,6 +163,7 @@ public class SpoonAPIFactory {
 			enm.getQualifiedName(),
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
+			convertSpoonAnnotations(enm.getAnnotations()),
 			convertSpoonPosition(enm.getPosition()),
 			createTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
@@ -158,6 +178,7 @@ public class SpoonAPIFactory {
 			record.getQualifiedName(),
 			convertSpoonVisibility(record.getVisibility()),
 			convertSpoonNonAccessModifiers(record.getModifiers()),
+			convertSpoonAnnotations(record.getAnnotations()),
 			convertSpoonPosition(record.getPosition()),
 			createTypeReferences(record.getSuperInterfaces()),
 			convertCtFormalTypeParameters(record),
@@ -173,6 +194,7 @@ public class SpoonAPIFactory {
 			makeQualifiedName(field),
 			convertSpoonVisibility(field.getVisibility()),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
+			convertSpoonAnnotations(field.getAnnotations()),
 			convertSpoonPosition(field.getPosition()),
 			createTypeReference(field.getDeclaringType()),
 			createITypeReference(field.getType())
@@ -190,6 +212,7 @@ public class SpoonAPIFactory {
 			makeQualifiedName(method),
 			convertSpoonVisibility(method.getVisibility()),
 			modifiers,
+			convertSpoonAnnotations(method.getAnnotations()),
 			convertSpoonPosition(method.getPosition()),
 			createTypeReference(method.getDeclaringType()),
 			createITypeReference(method.getType()),
@@ -204,6 +227,7 @@ public class SpoonAPIFactory {
 			makeQualifiedName(cons),
 			convertSpoonVisibility(cons.getVisibility()),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
+			convertSpoonAnnotations(cons.getAnnotations()),
 			convertSpoonPosition(cons.getPosition()),
 			createTypeReference(cons.getDeclaringType()),
 			createITypeReference(cons.getType()),
@@ -253,7 +277,7 @@ public class SpoonAPIFactory {
 	private List<ITypeReference> convertCtTypeParameterBounds(CtTypeReference<?> ref) {
 		return switch (ref) {
 			case CtIntersectionTypeReference<?> intersection -> intersection.getBounds().stream().map(this::createITypeReference).toList();
-			case CtTypeReference<?> reference -> List.of(createTypeReference(reference));
+			case CtTypeReference<?> reference -> List.of(createITypeReference(reference));
 			case null -> Collections.emptyList();
 		};
 	}
@@ -265,7 +289,10 @@ public class SpoonAPIFactory {
 	}
 
 	private ParameterDecl convertCtParameter(CtParameter<?> parameter) {
-		return new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), parameter.isVarArgs());
+		// Spoon treats varargs as arrays, which is correct but not what we want to properly match signatures
+		return parameter.isVarArgs() && parameter.getType() instanceof CtArrayTypeReference<?> atr
+			? new ParameterDecl(parameter.getSimpleName(), createITypeReference(atr.getComponentType()), true)
+			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
 	}
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {
@@ -304,6 +331,16 @@ public class SpoonAPIFactory {
 			.toList();
 	}
 
+	private List<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
+		return annotations.stream()
+			.map(this::convertSpoonAnnotation)
+			.toList();
+	}
+
+	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
+		return new Annotation(createTypeReference(annotation.getAnnotationType()));
+	}
+
 	private SourceLocation convertSpoonPosition(SourcePosition position) {
 		return position.isValidPosition()
 			? new SourceLocation(
@@ -319,18 +356,38 @@ public class SpoonAPIFactory {
 	}
 
 	private boolean isExported(CtTypeMember member) {
-		return (member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType())))
-			&& isParentExported(member);
+		/*
+		 * This is kinda tricky due to API types leaking internal types. In the following,
+		 * A itself and anything it declares cannot be accessed outside 'pkg'.
+		 * However, B re-opens A through subclassing and effectively re-exports the declarations
+		 * it sees through its own public visibility. A client class C extending B would see m().
+		 * So we have to keep A's potentially-leaked declarations to mark them later as part of B's API.
+		 * It's possible to re-open and leak a type within the API if:
+		 *   - It has a non-private constructor (package-private can be re-opened within the same package)
+		 *   - It is not explicitly 'final' or 'sealed' (sealed subclasses can attempt to leak but they're final
+		 *    themselves so they won't leak to clients)
+		 *
+		 * class A { // package 'pkg'
+		 *   A() {}
+		 *   protected void m() {}
+		 * }
+		 * public class B extends A {} // package 'pkg'
+		 */
+		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
 	}
 
 	private boolean isParentExported(CtTypeMember member) {
 		return member.getDeclaringType() == null || isExported(member.getDeclaringType());
 	}
 
+	/**
+	 * Checks whether the given type is effectively final _within the API_. While package-private constructors
+	 * cannot be accessed from client code, they can be from the API itself, and sub-classes can leak internals.
+	 */
 	private boolean isEffectivelyFinal(CtType<?> type) {
 		if (type instanceof CtClass<?> cls)
 			if (!cls.getConstructors().isEmpty()
-				&& cls.getConstructors().stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()))
+				&& cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
 				return true;
 
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);

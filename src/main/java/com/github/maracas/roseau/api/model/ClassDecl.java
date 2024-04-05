@@ -1,7 +1,5 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -10,27 +8,24 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.stream.Stream;
 
+/**
+ * A class declaration is a {@link TypeDecl} with an optional superclass and list of {@link ConstructorDecl}.
+ */
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
-	/**
-	 * The superclass as a type reference (null if there isn't any).
-	 */
 	protected final TypeReference<ClassDecl> superClass;
 
-	/**
-	 * List of constructors declared within the class.
-	 */
 	protected final List<ConstructorDecl> constructors;
 
-	@JsonCreator
-	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
+	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                 List<Annotation> annotations, SourceLocation location,
 	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                 TypeReference<TypeDecl> enclosingType,
-	                 TypeReference<ClassDecl> superClass, List<ConstructorDecl> constructors) {
-		super(qualifiedName, visibility, modifiers, location,
+	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
+	                 List<ConstructorDecl> constructors) {
+		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		this.superClass = superClass;
-		this.constructors = constructors;
+		this.constructors = Objects.requireNonNull(constructors);
 	}
 
 	@Override
@@ -38,35 +33,12 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return true;
 	}
 
-	@Override
-	protected List<MethodDecl> getSuperMethods() {
-		return Stream.concat(
-			superClass != null
-				? superClass.getResolvedApiType().map(cls -> cls.getAllMethods().stream()).orElse(Stream.empty())
-				: Stream.empty(),
-			super.getSuperMethods().stream()
-			).toList();
-	}
-
-	@Override
-	public List<FieldDecl> getAllFields() {
-		return Stream.concat(
-			superClass != null
-				? superClass.getResolvedApiType().map(cls -> cls.getAllFields().stream()).orElse(Stream.empty())
-				: Stream.empty(),
-			super.getAllFields().stream()
-		).toList();
-	}
-
-	@Override
 	public boolean isCheckedException() {
-		if ("java.lang.Exception".equals(qualifiedName))
-			return true;
-		if ("java.lang.RuntimeException".equals(qualifiedName))
-			return false;
+		return isSubtypeOf(TypeReference.EXCEPTION) && !isUncheckedException();
+	}
 
-		return getAllSuperClasses().stream().anyMatch(cls -> "java.lang.Exception".equals(cls.getQualifiedName()))
-			&& getAllSuperClasses().stream().noneMatch(cls -> "java.lang.RuntimeException".equals(cls.getQualifiedName()));
+	public boolean isUncheckedException() {
+		return isSubtypeOf(TypeReference.RUNTIME_EXCEPTION);
 	}
 
 	@Override
@@ -76,49 +48,42 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return super.isEffectivelyFinal() || constructors.isEmpty();
 	}
 
+	public boolean isEffectivelyAbstract() {
+		return isAbstract() ||
+			(constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()));
+	}
+
 	@Override
-	public List<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
+	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return Stream.concat(
-			super.getAllSuperTypes().stream(),
-			getAllSuperClasses().stream()
-		).toList();
+			getAllSuperClasses().flatMap(ref -> Stream.concat(Stream.of(ref), ref.getAllSuperTypes())),
+			super.getAllSuperTypes()
+		).distinct();
+	}
+
+	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
+		return superClass == null
+			? Stream.empty()
+			: Stream.concat(Stream.of(superClass),
+					superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty));
 	}
 
 	public Optional<TypeReference<ClassDecl>> getSuperClass() {
 		return Optional.ofNullable(superClass);
 	}
 
-	@JsonIgnore
-	public List<TypeReference<ClassDecl>> getAllSuperClasses() {
-		return superClass != null
-			? Stream.concat(
-					Stream.of(superClass),
-					superClass.getResolvedApiType().map(c -> c.getAllSuperClasses().stream()).orElse(Stream.empty())
-				).toList()
-			: Collections.emptyList();
-	}
-
-	@Override
-	public List<TypeReference<InterfaceDecl>> getAllImplementedInterfaces() {
-		return Stream.concat(
-			super.getAllImplementedInterfaces().stream(),
-			superClass != null
-				? superClass.getResolvedApiType().map(cls -> cls.getAllImplementedInterfaces().stream()).orElse(Stream.empty())
-				: Stream.empty()
-		).distinct().toList();
-	}
-
 	public List<ConstructorDecl> getConstructors() {
-		return constructors;
+		return Collections.unmodifiableList(constructors);
 	}
 
 	@Override
 	public String toString() {
 		return """
-			class %s [%s] (%s)
+			%s class %s
 			  %s
 			  %s
-			""".formatted(qualifiedName, visibility, enclosingType, fields, methods);
+			  %s
+			""".formatted(visibility, qualifiedName, constructors, fields, methods);
 	}
 
 	@Override

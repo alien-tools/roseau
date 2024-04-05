@@ -1,61 +1,79 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 /**
- * Represents a method declaration within a Java type.
- * This class extends the {@link ExecutableDecl} class and complements it with method-specific information
+ * A method declaration within a {@link TypeDecl}.
+ * Extends the {@link ExecutableDecl} class and complements it with method-specific information
  */
 public final class MethodDecl extends ExecutableDecl {
-	@JsonCreator
-	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers, SourceLocation location,
-	                  TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
-	                  List<FormalTypeParameter> formalTypeParameters, List<TypeReference<ClassDecl>> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, location, containingType, type, parameters,
+	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	                  List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
+	                  ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
+	                  List<TypeReference<ClassDecl>> thrownExceptions) {
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type, parameters,
 			formalTypeParameters, thrownExceptions);
 	}
 
-	/**
-	 * Checks if the method is a default method.
-	 *
-	 * @return True if the method is a default method, false otherwise
-	 */
-	@JsonIgnore
+	@Override
+	public boolean isMethod() {
+		return true;
+	}
+
 	public boolean isDefault() {
 		return modifiers.contains(Modifier.DEFAULT);
 	}
 
-	@JsonIgnore
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	@JsonIgnore
 	public boolean isNative() {
 		return modifiers.contains(Modifier.NATIVE);
 	}
 
-	@JsonIgnore
 	public boolean isStrictFp() {
 		return modifiers.contains(Modifier.STRICTFP);
 	}
 
+	public boolean isEffectivelyFinal() {
+		return isFinal() || containingType.isEffectivelyFinal();
+	}
+
 	/**
-	 * Generates a string representation of the MethodDeclaration.
+	 * Checks whether the current method overrides the supplied method.
+	 * A method overrides itself.
 	 *
-	 * @return A formatted string containing the method's qualifiedName, return type, parameter types,
-	 * visibility, modifiers, type, exceptions, and position.
+	 * @param other The other method
+	 * @return whether this overrides other
 	 */
+	public boolean isOverriding(MethodDecl other) {
+		Objects.requireNonNull(other);
+		if (equals(other))
+			return true;
+		if (hasSameSignature(other)) {
+			if (getContainingType().isSubtypeOf(other.getContainingType()))
+				return true;
+			if (!isAbstract() && other.isAbstract())
+				return true;
+			if (!isDefault() && !isAbstract() && other.isDefault())
+				return true;
+		}
+		return false;
+	}
+
 	@Override
 	public String toString() {
 		return "%s %s %s %s(%s)".formatted(
-			modifiers.stream().map(Object::toString).collect(Collectors.joining(", ")), visibility, type, getSimpleName(),
+			visibility,
+			modifiers.stream().map(Object::toString).collect(Collectors.joining(" ")),
+			type,
+			getSimpleName(),
 			parameters.stream().map(Object::toString).collect(Collectors.joining(", ")));
 	}
 }
