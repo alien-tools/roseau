@@ -7,7 +7,7 @@ import org.json.JSONObject;
 
 import com.github.maracas.roseau.api.model.SourceLocation;
 
-public class JsonFormatter implements BreakinChangesFormatter {
+public class JsonFormatter implements BreakingChangesFormatter {
 
     /**
      * Formats the list of breaking changes in JSON format
@@ -15,18 +15,16 @@ public class JsonFormatter implements BreakinChangesFormatter {
     @Override
     public String format(List<BreakingChange> breakingChanges) {
         JSONArray jsonArray = new JSONArray();
-        
+
         for (BreakingChange bc : breakingChanges) {
             JSONObject jsonObject = new JSONObject();
             jsonObject.put("element", bc.impactedSymbol().getQualifiedName());
 
-            jsonObject.put("oldPosition", createLocationJson(bc.impactedSymbol().getLocation()));
+            jsonObject.put("oldLocation", createLocationJson(bc.impactedSymbol().getLocation()));
 
             if (bc.newSymbol() != null) {
-                JSONObject newPosition = createLocationJson(bc.newSymbol().getLocation());
-                jsonObject.put("newPosition", newPosition);
-            } else {
-                jsonObject.put("newPosition", "");
+                JSONObject newLocation = createLocationJson(bc.newSymbol().getLocation());
+                jsonObject.put("newLocation", newLocation);
             }
 
             jsonObject.put("kind", bc.kind());
@@ -37,10 +35,10 @@ public class JsonFormatter implements BreakinChangesFormatter {
     }
 
     private JSONObject createLocationJson(SourceLocation location) {
-		JSONObject position = new JSONObject();
-		position.put("path", location.file());
-		position.put("line", location.line());
-		return position;
-	}
+        JSONObject position = new JSONObject();
+        position.put("path", location.file());
+        position.put("line", location.line());
+        return position;
+    }
 
 }
