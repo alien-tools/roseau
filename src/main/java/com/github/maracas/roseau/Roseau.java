@@ -7,17 +7,19 @@ import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.formatter.JsonFormatter;
+import com.github.maracas.roseau.diff.formatter.ReportFormatType;
 import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
-import org.json.JSONArray;
 
 import picocli.CommandLine;
 import spoon.reflect.CtModel;
 
+import java.io.FileWriter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collections;
@@ -62,6 +64,10 @@ final class Roseau implements Callable<Integer>  {
 			description = "Command returns an error when there are breaking changes detected",
 			defaultValue = "false")
 	private boolean failMode;
+	@CommandLine.Option(names = "--format",
+			description="Format of the report; defaults to csv; possible values: ${COMPLETION-CANDIDATES}",
+			defaultValue="CSV")
+	private ReportFormatType format;
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
@@ -100,7 +106,21 @@ final class Roseau implements Callable<Integer>  {
 			List<BreakingChange> bcs = diff.diff();
 			logger.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
-			diff.writeReport(report);
+			switch (format) {
+				case JSON:
+					JsonFormatter formatter = new JsonFormatter();
+					String bcsJson = formatter.format(bcs);
+					if (!isGoodExtension(report.toString(),".json"))
+						report = modifyReportExtension(".json", report);
+					try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
+						writer.write(bcsJson);
+					}
+					break;
+				default:
+					diff.writeReport(report);
+					break;
+			}
+
 			return bcs;
 		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
@@ -110,6 +130,14 @@ final class Roseau implements Callable<Integer>  {
 		}
 
 		return Collections.emptyList();
+	}
+
+	public Path modifyReportExtension(String format, Path report) {
+		return report.resolveSibling(report.getFileName() + format);
+	}
+
+	public boolean isGoodExtension(String extension, String format) {
+		return extension.endsWith(format);
 	}
 
 	private String format(BreakingChange bc) {
