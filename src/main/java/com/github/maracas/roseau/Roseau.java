@@ -109,7 +109,8 @@ final class Roseau implements Callable<Integer>  {
 				case "json":
 					JsonFormatter formatter = new JsonFormatter();
 					String bcsJson = formatter.format(bcs);
-					report = modifyReportExtension(".json", report);
+					if (!isGoodExtension(report.toString(),".json"))
+						report = modifyReportExtension(".json", report);
 					try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
 						writer.write(bcsJson);
 					}
@@ -118,7 +119,7 @@ final class Roseau implements Callable<Integer>  {
 					diff.writeReport(report);
 					break;
 			}
-			
+
 			return bcs;
 		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
@@ -132,6 +133,10 @@ final class Roseau implements Callable<Integer>  {
 
 	public Path modifyReportExtension(String format, Path report) {
 		return report.resolveSibling(report.getFileName() + format);
+	}
+
+	public boolean isGoodExtension(String extension, String format) {
+		return extension.endsWith(format);
 	}
 
 	private String format(BreakingChange bc) {
