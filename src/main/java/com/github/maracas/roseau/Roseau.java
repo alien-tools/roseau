@@ -6,7 +6,7 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
-import com.github.maracas.roseau.diff.changes.JsonFormatter;
+import com.github.maracas.roseau.diff.formatter.JsonFormatter;
 import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
