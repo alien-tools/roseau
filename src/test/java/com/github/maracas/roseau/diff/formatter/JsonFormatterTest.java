@@ -8,6 +8,10 @@ import com.github.maracas.roseau.diff.changes.BreakingChange;
 
 import static com.github.maracas.roseau.utils.TestUtils.buildDiff;
 
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+
 class JsonFormatterTest {
     @Test
     void method_removed_in_JSON_format() {
@@ -34,7 +38,7 @@ class JsonFormatterTest {
         JsonFormatter formatter = new JsonFormatter();
         var result = formatter.format(breakingChanges);
 
-        assert (result.equals(expectedResult));
+        assertThat(result, is(equalTo(expectedResult)));
     }
 
     @Test
@@ -58,7 +62,7 @@ class JsonFormatterTest {
         JsonFormatter formatter = new JsonFormatter();
         var result = formatter.format(breakingChanges);
 
-        assert (result.equals(expectedResult));
+        assertThat(result, is(equalTo(expectedResult)));
     }
 
 }
