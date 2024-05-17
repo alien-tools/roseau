@@ -1,15 +1,9 @@
 name: Maven Build & Test
 
 on:
-  push:
-    branches:
-      - main
   pull_request:
     branches:
       - main
-  schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
 
 jobs:
   build:
@@ -31,17 +25,4 @@ jobs:
         run: mvn --batch-mode -DskipTests -Dmaven.javadoc.skip clean package
       - name: Run tests
         run: mvn --batch-mode -Dmaven.test.failure.ignore verify
-      - name: Build tests report
-        uses: dorny/test-reporter@v1
-        if: always()
-        with:
-          name: Maven Tests
-          path: '**/target/surefire-reports/*.xml'
-          reporter: java-junit
-          fail-on-error: true
-      - name: Publish SNAPSHOT
-        if: ${{ success() && github.event_name == 'push' }}
-        run: mvn --batch-mode -DskipTests -DdeployAtEnd deploy
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
