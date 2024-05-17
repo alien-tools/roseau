@@ -7,6 +7,7 @@ import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.formatter.JsonFormatter;
+import com.github.maracas.roseau.diff.formatter.ReportFormatType;
 import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -64,9 +65,9 @@ final class Roseau implements Callable<Integer>  {
 			defaultValue = "false")
 	private boolean failMode;
 	@CommandLine.Option(names = "--format",
-			description="Format of the report; defaults to csv",
-			defaultValue="csv")
-	private String format;
+			description="Format of the report; defaults to csv; possible values: ${COMPLETION-CANDIDATES}",
+			defaultValue="CSV")
+	private ReportFormatType format;
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
@@ -105,8 +106,8 @@ final class Roseau implements Callable<Integer>  {
 			List<BreakingChange> bcs = diff.diff();
 			logger.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
-			switch (format.toLowerCase()) {
-				case "json":
+			switch (format) {
+				case JSON:
 					JsonFormatter formatter = new JsonFormatter();
 					String bcsJson = formatter.format(bcs);
 					if (!isGoodExtension(report.toString(),".json"))
