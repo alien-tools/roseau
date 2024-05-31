@@ -15,10 +15,6 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 
-import java.io.FileWriter;
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
@@ -337,23 +333,6 @@ public class APIDiff {
 
 	public List<BreakingChange> getBreakingChanges() {
 		return breakingChanges;
-	}
-
-	/**
-	 * Generates a CSV report at {@code report} for the detected breaking changes.
-	 */
-	public void writeReport(Path report) throws IOException {
-		try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
-			writer.write("element,oldPosition,newPosition,kind,nature" + System.lineSeparator());
-			writer.write(breakingChanges.stream()
-				.map(bc -> "%s,%s,%s,%s,%s".formatted(
-					bc.impactedSymbol().getQualifiedName(),
-					bc.impactedSymbol().getLocation(),
-					bc.newSymbol() != null ? bc.newSymbol().getLocation() : "",
-					bc.kind(),
-					bc.kind().getNature())
-				).collect(Collectors.joining(System.lineSeparator())));
-			}
 	}
 
 	@Override
