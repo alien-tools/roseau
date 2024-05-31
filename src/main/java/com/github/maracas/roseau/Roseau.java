@@ -6,7 +6,6 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
-import com.github.maracas.roseau.diff.formatter.JsonFormatter;
 import com.github.maracas.roseau.diff.formatter.BreakingChangesFormatter;
 import com.github.maracas.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import com.google.common.base.Stopwatch;
@@ -108,7 +107,8 @@ final class Roseau implements Callable<Integer>  {
 			logger.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
 			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
-			report = modifyReportExtension(fmt.getFileExtension(), report);
+			if (!hasGoodExtension(report, fmt.getFileExtension()))
+				report = modifyReportExtension(report, fmt.getFileExtension());
 			try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
 				writer.write(fmt.format(bcs));
 			}
@@ -124,8 +124,12 @@ final class Roseau implements Callable<Integer>  {
 		return Collections.emptyList();
 	}
 
-	public Path modifyReportExtension(String format, Path report) {
-		return report.resolveSibling(report.getFileName() + format);
+	public static boolean hasGoodExtension(Path report, String extension) {
+		return report.getFileName().toString().endsWith("." + extension);
+	}
+
+	public static Path modifyReportExtension(Path report, String extension) {
+		return report.resolveSibling(report.getFileName() + "." + extension);
 	}
 
 	private String format(BreakingChange bc) {
