@@ -6,8 +6,8 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
-import com.github.maracas.roseau.diff.formatter.JsonFormatter;
-import com.github.maracas.roseau.diff.formatter.ReportFormatType;
+import com.github.maracas.roseau.diff.formatter.BreakingChangesFormatter;
+import com.github.maracas.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -67,7 +67,7 @@ final class Roseau implements Callable<Integer>  {
 	@CommandLine.Option(names = "--format",
 			description="Format of the report; defaults to csv; possible values: ${COMPLETION-CANDIDATES}",
 			defaultValue="CSV")
-	private ReportFormatType format;
+	private BreakingChangesFormatterFactory format;
 
 	private static final Logger logger = LogManager.getLogger(Roseau.class);
 
@@ -106,19 +106,11 @@ final class Roseau implements Callable<Integer>  {
 			List<BreakingChange> bcs = diff.diff();
 			logger.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
-			switch (format) {
-				case JSON:
-					JsonFormatter formatter = new JsonFormatter();
-					String bcsJson = formatter.format(bcs);
-					if (!isGoodExtension(report.toString(),".json"))
-						report = modifyReportExtension(".json", report);
-					try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
-						writer.write(bcsJson);
-					}
-					break;
-				default:
-					diff.writeReport(report);
-					break;
+			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
+			if (!hasGoodExtension(report, fmt.getFileExtension()))
+				report = modifyReportExtension(report, fmt.getFileExtension());
+			try (FileWriter writer = new FileWriter(report.toFile(), StandardCharsets.UTF_8)) {
+				writer.write(fmt.format(bcs));
 			}
 
 			return bcs;
@@ -132,12 +124,12 @@ final class Roseau implements Callable<Integer>  {
 		return Collections.emptyList();
 	}
 
-	public Path modifyReportExtension(String format, Path report) {
-		return report.resolveSibling(report.getFileName() + format);
+	public static boolean hasGoodExtension(Path report, String extension) {
+		return report.getFileName().toString().endsWith("." + extension);
 	}
 
-	public boolean isGoodExtension(String extension, String format) {
-		return extension.endsWith(format);
+	public static Path modifyReportExtension(Path report, String extension) {
+		return report.resolveSibling(report.getFileName() + "." + extension);
 	}
 
 	private String format(BreakingChange bc) {
