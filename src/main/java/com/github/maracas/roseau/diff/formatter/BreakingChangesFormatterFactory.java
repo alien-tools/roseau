@@ -4,8 +4,9 @@ package com.github.maracas.roseau.diff.formatter;
  * Enumerates the possible formats for the report output. Currently supports JSON and CSV.
  */
 public enum BreakingChangesFormatterFactory {
-    JSON,
-    CSV;
+    CSV,
+    HTML,
+    JSON;
 
     public static BreakingChangesFormatter newBreakingChangesFormatter(BreakingChangesFormatterFactory format) {
         switch (format) {
@@ -13,6 +14,8 @@ public enum BreakingChangesFormatterFactory {
                 return new JsonFormatter();
             case CSV:
                 return new CsvFormatter();
+            case HTML:
+                return new HtmlFormatter();
             default:
                 throw new IllegalArgumentException("Unsupported format: " + format);
         }
