@@ -10,6 +10,7 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -21,6 +22,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private SpoonAPIFactory factory;
 	@JsonIgnore
 	private T resolvedApiType;
+
+	private static final ConcurrentHashMap<String, TypeDecl> typeCache = new ConcurrentHashMap<>();
 
 	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
 	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
@@ -57,13 +60,13 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	/**
-	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary,
+	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly and cached if necessary,
 	 * or {@link Optional<T>.empty()} if it cannot be resolved.
 	 */
 	public Optional<T> getResolvedApiType() {
 		if (resolvedApiType == null && factory != null)
 			// Safe as long as we don't have two types with same FQN of different kinds (e.g. class vs interface)
-			resolvedApiType = (T) factory.convertCtType(qualifiedName);
+			resolvedApiType = (T) typeCache.computeIfAbsent(qualifiedName, fqn -> factory.convertCtType(fqn));
 
 		if (resolvedApiType == null)
 			System.err.printf("Warning: %s couldn't be resolved, results may be innacurate%n", qualifiedName);
