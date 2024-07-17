@@ -1,15 +1,14 @@
 package com.github.maracas.roseau.diff.formatter;
 
-import java.util.List;
-
+import com.github.maracas.roseau.api.model.SourceLocation;
+import com.github.maracas.roseau.diff.changes.BreakingChange;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import com.github.maracas.roseau.api.model.SourceLocation;
-import com.github.maracas.roseau.diff.changes.BreakingChange;
+import java.util.List;
 
 public class JsonFormatter implements BreakingChangesFormatter {
-	private final static String EXTENSION = "json";
+	private static final String EXTENSION = "json";
 
 	/**
 	 * Formats the list of breaking changes in JSON format

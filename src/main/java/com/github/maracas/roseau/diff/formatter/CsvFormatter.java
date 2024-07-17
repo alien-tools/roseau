@@ -1,18 +1,17 @@
 package com.github.maracas.roseau.diff.formatter;
 
-import java.util.List;
-
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class CsvFormatter implements BreakingChangesFormatter {
-	private final static String EXTENSION = "csv";
+	private static final String EXTENSION = "csv";
 
 	@Override
 	public String format(List<BreakingChange> changes) {
 		StringBuilder sb = new StringBuilder();
-		sb.append("element,oldPosition,newPosition,kind,nature" + System.lineSeparator());
+		sb.append("element,oldPosition,newPosition,kind,nature").append(System.lineSeparator());
 		sb.append(changes.stream().map(bc -> "%s,%s,%s,%s,%s".formatted(
 			bc.impactedSymbol().getQualifiedName(),
 			bc.impactedSymbol().getLocation(),
@@ -21,7 +20,7 @@ public class CsvFormatter implements BreakingChangesFormatter {
 			bc.kind().getNature())
 		).collect(Collectors.joining(System.lineSeparator())));
 		return sb.toString();
-    }
+	}
 
 	@Override
 	public String getFileExtension() {

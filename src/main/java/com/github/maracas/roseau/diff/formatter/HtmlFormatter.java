@@ -1,17 +1,16 @@
 package com.github.maracas.roseau.diff.formatter;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-
 import com.github.maracas.roseau.api.model.Symbol;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.TypeMemberDecl;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
-
 import htmlflow.HtmlFlow;
 import org.xmlet.htmlapifaster.Tr;
+
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
 
 public class HtmlFormatter implements BreakingChangesFormatter {
 	private static final String EXTENSION = "html";
@@ -21,32 +20,32 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 		StringBuilder sb = new StringBuilder();
 		HtmlFlow.doc(sb)
 			.html()
-				.head()
-					.meta().addAttr("charset", "utf-8").__()
-					.meta()
-						.addAttr("name", "viewport")
-						.addAttr("content", "width=device-width, initial-scale=1.0")
-					.__()
-					.title().text("Maracas Breaking Changes Report").__()
-					.link()
-						.addAttr("href", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css")
-						.addAttr("rel", "stylesheet")
-						.addAttr("integrity", "sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH")
-						.addAttr("crossorigin", "anonymous")
-					.__()
-				.__()
-				.body()
-				.div().addAttr("class", "container mt-5")
-				.h1().text("Breaking Changes Report").__()
-				.table().addAttr("class", "table")
-				.of(table -> getImpactedApiTree(changes).forEach(node ->
-						table.tr().of(tr -> appendNode(tr, node)).__()
-								.of(theTable -> node.children.forEach(member ->
-												theTable.tr().of(tr -> appendNode(tr, member)).__()
-										)
-								)))
-				.__()
-				.__()
+			.head()
+			.meta().addAttr("charset", "utf-8").__()
+			.meta()
+			.addAttr("name", "viewport")
+			.addAttr("content", "width=device-width, initial-scale=1.0")
+			.__()
+			.title().text("Maracas Breaking Changes Report").__()
+			.link()
+			.addAttr("href", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css")
+			.addAttr("rel", "stylesheet")
+			.addAttr("integrity", "sha384-QWTKZyjpPEjISv5WaRU9OFeRpok6YctnYmDr5pNlyT2bRjXh0JMhjY6hW+ALEwIH")
+			.addAttr("crossorigin", "anonymous")
+			.__()
+			.__()
+			.body()
+			.div().addAttr("class", "container mt-5")
+			.h1().text("Breaking Changes Report").__()
+			.table().addAttr("class", "table")
+			.of(table -> getImpactedApiTree(changes).forEach(node ->
+				table.tr().of(tr -> appendNode(tr, node)).__()
+					.of(theTable -> node.children.forEach(member ->
+							theTable.tr().of(tr -> appendNode(tr, member)).__()
+						)
+					)))
+			.__()
+			.__()
 			.__();
 		return sb.toString();
 	}
@@ -66,9 +65,9 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 
 	private static List<TypeNode> getImpactedApiTree(List<BreakingChange> changes) {
 		Map<Symbol, Node> nodes = new HashMap<>();
-		for (BreakingChange change: changes) {
+		for (BreakingChange change : changes) {
 			Symbol sym = change.impactedSymbol();
-			switch(sym) {
+			switch (sym) {
 				case TypeDecl td:
 					nodes.computeIfAbsent(sym, k -> fromTypeDecl(td));
 					nodes.get(sym).addBreakingChange(change);
