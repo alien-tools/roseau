@@ -48,8 +48,10 @@ import spoon.reflect.reference.CtWildcardReference;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class SpoonAPIFactory {
@@ -203,10 +205,10 @@ public class SpoonAPIFactory {
 
 	private MethodDecl convertCtMethod(CtMethod<?> method) {
 		// Spoon does not store 'default' information as modifier, but we do
-		List<Modifier> modifiers = Stream.concat(
+		EnumSet<Modifier> modifiers = Stream.concat(
 			convertSpoonNonAccessModifiers(method.getModifiers()).stream(),
 			method.isDefaultMethod() ? Stream.of(Modifier.DEFAULT) : Stream.empty()
-		).toList();
+		).collect(Collectors.toCollection(() -> EnumSet.noneOf(Modifier.class)));
 
 		return new MethodDecl(
 			makeQualifiedName(method),
@@ -321,14 +323,14 @@ public class SpoonAPIFactory {
 		};
 	}
 
-	private List<Modifier> convertSpoonNonAccessModifiers(Collection<ModifierKind> modifiers) {
+	private EnumSet<Modifier> convertSpoonNonAccessModifiers(Collection<ModifierKind> modifiers) {
 		return modifiers.stream()
 			.filter(mod ->
 				     ModifierKind.PUBLIC != mod
 					&& ModifierKind.PROTECTED != mod
 					&& ModifierKind.PRIVATE != mod)
 			.map(this::convertSpoonModifier)
-			.toList();
+			.collect(Collectors.toCollection(() -> EnumSet.noneOf(Modifier.class)));
 	}
 
 	private List<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {

@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -12,7 +13,7 @@ import java.util.stream.Collectors;
  * Extends the {@link ExecutableDecl} class and complements it with method-specific information
  */
 public final class MethodDecl extends ExecutableDecl {
-	public MethodDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	public MethodDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                  List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                  ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
 	                  List<TypeReference<ClassDecl>> thrownExceptions) {

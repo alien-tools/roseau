@@ -4,6 +4,7 @@ import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
@@ -19,7 +20,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	protected final List<TypeReference<ClassDecl>> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,

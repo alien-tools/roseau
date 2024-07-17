@@ -3,10 +3,11 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 
 public final class AnnotationDecl extends TypeDecl {
-	public AnnotationDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	public AnnotationDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                      List<Annotation> annotations, SourceLocation location, List<FieldDecl> fields,
 	                      List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType) {
 		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),

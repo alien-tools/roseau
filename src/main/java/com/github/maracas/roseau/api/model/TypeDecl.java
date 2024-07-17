@@ -5,6 +5,7 @@ import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -44,7 +45,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 */
 	protected List<MethodDecl> allMethods;
 
-	protected TypeDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	protected TypeDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                   List<Annotation> annotations, SourceLocation location,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,

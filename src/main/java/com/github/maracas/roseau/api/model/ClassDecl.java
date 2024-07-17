@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -16,7 +17,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	protected final List<ConstructorDecl> constructors;
 
-	public ClassDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	public ClassDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location,
 	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,

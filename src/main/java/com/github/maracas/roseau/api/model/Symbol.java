@@ -1,8 +1,12 @@
 package com.github.maracas.roseau.api.model;
 
+import com.google.common.collect.Sets;
+
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}.
@@ -22,7 +26,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
 	 * List of non-access modifiers applied to the symbol.
 	 */
-	protected final List<Modifier> modifiers;
+	protected final EnumSet<Modifier> modifiers;
 
 	/**
 	 * Symbol annotations
@@ -39,7 +43,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	 */
 	protected final String simpleName;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	protected Symbol(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.visibility = Objects.requireNonNull(visibility);
@@ -57,8 +61,8 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return visibility;
 	}
 
-	public List<Modifier> getModifiers() {
-		return Collections.unmodifiableList(modifiers);
+	public Set<Modifier> getModifiers() {
+		return Sets.immutableEnumSet(modifiers);
 	}
 
 	public List<Annotation> getAnnotations() {

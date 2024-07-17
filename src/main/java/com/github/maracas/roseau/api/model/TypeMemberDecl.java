@@ -3,8 +3,10 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A member of a type declaration, either a {@link FieldDecl} or {@link ExecutableDecl}.
@@ -14,7 +16,7 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
-	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, List<Modifier> modifiers,
+	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
