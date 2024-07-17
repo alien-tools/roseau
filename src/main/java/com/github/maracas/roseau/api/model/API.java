@@ -11,11 +11,11 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.visit.APITypeResolver;
+import com.google.common.collect.ImmutableMap;
 
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -28,7 +28,7 @@ import java.util.stream.Stream;
  * and can be serialized/deserialized from Json.
  */
 public final class API {
-	private final Map<String, TypeDecl> allTypes;
+	private final ImmutableMap<String, TypeDecl> allTypes;
 	@JsonIgnore
 	private final SpoonAPIFactory factory;
 
@@ -42,7 +42,7 @@ public final class API {
 	 */
 	public API(@JsonProperty("allTypes") List<TypeDecl> types, @JacksonInject SpoonAPIFactory factory) {
 		this.allTypes = Objects.requireNonNull(types).stream()
-			.collect(Collectors.toMap(
+			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
 				Function.identity()
 			));
