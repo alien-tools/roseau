@@ -22,7 +22,8 @@ public class Combinatorial {
 	private static final Set<Modifier> visibilities = Set.of(Modifier.PRIVATE, Modifier.PROTECTED, Modifier.PUBLIC);
 	private static final Set<Modifier> fieldModifiers = Set.of(Modifier.STATIC, Modifier.FINAL); // TRANSIENT, VOLATILE
 	private static final Set<Modifier> methodModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.NATIVE, Modifier.DEFAULT, Modifier.SYNCHRONIZED);
-	private static final Set<Modifier> typeModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
+	private static final Set<Modifier> classModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
+	private static final Set<Modifier> recordModifiers = Set.of(Modifier.STATIC, Modifier.FINAL);
 	private static final Set<TypeName> fieldTypes = Set.of(
 		TypeName.INT,
 		TypeName.INT.box(),
@@ -60,12 +61,13 @@ public class Combinatorial {
 
 	private void generateTypes() {
 		classes(null);
+		records(null);
 	}
 
 	private void classes(TypeSpec.Builder parent) {
 		int i = 0;
 		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(typeModifiers)) {
+			for (var mods : Sets.powerSet(classModifiers)) {
 				var clsName = "C" + i++;
 
 				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
@@ -88,6 +90,30 @@ public class Combinatorial {
 				if (mods.contains(Modifier.NON_SEALED)) {
 					insertSuperclassSealed(cls);
 				}
+
+				storeType(clsName, cls);
+			}
+		}
+	}
+
+	private void records(TypeSpec.Builder parent) {
+		int i = 0;
+		for (var vis : visibilities) {
+			for (var mods : Sets.powerSet(recordModifiers)) {
+				var clsName = "R" + i++;
+
+				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
+					continue;
+				if (mods.contains(Modifier.SEALED) && mods.contains(Modifier.NON_SEALED))
+					continue;
+				if (mods.contains(Modifier.ABSTRACT) && mods.contains(Modifier.FINAL))
+					continue;
+				if (mods.contains(Modifier.FINAL) && (mods.contains(Modifier.SEALED) || mods.contains(Modifier.NON_SEALED)))
+					continue;
+
+				var cls = TypeSpec.recordBuilder(clsName)
+					.addModifiers(vis)
+					.addModifiers(mods.toArray(new Modifier[0]));
 
 				storeType(clsName, cls);
 			}
@@ -124,6 +150,8 @@ public class Combinatorial {
 						continue;
 					if (mods.contains(Modifier.ABSTRACT) && (vis == Modifier.PRIVATE ||
 						mods.contains(Modifier.FINAL) || mods.contains(Modifier.NATIVE) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.SYNCHRONIZED)))
+						continue;
+					if (typeBuilder.build().kind == TypeSpec.Kind.RECORD && mods.contains(Modifier.NATIVE))
 						continue;
 
 					var m = MethodSpec.methodBuilder(mName)
