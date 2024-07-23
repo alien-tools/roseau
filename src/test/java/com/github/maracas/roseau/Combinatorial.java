@@ -19,6 +19,7 @@ import java.util.Set;
 
 public class Combinatorial {
 	private static final String packageName = "com.example.testapi";
+	private static final Path outputPath = Path.of("generated");
 	private static final Set<Modifier> visibilities = Set.of(Modifier.PRIVATE, Modifier.PROTECTED, Modifier.PUBLIC);
 	private static final Set<Modifier> fieldModifiers = Set.of(Modifier.STATIC, Modifier.FINAL); // TRANSIENT, VOLATILE
 	private static final Set<Modifier> methodModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.NATIVE, Modifier.DEFAULT, Modifier.SYNCHRONIZED);
@@ -34,37 +35,35 @@ public class Combinatorial {
 
 	private Map<String, TypeSpec.Builder> types = new HashMap<>();
 
-	public static void main(String[] args) throws IOException {
-		new Combinatorial().run(packageName, Path.of("generated"));
+	public static void main(String[] args) {
+		new Combinatorial().run();
 	}
 
-	public void run(String packageName, Path outputDir) throws IOException {
-		generateTypes();
+	void run() {
+		generateAllTypes();
 
-		for (var type : types.values().stream()
-			.sorted((t1, t2) -> {
-				if (t1.build().superclass.toString().equals(packageName + "." + t2.build().name)) {
-					return 1;
-				}
-				if (t2.build().superclass.toString().equals(packageName + "." + t1.build().name)) {
-					return -1;
-				}
-				return t1.build().name.toString().compareTo(t2.build().name.toString());
-			}).toList()) {
-			insertAllFields(type);
-			insertAllMethods(type);
+		types.values().stream().sorted(this::typeHierarchy).forEach(type -> {
+			weaveAllFields(type);
+			weaveAllMethods(type);
+			writeJavaFile(type);
+		});
+	}
 
+	void writeJavaFile(TypeSpec.Builder type) {
+		try {
 			var javaFile = JavaFile.builder(packageName, type.build()).build();
-			javaFile.writeTo(outputDir);
+			javaFile.writeTo(outputPath);
+		} catch (IOException e) {
+			e.printStackTrace();
 		}
 	}
 
-	private void generateTypes() {
+	void generateAllTypes() {
 		classes(null);
 		records(null);
 	}
 
-	private void classes(TypeSpec.Builder parent) {
+	void classes(TypeSpec.Builder parent) {
 		int i = 0;
 		for (var vis : visibilities) {
 			for (var mods : Sets.powerSet(classModifiers)) {
@@ -74,9 +73,7 @@ public class Combinatorial {
 					continue;
 				if (mods.contains(Modifier.SEALED) && mods.contains(Modifier.NON_SEALED))
 					continue;
-				if (mods.contains(Modifier.ABSTRACT) && mods.contains(Modifier.FINAL))
-					continue;
-				if (mods.contains(Modifier.FINAL) && (mods.contains(Modifier.SEALED) || mods.contains(Modifier.NON_SEALED)))
+				if (mods.contains(Modifier.FINAL) && (mods.contains(Modifier.ABSTRACT) || mods.contains(Modifier.SEALED) || mods.contains(Modifier.NON_SEALED)))
 					continue;
 
 				var cls = TypeSpec.classBuilder(clsName)
@@ -96,19 +93,13 @@ public class Combinatorial {
 		}
 	}
 
-	private void records(TypeSpec.Builder parent) {
+	void records(TypeSpec.Builder parent) {
 		int i = 0;
 		for (var vis : visibilities) {
 			for (var mods : Sets.powerSet(recordModifiers)) {
 				var clsName = "R" + i++;
 
 				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
-					continue;
-				if (mods.contains(Modifier.SEALED) && mods.contains(Modifier.NON_SEALED))
-					continue;
-				if (mods.contains(Modifier.ABSTRACT) && mods.contains(Modifier.FINAL))
-					continue;
-				if (mods.contains(Modifier.FINAL) && (mods.contains(Modifier.SEALED) || mods.contains(Modifier.NON_SEALED)))
 					continue;
 
 				var cls = TypeSpec.recordBuilder(clsName)
@@ -120,7 +111,7 @@ public class Combinatorial {
 		}
 	}
 
-	private void insertAllFields(TypeSpec.Builder typeBuilder) {
+	void weaveAllFields(TypeSpec.Builder typeBuilder) {
 		int i = 0;
 		for (var vis : visibilities) {
 			for (var mods : Sets.powerSet(fieldModifiers)) {
@@ -139,7 +130,7 @@ public class Combinatorial {
 		}
 	}
 
-	private void insertAllMethods(TypeSpec.Builder typeBuilder) {
+	void weaveAllMethods(TypeSpec.Builder typeBuilder) {
 		int i = 0;
 		for (var vis : visibilities) {
 			for (var mods : Sets.powerSet(methodModifiers)) {
@@ -148,8 +139,9 @@ public class Combinatorial {
 
 					if (mods.contains(Modifier.DEFAULT) && typeBuilder.build().kind != TypeSpec.Kind.INTERFACE)
 						continue;
-					if (mods.contains(Modifier.ABSTRACT) && (vis == Modifier.PRIVATE ||
-						mods.contains(Modifier.FINAL) || mods.contains(Modifier.NATIVE) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.SYNCHRONIZED)))
+					if (mods.contains(Modifier.ABSTRACT) && (
+						vis == Modifier.PRIVATE || mods.contains(Modifier.FINAL) || mods.contains(Modifier.NATIVE) ||
+						mods.contains(Modifier.STATIC) || mods.contains(Modifier.SYNCHRONIZED)))
 						continue;
 					if (typeBuilder.build().kind == TypeSpec.Kind.RECORD && mods.contains(Modifier.NATIVE))
 						continue;
@@ -163,19 +155,14 @@ public class Combinatorial {
 						m.addCode("return $L;", getDefaultValue(t));
 
 					var shouldOverride = false;
-					var sup = types.get(typeBuilder.build().superclass.toString());
-					if (sup != null) {
-						var opt = sup.methodSpecs.stream().filter(superM -> superM.name.equals(mName)).findFirst();
-						if (opt.isPresent()) {
-							var superM = opt.get();
-							if (superM.hasModifier(Modifier.FINAL))
-								continue;
-							if (superM.hasModifier(Modifier.PUBLIC) && mods.contains(Modifier.PROTECTED))
-								continue;
-							if (superM.hasModifier(Modifier.ABSTRACT) && !typeBuilder.modifiers.contains(Modifier.ABSTRACT)) {
-								shouldOverride = true;
-							}
-						}
+					var superM = superMethod(typeBuilder, m);
+					if (superM != null) {
+						if (superM.hasModifier(Modifier.FINAL))
+							continue;
+						if (superM.hasModifier(Modifier.PUBLIC) && mods.contains(Modifier.PROTECTED))
+							continue;
+						if (superM.hasModifier(Modifier.ABSTRACT) && !typeBuilder.modifiers.contains(Modifier.ABSTRACT))
+							shouldOverride = true;
 					}
 
 					if (shouldOverride) {
@@ -193,10 +180,10 @@ public class Combinatorial {
 		}
 	}
 
-	private void insertSubclassesSealed(TypeSpec.Builder cls) {
+	void insertSubclassesSealed(TypeSpec.Builder cls) {
 		// FIXME
-		String supName = cls.build().name;
-		String subName = "Sub" + supName;
+		var supName = cls.build().name;
+		var subName = "Sub" + supName;
 		var sub = TypeSpec.classBuilder(subName)
 			.addModifiers(Modifier.FINAL)
 			.superclass(ClassName.get(packageName, supName));
@@ -206,9 +193,9 @@ public class Combinatorial {
 		storeType(subName, sub);
 	}
 
-	private void insertSuperclassSealed(TypeSpec.Builder cls) {
-		String subName = cls.build().name;
-		String supName = subName + "Sup";
+	void insertSuperclassSealed(TypeSpec.Builder cls) {
+		var subName = cls.build().name;
+		var supName = subName + "Sup";
 
 		// FIXME
 		var sup = TypeSpec.classBuilder(supName)
@@ -220,7 +207,17 @@ public class Combinatorial {
 		storeType(supName, sup);
 	}
 
-	private String getDefaultValue(TypeName type) {
+	MethodSpec superMethod(TypeSpec.Builder t, MethodSpec.Builder m) {
+		var sup = types.get(t.build().superclass.toString());
+		if (sup != null) {
+			var opt = sup.methodSpecs.stream().filter(superM -> superM.name.equals(m.build().name)).findFirst();
+			if (opt.isPresent())
+				return opt.get();
+		}
+		return null;
+	}
+
+	String getDefaultValue(TypeName type) {
 		if (type.equals(TypeName.BOOLEAN)) return "false";
 		if (type.equals(TypeName.BYTE) || type.equals(TypeName.SHORT) || type.equals(TypeName.INT) || type.equals(TypeName.LONG)) return "0";
 		if (type.equals(TypeName.FLOAT)) return "0.0f";
@@ -229,18 +226,26 @@ public class Combinatorial {
 		return "null";
 	}
 
-	private boolean isAbstract(TypeSpec.Builder typeBuilder) {
+	boolean isAbstract(TypeSpec.Builder typeBuilder) {
 		return typeBuilder.modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	private TypeSpec.Builder findType(String name) {
+	TypeSpec.Builder findType(String name) {
 		if (name == null)
 			return null;
 
 		return types.get(name);
 	}
 
-	private void storeType(String name, TypeSpec.Builder typeBuilder) {
+	void storeType(String name, TypeSpec.Builder typeBuilder) {
 		types.put(packageName + "." + name, typeBuilder);
+	}
+
+	int typeHierarchy(TypeSpec.Builder t1, TypeSpec.Builder t2) {
+		if (t1.build().superclass.toString().equals(packageName + "." + t2.build().name))
+			return 1;
+		if (t2.build().superclass.toString().equals(packageName + "." + t1.build().name))
+			return -1;
+		return t1.build().name.toString().compareTo(t2.build().name.toString());
 	}
 }
