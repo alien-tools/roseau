@@ -24,7 +24,9 @@ public class Combinatorial {
 	private static final Set<Modifier> fieldModifiers = Set.of(Modifier.STATIC, Modifier.FINAL); // TRANSIENT, VOLATILE
 	private static final Set<Modifier> methodModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.NATIVE, Modifier.DEFAULT, Modifier.SYNCHRONIZED);
 	private static final Set<Modifier> classModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
+	private static final Set<Modifier> interfaceModifiers = Set.of(Modifier.STATIC, Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
 	private static final Set<Modifier> recordModifiers = Set.of(Modifier.STATIC, Modifier.FINAL);
+	private static final Set<Modifier> enumModifiers = Set.of(Modifier.STATIC);
 	private static final Set<TypeName> fieldTypes = Set.of(
 		TypeName.INT,
 		TypeName.INT.box(),
@@ -60,7 +62,9 @@ public class Combinatorial {
 
 	void generateAllTypes() {
 		classes(null);
+		interfaces(null);
 		records(null);
+		enums(null);
 	}
 
 	void classes(TypeSpec.Builder parent) {
@@ -85,7 +89,35 @@ public class Combinatorial {
 				}
 
 				if (mods.contains(Modifier.NON_SEALED)) {
-					insertSuperclassSealed(cls);
+					insertSupertypesSealed(cls);
+				}
+
+				storeType(clsName, cls);
+			}
+		}
+	}
+
+	void interfaces(TypeSpec.Builder parent) {
+		int i = 0;
+		for (var vis : visibilities) {
+			for (var mods : Sets.powerSet(interfaceModifiers)) {
+				var clsName = "I" + i++;
+
+				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
+					continue;
+				if (mods.contains(Modifier.SEALED) && mods.contains(Modifier.NON_SEALED))
+					continue;
+
+				var cls = TypeSpec.interfaceBuilder(clsName)
+					.addModifiers(vis)
+					.addModifiers(mods.toArray(new Modifier[0]));
+
+				if (mods.contains(Modifier.SEALED)) {
+					insertSubclassesSealed(cls);
+				}
+
+				if (mods.contains(Modifier.NON_SEALED)) {
+					insertSupertypesSealed(cls);
 				}
 
 				storeType(clsName, cls);
@@ -111,12 +143,40 @@ public class Combinatorial {
 		}
 	}
 
+	void enums(TypeSpec.Builder parent) {
+		// TODO enum constants
+		int i = 0;
+		for (var vis : visibilities) {
+			for (var mods : Sets.powerSet(enumModifiers)) {
+				var clsName = "E" + i++;
+
+				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
+					continue;
+
+				var cls = TypeSpec.enumBuilder(clsName)
+					.addModifiers(vis)
+					.addModifiers(mods.toArray(new Modifier[0]));
+
+				storeType(clsName, cls);
+			}
+		}
+	}
+
 	void weaveAllFields(TypeSpec.Builder typeBuilder) {
 		int i = 0;
 		for (var vis : visibilities) {
 			for (var mods : Sets.powerSet(fieldModifiers)) {
 				for (var t : fieldTypes) {
 					var fName = "f" + i++;
+					var kind = typeBuilder.build().kind;
+
+					if (kind == TypeSpec.Kind.INTERFACE) {
+						if (vis != Modifier.PUBLIC)
+							continue;
+						if (!mods.containsAll(Set.of(Modifier.FINAL, Modifier.STATIC)))
+							continue;
+					}
+
 					var f = FieldSpec.builder(t, fName)
 						.addModifiers(vis)
 						.addModifiers(mods.toArray(new Modifier[0]));
@@ -136,14 +196,28 @@ public class Combinatorial {
 			for (var mods : Sets.powerSet(methodModifiers)) {
 				for (var t : methodTypes) {
 					var mName = "m" + i++;
+					var kind = typeBuilder.build().kind;
 
-					if (mods.contains(Modifier.DEFAULT) && typeBuilder.build().kind != TypeSpec.Kind.INTERFACE)
+					if (mods.contains(Modifier.NATIVE) && kind != TypeSpec.Kind.CLASS)
 						continue;
+					if (mods.contains(Modifier.DEFAULT) && kind != TypeSpec.Kind.INTERFACE)
+						continue;
+					if (kind == TypeSpec.Kind.INTERFACE) {
+						if (vis == Modifier.PROTECTED)
+							continue;
+						if (mods.contains(Modifier.FINAL) || mods.contains(Modifier.SYNCHRONIZED))
+							continue;
+						if (mods.contains(Modifier.DEFAULT) && (vis != Modifier.PUBLIC || mods.contains(Modifier.STATIC) || mods.contains(Modifier.ABSTRACT)))
+							continue;
+						if (vis == Modifier.PUBLIC && !(mods.contains(Modifier.ABSTRACT) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.DEFAULT)))
+							continue;
+						if (vis == Modifier.PUBLIC && (mods.contains(Modifier.ABSTRACT) || mods.contains(Modifier.DEFAULT)))
+							continue;
+					}
+
 					if (mods.contains(Modifier.ABSTRACT) && (
 						vis == Modifier.PRIVATE || mods.contains(Modifier.FINAL) || mods.contains(Modifier.NATIVE) ||
 						mods.contains(Modifier.STATIC) || mods.contains(Modifier.SYNCHRONIZED)))
-						continue;
-					if (typeBuilder.build().kind == TypeSpec.Kind.RECORD && mods.contains(Modifier.NATIVE))
 						continue;
 
 					var m = MethodSpec.methodBuilder(mName)
@@ -184,13 +258,26 @@ public class Combinatorial {
 		// FIXME
 		var supName = cls.build().name;
 		var subName = "Sub" + supName;
-		var sub = TypeSpec.classBuilder(subName)
-			.addModifiers(Modifier.FINAL)
-			.superclass(ClassName.get(packageName, supName));
+		if (cls.build().kind == TypeSpec.Kind.CLASS) {
+			var sub = TypeSpec.classBuilder(subName)
+				.addModifiers(Modifier.FINAL)
+				.superclass(ClassName.get(packageName, supName));
+			cls.addPermits(ClassName.get(packageName, subName));
+			storeType(subName, sub);
+		} else {
+			var sub = TypeSpec.classBuilder(subName)
+				.addModifiers(Modifier.FINAL)
+				.addSuperinterface(ClassName.get(packageName, supName));
+			cls.addPermits(ClassName.get(packageName, subName));
+			storeType(subName, sub);
+		}
+	}
 
-		cls.addPermits(ClassName.get(packageName, subName));
+	void insertSupertypesSealed(TypeSpec.Builder cls) {
+		if (cls.build().kind == TypeSpec.Kind.CLASS)
+			insertSuperclassSealed(cls);
 
-		storeType(subName, sub);
+		insertSupertypeSealed(cls);
 	}
 
 	void insertSuperclassSealed(TypeSpec.Builder cls) {
@@ -203,6 +290,20 @@ public class Combinatorial {
 			.addPermits(ClassName.get(packageName, subName));
 
 		cls.superclass(ClassName.get(packageName, supName));
+
+		storeType(supName, sup);
+	}
+
+	void insertSupertypeSealed(TypeSpec.Builder cls) {
+		var subName = cls.build().name;
+		var supName = subName + "SupI";
+
+		// FIXME
+		var sup = TypeSpec.interfaceBuilder(supName)
+			.addModifiers(Modifier.SEALED)
+			.addPermits(ClassName.get(packageName, subName));
+
+		cls.addSuperinterface(ClassName.get(packageName, supName));
 
 		storeType(supName, sup);
 	}
