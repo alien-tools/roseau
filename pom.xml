@@ -157,6 +157,12 @@
             <artifactId>json</artifactId>
             <version>20240303</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.siom79.japicmp</groupId>
+            <artifactId>japicmp</artifactId>
+            <version>0.20.0</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
