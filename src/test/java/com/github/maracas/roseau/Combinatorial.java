@@ -9,24 +9,66 @@ import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
 
-import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 public class Combinatorial {
+	enum TypeKind {
+		CLASS, INTERFACE, RECORD, ENUM /* ANNOTATION */
+	}
+
+	enum Visibility {
+		PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE;
+
+		static List<Visibility> topLevelVisibilities = List.of(PUBLIC, PACKAGE_PRIVATE);
+		static List<Visibility> nestedVisibilities   = List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+
+		Set<javax.lang.model.element.Modifier> toJavaxModifier() {
+			return switch (this) {
+				case PUBLIC ->          Set.of(javax.lang.model.element.Modifier.PUBLIC);
+				case PROTECTED ->       Set.of(javax.lang.model.element.Modifier.PROTECTED);
+				case PACKAGE_PRIVATE -> Set.of();
+				case PRIVATE ->         Set.of(javax.lang.model.element.Modifier.PRIVATE);
+			};
+		}
+	}
+
+	enum Modifier {
+		ABSTRACT, DEFAULT, FINAL, NATIVE, NON_SEALED, SEALED, STATIC, SYNCHRONIZED; /* TRANSIENT, VOLATILE */
+
+		static Set<Set<Modifier>> fieldModifiers  = Sets.powerSet(Set.of(STATIC, FINAL));
+		static Set<Set<Modifier>> methodModifiers = Sets.powerSet(Set.of(STATIC, FINAL, ABSTRACT, NATIVE, DEFAULT, SYNCHRONIZED))
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
+			.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(NATIVE, STATIC, SYNCHRONIZED)).isEmpty())
+			.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
+			.collect(Collectors.toSet());
+		static Set<Set<Modifier>> classModifiers  = Sets.powerSet(Set.of(STATIC, FINAL, ABSTRACT, SEALED, NON_SEALED))
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+			.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
+			.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
+			.collect(Collectors.toSet());
+		static Set<Set<Modifier>> interfaceModifiers = Sets.powerSet(Set.of(STATIC, ABSTRACT, SEALED, NON_SEALED))
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+			.collect(Collectors.toSet());
+		static Set<Set<Modifier>> recordModifiers = Sets.powerSet(Set.of(STATIC, FINAL));
+		static Set<Set<Modifier>> enumModifiers   = Sets.powerSet(Set.of(STATIC));
+
+		javax.lang.model.element.Modifier toJavaxModifier() {
+			return javax.lang.model.element.Modifier.valueOf(name());
+		}
+	}
+
 	private static final String packageName = "com.example.testapi";
 	private static final Path outputPath = Path.of("generated");
-	private static final Set<Modifier> visibilities = Set.of(Modifier.PRIVATE, Modifier.PROTECTED, Modifier.PUBLIC);
-	private static final Set<Modifier> fieldModifiers = Set.of(Modifier.STATIC, Modifier.FINAL); // TRANSIENT, VOLATILE
-	private static final Set<Modifier> methodModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.NATIVE, Modifier.DEFAULT, Modifier.SYNCHRONIZED);
-	private static final Set<Modifier> classModifiers = Set.of(Modifier.STATIC, Modifier.FINAL, Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
-	private static final Set<Modifier> interfaceModifiers = Set.of(Modifier.STATIC, Modifier.ABSTRACT, Modifier.SEALED, Modifier.NON_SEALED);
-	private static final Set<Modifier> recordModifiers = Set.of(Modifier.STATIC, Modifier.FINAL);
-	private static final Set<Modifier> enumModifiers = Set.of(Modifier.STATIC);
 	private static final Set<TypeName> fieldTypes = Set.of(
 		TypeName.INT,
 		TypeName.INT.box(),
@@ -45,6 +87,7 @@ public class Combinatorial {
 		generateAllTypes();
 
 		types.values().stream().sorted(this::typeHierarchy).forEach(type -> {
+			System.out.println(type.build().name);
 			weaveAllFields(type);
 			weaveAllMethods(type);
 			writeJavaFile(type);
@@ -60,195 +103,141 @@ public class Combinatorial {
 		}
 	}
 
+	javax.lang.model.element.Modifier[] toArray(Set<javax.lang.model.element.Modifier> mods) {
+		return mods.toArray(new javax.lang.model.element.Modifier[0]);
+	}
+
+	Set<javax.lang.model.element.Modifier> toJavaxModifiers(Set<Modifier> mods) {
+		return mods.stream().map(Modifier::toJavaxModifier).collect(Collectors.toSet());
+	}
+
 	void generateAllTypes() {
-		classes(null);
-		interfaces(null);
-		records(null);
-		enums(null);
+		for (var kind : TypeKind.values())
+			type(kind, null);
 	}
 
-	void classes(TypeSpec.Builder parent) {
+	void type(TypeKind kind, TypeSpec.Builder containing) {
 		int i = 0;
+		var visibilities = containing == null ? Visibility.topLevelVisibilities : Visibility.nestedVisibilities;
+		var modifiers = switch (kind) {
+			case CLASS     -> Modifier.classModifiers;
+			case INTERFACE -> Modifier.interfaceModifiers;
+			case RECORD    -> Modifier.recordModifiers;
+			case ENUM      -> Modifier.enumModifiers;
+		};
 		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(classModifiers)) {
-				var clsName = "C" + i++;
-
-				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
-					continue;
-				if (mods.contains(Modifier.SEALED) && mods.contains(Modifier.NON_SEALED))
-					continue;
-				if (mods.contains(Modifier.FINAL) && (mods.contains(Modifier.ABSTRACT) || mods.contains(Modifier.SEALED) || mods.contains(Modifier.NON_SEALED)))
+			for (var mods : modifiers) {
+				if (containing == null && mods.contains(Modifier.STATIC))
 					continue;
 
-				var cls = TypeSpec.classBuilder(clsName)
-					.addModifiers(vis)
-					.addModifiers(mods.toArray(new Modifier[0]));
+				var typeName = kind.name().substring(0, 1) + i++;
+
+				var builder = switch (kind) {
+					case CLASS     -> TypeSpec.classBuilder(typeName);
+					case INTERFACE -> TypeSpec.interfaceBuilder(typeName);
+					case RECORD    -> TypeSpec.recordBuilder(typeName);
+					case ENUM      -> TypeSpec.enumBuilder(typeName);
+				};
+
+				builder
+					.addModifiers(toArray(vis.toJavaxModifier()))
+					.addModifiers(toArray(toJavaxModifiers(mods)));
 
 				if (mods.contains(Modifier.SEALED)) {
-					insertSubclassesSealed(cls);
+					insertSubclassesSealed(builder);
 				}
 
 				if (mods.contains(Modifier.NON_SEALED)) {
-					insertSupertypesSealed(cls);
+					insertSupertypesSealed(builder);
 				}
 
-				storeType(clsName, cls);
+				storeType(typeName, builder);
 			}
 		}
 	}
 
-	void interfaces(TypeSpec.Builder parent) {
+	void weaveAllFields(TypeSpec.Builder containing) {
 		int i = 0;
-		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(interfaceModifiers)) {
-				var clsName = "I" + i++;
-
-				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
-					continue;
-				if (mods.contains(Modifier.SEALED) && mods.contains(Modifier.NON_SEALED))
-					continue;
-
-				var cls = TypeSpec.interfaceBuilder(clsName)
-					.addModifiers(vis)
-					.addModifiers(mods.toArray(new Modifier[0]));
-
-				if (mods.contains(Modifier.SEALED)) {
-					insertSubclassesSealed(cls);
-				}
-
-				if (mods.contains(Modifier.NON_SEALED)) {
-					insertSupertypesSealed(cls);
-				}
-
-				storeType(clsName, cls);
-			}
-		}
-	}
-
-	void records(TypeSpec.Builder parent) {
-		int i = 0;
-		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(recordModifiers)) {
-				var clsName = "R" + i++;
-
-				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
-					continue;
-
-				var cls = TypeSpec.recordBuilder(clsName)
-					.addModifiers(vis)
-					.addModifiers(mods.toArray(new Modifier[0]));
-
-				storeType(clsName, cls);
-			}
-		}
-	}
-
-	void enums(TypeSpec.Builder parent) {
-		// TODO enum constants
-		int i = 0;
-		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(enumModifiers)) {
-				var clsName = "E" + i++;
-
-				if (parent == null && (vis == Modifier.PRIVATE || vis == Modifier.PROTECTED || mods.contains(Modifier.STATIC)))
-					continue;
-
-				var cls = TypeSpec.enumBuilder(clsName)
-					.addModifiers(vis)
-					.addModifiers(mods.toArray(new Modifier[0]));
-
-				storeType(clsName, cls);
-			}
-		}
-	}
-
-	void weaveAllFields(TypeSpec.Builder typeBuilder) {
-		int i = 0;
-		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(fieldModifiers)) {
+		var kind = containing.build().kind;
+		for (var vis : Visibility.nestedVisibilities) {
+			for (var mods : Modifier.fieldModifiers) {
 				for (var t : fieldTypes) {
 					var fName = "f" + i++;
-					var kind = typeBuilder.build().kind;
 
 					if (kind == TypeSpec.Kind.INTERFACE) {
-						if (vis != Modifier.PUBLIC)
+						if (vis != Visibility.PUBLIC)
 							continue;
 						if (!mods.containsAll(Set.of(Modifier.FINAL, Modifier.STATIC)))
 							continue;
 					}
 
 					var f = FieldSpec.builder(t, fName)
-						.addModifiers(vis)
-						.addModifiers(mods.toArray(new Modifier[0]));
+						.addModifiers(toArray(vis.toJavaxModifier()))
+						.addModifiers(toArray(toJavaxModifiers(mods)));
 
 					if (mods.contains(Modifier.FINAL))
 						f.initializer("$L", getDefaultValue(t));
 
-					typeBuilder.addField(f.build());
+					containing.addField(f.build());
 				}
 			}
 		}
 	}
 
-	void weaveAllMethods(TypeSpec.Builder typeBuilder) {
+	void weaveAllMethods(TypeSpec.Builder containing) {
 		int i = 0;
-		for (var vis : visibilities) {
-			for (var mods : Sets.powerSet(methodModifiers)) {
+		var kind = containing.build().kind;
+		for (var vis : Visibility.nestedVisibilities) {
+			for (var mods : Modifier.methodModifiers) {
 				for (var t : methodTypes) {
 					var mName = "m" + i++;
-					var kind = typeBuilder.build().kind;
 
 					if (mods.contains(Modifier.NATIVE) && kind != TypeSpec.Kind.CLASS)
 						continue;
 					if (mods.contains(Modifier.DEFAULT) && kind != TypeSpec.Kind.INTERFACE)
 						continue;
+					if (mods.contains(Modifier.ABSTRACT) && vis == Visibility.PRIVATE)
+						continue;
 					if (kind == TypeSpec.Kind.INTERFACE) {
-						if (vis == Modifier.PROTECTED)
+						if (vis == Visibility.PROTECTED || vis == Visibility.PACKAGE_PRIVATE)
 							continue;
 						if (mods.contains(Modifier.FINAL) || mods.contains(Modifier.SYNCHRONIZED))
 							continue;
-						if (mods.contains(Modifier.DEFAULT) && (vis != Modifier.PUBLIC || mods.contains(Modifier.STATIC) || mods.contains(Modifier.ABSTRACT)))
+						if (mods.contains(Modifier.DEFAULT) && vis != Visibility.PUBLIC)
 							continue;
-						if (vis == Modifier.PUBLIC && !(mods.contains(Modifier.ABSTRACT) || mods.contains(Modifier.STATIC) || mods.contains(Modifier.DEFAULT)))
-							continue;
-						if (vis == Modifier.PUBLIC && (mods.contains(Modifier.ABSTRACT) || mods.contains(Modifier.DEFAULT)))
+						if (vis == Visibility.PUBLIC && Sets.intersection(mods, Set.of(Modifier.ABSTRACT, Modifier.STATIC, Modifier.DEFAULT)).isEmpty())
 							continue;
 					}
 
-					if (mods.contains(Modifier.ABSTRACT) && (
-						vis == Modifier.PRIVATE || mods.contains(Modifier.FINAL) || mods.contains(Modifier.NATIVE) ||
-						mods.contains(Modifier.STATIC) || mods.contains(Modifier.SYNCHRONIZED)))
-						continue;
-
 					var m = MethodSpec.methodBuilder(mName)
-						.addModifiers(vis)
-						.addModifiers(mods)
+						.addModifiers(toArray(vis.toJavaxModifier()))
+						.addModifiers(toArray(toJavaxModifiers(mods)))
 						.returns(t);
 
 					if (!mods.contains(Modifier.ABSTRACT) && !mods.contains(Modifier.NATIVE) && !t.equals(TypeName.VOID))
 						m.addCode("return $L;", getDefaultValue(t));
 
-					var shouldOverride = false;
-					var superM = superMethod(typeBuilder, m);
+					var shouldImplement = false;
+					var superM = superMethod(containing, m);
 					if (superM != null) {
-						if (superM.hasModifier(Modifier.FINAL))
+						if (superM.hasModifier(Modifier.FINAL.toJavaxModifier()) || superM.hasModifier(Modifier.STATIC.toJavaxModifier()))
 							continue;
-						if (superM.hasModifier(Modifier.PUBLIC) && mods.contains(Modifier.PROTECTED))
+						if (superM.modifiers.containsAll(Visibility.PUBLIC.toJavaxModifier()) && vis != Visibility.PUBLIC)
 							continue;
-						if (superM.hasModifier(Modifier.ABSTRACT) && !typeBuilder.modifiers.contains(Modifier.ABSTRACT))
-							shouldOverride = true;
+						if (superM.hasModifier(Modifier.ABSTRACT.toJavaxModifier()) && !isAbstract(containing))
+							shouldImplement = true;
 					}
 
-					if (shouldOverride) {
-						m.modifiers.remove(Modifier.ABSTRACT);
+					if (shouldImplement) {
+						m.modifiers.remove(Modifier.ABSTRACT.toJavaxModifier());
 						if (!t.equals(TypeName.VOID))
 							m.addCode("return $L;", getDefaultValue(t));
-					} else if (mods.contains(Modifier.ABSTRACT) && !typeBuilder.modifiers.contains(Modifier.ABSTRACT)) {
+					} else if (mods.contains(Modifier.ABSTRACT) && !containing.modifiers.contains(Modifier.ABSTRACT.toJavaxModifier())) {
 						continue;
 					}
 
-					typeBuilder.addMethod(m.build());
-					typeBuilder.build();
+					containing.addMethod(m.build());
+					containing.build();
 				}
 			}
 		}
@@ -257,16 +246,16 @@ public class Combinatorial {
 	void insertSubclassesSealed(TypeSpec.Builder cls) {
 		// FIXME
 		var supName = cls.build().name;
-		var subName = "Sub" + supName;
+		var subName = supName + "Sub";
 		if (cls.build().kind == TypeSpec.Kind.CLASS) {
 			var sub = TypeSpec.classBuilder(subName)
-				.addModifiers(Modifier.FINAL)
+				.addModifiers(Modifier.FINAL.toJavaxModifier())
 				.superclass(ClassName.get(packageName, supName));
 			cls.addPermits(ClassName.get(packageName, subName));
 			storeType(subName, sub);
 		} else {
 			var sub = TypeSpec.classBuilder(subName)
-				.addModifiers(Modifier.FINAL)
+				.addModifiers(Modifier.FINAL.toJavaxModifier())
 				.addSuperinterface(ClassName.get(packageName, supName));
 			cls.addPermits(ClassName.get(packageName, subName));
 			storeType(subName, sub);
@@ -286,7 +275,7 @@ public class Combinatorial {
 
 		// FIXME
 		var sup = TypeSpec.classBuilder(supName)
-			.addModifiers(Modifier.SEALED)
+			.addModifiers(Modifier.SEALED.toJavaxModifier())
 			.addPermits(ClassName.get(packageName, subName));
 
 		cls.superclass(ClassName.get(packageName, supName));
@@ -300,7 +289,7 @@ public class Combinatorial {
 
 		// FIXME
 		var sup = TypeSpec.interfaceBuilder(supName)
-			.addModifiers(Modifier.SEALED)
+			.addModifiers(Modifier.SEALED.toJavaxModifier())
 			.addPermits(ClassName.get(packageName, subName));
 
 		cls.addSuperinterface(ClassName.get(packageName, supName));
@@ -309,13 +298,25 @@ public class Combinatorial {
 	}
 
 	MethodSpec superMethod(TypeSpec.Builder t, MethodSpec.Builder m) {
-		var sup = types.get(t.build().superclass.toString());
-		if (sup != null) {
-			var opt = sup.methodSpecs.stream().filter(superM -> superM.name.equals(m.build().name)).findFirst();
-			if (opt.isPresent())
-				return opt.get();
+		var supers = Stream.concat(
+			Stream.of(t.build().superclass.toString()),
+			t.build().superinterfaces.stream().map(intf -> intf.toString())
+		);
+
+		for (var s : supers.toList()) {
+			var superType = types.get(s);
+			if (superType != null) {
+				var opt = superType.methodSpecs.stream().filter(superM -> superM.name.equals(m.build().name)).findFirst();
+				if (opt.isPresent())
+					return opt.get();
+			}
 		}
+
 		return null;
+	}
+
+	boolean isAbstract(TypeSpec.Builder type) {
+		return type.build().kind == TypeSpec.Kind.INTERFACE || type.modifiers.contains(Modifier.ABSTRACT.toJavaxModifier());
 	}
 
 	String getDefaultValue(TypeName type) {
@@ -327,26 +328,24 @@ public class Combinatorial {
 		return "null";
 	}
 
-	boolean isAbstract(TypeSpec.Builder typeBuilder) {
-		return typeBuilder.modifiers.contains(Modifier.ABSTRACT);
-	}
-
-	TypeSpec.Builder findType(String name) {
-		if (name == null)
-			return null;
-
-		return types.get(name);
-	}
-
 	void storeType(String name, TypeSpec.Builder typeBuilder) {
 		types.put(packageName + "." + name, typeBuilder);
 	}
 
+	// FIXME: too lazy for topological sort
 	int typeHierarchy(TypeSpec.Builder t1, TypeSpec.Builder t2) {
-		if (t1.build().superclass.toString().equals(packageName + "." + t2.build().name))
-			return 1;
-		if (t2.build().superclass.toString().equals(packageName + "." + t1.build().name))
+		var t1name = t1.build().name;
+		var t2name = t2.build().name;
+
+		if (t1name.contains("Sup") && !t2name.contains("Sup"))
 			return -1;
-		return t1.build().name.toString().compareTo(t2.build().name.toString());
+		if (t2name.contains("Sup") && !t1name.contains("Sup"))
+			return 1;
+		if (t1name.contains("Sub") && !t2name.contains("Sub"))
+			return 1;
+		if (t2name.contains("Sub") && !t1name.contains("Sub"))
+			return -1;
+
+		return t1name.compareTo(t2name);
 	}
 }
