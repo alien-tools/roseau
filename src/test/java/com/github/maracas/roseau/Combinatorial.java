@@ -8,13 +8,16 @@ import com.squareup.javapoet.MethodSpec;
 import com.squareup.javapoet.ParameterizedTypeName;
 import com.squareup.javapoet.TypeName;
 import com.squareup.javapoet.TypeSpec;
+import jdk.dynalink.beans.StaticClass;
 
+import javax.lang.model.element.Modifier;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -76,6 +79,7 @@ public class Combinatorial {
 		ParameterizedTypeName.get(List.class, String.class)
 	);
 	private static final Set<TypeName> methodTypes = Sets.union(fieldTypes, Set.of(TypeName.VOID));
+	private static final int enumConstants = 3;
 
 	private Map<String, TypeSpec.Builder> types = new HashMap<>();
 
@@ -88,8 +92,8 @@ public class Combinatorial {
 
 		types.values().stream().sorted(this::typeHierarchy).forEach(type -> {
 			System.out.println(type.build().name);
-			weaveAllFields(type);
-			weaveAllMethods(type);
+//			weaveAllFields(type);
+//			weaveAllMethods(type);
 			writeJavaFile(type);
 		});
 	}
@@ -114,6 +118,10 @@ public class Combinatorial {
 	void generateAllTypes() {
 		for (var kind : TypeKind.values())
 			type(kind, null);
+
+		for (var type : new CopyOnWriteArrayList<>(types.values()))
+			for (var kind: TypeKind.values())
+				type(kind, type);
 	}
 
 	void type(TypeKind kind, TypeSpec.Builder containing) {
@@ -130,7 +138,7 @@ public class Combinatorial {
 				if (containing == null && mods.contains(Modifier.STATIC))
 					continue;
 
-				var typeName = kind.name().substring(0, 1) + i++;
+				var typeName = (containing != null ? "N" : "") + kind.name().substring(0, 1) + i++;
 
 				var builder = switch (kind) {
 					case CLASS     -> TypeSpec.classBuilder(typeName);
@@ -143,15 +151,26 @@ public class Combinatorial {
 					.addModifiers(toArray(vis.toJavaxModifier()))
 					.addModifiers(toArray(toJavaxModifiers(mods)));
 
+				if (containing != null) {
+					if (vis != Visibility.PUBLIC || !mods.contains(Modifier.STATIC))
+						continue;
+					containing.addType(builder.build());
+				}
+
+				if (kind == TypeKind.ENUM)
+					for (int j = 0; j < enumConstants; j++)
+						builder.addEnumConstant("EC" + j);
+
 				if (mods.contains(Modifier.SEALED)) {
-					insertSubclassesSealed(builder);
+					insertSubclassesSealed(builder, containing);
 				}
 
 				if (mods.contains(Modifier.NON_SEALED)) {
-					insertSupertypesSealed(builder);
+					insertSupertypesSealed(builder, containing);
 				}
 
-				storeType(typeName, builder);
+				if (containing == null)
+					storeType(typeName, builder);
 			}
 		}
 	}
@@ -243,58 +262,85 @@ public class Combinatorial {
 		}
 	}
 
-	void insertSubclassesSealed(TypeSpec.Builder cls) {
+	void insertSubclassesSealed(TypeSpec.Builder cls, TypeSpec.Builder containing) {
 		// FIXME
 		var supName = cls.build().name;
 		var subName = supName + "Sub";
 		if (cls.build().kind == TypeSpec.Kind.CLASS) {
 			var sub = TypeSpec.classBuilder(subName)
-				.addModifiers(Modifier.FINAL.toJavaxModifier())
-				.superclass(ClassName.get(packageName, supName));
-			cls.addPermits(ClassName.get(packageName, subName));
-			storeType(subName, sub);
+				.addModifiers(Modifier.FINAL.toJavaxModifier());
+			if (containing != null) {
+				sub.superclass(ClassName.get(packageName, containing.build().name, supName));
+				cls.addPermits(ClassName.get(packageName, containing.build().name, subName));
+				sub.addModifiers(javax.lang.model.element.Modifier.STATIC, javax.lang.model.element.Modifier.PUBLIC);
+				containing.addType(sub.build());
+			} else {
+				sub.superclass(ClassName.get(packageName, supName));
+				cls.addPermits(ClassName.get(packageName, subName));
+				storeType(subName, sub);
+			}
 		} else {
 			var sub = TypeSpec.classBuilder(subName)
-				.addModifiers(Modifier.FINAL.toJavaxModifier())
-				.addSuperinterface(ClassName.get(packageName, supName));
-			cls.addPermits(ClassName.get(packageName, subName));
-			storeType(subName, sub);
+				.addModifiers(Modifier.FINAL.toJavaxModifier());
+			if (containing != null) {
+				cls.addSuperinterface(ClassName.get(packageName, containing.build().name, supName));
+				cls.addPermits(ClassName.get(packageName, containing.build().name, subName));
+				sub.addModifiers(javax.lang.model.element.Modifier.STATIC, javax.lang.model.element.Modifier.PUBLIC);
+				containing.addType(sub.build());
+			} else {
+				cls.addSuperinterface(ClassName.get(packageName, supName));
+				cls.addPermits(ClassName.get(packageName, subName));
+				storeType(subName, sub);
+			}
 		}
 	}
 
-	void insertSupertypesSealed(TypeSpec.Builder cls) {
+	void insertSupertypesSealed(TypeSpec.Builder cls, TypeSpec.Builder containing) {
 		if (cls.build().kind == TypeSpec.Kind.CLASS)
-			insertSuperclassSealed(cls);
+			insertSuperclassSealed(cls, containing);
 
-		insertSupertypeSealed(cls);
+		insertSupertypeSealed(cls, containing);
 	}
 
-	void insertSuperclassSealed(TypeSpec.Builder cls) {
+	void insertSuperclassSealed(TypeSpec.Builder cls, TypeSpec.Builder containing) {
 		var subName = cls.build().name;
 		var supName = subName + "Sup";
 
 		// FIXME
 		var sup = TypeSpec.classBuilder(supName)
-			.addModifiers(Modifier.SEALED.toJavaxModifier())
-			.addPermits(ClassName.get(packageName, subName));
+			.addModifiers(Modifier.SEALED.toJavaxModifier());
 
-		cls.superclass(ClassName.get(packageName, supName));
-
-		storeType(supName, sup);
+		if (containing != null) {
+			cls.superclass(ClassName.get(packageName, containing.build().name, supName));
+			sup.addPermits(ClassName.get(packageName, containing.build().name, subName));
+			sup.addModifiers(javax.lang.model.element.Modifier.STATIC, javax.lang.model.element.Modifier.PUBLIC);
+			containing.addType(sup.build());
+		} else {
+			cls.superclass(ClassName.get(packageName, supName));
+			sup.addPermits(ClassName.get(packageName, subName));
+			storeType(supName, sup);
+		}
 	}
 
-	void insertSupertypeSealed(TypeSpec.Builder cls) {
+	void insertSupertypeSealed(TypeSpec.Builder cls, TypeSpec.Builder containing) {
 		var subName = cls.build().name;
 		var supName = subName + "SupI";
 
 		// FIXME
 		var sup = TypeSpec.interfaceBuilder(supName)
-			.addModifiers(Modifier.SEALED.toJavaxModifier())
-			.addPermits(ClassName.get(packageName, subName));
+			.addModifiers(Modifier.SEALED.toJavaxModifier());
 
-		cls.addSuperinterface(ClassName.get(packageName, supName));
 
-		storeType(supName, sup);
+		if (containing != null) {
+			cls.addSuperinterface(ClassName.get(packageName, containing.build().name, supName));
+			sup.addPermits(ClassName.get(packageName, containing.build().name, subName));
+			sup.addModifiers(javax.lang.model.element.Modifier.STATIC, javax.lang.model.element.Modifier.PUBLIC);
+			containing.addType(sup.build());
+		} else {
+			cls.addSuperinterface(ClassName.get(packageName, supName));
+			sup.addPermits(ClassName.get(packageName, subName));
+			storeType(supName, sup);
+		}
 	}
 
 	MethodSpec superMethod(TypeSpec.Builder t, MethodSpec.Builder m) {
