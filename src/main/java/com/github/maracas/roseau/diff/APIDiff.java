@@ -21,6 +21,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -42,16 +43,23 @@ public class APIDiff {
 	 */
 	private final List<BreakingChange> breakingChanges;
 
+	private final List<Pattern> ignorePatterns;
+
 	/**
 	 * Constructs an APIDiff instance to compare two API versions for breaking changes detection.
 	 *
 	 * @param v1 The first version of the API to compare.
 	 * @param v2 The second version of the API to compare.
 	 */
-	public APIDiff(API v1, API v2) {
+	public APIDiff(API v1, API v2, List<Pattern> ignorePatterns) {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
-		breakingChanges = Collections.synchronizedList(new ArrayList<>());
+		this.ignorePatterns = ignorePatterns;
+		this.breakingChanges = Collections.synchronizedList(new ArrayList<>());
+	}
+
+	public APIDiff(API v1, API v2) {
+		this(v1, v2, List.of());
 	}
 	
 	/**
@@ -60,7 +68,8 @@ public class APIDiff {
 	 * @return List of all the breaking changes detected
 	 */
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().parallel().forEach(t1 ->
+		// Diff types
+		v1.getExportedTypes().parallel().filter(t -> ignorePatterns.stream().noneMatch(p -> p.matcher(t.getQualifiedName()).matches())).forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
 				t2 -> {
