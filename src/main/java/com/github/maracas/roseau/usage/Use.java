@@ -3,7 +3,7 @@ package com.github.maracas.roseau.usage;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.Symbol;
 
-record Use(
+public record Use(
 	Symbol used,
 	UseType type,
 	SourceLocation location

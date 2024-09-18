@@ -3,10 +3,8 @@ package com.github.maracas.roseau.usage;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.SpoonUtils;
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import spoon.reflect.CtModel;
-import spoon.reflect.cu.SourcePosition;
 
 import java.nio.file.Path;
 import java.time.Duration;
@@ -16,18 +14,18 @@ import java.util.stream.Collectors;
 public class Usage {
 	private final CtModel model;
 	private final API api;
+	private List<Use> uses;
 
 	public Usage(CtModel model, API api) {
 		this.model = model;
 		this.api = api;
 	}
 
-	List<Use> inferUses() {
-		// FIXME: Not sure why the former doesn't work?!
-		//scanner.scan(model);
+	public List<Use> inferUses() {
 		UsageVisitor visitor = new UsageVisitor(api);
 		model.getRootPackage().accept(visitor);
-		return visitor.getUses();
+		uses = visitor.getUses();
+		return uses;
 	}
 
 	public static void main(String[] args) throws Exception{
@@ -40,7 +38,7 @@ public class Usage {
 		var usage = new Usage(client, v1);
 		var uses = usage.inferUses();
 
-		System.out.println(uses.stream().map(Use::toString).collect(Collectors.joining("\n")));
+		System.out.println(uses.stream().filter(u -> u.type() == UseType.OVERRIDE).map(Use::toString).collect(Collectors.joining("\n")));
 		System.out.println(uses.size() + " uses");
 	}
 }

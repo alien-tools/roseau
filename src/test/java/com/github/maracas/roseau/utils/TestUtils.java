@@ -13,6 +13,9 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
+import com.github.maracas.roseau.usage.Usage;
+import com.github.maracas.roseau.usage.Use;
+import com.github.maracas.roseau.usage.UseType;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -134,6 +137,26 @@ public class TestUtils {
 		return (AnnotationDecl) assertType(api, name, "annotation");
 	}
 
+	public static void assertUsage(String symbol, UseType type, int line, List<Use> uses) {
+		List<Use> found = uses.stream()
+			.filter(u ->
+				   u.used().getQualifiedName().equals(symbol)
+				&& u.type() == type
+				&& u.location().line() == line)
+			.toList();
+
+		if (found.size() != 1) {
+			String expected = "[%s, %s, %d]".formatted(symbol, type, line);
+			String actual = uses.stream()
+				.filter(u -> u.location().line() == line)
+				.map(u -> "[%s, %s, %s]".formatted(u.used().getQualifiedName(), u.type(), u.location()))
+				.collect(Collectors.joining(", "));
+			throw new AssertionFailedError("Use not found",
+				expected,
+				actual);
+		}
+	}
+
 	public static CtModel buildModel(String sources) {
 		Launcher launcher = new Launcher();
 
@@ -154,5 +177,17 @@ public class TestUtils {
 		APIDiff apiDiff = new APIDiff(buildAPI(sourcesV1), buildAPI(sourcesV2));
 		apiDiff.diff();
 		return apiDiff.getBreakingChanges();
+	}
+
+	public static List<Use> buildUsage(String apiSources, String clientSources) {
+		Launcher launcher = new Launcher();
+
+		launcher.addInputResource(new VirtualFile(apiSources, "Library.java"));
+		launcher.addInputResource(new VirtualFile(clientSources, "Client.java"));
+		launcher.getEnvironment().setComplianceLevel(17);
+		launcher.getEnvironment().setLevel("TRACE");
+
+		Usage usage = new Usage(launcher.buildModel(), buildAPI(apiSources));
+		return usage.inferUses();
 	}
 }

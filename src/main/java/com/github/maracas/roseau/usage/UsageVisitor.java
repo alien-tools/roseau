@@ -8,6 +8,7 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import spoon.reflect.code.CtFieldRead;
 import spoon.reflect.code.CtFieldWrite;
 import spoon.reflect.code.CtInvocation;
+import spoon.reflect.code.CtLambda;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.reference.CtExecutableReference;
 import spoon.reflect.reference.CtFieldReference;
@@ -39,6 +40,15 @@ public class UsageVisitor extends CtScanner {
 				uses.add(new Use(s, UseType.INVOCATION, SpoonUtils.convertSpoonPosition(invocation.getPosition())));
 			}
 		);
+	}
+
+	@Override
+	public <T> void visitCtLambda(CtLambda<T> lambda) {
+		super.visitCtLambda(lambda);
+		if (lambda.getOverriddenMethod() != null)
+			findAPISymbol(lambda.getOverriddenMethod().getReference()).ifPresent(
+				s -> uses.add(new Use(s, UseType.OVERRIDE, SpoonUtils.convertSpoonPosition(lambda.getPosition())))
+			);
 	}
 
 	@Override
