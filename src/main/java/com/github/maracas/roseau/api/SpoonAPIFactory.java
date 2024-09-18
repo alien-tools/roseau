@@ -121,7 +121,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonAnnotations(cls.getAnnotations()),
-			convertSpoonPosition(cls.getPosition()),
+			SpoonUtils.convertSpoonPosition(cls.getPosition()),
 			createTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
 			convertCtFields(cls),
@@ -138,7 +138,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonAnnotations(intf.getAnnotations()),
-			convertSpoonPosition(intf.getPosition()),
+			SpoonUtils.convertSpoonPosition(intf.getPosition()),
 			createTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
@@ -153,7 +153,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(annotation.getVisibility()),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
 			convertSpoonAnnotations(annotation.getAnnotations()),
-			convertSpoonPosition(annotation.getPosition()),
+			SpoonUtils.convertSpoonPosition(annotation.getPosition()),
 			convertCtFields(annotation),
 			convertCtMethods(annotation),
 			createTypeReference(annotation.getDeclaringType())
@@ -166,7 +166,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonAnnotations(enm.getAnnotations()),
-			convertSpoonPosition(enm.getPosition()),
+			SpoonUtils.convertSpoonPosition(enm.getPosition()),
 			createTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
 			convertCtMethods(enm),
@@ -181,7 +181,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(record.getVisibility()),
 			convertSpoonNonAccessModifiers(record.getModifiers()),
 			convertSpoonAnnotations(record.getAnnotations()),
-			convertSpoonPosition(record.getPosition()),
+			SpoonUtils.convertSpoonPosition(record.getPosition()),
 			createTypeReferences(record.getSuperInterfaces()),
 			convertCtFormalTypeParameters(record),
 			convertCtFields(record),
@@ -197,7 +197,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(field.getVisibility()),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
 			convertSpoonAnnotations(field.getAnnotations()),
-			convertSpoonPosition(field.getPosition()),
+			SpoonUtils.convertSpoonPosition(field.getPosition()),
 			createTypeReference(field.getDeclaringType()),
 			createITypeReference(field.getType())
 		);
@@ -215,7 +215,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(method.getVisibility()),
 			modifiers,
 			convertSpoonAnnotations(method.getAnnotations()),
-			convertSpoonPosition(method.getPosition()),
+			SpoonUtils.convertSpoonPosition(method.getPosition()),
 			createTypeReference(method.getDeclaringType()),
 			createITypeReference(method.getType()),
 			convertCtParameters(method),
@@ -230,7 +230,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cons.getVisibility()),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
 			convertSpoonAnnotations(cons.getAnnotations()),
-			convertSpoonPosition(cons.getPosition()),
+			SpoonUtils.convertSpoonPosition(cons.getPosition()),
 			createTypeReference(cons.getDeclaringType()),
 			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
@@ -341,14 +341,6 @@ public class SpoonAPIFactory {
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
 		return new Annotation(createTypeReference(annotation.getAnnotationType()));
-	}
-
-	private SourceLocation convertSpoonPosition(SourcePosition position) {
-		return position.isValidPosition()
-			? new SourceLocation(
-				position.getFile() != null ? position.getFile().toPath() : null,
-				position.getLine())
-			: SourceLocation.NO_LOCATION;
 	}
 
 	private boolean isExported(CtType<?> type) {

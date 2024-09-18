@@ -1,9 +1,11 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.SourceLocation;
 import spoon.Launcher;
 import spoon.MavenLauncher;
 import spoon.SpoonException;
 import spoon.reflect.CtModel;
+import spoon.reflect.cu.SourcePosition;
 import spoon.support.compiler.SpoonProgress;
 
 import java.nio.file.Files;
@@ -103,5 +105,13 @@ public final class SpoonUtils {
 		});
 
 		return launcher;
+	}
+
+	public static SourceLocation convertSpoonPosition(SourcePosition position) {
+		return position.isValidPosition()
+			? new SourceLocation(
+			position.getFile() != null ? position.getFile().toPath() : null,
+			position.getLine())
+			: SourceLocation.NO_LOCATION;
 	}
 }
