@@ -2,9 +2,11 @@ package com.github.maracas.roseau.usage;
 
 import com.github.maracas.roseau.api.SpoonUtils;
 import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.api.model.ExecutableDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import spoon.reflect.code.CtConstructorCall;
 import spoon.reflect.code.CtFieldRead;
 import spoon.reflect.code.CtFieldWrite;
 import spoon.reflect.code.CtInvocation;
@@ -31,14 +33,18 @@ public class UsageVisitor extends CtScanner {
 	public <T> void visitCtInvocation(CtInvocation<T> invocation) {
 		super.visitCtInvocation(invocation);
 		findAPISymbol(invocation.getExecutable()).ifPresent(
-			s -> {
-				if (invocation.getExecutable().isConstructor()) {
-					uses.add(new Use(s.getContainingType().getResolvedApiType().get(),
-						UseType.INSTANTIATION, SpoonUtils.convertSpoonPosition(invocation.getPosition())));
-				}
+			s -> uses.add(new Use(s, UseType.INVOCATION, SpoonUtils.convertSpoonPosition(invocation.getPosition())))
+		);
+	}
 
-				uses.add(new Use(s, UseType.INVOCATION, SpoonUtils.convertSpoonPosition(invocation.getPosition())));
-			}
+	@Override
+	public <T> void visitCtConstructorCall(CtConstructorCall<T> constructorCall) {
+		super.visitCtConstructorCall(constructorCall);
+		findAPISymbol(constructorCall.getExecutable()).ifPresent(
+			s -> uses.add(new Use(s, UseType.INVOCATION, SpoonUtils.convertSpoonPosition(constructorCall.getPosition())))
+		);
+		findAPISymbol(constructorCall.getExecutable().getDeclaringType()).ifPresent(
+			s -> uses.add(new Use(s, UseType.INSTANTIATION, SpoonUtils.convertSpoonPosition(constructorCall.getPosition())))
 		);
 	}
 
@@ -54,9 +60,10 @@ public class UsageVisitor extends CtScanner {
 	@Override
 	public <T> void visitCtTypeReference(CtTypeReference<T> typeReference) {
 		super.visitCtTypeReference(typeReference);
-		findAPISymbol(typeReference).ifPresent(
-			s -> uses.add(new Use(s, UseType.REFERENCE, SpoonUtils.convertSpoonPosition(typeReference.getPosition())))
-		);
+		if (typeReference.getPosition().isValidPosition())
+			findAPISymbol(typeReference).ifPresent(
+				s -> uses.add(new Use(s, UseType.REFERENCE, SpoonUtils.convertSpoonPosition(typeReference.getPosition())))
+			);
 	}
 
 	@Override
@@ -97,12 +104,14 @@ public class UsageVisitor extends CtScanner {
 		return api.findType(typeReference.getQualifiedName());
 	}
 
-	<T> Optional<MethodDecl> findAPISymbol(CtExecutableReference<T> executable) {
+	<T> Optional<? extends ExecutableDecl> findAPISymbol(CtExecutableReference<T> executable) {
 		if (executable.getDeclaringType() != null) {
 			Optional<TypeDecl> type = findAPISymbol(executable.getDeclaringType());
 
 			if (type.isPresent()) {
-				return type.get().findMethod(executable.getSignature());
+				return executable.isConstructor()
+					? type.get().findConstructor(executable.getSignature())
+					: type.get().findMethod(executable.getSignature());
 			}
 		}
 		return Optional.empty();

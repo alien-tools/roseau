@@ -78,6 +78,13 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	@Override
+	public Optional<ConstructorDecl> findConstructor(String signature) {
+		return constructors.stream()
+			.filter(cons -> Objects.equals(cons.getSignature().substring(cons.getSignature().indexOf("(")), signature.substring(signature.indexOf("("))))
+			.findFirst();
+	}
+
+	@Override
 	public String toString() {
 		return """
 			%s class %s

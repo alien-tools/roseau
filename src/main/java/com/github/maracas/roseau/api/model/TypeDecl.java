@@ -219,6 +219,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
+	public Optional<ConstructorDecl> findConstructor(String signature) {
+		return Optional.empty();
+	}
+
 	public boolean isSubtypeOf(ITypeReference other) {
 		return Objects.equals(qualifiedName, other.getQualifiedName())
 			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup, other));
