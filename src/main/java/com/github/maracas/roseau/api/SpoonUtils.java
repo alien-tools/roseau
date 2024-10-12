@@ -30,8 +30,21 @@ public final class SpoonUtils {
 	 * @throws SpoonException If there is an error in building the Spoon model
 	 */
 	public static CtModel buildModel(Path location, Duration timeout) {
+		return buildModel(launcherFor(location), location, timeout);
+	}
+
+	/**
+	 * Builds a Spoon model from the source code located at the given path using the supplied launcher,
+	 * with a specified timeout.
+	 *
+	 * @param location The path to the source code
+	 * @param timeout  The maximum duration to wait for the model to be built
+	 * @return The built Spoon model
+	 * @throws SpoonException If there is an error in building the Spoon model
+	 */
+	public static CtModel buildModel(Launcher launcher, Path location, Duration timeout) {
 		long timeoutSeconds = timeout != null ? timeout.getSeconds() : Long.MAX_VALUE;
-		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(() -> launcherFor(location).buildModel());
+		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(launcher::buildModel);
 
 		try {
 			return future.get(timeoutSeconds, TimeUnit.SECONDS);
