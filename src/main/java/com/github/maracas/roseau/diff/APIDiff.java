@@ -101,11 +101,7 @@ public class APIDiff {
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
 		c1.getConstructors().forEach(cons1 -> {
-			Optional<ConstructorDecl> matchCons2 = c2.getConstructors().stream()
-				.filter(cons -> cons.hasSameSignature(cons1))
-				.findFirst();
-
-			matchCons2.ifPresentOrElse(
+			c2.findConstructor(cons1.getSignature(), cons1.isVarargs()).ifPresentOrElse(
 				// There is a matching constructor
 				cons2 -> diffConstructor(cons1, cons2),
 				// The constructor has been removed

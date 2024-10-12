@@ -54,6 +54,18 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			(constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()));
 	}
 
+	public Optional<ConstructorDecl> findConstructor(String signature, boolean varargs) {
+		List<ConstructorDecl> matchingCons = getConstructors().stream()
+			.filter(cons -> Objects.equals(signature, cons.getSignature()))
+			.toList();
+
+		if (matchingCons.isEmpty())
+			return Optional.empty();
+		if (matchingCons.size() == 1)
+			return Optional.of(matchingCons.getFirst());
+		return matchingCons.stream().filter(cons -> cons.isVarargs() == varargs).findFirst();
+	}
+
 	@Override
 	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return Stream.concat(
