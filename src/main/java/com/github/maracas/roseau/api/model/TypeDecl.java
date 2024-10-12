@@ -44,6 +44,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 * It kinda sucks having to cache that, but it really makes a huge difference
 	 */
 	protected List<MethodDecl> allMethods;
+	protected List<FieldDecl> allFields;
 
 	protected TypeDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                   List<Annotation> annotations, SourceLocation location,
@@ -179,12 +180,16 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 * Returns all fields declared by this type, including those of its super types.
 	 */
 	public Stream<FieldDecl> getAllFields() {
-		return Stream.concat(
-			fields.stream(),
-			getAllSuperTypes()
-				.map(TypeReference::getResolvedApiType)
-				.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
-		).distinct();
+		if (allFields == null) {
+			allFields = Stream.concat(
+				fields.stream(),
+				getAllSuperTypes()
+					.map(TypeReference::getResolvedApiType)
+					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
+			).distinct().toList();
+		}
+
+		return allFields.stream();
 	}
 
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
