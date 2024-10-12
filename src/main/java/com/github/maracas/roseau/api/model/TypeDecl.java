@@ -186,7 +186,11 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				getAllSuperTypes()
 					.map(TypeReference::getResolvedApiType)
 					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
-			).distinct().toList();
+			).collect(Collectors.toMap(
+				FieldDecl::getSimpleName,
+				Function.identity(),
+				(f1, f2) -> f1.isShadowing(f2) ? f1 : f2
+			)).values().stream().toList();
 		}
 
 		return allFields.stream();

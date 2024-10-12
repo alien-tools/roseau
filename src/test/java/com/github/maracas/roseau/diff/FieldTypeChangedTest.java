@@ -4,6 +4,7 @@ import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertBC;
+import static com.github.maracas.roseau.utils.TestUtils.assertNoBC;
 import static com.github.maracas.roseau.utils.TestUtils.buildDiff;
 
 /*
@@ -308,5 +309,31 @@ class FieldTypeChangedTest {
 			}""";
 
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void subtype_shadowing() {
+		var v1 = """
+			public interface I {
+				public int f = 0;
+			}
+			public class C {
+				public Object f = null;
+			}
+			public class X extends C implements I {
+				public String f = "";
+			}""";
+		var v2 = """
+			public interface I {
+				public int f = 0;
+			}
+			public class C {
+				public Object f = null;
+			}
+			public class X extends C implements I {
+				public String f = "";
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 }
