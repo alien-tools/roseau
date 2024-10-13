@@ -88,25 +88,25 @@ public class APIDiff {
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
-		t1.getAllMethods().forEach(m1 -> {
+		t1.getAllMethods().forEach(m1 ->
 			t2.findMethod(m1.getSignature()).ifPresentOrElse(
 				// There is a matching method
 				m2 -> diffMethod(m1, m2),
 				// The method has been removed
 				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1, null)
-			);
-		});
+			)
+		);
 	}
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
-		c1.getConstructors().forEach(cons1 -> {
+		c1.getConstructors().forEach(cons1 ->
 			c2.findConstructor(cons1.getSignature(), cons1.isVarargs()).ifPresentOrElse(
 				// There is a matching constructor
 				cons2 -> diffConstructor(cons1, cons2),
 				// The constructor has been removed
 				() -> bc(BreakingChangeKind.CONSTRUCTOR_REMOVED, cons1, null)
-			);
-		});
+			)
+		);
 	}
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {

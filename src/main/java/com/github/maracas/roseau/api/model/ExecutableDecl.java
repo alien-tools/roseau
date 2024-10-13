@@ -54,7 +54,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public String getSignature() {
 		return "%s(%s)".formatted(simpleName,
-			parameters.stream().map(p -> p.type().getQualifiedName()).collect(Collectors.joining(", ")));
+			parameters.stream().map(ParameterDecl::type).map(ITypeReference::getQualifiedName).collect(Collectors.joining(", ")));
 	}
 
 	/**

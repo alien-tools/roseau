@@ -117,11 +117,6 @@
             <version>4.7.5</version>
         </dependency>
         <dependency>
-            <groupId>com.diogonunes</groupId>
-            <artifactId>JColor</artifactId>
-            <version>5.5.1</version>
-        </dependency>
-        <dependency>
             <groupId>com.github.xmlet</groupId>
             <artifactId>htmlflow</artifactId>
             <version>4.6</version>
@@ -168,5 +163,3 @@
     </distributionManagement>
 
 </project>
-
-
