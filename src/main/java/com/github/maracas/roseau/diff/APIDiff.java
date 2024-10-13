@@ -15,12 +15,11 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 
-import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
@@ -40,7 +39,7 @@ public class APIDiff {
 	/**
 	 * List of all the breaking changes identified in the comparison.
 	 */
-	private final List<BreakingChange> breakingChanges;
+	private final Set<BreakingChange> breakingChanges;
 
 	/**
 	 * Constructs an APIDiff instance to compare two API versions for breaking changes detection.
@@ -51,13 +50,13 @@ public class APIDiff {
 	public APIDiff(API v1, API v2) {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
-		breakingChanges = Collections.synchronizedList(new ArrayList<>());
+		breakingChanges = ConcurrentHashMap.newKeySet();
 	}
 	
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return List of all the breaking changes detected
+	 * @return Set of all the breaking changes detected
 	 */
 	public List<BreakingChange> diff() {
 		v1.getExportedTypes().parallel().forEach(t1 ->
@@ -74,7 +73,7 @@ public class APIDiff {
 			)
 		);
 
-		return breakingChanges;
+		return getBreakingChanges();
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
@@ -323,12 +322,11 @@ public class APIDiff {
 
 	private void bc(BreakingChangeKind kind, Symbol impactedSymbol, Symbol newSymbol) {
 		BreakingChange bc = new BreakingChange(kind, impactedSymbol, newSymbol);
-		if (!breakingChanges.contains(bc))
-			breakingChanges.add(bc);
+		breakingChanges.add(bc);
 	}
 
 	public List<BreakingChange> getBreakingChanges() {
-		return breakingChanges;
+		return breakingChanges.stream().toList();
 	}
 
 	@Override
