@@ -86,7 +86,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 		// Subtype of a wildcard if bounds are compatible
 		// FIXME: what if upper() or !upper()?
-		if (other instanceof WildcardTypeReference wtr && wtr.bounds().stream().allMatch(this::isSubtypeOf))
+		if (other instanceof WildcardTypeReference(List<ITypeReference> bounds, boolean upper) && bounds.stream().allMatch(this::isSubtypeOf))
 			return true;
 
 		// Subtype of another type if it's a super type (or self) and type parameters are compatible
