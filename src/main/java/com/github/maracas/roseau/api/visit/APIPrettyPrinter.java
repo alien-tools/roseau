@@ -67,7 +67,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			it.getSimpleName(),
 			it.getImplementedInterfaces().isEmpty()
 				? ""
-				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
+				: "extends " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
 			""
@@ -142,7 +142,18 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 	@Override
 	public Print methodDecl(MethodDecl it) {
-		return null;
+		return () -> "\t%s %s %s %s(%s)%s %s".formatted(
+			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
+			it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", ")),
+			!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")) : "",
+			hasBody(it) ? "{ return null; }" : ";"
+		);
+	}
+
+	private boolean hasBody(MethodDecl it) {
+		if (it.getContainingType().getResolvedApiType().get().isInterface())
+			return it.isDefault() || it.isStatic() || it.getVisibility() == AccessModifier.PRIVATE;
+		return !it.isAbstract() && !it.isNative();
 	}
 
 	@Override
@@ -154,7 +165,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	public Print fieldDecl(FieldDecl it) {
 		return () -> "\t%s %s %s %s%s;".formatted(
 			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
-			it.isFinal() ? " = " + getDefaultValue(it.getType()) : "");
+			it.isFinal() || it.getContainingType().getResolvedApiType().get().isInterface() ? " = " + getDefaultValue(it.getType()) : "");
 	}
 
 	private String getDefaultValue(ITypeReference ref) {
