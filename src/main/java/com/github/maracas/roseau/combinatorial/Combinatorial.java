@@ -12,6 +12,7 @@ import com.github.maracas.roseau.api.model.Modifier;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.visit.APIPrettyPrinter;
 import com.google.common.collect.Sets;
@@ -64,10 +65,11 @@ public class Combinatorial {
 	static final Set<Set<Modifier>> recordModifiers = Sets.powerSet(Set.of(STATIC, FINAL));
 	static final Set<Set<Modifier>> enumModifiers   = Sets.powerSet(Set.of(STATIC));
 
-	static final List<ITypeReference> fieldTypes = List.of(TypeReference.OBJECT);
+	static final List<ITypeReference> fieldTypes = List.of(new PrimitiveTypeReference("int"));
 
 	static final int typeHierarchyDepth = 2;
 	static final Path dst = Path.of("generated");
+	static int i = 0;
 
 	Map<String, TypeDecl> typeStore = new HashMap<>();
 
@@ -78,12 +80,14 @@ public class Combinatorial {
 				.flatMap(modifiers -> IntStream.range(0, typeHierarchyDepth)
 					.mapToObj(depth -> {
 						var implemented = IntStream.range(0, depth)
-							.mapToObj(i -> newInterface("fqn", PUBLIC, Collections.emptySet()))
+							.mapToObj(i -> newInterface("I" + i++, PUBLIC, Collections.emptySet()))
 							.toList();
 
-						var intf = new InterfaceDecl("fqn", visibility, toEnumSet(modifiers, Modifier.class), weaveAnnotations(), SourceLocation.NO_LOCATION,
-							implemented, Collections.emptyList(), weaveFields(), weaveMethods(), null);
-						typeStore.put("fqn", intf);
+						var fqn = "I" + i++;
+						var ref = new TypeReference<>(fqn);
+						var intf = new InterfaceDecl(fqn, visibility, toEnumSet(modifiers, Modifier.class), weaveAnnotations(), SourceLocation.NO_LOCATION,
+							implemented, Collections.emptyList(), weaveFields(ref), weaveMethods(), null);
+						typeStore.put(fqn, intf);
 						return weaveInnerTypes(intf);
 					})
 				)
@@ -95,9 +99,10 @@ public class Combinatorial {
 	}
 
 	TypeReference<InterfaceDecl> newInterface(String fqn, AccessModifier visibility, Set<Modifier> modifiers) {
+		var ref = new TypeReference<>(fqn);
 		var intf = new InterfaceDecl(fqn, visibility, toEnumSet(modifiers, Modifier.class),
 			weaveAnnotations(), SourceLocation.NO_LOCATION, Collections.emptyList(),
-			Collections.emptyList(), weaveFields(), weaveMethods(), null);
+			Collections.emptyList(), weaveFields(ref), weaveMethods(), null);
 		typeStore.put(fqn, intf);
 		return new TypeReference<>(fqn);
 	}
@@ -118,15 +123,16 @@ public class Combinatorial {
 		return Collections.emptyList();
 	}
 
-	private List<FieldDecl> weaveFields() {
-		TypeReference<TypeDecl> containing = new TypeReference<>("fqn");
-
+	private List<FieldDecl> weaveFields(TypeReference<TypeDecl> containing) {
 		return nestedVisibilities.stream()
 			.flatMap(visibility -> fieldModifiers.stream()
 				.flatMap(modifiers -> fieldTypes.stream()
-					.map(type -> new FieldDecl("%s%s%s".formatted(visibility, modifiers.stream().map(Modifier::toString).collect(Collectors.joining("")), type),
-						visibility, toEnumSet(modifiers, Modifier.class),
-						Collections.emptyList(), SourceLocation.NO_LOCATION, containing, type))
+					.map(type -> {
+						System.out.println("%s.%s%s%s".formatted(containing.getQualifiedName(), visibility, modifiers.stream().map(Modifier::toString).collect(Collectors.joining("")), type));
+						return new FieldDecl("%s.%s%s%s".formatted(containing.getQualifiedName(), visibility, modifiers.stream().map(Modifier::toString).collect(Collectors.joining("")), type),
+							visibility, toEnumSet(modifiers, Modifier.class),
+							Collections.emptyList(), SourceLocation.NO_LOCATION, containing, type);
+					})
 				)
 			)
 			.toList();

@@ -16,6 +16,7 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -151,8 +152,15 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 	@Override
 	public Print fieldDecl(FieldDecl it) {
-		return () -> "\t%s %s %s;".formatted(
-			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getSimpleName());
+		return () -> "\t%s %s %s %s%s;".formatted(
+			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
+			it.isFinal() ? " = " + getDefaultValue(it.getType()) : "");
+	}
+
+	private String getDefaultValue(ITypeReference ref) {
+		if (ref.getQualifiedName().equals("int"))
+			return "0";
+		return "null";
 	}
 
 	@Override
@@ -196,7 +204,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	}
 
 	String prettyPrint(Set<Modifier> modifiers) {
-		return modifiers.stream().map(Modifier::toString).collect(Collectors.joining(" "));
+		return modifiers.stream().map(m -> m.toString().replaceAll("_", "-")).collect(Collectors.joining(" "));
 	}
 
 	String prettyPrint(AccessModifier visibility) {
