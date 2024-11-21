@@ -1,12 +1,15 @@
 package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A method declaration within a {@link TypeDecl}.
@@ -57,15 +60,39 @@ public final class MethodDecl extends ExecutableDecl {
 		Objects.requireNonNull(other);
 		if (equals(other))
 			return true;
-		if (hasSameSignature(other)) {
-			if (getContainingType().isSubtypeOf(other.getContainingType()))
-				return true;
-			if (!isAbstract() && other.isAbstract())
-				return true;
-			if (!isDefault() && !isAbstract() && other.isDefault())
-				return true;
+		if (!Objects.equals(getSimpleName(), other.getSimpleName()))
+			return false;
+		if (getParameters().size() != other.getParameters().size())
+			return false;
+		for (int i = 0; i < getParameters().size(); i++) {
+			if (!(other.getParameters().get(i).type() instanceof TypeParameterReference)
+					&& !Objects.equals(getParameters().get(i), other.getParameters().get(i)))
+				return false;
 		}
+		if (getContainingType().isSubtypeOf(other.getContainingType()))
+			return true;
+		if (!isAbstract() && other.isAbstract())
+			return true;
+		if (!isDefault() && !isAbstract() && other.isDefault())
+			return true;
+//		if (hasSameSignature(other)) {
+//			if (getContainingType().isSubtypeOf(other.getContainingType()))
+//				return true;
+//			if (!isAbstract() && other.isAbstract())
+//				return true;
+//			if (!isDefault() && !isAbstract() && other.isDefault())
+//				return true;
+//		}
+//		return false;
 		return false;
+	}
+
+	public Stream<MethodDecl> getSuperMethods() {
+		return containingType.getResolvedApiType()
+			.map(TypeDecl::getAllSuperTypes).orElse(Stream.empty())
+			.map(TypeReference::getResolvedApiType)
+			.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
+			.filter(this::isOverriding);
 	}
 
 	@Override

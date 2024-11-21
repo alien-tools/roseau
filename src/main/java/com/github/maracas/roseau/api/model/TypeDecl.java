@@ -167,7 +167,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 					.map(TypeReference::getResolvedApiType)
 					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
 			).collect(Collectors.toMap(
-				MethodDecl::getSignature,
+				MethodDecl::getErasedSignature,
 				Function.identity(),
 				(m1, m2) -> m1.isOverriding(m2) ? m1 : m2
 			)).values().stream().toList();

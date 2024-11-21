@@ -67,11 +67,6 @@ class MethodsOverloadingTest {
 		assertThat(a.getAllMethods().toList(), hasSize(3));
 		assertThat(c.getAllMethods().toList(), hasSize(4));
 
-		var factory = api.getFactory();
-		var intRef = factory.getTypeReferenceFactory().createPrimitiveTypeReference("int");
-		var doubleRef = factory.getTypeReferenceFactory().createPrimitiveTypeReference("double");
-		var stringRef = factory.getTypeReferenceFactory().createTypeReference("java.lang.String");
-
 		var im = assertMethod(i, "m()");
 		var amInt = assertMethod(a, "m(int)");
 		var amString = assertMethod(a, "m(java.lang.String)");
@@ -162,4 +157,42 @@ class MethodsOverloadingTest {
 		assertThat(d.getAllMethods().toList(), hasSize(1));
 		assertEquals("K.m", d.getAllMethods().toList().getFirst().getQualifiedName());
 	}
+
+	@Test
+	void jdk_test() {
+		var api = buildAPI("""
+			public class C implements java.lang.Comparable<C> {
+				@Override
+				public int compareTo(C o) {
+					return 0;
+				}
+			}""");
+
+		var c = assertClass(api, "C");
+		assertThat(c.getAllMethods().toList(), hasSize(1));
+	}
+
+	@Test
+	void generics_override_test() {
+		var api = buildAPI("""
+			public interface I<T> {
+				T m1(T t);
+			}
+			public interface J {
+				<T> T m2(T t);
+			}
+			public class C implements I<C>, J<C> {
+				public C m1(C t) {
+					return null;
+				}
+				public <T> T m2(T t) {
+					return null;
+				}
+			}""");
+
+		var c = assertClass(api, "C");
+		assertThat(c.getAllMethods().toList(), hasSize(2));
+	}
+
+	// TODO: wildcard overrides, etc.
 }

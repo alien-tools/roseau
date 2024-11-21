@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -55,6 +56,23 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	public String getSignature() {
 		return "%s(%s)".formatted(simpleName,
 			parameters.stream().map(ParameterDecl::type).map(ITypeReference::getQualifiedName).collect(Collectors.joining(", ")));
+	}
+
+	public String getErasedSignature() {
+		if (this instanceof MethodDecl m) {
+			var superGenerics = m.getSuperMethods()
+				.filter(superM -> superM.parameters.stream().anyMatch(p -> p.type() instanceof TypeParameterReference))
+				.toList();
+			if (!superGenerics.isEmpty())
+				return superGenerics.getFirst().getErasedSignature();
+		}
+
+		return "%s(%s)".formatted(simpleName,
+			parameters.stream().map(ParameterDecl::type).map(t -> {
+				if (t instanceof TypeParameterReference tpr)
+					return "Object";
+				else return t.getQualifiedName();
+			}).collect(Collectors.joining(", ")));
 	}
 
 	/**
