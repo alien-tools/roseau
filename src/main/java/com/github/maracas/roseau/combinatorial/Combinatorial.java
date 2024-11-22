@@ -86,7 +86,7 @@ public class Combinatorial {
 				.forEach(modifiers -> IntStream.range(0, typeHierarchyDepth)
 					.forEach(depth -> {
 						var implemented = IntStream.range(0, depth)
-							.mapToObj(i -> newInterface("I" + i++, PUBLIC, Collections.emptySet()))
+							.mapToObj(i -> newInterface("I" + i, PUBLIC, Collections.emptySet()))
 							.toList();
 
 						var fqn = "I" + i++;
@@ -106,7 +106,7 @@ public class Combinatorial {
 				.forEach(modifiers -> IntStream.range(0, typeHierarchyDepth)
 					.forEach(depth -> {
 						var implemented = IntStream.range(0, depth)
-							.mapToObj(i -> newInterface("I" + i++, PUBLIC, Collections.emptySet()))
+							.mapToObj(i -> newInterface("I" + i, PUBLIC, Collections.emptySet()))
 							.toList();
 
 						var fqn = "C" + i++;

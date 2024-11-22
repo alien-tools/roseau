@@ -33,3 +33,7 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Output Files ###
+generated/
+!generated/api/v1/
