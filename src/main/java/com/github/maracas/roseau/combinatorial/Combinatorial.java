@@ -7,9 +7,11 @@ import com.github.maracas.roseau.api.model.Annotation;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.api.model.Modifier;
+import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
@@ -20,6 +22,8 @@ import com.google.common.collect.Sets;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -29,7 +33,6 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
 import static com.github.maracas.roseau.api.model.AccessModifier.PACKAGE_PRIVATE;
 import static com.github.maracas.roseau.api.model.AccessModifier.PRIVATE;
@@ -73,116 +76,97 @@ public class Combinatorial {
 	static final List<ITypeReference> methodTypes = List.of(new PrimitiveTypeReference("int"));
 
 	static final int typeHierarchyDepth = 2;
+	static final int typeHierarchyWidth = 2;
 	static final int paramsCount = 1;
 	static final Path dst = Path.of("generated");
 	static int i = 0;
 
-	Map<String, TypeDecl> typeStore = new HashMap<>();
+	Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
 
-	void createInterface() {
-		// Modifiers, visibilities
-		topLevelVisibilities
-			.forEach(visibility -> interfaceModifiers
-				.forEach(modifiers -> IntStream.range(0, typeHierarchyDepth)
-					.forEach(depth -> {
-						var implemented = IntStream.range(0, depth)
-							.mapToObj(i -> newInterface("I" + i++, PUBLIC, Collections.emptySet()))
-							.toList();
-
-						var fqn = "I" + i++;
-						var ref = new TypeReference<>(fqn);
-						var intf = new InterfaceDecl(fqn, visibility, toEnumSet(modifiers, Modifier.class), weaveAnnotations(), SourceLocation.NO_LOCATION,
-							implemented, Collections.emptyList(), weaveFields(ref, true), weaveMethods(ref, true), null);
-						typeStore.put(fqn, intf);
-					})
-				)
-			);
+	void createTypes() {
+		createInterfaces();
+		createClasses();
 	}
 
-	void createClass() {
-		// Modifiers, visibilities
-		topLevelVisibilities
-			.forEach(visibility -> classModifiers
-				.forEach(modifiers -> IntStream.range(0, typeHierarchyDepth)
-					.forEach(depth -> {
-						var implemented = IntStream.range(0, depth)
-							.mapToObj(i -> newInterface("I" + i++, PUBLIC, Collections.emptySet()))
-							.toList();
+	void createInterfaces() {
+		topLevelVisibilities.forEach(visibility ->
+			interfaceModifiers.forEach(modifiers -> {
+				var builder = new InterfaceBuilder();
+				builder.qualifiedName = "I" + ++i;
+				builder.visibility = visibility;
+				builder.modifiers = toEnumSet(modifiers, Modifier.class);
+				store(builder);
 
-						var fqn = "C" + i++;
-						var ref = new TypeReference<>(fqn);
-						var cls = new ClassDecl(fqn, visibility, toEnumSet(modifiers, Modifier.class), weaveAnnotations(), SourceLocation.NO_LOCATION,
-							implemented, Collections.emptyList(), weaveFields(ref, true), weaveMethods(ref, false), null, null, weaveConstructors());
-						var clsWithSuper = new ClassDecl(fqn, visibility, toEnumSet(modifiers, Modifier.class), weaveAnnotations(), SourceLocation.NO_LOCATION,
-							implemented, Collections.emptyList(), weaveFields(ref, true), weaveMethods(ref, false), null, null, weaveConstructors());
-						typeStore.put(fqn, cls);
-						typeStore.put(fqn, clsWithSuper);
-					})
-				)
-			);
+				// [O, 1, N]?
+				IntStream.range(0, typeHierarchyWidth).forEach(intf -> {
+					var superBuilder = new InterfaceBuilder();
+					superBuilder.qualifiedName = "I" + ++i;
+					superBuilder.visibility = visibility;
+					superBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+					builder.implementedInterfaces.add(new TypeReference<>(superBuilder.qualifiedName));
+					store(superBuilder);
+				});
+			})
+		);
 	}
 
-	TypeReference<InterfaceDecl> newInterface(String fqn, AccessModifier visibility, Set<Modifier> modifiers) {
-		var ref = new TypeReference<>(fqn);
-		var intf = new InterfaceDecl(fqn, visibility, toEnumSet(modifiers, Modifier.class),
-			weaveAnnotations(), SourceLocation.NO_LOCATION, Collections.emptyList(),
-			Collections.emptyList(), weaveFields(ref, true), weaveMethods(ref, true), null);
-		typeStore.put(fqn, intf);
-		return new TypeReference<>(fqn);
+	void createClasses() {
+		topLevelVisibilities.forEach(visibility ->
+			classModifiers.forEach(modifiers -> {
+				var builder = new ClassBuilder();
+				builder.qualifiedName = "C" + ++i;
+				builder.visibility = visibility;
+				builder.modifiers = toEnumSet(modifiers, Modifier.class);
+				store(builder);
+			})
+		);
 	}
 
-	private TypeDecl weaveInnerTypes(TypeDecl type) {
-		return type;
-	}
-
-	private List<ConstructorDecl> weaveConstructors() {
-		return Collections.emptyList();
-	}
-
-	private List<MethodDecl> weaveMethods(TypeReference<TypeDecl> containing, boolean isInterface) {
-		return nestedVisibilities.stream()
-			.flatMap(visibility -> methodModifiers.stream()
-				.flatMap(modifiers -> methodTypes.stream()
-					.flatMap(type -> IntStream.range(0, paramsCount)
-						.mapToObj(pCount -> {
-							if (!isInterface && modifiers.contains(DEFAULT))
-								return Stream.<MethodDecl>empty();
-							if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(ABSTRACT, DEFAULT)).isEmpty())
-								return Stream.<MethodDecl>empty();
-							if (isInterface && !Sets.intersection(modifiers, Set.of(NATIVE, SYNCHRONIZED, FINAL)).isEmpty())
-								return Stream.<MethodDecl>empty();
-							if (isInterface && (visibility == PROTECTED || visibility == PACKAGE_PRIVATE))
-								return Stream.<MethodDecl>empty();
-
-							return Stream.of(new MethodDecl("%s.%s%s%s".formatted(containing.getQualifiedName(), visibility, modifiers.stream().map(Modifier::toString).collect(Collectors.joining("")), type),
-								visibility, toEnumSet(modifiers, Modifier.class), Collections.emptyList(), SourceLocation.NO_LOCATION,
-								containing, TypeReference.OBJECT, Collections.emptyList(), Collections.emptyList(), Collections.emptyList()));
-						})
-					)
-				)
-			).flatMap(Function.identity()).toList();
-	}
-
-	private List<Annotation> weaveAnnotations() {
-		return Collections.emptyList();
-	}
-
-	private List<FieldDecl> weaveFields(TypeReference<TypeDecl> containing, boolean isInterface) {
-		return nestedVisibilities.stream()
-			.flatMap(visibility -> fieldModifiers.stream()
-				.flatMap(modifiers -> fieldTypes.stream()
-					.flatMap(type -> {
-						if (isInterface)
-							if (visibility == PROTECTED || visibility == PRIVATE)
-								return Stream.empty();
-
-						return Stream.of(new FieldDecl("%s.%s%s%s".formatted(containing.getQualifiedName(), visibility, modifiers.stream().map(Modifier::toString).collect(Collectors.joining("")), type),
-							visibility, toEnumSet(modifiers, Modifier.class),
-							Collections.emptyList(), SourceLocation.NO_LOCATION, containing, type));
+	private void weaveFields() {
+		typeStore.forEach((fqn, t) ->
+			nestedVisibilities.stream().forEach(visibility ->
+				fieldModifiers.stream().forEach(modifiers ->
+					fieldTypes.stream().forEach(type -> {
+						var builder = new FieldBuilder();
+						builder.qualifiedName = t.qualifiedName + ".f" + ++i;
+						builder.visibility = visibility;
+						builder.modifiers = toEnumSet(modifiers, Modifier.class);
+						builder.type = type;
+						builder.containingType = new TypeReference<>(t.qualifiedName);
+						t.fields.add(builder.make());
 					})
 				)
 			)
-			.toList();
+		);
+	}
+
+	void weaveMethods() {
+		typeStore.forEach((fqn, t) ->
+			nestedVisibilities.stream().forEach(visibility ->
+				methodModifiers.stream().forEach(modifiers ->
+					methodTypes.stream().forEach(type ->
+						IntStream.range(0, paramsCount).forEach(pCount -> {
+							var builder = new MethodBuilder();
+							builder.qualifiedName = t.qualifiedName + ".m" + ++i;
+							builder.visibility = visibility;
+							builder.modifiers = toEnumSet(modifiers, Modifier.class);
+							builder.type = type;
+							builder.containingType = new TypeReference<>(t.qualifiedName);
+							IntStream.range(0, pCount).forEach(p -> {
+								// TODO: varargs
+								// TODO: parameter types
+								builder.parameters.add(new ParameterDecl("p" + p, TypeReference.OBJECT, false));
+							});
+							t.methods.add(builder.make());
+						})
+					)
+				)
+			)
+		);
+	}
+
+	void store(TypeDeclBuilder type) {
+		typeStore.put(type.qualifiedName, type);
 	}
 
 	private <T extends Enum<T>> EnumSet<T> toEnumSet(Set<T> set, Class<T> cls) {
@@ -211,15 +195,77 @@ public class Combinatorial {
 	}
 
 	public API getAPI() {
-		return new API(typeStore.values().stream().toList(), new SpoonAPIFactory());
+		return new API(typeStore.values().stream().map(TypeDeclBuilder::make).toList(), new SpoonAPIFactory());
 	}
 
 	public static void main(String[] args) {
 		var comb = new Combinatorial();
-		comb.createInterface();
-		comb.createClass();
+		comb.createTypes();
+		comb.weaveFields();
+		comb.weaveMethods();
 		var api = comb.getAPI();
 		System.out.println("api="+api);
 		comb.generateCode(api);
+	}
+
+	/* ... */
+	interface Builder { TypeDecl make(); }
+	class SymbolBuilder {
+		String qualifiedName;
+		AccessModifier visibility;
+		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+		List<Annotation> annotations = new ArrayList<>();
+		SourceLocation location = SourceLocation.NO_LOCATION;
+	}
+
+	abstract class TypeDeclBuilder extends SymbolBuilder implements Builder {
+		List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
+		List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
+		List<FieldDecl> fields = new ArrayList<>();
+		List<MethodDecl> methods = new ArrayList<>();
+		TypeReference<TypeDecl> enclosingType;
+	}
+
+	class InterfaceBuilder extends TypeDeclBuilder {
+		public InterfaceDecl make() {
+			return new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location,
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
+		}
+	}
+
+	class ClassBuilder extends TypeDeclBuilder {
+		TypeReference<ClassDecl> superClass;
+		List<ConstructorDecl> constructors = new ArrayList<>();
+
+		public ClassDecl make() {
+			return new ClassDecl(qualifiedName, visibility, modifiers, annotations, location,
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass,
+				constructors);
+		}
+	}
+
+	class TypeMemberBuilder extends SymbolBuilder {
+		TypeReference<TypeDecl> containingType;
+		ITypeReference type;
+	}
+
+	class FieldBuilder extends TypeMemberBuilder {
+		FieldDecl make() {
+			return new FieldDecl(qualifiedName, visibility, modifiers, annotations, location,
+				containingType, type);
+		}
+	}
+
+	class ExecutableBuilder extends TypeMemberBuilder {
+		List<ParameterDecl> parameters = new ArrayList<>();
+		List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
+		List<TypeReference<ClassDecl>> thrownExceptions = new ArrayList<>();
+	}
+
+	class MethodBuilder extends ExecutableBuilder {
+		MethodDecl make() {
+			return new MethodDecl(qualifiedName, visibility, modifiers, annotations, location,
+				containingType, type, parameters, formalTypeParameters, thrownExceptions);
+		}
 	}
 }
