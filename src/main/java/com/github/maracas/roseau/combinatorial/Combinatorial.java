@@ -14,6 +14,7 @@ import com.github.maracas.roseau.api.model.Modifier;
 import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -23,14 +24,11 @@ import com.google.common.collect.Sets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -49,15 +47,7 @@ import static com.github.maracas.roseau.api.model.Modifier.SYNCHRONIZED;
 
 public class Combinatorial {
 	static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC, PACKAGE_PRIVATE);
-	static final List<AccessModifier> nestedVisibilities   = List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
 
-	static final Set<Set<Modifier>> fieldModifiers  = Sets.powerSet(Set.of(STATIC, FINAL));
-	static final Set<Set<Modifier>> methodModifiers = Sets.powerSet(Set.of(STATIC, FINAL, ABSTRACT, NATIVE, DEFAULT, SYNCHRONIZED))
-		.stream()
-		.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
-		.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(NATIVE, STATIC, SYNCHRONIZED)).isEmpty())
-		.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
-		.collect(Collectors.toSet());
 	// STATIC handled separately for nested types only
 	static final Set<Set<Modifier>> classModifiers  = Sets.powerSet(Set.of(FINAL, ABSTRACT/*, SEALED, NON_SEALED*/)) // TODO: sealed
 		.stream()
@@ -72,8 +62,14 @@ public class Combinatorial {
 	static final Set<Set<Modifier>> recordModifiers = Sets.powerSet(Set.of(FINAL));
 	static final Set<Set<Modifier>> enumModifiers   = Sets.powerSet(Set.of());
 
-	static final List<ITypeReference> fieldTypes = List.of(new PrimitiveTypeReference("int"));
-	static final List<ITypeReference> methodTypes = List.of(new PrimitiveTypeReference("int"));
+	static final List<ITypeReference> fieldTypes = List.of(
+		new PrimitiveTypeReference("int")/*,
+		new TypeReference<>("java.lang.Integer"),
+		new TypeReference<>("java.lang.String"),
+		new ArrayTypeReference(new PrimitiveTypeReference("int"), 1)*/
+	);
+	static final List<ITypeReference> methodTypes = fieldTypes;
+	static final Set<Set<TypeReference<ClassDecl>>> thrownExceptions = Sets.powerSet(Set.of(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/));
 
 	static final int typeHierarchyDepth = 2;
 	static final int typeHierarchyWidth = 2;
@@ -82,6 +78,50 @@ public class Combinatorial {
 	static int i = 0;
 
 	Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
+
+	<T> Set<Set<T>> powerSet(T... elements) {
+		return Sets.powerSet(Set.of(elements));
+	}
+
+	Set<AccessModifier> fieldVisibilities(Builder container) {
+		return switch (container) {
+			case InterfaceBuilder i -> Set.of(PUBLIC, PACKAGE_PRIVATE);
+			default -> Set.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+		};
+	}
+
+	Set<AccessModifier> methodVisibilities(Builder container) {
+		return switch (container) {
+			case InterfaceBuilder i -> Set.of(PUBLIC, PACKAGE_PRIVATE, PRIVATE);
+			default -> Set.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+		};
+	}
+
+	Set<Set<Modifier>> fieldModifiers(Builder container) {
+		return switch (container) {
+			default -> powerSet(STATIC, FINAL);
+		};
+	}
+
+	Set<Set<Modifier>> methodModifiers(Builder container) {
+		var modifiers = powerSet(STATIC, FINAL, ABSTRACT, NATIVE, DEFAULT, SYNCHRONIZED)
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
+			.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(NATIVE, STATIC, SYNCHRONIZED)).isEmpty())
+			.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
+			.collect(Collectors.toSet());
+
+		return switch (container) {
+			case InterfaceBuilder b -> modifiers.stream()
+				.filter(mods -> Sets.intersection(mods, Set.of(NATIVE, SYNCHRONIZED, FINAL)).isEmpty())
+				.collect(Collectors.toSet());
+			case ClassBuilder b -> modifiers.stream()
+				.filter(mods -> !mods.contains(DEFAULT))
+				.filter(mods -> b.make().isAbstract() || !mods.contains(ABSTRACT))
+				.collect(Collectors.toSet());
+			default -> modifiers;
+		};
+	}
 
 	void createTypes() {
 		createInterfaces();
@@ -124,8 +164,8 @@ public class Combinatorial {
 
 	private void weaveFields() {
 		typeStore.forEach((fqn, t) ->
-			nestedVisibilities.stream().forEach(visibility ->
-				fieldModifiers.stream().forEach(modifiers ->
+			fieldVisibilities(t).stream().forEach(visibility ->
+				fieldModifiers(t).stream().forEach(modifiers ->
 					fieldTypes.stream().forEach(type -> {
 						var builder = new FieldBuilder();
 						builder.qualifiedName = t.qualifiedName + ".f" + ++i;
@@ -142,23 +182,30 @@ public class Combinatorial {
 
 	void weaveMethods() {
 		typeStore.forEach((fqn, t) ->
-			nestedVisibilities.stream().forEach(visibility ->
-				methodModifiers.stream().forEach(modifiers ->
+			methodVisibilities(t).stream().forEach(visibility ->
+				methodModifiers(t).stream().forEach(modifiers ->
 					methodTypes.stream().forEach(type ->
-						IntStream.range(0, paramsCount).forEach(pCount -> {
-							var builder = new MethodBuilder();
-							builder.qualifiedName = t.qualifiedName + ".m" + ++i;
-							builder.visibility = visibility;
-							builder.modifiers = toEnumSet(modifiers, Modifier.class);
-							builder.type = type;
-							builder.containingType = new TypeReference<>(t.qualifiedName);
-							IntStream.range(0, pCount).forEach(p -> {
-								// TODO: varargs
-								// TODO: parameter types
-								builder.parameters.add(new ParameterDecl("p" + p, TypeReference.OBJECT, false));
-							});
-							t.methods.add(builder.make());
-						})
+						thrownExceptions.stream().forEach(exc ->
+							IntStream.range(0, paramsCount + 1).forEach(pCount -> {
+								/* vis/mod interactions are annoying; don't want them there */
+								if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(DEFAULT, ABSTRACT)).isEmpty())
+									return;
+
+								var builder = new MethodBuilder();
+								builder.qualifiedName = t.qualifiedName + ".m" + ++i;
+								builder.visibility = visibility;
+								builder.modifiers = toEnumSet(modifiers, Modifier.class);
+								builder.type = type;
+								builder.containingType = new TypeReference<>(t.qualifiedName);
+								builder.thrownExceptions = exc.stream().toList();
+								IntStream.range(0, pCount).forEach(p -> {
+									// TODO: varargs
+									// TODO: parameter types
+									builder.parameters.add(new ParameterDecl("p" + p, TypeReference.OBJECT, false));
+								});
+								t.methods.add(builder.make());
+							})
+						)
 					)
 				)
 			)
