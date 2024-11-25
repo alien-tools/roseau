@@ -14,12 +14,11 @@ public class ClientsGenerator {
         APIExtractor apiExtractor = new SpoonAPIExtractor();
         var api = apiExtractor.extractAPI(Path.of(apiDir));
 
-        var clientGenerator = new ClientGenerator();
         var clientWriter = new ClientWriter(Path.of(outputDir));
         if (!clientWriter.createOutputDir()) {
             System.exit(1);
         }
 
-        api.getAllTypes().forEach(type -> clientGenerator.$(type).generate().forEach(clientWriter::writeClient));
+        new ClientGenerator(clientWriter).$(api).generate();
     }
 }

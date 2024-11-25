@@ -4,5 +4,5 @@ import java.util.Map;
 
 @FunctionalInterface
 public interface Generate {
-	Map<String, String> generate();
+	void generate();
 }
