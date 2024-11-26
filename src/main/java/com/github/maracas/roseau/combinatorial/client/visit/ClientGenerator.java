@@ -14,24 +14,36 @@ public class ClientGenerator implements APIAlgebra<Generate> {
 
 	@Override
 	public Generate api(API it) {
-		return () -> it.getAllTypes().forEach(type -> this.$(type).generate());
+		return () -> it.getAllTypes().parallel().forEach(type -> this.$(type).generate());
 	}
 
 	@Override
 	public Generate classDecl(ClassDecl it) {
 		return () -> {
-			writer.writeCodeInFile(it);
+			if (!it.isExported()) return;
 
-			it.getConstructors().forEach(ctr -> this.$(ctr).generate());
-			it.getAllFields().forEach(fld -> this.$(fld).generate());
-			it.getAllMethods().forEach(mtd -> this.$(mtd).generate());
+			writer.writeTypeReference(it);
+			writer.writeClassInheritance(it);
+
+			if (it.isEffectivelyAbstract()) return;
+
+			it.getConstructors().parallelStream().forEach(ctr -> this.$(ctr).generate());
+			it.getAllFields().parallel().forEach(fld -> this.$(fld).generate());
+			it.getAllMethods().parallel().forEach(mtd -> this.$(mtd).generate());
 		};
 	}
 
 	@Override
 	public Generate interfaceDecl(InterfaceDecl it) {
 		return () -> {
-			System.out.println("In interfaceDecl: " + it.toString());
+			if (!it.isExported()) return;
+
+			writer.writeTypeReference(it);
+			writer.writeInterfaceExtension(it);
+			writer.writeInterfaceImplementation(it);
+
+			it.getAllFields().parallel().forEach(fld -> this.$(fld).generate());
+			it.getAllMethods().parallel().forEach(mtd -> this.$(mtd).generate());
 		};
 	}
 
