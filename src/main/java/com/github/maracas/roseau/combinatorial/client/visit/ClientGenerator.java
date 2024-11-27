@@ -61,37 +61,28 @@ public class ClientGenerator implements APIAlgebra<Generate> {
 	}
 
 	@Override
-	public Generate recordDecl(RecordDecl it) {
-		return () -> {
-			System.out.println("In recordDecl: " + it.toString());
-		};
+	public Generate constructorDecl(ConstructorDecl it) {
+		return () -> writer.writeConstructorInvocation(it);
 	}
 
 	@Override
 	public Generate methodDecl(MethodDecl it) {
 		return () -> {
-			System.out.println("In methodDecl: " + it.toString());
-		};
-	}
-
-	@Override
-	public Generate constructorDecl(ConstructorDecl it) {
-		return () -> {
-			System.out.println("In constructorDecl: " + it.toString());
+//			System.out.println("In methodDecl: " + it.toString());
 		};
 	}
 
 	@Override
 	public Generate fieldDecl(FieldDecl it) {
 		return () -> {
-			System.out.println("In fieldDecl: " + it.toString());
+//			System.out.println("In fieldDecl: " + it.toString());
 		};
 	}
 
 	@Override
-	public Generate parameterDecl(ParameterDecl it) {
+	public Generate annotationDecl(AnnotationDecl it) {
 		return () -> {
-			System.out.println("In parameterDecl: " + it.toString());
+//			System.out.println("In annotationDecl: " + it.toString());
 		};
 	}
 

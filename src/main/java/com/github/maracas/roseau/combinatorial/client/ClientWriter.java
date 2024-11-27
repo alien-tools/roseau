@@ -58,6 +58,19 @@ public class ClientWriter {
         writeCodeInFile(name, code);
     }
 
+    public void writeConstructorInvocation(ConstructorDecl constructorDecl) {
+        if (constructorDecl.getContainingType().getResolvedApiType().isEmpty()) return;
+
+        var classOrigin = constructorDecl.getContainingType().getResolvedApiType().get();
+        var imports = getImportsForType(classOrigin);
+        var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
+
+        var params = getParamsForExecutableInvocation(constructorDecl);
+        var code = "new %s(%s);".formatted(classOrigin.getSimpleName(), params);
+
+        writeCodeInMain(imports, name, code);
+    }
+
     public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
         var imports = getImportsForType(interfaceDecl);
         var name = "%sInterfaceExtension".formatted(interfaceDecl.getPrettyQualifiedName());
@@ -100,6 +113,12 @@ public class ClientWriter {
         return "import %s;".formatted(typeDecl.getQualifiedName());
     }
 
+    private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
+        return executableDecl.getParameters().stream()
+                .map(p -> getDefaultValueForType(p.type().getQualifiedName()))
+                .collect(Collectors.joining(", "));
+    }
+
     private String implementNecessaryMethods(TypeDecl typeDecl) {
         var methods = typeDecl.getAllMethodsToImplement();
         return methods.map(this::overrideMethod).collect(Collectors.joining("\n\n"));
@@ -121,7 +140,7 @@ public class ClientWriter {
     private String getDefaultValueForType(String typeName) {
         return switch (typeName) {
             case "int", "long", "float", "double", "byte", "short" -> "0";
-            case "char" -> "'\\u0000'";
+            case "char" -> "'c'";
             case "boolean" -> "false";
             default -> "null";
         };

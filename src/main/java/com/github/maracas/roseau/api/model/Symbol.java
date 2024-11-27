@@ -56,7 +56,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public String getPrettyQualifiedName() {
 		return Arrays.stream(qualifiedName.split("\\."))
-				.map(s -> s.substring(0, 1).toUpperCase() + s.substring(1))
+				.map(Symbol::capitalizeFirstLetter)
 				.collect(Collectors.joining(""));
 	}
 
@@ -100,5 +100,9 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	@Override
 	public int hashCode() {
 		return Objects.hash(qualifiedName, visibility, modifiers, annotations, location);
+	}
+
+	protected static String capitalizeFirstLetter(String s) {
+		return s.substring(0, 1).toUpperCase() + s.substring(1);
 	}
 }

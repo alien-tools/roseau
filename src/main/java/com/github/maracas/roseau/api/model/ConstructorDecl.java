@@ -23,6 +23,11 @@ public final class ConstructorDecl extends ExecutableDecl {
 	}
 
 	@Override
+	public String getPrettyQualifiedName() {
+		return super.getPrettyQualifiedName().replace("<init>", "");
+	}
+
+	@Override
 	public String toString() {
 		return "%s %s(%s)".formatted(visibility, getSimpleName(),
 			parameters.stream().map(Object::toString).collect(Collectors.joining(", ")));

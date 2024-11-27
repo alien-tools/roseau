@@ -98,6 +98,16 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	@Override
+	public String getPrettyQualifiedName() {
+		var name = super.getPrettyQualifiedName();
+		var parameters = getParameters().stream()
+				.map(p -> ExecutableDecl.capitalizeFirstLetter(p.type().getQualifiedName()))
+				.collect(Collectors.joining());
+
+		return name + parameters;
+	}
+
+	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
