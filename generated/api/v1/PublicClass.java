@@ -3,6 +3,7 @@ package generated.api.v1;
 public class PublicClass {
     public int publicInt = 0;
     private char privateChar = 'c';
+    protected boolean protectedBool = false;
 
     public PublicClass() {}
 

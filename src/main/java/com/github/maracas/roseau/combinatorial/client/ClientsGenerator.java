@@ -19,6 +19,6 @@ public class ClientsGenerator {
             System.exit(1);
         }
 
-        new ClientGenerator(clientWriter).$(api).generate();
+        new ClientGenerator(clientWriter).$(api).visit();
     }
 }
