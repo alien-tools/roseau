@@ -12,7 +12,7 @@ public class PublicClass {
     }
 
     public PublicClass(int valInt, char valChar) {
-        this.publicInt = val;
+        this.publicInt = valInt;
         this.privateChar = valChar;
     }
 

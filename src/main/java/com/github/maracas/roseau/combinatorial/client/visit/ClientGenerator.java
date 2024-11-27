@@ -5,6 +5,8 @@ import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
 import com.github.maracas.roseau.combinatorial.client.ClientWriter;
 
+import java.util.Optional;
+
 public class ClientGenerator extends AbstractAPIVisitor {
 	private final ClientWriter writer;
 
@@ -31,9 +33,9 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	private void generateClassClients(ClassDecl it) {
 		writer.writeTypeReference(it);
 
-		if (!it.isEffectivelyFinal()) {
-			writer.writeClassInheritance(it);
-		}
+		if (it.isEffectivelyFinal()) return;
+
+		writer.writeClassInheritance(it);
 	}
 
 	private void generateInterfaceClients(InterfaceDecl it) {
@@ -43,14 +45,33 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	}
 
 	private void generateConstructorClients(ConstructorDecl it) {
-		writer.writeConstructorInvocation(it);
+		var originalClassOpt = getOriginClassFromTypeMember(it);
+		if (originalClassOpt.isEmpty()) return;
+
+		var originalClass = originalClassOpt.get();
+		if (originalClass.isEffectivelyAbstract()) return;
+
+		writer.writeConstructorInvocation(it, originalClass);
 	}
 
 	private void generateFieldClients(FieldDecl it) {
-		writer.writeFieldRead(it);
+		var originalClassOpt = getOriginClassFromTypeMember(it);
+		if (originalClassOpt.isEmpty()) return;
+
+		var originalClass = originalClassOpt.get();
+		if (originalClass.isEffectivelyAbstract() && !it.isStatic()) return;
+
+		writer.writeFieldRead(it, originalClass);
 
 		if (!it.isFinal()) {
-			writer.writeFieldWrite(it);
+			writer.writeFieldWrite(it, originalClass);
 		}
+	}
+
+	private Optional<ClassDecl> getOriginClassFromTypeMember(TypeMemberDecl typeMemberDecl) {
+		if (typeMemberDecl.getContainingType().getResolvedApiType().isEmpty()) return Optional.empty();
+
+		var resolvedType = typeMemberDecl.getContainingType().getResolvedApiType().get();
+		return resolvedType instanceof ClassDecl ? Optional.of((ClassDecl) resolvedType) : Optional.empty();
 	}
 }

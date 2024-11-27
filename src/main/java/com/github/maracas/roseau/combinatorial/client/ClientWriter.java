@@ -59,40 +59,31 @@ public class ClientWriter {
         writeCodeInFile(name, code);
     }
 
-    public void writeConstructorInvocation(ConstructorDecl constructorDecl) {
-        var classOrigin = getOriginClassFromTypeMember(constructorDecl);
-        if (classOrigin == null) return;
-
-        var imports = getImportsForType(classOrigin);
+    public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl originalClass) {
+        var imports = getImportsForType(originalClass);
         var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
 
         var params = getParamsForExecutableInvocation(constructorDecl);
-        var code = "new %s(%s);".formatted(classOrigin.getSimpleName(), params);
+        var code = "new %s(%s);".formatted(originalClass.getSimpleName(), params);
 
         writeCodeInMain(imports, name, code);
     }
 
-    public void writeFieldRead(FieldDecl fieldDecl) {
-        var classOrigin = getOriginClassFromTypeMember(fieldDecl);
-        if (classOrigin == null) return;
-
-        var imports = getImportsForType(classOrigin);
+    public void writeFieldRead(FieldDecl fieldDecl, ClassDecl originalClass) {
+        var imports = getImportsForType(originalClass);
         var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
 
-        var caller = getClassAccessForTypeMember(classOrigin, fieldDecl);
+        var caller = getClassAccessForTypeMember(originalClass, fieldDecl);
         var code = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
 
         writeCodeInMain(imports, name, code);
     }
 
-    public void writeFieldWrite(FieldDecl fieldDecl) {
-        var classOrigin = getOriginClassFromTypeMember(fieldDecl);
-        if (classOrigin == null) return;
-
-        var imports = getImportsForType(classOrigin);
+    public void writeFieldWrite(FieldDecl fieldDecl, ClassDecl originalClass) {
+        var imports = getImportsForType(originalClass);
         var name = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
 
-        var caller = getClassAccessForTypeMember(classOrigin, fieldDecl);
+        var caller = getClassAccessForTypeMember(originalClass, fieldDecl);
         var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
         var code = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
@@ -139,13 +130,6 @@ public class ClientWriter {
 
     private String getImportsForType(TypeDecl typeDecl) {
         return "import %s;".formatted(typeDecl.getQualifiedName());
-    }
-
-    private ClassDecl getOriginClassFromTypeMember(TypeMemberDecl typeMemberDecl) {
-        if (typeMemberDecl.getContainingType().getResolvedApiType().isEmpty()) return null;
-
-        var resolvedType = typeMemberDecl.getContainingType().getResolvedApiType().get();
-        return resolvedType instanceof ClassDecl ? (ClassDecl) resolvedType : null;
     }
 
     private String getClassAccessForTypeMember(ClassDecl classDecl, TypeMemberDecl typeMemberDecl) {

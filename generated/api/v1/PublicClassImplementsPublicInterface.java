@@ -2,7 +2,7 @@ package generated.api.v1;
 
 public class PublicClassImplementsPublicInterface implements PublicInterface {
     @Override
-    public void methodFromInterface() {}
+    public void voidMethodFromInterface() {}
 
     @Override
     public boolean booleanMethodFromInterface() { return false; }
