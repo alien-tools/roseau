@@ -23,7 +23,10 @@ public class ClientGenerator implements APIAlgebra<Generate> {
 			if (!it.isExported()) return;
 
 			writer.writeTypeReference(it);
-			writer.writeClassInheritance(it);
+
+			if (!it.isEffectivelyFinal()) {
+				writer.writeClassInheritance(it);
+			}
 
 			if (it.isEffectivelyAbstract()) return;
 
@@ -49,16 +52,12 @@ public class ClientGenerator implements APIAlgebra<Generate> {
 
 	@Override
 	public Generate enumDecl(EnumDecl it) {
-		return () -> {
-			System.out.println("In enumDecl: " + it.toString());
-		};
+		return classDecl(it);
 	}
 
 	@Override
-	public Generate annotationDecl(AnnotationDecl it) {
-		return () -> {
-			System.out.println("In annotationDecl: " + it.toString());
-		};
+	public Generate recordDecl(RecordDecl it) {
+		return classDecl(it);
 	}
 
 	@Override
@@ -97,51 +96,19 @@ public class ClientGenerator implements APIAlgebra<Generate> {
 	}
 
 	@Override
-	public <U extends TypeDecl> Generate typeReference(TypeReference<U> it) {
-		return () -> {
-			System.out.println("In typeReference: " + it.toString());
-		};
-	}
-
+	public Generate parameterDecl(ParameterDecl it) { return () -> {}; }
 	@Override
-	public Generate primitiveTypeReference(PrimitiveTypeReference it) {
-		return () -> {
-			System.out.println("In primitiveTypeReference: " + it.toString());
-		};
-	}
-
+	public Generate annotation(Annotation it) { return () -> {}; }
 	@Override
-	public Generate arrayTypeReference(ArrayTypeReference it) {
-		return () -> {
-			System.out.println("In arrayTypeReference: " + it.toString());
-		};
-	}
-
+	public <U extends TypeDecl> Generate typeReference(TypeReference<U> it) { return () -> {}; }
 	@Override
-	public Generate typeParameterReference(TypeParameterReference it) {
-		return () -> {
-			System.out.println("In typeParameterReference: " + it.toString());
-		};
-	}
-
+	public Generate primitiveTypeReference(PrimitiveTypeReference it) { return () -> {}; }
 	@Override
-	public Generate wildcardTypeReference(WildcardTypeReference it) {
-		return () -> {
-			System.out.println("In wildcardTypeReference: " + it.toString());
-		};
-	}
-
+	public Generate arrayTypeReference(ArrayTypeReference it) { return () -> {}; }
 	@Override
-	public Generate annotation(Annotation it) {
-		return () -> {
-			System.out.println("In annotation: " + it.toString());
-		};
-	}
-
+	public Generate typeParameterReference(TypeParameterReference it) { return () -> {}; }
 	@Override
-	public Generate formalTypeParameter(FormalTypeParameter it) {
-		return () -> {
-			System.out.println("In formalTypeParameter: " + it.toString());
-		};
-	}
+	public Generate wildcardTypeReference(WildcardTypeReference it) { return () -> {}; }
+	@Override
+	public Generate formalTypeParameter(FormalTypeParameter it) { return () -> {}; }
 }

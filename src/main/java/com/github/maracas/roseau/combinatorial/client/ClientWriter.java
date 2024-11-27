@@ -1,9 +1,6 @@
 package com.github.maracas.roseau.combinatorial.client;
 
-import com.github.maracas.roseau.api.model.ClassDecl;
-import com.github.maracas.roseau.api.model.InterfaceDecl;
-import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.*;
 
 import java.io.IOException;
 import java.nio.file.Files;
