@@ -81,22 +81,36 @@ public class ClientWriter {
     public void writeFieldRead(FieldDecl fieldDecl, ClassDecl originalClass) {
         var imports = getImportsForType(originalClass);
         var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
-
         var caller = getClassAccessForTypeMember(originalClass, fieldDecl);
-        var code = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
 
-        writeCodeInMain(imports, name, code);
+        if (fieldDecl.isPublic()) {
+            var fieldReadCode = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
+
+            writeCodeInMain(imports, name, fieldReadCode);
+        } else if (fieldDecl.isProtected()) {
+            var fieldReadInMethodCode = "\tpublic void aNewMethodToReadProtectedField() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), fieldReadInMethodCode);
+
+            writeCodeInFile(name, code);
+        }
     }
 
     public void writeFieldWrite(FieldDecl fieldDecl, ClassDecl originalClass) {
         var imports = getImportsForType(originalClass);
         var name = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
-
         var caller = getClassAccessForTypeMember(originalClass, fieldDecl);
         var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
-        var code = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
-        writeCodeInMain(imports, name, code);
+        if (fieldDecl.isPublic()) {
+            var fieldWriteCode = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
+
+            writeCodeInMain(imports, name, fieldWriteCode);
+        } else if (fieldDecl.isProtected()) {
+            var fieldWriteInMethodCode = "\tpublic void aNewMethodToWriteProtectedField() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), fieldWriteInMethodCode);
+
+            writeCodeInFile(name, code);
+        }
     }
 
     public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
