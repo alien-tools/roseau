@@ -7,6 +7,10 @@ public class PublicClass {
 
     public PublicClass() {}
 
+    protected PublicClass(char valChar) {
+        this.privateChar = valChar;
+    }
+
     private PublicClass(int val) {
         this.publicInt = val;
     }

@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.combinatorial.client;
 
 import com.github.maracas.roseau.api.model.*;
+import org.xmlet.htmlapifaster.S;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -14,17 +15,24 @@ public class ClientWriter {
 
     private static final String FILE_TEMPLATE = """
             package generated.clients;
-
-            %s
-            """;
+            
+            %s""";
 
     private static final String MAIN_CLASS_TEMPLATE = """
             %s
-
+            
             public class %s {
                 public static void main(String[] args) {
                     %s
                 }
+            }
+            """;
+
+    private static final String CLASS_INHERITANCE_TEMPLATE = """
+            %s
+            
+            class %s extends %s {
+            %s
             }
             """;
 
@@ -48,13 +56,7 @@ public class ClientWriter {
         var name = "%sClassInheritance".formatted(classDecl.getPrettyQualifiedName());
         var methodsImplemented = implementNecessaryMethods(classDecl);
 
-        var code = """
-        %s
-        
-        class %s extends %s {
-        %s
-        }
-        """.formatted(imports, name, classDecl.getSimpleName(), methodsImplemented);
+        var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), methodsImplemented);
 
         writeCodeInFile(name, code);
     }
@@ -62,11 +64,18 @@ public class ClientWriter {
     public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl originalClass) {
         var imports = getImportsForType(originalClass);
         var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
-
         var params = getParamsForExecutableInvocation(constructorDecl);
-        var code = "new %s(%s);".formatted(originalClass.getSimpleName(), params);
 
-        writeCodeInMain(imports, name, code);
+        if (constructorDecl.isPublic()) {
+            var code = "new %s(%s);".formatted(originalClass.getSimpleName(), params);
+
+            writeCodeInMain(imports, name, code);
+        } else if (constructorDecl.isProtected()) {
+            var constructorSuper = "\t%s() {\n\t\tsuper(%s);\n\t}".formatted(name, params);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), constructorSuper);
+
+            writeCodeInFile(name, code);
+        }
     }
 
     public void writeFieldRead(FieldDecl fieldDecl, ClassDecl originalClass) {
@@ -95,10 +104,10 @@ public class ClientWriter {
         var name = "%sInterfaceExtension".formatted(interfaceDecl.getPrettyQualifiedName());
 
         var code = """
-        %s
-        
-        interface %s extends %s {}
-        """.formatted(imports, name, interfaceDecl.getSimpleName());
+                %s
+                
+                interface %s extends %s {}
+                """.formatted(imports, name, interfaceDecl.getSimpleName());
 
         writeCodeInFile(name, code);
     }
@@ -109,12 +118,12 @@ public class ClientWriter {
         var methodsImplemented = implementNecessaryMethods(interfaceDecl);
 
         var code = """
-        %s
-        
-        class %s implements %s {
-        %s
-        }
-        """.formatted(imports, name, interfaceDecl.getSimpleName(), methodsImplemented);
+                %s
+                
+                class %s implements %s {
+                %s
+                }
+                """.formatted(imports, name, interfaceDecl.getSimpleName(), methodsImplemented);
 
         writeCodeInFile(name, code);
     }
@@ -169,8 +178,8 @@ public class ClientWriter {
         var methodSignature = methodDecl.toString().replace("abstract ", "");
 
         return methodReturnTypeName.equals("void")
-            ? methodSignature + " {}"
-            : "%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
+                ? methodSignature + " {}"
+                : "%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
     }
 
     private String getDefaultValueForType(String typeName) {
