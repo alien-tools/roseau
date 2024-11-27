@@ -1,6 +1,6 @@
 package generated.api.v1;
 
-public record OneRecord(int oneField, char twoField) {
+public record PublicRecord(int oneField, char twoField) {
     public static int onePublicStaticField;
     static int oneDefaultStaticField;
 

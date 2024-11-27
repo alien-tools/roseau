@@ -75,7 +75,11 @@ public class ClientGenerator implements APIAlgebra<Generate> {
 	@Override
 	public Generate fieldDecl(FieldDecl it) {
 		return () -> {
-//			System.out.println("In fieldDecl: " + it.toString());
+			writer.writeFieldRead(it);
+
+			if (!it.isFinal()) {
+				writer.writeFieldWrite(it);
+			}
 		};
 	}
 

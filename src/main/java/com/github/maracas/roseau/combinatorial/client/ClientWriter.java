@@ -6,6 +6,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
+import java.util.Comparator;
 import java.util.stream.Collectors;
 
 public class ClientWriter {
@@ -59,14 +60,41 @@ public class ClientWriter {
     }
 
     public void writeConstructorInvocation(ConstructorDecl constructorDecl) {
-        if (constructorDecl.getContainingType().getResolvedApiType().isEmpty()) return;
+        var classOrigin = getOriginClassFromTypeMember(constructorDecl);
+        if (classOrigin == null) return;
 
-        var classOrigin = constructorDecl.getContainingType().getResolvedApiType().get();
         var imports = getImportsForType(classOrigin);
         var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
 
         var params = getParamsForExecutableInvocation(constructorDecl);
         var code = "new %s(%s);".formatted(classOrigin.getSimpleName(), params);
+
+        writeCodeInMain(imports, name, code);
+    }
+
+    public void writeFieldRead(FieldDecl fieldDecl) {
+        var classOrigin = getOriginClassFromTypeMember(fieldDecl);
+        if (classOrigin == null) return;
+
+        var imports = getImportsForType(classOrigin);
+        var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
+
+        var caller = getClassAccessForTypeMember(classOrigin, fieldDecl);
+        var code = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
+
+        writeCodeInMain(imports, name, code);
+    }
+
+    public void writeFieldWrite(FieldDecl fieldDecl) {
+        var classOrigin = getOriginClassFromTypeMember(fieldDecl);
+        if (classOrigin == null) return;
+
+        var imports = getImportsForType(classOrigin);
+        var name = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
+
+        var caller = getClassAccessForTypeMember(classOrigin, fieldDecl);
+        var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
+        var code = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
         writeCodeInMain(imports, name, code);
     }
@@ -111,6 +139,30 @@ public class ClientWriter {
 
     private String getImportsForType(TypeDecl typeDecl) {
         return "import %s;".formatted(typeDecl.getQualifiedName());
+    }
+
+    private ClassDecl getOriginClassFromTypeMember(TypeMemberDecl typeMemberDecl) {
+        if (typeMemberDecl.getContainingType().getResolvedApiType().isEmpty()) return null;
+
+        var resolvedType = typeMemberDecl.getContainingType().getResolvedApiType().get();
+        return resolvedType instanceof ClassDecl ? (ClassDecl) resolvedType : null;
+    }
+
+    private String getClassAccessForTypeMember(ClassDecl classDecl, TypeMemberDecl typeMemberDecl) {
+        if (typeMemberDecl.isStatic()) {
+            return classDecl.getSimpleName();
+        } else {
+            var sortedConstructors = classDecl.getConstructors().stream()
+                    .sorted(Comparator.comparingInt(c -> c.getParameters().size()))
+                    .toList();
+
+            if (sortedConstructors.isEmpty()) {
+                return "new %s()".formatted(classDecl.getSimpleName());
+            }
+
+            var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
+            return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
+        }
     }
 
     private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
