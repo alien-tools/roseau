@@ -142,6 +142,37 @@ public class ClientWriter {
         writeCodeInFile(name, code);
     }
 
+    public void writeMethodInvocation(MethodDecl methodDecl, ClassDecl originalClass) {
+        var imports = getImportsForType(originalClass);
+        var name = "%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName());
+        var caller = getClassAccessForTypeMember(originalClass, methodDecl);
+        var params = getParamsForExecutableInvocation(methodDecl);
+
+        if (methodDecl.isPublic()) {
+            var methodInvocationCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
+
+            writeCodeInMain(imports, name, methodInvocationCode);
+        } else if (methodDecl.isProtected()) {
+            var methodInvocationInMethodCode = "\tpublic void aNewMethodToInvokeProtectedMethod() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), methodInvocationInMethodCode);
+
+            writeCodeInFile(name, code);
+        }
+    }
+
+    public void writeMethodOverride(MethodDecl methodDecl, ClassDecl originalClass) {
+        var imports = getImportsForType(originalClass);
+        var name = "%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName());
+
+        var methodImplemented = methodDecl.isStatic()
+                ? implementMethod(methodDecl)
+                : overrideMethod(methodDecl);
+
+        var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), methodImplemented);
+
+        writeCodeInFile(name, code);
+    }
+
     public void writeTypeReference(TypeDecl typeDecl) {
         var imports = getImportsForType(typeDecl);
         var name = "%sTypeReference".formatted(typeDecl.getPrettyQualifiedName());
@@ -184,7 +215,7 @@ public class ClientWriter {
     }
 
     private String overrideMethod(MethodDecl methodDecl) {
-        return "\t@Override\n\t" + implementMethod(methodDecl);
+        return "\t@Override\n" + implementMethod(methodDecl);
     }
 
     private String implementMethod(MethodDecl methodDecl) {
@@ -192,8 +223,8 @@ public class ClientWriter {
         var methodSignature = methodDecl.toString().replace("abstract ", "");
 
         return methodReturnTypeName.equals("void")
-                ? methodSignature + " {}"
-                : "%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
+                ? "\t" + methodSignature + " {}"
+                : "\t%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
     }
 
     private String getDefaultValueForType(String typeName) {

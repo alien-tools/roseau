@@ -21,4 +21,10 @@ public class PublicClass {
     }
 
     public void publicVoidMethod() {}
+    protected void protectedVoidMethod() {}
+    private void privateVoidMethod() {}
+
+    public static void publicStaticVoidMethod() {}
+    protected static void protectedStaticVoidMethod() {}
+    private static void privateStaticVoidMethod() {}
 }

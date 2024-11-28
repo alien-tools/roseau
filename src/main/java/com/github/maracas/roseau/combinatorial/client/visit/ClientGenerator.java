@@ -23,6 +23,7 @@ public class ClientGenerator extends AbstractAPIVisitor {
 				case InterfaceDecl i: generateInterfaceClients(i); break;
 				case ConstructorDecl c: generateConstructorClients(c); break;
 				case FieldDecl f: generateFieldClients(f); break;
+				case MethodDecl m: generateMethodClients(m); break;
 				default: break;
 			}
 		}
@@ -66,6 +67,17 @@ public class ClientGenerator extends AbstractAPIVisitor {
 		if (!it.isFinal()) {
 			writer.writeFieldWrite(it, originalClass);
 		}
+	}
+
+	private void generateMethodClients(MethodDecl it) {
+		var originalClassOpt = getOriginClassFromTypeMember(it);
+		if (originalClassOpt.isEmpty()) return;
+
+		var originalClass = originalClassOpt.get();
+		if (originalClass.isEffectivelyAbstract() && !it.isStatic()) return;
+
+		writer.writeMethodInvocation(it, originalClass);
+		writer.writeMethodOverride(it, originalClass);
 	}
 
 	private Optional<ClassDecl> getOriginClassFromTypeMember(TypeMemberDecl typeMemberDecl) {
