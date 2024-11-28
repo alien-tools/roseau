@@ -146,11 +146,17 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
 			it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", ")),
 			!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")) : "",
-			hasBody(it) ? "{ return null; }" : ";"
+			hasBody(it) ? "{ return %s; }".formatted(defaultValue(it.getType())) : ";"
 		);
 	}
 
-	private boolean hasBody(MethodDecl it) {
+	String defaultValue(ITypeReference type) {
+		if (type.getQualifiedName().equals("int"))
+			return "0";
+		return "null";
+	}
+
+	boolean hasBody(MethodDecl it) {
 		if (it.getContainingType().getResolvedApiType().get().isInterface())
 			return it.isDefault() || it.isStatic() || it.getVisibility() == AccessModifier.PRIVATE;
 		return !it.isAbstract() && !it.isNative();
@@ -176,7 +182,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 	@Override
 	public Print parameterDecl(ParameterDecl it) {
-		return null;
+		return () -> "%s %s".formatted(it.type().getQualifiedName(), it.name());
 	}
 
 	@Override
