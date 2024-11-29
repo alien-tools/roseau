@@ -38,7 +38,8 @@ public class PublicClass {
     public void publicVoidMethodWithObjectParam(java.lang.Object obj) {}
     public String[] publicStringArrayMethod(String[] array) { return null; }
     public void publicListStringMethod(List<String> test) {}
-    public <T> void publicGenericMethod(T test) {}
+    public <T> void publicGenericMethod(T test, int val) {}
+    public <T extends PublicClassImplementsPublicInterface> void publicGenericMethod(T test, int val) {}
 
     public void publicVoidMethodSurcharged() {}
     public void publicVoidMethodSurcharged(int i) {}

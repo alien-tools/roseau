@@ -104,8 +104,13 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		var parameters = getParameters().stream()
 				.map(p -> StringUtils.capitalizeFirstLetter(p.type().getPrettyQualifiedName()))
 				.collect(Collectors.joining());
+		var formalTypeParameters = getFormalTypeParameters().stream()
+				.map(fP -> fP.name() + fP.bounds().stream()
+						.map(ITypeReference::getPrettyQualifiedName)
+						.collect(Collectors.joining()))
+				.collect(Collectors.joining());
 
-		return name + parameters;
+		return name + parameters + formalTypeParameters;
 	}
 
 	@Override
