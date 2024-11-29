@@ -5,6 +5,7 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.utils.StringUtils;
 
 import java.util.Collections;
 import java.util.List;
@@ -47,6 +48,11 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	@Override
 	public String getQualifiedName() {
 		return qualifiedName;
+	}
+
+	@Override
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
 	public List<ITypeReference> getTypeArguments() {

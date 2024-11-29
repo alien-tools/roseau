@@ -2,6 +2,7 @@ package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.utils.StringUtils;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -101,7 +102,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	public String getPrettyQualifiedName() {
 		var name = super.getPrettyQualifiedName();
 		var parameters = getParameters().stream()
-				.map(p -> ExecutableDecl.capitalizeFirstLetter(p.type().getQualifiedName()))
+				.map(p -> StringUtils.capitalizeFirstLetter(p.type().getPrettyQualifiedName()))
 				.collect(Collectors.joining());
 
 		return name + parameters;

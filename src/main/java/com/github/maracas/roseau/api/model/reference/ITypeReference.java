@@ -6,6 +6,7 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 public sealed interface ITypeReference
 	permits TypeReference, ArrayTypeReference, PrimitiveTypeReference, TypeParameterReference, WildcardTypeReference {
 	String getQualifiedName();
+	String getPrettyQualifiedName();
 
 	boolean isSubtypeOf(ITypeReference other);
 }

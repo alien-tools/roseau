@@ -1,9 +1,9 @@
 package com.github.maracas.roseau.api.model;
 
+import com.github.maracas.roseau.api.utils.StringUtils;
 import com.google.common.collect.Sets;
 
 import java.util.*;
-import java.util.stream.Collectors;
 
 /**
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}.
@@ -55,9 +55,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	public String getPrettyQualifiedName() {
-		return Arrays.stream(qualifiedName.split("\\."))
-				.map(Symbol::capitalizeFirstLetter)
-				.collect(Collectors.joining(""));
+		return StringUtils.splitSpecialCharsAndCapitalize(qualifiedName);
 	}
 
 	public AccessModifier getVisibility() {
@@ -100,9 +98,5 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	@Override
 	public int hashCode() {
 		return Objects.hash(qualifiedName, visibility, modifiers, annotations, location);
-	}
-
-	protected static String capitalizeFirstLetter(String s) {
-		return s.substring(0, 1).toUpperCase() + s.substring(1);
 	}
 }

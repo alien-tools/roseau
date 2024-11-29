@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.api.model.reference;
 
+import com.github.maracas.roseau.api.utils.StringUtils;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -18,6 +20,11 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 	@Override
 	public String getQualifiedName() {
 		return toString();
+	}
+
+	@Override
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
 	@Override
