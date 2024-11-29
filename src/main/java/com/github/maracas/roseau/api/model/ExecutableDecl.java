@@ -102,7 +102,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	public String getPrettyQualifiedName() {
 		var name = super.getPrettyQualifiedName();
 		var parameters = getParameters().stream()
-				.map(p -> StringUtils.capitalizeFirstLetter(p.type().getPrettyQualifiedName()))
+				.map(p -> StringUtils.capitalizeFirstLetter(p.type().getPrettyQualifiedName() + (p.isVarargs() ? "Varargs" : "")))
 				.collect(Collectors.joining());
 		var formalTypeParameters = getFormalTypeParameters().stream()
 				.map(fP -> fP.name() + fP.bounds().stream()

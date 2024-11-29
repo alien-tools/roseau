@@ -40,6 +40,11 @@ public class PublicClass {
     public void publicListStringMethod(List<String> test) {}
     public <T> void publicGenericMethod(T test, int val) {}
     public <T extends PublicClassImplementsPublicInterface> void publicGenericMethod(T test, int val) {}
+    public void publicVoidMethodWithVarArgs(String... args) {}
+    public void publicVoidMethodWithVarArgs(String args) {}
+    public void publicVoidMethodWithVarArgsAndInt(int i, String... args) {}
+    public void publicVoidMethodWithWildcard(List<?> list) {}
+    public void publicVoidMethodWithWildcardExtend(List<? extends List<?>> list) {}
 
     public void publicVoidMethodSurcharged() {}
     public void publicVoidMethodSurcharged(int i) {}
