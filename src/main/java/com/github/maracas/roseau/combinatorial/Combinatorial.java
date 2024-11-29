@@ -14,7 +14,6 @@ import com.github.maracas.roseau.api.model.Modifier;
 import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -92,7 +91,7 @@ public class Combinatorial {
 
 	Set<AccessModifier> methodVisibilities(Builder container) {
 		return switch (container) {
-			case InterfaceBuilder i -> Set.of(PUBLIC, PACKAGE_PRIVATE, PRIVATE);
+			case InterfaceBuilder i -> Set.of(PUBLIC, /*PACKAGE_PRIVATE,*/ PRIVATE);
 			default -> Set.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
 		};
 	}
@@ -126,6 +125,123 @@ public class Combinatorial {
 	void createTypes() {
 		createInterfaces();
 		createClasses();
+	}
+
+	void createHierarchies() {
+		List.copyOf(typeStore.values()).forEach(t -> {
+			if (t instanceof ClassBuilder c)
+				createSubtypes(c);
+			if (t instanceof InterfaceBuilder i)
+				createSubtypes(i);
+		});
+	}
+
+	void createSubtypes(InterfaceBuilder intf) {
+		var api = getAPI();
+		var intfDecl = (InterfaceDecl) api.findType(intf.qualifiedName).get();
+		createOverridingInterface(intfDecl);
+		createImplementingClass(intfDecl);
+	}
+
+	void createSubtypes(ClassBuilder cls) {
+		var api = getAPI();
+		var clsDecl = (ClassDecl) api.findType(cls.qualifiedName).get();
+		if (!clsDecl.getModifiers().contains(FINAL)) // isEffectivelyFinal always true cause there are no constructors
+			createSubclass(clsDecl);
+	}
+
+	void createOverridingInterface(InterfaceDecl intf) {
+		topLevelVisibilities.forEach(visibility ->
+			interfaceModifiers.forEach(modifiers -> {
+				var builder = new InterfaceBuilder();
+				builder.qualifiedName = "I" + ++i;
+				builder.visibility = visibility;
+				builder.modifiers = toEnumSet(modifiers, Modifier.class);
+				builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+				intf.getAllMethods().forEach(m -> {
+					// @Override ann?
+					var mBuilder = new MethodBuilder();
+					mBuilder.qualifiedName = builder.qualifiedName + "." + m.getSimpleName();
+					mBuilder.visibility = m.getVisibility();
+					mBuilder.modifiers = toEnumSet(m.getModifiers(), Modifier.class);
+					if (!builder.make().isAbstract())
+						mBuilder.modifiers.remove(ABSTRACT);
+					mBuilder.type = m.getType();
+					mBuilder.containingType = new TypeReference<>(builder.qualifiedName);
+					mBuilder.thrownExceptions = m.getThrownExceptions();
+					m.getParameters().forEach(p -> {
+						mBuilder.parameters.add(p);
+					});
+					builder.methods.add(mBuilder.make());
+				});
+				// Field shadowing?
+				store(builder);
+			})
+		);
+	}
+
+	void createImplementingClass(InterfaceDecl intf) {
+		topLevelVisibilities.forEach(visibility ->
+			classModifiers.forEach(modifiers -> {
+				var builder = new ClassBuilder();
+				builder.qualifiedName = "C" + ++i;
+				builder.visibility = visibility;
+				builder.modifiers = toEnumSet(modifiers, Modifier.class);
+				builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+				intf.getAllMethods().forEach(m -> {
+					// @Override ann?
+					var mBuilder = new MethodBuilder();
+					mBuilder.qualifiedName = builder.qualifiedName + "." + m.getSimpleName();
+					mBuilder.visibility = m.getVisibility();
+					mBuilder.modifiers = toEnumSet(m.getModifiers(), Modifier.class);
+					if (!builder.make().isAbstract())
+						mBuilder.modifiers.remove(ABSTRACT);
+					mBuilder.modifiers.remove(DEFAULT);
+					mBuilder.type = m.getType();
+					mBuilder.containingType = new TypeReference<>(builder.qualifiedName);
+					mBuilder.thrownExceptions = m.getThrownExceptions();
+					m.getParameters().forEach(p -> {
+						mBuilder.parameters.add(p);
+					});
+					builder.methods.add(mBuilder.make());
+				});
+				// Field shadowing?
+				store(builder);
+			})
+		);
+	}
+
+	void createSubclass(ClassDecl cls) {
+		topLevelVisibilities.forEach(visibility ->
+			classModifiers.forEach(modifiers -> {
+				var builder = new ClassBuilder();
+				builder.qualifiedName = "C" + ++i;
+				builder.visibility = visibility;
+				builder.modifiers = toEnumSet(modifiers, Modifier.class);
+				builder.superClass = new TypeReference<>(cls.getQualifiedName());
+				cls.getAllMethods()
+					.filter(m -> !m.isFinal())
+					.forEach(m -> {
+					// @Override ann?
+						var mBuilder = new MethodBuilder();
+						mBuilder.qualifiedName = builder.qualifiedName + "." + m.getSimpleName();
+						mBuilder.visibility = m.getVisibility();
+						mBuilder.modifiers = toEnumSet(m.getModifiers(), Modifier.class);
+						if (!builder.make().isAbstract())
+							mBuilder.modifiers.remove(ABSTRACT);
+						mBuilder.modifiers.remove(DEFAULT);
+						mBuilder.type = m.getType();
+						mBuilder.containingType = new TypeReference<>(builder.qualifiedName);
+						mBuilder.thrownExceptions = m.getThrownExceptions();
+						m.getParameters().forEach(p -> {
+							mBuilder.parameters.add(p);
+						});
+						builder.methods.add(mBuilder.make());
+					});
+				// Field shadowing?
+				store(builder);
+			})
+		);
 	}
 
 	void createInterfaces() {
@@ -181,6 +297,7 @@ public class Combinatorial {
 	}
 
 	void weaveMethods() {
+		// TODO: overloading
 		typeStore.forEach((fqn, t) ->
 			methodVisibilities(t).stream().forEach(visibility ->
 				methodModifiers(t).stream().forEach(modifiers ->
@@ -250,6 +367,7 @@ public class Combinatorial {
 		comb.createTypes();
 		comb.weaveFields();
 		comb.weaveMethods();
+		comb.createHierarchies();
 		var api = comb.getAPI();
 		System.out.println("api="+api);
 		comb.generateCode(api);
