@@ -1,4 +1,4 @@
-package generated.api.v1;
+package sample.api.v1;
 
 public record PublicRecord(int oneField, char twoField) {
     public static int onePublicStaticField;
