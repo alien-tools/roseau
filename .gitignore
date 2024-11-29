@@ -36,4 +36,6 @@ build/
 
 ### Output Files ###
 generated/
-!generated/api/v1/
+
+sample/
+!sample/api/v1/

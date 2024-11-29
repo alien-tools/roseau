@@ -1,8 +1,9 @@
 package com.github.maracas.roseau.combinatorial.client;
 
 import com.github.maracas.roseau.api.model.*;
-import org.xmlet.htmlapifaster.S;
+import org.apache.commons.io.FileUtils;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
@@ -42,9 +43,18 @@ public class ClientWriter {
 
     public boolean createOutputDir() {
         try {
-            if (outputDir.toFile().exists()) return true;
+            File outputDirFile = outputDir.toFile();
+            if (outputDirFile.exists()) {
+                try {
+                    FileUtils.cleanDirectory(outputDirFile);
+                    return true;
+                } catch (IOException e) {
+                    System.err.println("Error cleaning output directory: " + e.getMessage());
+                    return false;
+                }
+            }
 
-            return outputDir.toFile().mkdirs();
+            return outputDirFile.mkdirs();
         } catch (SecurityException e) {
             System.err.println("Error creating output directory: " + e.getMessage());
             return false;
