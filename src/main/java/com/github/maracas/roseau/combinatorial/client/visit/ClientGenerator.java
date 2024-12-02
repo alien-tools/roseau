@@ -64,9 +64,9 @@ public class ClientGenerator extends AbstractAPIVisitor {
 
 		writer.writeFieldRead(it, originalClass);
 
-		if (!it.isFinal()) {
-			writer.writeFieldWrite(it, originalClass);
-		}
+		if (it.isFinal()) return;
+
+		writer.writeFieldWrite(it, originalClass);
 	}
 
 	private void generateMethodClients(MethodDecl it) {
@@ -77,6 +77,9 @@ public class ClientGenerator extends AbstractAPIVisitor {
 		if (originalClass.isEffectivelyAbstract() && !it.isStatic()) return;
 
 		writer.writeMethodInvocation(it, originalClass);
+
+		if (originalClass.isEffectivelyFinal()) return;
+
 		writer.writeMethodOverride(it, originalClass);
 	}
 
