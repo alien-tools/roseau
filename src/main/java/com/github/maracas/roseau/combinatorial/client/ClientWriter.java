@@ -73,7 +73,17 @@ public class ClientWriter {
     }
 
     public void writeExceptionThrow(ClassDecl classDecl) {
+        var imports = getImportsForType(classDecl);
+        var name = "%sExceptionThrow".formatted(classDecl.getPrettyQualifiedName());
 
+        var constructor = generateEasiestConstructorInvocationForClass(classDecl);
+        var code = "throw %s;".formatted(constructor);
+
+        if (classDecl.isCheckedException()) {
+            writeCodeInMain(imports, name, code, classDecl.getSimpleName());
+        } else if (classDecl.isUncheckedException()) {
+            writeCodeInMain(imports, name, code);
+        }
     }
 
     public void writeExceptionThrows(ClassDecl classDecl) {
@@ -212,17 +222,9 @@ public class ClientWriter {
     }
 
     private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
-        if (typeDecl.isClass() && !typeMemberDecl.isStatic()) {
-            var classDecl = (ClassDecl) typeDecl;
-            var sortedConstructors = getSortedConstructors(classDecl);
-
-            if (sortedConstructors.isEmpty()) return "new %s()".formatted(classDecl.getSimpleName());
-
-            var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
-            return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
-        }
-
-        return typeDecl.getSimpleName();
+        return typeDecl.isClass() && !typeMemberDecl.isStatic()
+                ? generateEasiestConstructorInvocationForClass((ClassDecl) typeDecl)
+                : typeDecl.getSimpleName();
     }
 
     private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
@@ -240,6 +242,15 @@ public class ClientWriter {
         return params.isBlank()
                 ? ""
                 : "\t%s() {\n\t\tsuper(%s);\n\t}\n".formatted(className, params);
+    }
+
+    private String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
+        var sortedConstructors = getSortedConstructors(classDecl);
+
+        if (sortedConstructors.isEmpty()) return "new %s()".formatted(classDecl.getSimpleName());
+
+        var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
+        return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
     }
 
     private String implementNecessaryMethods(TypeDecl typeDecl) {
