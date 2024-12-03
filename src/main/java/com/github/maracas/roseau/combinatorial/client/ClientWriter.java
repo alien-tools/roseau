@@ -69,7 +69,13 @@ public class ClientWriter {
     }
 
     public void writeExceptionCatch(ClassDecl classDecl) {
+        var imports = getImportsForType(classDecl);
+        var name = "%sExceptionCatch".formatted(classDecl.getPrettyQualifiedName());
 
+        var constructor = generateEasiestConstructorInvocationForClass(classDecl);
+        var code = "try {\n\t\t\tthrow %s;\n\t\t} catch (%s e) {}".formatted(constructor, classDecl.getSimpleName());
+
+        writeCodeInMain(imports, name, code);
     }
 
     public void writeExceptionThrow(ClassDecl classDecl) {
