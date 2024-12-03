@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Paths;
 import java.nio.file.Path;
 import java.util.Comparator;
+import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClientWriter {
@@ -72,9 +73,11 @@ public class ClientWriter {
     public void writeClassInheritance(ClassDecl classDecl) {
         var imports = getImportsForType(classDecl);
         var name = "%sClassInheritance".formatted(classDecl.getPrettyQualifiedName());
+        var constructorsImplemented = implementNecessaryConstructors(classDecl, name);
         var methodsImplemented = implementNecessaryMethods(classDecl);
+        var classBody = constructorsImplemented + "\n" + methodsImplemented;
 
-        var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), methodsImplemented);
+        var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), classBody);
 
         writeCodeInFile(name, code);
     }
@@ -225,13 +228,9 @@ public class ClientWriter {
     private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
         if (typeDecl.isClass() && !typeMemberDecl.isStatic()) {
             var classDecl = (ClassDecl) typeDecl;
-            var sortedConstructors = classDecl.getConstructors().stream()
-                    .sorted(Comparator.comparingInt(c -> c.getParameters().size()))
-                    .toList();
+            var sortedConstructors = getSortedConstructors(classDecl);
 
-            if (sortedConstructors.isEmpty()) {
-                return "new %s()".formatted(classDecl.getSimpleName());
-            }
+            if (sortedConstructors.isEmpty()) return "new %s()".formatted(classDecl.getSimpleName());
 
             var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
             return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
@@ -244,6 +243,17 @@ public class ClientWriter {
         return executableDecl.getParameters().stream()
                 .map(p -> getDefaultValueForType(p.type().getQualifiedName()))
                 .collect(Collectors.joining(", "));
+    }
+
+    private String implementNecessaryConstructors(ClassDecl classDecl, String className) {
+        var constructors = getSortedConstructors(classDecl);
+
+        if (constructors.isEmpty()) return "";
+
+        var params = getParamsForExecutableInvocation(constructors.getFirst());
+        return params.isBlank()
+                ? ""
+                : "\t%s() {\n\t\tsuper(%s);\n\t}".formatted(className, params);
     }
 
     private String implementNecessaryMethods(TypeDecl typeDecl) {
@@ -273,6 +283,12 @@ public class ClientWriter {
             case "boolean" -> "false";
             default -> "null";
         };
+    }
+
+    private List<ConstructorDecl> getSortedConstructors(ClassDecl classDecl) {
+        return classDecl.getConstructors().stream()
+                .sorted(Comparator.comparingInt(c -> c.getParameters().size()))
+                .toList();
     }
 
     private void writeCodeInMain(String imports, String clientName, String code) {
