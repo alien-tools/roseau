@@ -15,37 +15,6 @@ import java.util.stream.Collectors;
 public class ClientWriter {
     private final Path outputDir;
 
-    private static final String FILE_TEMPLATE = """
-            package generated.clients;
-            
-            %s""";
-
-    private static final String MAIN_CLASS_TEMPLATE = """
-            %s
-            
-            public class %s {
-                public static void main(String[] args) {
-                    %s
-                }
-            }
-            """;
-
-    private static final String CLASS_INHERITANCE_TEMPLATE = """
-            %s
-            
-            class %s extends %s {
-            %s
-            }
-            """;
-
-    private static final String ABSTRACT_CLASS_INHERITANCE_TEMPLATE = """
-            %s
-            
-            abstract class %s extends %s {
-            %s
-            }
-            """;
-
     public ClientWriter(Path outputDir) {
         this.outputDir = outputDir;
     }
@@ -77,7 +46,7 @@ public class ClientWriter {
         var methodsImplemented = implementNecessaryMethods(classDecl);
         var classBody = constructorRequired + "\n" + methodsImplemented;
 
-        var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), classBody);
+        var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), classBody);
 
         writeCodeInFile(name, code);
     }
@@ -93,10 +62,25 @@ public class ClientWriter {
             writeCodeInMain(imports, name, code);
         } else if (constructorDecl.isProtected()) {
             var constructorSuper = "\t%s() {\n\t\tsuper(%s);\n\t}".formatted(name, params);
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), constructorSuper);
+            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), constructorSuper);
 
             writeCodeInFile(name, code);
         }
+    }
+
+    public void writeExceptionCatch(ClassDecl classDecl) {
+
+    }
+
+    public void writeExceptionThrow(ClassDecl classDecl) {
+
+    }
+
+    public void writeExceptionThrows(ClassDecl classDecl) {
+        var imports = getImportsForType(classDecl);
+        var name = "%sExceptionThrows".formatted(classDecl.getPrettyQualifiedName());
+
+        writeCodeInMain(imports, name, "", classDecl.getSimpleName());
     }
 
     public void writeFieldRead(FieldDecl fieldDecl, TypeDecl containingType) {
@@ -105,7 +89,7 @@ public class ClientWriter {
 
         if (containingType.isClass() && containingType.isAbstract()) {
             var fieldReadInAbstractClass = "\tpublic void aNewMethodToReadFieldInAbstractClass() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
-            var code = ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInAbstractClass);
+            var code = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInAbstractClass);
 
             writeCodeInFile(name, code);
         } else if (fieldDecl.isPublic()) {
@@ -115,7 +99,7 @@ public class ClientWriter {
             writeCodeInMain(imports, name, fieldReadCode);
         } else if (fieldDecl.isProtected()) {
             var fieldReadInMethodCode = "\tpublic void aNewMethodToReadProtectedField() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInMethodCode);
+            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInMethodCode);
 
             writeCodeInFile(name, code);
         }
@@ -128,7 +112,7 @@ public class ClientWriter {
 
         if (containingType.isClass() && containingType.isAbstract()) {
             var fieldWriteInAbstractClass = "\tpublic void aNewMethodToWriteFieldInAbstractClass() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
-            var code = ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInAbstractClass);
+            var code = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInAbstractClass);
 
             writeCodeInFile(name, code);
         } else if (fieldDecl.isPublic()) {
@@ -138,7 +122,7 @@ public class ClientWriter {
             writeCodeInMain(imports, name, fieldWriteCode);
         } else if (fieldDecl.isProtected()) {
             var fieldWriteInMethodCode = "\tpublic void aNewMethodToWriteProtectedField() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInMethodCode);
+            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInMethodCode);
 
             writeCodeInFile(name, code);
         }
@@ -182,7 +166,7 @@ public class ClientWriter {
 
         if (methodDecl.isAbstract() || containingClass.isAbstract()) {
             var methodInvocationInAbstractClass = "\tpublic void aNewMethodToInvokeMethodInAbstractClass() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
-            var code = ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInAbstractClass);
+            var code = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInAbstractClass);
 
             writeCodeInFile(name, code);
         } else if (methodDecl.isPublic()) {
@@ -191,7 +175,7 @@ public class ClientWriter {
             writeCodeInMain(imports, name, methodInvocationCode);
         } else if (methodDecl.isProtected()) {
             var methodInvocationInMethodCode = "\tpublic void aNewMethodToInvokeProtectedMethod() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInMethodCode);
+            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInMethodCode);
 
             writeCodeInFile(name, code);
         }
@@ -208,8 +192,8 @@ public class ClientWriter {
         var classBody = constructorRequired + "\n" + methodImplemented;
 
         var code = methodDecl.isAbstract() || containingClass.isAbstract()
-                ? ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody)
-                : CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody);
+                ? ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody)
+                : ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody);
 
         writeCodeInFile(name, code);
     }
@@ -294,14 +278,25 @@ public class ClientWriter {
     }
 
     private void writeCodeInMain(String imports, String clientName, String code) {
-        var mainClassCode = MAIN_CLASS_TEMPLATE.formatted(imports, clientName, String.join("\n", code));
+        var mainClassCode = ClientTemplates.MAIN_CLASS_TEMPLATE.formatted(imports, clientName, code);
+
+        writeCodeInFile(clientName, mainClassCode);
+    }
+
+    private void writeCodeInMain(String imports, String clientName, String code, String exceptions) {
+        if (exceptions.isBlank()) {
+            writeCodeInMain(imports, clientName, code);
+            return;
+        }
+
+        var mainClassCode = ClientTemplates.MAIN_THROWING_CLASS_TEMPLATE.formatted(imports, clientName, exceptions, code);
 
         writeCodeInFile(clientName, mainClassCode);
     }
 
     private void writeCodeInFile(String fileName, String code) {
         try {
-            var fullCode = FILE_TEMPLATE.formatted(code).getBytes();
+            var fullCode = ClientTemplates.FILE_TEMPLATE.formatted(code).getBytes();
 
             Files.write(Paths.get(outputDir.toString(), fileName + ".java"), fullCode);
         } catch (IOException e) {

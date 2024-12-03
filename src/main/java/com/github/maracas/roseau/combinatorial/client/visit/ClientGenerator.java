@@ -34,9 +34,22 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	private void generateClassClients(ClassDecl it) {
 		writer.writeTypeReference(it);
 
-		if (it.isEffectivelyFinal()) return;
+		if (!it.isEffectivelyFinal()) {
+			writer.writeClassInheritance(it);
+		}
 
-		writer.writeClassInheritance(it);
+		if (it.isCheckedException() || it.isUncheckedException()) {
+			generateExceptionClients(it);
+		}
+	}
+
+	private void generateExceptionClients(ClassDecl it) {
+		writer.writeExceptionCatch(it);
+		writer.writeExceptionThrows(it);
+
+		if (!it.isEffectivelyAbstract()) {
+			writer.writeExceptionThrow(it);
+		}
 	}
 
 	private void generateInterfaceClients(InterfaceDecl it) {
