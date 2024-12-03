@@ -256,6 +256,9 @@ public class ClientWriter {
     }
 
     private String getDefaultValueForType(String typeName) {
+        if (typeName.contains("[]")) return "[]";
+        if (typeName.contains("String")) return "\"\"";
+
         return switch (typeName) {
             case "int", "long", "float", "double", "byte", "short" -> "0";
             case "char" -> "'c'";
