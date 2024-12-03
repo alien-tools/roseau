@@ -52,6 +52,7 @@ public class PublicClass {
     public void publicVoidMethodWithVarArgsAndInt(int i, String... args) {}
     public void publicVoidMethodWithWildcard(List<?> list) {}
     public void publicVoidMethodWithWildcardExtend(List<? extends List<?>> list) {}
+    public PublicFinalClass publicPublicFinalClassMethodWithPublicFinalClassParam(PublicFinalClass cls) {}
 
     public void publicVoidMethodSurcharged() {}
     public void publicVoidMethodSurcharged(int i) {}

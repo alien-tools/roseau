@@ -70,11 +70,22 @@ public final class MethodDecl extends ExecutableDecl {
 
 	@Override
 	public String toString() {
-		return "%s %s %s %s(%s)".formatted(
+		return "%s %s %s %s %s(%s)".formatted(
 			visibility,
 			modifiers.stream().map(Object::toString).collect(Collectors.joining(" ")),
+			formatFormalTypeParameters(),
 			type,
 			getSimpleName(),
 			parameters.stream().map(Object::toString).collect(Collectors.joining(", ")));
+	}
+
+	private String formatFormalTypeParameters() {
+		if (formalTypeParameters.isEmpty()) return "";
+
+		return "<%s>".formatted(formalTypeParameters.stream().map(fTP -> {
+			if (fTP.bounds().isEmpty()) return fTP.name();
+
+			return fTP.name() + " extends " + fTP.bounds().getFirst().getQualifiedName();
+		}).collect(Collectors.joining(", ")));
 	}
 }

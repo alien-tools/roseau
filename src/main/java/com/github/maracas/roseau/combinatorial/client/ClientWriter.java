@@ -214,10 +214,9 @@ public class ClientWriter {
         return "import %s;".formatted(typeDecl.getQualifiedName());
     }
 
-    private String getClassAccessForTypeMember(ClassDecl classDecl, TypeMemberDecl typeMemberDecl) {
-        if (typeMemberDecl.isStatic()) {
-            return classDecl.getSimpleName();
-        } else {
+    private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
+        if (typeDecl.isClass() && !typeMemberDecl.isStatic()) {
+            var classDecl = (ClassDecl) typeDecl;
             var sortedConstructors = classDecl.getConstructors().stream()
                     .sorted(Comparator.comparingInt(c -> c.getParameters().size()))
                     .toList();
@@ -229,6 +228,8 @@ public class ClientWriter {
             var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
             return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
         }
+
+        return typeDecl.getSimpleName();
     }
 
     private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
