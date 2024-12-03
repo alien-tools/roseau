@@ -73,9 +73,9 @@ public class ClientWriter {
     public void writeClassInheritance(ClassDecl classDecl) {
         var imports = getImportsForType(classDecl);
         var name = "%sClassInheritance".formatted(classDecl.getPrettyQualifiedName());
-        var constructorsImplemented = implementNecessaryConstructors(classDecl, name);
+        var constructorRequired = implementRequiredConstructor(classDecl, name);
         var methodsImplemented = implementNecessaryMethods(classDecl);
-        var classBody = constructorsImplemented + "\n" + methodsImplemented;
+        var classBody = constructorRequired + "\n" + methodsImplemented;
 
         var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), classBody);
 
@@ -201,13 +201,15 @@ public class ClientWriter {
         var imports = getImportsForType(containingClass);
         var name = "%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName());
 
+        var constructorRequired = implementRequiredConstructor(containingClass, name);
         var methodImplemented = methodDecl.isStatic()
                 ? implementMethod(methodDecl)
                 : overrideMethod(methodDecl);
+        var classBody = constructorRequired + "\n" + methodImplemented;
 
         var code = methodDecl.isAbstract() || containingClass.isAbstract()
-                ? ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodImplemented)
-                : CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodImplemented);
+                ? ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody)
+                : CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody);
 
         writeCodeInFile(name, code);
     }
@@ -245,7 +247,7 @@ public class ClientWriter {
                 .collect(Collectors.joining(", "));
     }
 
-    private String implementNecessaryConstructors(ClassDecl classDecl, String className) {
+    private String implementRequiredConstructor(ClassDecl classDecl, String className) {
         var constructors = getSortedConstructors(classDecl);
 
         if (constructors.isEmpty()) return "";
@@ -253,7 +255,7 @@ public class ClientWriter {
         var params = getParamsForExecutableInvocation(constructors.getFirst());
         return params.isBlank()
                 ? ""
-                : "\t%s() {\n\t\tsuper(%s);\n\t}".formatted(className, params);
+                : "\t%s() {\n\t\tsuper(%s);\n\t}\n".formatted(className, params);
     }
 
     private String implementNecessaryMethods(TypeDecl typeDecl) {
