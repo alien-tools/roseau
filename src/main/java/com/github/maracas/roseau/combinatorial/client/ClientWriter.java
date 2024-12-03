@@ -71,18 +71,18 @@ public class ClientWriter {
         writeCodeInFile(name, code);
     }
 
-    public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl originalClass) {
-        var imports = getImportsForType(originalClass);
+    public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
+        var imports = getImportsForType(containingClass);
         var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
         var params = getParamsForExecutableInvocation(constructorDecl);
 
         if (constructorDecl.isPublic()) {
-            var code = "new %s(%s);".formatted(originalClass.getSimpleName(), params);
+            var code = "new %s(%s);".formatted(containingClass.getSimpleName(), params);
 
             writeCodeInMain(imports, name, code);
         } else if (constructorDecl.isProtected()) {
             var constructorSuper = "\t%s() {\n\t\tsuper(%s);\n\t}".formatted(name, params);
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), constructorSuper);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), constructorSuper);
 
             writeCodeInFile(name, code);
         }
