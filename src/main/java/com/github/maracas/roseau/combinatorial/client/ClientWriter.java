@@ -170,33 +170,41 @@ public class ClientWriter {
         writeCodeInFile(name, code);
     }
 
-    public void writeMethodInvocation(MethodDecl methodDecl, ClassDecl originalClass) {
-        var imports = getImportsForType(originalClass);
+    // TODO: Check if method throws an Exception
+    public void writeMethodInvocation(MethodDecl methodDecl, ClassDecl containingClass) {
+        var imports = getImportsForType(containingClass);
         var name = "%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName());
-        var caller = getClassAccessForTypeMember(originalClass, methodDecl);
+        var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
         var params = getParamsForExecutableInvocation(methodDecl);
 
-        if (methodDecl.isPublic()) {
+        if (methodDecl.isAbstract() || containingClass.isAbstract()) {
+            var methodInvocationInAbstractClass = "\tpublic void aNewMethodToInvokeMethodInAbstractClass() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
+            var code = ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInAbstractClass);
+
+            writeCodeInFile(name, code);
+        } else if (methodDecl.isPublic()) {
             var methodInvocationCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
 
             writeCodeInMain(imports, name, methodInvocationCode);
         } else if (methodDecl.isProtected()) {
             var methodInvocationInMethodCode = "\tpublic void aNewMethodToInvokeProtectedMethod() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), methodInvocationInMethodCode);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInMethodCode);
 
             writeCodeInFile(name, code);
         }
     }
 
-    public void writeMethodOverride(MethodDecl methodDecl, ClassDecl originalClass) {
-        var imports = getImportsForType(originalClass);
+    public void writeMethodOverride(MethodDecl methodDecl, ClassDecl containingClass) {
+        var imports = getImportsForType(containingClass);
         var name = "%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName());
 
         var methodImplemented = methodDecl.isStatic()
                 ? implementMethod(methodDecl)
                 : overrideMethod(methodDecl);
 
-        var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), methodImplemented);
+        var code = methodDecl.isAbstract() || containingClass.isAbstract()
+                ? ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodImplemented)
+                : CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodImplemented);
 
         writeCodeInFile(name, code);
     }
@@ -257,8 +265,7 @@ public class ClientWriter {
     }
 
     private String getDefaultValueForType(String typeName) {
-        if (typeName.contains("[]")) return "[]";
-        if (typeName.contains("String")) return "\"\"";
+        if (typeName.contains("String") && !typeName.contains("[]")) return "\"\"";
 
         return switch (typeName) {
             case "int", "long", "float", "double", "byte", "short" -> "0";

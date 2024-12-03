@@ -71,17 +71,18 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	}
 
 	private void generateMethodClients(MethodDecl it) {
-		var originalClassOpt = getOriginClassFromTypeMember(it);
-		if (originalClassOpt.isEmpty()) return;
+		var containingTypeOpt = getContainingTypeFromTypeMember(it);
+		if (containingTypeOpt.isEmpty()) return;
+		var containingType = containingTypeOpt.get();
 
-		var originalClass = originalClassOpt.get();
-		if (originalClass.isEffectivelyAbstract() && !it.isStatic()) return;
+		if (!containingType.isClass()) return;
+		var containingClass = (ClassDecl) containingType;
 
-		writer.writeMethodInvocation(it, originalClass);
+		writer.writeMethodInvocation(it, containingClass);
 
-		if (originalClass.isEffectivelyFinal()) return;
-
-		writer.writeMethodOverride(it, originalClass);
+		if (!it.isEffectivelyFinal()) { // Checks also if class is final
+			writer.writeMethodOverride(it, containingClass);
+		}
 	}
 
 	private Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
