@@ -48,8 +48,8 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	private void generateConstructorClients(ConstructorDecl it) {
 		var containingTypeOpt = getContainingTypeFromTypeMember(it);
 		if (containingTypeOpt.isEmpty()) return;
-
 		var containingType = containingTypeOpt.get();
+
 		if (!containingType.isClass()) return;
 		var containingClass = (ClassDecl) containingType;
 
@@ -59,17 +59,15 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	}
 
 	private void generateFieldClients(FieldDecl it) {
-		var originalClassOpt = getOriginClassFromTypeMember(it);
-		if (originalClassOpt.isEmpty()) return;
+		var containingTypeOpt = getContainingTypeFromTypeMember(it);
+		if (containingTypeOpt.isEmpty()) return;
+		var containingType = containingTypeOpt.get();
 
-		var originalClass = originalClassOpt.get();
-		if (originalClass.isEffectivelyAbstract() && !it.isStatic()) return;
+		writer.writeFieldRead(it, containingType);
 
-		writer.writeFieldRead(it, originalClass);
-
-		if (it.isFinal()) return;
-
-		writer.writeFieldWrite(it, originalClass);
+		if (!it.isFinal()) {
+			writer.writeFieldWrite(it, containingType);
+		}
 	}
 
 	private void generateMethodClients(MethodDecl it) {

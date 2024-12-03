@@ -37,6 +37,14 @@ public class ClientWriter {
             }
             """;
 
+    private static final String ABSTRACT_CLASS_INHERITANCE_TEMPLATE = """
+            %s
+            
+            abstract class %s extends %s {
+            %s
+            }
+            """;
+
     public ClientWriter(Path outputDir) {
         this.outputDir = outputDir;
     }
@@ -88,36 +96,46 @@ public class ClientWriter {
         }
     }
 
-    public void writeFieldRead(FieldDecl fieldDecl, ClassDecl originalClass) {
-        var imports = getImportsForType(originalClass);
+    public void writeFieldRead(FieldDecl fieldDecl, TypeDecl containingType) {
+        var imports = getImportsForType(containingType);
         var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
-        var caller = getClassAccessForTypeMember(originalClass, fieldDecl);
 
-        if (fieldDecl.isPublic()) {
+        if (containingType.isClass() && containingType.isAbstract()) {
+            var fieldReadInAbstractClass = "\tpublic void aNewMethodToReadFieldInAbstractClass() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
+            var code = ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInAbstractClass);
+
+            writeCodeInFile(name, code);
+        } else if (fieldDecl.isPublic()) {
+            var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
             var fieldReadCode = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
 
             writeCodeInMain(imports, name, fieldReadCode);
         } else if (fieldDecl.isProtected()) {
             var fieldReadInMethodCode = "\tpublic void aNewMethodToReadProtectedField() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), fieldReadInMethodCode);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInMethodCode);
 
             writeCodeInFile(name, code);
         }
     }
 
-    public void writeFieldWrite(FieldDecl fieldDecl, ClassDecl originalClass) {
-        var imports = getImportsForType(originalClass);
+    public void writeFieldWrite(FieldDecl fieldDecl, TypeDecl containingType) {
+        var imports = getImportsForType(containingType);
         var name = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
-        var caller = getClassAccessForTypeMember(originalClass, fieldDecl);
         var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
 
-        if (fieldDecl.isPublic()) {
+        if (containingType.isClass() && containingType.isAbstract()) {
+            var fieldWriteInAbstractClass = "\tpublic void aNewMethodToWriteFieldInAbstractClass() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
+            var code = ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInAbstractClass);
+
+            writeCodeInFile(name, code);
+        } else if (fieldDecl.isPublic()) {
+            var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
             var fieldWriteCode = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
             writeCodeInMain(imports, name, fieldWriteCode);
         } else if (fieldDecl.isProtected()) {
             var fieldWriteInMethodCode = "\tpublic void aNewMethodToWriteProtectedField() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
-            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, originalClass.getSimpleName(), fieldWriteInMethodCode);
+            var code = CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInMethodCode);
 
             writeCodeInFile(name, code);
         }

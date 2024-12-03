@@ -8,6 +8,14 @@ public class PublicClass {
     protected boolean protectedBool = false;
     public java.lang.Object publicObject = null;
 
+    public static int publicStaticInt = 0;
+    protected static int protectedStaticInt = 0;
+    private static int privateStaticInt = 0;
+
+    public final static int publicFinalStaticInt = 0;
+    protected final static int protectedFinalStaticInt = 0;
+    private final static int privateFinalStaticInt = 0;
+
     public PublicClass() {}
 
     protected PublicClass(char valChar) {
@@ -38,7 +46,6 @@ public class PublicClass {
     public void publicVoidMethodWithObjectParam(java.lang.Object obj) {}
     public String[] publicStringArrayMethod(String[] array) { return null; }
     public void publicListStringMethod(List<String> test) {}
-    public <T> void publicGenericMethod(T test, int val) {}
     public <T extends PublicClassImplementsPublicInterface> void publicGenericMethod(T test, int val) {}
     public void publicVoidMethodWithVarArgs(String... args) {}
     public void publicVoidMethodWithVarArgs(String args) {}
