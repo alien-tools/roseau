@@ -10,6 +10,10 @@ public abstract class AbstractPublicClass {
     private int privateInt = 0;
 
     public void publicVoidMethod() {}
+    public void publicVoidMethodThrowingCheckedException() throws CheckedException {}
+    public void publicVoidMethodThrowingUncheckedException() throws UncheckedException {}
 
     public abstract void abstractMethod();
+    public abstract void abstractMethodThrowingCheckedException() throws CheckedException;
+    public abstract void abstractMethodThrowingUncheckedException() throws UncheckedException;
 }

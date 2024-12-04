@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.combinatorial.client;
 
 import com.github.maracas.roseau.api.model.*;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import org.apache.commons.io.FileUtils;
 
 import java.io.File;
@@ -173,28 +174,36 @@ public class ClientWriter {
         writeCodeInFile(name, code);
     }
 
-    // TODO: Check if method throws an Exception
     public void writeMethodInvocation(MethodDecl methodDecl, ClassDecl containingClass) {
         var imports = getImportsForType(containingClass);
         var name = "%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName());
         var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
         var params = getParamsForExecutableInvocation(methodDecl);
+        var exceptions = methodDecl.getThrownCheckedExceptions().stream()
+                .map(TypeReference::getQualifiedName)
+                .collect(Collectors.joining(", "));
 
+        String methodName = null, template = null;
         if (methodDecl.isAbstract() || containingClass.isAbstract()) {
-            var methodInvocationInAbstractClass = "\tpublic void aNewMethodToInvokeMethodInAbstractClass() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
-            var code = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInAbstractClass);
-
-            writeCodeInFile(name, code);
+            methodName = "aNewMethodToInvokeMethodInAbstractClass";
+            template = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE;
         } else if (methodDecl.isPublic()) {
             var methodInvocationCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
 
-            writeCodeInMain(imports, name, methodInvocationCode);
+            writeCodeInMain(imports, name, methodInvocationCode, exceptions);
+            return;
         } else if (methodDecl.isProtected()) {
-            var methodInvocationInMethodCode = "\tpublic void aNewMethodToInvokeProtectedMethod() {\n\t\tthis.%s(%s);\n\t}".formatted(methodDecl.getSimpleName(), params);
-            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), methodInvocationInMethodCode);
-
-            writeCodeInFile(name, code);
+            methodName = "aNewMethodToInvokeProtectedMethod";
+            template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
         }
+
+        if (methodName == null) return;
+
+        var methodCode = "this.%s(%s);".formatted(methodDecl.getSimpleName(), params);
+        var method = generateMethodDeclaration(methodName, methodCode, exceptions);
+        var code = template.formatted(imports, name, containingClass.getSimpleName(), method);
+
+        writeCodeInFile(name, code);
     }
 
     public void writeMethodOverride(MethodDecl methodDecl, ClassDecl containingClass) {
@@ -275,6 +284,16 @@ public class ClientWriter {
         return methodReturnTypeName.equals("void")
                 ? "\t" + methodSignature + " {}"
                 : "\t%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
+    }
+
+    private String generateMethodDeclaration(String functionName, String functionCode) {
+        return "\tpublic void %s() {\n\t\t%s\n\t}".formatted(functionName, functionCode);
+    }
+
+    private String generateMethodDeclaration(String functionName, String functionCode, String exceptions) {
+        return exceptions.isBlank()
+                ? generateMethodDeclaration(functionName, functionCode)
+                : "\tpublic void %s() throws %s {\n\t\t%s\n\t}".formatted(functionName, exceptions, functionCode);
     }
 
     private String getDefaultValueForType(String typeName) {
