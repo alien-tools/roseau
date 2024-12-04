@@ -104,22 +104,27 @@ public class ClientWriter {
         var imports = getImportsForType(containingType);
         var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
 
+        String methodName = null, template = null;
         if (containingType.isClass() && containingType.isAbstract()) {
-            var fieldReadInAbstractClass = "\tpublic void aNewMethodToReadFieldInAbstractClass() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
-            var code = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInAbstractClass);
-
-            writeCodeInFile(name, code);
+            methodName = "aNewMethodToReadFieldInAbstractClass";
+            template = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE;
         } else if (fieldDecl.isPublic()) {
             var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
             var fieldReadCode = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
 
             writeCodeInMain(imports, name, fieldReadCode);
         } else if (fieldDecl.isProtected()) {
-            var fieldReadInMethodCode = "\tpublic void aNewMethodToReadProtectedField() {\n\t\tvar val = this.%s;\n\t}".formatted(fieldDecl.getSimpleName());
-            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldReadInMethodCode);
-
-            writeCodeInFile(name, code);
+            methodName = "aNewMethodToReadProtectedField";
+            template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
         }
+
+        if (methodName == null) return;
+
+        var methodCode = "var val = this.%s;".formatted(fieldDecl.getSimpleName());
+        var method = generateMethodDeclaration(methodName, methodCode);
+        var code = template.formatted(imports, name, containingType.getSimpleName(), method);
+
+        writeCodeInFile(name, code);
     }
 
     public void writeFieldWrite(FieldDecl fieldDecl, TypeDecl containingType) {
@@ -127,33 +132,34 @@ public class ClientWriter {
         var name = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
         var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
 
+        String methodName = null, template = null;
         if (containingType.isClass() && containingType.isAbstract()) {
-            var fieldWriteInAbstractClass = "\tpublic void aNewMethodToWriteFieldInAbstractClass() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
-            var code = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInAbstractClass);
-
-            writeCodeInFile(name, code);
+            methodName = "aNewMethodToWriteFieldInAbstractClass";
+            template = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE;
         } else if (fieldDecl.isPublic()) {
             var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
             var fieldWriteCode = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
             writeCodeInMain(imports, name, fieldWriteCode);
         } else if (fieldDecl.isProtected()) {
-            var fieldWriteInMethodCode = "\tpublic void aNewMethodToWriteProtectedField() {\n\t\tthis.%s = %s;\n\t}".formatted(fieldDecl.getSimpleName(), value);
-            var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingType.getSimpleName(), fieldWriteInMethodCode);
-
-            writeCodeInFile(name, code);
+            methodName = "aNewMethodToWriteProtectedField";
+            template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
         }
+
+        if (methodName == null) return;
+
+        var methodCode = "this.%s = %s;".formatted(fieldDecl.getSimpleName(), value);
+        var method = generateMethodDeclaration(methodName, methodCode);
+        var code = template.formatted(imports, name, containingType.getSimpleName(), method);
+
+        writeCodeInFile(name, code);
     }
 
     public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
         var imports = getImportsForType(interfaceDecl);
         var name = "%sInterfaceExtension".formatted(interfaceDecl.getPrettyQualifiedName());
 
-        var code = """
-                %s
-                
-                interface %s extends %s {}
-                """.formatted(imports, name, interfaceDecl.getSimpleName());
+        var code = ClientTemplates.INTERFACE_EXTENSION_TEMPLATE.formatted(imports, name, interfaceDecl.getSimpleName());
 
         writeCodeInFile(name, code);
     }
@@ -163,13 +169,7 @@ public class ClientWriter {
         var name = "%sInterfaceImplementation".formatted(interfaceDecl.getPrettyQualifiedName());
         var methodsImplemented = implementNecessaryMethods(interfaceDecl);
 
-        var code = """
-                %s
-                
-                class %s implements %s {
-                %s
-                }
-                """.formatted(imports, name, interfaceDecl.getSimpleName(), methodsImplemented);
+        var code = ClientTemplates.INTERFACE_IMPLEMENTATION_TEMPLATE.formatted(imports, name, interfaceDecl.getSimpleName(), methodsImplemented);
 
         writeCodeInFile(name, code);
     }
@@ -191,7 +191,6 @@ public class ClientWriter {
             var methodInvocationCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
 
             writeCodeInMain(imports, name, methodInvocationCode, exceptions);
-            return;
         } else if (methodDecl.isProtected()) {
             methodName = "aNewMethodToInvokeProtectedMethod";
             template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;

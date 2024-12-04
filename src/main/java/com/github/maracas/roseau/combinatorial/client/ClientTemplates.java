@@ -41,4 +41,18 @@ public interface ClientTemplates {
             %s
             }
             """;
+
+    String INTERFACE_EXTENSION_TEMPLATE = """
+            %s
+            
+            interface %s extends %s {}
+            """;
+
+    String INTERFACE_IMPLEMENTATION_TEMPLATE = """
+            %s
+            
+            class %s implements %s {
+            %s
+            }
+            """;
 }
