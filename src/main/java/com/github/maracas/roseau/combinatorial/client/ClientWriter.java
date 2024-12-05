@@ -280,6 +280,10 @@ public class ClientWriter {
         var methodReturnTypeName = methodDecl.getType().getQualifiedName();
         var methodSignature = methodDecl.toString().replace("abstract ", "");
 
+        if (methodDecl.isNative()) {
+            return "\t" + methodSignature + ";";
+        }
+
         return methodReturnTypeName.equals("void")
                 ? "\t" + methodSignature + " {}"
                 : "\t%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));

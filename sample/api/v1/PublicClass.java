@@ -57,4 +57,6 @@ public class PublicClass {
     public void publicVoidMethodSurcharged() {}
     public void publicVoidMethodSurcharged(int i) {}
     public void publicVoidMethodSurcharged(java.lang.Object obj) {}
+
+    public native void publicNativeVoidMethod();
 }
