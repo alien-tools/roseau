@@ -73,7 +73,7 @@ public class Combinatorial {
 	static final int typeHierarchyDepth = 2;
 	static final int typeHierarchyWidth = 2;
 	static final int paramsCount = 1;
-	static final Path dst = Path.of("generated");
+	static final Path dst = Path.of("generated/v1");
 	static int i = 0;
 
 	Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
@@ -341,6 +341,7 @@ public class Combinatorial {
 
 	public void generateCode(API api) {
 		dst.toFile().mkdirs();
+		var packageName = dst.toString().replace('/', '.');
 		var prettyPrinter = new APIPrettyPrinter();
 
 		api.getAllTypes().forEach(t -> {
@@ -350,7 +351,7 @@ public class Combinatorial {
 				var code = prettyPrinter.$(t).print();
 
 				file.toFile().createNewFile();
-				Files.writeString(file, code);
+				Files.writeString(file, "package %s;\n\n%s".formatted(packageName, code));
 				System.out.println("Generated " + file);
 			} catch (Exception e) {
 				e.printStackTrace();
