@@ -1,11 +1,14 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.AccessModifier;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.assertField;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -72,5 +75,37 @@ class MethodsExtractionTest {
 
 		assertFalse(m1.isNative());
 		assertTrue(m2.isNative());
+	}
+
+	@Test
+	void default_interface_visibilities() {
+		var api = buildAPI("""
+			public interface I {
+				int f = 0;
+			  void m();
+			}""");
+
+		var i = assertInterface(api, "I");
+		var f = assertField(i, "f");
+		var m = assertMethod(i, "m()");
+
+		assertEquals(AccessModifier.PUBLIC, f.getVisibility());
+		assertEquals(AccessModifier.PUBLIC, m.getVisibility());
+		assertTrue(f.isPublic());
+		assertTrue(m.isPublic());
+	}
+
+	@Test
+	void default_class_visibilities() {
+		var api = buildAPI("""
+			public class C {
+			  int f = 0;
+			  void m() {}
+			}""");
+
+		var c = assertClass(api, "C");
+
+		assertEquals(0, c.getAllFields().count());
+		assertEquals(0, c.getAllMethods().count());
 	}
 }
