@@ -34,7 +34,7 @@ build/
 ### Mac OS ###
 .DS_Store
 
-### Output Files ###
+### Generated ###
 generated/
 
 sample/
