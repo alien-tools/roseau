@@ -19,7 +19,9 @@ import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.visit.APIPrettyPrinter;
 import com.google.common.collect.Sets;
+import org.apache.commons.io.FileUtils;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -340,7 +342,17 @@ public class Combinatorial {
 	}
 
 	public void generateCode(API api) {
-		dst.toFile().mkdirs();
+		var outputDirFile = dst.toFile();
+		if (outputDirFile.exists()) {
+			try {
+				FileUtils.cleanDirectory(outputDirFile);
+			} catch (IOException e) {
+				System.err.println("Error cleaning output directory: " + e.getMessage());
+			}
+		} else {
+			outputDirFile.mkdirs();
+		}
+
 		var prettyPrinter = new APIPrettyPrinter();
 
 		api.getAllTypes().forEach(t -> {
