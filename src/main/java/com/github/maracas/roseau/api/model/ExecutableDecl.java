@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
+import java.lang.reflect.Executable;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;

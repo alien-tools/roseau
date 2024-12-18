@@ -64,10 +64,10 @@ public class Combinatorial {
 	static final Set<Set<Modifier>> enumModifiers   = Sets.powerSet(Set.of());
 
 	static final List<ITypeReference> fieldTypes = List.of(
-		new PrimitiveTypeReference("int")/*,
-		new TypeReference<>("java.lang.Integer"),
-		new TypeReference<>("java.lang.String"),
-		new ArrayTypeReference(new PrimitiveTypeReference("int"), 1)*/
+		new PrimitiveTypeReference("int")/*, // Primitive
+		new TypeReference<>("java.lang.Integer"), // Boxed
+		new TypeReference<>("java.lang.Thread"), // Object reference
+		new ArrayTypeReference(new PrimitiveTypeReference("int"), 1) // Array */
 	);
 	static final List<ITypeReference> methodTypes = fieldTypes;
 	static final Set<Set<TypeReference<ClassDecl>>> thrownExceptions = Sets.powerSet(Set.of(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/));
@@ -176,7 +176,7 @@ public class Combinatorial {
 					});
 					builder.methods.add(mBuilder.make());
 				});
-				// Field shadowing?
+				// Field hiding?
 				store(builder);
 			})
 		);
@@ -256,14 +256,14 @@ public class Combinatorial {
 				store(builder);
 
 				// [O, 1, N]?
-				IntStream.range(0, typeHierarchyWidth).forEach(intf -> {
-					var superBuilder = new InterfaceBuilder();
-					superBuilder.qualifiedName = "I" + ++i;
-					superBuilder.visibility = visibility;
-					superBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					builder.implementedInterfaces.add(new TypeReference<>(superBuilder.qualifiedName));
-					store(superBuilder);
-				});
+//				IntStream.range(0, typeHierarchyWidth).forEach(intf -> {
+//					var superBuilder = new InterfaceBuilder();
+//					superBuilder.qualifiedName = "I" + ++i;
+//					superBuilder.visibility = visibility;
+//					superBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+//					builder.implementedInterfaces.add(new TypeReference<>(superBuilder.qualifiedName));
+//					store(superBuilder);
+//				});
 			})
 		);
 	}
@@ -309,6 +309,8 @@ public class Combinatorial {
 								/* vis/mod interactions are annoying; don't want them there */
 								if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(DEFAULT, ABSTRACT)).isEmpty())
 									return;
+								// Put here the package-private abstract methods exclusion
+
 
 								var builder = new MethodBuilder();
 								builder.qualifiedName = t.qualifiedName + ".m" + ++i;
