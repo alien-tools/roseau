@@ -11,9 +11,11 @@ import java.nio.file.Path;
 
 public class ApiWriter {
     private final Path outputDir;
+    private final String packageName;
 
     public ApiWriter(Path outputDir) {
         this.outputDir = outputDir;
+        this.packageName = outputDir.toString().replace('/', '.');
     }
 
     public boolean createOutputDir() {
@@ -46,7 +48,7 @@ public class ApiWriter {
                 var code = prettyPrinter.$(t).print();
 
                 file.toFile().createNewFile();
-                Files.writeString(file, code);
+                Files.writeString(file, "package %s;\n\n%s".formatted(packageName, code));
                 System.out.println("Generated " + file);
             } catch (Exception e) {
                 e.printStackTrace();
