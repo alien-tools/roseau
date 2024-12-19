@@ -2,6 +2,7 @@ package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.utils.StringUtils;
 
 import java.lang.reflect.Executable;
 import java.util.Collections;
@@ -96,6 +97,21 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return thrownExceptions.stream()
 			.filter(e -> e.getResolvedApiType().map(ClassDecl::isCheckedException).orElse(false))
 			.toList();
+	}
+
+	@Override
+	public String getPrettyQualifiedName() {
+		var name = super.getPrettyQualifiedName();
+		var parameters = getParameters().stream()
+				.map(p -> StringUtils.capitalizeFirstLetter(p.type().getPrettyQualifiedName() + (p.isVarargs() ? "Varargs" : "")))
+				.collect(Collectors.joining());
+		var formalTypeParameters = getFormalTypeParameters().stream()
+				.map(fP -> fP.name() + fP.bounds().stream()
+						.map(ITypeReference::getPrettyQualifiedName)
+						.collect(Collectors.joining()))
+				.collect(Collectors.joining());
+
+		return name + parameters + formalTypeParameters;
 	}
 
 	@Override

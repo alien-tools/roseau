@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.api.model.reference;
 
+import com.github.maracas.roseau.api.utils.StringUtils;
+
 import java.util.Objects;
 
 public record ArrayTypeReference(ITypeReference componentType, int dimension) implements ITypeReference {
@@ -12,6 +14,11 @@ public record ArrayTypeReference(ITypeReference componentType, int dimension) im
 	@Override
 	public String getQualifiedName() {
 		return componentType().getQualifiedName() + "[]".repeat(dimension);
+	}
+
+	@Override
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName() + "Array".repeat(dimension));
 	}
 
 	@Override

@@ -36,3 +36,6 @@ build/
 
 ### Generated ###
 generated/
+
+sample/
+!sample/api/v1/

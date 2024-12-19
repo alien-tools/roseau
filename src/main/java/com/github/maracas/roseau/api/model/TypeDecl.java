@@ -175,6 +175,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return allMethods.stream();
 	}
 
+	public Stream<MethodDecl> getAllMethodsToImplement() {
+		return getAllMethods().filter(MethodDecl::isAbstract);
+	}
+
 	/**
 	 * Returns all fields declared by this type, including those of its super types.
 	 */
