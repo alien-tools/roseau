@@ -8,8 +8,8 @@ import java.nio.file.Path;
 
 public class ClientsGenerator {
     public static void main(String[] args) {
-        String apiDir = args.length >= 1 ? args[0] : "sample/api/v1";
-        String outputDir = args.length >= 2 ? args[1] : "sample/clients";
+        String apiDir = args.length >= 1 ? args[0] : "generated/api/v1";
+        String outputDir = args.length >= 2 ? args[1] : "generated/clients";
 
         Path apiPath = Path.of(apiDir);
         if (!apiPath.toFile().exists()) {

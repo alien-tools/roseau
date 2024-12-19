@@ -109,8 +109,9 @@ public class CombinatorialApi {
                                                     /* vis/mod interactions are annoying; don't want them there */
                                                     if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(DEFAULT, ABSTRACT)).isEmpty())
                                                         return;
-                                                    // TODO: Put here the package-private abstract methods exclusion
-
+                                                    if (visibility == PACKAGE_PRIVATE && modifiers.contains(ABSTRACT))
+                                                        if (t instanceof ClassBuilder clsBuilder && clsBuilder.modifiers.contains(ABSTRACT))
+                                                            return;
 
                                                     var builder = new MethodBuilder();
                                                     builder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
