@@ -8,11 +8,7 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.combinatorial.api.builder.*;
 import com.google.common.collect.Sets;
 
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
@@ -33,18 +29,18 @@ public class CombinatorialApi {
     static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC, PACKAGE_PRIVATE);
 
     // STATIC handled separately for nested types only
-    static final Set<Set<Modifier>> classModifiers = Sets.powerSet(Set.of(FINAL, ABSTRACT/*, SEALED, NON_SEALED*/)) // TODO: sealed
+    static final Set<Set<Modifier>> classModifiers = powerSet(FINAL, ABSTRACT/*, SEALED, NON_SEALED*/) // TODO: sealed
             .stream()
             .filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
             .filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
             .filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT/*, SEALED, NON_SEALED*/)).isEmpty()) // TODO: sealed
             .collect(Collectors.toSet());
-    static final Set<Set<Modifier>> interfaceModifiers = Sets.powerSet(Set.of(ABSTRACT/*, SEALED, NON_SEALED*/)) // TODO: sealed
+    static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT/*, SEALED, NON_SEALED*/) // TODO: sealed
             .stream()
             .filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
             .collect(Collectors.toSet());
-    static final Set<Set<Modifier>> recordModifiers = Sets.powerSet(Set.of(FINAL));
-    static final Set<Set<Modifier>> enumModifiers = Sets.powerSet(Set.of());
+    static final Set<Set<Modifier>> recordModifiers = powerSet(FINAL);
+    static final Set<Set<Modifier>> enumModifiers = powerSet();
 
     static final List<ITypeReference> fieldTypes = List.of(
             new PrimitiveTypeReference("int")/*, // Primitive
@@ -53,7 +49,7 @@ public class CombinatorialApi {
 		new ArrayTypeReference(new PrimitiveTypeReference("int"), 1) // Array */
     );
     static final List<ITypeReference> methodTypes = fieldTypes;
-    static final Set<Set<TypeReference<ClassDecl>>> thrownExceptions = Sets.powerSet(Set.of(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/));
+    static final Set<Set<TypeReference<ClassDecl>>> thrownExceptions = powerSet(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/);
 
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
@@ -233,7 +229,11 @@ public class CombinatorialApi {
         );
     }
 
-    private MethodDecl generateMethodForTypeDeclBuilder(MethodDecl method, TypeDeclBuilder builder) {
+    private void store(TypeDeclBuilder type) {
+        typeStore.put(type.qualifiedName, type);
+    }
+
+    private static MethodDecl generateMethodForTypeDeclBuilder(MethodDecl method, TypeDeclBuilder builder) {
         // @Override ann?
         var mBuilder = new MethodBuilder();
 
@@ -253,31 +253,27 @@ public class CombinatorialApi {
         return mBuilder.make();
     }
 
-    private <T> Set<Set<T>> powerSet(T... elements) {
-        return Sets.powerSet(Set.of(elements));
-    }
-
-    private Set<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {
+    private static List<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {
         return switch (container) {
-            case InterfaceBuilder ignored -> Set.of(PUBLIC, PACKAGE_PRIVATE);
-            default -> Set.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+            case InterfaceBuilder ignored -> List.of(PUBLIC, PACKAGE_PRIVATE);
+            default -> List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
         };
     }
 
-    private Set<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
+    private static List<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
         return switch (container) {
-            case InterfaceBuilder ignored -> Set.of(PUBLIC, /*PACKAGE_PRIVATE,*/ PRIVATE);
-            default -> Set.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+            case InterfaceBuilder ignored -> List.of(PUBLIC, /*PACKAGE_PRIVATE,*/ PRIVATE);
+            default -> List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
         };
     }
 
-    private Set<Set<Modifier>> fieldModifiers(Builder<TypeDecl> container) {
+    private static Set<Set<Modifier>> fieldModifiers(Builder<TypeDecl> container) {
         return switch (container) {
             default -> powerSet(STATIC, FINAL);
         };
     }
 
-    private Set<Set<Modifier>> methodModifiers(Builder<TypeDecl> container) {
+    private static Set<Set<Modifier>> methodModifiers(Builder<TypeDecl> container) {
         var modifiers = powerSet(STATIC, FINAL, ABSTRACT, NATIVE, DEFAULT, SYNCHRONIZED)
                 .stream()
                 .filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
@@ -297,11 +293,11 @@ public class CombinatorialApi {
         };
     }
 
-    private void store(TypeDeclBuilder type) {
-        typeStore.put(type.qualifiedName, type);
+    private static <T> Set<Set<T>> powerSet(T... elements) {
+        return Sets.powerSet(new LinkedHashSet<>(List.of(elements)));
     }
 
-    private <T extends Enum<T>> EnumSet<T> toEnumSet(Set<T> set, Class<T> cls) {
+    private static <T extends Enum<T>> EnumSet<T> toEnumSet(Set<T> set, Class<T> cls) {
         return set.isEmpty()
                 ? EnumSet.noneOf(cls)
                 : EnumSet.copyOf(set);
