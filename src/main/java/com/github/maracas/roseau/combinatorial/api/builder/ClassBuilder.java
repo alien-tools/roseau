@@ -7,7 +7,7 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import java.util.ArrayList;
 import java.util.List;
 
-public sealed class ClassBuilder extends TypeDeclBuilder permits RecordBuilder {
+public sealed class ClassBuilder extends TypeDeclBuilder permits EnumBuilder, RecordBuilder {
     public TypeReference<ClassDecl> superClass;
     public List<ConstructorDecl> constructors = new ArrayList<>();
 

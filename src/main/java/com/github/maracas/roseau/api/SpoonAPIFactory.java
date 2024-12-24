@@ -171,7 +171,8 @@ public class SpoonAPIFactory {
 			convertCtFields(enm),
 			convertCtMethods(enm),
 			createTypeReference(enm.getDeclaringType()),
-			convertCtConstructors(enm)
+			convertCtConstructors(enm),
+			convertCtEnumValues(enm)
 		);
 	}
 
@@ -295,6 +296,12 @@ public class SpoonAPIFactory {
 		return parameter.isVarArgs() && parameter.getType() instanceof CtArrayTypeReference<?> atr
 			? new ParameterDecl(parameter.getSimpleName(), createITypeReference(atr.getComponentType()), true)
 			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
+	}
+
+	private List<String> convertCtEnumValues(CtEnum<?> enm) {
+		return enm.getEnumValues().stream()
+			.map(CtTypeMember::getSimpleName)
+			.toList();
 	}
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {

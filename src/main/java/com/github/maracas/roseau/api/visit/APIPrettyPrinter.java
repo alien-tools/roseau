@@ -78,7 +78,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	public Print enumDecl(EnumDecl it) {
 		return () -> """
 			%s %s enum %s %s %s {
-				%s
+				%s;
 				%s
 				%s
 				%s
@@ -90,10 +90,10 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			it.getImplementedInterfaces().isEmpty()
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
+			String.join(", ", it.getValues()),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
-			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
-			""
+			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
 		);
 	}
 

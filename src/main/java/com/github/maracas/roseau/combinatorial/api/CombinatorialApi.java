@@ -53,6 +53,7 @@ public class CombinatorialApi {
 
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
+    static final int enumValuesCount = 5;
     static final int paramsCount = 1;
     static int symbolCounter = 0;
 
@@ -75,6 +76,7 @@ public class CombinatorialApi {
         createInterfaces();
         createClasses();
         createRecords();
+        createEnums();
     }
 
     private void weaveFields() {
@@ -176,21 +178,54 @@ public class CombinatorialApi {
         );
     }
 
-    private void createSubtypes(InterfaceBuilder intf) {
-        var intfDecl = intf.make();
-        createOverridingInterface(intfDecl);
-        createImplementingClass(intfDecl);
-        createImplementingRecord(intfDecl);
+    private void createEnums() {
+        topLevelVisibilities.forEach(visibility ->
+                enumModifiers.forEach(modifiers -> {
+                    var builder = new EnumBuilder();
+                    builder.qualifiedName = "E" + ++symbolCounter;
+                    builder.visibility = visibility;
+                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
+                    for (int i = 0; i < enumValuesCount; i++)
+                        builder.values.add("V" + ++symbolCounter);
+                    store(builder);
+                })
+        );
     }
 
     private void createSubtypes(ClassBuilder cls) {
-        if (!cls.modifiers.contains(FINAL) && !(cls instanceof RecordBuilder)) {
+        if (!cls.modifiers.contains(FINAL) && !(cls instanceof RecordBuilder) && !(cls instanceof EnumBuilder)) {
             var clsDecl = cls.make();
             createSubclass(clsDecl);
         }
     }
 
-    private void createOverridingInterface(InterfaceDecl intf) {
+    private void createSubtypes(InterfaceBuilder intf) {
+        var intfDecl = intf.make();
+        createInterfaceOverridingInterface(intfDecl);
+        createClassImplementingInterface(intfDecl);
+        createRecordImplementingInterface(intfDecl);
+        createEnumImplementingInterface(intfDecl);
+    }
+
+    private void createSubclass(ClassDecl cls) {
+        topLevelVisibilities.forEach(visibility ->
+                classModifiers.forEach(modifiers -> {
+                    var builder = new ClassBuilder();
+                    builder.qualifiedName = "C" + ++symbolCounter;
+                    builder.visibility = visibility;
+                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
+                    builder.superClass = new TypeReference<>(cls.getQualifiedName());
+                    cls.getAllMethods()
+                            .filter(m -> !m.isFinal())
+                            .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+
+                    // TODO: Field hiding
+                    store(builder);
+                })
+        );
+    }
+
+    private void createInterfaceOverridingInterface(InterfaceDecl intf) {
         topLevelVisibilities.forEach(visibility ->
                 interfaceModifiers.forEach(modifiers -> {
                     var builder = new InterfaceBuilder();
@@ -207,7 +242,7 @@ public class CombinatorialApi {
         );
     }
 
-    private void createImplementingClass(InterfaceDecl intf) {
+    private void createClassImplementingInterface(InterfaceDecl intf) {
         topLevelVisibilities.forEach(visibility ->
                 classModifiers.forEach(modifiers -> {
                     var builder = new ClassBuilder();
@@ -224,7 +259,7 @@ public class CombinatorialApi {
         );
     }
 
-    private void createImplementingRecord(InterfaceDecl intf) {
+    private void createRecordImplementingInterface(InterfaceDecl intf) {
         topLevelVisibilities.forEach(visibility ->
                 recordModifiers.forEach(modifiers -> {
                     var builder = new RecordBuilder();
@@ -241,16 +276,17 @@ public class CombinatorialApi {
         );
     }
 
-    private void createSubclass(ClassDecl cls) {
+    private void createEnumImplementingInterface(InterfaceDecl intf) {
         topLevelVisibilities.forEach(visibility ->
-                classModifiers.forEach(modifiers -> {
-                    var builder = new ClassBuilder();
-                    builder.qualifiedName = "C" + ++symbolCounter;
+                enumModifiers.forEach(modifiers -> {
+                    var builder = new EnumBuilder();
+                    builder.qualifiedName = "E" + ++symbolCounter;
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    builder.superClass = new TypeReference<>(cls.getQualifiedName());
-                    cls.getAllMethods()
-                            .filter(m -> !m.isFinal())
+                    for (int i = 0; i < enumValuesCount; i++)
+                        builder.values.add("V" + ++symbolCounter);
+                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+                    intf.getAllMethods()
                             .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
                     // TODO: Field hiding
