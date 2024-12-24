@@ -120,7 +120,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print recordDecl(RecordDecl it) {
 		return () -> """
-			%s %s record %s %s %s {
+			%s %s record %s() %s {
 				%s
 				%s
 				%s
@@ -129,7 +129,6 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
-			it.getSuperClass().map(ref -> "extends " + ref.getQualifiedName()).orElse(""),
 			it.getImplementedInterfaces().isEmpty()
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),

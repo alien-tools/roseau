@@ -74,6 +74,7 @@ public class CombinatorialApi {
     private void createTypes() {
         createInterfaces();
         createClasses();
+        createRecords();
     }
 
     private void weaveFields() {
@@ -163,18 +164,30 @@ public class CombinatorialApi {
         );
     }
 
+    private void createRecords() {
+        topLevelVisibilities.forEach(visibility ->
+                recordModifiers.forEach(modifiers -> {
+                    var builder = new RecordBuilder();
+                    builder.qualifiedName = "R" + ++symbolCounter;
+                    builder.visibility = visibility;
+                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
+                    store(builder);
+                })
+        );
+    }
+
     private void createSubtypes(InterfaceBuilder intf) {
-        var api = getAPI();
-        var intfDecl = (InterfaceDecl) api.findType(intf.qualifiedName).get();
+        var intfDecl = intf.make();
         createOverridingInterface(intfDecl);
         createImplementingClass(intfDecl);
+        createImplementingRecord(intfDecl);
     }
 
     private void createSubtypes(ClassBuilder cls) {
-        var api = getAPI();
-        var clsDecl = (ClassDecl) api.findType(cls.qualifiedName).get();
-        if (!clsDecl.getModifiers().contains(FINAL)) // isEffectivelyFinal always true cause there are no constructors
+        if (!cls.modifiers.contains(FINAL) && !(cls instanceof RecordBuilder)) {
+            var clsDecl = cls.make();
             createSubclass(clsDecl);
+        }
     }
 
     private void createOverridingInterface(InterfaceDecl intf) {
@@ -199,6 +212,23 @@ public class CombinatorialApi {
                 classModifiers.forEach(modifiers -> {
                     var builder = new ClassBuilder();
                     builder.qualifiedName = "C" + ++symbolCounter;
+                    builder.visibility = visibility;
+                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
+                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+                    intf.getAllMethods()
+                            .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+
+                    // TODO: Field hiding
+                    store(builder);
+                })
+        );
+    }
+
+    private void createImplementingRecord(InterfaceDecl intf) {
+        topLevelVisibilities.forEach(visibility ->
+                recordModifiers.forEach(modifiers -> {
+                    var builder = new RecordBuilder();
+                    builder.qualifiedName = "R" + ++symbolCounter;
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
                     builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
@@ -269,6 +299,9 @@ public class CombinatorialApi {
 
     private static Set<Set<Modifier>> fieldModifiers(Builder<TypeDecl> container) {
         return switch (container) {
+            case RecordBuilder ignored -> powerSet(STATIC, FINAL).stream()
+                    .filter(mods -> mods.contains(STATIC))
+                    .collect(Collectors.toSet());
             default -> powerSet(STATIC, FINAL);
         };
     }
@@ -284,6 +317,9 @@ public class CombinatorialApi {
         return switch (container) {
             case InterfaceBuilder ignored -> modifiers.stream()
                     .filter(mods -> Sets.intersection(mods, Set.of(NATIVE, SYNCHRONIZED, FINAL)).isEmpty())
+                    .collect(Collectors.toSet());
+            case RecordBuilder ignored -> modifiers.stream()
+                    .filter(mods -> !mods.contains(ABSTRACT) && !mods.contains(NATIVE) && !mods.contains(DEFAULT))
                     .collect(Collectors.toSet());
             case ClassBuilder b -> modifiers.stream()
                     .filter(mods -> !mods.contains(DEFAULT))
