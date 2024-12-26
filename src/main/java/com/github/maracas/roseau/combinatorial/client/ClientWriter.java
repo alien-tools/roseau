@@ -236,9 +236,11 @@ public class ClientWriter {
     }
 
     private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
-        return typeDecl.isClass() && !typeMemberDecl.isStatic()
-                ? generateEasiestConstructorInvocationForClass((ClassDecl) typeDecl)
-                : typeDecl.getSimpleName();
+        if (typeMemberDecl.isStatic()) return typeDecl.getSimpleName();
+        else if (typeDecl.isEnum()) return generateAccessToFirstEnumValue((EnumDecl) typeDecl);
+        else if (typeDecl.isClass()) return generateEasiestConstructorInvocationForClass((ClassDecl) typeDecl);
+
+        throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
     }
 
     private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
@@ -256,6 +258,10 @@ public class ClientWriter {
         return params.isBlank()
                 ? ""
                 : "\t%s() {\n\t\tsuper(%s);\n\t}\n".formatted(className, params);
+    }
+
+    private String generateAccessToFirstEnumValue(EnumDecl enumDecl) {
+        return "%s.%s".formatted(enumDecl.getSimpleName(), enumDecl.getValues().getFirst());
     }
 
     private String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
