@@ -134,11 +134,13 @@ public class CombinatorialApi {
     }
 
     private void createHierarchies() {
-        List.copyOf(typeStore.values()).forEach(t -> {
-            if (t instanceof ClassBuilder c)
-                createSubtypes(c);
-            if (t instanceof InterfaceBuilder i)
-                createSubtypes(i);
+        IntStream.range(1, typeHierarchyDepth).forEach(depth -> {
+            List.copyOf(typeStore.values()).forEach(t -> {
+                if (t instanceof ClassBuilder c)
+                    createSubtypes(c, depth);
+                if (t instanceof InterfaceBuilder i)
+                    createSubtypes(i, depth);
+            });
         });
     }
 
@@ -192,91 +194,99 @@ public class CombinatorialApi {
         );
     }
 
-    private void createSubtypes(ClassBuilder cls) {
+    private void createSubtypes(ClassBuilder cls, int depth) {
         if (!cls.modifiers.contains(FINAL) && !(cls instanceof RecordBuilder) && !(cls instanceof EnumBuilder)) {
             var clsDecl = cls.make();
-            createSubclass(clsDecl);
+            createNewClassExtendingClass(clsDecl, depth);
         }
     }
 
-    private void createSubtypes(InterfaceBuilder intf) {
+    private void createSubtypes(InterfaceBuilder intf, int depth) {
         var intfDecl = intf.make();
-        createInterfaceOverridingInterface(intfDecl);
-        createClassImplementingInterface(intfDecl);
-        createRecordImplementingInterface(intfDecl);
-        createEnumImplementingInterface(intfDecl);
+        createNewInterfaceExtendingInterface(intfDecl, depth);
+        createNewClassImplementingInterface(intfDecl, depth);
+        createNewRecordImplementingInterface(intfDecl, depth);
+        createNewEnumImplementingInterface(intfDecl, depth);
     }
 
-    private void createSubclass(ClassDecl cls) {
+    private void createNewClassExtendingClass(ClassDecl cls, int depth) {
         topLevelVisibilities.forEach(visibility ->
                 classModifiers.forEach(modifiers -> {
                     var builder = new ClassBuilder();
                     builder.qualifiedName = "C" + ++symbolCounter;
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    builder.superClass = new TypeReference<>(cls.getQualifiedName());
+                    builder.superClass = new TypeReference<>(cls.getQualifiedName(), cls);
                     cls.getAllMethods()
                             .filter(m -> !m.isFinal())
                             .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
                     // TODO: Field hiding
                     store(builder);
+                    if (depth > 0)
+                        createSubtypes(builder, depth - 1);
                 })
         );
     }
 
-    private void createInterfaceOverridingInterface(InterfaceDecl intf) {
+    private void createNewInterfaceExtendingInterface(InterfaceDecl intf, int depth) {
         topLevelVisibilities.forEach(visibility ->
                 interfaceModifiers.forEach(modifiers -> {
                     var builder = new InterfaceBuilder();
                     builder.qualifiedName = "I" + ++symbolCounter;
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName(), intf));
                     intf.getAllMethods()
                             .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
                     // TODO: Field hiding
                     store(builder);
+                    if (depth > 0)
+                        createSubtypes(builder, depth - 1);
                 })
         );
     }
 
-    private void createClassImplementingInterface(InterfaceDecl intf) {
+    private void createNewClassImplementingInterface(InterfaceDecl intf, int depth) {
         topLevelVisibilities.forEach(visibility ->
                 classModifiers.forEach(modifiers -> {
                     var builder = new ClassBuilder();
                     builder.qualifiedName = "C" + ++symbolCounter;
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName(), intf));
                     intf.getAllMethods()
                             .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
                     // TODO: Field hiding
                     store(builder);
+                    if (depth > 0)
+                        createSubtypes(builder, depth - 1);
                 })
         );
     }
 
-    private void createRecordImplementingInterface(InterfaceDecl intf) {
+    private void createNewRecordImplementingInterface(InterfaceDecl intf, int depth) {
         topLevelVisibilities.forEach(visibility ->
                 recordModifiers.forEach(modifiers -> {
                     var builder = new RecordBuilder();
                     builder.qualifiedName = "R" + ++symbolCounter;
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName(), intf));
                     intf.getAllMethods()
                             .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
                     // TODO: Field hiding
                     store(builder);
+                    if (depth > 0)
+                        createSubtypes(builder, depth - 1);
                 })
         );
     }
 
-    private void createEnumImplementingInterface(InterfaceDecl intf) {
+    private void createNewEnumImplementingInterface(InterfaceDecl intf, int depth) {
         topLevelVisibilities.forEach(visibility ->
                 enumModifiers.forEach(modifiers -> {
                     var builder = new EnumBuilder();
@@ -285,12 +295,14 @@ public class CombinatorialApi {
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
                     for (int i = 0; i < enumValuesCount; i++)
                         builder.values.add("V" + ++symbolCounter);
-                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName()));
+                    builder.implementedInterfaces.add(new TypeReference<>(intf.getQualifiedName(), intf));
                     intf.getAllMethods()
                             .forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
                     // TODO: Field hiding
                     store(builder);
+                    if (depth > 0)
+                        createSubtypes(builder, depth - 1);
                 })
         );
     }
@@ -301,22 +313,23 @@ public class CombinatorialApi {
 
     private static MethodDecl generateMethodForTypeDeclBuilder(MethodDecl method, TypeDeclBuilder builder) {
         // @Override ann?
-        var mBuilder = new MethodBuilder();
+        var typeDecl = builder.make();
+        var methodBuilder = new MethodBuilder();
 
-        mBuilder.qualifiedName = builder.qualifiedName + "." + method.getSimpleName();
-        mBuilder.visibility = method.getVisibility();
-        mBuilder.containingType = new TypeReference<>(builder.qualifiedName);
-        mBuilder.thrownExceptions = method.getThrownExceptions();
-        mBuilder.parameters.addAll(method.getParameters());
-        mBuilder.type = method.getType();
+        methodBuilder.qualifiedName = builder.qualifiedName + "." + method.getSimpleName();
+        methodBuilder.visibility = method.getVisibility();
+        methodBuilder.containingType = new TypeReference<>(builder.qualifiedName, typeDecl);
+        methodBuilder.thrownExceptions = method.getThrownExceptions();
+        methodBuilder.parameters.addAll(method.getParameters());
+        methodBuilder.type = method.getType();
 
-        mBuilder.modifiers = toEnumSet(method.getModifiers(), Modifier.class);
-        if (!builder.make().isAbstract())
-            mBuilder.modifiers.remove(ABSTRACT);
-        if (builder instanceof ClassBuilder)
-            mBuilder.modifiers.remove(DEFAULT);
+        methodBuilder.modifiers = toEnumSet(method.getModifiers(), Modifier.class);
+        if (!typeDecl.isAbstract())
+            methodBuilder.modifiers.remove(ABSTRACT);
+        if (typeDecl.isClass())
+            methodBuilder.modifiers.remove(DEFAULT);
 
-        return mBuilder.make();
+        return methodBuilder.make();
     }
 
     private static List<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {

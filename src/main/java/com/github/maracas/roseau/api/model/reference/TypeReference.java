@@ -45,6 +45,11 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		this(qualifiedName, Collections.emptyList());
 	}
 
+	public TypeReference(String qualifiedName, T resolvedApiType) {
+		this(qualifiedName);
+		this.resolvedApiType = Objects.requireNonNull(resolvedApiType);
+	}
+
 	@Override
 	public String getQualifiedName() {
 		return qualifiedName;
