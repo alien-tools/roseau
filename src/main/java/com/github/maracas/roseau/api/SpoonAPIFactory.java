@@ -21,23 +21,7 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import spoon.Launcher;
 import spoon.reflect.cu.SourcePosition;
-import spoon.reflect.declaration.CtAnnotation;
-import spoon.reflect.declaration.CtAnnotationType;
-import spoon.reflect.declaration.CtClass;
-import spoon.reflect.declaration.CtConstructor;
-import spoon.reflect.declaration.CtEnum;
-import spoon.reflect.declaration.CtExecutable;
-import spoon.reflect.declaration.CtField;
-import spoon.reflect.declaration.CtFormalTypeDeclarer;
-import spoon.reflect.declaration.CtInterface;
-import spoon.reflect.declaration.CtMethod;
-import spoon.reflect.declaration.CtModifiable;
-import spoon.reflect.declaration.CtParameter;
-import spoon.reflect.declaration.CtRecord;
-import spoon.reflect.declaration.CtType;
-import spoon.reflect.declaration.CtTypeMember;
-import spoon.reflect.declaration.CtTypeParameter;
-import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.declaration.*;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtIntersectionTypeReference;
@@ -128,7 +112,8 @@ public class SpoonAPIFactory {
 			convertCtMethods(cls),
 			createTypeReference(cls.getDeclaringType()),
 			createTypeReference(cls.getSuperclass()),
-			convertCtConstructors(cls)
+			convertCtConstructors(cls),
+			convertCtSealable(cls)
 		);
 	}
 
@@ -143,7 +128,8 @@ public class SpoonAPIFactory {
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
 			convertCtMethods(intf),
-			createTypeReference(intf.getDeclaringType())
+			createTypeReference(intf.getDeclaringType()),
+			convertCtSealable(intf)
 		);
 	}
 
@@ -296,6 +282,12 @@ public class SpoonAPIFactory {
 		return parameter.isVarArgs() && parameter.getType() instanceof CtArrayTypeReference<?> atr
 			? new ParameterDecl(parameter.getSimpleName(), createITypeReference(atr.getComponentType()), true)
 			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
+	}
+
+	private List<String> convertCtSealable(CtSealable sealable) {
+		return sealable.getPermittedTypes().stream()
+			.map(CtTypeReference::getSimpleName)
+			.toList();
 	}
 
 	private List<String> convertCtEnumValues(CtEnum<?> enm) {

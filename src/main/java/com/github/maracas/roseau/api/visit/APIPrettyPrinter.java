@@ -34,7 +34,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print classDecl(ClassDecl it) {
 		return () -> """
-			%s %s class %s %s %s {
+			%s %s class %s %s %s %s {
 				%s
 				%s
 				%s
@@ -47,6 +47,9 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				it.getImplementedInterfaces().isEmpty()
 					? ""
 					: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
+				it.getPermittedTypes().isEmpty()
+					? ""
+					: "permits " + String.join(", ", it.getPermittedTypes()),
 				it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 				it.getConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 				it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
@@ -57,7 +60,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print interfaceDecl(InterfaceDecl it) {
 		return () -> """
-			%s %s interface %s %s {
+			%s %s interface %s %s %s {
 				%s
 				%s
 				%s
@@ -68,6 +71,9 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			it.getImplementedInterfaces().isEmpty()
 				? ""
 				: "extends " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
+			it.getPermittedTypes().isEmpty()
+					? ""
+					: "permits " + String.join(", ", it.getPermittedTypes()),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
 			""

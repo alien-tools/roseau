@@ -10,10 +10,11 @@ import java.util.List;
 public sealed class ClassBuilder extends TypeDeclBuilder permits EnumBuilder, RecordBuilder {
     public TypeReference<ClassDecl> superClass;
     public List<ConstructorDecl> constructors = new ArrayList<>();
+    public List<String> permittedTypes = new ArrayList<>();
 
     public ClassDecl make() {
         return new ClassDecl(qualifiedName, visibility, modifiers, annotations, location,
                 implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass,
-                constructors);
+                constructors, permittedTypes);
     }
 }

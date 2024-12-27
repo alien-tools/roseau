@@ -17,7 +17,7 @@ public final class EnumDecl extends ClassDecl {
 	                List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType,
 					List<ConstructorDecl> constructors, List<String> values) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
-			fields, methods, enclosingType, null, constructors);
+			fields, methods, enclosingType, null, constructors, List.of());
 
 		this.values = Objects.requireNonNull(values);
 	}
