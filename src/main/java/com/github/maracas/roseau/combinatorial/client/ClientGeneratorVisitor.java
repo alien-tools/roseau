@@ -1,16 +1,15 @@
-package com.github.maracas.roseau.combinatorial.client.visit;
+package com.github.maracas.roseau.combinatorial.client;
 
 import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
-import com.github.maracas.roseau.combinatorial.client.ClientWriter;
 
 import java.util.Optional;
 
-public class ClientGenerator extends AbstractAPIVisitor {
+public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	private final ClientWriter writer;
 
-	public ClientGenerator(ClientWriter writer) {
+	public ClientGeneratorVisitor(ClientWriter writer) {
 		this.writer = writer;
 	}
 
@@ -34,7 +33,7 @@ public class ClientGenerator extends AbstractAPIVisitor {
 	private void generateClassClients(ClassDecl it) {
 		writer.writeTypeReference(it);
 
-		if (!it.isEffectivelyFinal()) {
+		if (!it.isEffectivelyFinal() && !it.isSealed()) {
 			writer.writeClassInheritance(it);
 		}
 
@@ -54,8 +53,11 @@ public class ClientGenerator extends AbstractAPIVisitor {
 
 	private void generateInterfaceClients(InterfaceDecl it) {
 		writer.writeTypeReference(it);
-		writer.writeInterfaceExtension(it);
-		writer.writeInterfaceImplementation(it);
+
+		if (!it.isSealed()) {
+			writer.writeInterfaceExtension(it);
+			writer.writeInterfaceImplementation(it);
+		}
 	}
 
 	private void generateConstructorClients(ConstructorDecl it) {
@@ -93,7 +95,7 @@ public class ClientGenerator extends AbstractAPIVisitor {
 
 		writer.writeMethodInvocation(it, containingClass);
 
-		if (!it.isEffectivelyFinal()) { // Checks also if class is final
+		if (!it.isEffectivelyFinal()) { // Checks also if containing class is final or sealed
 			writer.writeMethodOverride(it, containingClass);
 		}
 	}

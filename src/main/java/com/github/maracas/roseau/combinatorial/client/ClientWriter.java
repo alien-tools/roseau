@@ -118,7 +118,7 @@ public class ClientWriter {
             template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
         }
 
-        if (methodName == null) return;
+        if (methodName == null || containingType.isSealed()) return;
 
         var methodCode = "var val = this.%s;".formatted(fieldDecl.getSimpleName());
         var method = generateMethodDeclaration(methodName, methodCode);
@@ -146,7 +146,7 @@ public class ClientWriter {
             template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
         }
 
-        if (methodName == null) return;
+        if (methodName == null || containingType.isSealed()) return;
 
         var methodCode = "this.%s = %s;".formatted(fieldDecl.getSimpleName(), value);
         var method = generateMethodDeclaration(methodName, methodCode);
@@ -196,7 +196,7 @@ public class ClientWriter {
             template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
         }
 
-        if (methodName == null) return;
+        if (methodName == null || containingClass.isSealed()) return;
 
         var methodCode = "this.%s(%s);".formatted(methodDecl.getSimpleName(), params);
         var method = generateMethodDeclaration(methodName, methodCode, exceptions);

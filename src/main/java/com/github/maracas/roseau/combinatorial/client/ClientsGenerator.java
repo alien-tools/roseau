@@ -2,7 +2,6 @@ package com.github.maracas.roseau.combinatorial.client;
 
 import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
-import com.github.maracas.roseau.combinatorial.client.visit.ClientGenerator;
 
 import java.nio.file.Path;
 
@@ -26,7 +25,7 @@ public class ClientsGenerator {
                 System.exit(1);
             }
 
-            new ClientGenerator(clientWriter).$(api).visit();
+            new ClientGeneratorVisitor(clientWriter).$(api).visit();
         } catch (Exception e) {
             System.err.println("Failed to extract API from " + apiDir);
             System.err.println(e.getMessage());
