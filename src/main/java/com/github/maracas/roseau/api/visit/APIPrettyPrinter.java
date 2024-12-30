@@ -151,7 +151,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
 			it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", ")),
 			!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")) : "",
-			hasBody(it) ? "{ return %s; }".formatted(defaultValue(it.getType())) : ";"
+			hasBody(it)
+					? it.getType().getQualifiedName().equals("void")
+						? "{}"
+						: "{ return %s; }".formatted(defaultValue(it.getType()))
+					: ";"
 		);
 	}
 

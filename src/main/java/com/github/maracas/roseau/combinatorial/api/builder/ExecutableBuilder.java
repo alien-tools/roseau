@@ -12,4 +12,8 @@ abstract class ExecutableBuilder extends TypeMemberBuilder {
     public List<ParameterDecl> parameters = new ArrayList<>();
     public List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
     public List<TypeReference<ClassDecl>> thrownExceptions = new ArrayList<>();
+
+    public void resetParameters() {
+        parameters = new ArrayList<>();
+    }
 }

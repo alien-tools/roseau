@@ -2,15 +2,18 @@ package com.github.maracas.roseau.combinatorial.api;
 
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.*;
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.combinatorial.api.builder.*;
 import com.google.common.collect.Sets;
+import org.javatuples.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 import static com.github.maracas.roseau.api.model.AccessModifier.PACKAGE_PRIVATE;
 import static com.github.maracas.roseau.api.model.AccessModifier.PRIVATE;
@@ -43,18 +46,18 @@ public class CombinatorialApi {
     static final Set<Set<Modifier>> enumModifiers = powerSet();
 
     static final List<ITypeReference> fieldTypes = List.of(
-            new PrimitiveTypeReference("int")/*, // Primitive
-		new TypeReference<>("java.lang.Integer"), // Boxed
-		new TypeReference<>("java.lang.Thread"), // Object reference
-		new ArrayTypeReference(new PrimitiveTypeReference("int"), 1) // Array */
+            new PrimitiveTypeReference("int"), // Primitive
+            new TypeReference<>("java.lang.Integer"), // Boxed
+            new TypeReference<>("java.lang.Thread"), // Object reference
+            new ArrayTypeReference(new PrimitiveTypeReference("int"), 1) // Array
     );
-    static final List<ITypeReference> methodTypes = fieldTypes;
+    static final List<ITypeReference> methodTypes = Stream.concat(fieldTypes.stream(), Stream.of(new PrimitiveTypeReference("void"))).toList();
     static final Set<Set<TypeReference<ClassDecl>>> thrownExceptions = powerSet(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/);
 
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
-    static final int paramsCount = 1;
+    static final int paramsCount = 2;
     static int symbolCounter = 0;
 
     Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
@@ -98,36 +101,45 @@ public class CombinatorialApi {
     }
 
     private void weaveMethods() {
+        var methodsFieldTypes = powerSet(fieldTypes).stream()
+                .map(setTypes -> setTypes.stream().toList())
+                .toList();
+
         // TODO: overloading
         typeStore.forEach((fqn, t) ->
-                methodVisibilities(t).forEach(visibility ->
-                        methodModifiers(t).forEach(modifiers ->
-                                methodTypes.forEach(type ->
-                                        thrownExceptions.forEach(exc ->
-                                                IntStream.range(0, paramsCount + 1).forEach(pCount -> {
-                                                    /* vis/mod interactions are annoying; don't want them there */
-                                                    if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(DEFAULT, ABSTRACT)).isEmpty())
-                                                        return;
-                                                    if (visibility == PACKAGE_PRIVATE && modifiers.contains(ABSTRACT))
-                                                        if (t instanceof ClassBuilder clsBuilder && clsBuilder.modifiers.contains(ABSTRACT))
-                                                            return;
+                methodVisibilitiesAndModifiers(t).forEach(visibilityAndModifiers ->
+                        methodTypes.forEach(type ->
+                                thrownExceptions.forEach(exc -> {
+                                    var visibility = visibilityAndModifiers.getValue0();
+                                    var modifiers = visibilityAndModifiers.getValue1();
 
-                                                    var builder = new MethodBuilder();
-                                                    builder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
-                                                    builder.visibility = visibility;
-                                                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                                                    builder.type = type;
-                                                    builder.containingType = new TypeReference<>(t.qualifiedName);
-                                                    builder.thrownExceptions = exc.stream().toList();
-                                                    IntStream.range(0, pCount).forEach(p -> {
-                                                        // TODO: varargs
-                                                        // TODO: parameter types
-                                                        builder.parameters.add(new ParameterDecl("p" + p, TypeReference.OBJECT, false));
-                                                    });
-                                                    t.methods.add(builder.make());
-                                                })
-                                        )
-                                )
+                                    var methodBuilder = new MethodBuilder();
+                                    methodBuilder.visibility = visibility;
+                                    methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                                    methodBuilder.type = type;
+                                    methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
+                                    methodBuilder.thrownExceptions = exc.stream().toList();
+
+                                    IntStream.range(0, paramsCount + 1).forEach(pCount -> {
+                                        var methodsFieldTypesForParamsCount = methodsFieldTypes.stream()
+                                                .filter(types -> types.size() == pCount)
+                                                .toList();
+
+                                        IntStream.range(0, methodsFieldTypesForParamsCount.size()).forEach(methodFieldTypesIndex -> {
+                                            var methodFieldTypes = methodsFieldTypesForParamsCount.get(methodFieldTypesIndex);
+
+                                            // TODO: varargs
+                                            IntStream.range(0, methodFieldTypes.size()).forEach(fieldIndex -> {
+                                                var field = methodFieldTypes.get(fieldIndex % methodFieldTypes.size());
+                                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                                            });
+
+                                            methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
+                                            t.methods.add(methodBuilder.make());
+                                            methodBuilder.resetParameters();
+                                        });
+                                    });
+                                })
                         )
                 )
         );
@@ -221,7 +233,8 @@ public class CombinatorialApi {
                     // Last level of hierarchy can't have sealed classes
                     if (depth == 0 && modifiers.contains(SEALED)) return;
                     // Class extending sealed class must be sealed, non-sealed or final
-                    if (parentCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty()) return;
+                    if (parentCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+                        return;
                     // Class extending non-sealed class can't be non-sealed
                     if (!parentCls.isSealed() && modifiers.contains(NON_SEALED)) return;
 
@@ -254,7 +267,8 @@ public class CombinatorialApi {
                     // Last level of hierarchy can't have sealed interfaces
                     if (depth == 0 && modifiers.contains(SEALED)) return;
                     // Interface extending sealed interface must be sealed or non-sealed
-                    if (parentIntf.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty()) return;
+                    if (parentIntf.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
+                        return;
                     // Interface extending non-sealed interface can't be non-sealed
                     if (!parentIntf.isSealed() && modifiers.contains(NON_SEALED)) return;
 
@@ -286,7 +300,8 @@ public class CombinatorialApi {
                     // Last level of hierarchy can't have sealed classes
                     if (depth == 0 && modifiers.contains(SEALED)) return;
                     // Class implementing sealed interface must be sealed, non-sealed or final
-                    if (parentIntf.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty()) return;
+                    if (parentIntf.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+                        return;
                     // Class implementing non-sealed interface can't be non-sealed
                     if (!parentIntf.isSealed() && modifiers.contains(NON_SEALED)) return;
 
@@ -394,19 +409,37 @@ public class CombinatorialApi {
         };
     }
 
-    private static List<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
-        return switch (container) {
-            case InterfaceBuilder ignored -> List.of(PUBLIC, /*PACKAGE_PRIVATE,*/ PRIVATE);
-            default -> List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
-        };
-    }
-
     private static Set<Set<Modifier>> fieldModifiers(Builder<TypeDecl> container) {
         return switch (container) {
             case RecordBuilder ignored -> powerSet(STATIC, FINAL).stream()
                     .filter(mods -> mods.contains(STATIC))
                     .collect(Collectors.toSet());
             default -> powerSet(STATIC, FINAL);
+        };
+    }
+
+    private List<Pair<AccessModifier, Set<Modifier>>> methodVisibilitiesAndModifiers(TypeDeclBuilder typeDeclBuilder) {
+        List<Pair<AccessModifier, Set<Modifier>>> visibilitiesAndModifiers = new ArrayList<>();
+
+        methodVisibilities(typeDeclBuilder).forEach(visibility ->
+                methodModifiers(typeDeclBuilder).forEach(modifiers -> {
+                    if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(DEFAULT, ABSTRACT)).isEmpty())
+                        return;
+                    if (visibility == PACKAGE_PRIVATE && modifiers.contains(ABSTRACT))
+                        if (typeDeclBuilder instanceof ClassBuilder clsBuilder && clsBuilder.modifiers.contains(ABSTRACT))
+                            return;
+
+                    visibilitiesAndModifiers.add(new Pair<>(visibility, modifiers));
+                })
+        );
+
+        return visibilitiesAndModifiers;
+    }
+
+    private static List<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
+        return switch (container) {
+            case InterfaceBuilder ignored -> List.of(PUBLIC, /*PACKAGE_PRIVATE,*/ PRIVATE);
+            default -> List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
         };
     }
 
