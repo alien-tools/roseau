@@ -191,7 +191,9 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 	@Override
 	public Print parameterDecl(ParameterDecl it) {
-		return () -> "%s %s".formatted(it.type().getQualifiedName(), it.name());
+		return () -> it.isVarargs()
+				? "%s ...%s".formatted(it.type().getQualifiedName(), it.name())
+				: "%s %s".formatted(it.type().getQualifiedName(), it.name());
 	}
 
 	@Override

@@ -128,7 +128,6 @@ public class CombinatorialApi {
                                         IntStream.range(0, methodsFieldTypesForParamsCount.size()).forEach(methodFieldTypesIndex -> {
                                             var methodFieldTypes = methodsFieldTypesForParamsCount.get(methodFieldTypesIndex);
 
-                                            // TODO: varargs
                                             IntStream.range(0, methodFieldTypes.size()).forEach(fieldIndex -> {
                                                 var field = methodFieldTypes.get(fieldIndex % methodFieldTypes.size());
                                                 methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
@@ -136,6 +135,20 @@ public class CombinatorialApi {
 
                                             methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
                                             t.methods.add(methodBuilder.make());
+
+                                            if (pCount < paramsCount) {
+                                                var currentParameters = new ArrayList<>(methodBuilder.parameters);
+
+                                                fieldTypes.forEach(varArgsFieldType -> {
+                                                    methodBuilder.resetParameters();
+                                                    methodBuilder.parameters.addAll(currentParameters);
+                                                    methodBuilder.parameters.add(new ParameterDecl("p" + pCount, varArgsFieldType, true));
+
+                                                    methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
+                                                    t.methods.add(methodBuilder.make());
+                                                });
+                                            }
+
                                             methodBuilder.resetParameters();
                                         });
                                     });
@@ -466,8 +479,12 @@ public class CombinatorialApi {
         };
     }
 
+    private static <T> Set<Set<T>> powerSet(List<T> elements) {
+        return Sets.powerSet(new LinkedHashSet<>(elements));
+    }
+
     private static <T> Set<Set<T>> powerSet(T... elements) {
-        return Sets.powerSet(new LinkedHashSet<>(List.of(elements)));
+        return powerSet(List.of(elements));
     }
 
     private static <T extends Enum<T>> EnumSet<T> toEnumSet(Set<T> set, Class<T> cls) {
