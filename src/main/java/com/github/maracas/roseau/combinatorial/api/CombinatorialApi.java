@@ -120,14 +120,13 @@ public class CombinatorialApi {
                                     methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
                                     methodBuilder.thrownExceptions = exc.stream().toList();
 
-                                    IntStream.range(0, paramsCount + 1).forEach(pCount -> {
+                                    // Parameters different types and count
+                                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
                                         var methodsFieldTypesForParamsCount = methodsFieldTypes.stream()
-                                                .filter(types -> types.size() == pCount)
+                                                .filter(types -> types.size() == methodParamsCount)
                                                 .toList();
 
-                                        IntStream.range(0, methodsFieldTypesForParamsCount.size()).forEach(methodFieldTypesIndex -> {
-                                            var methodFieldTypes = methodsFieldTypesForParamsCount.get(methodFieldTypesIndex);
-
+                                        methodsFieldTypesForParamsCount.forEach(methodFieldTypes -> {
                                             IntStream.range(0, methodFieldTypes.size()).forEach(fieldIndex -> {
                                                 var field = methodFieldTypes.get(fieldIndex % methodFieldTypes.size());
                                                 methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
@@ -136,13 +135,14 @@ public class CombinatorialApi {
                                             methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
                                             t.methods.add(methodBuilder.make());
 
-                                            if (pCount < paramsCount) {
+                                            // Varargs
+                                            if (methodParamsCount < paramsCount) {
                                                 var currentParameters = new ArrayList<>(methodBuilder.parameters);
 
                                                 fieldTypes.forEach(varArgsFieldType -> {
                                                     methodBuilder.resetParameters();
                                                     methodBuilder.parameters.addAll(currentParameters);
-                                                    methodBuilder.parameters.add(new ParameterDecl("p" + pCount, varArgsFieldType, true));
+                                                    methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsFieldType, true));
 
                                                     methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
                                                     t.methods.add(methodBuilder.make());
@@ -150,6 +150,25 @@ public class CombinatorialApi {
                                             }
 
                                             methodBuilder.resetParameters();
+                                        });
+                                    });
+
+                                    // Overloading
+                                    methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
+                                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+                                        var methodsFieldTypesForParamsCount = methodsFieldTypes.stream()
+                                                .filter(types -> types.size() == methodParamsCount)
+                                                .toList();
+
+                                        methodsFieldTypesForParamsCount.forEach(methodFieldTypes -> {
+                                            methodBuilder.resetParameters();
+
+                                            IntStream.range(0, methodFieldTypes.size()).forEach(fieldIndex -> {
+                                                var field = methodFieldTypes.get(fieldIndex % methodFieldTypes.size());
+                                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                                            });
+
+                                            t.methods.add(methodBuilder.make());
                                         });
                                     });
                                 })
