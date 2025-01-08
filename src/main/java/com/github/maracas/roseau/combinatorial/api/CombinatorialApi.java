@@ -51,14 +51,26 @@ public class CombinatorialApi {
             new TypeReference<>("java.lang.Thread"), // Object reference
             new ArrayTypeReference(new PrimitiveTypeReference("int"), 1) // Array
     );
-    static final List<ITypeReference> methodTypes = Stream.concat(fieldTypes.stream(), Stream.of(new PrimitiveTypeReference("void"))).toList();
-    static final Set<Set<TypeReference<ClassDecl>>> thrownExceptions = powerSet(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/);
+
+    static final List<List<ITypeReference>> methodParamsTypes = powerSet(fieldTypes)
+            .stream()
+            .map(setTypes -> setTypes.stream().toList())
+            .toList();
+    static final List<ITypeReference> methodReturnTypes = Stream
+            .concat(fieldTypes.stream(), Stream.of(new PrimitiveTypeReference("void")))
+            .toList();
+
+    static final List<List<TypeReference<ClassDecl>>> thrownExceptions = powerSet(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/)
+            .stream()
+            .map(set -> set.stream().toList())
+            .toList();
 
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
     static final int paramsCount = 2;
     static int symbolCounter = 0;
+    static int methodCounter = 0;
 
     Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
 
@@ -101,80 +113,93 @@ public class CombinatorialApi {
     }
 
     private void weaveMethods() {
-        var methodsFieldTypes = powerSet(fieldTypes).stream()
-                .map(setTypes -> setTypes.stream().toList())
-                .toList();
+        Map<Integer, List<List<ITypeReference>>> paramsCountToMethodsParamsTypes = new HashMap<>();
+        IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+            var methodsArgsTypes = methodParamsTypes.stream()
+                    .filter(types -> types.size() == methodParamsCount)
+                    .toList();
 
-        // TODO: overloading
+            paramsCountToMethodsParamsTypes.put(methodParamsCount, methodsArgsTypes);
+        });
+
         typeStore.forEach((fqn, t) ->
-                methodVisibilitiesAndModifiers(t).forEach(visibilityAndModifiers ->
-                        methodTypes.forEach(type ->
-                                thrownExceptions.forEach(exc -> {
-                                    var visibility = visibilityAndModifiers.getValue0();
-                                    var modifiers = visibilityAndModifiers.getValue1();
+                methodVisibilitiesAndModifiers(t).forEach(visibilityAndModifiers -> {
+                    var visibility = visibilityAndModifiers.getValue0();
+                    var modifiers = visibilityAndModifiers.getValue1();
 
-                                    var methodBuilder = new MethodBuilder();
-                                    methodBuilder.visibility = visibility;
-                                    methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                                    methodBuilder.type = type;
-                                    methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
-                                    methodBuilder.thrownExceptions = exc.stream().toList();
+                    var methodBuilder = new MethodBuilder();
+                    methodBuilder.visibility = visibility;
+                    methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                    methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
 
-                                    // Parameters different types and count
-                                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-                                        var methodsFieldTypesForParamsCount = methodsFieldTypes.stream()
-                                                .filter(types -> types.size() == methodParamsCount)
-                                                .toList();
+                    // Parameters different types and count
+                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+                        var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
+                        if (methodParamsCount > 1) {
+                            methodsParamsTypesForParamsCount = List.of(methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size()));
+                        }
 
-                                        methodsFieldTypesForParamsCount.forEach(methodFieldTypes -> {
-                                            IntStream.range(0, methodFieldTypes.size()).forEach(fieldIndex -> {
-                                                var field = methodFieldTypes.get(fieldIndex % methodFieldTypes.size());
-                                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
-                                            });
+                        methodsParamsTypesForParamsCount.forEach(methodParamsTypes -> {
+                            IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
+                                var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
+                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                            });
 
-                                            methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
-                                            t.methods.add(methodBuilder.make());
+                            addMethodToType(t, methodBuilder);
 
-                                            // Varargs
-                                            if (methodParamsCount < paramsCount) {
-                                                var currentParameters = new ArrayList<>(methodBuilder.parameters);
+                            methodBuilder.resetParameters();
+                        });
+                    });
 
-                                                fieldTypes.forEach(varArgsFieldType -> {
-                                                    methodBuilder.resetParameters();
-                                                    methodBuilder.parameters.addAll(currentParameters);
-                                                    methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsFieldType, true));
+                    // Varargs
+                    IntStream.range(1, paramsCount + 1).forEach(methodParamsCount -> {
+                        fieldTypes.forEach(varArgsParamType -> {
+                            var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
+                            var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
 
-                                                    methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
-                                                    t.methods.add(methodBuilder.make());
-                                                });
-                                            }
+                            IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
+                                var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
+                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                            });
 
-                                            methodBuilder.resetParameters();
-                                        });
-                                    });
+                            methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsParamType, true));
 
-                                    // Overloading
-                                    methodBuilder.qualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
-                                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-                                        var methodsFieldTypesForParamsCount = methodsFieldTypes.stream()
-                                                .filter(types -> types.size() == methodParamsCount)
-                                                .toList();
+                            addMethodToType(t, methodBuilder);
 
-                                        methodsFieldTypesForParamsCount.forEach(methodFieldTypes -> {
-                                            methodBuilder.resetParameters();
+                            methodBuilder.resetParameters();
+                        });
+                    });
 
-                                            IntStream.range(0, methodFieldTypes.size()).forEach(fieldIndex -> {
-                                                var field = methodFieldTypes.get(fieldIndex % methodFieldTypes.size());
-                                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
-                                            });
+                    // Overloading
+                    var overloadedQualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
+                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+                        var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
+                        var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
 
-                                            t.methods.add(methodBuilder.make());
-                                        });
-                                    });
-                                })
-                        )
-                )
+                        methodBuilder.resetParameters();
+
+                        IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
+                            var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
+                            methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                        });
+
+                        addMethodToType(t, methodBuilder, overloadedQualifiedName);
+                    });
+                })
         );
+    }
+
+    private void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder) {
+        addMethodToType(type, methodBuilder, type.qualifiedName + ".m" + ++symbolCounter);
+    }
+
+    private void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder, String qualifiedName) {
+        methodBuilder.qualifiedName = qualifiedName;
+        methodBuilder.type = methodReturnTypes.get(methodCounter % methodReturnTypes.size());
+        methodBuilder.thrownExceptions = thrownExceptions.get(methodCounter % thrownExceptions.size());
+
+        type.methods.add(methodBuilder.make());
+        methodCounter++;
     }
 
     private void createHierarchies() {
