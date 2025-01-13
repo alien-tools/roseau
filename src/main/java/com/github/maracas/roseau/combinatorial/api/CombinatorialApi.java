@@ -65,6 +65,8 @@ public class CombinatorialApi {
             .map(set -> set.stream().toList())
             .toList();
 
+    static final List<Boolean> isOverridings = List.of(true, false);
+
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
@@ -272,24 +274,29 @@ public class CombinatorialApi {
     private void createNewClassesExtendingClass(ClassBuilder parentClsBuilder, int depth) {
         var parentCls = parentClsBuilder.make();
 
-        topLevelVisibilities.forEach(visibility ->
-                classModifiers.forEach(modifiers -> {
-                    // Last level of hierarchy can't have sealed classes
-                    if (depth == 0 && modifiers.contains(SEALED)) return;
-                    // Class extending sealed class must be sealed, non-sealed or final
-                    if (parentCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
-                        return;
-                    // Class extending non-sealed class can't be non-sealed
-                    if (!parentCls.isSealed() && modifiers.contains(NON_SEALED)) return;
+        classModifiers.forEach(modifiers -> {
+            // Last level of hierarchy can't have sealed classes
+            if (depth == 0 && modifiers.contains(SEALED)) return;
+            // Class extending sealed class must be sealed, non-sealed or final
+            if (parentCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+                return;
+            // Class extending non-sealed class can't be non-sealed
+            if (!parentCls.isSealed() && modifiers.contains(NON_SEALED)) return;
+
+            topLevelVisibilities.forEach(visibility ->
+                isOverridings.forEach(isOverriding -> {
+                    if (!isOverriding && parentCls.isAbstract()) return;
 
                     var childClsBuilder = new ClassBuilder();
                     childClsBuilder.qualifiedName = "C" + ++symbolCounter;
                     childClsBuilder.visibility = visibility;
                     childClsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
                     childClsBuilder.superClass = new TypeReference<>(parentCls);
-                    parentCls.getAllMethods()
-                            .filter(m -> !m.isFinal())
-                            .forEach(m -> childClsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childClsBuilder)));
+                    if (isOverriding) {
+                        parentCls.getAllMethods()
+                                .filter(m -> !m.isFinal())
+                                .forEach(m -> childClsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childClsBuilder)));
+                    }
 
                     if (parentCls.isSealed()) {
                         parentClsBuilder.permittedTypes.add(childClsBuilder.qualifiedName);
@@ -300,7 +307,8 @@ public class CombinatorialApi {
                     if (depth > 0)
                         createSubtypes(childClsBuilder, depth - 1);
                 })
-        );
+            );
+        });
     }
 
     private void createNewInterfacesExtendingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
