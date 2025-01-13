@@ -152,23 +152,23 @@ public class CombinatorialApi {
                     });
 
                     // Varargs
-                    IntStream.range(1, paramsCount + 1).forEach(methodParamsCount -> {
-                        fieldTypes.forEach(varArgsParamType -> {
-                            var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
-                            var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
+                    IntStream.range(1, paramsCount + 1).forEach(methodParamsCount ->
+                            fieldTypes.forEach(varArgsParamType -> {
+                                var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
+                                var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
 
-                            IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
-                                var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
-                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
-                            });
+                                IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
+                                    var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
+                                    methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                                });
 
-                            methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsParamType, true));
+                                methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsParamType, true));
 
-                            addMethodToType(t, methodBuilder);
+                                addMethodToType(t, methodBuilder);
 
-                            methodBuilder.resetParameters();
-                        });
-                    });
+                                methodBuilder.resetParameters();
+                            })
+                    );
 
                     // Overloading
                     var overloadedQualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
@@ -189,28 +189,15 @@ public class CombinatorialApi {
         );
     }
 
-    private void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder) {
-        addMethodToType(type, methodBuilder, type.qualifiedName + ".m" + ++symbolCounter);
-    }
-
-    private void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder, String qualifiedName) {
-        methodBuilder.qualifiedName = qualifiedName;
-        methodBuilder.type = methodReturnTypes.get(methodCounter % methodReturnTypes.size());
-        methodBuilder.thrownExceptions = thrownExceptions.get(methodCounter % thrownExceptions.size());
-
-        type.methods.add(methodBuilder.make());
-        methodCounter++;
-    }
-
     private void createHierarchies() {
-        IntStream.range(1, typeHierarchyDepth).forEach(depth -> {
+        IntStream.range(0, typeHierarchyDepth).forEach(depth ->
             List.copyOf(typeStore.values()).forEach(t -> {
                 if (t instanceof ClassBuilder c)
                     createSubtypes(c, depth);
                 if (t instanceof InterfaceBuilder i)
                     createSubtypes(i, depth);
-            });
-        });
+            })
+        );
     }
 
     private void createInterfaces() {
@@ -271,18 +258,18 @@ public class CombinatorialApi {
 
     private void createSubtypes(ClassBuilder clsBuilder, int depth) {
         if (!clsBuilder.modifiers.contains(FINAL) && !(clsBuilder instanceof RecordBuilder) && !(clsBuilder instanceof EnumBuilder)) {
-            createNewClassExtendingClass(clsBuilder, depth);
+            createNewClassesExtendingClass(clsBuilder, depth);
         }
     }
 
     private void createSubtypes(InterfaceBuilder intfBuilder, int depth) {
-        createNewInterfaceExtendingInterface(intfBuilder, depth);
-        createNewClassImplementingInterface(intfBuilder, depth);
-        createNewRecordImplementingInterface(intfBuilder, depth);
-        createNewEnumImplementingInterface(intfBuilder, depth);
+        createNewInterfacesExtendingInterface(intfBuilder, depth);
+        createNewClassesImplementingInterface(intfBuilder, depth);
+        createNewRecordsImplementingInterface(intfBuilder, depth);
+        createNewEnumsImplementingInterface(intfBuilder, depth);
     }
 
-    private void createNewClassExtendingClass(ClassBuilder parentClsBuilder, int depth) {
+    private void createNewClassesExtendingClass(ClassBuilder parentClsBuilder, int depth) {
         var parentCls = parentClsBuilder.make();
 
         topLevelVisibilities.forEach(visibility ->
@@ -316,7 +303,7 @@ public class CombinatorialApi {
         );
     }
 
-    private void createNewInterfaceExtendingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
+    private void createNewInterfacesExtendingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
         var parentIntf = parentIntfBuilder.make();
 
         topLevelVisibilities.forEach(visibility ->
@@ -349,7 +336,7 @@ public class CombinatorialApi {
         );
     }
 
-    private void createNewClassImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
+    private void createNewClassesImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
         var parentIntf = parentIntfBuilder.make();
 
         topLevelVisibilities.forEach(visibility ->
@@ -382,7 +369,7 @@ public class CombinatorialApi {
         );
     }
 
-    private void createNewRecordImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
+    private void createNewRecordsImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
         var parentIntf = parentIntfBuilder.make();
 
         topLevelVisibilities.forEach(visibility ->
@@ -407,7 +394,7 @@ public class CombinatorialApi {
         );
     }
 
-    private void createNewEnumImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
+    private void createNewEnumsImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
         var parentIntf = parentIntfBuilder.make();
 
         topLevelVisibilities.forEach(visibility ->
@@ -436,6 +423,19 @@ public class CombinatorialApi {
 
     private void store(TypeDeclBuilder type) {
         typeStore.put(type.qualifiedName, type);
+    }
+
+    private static void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder) {
+        addMethodToType(type, methodBuilder, type.qualifiedName + ".m" + ++symbolCounter);
+    }
+
+    private static void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder, String qualifiedName) {
+        methodBuilder.qualifiedName = qualifiedName;
+        methodBuilder.type = methodReturnTypes.get(methodCounter % methodReturnTypes.size());
+        methodBuilder.thrownExceptions = thrownExceptions.get(methodCounter % thrownExceptions.size());
+
+        type.methods.add(methodBuilder.make());
+        methodCounter++;
     }
 
     private static MethodDecl generateMethodForTypeDeclBuilder(MethodDecl method, TypeDeclBuilder builder) {
