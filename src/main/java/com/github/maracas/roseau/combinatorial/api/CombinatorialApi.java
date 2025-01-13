@@ -66,6 +66,7 @@ public class CombinatorialApi {
             .toList();
 
     static final List<Boolean> isOverridings = List.of(true, false);
+    static final List<Boolean> isHidings = List.of(true, false);
 
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
@@ -193,12 +194,12 @@ public class CombinatorialApi {
 
     private void createHierarchies() {
         IntStream.range(0, typeHierarchyDepth).forEach(depth ->
-            List.copyOf(typeStore.values()).forEach(t -> {
-                if (t instanceof ClassBuilder c)
-                    createSubtypes(c, depth);
-                if (t instanceof InterfaceBuilder i)
-                    createSubtypes(i, depth);
-            })
+                List.copyOf(typeStore.values()).forEach(t -> {
+                    if (t instanceof ClassBuilder c)
+                        createSubtypes(c, depth);
+                    if (t instanceof InterfaceBuilder i)
+                        createSubtypes(i, depth);
+                })
         );
     }
 
@@ -284,29 +285,37 @@ public class CombinatorialApi {
             if (!parentCls.isSealed() && modifiers.contains(NON_SEALED)) return;
 
             topLevelVisibilities.forEach(visibility ->
-                isOverridings.forEach(isOverriding -> {
-                    if (!isOverriding && parentCls.isAbstract()) return;
+                    isHidings.forEach(isHiding ->
+                            isOverridings.forEach(isOverriding -> {
+                                if (!isOverriding && parentCls.isAbstract()) return;
 
-                    var childClsBuilder = new ClassBuilder();
-                    childClsBuilder.qualifiedName = "C" + ++symbolCounter;
-                    childClsBuilder.visibility = visibility;
-                    childClsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    childClsBuilder.superClass = new TypeReference<>(parentCls);
-                    if (isOverriding) {
-                        parentCls.getAllMethods()
-                                .filter(m -> !m.isFinal())
-                                .forEach(m -> childClsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childClsBuilder)));
-                    }
+                                var childClsBuilder = new ClassBuilder();
+                                childClsBuilder.qualifiedName = "C" + ++symbolCounter;
+                                childClsBuilder.visibility = visibility;
+                                childClsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                                childClsBuilder.superClass = new TypeReference<>(parentCls);
+                                if (isHiding) {
+                                    parentCls.getAllFields()
+                                            .filter(f -> !f.isFinal())
+                                            .forEach(f -> childClsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, childClsBuilder)));
+                                }
 
-                    if (parentCls.isSealed()) {
-                        parentClsBuilder.permittedTypes.add(childClsBuilder.qualifiedName);
-                    }
+                                if (isOverriding) {
+                                    parentCls.getAllMethods()
+                                            .filter(m -> !m.isFinal())
+                                            .forEach(m -> childClsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childClsBuilder)));
+                                }
 
-                    // TODO: Field hiding
-                    store(childClsBuilder);
-                    if (depth > 0)
-                        createSubtypes(childClsBuilder, depth - 1);
-                })
+                                if (parentCls.isSealed()) {
+                                    parentClsBuilder.permittedTypes.add(childClsBuilder.qualifiedName);
+                                }
+
+                                // TODO: Field hiding
+                                store(childClsBuilder);
+                                if (depth > 0)
+                                    createSubtypes(childClsBuilder, depth - 1);
+                            })
+                    )
             );
         });
     }
@@ -444,6 +453,19 @@ public class CombinatorialApi {
 
         type.methods.add(methodBuilder.make());
         methodCounter++;
+    }
+
+    private static FieldDecl generateFieldForTypeDeclBuilder(FieldDecl field, TypeDeclBuilder builder) {
+        var typeDecl = builder.make();
+        var fieldBuilder = new FieldBuilder();
+
+        fieldBuilder.qualifiedName = builder.qualifiedName + "." + field.getSimpleName();
+        fieldBuilder.visibility = field.getVisibility();
+        fieldBuilder.modifiers = toEnumSet(field.getModifiers(), Modifier.class);
+        fieldBuilder.containingType = new TypeReference<>(typeDecl);
+        fieldBuilder.type = field.getType();
+
+        return fieldBuilder.make();
     }
 
     private static MethodDecl generateMethodForTypeDeclBuilder(MethodDecl method, TypeDeclBuilder builder) {
