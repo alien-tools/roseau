@@ -193,14 +193,12 @@ public class CombinatorialApi {
     }
 
     private void createHierarchies() {
-        IntStream.range(0, typeHierarchyDepth).forEach(depth ->
-                List.copyOf(typeStore.values()).forEach(t -> {
-                    if (t instanceof ClassBuilder c)
-                        createSubtypes(c, depth);
-                    if (t instanceof InterfaceBuilder i)
-                        createSubtypes(i, depth);
-                })
-        );
+        List.copyOf(typeStore.values()).forEach(t -> {
+            if (t instanceof ClassBuilder c)
+                createSubtypes(c, typeHierarchyDepth - 1);
+            if (t instanceof InterfaceBuilder i)
+                createSubtypes(i, typeHierarchyDepth - 1);
+        });
     }
 
     private void createInterfaces() {
