@@ -232,14 +232,31 @@ public class CombinatorialApi {
     }
 
     private void createRecords() {
+        var recordsComponentTypes = methodParamsTypes.stream()
+                .filter(types -> types.size() <= paramsCount)
+                .toList();
+
         topLevelVisibilities.forEach(visibility ->
-                recordModifiers.forEach(modifiers -> {
-                    var builder = new RecordBuilder();
-                    builder.qualifiedName = "R" + ++symbolCounter;
-                    builder.visibility = visibility;
-                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    store(builder);
-                })
+                recordModifiers.forEach(modifiers ->
+                        recordsComponentTypes.forEach(recordComponentTypes -> {
+                            var recordBuilder = new RecordBuilder();
+                            recordBuilder.qualifiedName = "R" + ++symbolCounter;
+                            recordBuilder.visibility = visibility;
+                            recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+
+                            recordComponentTypes.forEach(recordComponentType -> {
+                                FieldBuilder fieldBuilder = new FieldBuilder();
+                                fieldBuilder.qualifiedName = "f" + ++symbolCounter;
+                                fieldBuilder.type = recordComponentType;
+                                fieldBuilder.visibility = PUBLIC;
+                                fieldBuilder.containingType = new TypeReference<>(recordBuilder.qualifiedName);
+
+                                recordBuilder.fields.add(fieldBuilder.make());
+                            });
+
+                            store(recordBuilder);
+                        })
+                )
         );
     }
 

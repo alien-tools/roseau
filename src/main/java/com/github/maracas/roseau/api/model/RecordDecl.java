@@ -4,6 +4,7 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.stream.Stream;
 
 public final class RecordDecl extends ClassDecl {
 	public RecordDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
@@ -18,6 +19,14 @@ public final class RecordDecl extends ClassDecl {
 	@Override
 	public boolean isRecord() {
 		return true;
+	}
+
+	public Stream<FieldDecl> getRecordComponents() {
+		return super.getDeclaredFields().stream().filter(f -> !f.isStatic());
+	}
+
+	public Stream<FieldDecl> getStaticDeclaredFields() {
+		return super.getDeclaredFields().stream().filter(FieldDecl::isStatic);
 	}
 
 	@Override

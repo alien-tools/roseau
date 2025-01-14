@@ -126,7 +126,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print recordDecl(RecordDecl it) {
 		return () -> """
-			%s %s record %s() %s {
+			%s %s record %s(%s) %s {
 				%s
 				%s
 				%s
@@ -135,10 +135,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
+			it.getRecordComponents().map(f -> "%s %s".formatted(f.getType().toString(), f.getSimpleName())).collect(Collectors.joining(", ")),
 			it.getImplementedInterfaces().isEmpty()
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
-			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
+			it.getStaticDeclaredFields().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
 			""
