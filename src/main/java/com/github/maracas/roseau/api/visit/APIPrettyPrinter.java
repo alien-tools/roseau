@@ -36,7 +36,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 		return () -> """
 			%s %s class %s %s %s %s {
 				%s
-				%s
+			%s
 				%s
 				%s
 			}""".formatted(
@@ -174,7 +174,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 	@Override
 	public Print constructorDecl(ConstructorDecl it) {
-		return null;
+		return () -> "\t%s %s(%s) {}".formatted(
+				prettyPrint(it.getVisibility()),
+				it.getSimpleName(),
+				it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", "))
+		);
 	}
 
 	@Override

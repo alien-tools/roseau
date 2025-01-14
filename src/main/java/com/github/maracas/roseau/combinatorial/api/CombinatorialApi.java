@@ -30,6 +30,7 @@ import static com.github.maracas.roseau.api.model.Modifier.SYNCHRONIZED;
 
 public class CombinatorialApi {
     static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC, PACKAGE_PRIVATE);
+    static final List<AccessModifier> constructorsVisibilities = List.of(PACKAGE_PRIVATE, PRIVATE, PROTECTED, PUBLIC);
 
     // STATIC handled separately for nested types only
     static final Set<Set<Modifier>> classModifiers = powerSet(FINAL, ABSTRACT, SEALED, NON_SEALED)
@@ -73,6 +74,7 @@ public class CombinatorialApi {
     static final int enumValuesCount = 5;
     static final int paramsCount = 2;
     static int symbolCounter = 0;
+    static int constructorCounter = 0;
     static int methodCounter = 0;
 
     Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
@@ -116,14 +118,7 @@ public class CombinatorialApi {
     }
 
     private void weaveMethods() {
-        Map<Integer, List<List<ITypeReference>>> paramsCountToMethodsParamsTypes = new HashMap<>();
-        IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-            var methodsArgsTypes = methodParamsTypes.stream()
-                    .filter(types -> types.size() == methodParamsCount)
-                    .toList();
-
-            paramsCountToMethodsParamsTypes.put(methodParamsCount, methodsArgsTypes);
-        });
+        var paramsCountToMethodsParamsTypes = getParamsCountToParamsTypesMap();
 
         typeStore.forEach((fqn, t) ->
                 methodVisibilitiesAndModifiers(t).forEach(visibilityAndModifiers -> {
@@ -217,16 +212,37 @@ public class CombinatorialApi {
     }
 
     private void createClasses() {
+        var paramsCountToConstructorsParamsTypes = getParamsCountToParamsTypesMap();
+
         topLevelVisibilities.forEach(visibility ->
                 classModifiers.forEach(modifiers -> {
                     // First level of hierarchy can't have non-sealed classes
                     if (modifiers.contains(NON_SEALED)) return;
 
-                    var builder = new ClassBuilder();
-                    builder.qualifiedName = "C" + ++symbolCounter;
-                    builder.visibility = visibility;
-                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    store(builder);
+                    var classBuilder = new ClassBuilder();
+                    classBuilder.qualifiedName = "C" + ++symbolCounter;
+                    classBuilder.visibility = visibility;
+                    classBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+
+                    constructorsVisibilities.forEach(constructorVisibility -> {
+                        var constructorBuilder = new ConstructorBuilder();
+                        constructorBuilder.qualifiedName = classBuilder.qualifiedName;
+                        constructorBuilder.visibility = constructorVisibility;
+                        constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
+                        constructorBuilder.type = new PrimitiveTypeReference("void");
+
+                        var paramCountToConstructorsParamsTypes = paramsCountToConstructorsParamsTypes.get(constructorCounter % paramsCountToConstructorsParamsTypes.size());
+                        var constructorsParamsTypes = paramCountToConstructorsParamsTypes.get(constructorCounter % paramCountToConstructorsParamsTypes.size());
+                        IntStream.range(0, constructorsParamsTypes.size()).forEach(constructorParamTypeIndex -> {
+                            var constructorsParamType = constructorsParamsTypes.get(constructorParamTypeIndex);
+                            constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, false));
+                        });
+
+                        classBuilder.constructors.add(constructorBuilder.make());
+                        constructorCounter++;
+                    });
+
+                    store(classBuilder);
                 })
         );
     }
@@ -566,6 +582,20 @@ public class CombinatorialApi {
                     .collect(Collectors.toSet());
             default -> modifiers;
         };
+    }
+
+    private static Map<Integer, List<List<ITypeReference>>> getParamsCountToParamsTypesMap() {
+        Map<Integer, List<List<ITypeReference>>> paramsCountToConstructorsParamsTypes = new HashMap<>();
+
+        IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+            var methodsArgsTypes = methodParamsTypes.stream()
+                    .filter(types -> types.size() == methodParamsCount)
+                    .toList();
+
+            paramsCountToConstructorsParamsTypes.put(methodParamsCount, methodsArgsTypes);
+        });
+
+        return paramsCountToConstructorsParamsTypes;
     }
 
     private static <T> Set<Set<T>> powerSet(List<T> elements) {
