@@ -69,6 +69,9 @@ public class CombinatorialApi {
     static final List<Boolean> isOverridings = List.of(true, false);
     static final List<Boolean> isHidings = List.of(true, false);
 
+    static List<ClassBuilder> classBuilders = new ArrayList<>();
+    static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
+
     static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
@@ -188,11 +191,40 @@ public class CombinatorialApi {
     }
 
     private void createHierarchies() {
-        List.copyOf(typeStore.values()).forEach(t -> {
-            if (t instanceof ClassBuilder c)
-                createSubtypes(c, typeHierarchyDepth - 1);
-            if (t instanceof InterfaceBuilder i)
-                createSubtypes(i, typeHierarchyDepth - 1);
+        var interfaceBuilders = List.copyOf(typeStore.values()).stream()
+                .filter(t -> t instanceof InterfaceBuilder)
+                .map(t -> (InterfaceBuilder) t)
+                .toList();
+        var interfaceBuildersPowerSet = powerSet(interfaceBuilders);
+        var widthToInterfacesMap = new HashMap<Integer, List<List<InterfaceBuilder>>>();
+        IntStream.range(0, typeHierarchyWidth + 1).forEach(width ->
+                interfaceBuildersPowerSet.forEach(interfaceBuilderSet -> {
+                    if (interfaceBuilderSet.size() == width) {
+                        widthToInterfacesMap.putIfAbsent(width, new ArrayList<>());
+                        widthToInterfacesMap.get(width).add(interfaceBuilderSet.stream().toList());
+                    }
+                })
+        );
+
+        classBuilders.forEach(clsBuilder -> {
+            // Create C extends C hierarchy & C extends C implements I hierarchy
+            widthToInterfacesMap.forEach((width, allInterfaceBuildersForWidth) ->
+                    allInterfaceBuildersForWidth.forEach(interfaceBuildersForWidth ->
+                            createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, interfaceBuildersForWidth, typeHierarchyDepth - 1)
+                    )
+            );
+        });
+
+        widthToInterfacesMap.forEach((width, allInterfaceBuildersForWidth) -> {
+            if (width == 0) return;
+
+            // Create C / R / E / I implements I hierarchy
+            allInterfaceBuildersForWidth.forEach(interfaceBuildersForWidth -> {
+                createNewInterfacesExtendingInterfaces(interfaceBuildersForWidth, typeHierarchyDepth - 1);
+                createNewClassesImplementingInterfaces(interfaceBuildersForWidth);
+                createNewEnumsImplementingInterfaces(interfaceBuildersForWidth);
+                createNewRecordsImplementingInterfaces(interfaceBuildersForWidth);
+            });
         });
     }
 
@@ -202,11 +234,13 @@ public class CombinatorialApi {
                     // First level of hierarchy can't have non-sealed interfaces
                     if (modifiers.contains(NON_SEALED)) return;
 
-                    var builder = new InterfaceBuilder();
-                    builder.qualifiedName = "I" + ++symbolCounter;
-                    builder.visibility = visibility;
-                    builder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    store(builder);
+                    var interfaceBuilder = new InterfaceBuilder();
+                    interfaceBuilder.qualifiedName = "I" + ++symbolCounter;
+                    interfaceBuilder.visibility = visibility;
+                    interfaceBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+
+                    store(interfaceBuilder);
+                    interfaceBuilders.add(interfaceBuilder);
                 })
         );
     }
@@ -236,6 +270,7 @@ public class CombinatorialApi {
                     });
 
                     store(classBuilder);
+                    classBuilders.add(classBuilder);
                 })
         );
     }
@@ -277,209 +312,205 @@ public class CombinatorialApi {
                     builder.visibility = visibility;
                     builder.modifiers = toEnumSet(modifiers, Modifier.class);
                     for (int i = 0; i < enumValuesCount; i++)
-                        builder.values.add("V" + ++symbolCounter);
+                        builder.values.add("V" + i);
                     store(builder);
                 })
         );
     }
 
-    private void createSubtypes(ClassBuilder clsBuilder, int depth) {
-        if (!clsBuilder.modifiers.contains(FINAL) && !(clsBuilder instanceof RecordBuilder) && !(clsBuilder instanceof EnumBuilder)) {
-            createNewClassesExtendingClass(clsBuilder, depth);
-        }
-    }
-
-    private void createSubtypes(InterfaceBuilder intfBuilder, int depth) {
-        createNewInterfacesExtendingInterface(intfBuilder, depth);
-        createNewClassesImplementingInterface(intfBuilder, depth);
-        createNewRecordsImplementingInterface(intfBuilder, depth);
-        createNewEnumsImplementingInterface(intfBuilder, depth);
-    }
-
-    private void createNewClassesExtendingClass(ClassBuilder parentClsBuilder, int depth) {
-        var parentCls = parentClsBuilder.make();
+    private void createNewClassesExtendingClassAndImplementingInterfaces(ClassBuilder superClsBuilder, List<InterfaceBuilder> implementingIntfBuilders, int depth) {
+        var superCls = superClsBuilder.make();
+        if (superCls.isFinal()) return;
 
         classModifiers.forEach(modifiers -> {
             // Last level of hierarchy can't have sealed classes
-            if (depth == 0 && modifiers.contains(SEALED)) return;
+            if (depth == 0 && modifiers.contains(SEALED))
+                return;
             // Class extending sealed class must be sealed, non-sealed or final
-            if (parentCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+            if (superCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+                return;
+            // Class implementing at least one sealed interface must be sealed, non-sealed or final
+            if (implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
                 return;
             // Class extending non-sealed class can't be non-sealed
-            if (!parentCls.isSealed() && modifiers.contains(NON_SEALED)) return;
+            if (!superCls.isSealed() && modifiers.contains(NON_SEALED))
+                return;
+            // Class implementing non-sealed interfaces can't be non-sealed
+            if (implementingIntfBuilders.stream().noneMatch(iB -> iB.make().isSealed()) && modifiers.contains(NON_SEALED))
+                return;
 
             topLevelVisibilities.forEach(visibility ->
                     isHidings.forEach(isHiding ->
                             isOverridings.forEach(isOverriding -> {
-                                if (!isOverriding && parentCls.isAbstract()) return;
-
-                                var childClsBuilder = new ClassBuilder();
-                                childClsBuilder.qualifiedName = "C" + ++symbolCounter;
-                                childClsBuilder.visibility = visibility;
-                                childClsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                                childClsBuilder.superClass = new TypeReference<>(parentCls);
+                                var clsBuilder = new ClassBuilder();
+                                clsBuilder.qualifiedName = "C" + ++symbolCounter;
+                                clsBuilder.visibility = visibility;
+                                clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                                clsBuilder.superClass = new TypeReference<>(superCls);
                                 if (isHiding) {
-                                    parentCls.getAllFields()
-                                            .filter(f -> !f.isFinal())
-                                            .forEach(f -> childClsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, childClsBuilder)));
+                                    superCls.getDeclaredFields()
+                                            .forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
                                 }
 
                                 if (isOverriding) {
-                                    parentCls.getAllMethods()
+                                    superCls.getAllMethods()
                                             .filter(m -> !m.isFinal())
-                                            .forEach(m -> childClsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childClsBuilder)));
+                                            .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                } else if (superCls.isAbstract()) {
+                                    superCls.getAllMethodsToImplement()
+                                            .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
                                 }
 
-                                if (parentCls.isSealed()) {
-                                    parentClsBuilder.permittedTypes.add(childClsBuilder.qualifiedName);
+                                if (superCls.isSealed()) {
+                                    superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
                                 }
 
-                                // TODO: Field hiding
-                                store(childClsBuilder);
+                                implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+                                    var implementingIntf = implementingIntfBuilder.make();
+
+                                    clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+                                    implementingIntf.getAllMethods()
+                                            .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+
+                                    if (implementingIntf.isSealed()) {
+                                        implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+                                    }
+                                });
+
+                                store(clsBuilder);
                                 if (depth > 0)
-                                    createSubtypes(childClsBuilder, depth - 1);
+                                    createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, implementingIntfBuilders, depth - 1);
                             })
                     )
             );
         });
     }
 
-    private void createNewInterfacesExtendingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
-        var parentIntf = parentIntfBuilder.make();
-
+    private void createNewInterfacesExtendingInterfaces(List<InterfaceBuilder> extendingIntfBuilders, int depth) {
         topLevelVisibilities.forEach(visibility ->
                 interfaceModifiers.forEach(modifiers -> {
                     // Last level of hierarchy can't have sealed interfaces
                     if (depth == 0 && modifiers.contains(SEALED)) return;
-                    // Interface extending sealed interface must be sealed or non-sealed
-                    if (parentIntf.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
+                    // Interface extending at least one sealed interface must be sealed or non-sealed
+                    if (extendingIntfBuilders.stream().anyMatch(p -> p.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
                         return;
-                    // Interface extending non-sealed interface can't be non-sealed
-                    if (!parentIntf.isSealed() && modifiers.contains(NON_SEALED)) return;
+                    // Interface extending non-sealed interfaces can't be non-sealed
+                    if (extendingIntfBuilders.stream().noneMatch(p -> p.make().isSealed()) && modifiers.contains(NON_SEALED))
+                        return;
 
-                    var childIntfBuilder = new InterfaceBuilder();
-                    childIntfBuilder.qualifiedName = "I" + ++symbolCounter;
-                    childIntfBuilder.visibility = visibility;
-                    childIntfBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    childIntfBuilder.implementedInterfaces.add(new TypeReference<>(parentIntf));
-                    parentIntf.getAllMethods()
-                            .forEach(m -> childIntfBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childIntfBuilder)));
+                    var intfBuilder = new InterfaceBuilder();
+                    intfBuilder.qualifiedName = "I" + ++symbolCounter;
+                    intfBuilder.visibility = visibility;
+                    intfBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-                    if (parentIntf.isSealed()) {
-                        parentIntfBuilder.permittedTypes.add(childIntfBuilder.qualifiedName);
-                    }
+                    extendingIntfBuilders.forEach(extendingIntfBuilder -> {
+                        var extendingIntf = extendingIntfBuilder.make();
 
-                    // TODO: Field hiding
-                    store(childIntfBuilder);
+                        intfBuilder.implementedInterfaces.add(new TypeReference<>(extendingIntf));
+                        extendingIntf.getAllMethods()
+                                .forEach(m -> intfBuilder.methods.add(generateMethodForTypeDeclBuilder(m, intfBuilder)));
+
+                        if (extendingIntf.isSealed()) {
+                            extendingIntfBuilder.permittedTypes.add(intfBuilder.qualifiedName);
+                        }
+                    });
+
+                    store(intfBuilder);
                     if (depth > 0)
-                        createSubtypes(childIntfBuilder, depth - 1);
+                        createNewInterfacesExtendingInterfaces(List.of(intfBuilder), depth - 1);
                 })
         );
     }
 
-    private void createNewClassesImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
-        var parentIntf = parentIntfBuilder.make();
-
+    private void createNewClassesImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
         topLevelVisibilities.forEach(visibility ->
                 classModifiers.forEach(modifiers -> {
                     // Last level of hierarchy can't have sealed classes
-                    if (depth == 0 && modifiers.contains(SEALED)) return;
-                    // Class implementing sealed interface must be sealed, non-sealed or final
-                    if (parentIntf.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+                    if (modifiers.contains(SEALED))
                         return;
-                    // Class implementing non-sealed interface can't be non-sealed
-                    if (!parentIntf.isSealed() && modifiers.contains(NON_SEALED)) return;
+                    // Class implementing at least one sealed interface must be sealed, non-sealed or final
+                    if (implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+                        return;
+                    // Class implementing non-sealed interfaces can't be non-sealed
+                    if (implementingIntfBuilders.stream().noneMatch(iB -> iB.make().isSealed()) && modifiers.contains(NON_SEALED))
+                        return;
 
-                    var childClsBuilder = new ClassBuilder();
-                    childClsBuilder.qualifiedName = "C" + ++symbolCounter;
-                    childClsBuilder.visibility = visibility;
-                    childClsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    childClsBuilder.implementedInterfaces.add(new TypeReference<>(parentIntf));
-                    parentIntf.getAllMethods()
-                            .forEach(m -> childClsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childClsBuilder)));
+                    var clsBuilder = new ClassBuilder();
+                    clsBuilder.qualifiedName = "C" + ++symbolCounter;
+                    clsBuilder.visibility = visibility;
+                    clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-                    if (parentIntf.isSealed()) {
-                        parentIntfBuilder.permittedTypes.add(childClsBuilder.qualifiedName);
-                    }
+                    implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+                        var implementingIntf = implementingIntfBuilder.make();
 
-                    // TODO: Field hiding
-                    store(childClsBuilder);
-                    if (depth > 0)
-                        createSubtypes(childClsBuilder, depth - 1);
+                        clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+                        implementingIntf.getAllMethods()
+                                .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+
+                        if (implementingIntf.isSealed()) {
+                            implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+                        }
+                    });
+
+                    store(clsBuilder);
                 })
         );
     }
 
-    private void createNewRecordsImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
-        var parentIntf = parentIntfBuilder.make();
-
+    private void createNewRecordsImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
         topLevelVisibilities.forEach(visibility ->
                 recordModifiers.forEach(modifiers -> {
-                    var childRcdBuilder = new RecordBuilder();
-                    childRcdBuilder.qualifiedName = "R" + ++symbolCounter;
-                    childRcdBuilder.visibility = visibility;
-                    childRcdBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    childRcdBuilder.implementedInterfaces.add(new TypeReference<>(parentIntf));
-                    parentIntf.getAllMethods()
-                            .forEach(m -> childRcdBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childRcdBuilder)));
+                    var rcdBuilder = new RecordBuilder();
+                    rcdBuilder.qualifiedName = "R" + ++symbolCounter;
+                    rcdBuilder.visibility = visibility;
+                    rcdBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-                    if (parentIntf.isSealed()) {
-                        parentIntfBuilder.permittedTypes.add(childRcdBuilder.qualifiedName);
-                    }
+                    implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+                        var implementingIntf = implementingIntfBuilder.make();
 
-                    // TODO: Field hiding
-                    store(childRcdBuilder);
-                    if (depth > 0)
-                        createSubtypes(childRcdBuilder, depth - 1);
+                        rcdBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+                        implementingIntf.getAllMethods()
+                                .forEach(m -> rcdBuilder.methods.add(generateMethodForTypeDeclBuilder(m, rcdBuilder)));
+
+                        if (implementingIntf.isSealed()) {
+                            implementingIntfBuilder.permittedTypes.add(rcdBuilder.qualifiedName);
+                        }
+                    });
+
+                    store(rcdBuilder);
                 })
         );
     }
 
-    private void createNewEnumsImplementingInterface(InterfaceBuilder parentIntfBuilder, int depth) {
-        var parentIntf = parentIntfBuilder.make();
-
+    private void createNewEnumsImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
         topLevelVisibilities.forEach(visibility ->
                 enumModifiers.forEach(modifiers -> {
-                    var childEnmBuilder = new EnumBuilder();
-                    childEnmBuilder.qualifiedName = "E" + ++symbolCounter;
-                    childEnmBuilder.visibility = visibility;
-                    childEnmBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                    var enmBuilder = new EnumBuilder();
+                    enmBuilder.qualifiedName = "E" + ++symbolCounter;
+                    enmBuilder.visibility = visibility;
+                    enmBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
                     for (int i = 0; i < enumValuesCount; i++)
-                        childEnmBuilder.values.add("V" + ++symbolCounter);
-                    childEnmBuilder.implementedInterfaces.add(new TypeReference<>(parentIntf));
-                    parentIntf.getAllMethods()
-                            .forEach(m -> childEnmBuilder.methods.add(generateMethodForTypeDeclBuilder(m, childEnmBuilder)));
+                        enmBuilder.values.add("V" + i);
 
-                    if (parentIntf.isSealed()) {
-                        parentIntfBuilder.permittedTypes.add(childEnmBuilder.qualifiedName);
-                    }
+                    implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+                        var implementingIntf = implementingIntfBuilder.make();
 
-                    // TODO: Field hiding
-                    store(childEnmBuilder);
-                    if (depth > 0)
-                        createSubtypes(childEnmBuilder, depth - 1);
+                        enmBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+                        implementingIntf.getAllMethods()
+                                .forEach(m -> enmBuilder.methods.add(generateMethodForTypeDeclBuilder(m, enmBuilder)));
+
+                        if (implementingIntf.isSealed()) {
+                            implementingIntfBuilder.permittedTypes.add(enmBuilder.qualifiedName);
+                        }
+                    });
+
+                    store(enmBuilder);
                 })
         );
     }
 
     private void store(TypeDeclBuilder type) {
         typeStore.put(type.qualifiedName, type);
-    }
-
-    private void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params) {
-        var constructorBuilder = new ConstructorBuilder();
-        constructorBuilder.qualifiedName = classBuilder.qualifiedName;
-        constructorBuilder.visibility = visibility;
-        constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
-        constructorBuilder.type = new PrimitiveTypeReference("void");
-
-        IntStream.range(0, params.size()).forEach(constructorParamTypeIndex -> {
-            var constructorsParamType = params.get(constructorParamTypeIndex);
-            constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, false));
-        });
-
-        classBuilder.constructors.add(constructorBuilder.make());
-        constructorCounter++;
     }
 
     private static void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder) {
@@ -493,6 +524,22 @@ public class CombinatorialApi {
 
         type.methods.add(methodBuilder.make());
         methodCounter++;
+    }
+
+    private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params) {
+        var constructorBuilder = new ConstructorBuilder();
+        constructorBuilder.qualifiedName = classBuilder.qualifiedName;
+        constructorBuilder.visibility = visibility;
+        constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
+        constructorBuilder.type = new PrimitiveTypeReference("void");
+
+        IntStream.range(0, params.size()).forEach(constructorParamTypeIndex -> {
+            var constructorsParamType = params.get(constructorParamTypeIndex);
+            constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, false));
+        });
+
+        classBuilder.constructors.add(constructorBuilder.make());
+        constructorCounter++;
     }
 
     private static FieldDecl generateFieldForTypeDeclBuilder(FieldDecl field, TypeDeclBuilder builder) {

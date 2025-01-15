@@ -35,10 +35,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	public Print classDecl(ClassDecl it) {
 		return () -> """
 			%s %s class %s %s %s %s {
-				%s
 			%s
-				%s
-				%s
+
+			%s
+
+			%s
 			}""".formatted(
 				prettyPrint(it.getVisibility()),
 				prettyPrint(it.getModifiers()),
@@ -52,8 +53,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 					: "permits " + String.join(", ", it.getPermittedTypes()),
 				it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 				it.getConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
-				it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
-				""
+				it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
 			);
 	}
 

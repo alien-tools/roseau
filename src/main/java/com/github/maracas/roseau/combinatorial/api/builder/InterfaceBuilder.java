@@ -5,7 +5,7 @@ import com.github.maracas.roseau.api.model.InterfaceDecl;
 import java.util.ArrayList;
 import java.util.List;
 
-public class InterfaceBuilder extends TypeDeclBuilder {
+public final class InterfaceBuilder extends TypeDeclBuilder {
     public List<String> permittedTypes = new ArrayList<>();
 
     public InterfaceDecl make() {
