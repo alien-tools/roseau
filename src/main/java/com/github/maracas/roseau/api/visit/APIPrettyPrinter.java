@@ -155,21 +155,9 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			hasBody(it)
 					? it.getType().getQualifiedName().equals("void")
 						? "{}"
-						: "{ return %s; }".formatted(defaultValue(it.getType()))
+						: "{ return %s; }".formatted(getDefaultValue(it.getType()))
 					: ";"
 		);
-	}
-
-	String defaultValue(ITypeReference type) {
-		if (type.getQualifiedName().equals("int"))
-			return "0";
-		return "null";
-	}
-
-	boolean hasBody(MethodDecl it) {
-		if (it.getContainingType().getResolvedApiType().get().isInterface())
-			return it.isDefault() || it.isStatic() || it.getVisibility() == AccessModifier.PRIVATE;
-		return !it.isAbstract() && !it.isNative();
 	}
 
 	@Override
@@ -186,12 +174,6 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 		return () -> "\t%s %s %s %s%s;".formatted(
 			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
 			it.isFinal() || it.getContainingType().getResolvedApiType().get().isInterface() ? " = " + getDefaultValue(it.getType()) : "");
-	}
-
-	private String getDefaultValue(ITypeReference ref) {
-		if (ref.getQualifiedName().equals("int"))
-			return "0";
-		return "null";
 	}
 
 	@Override
@@ -236,13 +218,25 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 		return null;
 	}
 
-	String prettyPrint(Set<Modifier> modifiers) {
+	private static String prettyPrint(Set<Modifier> modifiers) {
 		return modifiers.stream().map(m -> m.toString().replaceAll("_", "-")).collect(Collectors.joining(" "));
 	}
 
-	String prettyPrint(AccessModifier visibility) {
+	private static String prettyPrint(AccessModifier visibility) {
 		if (visibility == AccessModifier.PACKAGE_PRIVATE)
 			return "";
 		return visibility.toString();
+	}
+
+	private static boolean hasBody(MethodDecl it) {
+		if (it.getContainingType().getResolvedApiType().get().isInterface())
+			return it.isDefault() || it.isStatic() || it.getVisibility() == AccessModifier.PRIVATE;
+		return !it.isAbstract() && !it.isNative();
+	}
+
+	private static String getDefaultValue(ITypeReference ref) {
+		if (ref.getQualifiedName().equals("int"))
+			return "0";
+		return "null";
 	}
 }

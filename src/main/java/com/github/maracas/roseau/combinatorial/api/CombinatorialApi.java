@@ -224,22 +224,15 @@ public class CombinatorialApi {
                     classBuilder.visibility = visibility;
                     classBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-                    constructorsVisibilities.forEach(constructorVisibility -> {
-                        var constructorBuilder = new ConstructorBuilder();
-                        constructorBuilder.qualifiedName = classBuilder.qualifiedName;
-                        constructorBuilder.visibility = constructorVisibility;
-                        constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
-                        constructorBuilder.type = new PrimitiveTypeReference("void");
+                    addConstructorToClassBuilder(classBuilder, PUBLIC, List.of());
+                    IntStream.range(1, paramsCountToConstructorsParamsTypes.size()).forEach(paramsCount -> {
+                        var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
 
-                        var paramCountToConstructorsParamsTypes = paramsCountToConstructorsParamsTypes.get(constructorCounter % paramsCountToConstructorsParamsTypes.size());
-                        var constructorsParamsTypes = paramCountToConstructorsParamsTypes.get(constructorCounter % paramCountToConstructorsParamsTypes.size());
-                        IntStream.range(0, constructorsParamsTypes.size()).forEach(constructorParamTypeIndex -> {
-                            var constructorsParamType = constructorsParamsTypes.get(constructorParamTypeIndex);
-                            constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, false));
+                        constructorsParamsTypesForParamsCount.forEach(constructorParamsTypes -> {
+                            var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
+
+                            addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes);
                         });
-
-                        classBuilder.constructors.add(constructorBuilder.make());
-                        constructorCounter++;
                     });
 
                     store(classBuilder);
@@ -473,6 +466,22 @@ public class CombinatorialApi {
         typeStore.put(type.qualifiedName, type);
     }
 
+    private void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params) {
+        var constructorBuilder = new ConstructorBuilder();
+        constructorBuilder.qualifiedName = classBuilder.qualifiedName;
+        constructorBuilder.visibility = visibility;
+        constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
+        constructorBuilder.type = new PrimitiveTypeReference("void");
+
+        IntStream.range(0, params.size()).forEach(constructorParamTypeIndex -> {
+            var constructorsParamType = params.get(constructorParamTypeIndex);
+            constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, false));
+        });
+
+        classBuilder.constructors.add(constructorBuilder.make());
+        constructorCounter++;
+    }
+
     private static void addMethodToType(TypeDeclBuilder type, MethodBuilder methodBuilder) {
         addMethodToType(type, methodBuilder, type.qualifiedName + ".m" + ++symbolCounter);
     }
@@ -536,7 +545,7 @@ public class CombinatorialApi {
         };
     }
 
-    private List<Pair<AccessModifier, Set<Modifier>>> methodVisibilitiesAndModifiers(TypeDeclBuilder typeDeclBuilder) {
+    private static List<Pair<AccessModifier, Set<Modifier>>> methodVisibilitiesAndModifiers(TypeDeclBuilder typeDeclBuilder) {
         List<Pair<AccessModifier, Set<Modifier>>> visibilitiesAndModifiers = new ArrayList<>();
 
         methodVisibilities(typeDeclBuilder).forEach(visibility ->
