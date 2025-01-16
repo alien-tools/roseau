@@ -191,10 +191,6 @@ public class CombinatorialApi {
     }
 
     private void createHierarchies() {
-        var interfaceBuilders = List.copyOf(typeStore.values()).stream()
-                .filter(t -> t instanceof InterfaceBuilder)
-                .map(t -> (InterfaceBuilder) t)
-                .toList();
         var interfaceBuildersPowerSet = powerSet(interfaceBuilders);
         var widthToInterfacesMap = new HashMap<Integer, List<List<InterfaceBuilder>>>();
         IntStream.range(0, typeHierarchyWidth + 1).forEach(width ->
@@ -288,9 +284,11 @@ public class CombinatorialApi {
                             recordBuilder.visibility = visibility;
                             recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-                            recordComponentTypes.forEach(recordComponentType -> {
+                            IntStream.range(0, recordComponentTypes.size()).forEach(recordComponentTypeIndex -> {
+                                var recordComponentType = recordComponentTypes.get(recordComponentTypeIndex);
+
                                 FieldBuilder fieldBuilder = new FieldBuilder();
-                                fieldBuilder.qualifiedName = "f" + ++symbolCounter;
+                                fieldBuilder.qualifiedName = "c" + recordComponentTypeIndex;
                                 fieldBuilder.type = recordComponentType;
                                 fieldBuilder.visibility = PUBLIC;
                                 fieldBuilder.containingType = new TypeReference<>(recordBuilder.qualifiedName);
