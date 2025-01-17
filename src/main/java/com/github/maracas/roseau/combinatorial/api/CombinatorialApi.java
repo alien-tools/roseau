@@ -66,13 +66,12 @@ public class CombinatorialApi {
             .map(set -> set.stream().toList())
             .toList();
 
-    static final List<Boolean> isOverridings = List.of(true, false);
-    static final List<Boolean> isHidings = List.of(true, false);
+    static final List<Boolean> isHidingAndOverriding = List.of(true, false);
 
     static List<ClassBuilder> classBuilders = new ArrayList<>();
     static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-    static final int typeHierarchyDepth = 2;
+    static final int typeHierarchyDepth = 1;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
     static final int paramsCount = 2;
@@ -338,48 +337,46 @@ public class CombinatorialApi {
                 return;
 
             topLevelVisibilities.forEach(visibility ->
-                    isHidings.forEach(isHiding ->
-                            isOverridings.forEach(isOverriding -> {
-                                var clsBuilder = new ClassBuilder();
-                                clsBuilder.qualifiedName = "C" + ++symbolCounter;
-                                clsBuilder.visibility = visibility;
-                                clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                                clsBuilder.superClass = new TypeReference<>(superCls);
-                                if (isHiding) {
-                                    superCls.getDeclaredFields()
-                                            .forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
-                                }
+                    isHidingAndOverriding.forEach(isHidingAndOverriding -> {
+                        var clsBuilder = new ClassBuilder();
+                        clsBuilder.qualifiedName = "C" + ++symbolCounter;
+                        clsBuilder.visibility = visibility;
+                        clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                        clsBuilder.superClass = new TypeReference<>(superCls);
+                        if (isHidingAndOverriding) {
+                            superCls.getDeclaredFields()
+                                    .forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
+                        }
 
-                                if (isOverriding) {
-                                    superCls.getAllMethods()
-                                            .filter(m -> !m.isFinal())
-                                            .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
-                                } else if (superCls.isAbstract()) {
-                                    superCls.getAllMethodsToImplement()
-                                            .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
-                                }
+                        if (isHidingAndOverriding) {
+                            superCls.getAllMethods()
+                                    .filter(m -> !m.isFinal())
+                                    .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                        } else if (superCls.isAbstract()) {
+                            superCls.getAllMethodsToImplement()
+                                    .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                        }
 
-                                if (superCls.isSealed()) {
-                                    superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
-                                }
+                        if (superCls.isSealed()) {
+                            superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+                        }
 
-                                implementingIntfBuilders.forEach(implementingIntfBuilder -> {
-                                    var implementingIntf = implementingIntfBuilder.make();
+                        implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+                            var implementingIntf = implementingIntfBuilder.make();
 
-                                    clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
-                                    implementingIntf.getAllMethods()
-                                            .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                            clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+                            implementingIntf.getAllMethods()
+                                    .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
 
-                                    if (implementingIntf.isSealed()) {
-                                        implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
-                                    }
-                                });
+                            if (implementingIntf.isSealed()) {
+                                implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+                            }
+                        });
 
-                                store(clsBuilder);
-                                if (depth > 0)
-                                    createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, implementingIntfBuilders, depth - 1);
-                            })
-                    )
+                        store(clsBuilder);
+                        if (depth > 0)
+                            createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, implementingIntfBuilders, depth - 1);
+                    })
             );
         });
     }
