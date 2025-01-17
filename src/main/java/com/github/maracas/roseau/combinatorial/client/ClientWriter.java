@@ -245,6 +245,7 @@ public class ClientWriter {
 
     private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
         return executableDecl.getParameters().stream()
+                .filter(p -> !p.isVarargs())
                 .map(p -> getDefaultValueForType(p.type().getQualifiedName()))
                 .collect(Collectors.joining(", "));
     }
