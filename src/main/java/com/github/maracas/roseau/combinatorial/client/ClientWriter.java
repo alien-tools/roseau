@@ -313,7 +313,7 @@ public class ClientWriter {
             case "int", "long", "float", "double", "byte", "short" -> "0";
             case "char" -> "'c'";
             case "boolean" -> "false";
-            default -> "null";
+            default -> "(%s) null".formatted(typeName);
         };
     }
 
