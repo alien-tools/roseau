@@ -350,7 +350,7 @@ public class CombinatorialApi {
                         }
 
                         if (isHidingAndOverriding) {
-                            superCls.getAllMethods()
+                            superCls.getDeclaredMethods().stream()
                                     .filter(m -> !m.isFinal())
                                     .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
                         } else if (superCls.isAbstract()) {
