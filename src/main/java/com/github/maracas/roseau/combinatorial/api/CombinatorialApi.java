@@ -349,13 +349,14 @@ public class CombinatorialApi {
                                     .forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
                         }
 
+                        var methodsToGenerate = new HashSet<MethodDecl>();
                         if (isHidingAndOverriding) {
                             superCls.getDeclaredMethods().stream()
                                     .filter(m -> !m.isFinal())
-                                    .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                    .forEach(m -> methodsToGenerate.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
                         } else if (superCls.isAbstract()) {
                             superCls.getAllMethodsToImplement()
-                                    .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                    .forEach(m -> methodsToGenerate.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
                         }
 
                         if (superCls.isSealed()) {
@@ -367,12 +368,14 @@ public class CombinatorialApi {
 
                             clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
                             implementingIntf.getAllMethods()
-                                    .forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                    .forEach(m -> methodsToGenerate.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
 
                             if (implementingIntf.isSealed()) {
                                 implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
                             }
                         });
+
+                        clsBuilder.methods.addAll(methodsToGenerate);
 
                         store(clsBuilder);
                         if (depth > 0)
