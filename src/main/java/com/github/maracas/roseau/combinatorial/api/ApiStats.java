@@ -3,18 +3,14 @@ package com.github.maracas.roseau.combinatorial.api;
 import com.github.maracas.roseau.api.model.*;
 
 final class ApiStats {
-    private static int classesCount;
-    private static int interfacesCount;
-    private static int enumsCount;
-    private static int recordsCount;
     private static int methodsCount;
     private static int fieldsCount;
 
     static void display(API api) {
-        classesCount = 0;
-        interfacesCount = 0;
-        enumsCount = 0;
-        recordsCount = 0;
+        int classesCount = 0;
+        int interfacesCount = 0;
+        int enumsCount = 0;
+        int recordsCount = 0;
         methodsCount = 0;
         fieldsCount = 0;
 
@@ -57,7 +53,7 @@ final class ApiStats {
     }
 
     private static void countMethodsAndFields(TypeDecl type) {
-        methodsCount += type.getDeclaredMethods().size();
-        fieldsCount += type.getDeclaredFields().size();
+        methodsCount += (int) type.getDeclaredMethods().stream().filter(TypeMemberDecl::isExported).count();
+        fieldsCount += (int) type.getDeclaredFields().stream().filter(TypeMemberDecl::isExported).count();
     }
 }
