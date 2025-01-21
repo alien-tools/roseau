@@ -29,7 +29,7 @@ import static com.github.maracas.roseau.api.model.Modifier.STATIC;
 import static com.github.maracas.roseau.api.model.Modifier.SYNCHRONIZED;
 
 public class CombinatorialApi {
-    static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC, PACKAGE_PRIVATE);
+    static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC);
     static final List<AccessModifier> constructorsVisibilities = List.of(PACKAGE_PRIVATE, PRIVATE, PROTECTED, PUBLIC);
 
     // STATIC handled separately for nested types only
@@ -71,10 +71,11 @@ public class CombinatorialApi {
     static List<ClassBuilder> classBuilders = new ArrayList<>();
     static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-    static final int typeHierarchyDepth = 1;
+    static final int typeHierarchyDepth = 2;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
     static final int paramsCount = 2;
+
     static int symbolCounter = 0;
     static int constructorCounter = 0;
     static int methodCounter = 0;
