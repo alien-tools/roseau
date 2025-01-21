@@ -349,14 +349,14 @@ public class CombinatorialApi {
                                     .forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
                         }
 
-                        var methodsToGenerate = new HashSet<MethodDecl>();
+                        var methodsToGenerate = new HashMap<String, MethodDecl>();
                         if (isHidingAndOverriding) {
                             superCls.getDeclaredMethods().stream()
                                     .filter(m -> !m.isFinal())
-                                    .forEach(m -> methodsToGenerate.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                    .forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
                         } else if (superCls.isAbstract()) {
                             superCls.getAllMethodsToImplement()
-                                    .forEach(m -> methodsToGenerate.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                    .forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
                         }
 
                         if (superCls.isSealed()) {
@@ -368,14 +368,18 @@ public class CombinatorialApi {
 
                             clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
                             implementingIntf.getAllMethods()
-                                    .forEach(m -> methodsToGenerate.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
+                                    .forEach(m -> {
+                                        if (!methodsToGenerate.containsKey(m.getSignature())) {
+                                            methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
+                                        }
+                                    });
 
                             if (implementingIntf.isSealed()) {
                                 implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
                             }
                         });
 
-                        clsBuilder.methods.addAll(methodsToGenerate);
+                        clsBuilder.methods.addAll(methodsToGenerate.values());
 
                         store(clsBuilder);
                         if (depth > 0)
