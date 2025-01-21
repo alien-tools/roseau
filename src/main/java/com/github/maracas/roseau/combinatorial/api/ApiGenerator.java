@@ -18,6 +18,8 @@ public class ApiGenerator {
             var api = combinatorialApi.getAPI();
             System.out.println("api="+api);
             apiWriter.write(api);
+
+            ApiStats.display(api);
         } catch (Exception e) {
             System.err.println("Failed to build API in " + outputDir);
             System.err.println(e.getMessage());
