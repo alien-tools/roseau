@@ -56,13 +56,18 @@ public class ClientWriter {
         var imports = getImportsForType(containingClass);
         var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
         var params = getParamsForExecutableInvocation(constructorDecl);
+        var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 
         if (constructorDecl.isPublic()) {
             var code = "new %s(%s);".formatted(containingClass.getSimpleName(), params);
 
-            writeCodeInMain(imports, name, code);
+            writeCodeInMain(imports, name, code, exceptions);
         } else if (constructorDecl.isProtected()) {
-            var constructorSuper = "\t%s() {\n\t\tsuper(%s);\n\t}".formatted(name, params);
+            var constructorSuper = "\t%s()%s {\n\t\tsuper(%s);\n\t}".formatted(
+                    name,
+                    exceptions.isBlank() ? "" : " throws %s".formatted(exceptions),
+                    params
+            );
             var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), constructorSuper);
 
             writeCodeInFile(name, code);
@@ -179,9 +184,7 @@ public class ClientWriter {
         var name = "%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName());
         var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
         var params = getParamsForExecutableInvocation(methodDecl);
-        var exceptions = methodDecl.getThrownCheckedExceptions().stream()
-                .map(TypeReference::getQualifiedName)
-                .collect(Collectors.joining(", "));
+        var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 
         String methodName = null, template = null;
         if (methodDecl.isAbstract() || containingClass.isAbstract()) {
@@ -243,22 +246,22 @@ public class ClientWriter {
         throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
     }
 
-    private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
-        return executableDecl.getParameters().stream()
-                .filter(p -> !p.isVarargs())
-                .map(p -> getDefaultValueForType(p.type().getQualifiedName()))
-                .collect(Collectors.joining(", "));
-    }
-
     private String implementRequiredConstructor(ClassDecl classDecl, String className) {
         var constructors = getSortedConstructors(classDecl);
 
         if (constructors.isEmpty()) return "";
 
-        var params = getParamsForExecutableInvocation(constructors.getFirst());
-        return params.isBlank()
+        var firstConstructor = constructors.getFirst();
+        var params = getParamsForExecutableInvocation(firstConstructor);
+        var exceptions = getExceptionsForExecutableInvocation(firstConstructor);
+
+        return params.isBlank() && exceptions.isBlank()
                 ? ""
-                : "\t%s() {\n\t\tsuper(%s);\n\t}\n".formatted(className, params);
+                : "\t%s()%s {\n\t\tsuper(%s);\n\t}\n".formatted(
+                    className,
+                    exceptions.isBlank() ? "" : " throws %s".formatted(exceptions),
+                    params
+                );
     }
 
     private String generateAccessToFirstEnumValue(EnumDecl enumDecl) {
@@ -277,6 +280,19 @@ public class ClientWriter {
     private String implementNecessaryMethods(TypeDecl typeDecl) {
         var methods = typeDecl.getAllMethodsToImplement();
         return methods.map(this::overrideMethod).collect(Collectors.joining("\n\n"));
+    }
+
+    private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
+        return executableDecl.getParameters().stream()
+                .filter(p -> !p.isVarargs())
+                .map(p -> getDefaultValueForType(p.type().getQualifiedName()))
+                .collect(Collectors.joining(", "));
+    }
+
+    private String getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
+        return executableDecl.getThrownCheckedExceptions().stream()
+                .map(TypeReference::getQualifiedName)
+                .collect(Collectors.joining(", "));
     }
 
     private String overrideMethod(MethodDecl methodDecl) {

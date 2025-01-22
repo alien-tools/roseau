@@ -162,10 +162,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 	@Override
 	public Print constructorDecl(ConstructorDecl it) {
-		return () -> "\t%s %s(%s) {}".formatted(
+		return () -> "\t%s %s(%s)%s {}".formatted(
 				prettyPrint(it.getVisibility()),
 				it.getSimpleName(),
-				it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", "))
+				it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", ")),
+				!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")) : ""
 		);
 	}
 

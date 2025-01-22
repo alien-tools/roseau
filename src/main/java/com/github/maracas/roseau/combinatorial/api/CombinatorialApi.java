@@ -250,14 +250,15 @@ public class CombinatorialApi {
                     classBuilder.visibility = visibility;
                     classBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-                    addConstructorToClassBuilder(classBuilder, PUBLIC, List.of());
+                    addConstructorToClassBuilder(classBuilder, PUBLIC, List.of(), List.of());
                     IntStream.range(1, paramsCountToConstructorsParamsTypes.size()).forEach(paramsCount -> {
                         var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
 
                         constructorsParamsTypesForParamsCount.forEach(constructorParamsTypes -> {
                             var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
+                            var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
 
-                            addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes);
+                            addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes, constructorExceptions);
                         });
                     });
 
@@ -340,6 +341,11 @@ public class CombinatorialApi {
                         clsBuilder.visibility = visibility;
                         clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
                         clsBuilder.superClass = new TypeReference<>(superCls);
+
+                        if (superCls.isSealed()) {
+                            superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+                        }
+
                         if (isHidingAndOverriding) {
                             superCls.getDeclaredFields()
                                     .forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
@@ -353,10 +359,6 @@ public class CombinatorialApi {
                         } else if (superCls.isAbstract()) {
                             superCls.getAllMethodsToImplement()
                                     .forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
-                        }
-
-                        if (superCls.isSealed()) {
-                            superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
                         }
 
                         implementingIntfBuilders.forEach(implementingIntfBuilder -> {
@@ -525,12 +527,13 @@ public class CombinatorialApi {
         methodCounter++;
     }
 
-    private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params) {
+    private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params, List<TypeReference<ClassDecl>> exceptions) {
         var constructorBuilder = new ConstructorBuilder();
         constructorBuilder.qualifiedName = classBuilder.qualifiedName;
         constructorBuilder.visibility = visibility;
         constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
         constructorBuilder.type = new PrimitiveTypeReference("void");
+        constructorBuilder.thrownExceptions = exceptions;
 
         IntStream.range(0, params.size()).forEach(constructorParamTypeIndex -> {
             var constructorsParamType = params.get(constructorParamTypeIndex);
