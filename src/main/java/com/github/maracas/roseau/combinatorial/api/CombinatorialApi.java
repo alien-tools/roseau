@@ -8,15 +8,12 @@ import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.combinatorial.api.builder.*;
 import com.google.common.collect.Sets;
-import org.javatuples.Pair;
 
 import java.util.*;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.github.maracas.roseau.api.model.AccessModifier.PACKAGE_PRIVATE;
-import static com.github.maracas.roseau.api.model.AccessModifier.PRIVATE;
 import static com.github.maracas.roseau.api.model.AccessModifier.PROTECTED;
 import static com.github.maracas.roseau.api.model.AccessModifier.PUBLIC;
 import static com.github.maracas.roseau.api.model.Modifier.ABSTRACT;
@@ -30,7 +27,7 @@ import static com.github.maracas.roseau.api.model.Modifier.SYNCHRONIZED;
 
 public class CombinatorialApi {
     static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC);
-    static final List<AccessModifier> constructorsVisibilities = List.of(PACKAGE_PRIVATE, PRIVATE, PROTECTED, PUBLIC);
+    static final List<AccessModifier> constructorsVisibilities = List.of(PROTECTED, PUBLIC);
 
     // STATIC handled separately for nested types only
     static final Set<Set<Modifier>> classModifiers = powerSet(FINAL, ABSTRACT, SEALED, NON_SEALED)
@@ -71,7 +68,7 @@ public class CombinatorialApi {
     static List<ClassBuilder> classBuilders = new ArrayList<>();
     static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-    static final int typeHierarchyDepth = 2;
+    static final int typeHierarchyDepth = 1;
     static final int typeHierarchyWidth = 2;
     static final int enumValuesCount = 5;
     static final int paramsCount = 2;
@@ -124,69 +121,68 @@ public class CombinatorialApi {
         var paramsCountToMethodsParamsTypes = getParamsCountToParamsTypesMap();
 
         typeStore.forEach((fqn, t) ->
-                methodVisibilitiesAndModifiers(t).forEach(visibilityAndModifiers -> {
-                    var visibility = visibilityAndModifiers.getValue0();
-                    var modifiers = visibilityAndModifiers.getValue1();
+                methodVisibilities(t).forEach(visibility ->
+                        methodModifiers(t).forEach(modifiers -> {
+                            var methodBuilder = new MethodBuilder();
+                            methodBuilder.visibility = visibility;
+                            methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+                            methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
 
-                    var methodBuilder = new MethodBuilder();
-                    methodBuilder.visibility = visibility;
-                    methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-                    methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
+                            // Parameters different types and count
+                            IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+                                var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
+                                if (methodParamsCount > 1) {
+                                    methodsParamsTypesForParamsCount = List.of(methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size()));
+                                }
 
-                    // Parameters different types and count
-                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-                        var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
-                        if (methodParamsCount > 1) {
-                            methodsParamsTypesForParamsCount = List.of(methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size()));
-                        }
+                                methodsParamsTypesForParamsCount.forEach(methodParamsTypes -> {
+                                    IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
+                                        var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
+                                        methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                                    });
 
-                        methodsParamsTypesForParamsCount.forEach(methodParamsTypes -> {
-                            IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
-                                var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
-                                methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                                    addMethodToType(t, methodBuilder);
+
+                                    methodBuilder.resetParameters();
+                                });
                             });
 
-                            addMethodToType(t, methodBuilder);
+                            // Varargs
+                            IntStream.range(1, paramsCount + 1).forEach(methodParamsCount ->
+                                    fieldTypes.forEach(varArgsParamType -> {
+                                        var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
+                                        var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
 
-                            methodBuilder.resetParameters();
-                        });
-                    });
+                                        IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
+                                            var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
+                                            methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
+                                        });
 
-                    // Varargs
-                    IntStream.range(1, paramsCount + 1).forEach(methodParamsCount ->
-                            fieldTypes.forEach(varArgsParamType -> {
-                                var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
+                                        methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsParamType, true));
+
+                                        addMethodToType(t, methodBuilder);
+
+                                        methodBuilder.resetParameters();
+                                    })
+                            );
+
+                            // Overloading
+                            var overloadedQualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
+                            IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+                                var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
                                 var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
+
+                                methodBuilder.resetParameters();
 
                                 IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
                                     var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
                                     methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
                                 });
 
-                                methodBuilder.parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsParamType, true));
-
-                                addMethodToType(t, methodBuilder);
-
-                                methodBuilder.resetParameters();
-                            })
-                    );
-
-                    // Overloading
-                    var overloadedQualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
-                    IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-                        var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
-                        var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
-
-                        methodBuilder.resetParameters();
-
-                        IntStream.range(0, methodParamsTypes.size()).forEach(fieldIndex -> {
-                            var field = methodParamsTypes.get(fieldIndex % methodParamsTypes.size());
-                            methodBuilder.parameters.add(new ParameterDecl("p" + fieldIndex, field, false));
-                        });
-
-                        addMethodToType(t, methodBuilder, overloadedQualifiedName);
-                    });
-                })
+                                addMethodToType(t, methodBuilder, overloadedQualifiedName);
+                            });
+                        })
+                )
         );
     }
 
@@ -581,8 +577,8 @@ public class CombinatorialApi {
 
     private static List<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {
         return switch (container) {
-            case InterfaceBuilder ignored -> List.of(PUBLIC, PACKAGE_PRIVATE);
-            default -> List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+            case InterfaceBuilder ignored -> List.of(PUBLIC);
+            default -> List.of(PUBLIC, PROTECTED);
         };
     }
 
@@ -595,28 +591,10 @@ public class CombinatorialApi {
         };
     }
 
-    private static List<Pair<AccessModifier, Set<Modifier>>> methodVisibilitiesAndModifiers(TypeDeclBuilder typeDeclBuilder) {
-        List<Pair<AccessModifier, Set<Modifier>>> visibilitiesAndModifiers = new ArrayList<>();
-
-        methodVisibilities(typeDeclBuilder).forEach(visibility ->
-                methodModifiers(typeDeclBuilder).forEach(modifiers -> {
-                    if (visibility == PRIVATE && !Sets.intersection(modifiers, Set.of(DEFAULT, ABSTRACT)).isEmpty())
-                        return;
-                    if (visibility == PACKAGE_PRIVATE && modifiers.contains(ABSTRACT))
-                        if (typeDeclBuilder instanceof ClassBuilder clsBuilder && clsBuilder.modifiers.contains(ABSTRACT))
-                            return;
-
-                    visibilitiesAndModifiers.add(new Pair<>(visibility, modifiers));
-                })
-        );
-
-        return visibilitiesAndModifiers;
-    }
-
     private static List<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
         return switch (container) {
-            case InterfaceBuilder ignored -> List.of(PUBLIC, /*PACKAGE_PRIVATE,*/ PRIVATE);
-            default -> List.of(PUBLIC, PROTECTED, PACKAGE_PRIVATE, PRIVATE);
+            case InterfaceBuilder ignored -> List.of(PUBLIC);
+            default -> List.of(PUBLIC, PROTECTED);
         };
     }
 
