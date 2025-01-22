@@ -3,6 +3,7 @@ package com.github.maracas.roseau.combinatorial.api;
 import com.github.maracas.roseau.api.model.*;
 
 final class ApiStats {
+    private static int constructorsCount;
     private static int methodsCount;
     private static int fieldsCount;
 
@@ -11,6 +12,7 @@ final class ApiStats {
         int interfacesCount = 0;
         int enumsCount = 0;
         int recordsCount = 0;
+        constructorsCount = 0;
         methodsCount = 0;
         fieldsCount = 0;
 
@@ -18,19 +20,19 @@ final class ApiStats {
             switch (type) {
                 case EnumDecl enumDecl:
                     enumsCount++;
-                    countMethodsAndFields(enumDecl);
+                    countConstructorsMethodsAndFields(enumDecl);
                     break;
                 case RecordDecl recordDecl:
                     recordsCount++;
-                    countMethodsAndFields(recordDecl);
+                    countConstructorsMethodsAndFields(recordDecl);
                     break;
                 case ClassDecl classDecl:
                     classesCount++;
-                    countMethodsAndFields(classDecl);
+                    countConstructorsMethodsAndFields(classDecl);
                     break;
                 case InterfaceDecl interfaceDecl:
                     interfacesCount++;
-                    countMethodsAndFields(interfaceDecl);
+                    countConstructorsMethodsAndFields(interfaceDecl);
                     break;
                 case AnnotationDecl ignored:
                     break;
@@ -47,13 +49,18 @@ final class ApiStats {
         System.out.println(enumsCount + " enums");
         System.out.println(recordsCount + " records");
         System.out.println("--------------------------------");
+        System.out.println(constructorsCount + " constructors");
         System.out.println(methodsCount + " methods");
         System.out.println(fieldsCount + " fields");
         System.out.println("--------------------------------");
     }
 
-    private static void countMethodsAndFields(TypeDecl type) {
+    private static void countConstructorsMethodsAndFields(TypeDecl type) {
         methodsCount += (int) type.getDeclaredMethods().stream().filter(TypeMemberDecl::isExported).count();
         fieldsCount += (int) type.getDeclaredFields().stream().filter(TypeMemberDecl::isExported).count();
+
+        if (type instanceof ClassDecl classDecl) {
+            constructorsCount += (int) classDecl.getConstructors().stream().filter(TypeMemberDecl::isExported).count();
+        }
     }
 }
