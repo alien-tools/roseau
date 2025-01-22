@@ -15,7 +15,7 @@ public class ApiWriter {
 
     public ApiWriter(Path outputDir) {
         this.outputDir = outputDir;
-        this.packageName = outputDir.toString().replace('/', '.');
+        this.packageName = "generated.api.v1";
     }
 
     public boolean createOutputDir() {
