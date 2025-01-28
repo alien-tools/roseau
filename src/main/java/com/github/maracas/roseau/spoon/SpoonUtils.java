@@ -80,7 +80,7 @@ public final class SpoonUtils {
 				return new JDTBasedSpoonCompiler(factory) {
 					@Override
 					protected JDTBatchCompiler createBatchCompiler() {
-						return new FastJDTBatchCompiler(this, environment, requestor, getEnvironment());
+						return new FastJDTBatchCompiler(this, environment, requestor);
 					}
 				};
 			}
@@ -95,7 +95,7 @@ public final class SpoonUtils {
 					return new JDTBasedSpoonCompiler(factory) {
 						@Override
 						protected JDTBatchCompiler createBatchCompiler() {
-							return new FastJDTBatchCompiler(this, environment, requestor, getEnvironment());
+							return new FastJDTBatchCompiler(this, environment, requestor);
 						}
 					};
 				}

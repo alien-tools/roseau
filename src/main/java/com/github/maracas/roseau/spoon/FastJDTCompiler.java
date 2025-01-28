@@ -15,7 +15,6 @@ import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.eclipse.jdt.internal.compiler.util.Messages;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import spoon.support.Level;
 import spoon.support.compiler.jdt.JDTConstants;
 
 import java.io.PrintWriter;
@@ -25,15 +24,11 @@ import java.util.Arrays;
 
 class FastJDTCompiler extends Compiler {
 	private static final Logger LOGGER = LoggerFactory.getLogger(MethodHandles.lookup().lookupClass());
-	private boolean ignoreSyntaxErrors;
-	private Level level;
 
 	FastJDTCompiler(INameEnvironment environment, IErrorHandlingPolicy policy, CompilerOptions options,
 	                ICompilerRequestor requestor, IProblemFactory problemFactory, PrintWriter out,
-	                boolean ignoreSyntaxErrors, Level level, CompilationProgress progress) {
+	                CompilationProgress progress) {
 		super(environment, policy, options, requestor, problemFactory, out, progress);
-		this.ignoreSyntaxErrors = ignoreSyntaxErrors;
-		this.level = level;
 	}
 
 	private void sortModuleDeclarationsFirst(ICompilationUnit[] sourceUnits) {
@@ -53,31 +48,17 @@ class FastJDTCompiler extends Compiler {
 	protected CompilationUnitDeclaration[] buildUnits(CompilationUnit[] sourceUnits) {
 		this.reportProgress(Messages.compilation_beginningToCompile);
 		this.sortModuleDeclarationsFirst(sourceUnits);
-		CompilationUnit[] filteredSourceUnits = null;
-		if (this.ignoreSyntaxErrors || this.level.toInt() > Level.ERROR.toInt()) {
-			filteredSourceUnits = this.ignoreSyntaxErrors(sourceUnits);
-		}
-
-		if (this.ignoreSyntaxErrors) {
-			this.beginToCompile(filteredSourceUnits);
-		} else {
-			this.beginToCompile(sourceUnits);
-		}
+		CompilationUnit[] filteredSourceUnits = this.ignoreSyntaxErrors(sourceUnits);
+		this.beginToCompile(filteredSourceUnits);
 
 		for(int i = 0; i < this.totalUnits; ++i) {
 			CompilationUnitDeclaration unit = this.unitsToProcess[i];
 			this.reportProgress(Messages.bind(Messages.compilation_processing, new String(unit.getFileName())));
-			//this.parser.getMethodBodies(unit);
 			if (unit.scope != null) {
 				unit.scope.faultInTypes();
 			}
 
-			//if (unit.scope != null) {
-			//	unit.scope.verifyMethods(this.lookupEnvironment.methodVerifier());
-			//}
-
 			unit.resolve();
-			//unit.analyseCode();
 			unit.ignoreFurtherInvestigation = false;
 			this.requestor.acceptResult(unit.compilationResult);
 			this.reportWorked(1, i);
@@ -91,7 +72,7 @@ class FastJDTCompiler extends Compiler {
 			}
 		}
 
-		return (CompilationUnitDeclaration[])unitsToReturn.toArray(new CompilationUnitDeclaration[0]);
+		return unitsToReturn.toArray(new CompilationUnitDeclaration[0]);
 	}
 
 	private CompilationUnit[] ignoreSyntaxErrors(CompilationUnit[] sourceUnits) {
@@ -109,6 +90,6 @@ class FastJDTCompiler extends Compiler {
 		}
 
 		this.initializeParser();
-		return (CompilationUnit[])sourceUnitList.toArray(new CompilationUnit[0]);
+		return sourceUnitList.toArray(new CompilationUnit[0]);
 	}
 }
