@@ -67,17 +67,17 @@ class FastJDTCompiler extends Compiler {
 		for(int i = 0; i < this.totalUnits; ++i) {
 			CompilationUnitDeclaration unit = this.unitsToProcess[i];
 			this.reportProgress(Messages.bind(Messages.compilation_processing, new String(unit.getFileName())));
-			this.parser.getMethodBodies(unit);
+			//this.parser.getMethodBodies(unit);
 			if (unit.scope != null) {
 				unit.scope.faultInTypes();
 			}
 
-			if (unit.scope != null) {
-				unit.scope.verifyMethods(this.lookupEnvironment.methodVerifier());
-			}
+			//if (unit.scope != null) {
+			//	unit.scope.verifyMethods(this.lookupEnvironment.methodVerifier());
+			//}
 
 			unit.resolve();
-			unit.analyseCode();
+			//unit.analyseCode();
 			unit.ignoreFurtherInvestigation = false;
 			this.requestor.acceptResult(unit.compilationResult);
 			this.reportWorked(1, i);

@@ -1,10 +1,10 @@
 package com.github.maracas.roseau.smoke;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
-import com.github.maracas.roseau.api.SpoonUtils;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
+import com.github.maracas.roseau.spoon.SpoonAPIExtractor;
+import com.github.maracas.roseau.spoon.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -40,7 +40,7 @@ class FastJDTBatchCompiler extends JDTBatchCompiler {
 			nameEnvironment = getLibraryAccess();
 		}
 		CompilerOptions compilerOptions = new CompilerOptions(this.options);
-		//compilerOptions.ignoreMethodBodies = true;
+		compilerOptions.ignoreMethodBodies = true;
 		compilerOptions.parseLiteralExpressionsAsConstants = false;
 
 		IErrorHandlingPolicy errorHandlingPolicy;
