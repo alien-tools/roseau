@@ -5,6 +5,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
@@ -28,6 +30,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
 	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
+
+	private static final Logger LOGGER = LogManager.getLogger();
 
 	@JsonCreator
 	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
@@ -69,7 +73,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 			resolvedApiType = (T) typeCache.computeIfAbsent(qualifiedName, fqn -> factory.convertCtType(fqn));
 
 		if (resolvedApiType == null)
-			System.err.printf("Warning: %s couldn't be resolved, results may be innacurate%n", qualifiedName);
+			LOGGER.warn("Warning: {} couldn't be resolved, results may be inaccurate", qualifiedName);
 
 		return Optional.ofNullable(resolvedApiType);
 	}

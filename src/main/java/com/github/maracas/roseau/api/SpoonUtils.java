@@ -84,6 +84,8 @@ public final class SpoonUtils {
 			launcher = mavenLauncher;
 		}
 
+		// Set log level; messages are redirected to log4j with our own independent level
+		launcher.getEnvironment().setLevel("DEBUG");
 		// Ignore missing types/classpath related errors
 		launcher.getEnvironment().setNoClasspath(true);
 		// Proceed even if we find the same type twice; affects the precision of the result.
