@@ -5,6 +5,7 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
+import com.github.maracas.roseau.spoon.SpoonAPIExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;

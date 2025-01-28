@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.utils;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.spoon.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;

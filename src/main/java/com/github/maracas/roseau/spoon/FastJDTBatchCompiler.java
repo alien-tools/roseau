@@ -1,4 +1,4 @@
-package spoon.support.compiler.jdt;
+package com.github.maracas.roseau.spoon;
 
 import org.eclipse.jdt.core.compiler.CompilationProgress;
 import org.eclipse.jdt.internal.compiler.CompilationResult;
@@ -12,29 +12,40 @@ import org.eclipse.jdt.internal.compiler.impl.CompilerOptions;
 import org.eclipse.jdt.internal.compiler.problem.DefaultProblemFactory;
 import org.eclipse.jdt.internal.compiler.problem.ProblemReporter;
 import org.eclipse.jdt.internal.core.util.CommentRecorderParser;
+import spoon.compiler.Environment;
 import spoon.support.compiler.SpoonProgress;
+import spoon.support.compiler.jdt.JDTBasedSpoonCompiler;
+import spoon.support.compiler.jdt.JDTBatchCompiler;
+import spoon.support.compiler.jdt.TreeBuilderRequestor;
 
 import java.util.Locale;
 
-public class CustomJDTBatchCompiler extends JDTBatchCompiler {
-	public CustomJDTBatchCompiler(JDTBasedSpoonCompiler jdtCompiler) {
+class FastJDTBatchCompiler extends JDTBatchCompiler {
+	private INameEnvironment nameEnvironment;
+	private TreeBuilderRequestor requestor;
+	private Environment spoonEnvironment;
+
+	FastJDTBatchCompiler(JDTBasedSpoonCompiler jdtCompiler, INameEnvironment nameEnvironment,
+	                            TreeBuilderRequestor requestor, Environment spoonEnvironment) {
 		super(jdtCompiler);
+		this.nameEnvironment = nameEnvironment;
+		this.requestor = requestor;
+		this.spoonEnvironment = spoonEnvironment;
 	}
 
 	@Override
 	public CompilationUnitDeclaration[] getUnits() {
 		startTime = System.currentTimeMillis();
-		INameEnvironment environment = this.jdtCompiler.environment;
-		if (environment == null) {
-			environment = getLibraryAccess();
+		if (nameEnvironment == null) {
+			nameEnvironment = getLibraryAccess();
 		}
 		CompilerOptions compilerOptions = new CompilerOptions(this.options);
-		compilerOptions.ignoreMethodBodies = true;
+		//compilerOptions.ignoreMethodBodies = true;
 		compilerOptions.parseLiteralExpressionsAsConstants = false;
 
 		IErrorHandlingPolicy errorHandlingPolicy;
 
-		if (jdtCompiler.getEnvironment().getNoClasspath()) {
+		if (spoonEnvironment.getNoClasspath()) {
 
 			// in no classpath, we should proceed on error,
 			// as we will encounter some
@@ -79,9 +90,9 @@ public class CustomJDTBatchCompiler extends JDTBatchCompiler {
 		}
 
 		IProblemFactory problemFactory = getProblemFactory();
-		TreeBuilderCompiler treeBuilderCompiler = new TreeBuilderCompiler(
-			environment, errorHandlingPolicy, compilerOptions, this.jdtCompiler.requestor, problemFactory,
-			this.out, jdtCompiler.getEnvironment().getIgnoreSyntaxErrors(), jdtCompiler.getEnvironment().getLevel(),
+		FastJDTCompiler treeBuilderCompiler = new FastJDTCompiler(
+			nameEnvironment, errorHandlingPolicy, compilerOptions, requestor, problemFactory,
+			this.out, spoonEnvironment.getIgnoreSyntaxErrors(), spoonEnvironment.getLevel(),
 			new CompilationProgress() {
 
 				private String currentElement = null;
@@ -112,10 +123,10 @@ public class CustomJDTBatchCompiler extends JDTBatchCompiler {
 					if (totalTask == -1) {
 						totalTask = remaining + 1;
 					}
-					jdtCompiler.getEnvironment().getSpoonProgress().step(SpoonProgress.Process.COMPILE, currentElement, totalTask - remaining, totalTask);
+					spoonEnvironment.getSpoonProgress().step(SpoonProgress.Process.COMPILE, currentElement, totalTask - remaining, totalTask);
 				}
 			});
-		if (jdtCompiler.getEnvironment().getNoClasspath()) {
+		if (spoonEnvironment.getNoClasspath()) {
 			treeBuilderCompiler.lookupEnvironment.problemReporter = new ProblemReporter(errorHandlingPolicy, compilerOptions, problemFactory) {
 				@Override
 				public int computeSeverity(int problemID) {
@@ -125,13 +136,13 @@ public class CustomJDTBatchCompiler extends JDTBatchCompiler {
 			};
 			treeBuilderCompiler.lookupEnvironment.mayTolerateMissingType = true;
 		}
-		jdtCompiler.getEnvironment().getSpoonProgress().start(SpoonProgress.Process.COMPILE);
+		spoonEnvironment.getSpoonProgress().start(SpoonProgress.Process.COMPILE);
 		// they have to be done all at once
 		final CompilationUnitDeclaration[] result = treeBuilderCompiler.buildUnits(getCompilationUnits());
-		jdtCompiler.getEnvironment().getSpoonProgress().end(SpoonProgress.Process.COMPILE);
+		spoonEnvironment.getSpoonProgress().end(SpoonProgress.Process.COMPILE);
 		// now adding the doc
-		if (jdtCompiler.getEnvironment().isCommentsEnabled()) {
-			jdtCompiler.getEnvironment().getSpoonProgress().start(SpoonProgress.Process.COMMENT);
+		if (spoonEnvironment.isCommentsEnabled()) {
+			spoonEnvironment.getSpoonProgress().start(SpoonProgress.Process.COMMENT);
 			//compile comments only if they are needed
 			for (int i = 0; i < result.length; i++) {
 				CompilationUnitDeclaration unit = result[i];
@@ -149,9 +160,9 @@ public class CustomJDTBatchCompiler extends JDTBatchCompiler {
 				final CompilationResult compilationResult = new CompilationResult(sourceUnit, 0, 0, compilerOptions.maxProblemsPerUnit);
 				CompilationUnitDeclaration tmpDeclForComment = parser.dietParse(sourceUnit, compilationResult);
 				unit.comments = tmpDeclForComment.comments;
-				jdtCompiler.getEnvironment().getSpoonProgress().step(SpoonProgress.Process.COMMENT, new String(unit.getFileName()), i + 1, result.length);
+				spoonEnvironment.getSpoonProgress().step(SpoonProgress.Process.COMMENT, new String(unit.getFileName()), i + 1, result.length);
 			}
-			jdtCompiler.getEnvironment().getSpoonProgress().end(SpoonProgress.Process.COMMENT);
+			spoonEnvironment.getSpoonProgress().end(SpoonProgress.Process.COMMENT);
 		}
 		return result;
 	}

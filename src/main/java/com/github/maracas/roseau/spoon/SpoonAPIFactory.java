@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.spoon;
 
 import com.github.maracas.roseau.api.model.AccessModifier;
 import com.github.maracas.roseau.api.model.Annotation;

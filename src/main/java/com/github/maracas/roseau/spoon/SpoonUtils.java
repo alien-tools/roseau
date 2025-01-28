@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.spoon;
 
 import spoon.Launcher;
 import spoon.MavenLauncher;
@@ -7,7 +7,6 @@ import spoon.SpoonModelBuilder;
 import spoon.reflect.CtModel;
 import spoon.reflect.factory.Factory;
 import spoon.support.compiler.SpoonProgress;
-import spoon.support.compiler.jdt.CustomJDTBatchCompiler;
 import spoon.support.compiler.jdt.JDTBasedSpoonCompiler;
 import spoon.support.compiler.jdt.JDTBatchCompiler;
 
@@ -81,7 +80,7 @@ public final class SpoonUtils {
 				return new JDTBasedSpoonCompiler(factory) {
 					@Override
 					protected JDTBatchCompiler createBatchCompiler() {
-						return new CustomJDTBatchCompiler(this);
+						return new FastJDTBatchCompiler(this, environment, requestor, getEnvironment());
 					}
 				};
 			}
@@ -96,7 +95,7 @@ public final class SpoonUtils {
 					return new JDTBasedSpoonCompiler(factory) {
 						@Override
 						protected JDTBatchCompiler createBatchCompiler() {
-							return new CustomJDTBatchCompiler(this);
+							return new FastJDTBatchCompiler(this, environment, requestor, getEnvironment());
 						}
 					};
 				}

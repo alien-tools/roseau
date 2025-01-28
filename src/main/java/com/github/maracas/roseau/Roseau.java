@@ -1,7 +1,7 @@
 package com.github.maracas.roseau;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
-import com.github.maracas.roseau.api.SpoonUtils;
+import com.github.maracas.roseau.spoon.SpoonAPIExtractor;
+import com.github.maracas.roseau.spoon.SpoonUtils;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
