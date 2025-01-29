@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.combinatorial.builder;
 
 import com.github.maracas.roseau.api.model.InterfaceDecl;
+import com.github.maracas.roseau.api.model.Modifier;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -19,7 +20,9 @@ public final class InterfaceBuilder extends TypeDeclBuilder {
 
 		builder.qualifiedName = decl.getQualifiedName();
 		builder.visibility = decl.getVisibility();
-		builder.modifiers = EnumSet.copyOf(decl.getModifiers());
+		builder.modifiers = decl.getModifiers().isEmpty()
+				? EnumSet.noneOf(Modifier.class)
+				: EnumSet.copyOf(decl.getModifiers());
 		builder.annotations = decl.getAnnotations();
 		builder.location = decl.getLocation();
 		builder.implementedInterfaces = decl.getImplementedInterfaces();

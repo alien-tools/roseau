@@ -13,7 +13,7 @@ abstract class AbstractWriter {
 		this.outputDir = outputDir;
 	}
 
-	public void createOutputDir() {
+	public void createOutputHierarchy() {
 		if (this.outputDir.toString().isBlank()) return;
 
 		try {

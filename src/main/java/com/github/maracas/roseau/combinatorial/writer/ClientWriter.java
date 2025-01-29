@@ -2,6 +2,7 @@ package com.github.maracas.roseau.combinatorial.writer;
 
 import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.client.ClientTemplates;
 
 import java.io.IOException;
@@ -12,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClientWriter extends AbstractWriter {
-	private static final String clientsPackageName = "clients";
+	private static final String clientsPackageName = Constants.CLIENTS_FOLDER;
 
 	public ClientWriter(Path outputDir) {
 		super(outputDir);

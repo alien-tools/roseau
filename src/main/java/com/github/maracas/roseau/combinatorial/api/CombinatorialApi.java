@@ -6,6 +6,7 @@ import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.builder.*;
 import com.google.common.collect.Sets;
 
@@ -68,7 +69,7 @@ public class CombinatorialApi {
 	static List<ClassBuilder> classBuilders = new ArrayList<>();
 	static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-	private static final String apiPackageName = "api";
+	private static final String apiPackageName = Constants.API_FOLDER;
 
 	static final int typeHierarchyDepth = 1;
 	static final int typeHierarchyWidth = 2;

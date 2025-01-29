@@ -33,15 +33,15 @@ public final class Benchmark implements Runnable {
 			Path clientsJarPath,
 			Path v1SourcesPath,
 			Path v1JarPath,
-			String workingPath
+			Path workingPath
 	) {
 		System.out.println("Creating Benchmark " + id);
 		this.id = id;
 
 		this.clientsSourcesPath = clientsSourcesPath;
 		this.clientsJarPath = clientsJarPath;
-		this.v2SourcesPath = Path.of(workingPath, id, Constants.API_FOLDER);
-		this.v2JarPath = Path.of(workingPath, id, Constants.JAR_FOLDER);
+		this.v2SourcesPath = workingPath.resolve(Path.of(id, Constants.API_FOLDER));
+		this.v2JarPath = workingPath.resolve(Path.of(id, Constants.JAR_FOLDER));
 
 		this.queue = queue;
 
@@ -51,7 +51,7 @@ public final class Benchmark implements Runnable {
 				new RoseauTool(v1SourcesPath, v2SourcesPath)
 		);
 
-		this.apiWriter = new ApiWriter(Path.of(workingPath, id));
+		this.apiWriter = new ApiWriter(workingPath.resolve(id));
 	}
 
 	@Override
@@ -74,7 +74,7 @@ public final class Benchmark implements Runnable {
 
 	private void generateNewApiSourcesAndJar(API api) {
 		System.out.println("Generating new API Sources");
-		apiWriter.createOutputDir();
+		apiWriter.createOutputHierarchy();
 		apiWriter.write(api);
 		System.out.println("\tGenerated to " + v2SourcesPath);
 
