@@ -22,6 +22,7 @@ import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
+import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -34,6 +35,8 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print classDecl(ClassDecl it) {
 		return () -> """
+			%s
+
 			%s %s class %s %s %s %s {
 			%s
 
@@ -41,6 +44,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 
 			%s
 			}""".formatted(
+				getPackageFromQualifiedName(it.getQualifiedName()),
 				prettyPrint(it.getVisibility()),
 				prettyPrint(it.getModifiers()),
 				it.getSimpleName(),
@@ -60,11 +64,14 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print interfaceDecl(InterfaceDecl it) {
 		return () -> """
+			%s
+
 			%s %s interface %s %s %s {
 				%s
 				%s
 				%s
 			}""".formatted(
+			getPackageFromQualifiedName(it.getQualifiedName()),
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
@@ -83,12 +90,15 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print enumDecl(EnumDecl it) {
 		return () -> """
+			%s
+
 			%s %s enum %s %s %s {
 				%s;
 				%s
 				%s
 				%s
 			}""".formatted(
+			getPackageFromQualifiedName(it.getQualifiedName()),
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
@@ -106,11 +116,14 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print annotationDecl(AnnotationDecl it) {
 		return () -> """
+			%s
+
 			%s %s @interface %s %s {
 				%s
 				%s
 				%s
 			}""".formatted(
+			getPackageFromQualifiedName(it.getQualifiedName()),
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
@@ -126,12 +139,15 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print recordDecl(RecordDecl it) {
 		return () -> """
+			%s
+
 			%s %s record %s(%s) %s {
 				%s
 				%s
 				%s
 				%s
 			}""".formatted(
+			getPackageFromQualifiedName(it.getQualifiedName()),
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
@@ -217,6 +233,18 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	@Override
 	public Print formalTypeParameter(FormalTypeParameter it) {
 		return null;
+	}
+
+	private static String getPackageFromQualifiedName(String qualifiedName) {
+		var qualifiedNameSplit = qualifiedName.split("\\.");
+		if (qualifiedNameSplit.length == 1)
+			return "";
+
+		var packageName = Arrays.stream(qualifiedNameSplit)
+				.limit(qualifiedNameSplit.length - 1)
+				.collect(Collectors.joining("."));
+
+		return "package %s;".formatted(packageName);
 	}
 
 	private static String prettyPrint(Set<Modifier> modifiers) {

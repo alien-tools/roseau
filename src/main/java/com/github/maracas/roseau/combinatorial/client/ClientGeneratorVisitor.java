@@ -3,6 +3,7 @@ package com.github.maracas.roseau.combinatorial.client;
 import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
+import com.github.maracas.roseau.combinatorial.writer.ClientWriter;
 
 import java.util.Optional;
 
@@ -23,7 +24,7 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 				case ConstructorDecl c: generateConstructorClients(c); break;
 				case FieldDecl f: generateFieldClients(f); break;
 				case MethodDecl m: generateMethodClients(m); break;
-				default: break;
+				case AnnotationDecl ignored: break;
 			}
 		}
 
