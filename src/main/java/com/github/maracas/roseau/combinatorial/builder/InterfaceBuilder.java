@@ -13,4 +13,22 @@ public final class InterfaceBuilder extends TypeDeclBuilder {
 		return new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
 	}
+
+	public static InterfaceBuilder from(InterfaceDecl decl) {
+		var builder = new InterfaceBuilder();
+
+		builder.qualifiedName = decl.getQualifiedName();
+		builder.visibility = decl.getVisibility();
+		builder.modifiers = EnumSet.copyOf(decl.getModifiers());
+		builder.annotations = decl.getAnnotations();
+		builder.location = decl.getLocation();
+		builder.implementedInterfaces = decl.getImplementedInterfaces();
+		builder.formalTypeParameters = decl.getFormalTypeParameters();
+		builder.fields = decl.getDeclaredFields();
+		builder.methods = decl.getDeclaredMethods();
+		builder.enclosingType = decl.getEnclosingType().orElse(null);
+		builder.permittedTypes = decl.getPermittedTypes();
+
+		return builder;
+	}
 }

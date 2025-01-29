@@ -1,12 +1,13 @@
 package com.github.maracas.roseau.combinatorial.api;
 
+import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.writer.ApiWriter;
 
 import java.nio.file.Path;
 
 public class ApiGenerator {
 	public static void main(String[] args) {
-		String outputDir = args.length >= 1 ? args[0] : "output";
+		String outputDir = args.length >= 1 ? args[0] : Constants.DEFAULT_OUTPUT_DIR;
 
 		try {
 			var apiWriter = new ApiWriter(Path.of(outputDir));

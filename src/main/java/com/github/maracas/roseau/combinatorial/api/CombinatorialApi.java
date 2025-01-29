@@ -84,10 +84,10 @@ public class CombinatorialApi {
 	public void build() {
 		createTypes();
 
-		weaveFields();
-		weaveMethods();
+//		weaveFields();
+//		weaveMethods();
 
-		createHierarchies();
+//		createHierarchies();
 	}
 
 	public API getAPI() {
@@ -96,9 +96,9 @@ public class CombinatorialApi {
 
 	private void createTypes() {
 		createInterfaces();
-		createClasses();
-		createRecords();
-		createEnums();
+//		createClasses();
+//		createRecords();
+//		createEnums();
 	}
 
 	private void weaveFields() {
