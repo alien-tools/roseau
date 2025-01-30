@@ -17,7 +17,7 @@ public final class Benchmark implements Runnable {
 	private final String id;
 
 	private final Path clientsSourcesPath;
-	private final Path clientsJarPath;
+	private final Path clientsBinPath;
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
@@ -35,7 +35,7 @@ public final class Benchmark implements Runnable {
 			String id,
 			NewApiQueue queue,
 			Path clientsSourcesPath,
-			Path clientsJarPath,
+			Path clientsBinPath,
 			Path v1SourcesPath,
 			Path v1JarPath,
 			Path workingPath
@@ -44,7 +44,7 @@ public final class Benchmark implements Runnable {
 		this.id = id;
 
 		this.clientsSourcesPath = clientsSourcesPath;
-		this.clientsJarPath = clientsJarPath;
+		this.clientsBinPath = clientsBinPath;
 		this.v2SourcesPath = workingPath.resolve(Path.of(id, Constants.API_FOLDER));
 		this.v2JarPath = workingPath.resolve(Path.of(id, Constants.JAR_FOLDER));
 
@@ -96,7 +96,7 @@ public final class Benchmark implements Runnable {
 		System.out.println("\t\tClients Sources: " + clientsSourcesPath);
 		System.out.println("\tLinking new API with Clients");
 		System.out.println("\t\tAPI Jar: " + v2JarPath);
-		System.out.println("\t\tClients Jar: " + clientsJarPath);
+		System.out.println("\t\tClients Jar: " + clientsBinPath);
 	}
 
 	private void runToolsAnalysis() {

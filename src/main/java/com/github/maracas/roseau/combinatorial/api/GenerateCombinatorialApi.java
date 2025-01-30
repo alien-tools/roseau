@@ -2,6 +2,7 @@ package com.github.maracas.roseau.combinatorial.api;
 
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.AbstractStep;
+import com.github.maracas.roseau.combinatorial.StepExecutionException;
 import com.github.maracas.roseau.combinatorial.writer.ApiWriter;
 
 import java.nio.file.Path;
@@ -27,14 +28,13 @@ public final class GenerateCombinatorialApi extends AbstractStep {
 
 			ApiStats.display(api);
 		} catch (Exception e) {
-			System.err.println("Failed to build API in " + outputPath);
-			System.err.println(e.getMessage());
-
-			System.exit(1);
+			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
 		}
 	}
 
 	public API getGeneratedApi() {
+		if (api == null) throw new StepExecutionException(this.getClass().getSimpleName(), "API not generated yet");
+
 		return api;
 	}
 }

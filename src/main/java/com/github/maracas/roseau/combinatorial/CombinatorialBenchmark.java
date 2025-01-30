@@ -17,18 +17,21 @@ public final class CombinatorialBenchmark {
 		String outputDir = args.length >= 2 ? args[1] : Constants.OUTPUT_FOLDER;
 		var outputPath = Path.of(outputDir);
 
-		var apiGeneration = new GenerateCombinatorialApi(outputPath);
-		apiGeneration.run();
-		var generatedApi = apiGeneration.getGeneratedApi();
-		if (generatedApi == null) {
-			System.err.println("Failed to generate API");
+		try {
+			var apiGeneration = new GenerateCombinatorialApi(outputPath);
+			apiGeneration.run();
+			var generatedApi = apiGeneration.getGeneratedApi();
+
+			var clientsGeneration = new GenerateApiClients(generatedApi, outputPath);
+			clientsGeneration.run();
+
+			var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(generatedApi, maxParallelAnalysis, outputPath);
+			newVersionsAndBenchmarkStep.run();
+		} catch (Exception e) {
+			System.err.println("Failed to run combinatorial benchmark");
+			System.err.println(e.getMessage());
+
 			System.exit(1);
 		}
-
-		var clientsGeneration = new GenerateApiClients(generatedApi, outputPath);
-		clientsGeneration.run();
-
-		var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(generatedApi, maxParallelAnalysis, outputPath);
-		newVersionsAndBenchmarkStep.run();
 	}
 }
