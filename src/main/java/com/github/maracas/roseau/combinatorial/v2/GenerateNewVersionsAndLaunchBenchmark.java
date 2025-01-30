@@ -44,6 +44,8 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		try {
 			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
 			visitor.$(v1Api).visit();
+
+			informAllBenchmarksGenerationIsOver();
 		} catch (Exception e) {
 			System.err.println(e.getMessage());
 

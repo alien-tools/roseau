@@ -28,4 +28,8 @@ public final class NewApiQueue {
 			return null;
 		}
 	}
+
+	public boolean hasStillWork() {
+		return !queue.isEmpty();
+	}
 }

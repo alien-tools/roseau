@@ -27,6 +27,8 @@ public final class Benchmark implements Runnable {
 
 	private final ApiWriter apiWriter;
 
+	private boolean isNewBreakingApisGenerationOngoing = true;
+
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
 	public Benchmark(
@@ -59,7 +61,7 @@ public final class Benchmark implements Runnable {
 
 	@Override
 	public void run() {
-		while (true) {
+		while (isNewBreakingApisGenerationOngoing || queue.hasStillWork()) {
 			var newApi = queue.take();
 			if (newApi == null) break;
 
@@ -71,6 +73,10 @@ public final class Benchmark implements Runnable {
 			System.out.println("Benchmark Thread n°" + id + " finished");
 			System.out.println("--------------------------------------\n");
 		}
+	}
+
+	public void informsBreakingApisGenerationIsOver() {
+		isNewBreakingApisGenerationOngoing = false;
 	}
 
 	private void generateNewApiSourcesAndJar(API api) {
