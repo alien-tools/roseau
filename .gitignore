@@ -35,9 +35,8 @@ build/
 .DS_Store
 
 ### Generated ###
-benchmark-tmp/
 output/
-work/
+tmp/
 
 sample/
 !sample/api/v1/

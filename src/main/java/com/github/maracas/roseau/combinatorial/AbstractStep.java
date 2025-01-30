@@ -9,12 +9,5 @@ public abstract class AbstractStep {
 		this.outputPath = outputPath;
 	}
 
-	public abstract void run();
-
-	protected static void checkPath(Path path) {
-		if (!path.toFile().exists()) {
-			System.err.println("Directory " + path + " does not exist");
-			System.exit(1);
-		}
-	}
+	public abstract void run() throws StepExecutionException;
 }

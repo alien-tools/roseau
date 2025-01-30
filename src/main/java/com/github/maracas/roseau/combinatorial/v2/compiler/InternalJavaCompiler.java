@@ -1,117 +1,114 @@
 package com.github.maracas.roseau.combinatorial.v2.compiler;
 
+import com.github.maracas.roseau.combinatorial.Constants;
+import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
+
 import javax.tools.*;
-import java.io.BufferedInputStream;
-import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.IOException;
+import java.io.*;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.List;
-import java.util.jar.Attributes;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
-import java.util.stream.Collectors;
 
 public final class InternalJavaCompiler {
-	public Path compileLibrary(String className, Path sourceFile) {
-		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-		StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
-		Iterable<? extends JavaFileObject> cus = fileManager.getJavaFileObjects(sourceFile);
+	private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
-		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, null, null, cus);
-		task.call();
+	public List<Diagnostic<? extends JavaFileObject>> packageApiToJar(Path apiPath, Path jarPath) {
+		var binPath = jarPath.getParent().resolve(Constants.BINARIES_FOLDER);
 
-		List<Diagnostic<? extends JavaFileObject>> errors = diagnostics.getDiagnostics().stream()
-			.filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
-			.toList();
+		var errors = compileApi(apiPath, binPath);
+		if (!errors.isEmpty()) return errors;
 
-		if (!errors.isEmpty())
-			throw new RuntimeException("Couldn't compile library :" +
-				errors.stream().map(Object::toString).collect(Collectors.joining(System.lineSeparator())));
+		try (var target = new JarOutputStream(new FileOutputStream(jarPath.toFile()))) {
+			var binFile = binPath.toFile();
+			addFileToJar(binFile, target, binFile.getAbsolutePath().length() + 1);
+		} catch (IOException e) {
+			return List.of(new InternalDiagnostic("Unknown error while packaging API to JAR"));
+		}
 
-		return sourceFile.getParent().resolve("%s.class".formatted(className));
+		ExplorerUtils.removeDirectory(binPath);
+
+		return List.of();
 	}
 
-	public List<Diagnostic<? extends JavaFileObject>> compileClient(Path clientSource, Path libraryPath) {
-		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
-		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
-		StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
-		Iterable<? extends JavaFileObject> cus = fileManager.getJavaFileObjects(clientSource);
-		List<String> options = List.of(
-			"-source", "21",
-			"--enable-preview", // Simpler main()
-			"-classpath", libraryPath.toString());
+	public List<Diagnostic<? extends JavaFileObject>> compileClientWithApi(Path clientsPath, Path apiPath, Path binPath) {
+		var clientsFiles = ExplorerUtils.getFilesInPath(clientsPath, "java");
+		if (!ExplorerUtils.cleanOrCreateDirectory(binPath))
+			return List.of(new InternalDiagnostic("Couldn't clean or create clients binaries directory"));
 
-		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, cus);
-		task.call();
+		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+
+		try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
+			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(binPath.toFile()));
+
+			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(clientsFiles);
+			System.out.println(apiPath);
+			List<String> options = List.of("-source", "21", "-cp", apiPath.toString());
+			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
+			task.call();
+		} catch (Exception e) {
+			return List.of(new InternalDiagnostic("Unknown error while compiling clients"));
+		}
 
 		return diagnostics.getDiagnostics().stream()
-			.filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)
-			.toList();
+				.filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)
+				.toList();
 	}
 
-	public void createJar(Path jar, Collection<Path> classFiles) throws IOException {
-		Manifest manifest = new Manifest();
-		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-		JarOutputStream target = new JarOutputStream(new FileOutputStream(jar.toFile()), manifest);
-		for (Path classFile : classFiles)
-			addToJar(classFile, target);
-		target.close();
+	private List<Diagnostic<? extends JavaFileObject>> compileApi(Path apiPath, Path binPath) {
+		var apiFiles = ExplorerUtils.getFilesInPath(apiPath, "java");
+		if (!ExplorerUtils.cleanOrCreateDirectory(binPath))
+			return List.of(new InternalDiagnostic("Couldn't clean or create API binaries directory"));
+
+		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
+
+		try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
+			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(binPath.toFile()));
+
+			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(apiFiles);
+			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, null, null, compilationUnits);
+			task.call();
+		} catch (Exception e) {
+			return List.of(new InternalDiagnostic("Unknown error while compiling API"));
+		}
+
+		return diagnostics.getDiagnostics().stream()
+				.filter(d -> d.getKind() == Diagnostic.Kind.ERROR)
+				.toList();
 	}
 
-	private void addToJar(Path source, JarOutputStream target) throws IOException {
-		JarEntry entry = new JarEntry(source.getFileName().toString());
-		entry.setTime(source.toFile().lastModified());
-		target.putNextEntry(entry);
-		try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(source.toFile()))) {
-			byte[] buffer = new byte[1024];
-			while (true) {
-				int count = in.read(buffer);
-				if (count == -1)
-					break;
-				target.write(buffer, 0, count);
+	private void addFileToJar(File file, JarOutputStream target, int basePathLength) throws IOException {
+		if (file.isDirectory()) {
+			for (File insideFile : Objects.requireNonNull(file.listFiles()))
+				addFileToJar(insideFile, target, basePathLength);
+		} else {
+			var entryName = file.getAbsolutePath().substring(basePathLength);
+			target.putNextEntry(new JarEntry(entryName));
+
+			try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
+				byte[] buffer = new byte[1024];
+				int bytesRead;
+				while ((bytesRead = in.read(buffer)) != -1) {
+					target.write(buffer, 0, bytesRead);
+				}
 			}
+
 			target.closeEntry();
 		}
 	}
 
-//	public static CaseResult roseauCase(String snippet1, String snippet2, String clientSnippet) {
-//		try {
-//			Path workingDirectory = Files.createTempDirectory("roseau-otf");
-//			OnTheFlyCaseCompiler otf = new OnTheFlyCaseCompiler(workingDirectory);
-//
-//			Path srcFile1 = otf.saveSource(snippet1, "A");
-//			Path clsFile1 = otf.compileLibrary("A", srcFile1);
-//			Path jar1 = workingDirectory.resolve("old.jar");
-//			otf.createJar(jar1, List.of(clsFile1));
-//
-//			Path srcFile2 = otf.saveSource(snippet2, "A");
-//			Path clsFile2 = otf.compileLibrary("A", srcFile2);
-//			Path jar2 = workingDirectory.resolve("new.jar");
-//			otf.createJar(jar2, List.of(clsFile2));
-//
-//			Path clientPath = workingDirectory.resolve("client");
-//			Path clientFile = clientPath.resolve("src/main/java/Client.java");
-//			clientFile.getParent().toFile().mkdirs();
-//			Files.writeString(clientFile, clientSnippet);
-//			Path pomFile = clientPath.resolve("pom.xml");
-//			clientFile.toFile().getParentFile().mkdirs();
-//			Files.writeString(pomFile, "<project></project>");
-//
-//			//		Files.deleteIfExists(workingDirectory);
-//
-//			List<Diagnostic<? extends JavaFileObject>> errors1 = otf.compileClient(clientFile, clsFile1.getParent());
-//			if (!errors1.isEmpty())
-//				throw new RuntimeException("On-the-fly case did not compile with the first version:\n" +
-//					errors1.stream().map(d -> d.getMessage(null)).collect(Collectors.joining(System.lineSeparator())));
-//
-//			List<Diagnostic<? extends JavaFileObject>> errors2 = otf.compileClient(clientFile, clsFile2.getParent());
-//			return new CaseResult(diff.diff(), errors2);
-//		} catch (IOException e) {
-//			throw new RuntimeException("On-the-fly failed", e);
-//		}
-//	}
+	private record InternalDiagnostic(String message) implements Diagnostic<JavaFileObject> {
+		@Override public Kind getKind() { return null; }
+		@Override public JavaFileObject getSource() { return null; }
+		@Override public long getPosition() { return 0; }
+		@Override public long getStartPosition() { return 0; }
+		@Override public long getEndPosition() { return 0; }
+		@Override public long getLineNumber() { return 0; }
+		@Override public long getColumnNumber() { return 0; }
+		@Override public String getCode() { return null; }
+		@Override public String getMessage(Locale locale) { return message; }
+		@Override public String toString() { return message; }
+	}
 }

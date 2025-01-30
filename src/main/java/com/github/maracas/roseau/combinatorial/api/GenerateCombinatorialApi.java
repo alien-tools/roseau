@@ -14,11 +14,12 @@ public final class GenerateCombinatorialApi extends AbstractStep {
 		super(outputPath);
 	}
 
-	public void run() {
-		try {
-			var apiWriter = new ApiWriter(outputPath);
-			apiWriter.createOutputHierarchy();
+	public void run() throws StepExecutionException {
+		var apiWriter = new ApiWriter(outputPath);
+		if (!apiWriter.createOutputHierarchy())
+			throw new StepExecutionException(this.getClass().getSimpleName(), "Failed to create output hierarchy");
 
+		try {
 			var combinatorialApi = new CombinatorialApi();
 			combinatorialApi.build();
 
@@ -32,7 +33,7 @@ public final class GenerateCombinatorialApi extends AbstractStep {
 		}
 	}
 
-	public API getGeneratedApi() {
+	public API getGeneratedApi() throws StepExecutionException {
 		if (api == null) throw new StepExecutionException(this.getClass().getSimpleName(), "API not generated yet");
 
 		return api;

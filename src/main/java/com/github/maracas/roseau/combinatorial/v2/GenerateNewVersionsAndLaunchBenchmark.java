@@ -4,12 +4,14 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.AbstractStep;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.StepExecutionException;
+import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.Benchmark;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
 
 public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private final API v1Api;
@@ -23,7 +25,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private final Path v1SourcesPath;
 	private final Path clientsSourcesPath;
-	private final Path benchmarkTempPath;
+	private final Path tmpPath;
 	private final Path v1JarPath;
 	private final Path clientsBinPath;
 
@@ -37,21 +39,22 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		v1SourcesPath = outputPath.resolve(Constants.API_FOLDER);
 		clientsSourcesPath = outputPath.resolve(Constants.CLIENTS_FOLDER);
-		benchmarkTempPath = Path.of(Constants.BENCHMARK_TMP_FOLDER);
-		v1JarPath = benchmarkTempPath.resolve(Path.of(Constants.JAR_FOLDER, Constants.API_FOLDER));
-		clientsBinPath = benchmarkTempPath.resolve(Path.of(Constants.BINARIES_FOLDER, Constants.CLIENTS_FOLDER));
+		tmpPath = Path.of(Constants.TMP_FOLDER);
+		v1JarPath = tmpPath.resolve(Path.of(Constants.JAR_FOLDER, "v1.jar"));
+		clientsBinPath = tmpPath.resolve(Path.of(Constants.BINARIES_FOLDER));
+
+		ExplorerUtils.cleanOrCreateDirectory(tmpPath);
 	}
 
-	public void run() {
-		checkPath(v1SourcesPath);
-		checkPath(clientsSourcesPath);
+	public void run() throws StepExecutionException {
+		checkSourcesArePresent();
 
 		packageV1Api();
 		compileClients();
 
-		initializeBenchmarkThreads();
-
 		try {
+			initializeBenchmarkThreads();
+
 			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
 			visitor.$(v1Api).visit();
 
@@ -61,21 +64,39 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		}
 	}
 
-	private void packageV1Api() {
+	private void checkSourcesArePresent() throws StepExecutionException {
+		if (!ExplorerUtils.checkPathExists(v1SourcesPath))
+			throw new StepExecutionException(this.getClass().getSimpleName(), "V1 API sources are missing");
 
+		if (!ExplorerUtils.checkPathExists(clientsSourcesPath))
+			throw new StepExecutionException(this.getClass().getSimpleName(), "Clients sources are missing");
 	}
 
-	private void compileClients() {
+	private void packageV1Api() throws StepExecutionException {
+		var errors = compiler.packageApiToJar(v1SourcesPath, v1JarPath);
 
+		if (!errors.isEmpty())
+			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't package V1 API: " + formatCompilerErrors(errors));
+	}
+
+	private void compileClients() throws StepExecutionException {
+		var errors = compiler.compileClientWithApi(clientsSourcesPath, v1JarPath, clientsBinPath);
+
+		if (!errors.isEmpty())
+			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile clients: " + formatCompilerErrors(errors));
+	}
+
+	private static String formatCompilerErrors(List<?> errors) {
+		return errors.stream().map(Object::toString).collect(Collectors.joining(System.lineSeparator()));
 	}
 
 	private void initializeBenchmarkThreads() {
 		System.out.println("\n----- Starting benchmark threads -----");
 
 		for (int i = 0; i < maxParallelAnalysis; i++) {
-			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, clientsSourcesPath, clientsBinPath, v1SourcesPath, v1JarPath, benchmarkTempPath);
-
+			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, clientsSourcesPath, clientsBinPath, v1SourcesPath, v1JarPath, tmpPath);
 			benchmarks.add(benchmark);
+
 			new Thread(benchmark).start();
 		}
 
