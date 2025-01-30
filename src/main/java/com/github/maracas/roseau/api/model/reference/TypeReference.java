@@ -17,6 +17,9 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/**
+ * @see TypeReferenceFactory
+ */
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
 	private final List<ITypeReference> typeArguments;
@@ -34,17 +37,17 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	@JsonCreator
-	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
+	TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.typeArguments = Objects.requireNonNull(typeArguments);
 	}
 
-	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
+	TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
 		this(qualifiedName, typeArguments);
 		this.factory = Objects.requireNonNull(factory);
 	}
 
-	public TypeReference(String qualifiedName) {
+	private TypeReference(String qualifiedName) {
 		this(qualifiedName, Collections.emptyList());
 	}
 
