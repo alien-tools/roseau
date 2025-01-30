@@ -13,10 +13,13 @@ public final class JapicmpTool extends AbstractTool {
 	public ToolResult detectBreakingChanges() {
 		System.out.println("--------------------------------------");
 		System.out.println("Detecting Breaking Changes with Japicmp");
-		System.out.println("\tV1 Path: " + v1Path);
-		System.out.println("\tV2 Path: " + v2Path);
+
+		long startTime = System.currentTimeMillis();
+		// TODO: Implement Japicmp
+		long executionTime = System.currentTimeMillis() - startTime;
+
 		System.out.println("--------------------------------------");
 
-		return new ToolResult(0.0f, false);
+		return new ToolResult(executionTime, false);
 	}
 }

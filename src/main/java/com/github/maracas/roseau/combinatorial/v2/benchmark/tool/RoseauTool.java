@@ -1,6 +1,10 @@
 package com.github.maracas.roseau.combinatorial.v2.benchmark.tool;
 
+import com.github.maracas.roseau.api.APIExtractor;
+import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.ToolResult;
+import com.github.maracas.roseau.diff.APIDiff;
 
 import java.nio.file.Path;
 
@@ -13,10 +17,17 @@ public final class RoseauTool extends AbstractTool {
 	public ToolResult detectBreakingChanges() {
 		System.out.println("--------------------------------------");
 		System.out.println("Detecting Breaking Changes with Roseau");
-		System.out.println("\tV1 Path: " + v1Path);
-		System.out.println("\tV2 Path: " + v2Path);
+
+		APIExtractor extractor = new SpoonAPIExtractor();
+		API v1 = extractor.extractAPI(v1Path);
+		API v2 = extractor.extractAPI(v2Path);
+
+		long startTime = System.currentTimeMillis();
+		APIDiff diff = new APIDiff(v1, v2);
+		long executionTime = System.currentTimeMillis() - startTime;
+
 		System.out.println("--------------------------------------");
 
-		return new ToolResult(0.0f, false);
+		return new ToolResult(executionTime, !diff.getBreakingChanges().isEmpty());
 	}
 }

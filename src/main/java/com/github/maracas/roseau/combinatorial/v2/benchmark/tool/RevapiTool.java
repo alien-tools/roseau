@@ -13,10 +13,13 @@ public final class RevapiTool extends AbstractTool {
 	public ToolResult detectBreakingChanges() {
 		System.out.println("--------------------------------------");
 		System.out.println("Detecting Breaking Changes with Revapi");
-		System.out.println("\tV1 Path: " + v1Path);
-		System.out.println("\tV2 Path: " + v2Path);
+
+		long startTime = System.currentTimeMillis();
+		// TODO: Implement Revapi
+		long executionTime = System.currentTimeMillis() - startTime;
+
 		System.out.println("--------------------------------------");
 
-		return new ToolResult(0.0f, false);
+		return new ToolResult(executionTime, false);
 	}
 }
