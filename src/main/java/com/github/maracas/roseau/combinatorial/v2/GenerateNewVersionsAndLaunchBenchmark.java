@@ -4,6 +4,7 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.AbstractStep;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.Benchmark;
+import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 
 import java.nio.file.Path;
 
@@ -26,8 +27,10 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		checkPath(v1SourcesPath);
 		checkPath(clientsSourcesPath);
 
-		// TODO: Package V1 API & Clients separately to working directory
+		var compiler = new InternalJavaCompiler();
+		// TODO: Package V1 API
 		var v1JarPath = Path.of("");
+		// TODO: Compile Clients
 		var clientsJarPath = Path.of("");
 
 		var newApiQueue = new NewApiQueue(maxParallelAnalysis);

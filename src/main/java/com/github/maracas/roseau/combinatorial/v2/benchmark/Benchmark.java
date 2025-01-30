@@ -7,6 +7,7 @@ import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.AbstractTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.JapicmpTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RevapiTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RoseauTool;
+import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 import com.github.maracas.roseau.combinatorial.writer.ApiWriter;
 
 import java.nio.file.Path;
@@ -25,6 +26,8 @@ public final class Benchmark implements Runnable {
 	private final List<AbstractTool> tools;
 
 	private final ApiWriter apiWriter;
+
+	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
 	public Benchmark(
 			String id,
@@ -60,8 +63,6 @@ public final class Benchmark implements Runnable {
 			var newApi = queue.take();
 			if (newApi == null) break;
 
-			try { Thread.sleep(5000); } catch (InterruptedException ignored) {}
-
 			System.out.println("\n--------------------------------------");
 			System.out.println("Running Benchmark Thread n°" + id);
 			generateNewApiSourcesAndJar(newApi);
@@ -94,11 +95,7 @@ public final class Benchmark implements Runnable {
 
 	private void runToolsAnalysis() {
 		for (var tool : tools) {
-			try {
-				System.out.println("Running tool: " + tool.getClass().getSimpleName());
-				Thread.sleep(1000);
-				tool.detectBreakingChanges();
-			} catch (InterruptedException ignored) {}
+			tool.detectBreakingChanges();
 		}
 	}
 }

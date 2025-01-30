@@ -5,7 +5,7 @@ import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
 import com.github.maracas.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
 
-public class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
+public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private final API apiV1;
 	private final NewApiQueue queue;
 
