@@ -44,7 +44,6 @@ public final class InternalJavaCompiler {
 			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(binPath.toFile()));
 
 			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(clientsFiles);
-			System.out.println(apiPath);
 			List<String> options = List.of("-source", "21", "-cp", apiPath.toString());
 			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
 			task.call();

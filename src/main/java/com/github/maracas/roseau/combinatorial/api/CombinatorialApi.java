@@ -37,10 +37,11 @@ public class CombinatorialApi {
 			.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
 			.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
 			.collect(Collectors.toSet());
-	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
-			.stream()
-			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
-			.collect(Collectors.toSet());
+	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT);
+//	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
+//			.stream()
+//			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+//			.collect(Collectors.toSet());
 	static final Set<Set<Modifier>> recordModifiers = powerSet(FINAL);
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 

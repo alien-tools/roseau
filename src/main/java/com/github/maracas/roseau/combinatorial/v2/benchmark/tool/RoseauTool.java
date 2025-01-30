@@ -15,9 +15,6 @@ public final class RoseauTool extends AbstractTool {
 
 	@Override
 	public ToolResult detectBreakingChanges() {
-		System.out.println("--------------------------------------");
-		System.out.println("Detecting Breaking Changes with Roseau");
-
 		APIExtractor extractor = new SpoonAPIExtractor();
 		API v1 = extractor.extractAPI(v1Path);
 		API v2 = extractor.extractAPI(v2Path);
@@ -25,8 +22,6 @@ public final class RoseauTool extends AbstractTool {
 		long startTime = System.currentTimeMillis();
 		APIDiff diff = new APIDiff(v1, v2);
 		long executionTime = System.currentTimeMillis() - startTime;
-
-		System.out.println("--------------------------------------");
 
 		return new ToolResult(executionTime, !diff.getBreakingChanges().isEmpty());
 	}

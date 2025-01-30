@@ -9,8 +9,9 @@ import com.github.maracas.roseau.combinatorial.v2.benchmark.Benchmark;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 
 import java.nio.file.Path;
-import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
@@ -19,7 +20,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private final NewApiQueue newApiQueue;
 
-	private final List<Benchmark> benchmarks = new ArrayList<>();
+	private final Map<Benchmark, Thread> benchmarkThreads = new HashMap<>();
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
@@ -91,20 +92,26 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	}
 
 	private void initializeBenchmarkThreads() {
-		System.out.println("\n----- Starting benchmark threads -----");
+		System.out.println("\n-- Starting benchmark threads --");
 
 		for (int i = 0; i < maxParallelAnalysis; i++) {
-			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, clientsSourcesPath, clientsBinPath, v1SourcesPath, v1JarPath, tmpPath);
-			benchmarks.add(benchmark);
+			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, clientsSourcesPath, v1SourcesPath, v1JarPath, tmpPath);
+			var thread = new Thread(benchmark);
+			thread.start();
 
-			new Thread(benchmark).start();
+			benchmarkThreads.put(benchmark, thread);
 		}
 
-		System.out.println("---- All benchmark threads started ---\n");
+		System.out.println("--- All bench threads started --\n");
 	}
 
 	private void informAllBenchmarksGenerationIsOver() {
-		for (Benchmark benchmark : benchmarks)
+		for (Benchmark benchmark : benchmarkThreads.keySet())
 			benchmark.informsBreakingApisGenerationIsOver();
+
+		for (Thread thread : benchmarkThreads.values())
+			try { thread.join(); } catch (InterruptedException ignored) {}
+
+		ExplorerUtils.removeDirectory(tmpPath);
 	}
 }

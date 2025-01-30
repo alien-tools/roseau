@@ -22,7 +22,7 @@ public final class GenerateApiClients extends AbstractStep {
 		try {
 			System.out.println("\n-- Generating clients for API --");
 			new ClientGeneratorVisitor(clientWriter).$(api).visit();
-			System.out.println("-- Generated clients for API ---\n");
+			System.out.println("-- Clients generated for API ---\n");
 		} catch (Exception e) {
 			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
 		}

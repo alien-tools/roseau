@@ -23,7 +23,6 @@ public class ApiWriter extends AbstractWriter {
 				file.getParentFile().mkdirs();
 
 				Files.writeString(filePath, code);
-				System.out.println("Generated " + filePath);
 			} catch (Exception e) {
 				e.printStackTrace();
 			}

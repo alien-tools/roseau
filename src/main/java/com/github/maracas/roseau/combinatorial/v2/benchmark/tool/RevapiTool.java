@@ -11,14 +11,9 @@ public final class RevapiTool extends AbstractTool {
 
 	@Override
 	public ToolResult detectBreakingChanges() {
-		System.out.println("--------------------------------------");
-		System.out.println("Detecting Breaking Changes with Revapi");
-
 		long startTime = System.currentTimeMillis();
 		// TODO: Implement Revapi
 		long executionTime = System.currentTimeMillis() - startTime;
-
-		System.out.println("--------------------------------------");
 
 		return new ToolResult(executionTime, false);
 	}

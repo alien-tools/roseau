@@ -24,7 +24,6 @@ public final class GenerateCombinatorialApi extends AbstractStep {
 			combinatorialApi.build();
 
 			api = combinatorialApi.getAPI();
-			System.out.println("api=" + api);
 			apiWriter.write(api);
 
 			ApiStats.display(api);

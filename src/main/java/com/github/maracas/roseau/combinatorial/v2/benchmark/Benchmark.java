@@ -2,6 +2,7 @@ package com.github.maracas.roseau.combinatorial.v2.benchmark;
 
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.Constants;
+import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
 import com.github.maracas.roseau.combinatorial.v2.NewApiQueue;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.AbstractTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.JapicmpTool;
@@ -16,8 +17,8 @@ import java.util.List;
 public final class Benchmark implements Runnable {
 	private final String id;
 
+	private final Path benchmarkWorkingPath;
 	private final Path clientsSourcesPath;
-	private final Path clientsBinPath;
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
@@ -35,18 +36,17 @@ public final class Benchmark implements Runnable {
 			String id,
 			NewApiQueue queue,
 			Path clientsSourcesPath,
-			Path clientsBinPath,
 			Path v1SourcesPath,
 			Path v1JarPath,
-			Path workingPath
+			Path tmpPath
 	) {
 		System.out.println("Creating Benchmark " + id);
 		this.id = id;
 
+		this.benchmarkWorkingPath = tmpPath.resolve(id);
 		this.clientsSourcesPath = clientsSourcesPath;
-		this.clientsBinPath = clientsBinPath;
-		this.v2SourcesPath = workingPath.resolve(Path.of(id, Constants.API_FOLDER));
-		this.v2JarPath = workingPath.resolve(Path.of(id, Constants.JAR_FOLDER));
+		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
+		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
 
 		this.queue = queue;
 
@@ -56,7 +56,7 @@ public final class Benchmark implements Runnable {
 				new RoseauTool(v1SourcesPath, v2SourcesPath)
 		);
 
-		this.apiWriter = new ApiWriter(workingPath.resolve(id));
+		this.apiWriter = new ApiWriter(benchmarkWorkingPath);
 	}
 
 	@Override
@@ -65,14 +65,20 @@ public final class Benchmark implements Runnable {
 			var newApi = queue.take();
 			if (newApi == null) break;
 
-			System.out.println("\n--------------------------------------");
-			System.out.println("Running Benchmark Thread n°" + id);
-			generateNewApiSourcesAndJar(newApi);
-			generateGroundTruth();
-			runToolsAnalysis();
-			System.out.println("Benchmark Thread n°" + id + " finished");
-			System.out.println("--------------------------------------\n");
+			try {
+				System.out.println("\n--------------------------------");
+				System.out.println("Running Benchmark Thread n°" + id);
+				generateNewApiSourcesAndJar(newApi);
+				var newApiIsBreaking = generateGroundTruth();
+				runToolsAnalysis(newApiIsBreaking);
+				System.out.println("Benchmark Thread n°" + id + " finished");
+				System.out.println("--------------------------------\n");
+			} catch (Exception e) {
+				System.out.println("Benchmark Thread n°" + id + " failed: " + e.getMessage());
+			}
 		}
+
+		ExplorerUtils.removeDirectory(benchmarkWorkingPath);
 	}
 
 	public void informsBreakingApisGenerationIsOver() {
@@ -80,28 +86,43 @@ public final class Benchmark implements Runnable {
 	}
 
 	private void generateNewApiSourcesAndJar(API api) {
-		System.out.println("Generating new API Sources");
-		apiWriter.createOutputHierarchy();
+		ExplorerUtils.cleanOrCreateDirectory(benchmarkWorkingPath);
+
+		System.out.println("\nGenerating new API Sources");
+		if (!apiWriter.createOutputHierarchy())
+			throw new RuntimeException("Failed to create new api sources hierarchy");
 		apiWriter.write(api);
-		System.out.println("\tGenerated to " + v2SourcesPath);
+		System.out.println("Generated to " + v2SourcesPath);
 
-		System.out.println("Generating new API Jar");
-		System.out.println("\tGenerated to " + v2JarPath);
+		System.out.println("\nGenerating new API Jar");
+		compiler.packageApiToJar(v2SourcesPath, v2JarPath);
+		System.out.println("Generated to " + v2JarPath);
 	}
 
-	private void generateGroundTruth() {
-		System.out.println("Generating Ground Truth");
-		System.out.println("\tCompiling new API with Clients");
-		System.out.println("\t\tAPI Sources: " + v2SourcesPath);
-		System.out.println("\t\tClients Sources: " + clientsSourcesPath);
-		System.out.println("\tLinking new API with Clients");
-		System.out.println("\t\tAPI Jar: " + v2JarPath);
-		System.out.println("\t\tClients Jar: " + clientsBinPath);
+	private boolean generateGroundTruth() {
+		System.out.println("\nGenerating Ground Truth");
+
+		var tmpClientsBinPath = benchmarkWorkingPath.resolve(Constants.BINARIES_FOLDER);
+		var errors = compiler.compileClientWithApi(clientsSourcesPath, v2JarPath, tmpClientsBinPath);
+		return !errors.isEmpty();
 	}
 
-	private void runToolsAnalysis() {
+	private void runToolsAnalysis(boolean isBreaking) {
+		System.out.println("\n--------------------------------");
+		System.out.println("     Running Tools Analysis");
+
 		for (var tool : tools) {
-			tool.detectBreakingChanges();
+			System.out.println("--------------------------------");
+			System.out.println(" Running " + tool.getClass().getSimpleName());
+
+			var result = tool.detectBreakingChanges();
+
+			System.out.println(" Execution Time: " + result.executionTime() + "ms");
+			System.out.println(" Tool Result   : " + (result.isBreaking() ? "Breaking" : "Not Breaking"));
+			System.out.println(" Expected      : " + (isBreaking ? "Breaking" : "Not Breaking"));
+			System.out.println(" Result        : " + (result.isBreaking() == isBreaking ? "OK" : "KO"));
 		}
+
+		System.out.println("--------------------------------\n");
 	}
 }

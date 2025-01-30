@@ -11,14 +11,9 @@ public final class JapicmpTool extends AbstractTool {
 
 	@Override
 	public ToolResult detectBreakingChanges() {
-		System.out.println("--------------------------------------");
-		System.out.println("Detecting Breaking Changes with Japicmp");
-
 		long startTime = System.currentTimeMillis();
 		// TODO: Implement Japicmp
 		long executionTime = System.currentTimeMillis() - startTime;
-
-		System.out.println("--------------------------------------");
 
 		return new ToolResult(executionTime, false);
 	}
