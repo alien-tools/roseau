@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.combinatorial.v2.benchmark.tool;
 
+import com.github.maracas.roseau.combinatorial.v2.benchmark.ToolResult;
+
 import java.nio.file.Path;
 
 public sealed abstract class AbstractTool permits JapicmpTool, RevapiTool, RoseauTool {
@@ -11,5 +13,5 @@ public sealed abstract class AbstractTool permits JapicmpTool, RevapiTool, Rosea
 		this.v2Path = v2Path;
 	}
 
-	public abstract void detectBreakingChanges();
+	public abstract ToolResult detectBreakingChanges();
 }
