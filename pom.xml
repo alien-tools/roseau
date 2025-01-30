@@ -168,6 +168,11 @@
             <artifactId>javatuples</artifactId>
             <version>1.2</version>
         </dependency>
+        <dependency>
+            <groupId>com.github.siom79.japicmp</groupId>
+            <artifactId>japicmp</artifactId>
+            <version>0.23.0</version>
+        </dependency>
     </dependencies>
 
     <distributionManagement>
