@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.combinatorial;
 
+import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.combinatorial.api.GenerateCombinatorialApi;
 import com.github.maracas.roseau.combinatorial.client.GenerateApiClients;
 import com.github.maracas.roseau.combinatorial.v2.GenerateNewVersionsAndLaunchBenchmark;
@@ -20,12 +21,15 @@ public final class CombinatorialBenchmark {
 		try {
 			var apiGeneration = new GenerateCombinatorialApi(outputPath);
 			apiGeneration.run();
-			var generatedApi = apiGeneration.getGeneratedApi();
 
-			var clientsGeneration = new GenerateApiClients(generatedApi, outputPath);
+			var apiPath = outputPath.resolve(Constants.API_FOLDER);
+			var apiExtractor = new SpoonAPIExtractor();
+			var api = apiExtractor.extractAPI(apiPath);
+
+			var clientsGeneration = new GenerateApiClients(api, outputPath);
 			clientsGeneration.run();
 
-			var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(generatedApi, maxParallelAnalysis, outputPath);
+			var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(api, maxParallelAnalysis, outputPath);
 			newVersionsAndBenchmarkStep.run();
 		} catch (Exception e) {
 			System.err.println("Failed to run combinatorial benchmark");
