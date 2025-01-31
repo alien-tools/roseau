@@ -22,6 +22,7 @@ public final class RoseauTool extends AbstractTool {
 		API v2 = extractor.extractAPI(v2Path);
 
 		APIDiff diff = new APIDiff(v1, v2);
+		diff.diff();
 		var isBreaking = !diff.getBreakingChanges().isEmpty();
 
 		long executionTime = System.currentTimeMillis() - startTime;
