@@ -2,6 +2,7 @@ package com.github.maracas.roseau.combinatorial;
 
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.combinatorial.api.GenerateCombinatorialApi;
 import com.github.maracas.roseau.combinatorial.client.GenerateApiClients;
 import com.github.maracas.roseau.combinatorial.v2.GenerateNewVersionsAndLaunchBenchmark;
 
@@ -20,8 +21,8 @@ public final class CombinatorialBenchmark {
 		var outputPath = Path.of(outputDir);
 
 		try {
-//			var apiGeneration = new GenerateCombinatorialApi(outputPath);
-//			apiGeneration.run();
+			var apiGeneration = new GenerateCombinatorialApi(outputPath);
+			apiGeneration.run();
 
 			var api = getAndExportGeneratedApi(outputPath);
 
