@@ -2,10 +2,7 @@ package com.github.maracas.roseau.combinatorial.api;
 
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.*;
-import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
-import com.github.maracas.roseau.api.model.reference.ITypeReference;
-import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
-import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.*;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.builder.*;
 import com.google.common.collect.Sets;
@@ -26,7 +23,10 @@ import static com.github.maracas.roseau.api.model.Modifier.SEALED;
 import static com.github.maracas.roseau.api.model.Modifier.STATIC;
 import static com.github.maracas.roseau.api.model.Modifier.SYNCHRONIZED;
 
-public class CombinatorialApi {
+public final class CombinatorialApi {
+	static final SpoonAPIFactory apiFactory = new SpoonAPIFactory();
+	static final SpoonTypeReferenceFactory typeReferenceFactory = new SpoonTypeReferenceFactory(apiFactory);
+
 	static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC);
 	static final List<AccessModifier> constructorsVisibilities = List.of(PROTECTED, PUBLIC);
 
@@ -46,10 +46,10 @@ public class CombinatorialApi {
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 
 	static final List<ITypeReference> fieldTypes = List.of(
-			new PrimitiveTypeReference("int"), // Primitive
-			new TypeReference<>("java.lang.Integer"), // Boxed
-			new TypeReference<>("java.lang.Thread"), // Object reference
-			new ArrayTypeReference(new PrimitiveTypeReference("int"), 1) // Array
+			typeReferenceFactory.createPrimitiveTypeReference("int"), // Primitive
+			typeReferenceFactory.createTypeReference("java.lang.Integer"), // Boxed
+			typeReferenceFactory.createTypeReference("java.lang.Thread"), // Object reference
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("int"), 1) // Array
 	);
 
 	static final List<List<ITypeReference>> methodParamsTypes = powerSet(fieldTypes)
@@ -70,7 +70,7 @@ public class CombinatorialApi {
 	static List<ClassBuilder> classBuilders = new ArrayList<>();
 	static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-	private static final String apiPackageName = Constants.API_FOLDER;
+	static final String apiPackageName = Constants.API_FOLDER;
 
 	static final int typeHierarchyDepth = 1;
 	static final int typeHierarchyWidth = 2;
@@ -86,14 +86,14 @@ public class CombinatorialApi {
 	public void build() {
 		createTypes();
 
-//		weaveFields();
-//		weaveMethods();
+		weaveFields();
+		weaveMethods();
 
 //		createHierarchies();
 	}
 
 	public API getAPI() {
-		return new API(typeStore.values().stream().map(TypeDeclBuilder::make).toList(), new SpoonAPIFactory());
+		return new API(typeStore.values().stream().map(TypeDeclBuilder::make).toList(), apiFactory);
 	}
 
 	private void createTypes() {
@@ -113,7 +113,7 @@ public class CombinatorialApi {
 									builder.visibility = visibility;
 									builder.modifiers = toEnumSet(modifiers, Modifier.class);
 									builder.type = type;
-									builder.containingType = new TypeReference<>(t.qualifiedName);
+									builder.containingType = typeReferenceFactory.createTypeReference(t.qualifiedName);
 									t.fields.add(builder.make());
 								})
 						)
@@ -130,7 +130,7 @@ public class CombinatorialApi {
 							var methodBuilder = new MethodBuilder();
 							methodBuilder.visibility = visibility;
 							methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-							methodBuilder.containingType = new TypeReference<>(t.qualifiedName);
+							methodBuilder.containingType = typeReferenceFactory.createTypeReference(t.qualifiedName);
 
 							// Parameters different types and count
 							IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
@@ -292,7 +292,7 @@ public class CombinatorialApi {
 								fieldBuilder.qualifiedName = "c" + recordComponentTypeIndex;
 								fieldBuilder.type = recordComponentType;
 								fieldBuilder.visibility = PUBLIC;
-								fieldBuilder.containingType = new TypeReference<>(recordBuilder.qualifiedName);
+								fieldBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
 
 								recordBuilder.fields.add(fieldBuilder.make());
 							});
@@ -344,7 +344,7 @@ public class CombinatorialApi {
 						clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
 						clsBuilder.visibility = visibility;
 						clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-						clsBuilder.superClass = new TypeReference<>(superCls);
+						clsBuilder.superClass = typeReferenceFactory.createTypeReference(superCls.getQualifiedName());
 
 						if (superCls.isSealed()) {
 							superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
@@ -368,7 +368,7 @@ public class CombinatorialApi {
 						implementingIntfBuilders.forEach(implementingIntfBuilder -> {
 							var implementingIntf = implementingIntfBuilder.make();
 
-							clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+							clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 							implementingIntf.getAllMethods()
 									.forEach(m -> {
 										if (!methodsToGenerate.containsKey(m.getSignature())) {
@@ -411,7 +411,7 @@ public class CombinatorialApi {
 					extendingIntfBuilders.forEach(extendingIntfBuilder -> {
 						var extendingIntf = extendingIntfBuilder.make();
 
-						intfBuilder.implementedInterfaces.add(new TypeReference<>(extendingIntf));
+						intfBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(extendingIntf.getQualifiedName()));
 						extendingIntf.getAllMethods()
 								.forEach(m -> intfBuilder.methods.add(generateMethodForTypeDeclBuilder(m, intfBuilder)));
 
@@ -448,7 +448,7 @@ public class CombinatorialApi {
 					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
 						var implementingIntf = implementingIntfBuilder.make();
 
-						clsBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+						clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 						implementingIntf.getAllMethods()
 								.forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
 
@@ -473,7 +473,7 @@ public class CombinatorialApi {
 					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
 						var implementingIntf = implementingIntfBuilder.make();
 
-						rcdBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+						rcdBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 						implementingIntf.getAllMethods()
 								.forEach(m -> rcdBuilder.methods.add(generateMethodForTypeDeclBuilder(m, rcdBuilder)));
 
@@ -500,7 +500,7 @@ public class CombinatorialApi {
 					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
 						var implementingIntf = implementingIntfBuilder.make();
 
-						enmBuilder.implementedInterfaces.add(new TypeReference<>(implementingIntf));
+						enmBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 						implementingIntf.getAllMethods()
 								.forEach(m -> enmBuilder.methods.add(generateMethodForTypeDeclBuilder(m, enmBuilder)));
 
@@ -535,7 +535,7 @@ public class CombinatorialApi {
 		var constructorBuilder = new ConstructorBuilder();
 		constructorBuilder.qualifiedName = classBuilder.qualifiedName;
 		constructorBuilder.visibility = visibility;
-		constructorBuilder.containingType = new TypeReference<>(classBuilder.qualifiedName);
+		constructorBuilder.containingType = typeReferenceFactory.createTypeReference(classBuilder.qualifiedName);
 		constructorBuilder.type = new PrimitiveTypeReference("void");
 		constructorBuilder.thrownExceptions = exceptions;
 
@@ -555,7 +555,7 @@ public class CombinatorialApi {
 		fieldBuilder.qualifiedName = builder.qualifiedName + "." + field.getSimpleName();
 		fieldBuilder.visibility = field.getVisibility();
 		fieldBuilder.modifiers = toEnumSet(field.getModifiers(), Modifier.class);
-		fieldBuilder.containingType = new TypeReference<>(typeDecl);
+		fieldBuilder.containingType = typeReferenceFactory.createTypeReference(typeDecl.getQualifiedName());
 		fieldBuilder.type = field.getType();
 
 		return fieldBuilder.make();
@@ -568,7 +568,7 @@ public class CombinatorialApi {
 
 		methodBuilder.qualifiedName = builder.qualifiedName + "." + method.getSimpleName();
 		methodBuilder.visibility = method.getVisibility();
-		methodBuilder.containingType = new TypeReference<>(typeDecl);
+		methodBuilder.containingType = typeReferenceFactory.createTypeReference(typeDecl.getQualifiedName());
 		methodBuilder.thrownExceptions = method.getThrownExceptions();
 		methodBuilder.parameters.addAll(method.getParameters());
 		methodBuilder.type = method.getType();
