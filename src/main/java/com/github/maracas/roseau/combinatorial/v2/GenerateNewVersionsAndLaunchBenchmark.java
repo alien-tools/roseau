@@ -112,6 +112,10 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		for (Thread thread : benchmarkThreads.values())
 			try { thread.join(); } catch (InterruptedException ignored) {}
 
+		System.out.println("-- All bench threads finished --");
+		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();
+		System.out.println("Total benchmark errors: " + totalErrors);
+
 		ExplorerUtils.removeDirectory(tmpPath);
 	}
 }

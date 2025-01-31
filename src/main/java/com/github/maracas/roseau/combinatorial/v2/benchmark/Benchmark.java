@@ -29,6 +29,7 @@ public final class Benchmark implements Runnable {
 	private final ApiWriter apiWriter;
 
 	private boolean isNewBreakingApisGenerationOngoing = true;
+	private int errorsCount = 0;
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
@@ -74,6 +75,7 @@ public final class Benchmark implements Runnable {
 				System.out.println("Benchmark Thread n°" + id + " finished");
 				System.out.println("--------------------------------\n");
 			} catch (Exception e) {
+				errorsCount++;
 				System.out.println("Benchmark Thread n°" + id + " failed: " + e.getMessage());
 			}
 		}
@@ -83,6 +85,10 @@ public final class Benchmark implements Runnable {
 
 	public void informsBreakingApisGenerationIsOver() {
 		isNewBreakingApisGenerationOngoing = false;
+	}
+
+	public int getErrorsCount() {
+		return errorsCount;
 	}
 
 	private void generateNewApiSourcesAndJar(API api) {
@@ -95,7 +101,9 @@ public final class Benchmark implements Runnable {
 		System.out.println("Generated to " + v2SourcesPath);
 
 		System.out.println("\nGenerating new API Jar");
-		compiler.packageApiToJar(v2SourcesPath, v2JarPath);
+		var errors = compiler.packageApiToJar(v2SourcesPath, v2JarPath);
+		if (!errors.isEmpty())
+			throw new RuntimeException("Failed to package new api to jar");
 		System.out.println("Generated to " + v2JarPath);
 	}
 
