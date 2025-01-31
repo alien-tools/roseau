@@ -23,14 +23,14 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
 	private final List<ITypeReference> typeArguments;
 	@JsonIgnore
-	private SpoonAPIFactory factory;
+	private SpoonAPIFactory factory = null;
 	@JsonIgnore
-	private boolean resolutionAttempted;
+	private boolean resolutionAttempted = false;
 	// Would intuitively make sense as WeakReference but:
 	//   - There should not be any TypeReference outside the API, so they're gc'd together
 	//   - These are the only references towards types outside the API, which would get randomly gc'd
 	@JsonIgnore
-	private T resolvedApiType;
+	private T resolvedApiType = null;
 
 	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
 	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
@@ -69,7 +69,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	/**
-	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly,
+	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary,
 	 * or {@link Optional<T>.empty()} if it cannot be resolved.
 	 */
 	public Optional<T> getResolvedApiType() {
