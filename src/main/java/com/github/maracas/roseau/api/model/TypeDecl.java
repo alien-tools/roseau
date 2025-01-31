@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -43,7 +44,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	/**
 	 * It kinda sucks having to cache that, but it really makes a huge difference
 	 */
+	@JsonIgnore
 	protected List<MethodDecl> allMethods;
+	@JsonIgnore
 	protected List<FieldDecl> allFields;
 
 	protected TypeDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,

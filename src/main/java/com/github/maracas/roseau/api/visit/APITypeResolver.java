@@ -22,7 +22,7 @@ public class APITypeResolver extends AbstractAPIVisitor {
 	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
 		return () -> {
 			it.setFactory(factory);
-			api.findType(it.getQualifiedName()).ifPresent(t -> it.setResolvedApiType((U) t));
+			api.findType(it.getQualifiedName()).ifPresent(t -> it.resolve((U) t));
 		};
 	}
 }

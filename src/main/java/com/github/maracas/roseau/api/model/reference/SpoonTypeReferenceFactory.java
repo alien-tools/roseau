@@ -11,47 +11,51 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
- * Type references factory. This implementation caches the created references so no two references are
- * created towards the same type.
+ * Flyweight {@link ITypeReference} factory.
+ * <br>
+ * This implementation caches the created references to ensure that there is a single shared reference towards any type
+ * within a given {@link SpoonAPIFactory}.
  */
 public class SpoonTypeReferenceFactory implements TypeReferenceFactory {
 	private final SpoonAPIFactory apiFactory;
+	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>();
 
 	public SpoonTypeReferenceFactory(SpoonAPIFactory apiFactory) {
 		this.apiFactory = Objects.requireNonNull(apiFactory);
 	}
-
-	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>();
 
 	private <U extends ITypeReference> U cache(String key, Supplier<U> f) {
 		return (U) referencesCache.computeIfAbsent(key, k -> f.get());
 	}
 
 	@Override
-	public <T extends TypeDecl> TypeReference<T> createTypeReference(
-		String qualifiedName, List<ITypeReference> typeArguments) {
-		String key = "TR" + qualifiedName + typeArguments.stream().map(Object::toString).collect(Collectors.joining(","));
-		return cache(key, () -> new TypeReference<>(qualifiedName, typeArguments, apiFactory));
+	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName,
+	                                                                 List<ITypeReference> typeArguments) {
+		return cache(String.valueOf(Objects.hash("TR", qualifiedName, typeArguments)),
+			() -> new TypeReference<>(qualifiedName, typeArguments, apiFactory));
 	}
 
 	@Override
 	public PrimitiveTypeReference createPrimitiveTypeReference(String qualifiedName) {
-		return cache("PTR" + qualifiedName, () -> new PrimitiveTypeReference(qualifiedName));
+		return cache(String.valueOf(Objects.hash("PTR", qualifiedName)),
+			() -> new PrimitiveTypeReference(qualifiedName));
 	}
 
 	@Override
 	public ArrayTypeReference createArrayTypeReference(ITypeReference componentType, int dimension) {
-		return cache("ATR" + componentType.toString() + dimension, () -> new ArrayTypeReference(componentType, dimension));
+		return cache(String.valueOf(Objects.hash("ATR", componentType, dimension)),
+			() -> new ArrayTypeReference(componentType, dimension));
 	}
 
 	@Override
 	public TypeParameterReference createTypeParameterReference(String qualifiedName) {
-		return cache("TPR" + qualifiedName, () -> new TypeParameterReference(qualifiedName));
+		return cache(String.valueOf(Objects.hash("TPR", qualifiedName)),
+			() -> new TypeParameterReference(qualifiedName));
 	}
 
 	@Override
 	public WildcardTypeReference createWildcardTypeReference(List<ITypeReference> bounds, boolean upper) {
-		String key = bounds.stream().map(Object::toString).collect(Collectors.joining(","))+upper;
-		return cache("WTR" + key, () -> new WildcardTypeReference(bounds, upper));
+		return cache(String.valueOf(Objects.hash("WTR", bounds, upper)),
+			() -> new WildcardTypeReference(bounds, upper));
 	}
 }

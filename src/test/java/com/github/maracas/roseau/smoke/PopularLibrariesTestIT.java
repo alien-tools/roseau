@@ -101,7 +101,7 @@ class PopularLibrariesTestIT {
 
 			// Check everything went well
 			assertFalse(api.getAllTypes().findAny().isEmpty());
-			assertTrue(bcs.isEmpty());
+			assertTrue(bcs.isEmpty(), "Breaking changes detected: " + bcs);
 
 			System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
 					"\tParsing: %dms API: %sms Diff: %dms%n" +
