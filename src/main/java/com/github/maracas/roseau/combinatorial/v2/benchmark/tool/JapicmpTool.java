@@ -16,16 +16,18 @@ public final class JapicmpTool extends AbstractTool {
 
 	@Override
 	public ToolResult detectBreakingChanges() {
+		long startTime = System.currentTimeMillis();
+
 		var comparatorOptions = new JarArchiveComparatorOptions();
 		var jarArchiveComparator = new JarArchiveComparator(comparatorOptions);
 
 		var v1Archive = new JApiCmpArchive(v1Path.toFile(), "1.0.0");
 		var v2Archive = new JApiCmpArchive(v2Path.toFile(), "2.0.0");
 
-		long startTime = System.currentTimeMillis();
 		List<JApiClass> jApiClasses = jarArchiveComparator.compare(v1Archive, v2Archive);
-		long executionTime = System.currentTimeMillis() - startTime;
+		var isBreaking = !jApiClasses.isEmpty();
 
-		return new ToolResult(executionTime, !jApiClasses.isEmpty());
+		long executionTime = System.currentTimeMillis() - startTime;
+		return new ToolResult(executionTime, isBreaking);
 	}
 }
