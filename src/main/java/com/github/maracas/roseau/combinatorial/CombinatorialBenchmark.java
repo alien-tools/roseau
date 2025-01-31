@@ -44,7 +44,7 @@ public final class CombinatorialBenchmark {
 		var api = apiExtractor.extractAPI(apiPath);
 
 		try {
-			var exportPath = outputPath.resolve("api.json");
+			var exportPath = outputPath.resolve(Constants.API_JSON);
 			api.writeJson(exportPath);
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to export generated API", e);

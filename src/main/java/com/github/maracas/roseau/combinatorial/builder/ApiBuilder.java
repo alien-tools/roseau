@@ -9,17 +9,20 @@ import java.util.Map;
 public final class ApiBuilder implements Builder<API> {
 	public final Map<String, TypeDeclBuilder> allTypes = new HashMap<>();
 
-	private SpoonAPIFactory factory;
+	private final SpoonAPIFactory factory;
+
+	public ApiBuilder(SpoonAPIFactory factory) {
+		this.factory = factory;
+	}
 
 	@Override
 	public API make() {
 		return new API(allTypes.values().stream().map(TypeDeclBuilder::make).toList(), factory);
 	}
 
-	public static ApiBuilder from(API api) {
-		var apiBuilder = new ApiBuilder();
+	public static ApiBuilder from(API api, SpoonAPIFactory factory) {
+		var apiBuilder = new ApiBuilder(factory);
 
-		apiBuilder.factory = api.getFactory();
 		api.getAllTypes().forEach(typeDecl -> {
 			switch (typeDecl) {
 				case EnumDecl enumDecl:

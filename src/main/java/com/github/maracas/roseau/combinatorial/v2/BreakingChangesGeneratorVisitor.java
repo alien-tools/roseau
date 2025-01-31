@@ -3,15 +3,20 @@ package com.github.maracas.roseau.combinatorial.v2;
 import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
+import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
 
+import java.nio.file.Path;
+
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
-	private final API apiV1;
 	private final NewApiQueue queue;
 
-	public BreakingChangesGeneratorVisitor(API apiV1, NewApiQueue queue) {
-		this.apiV1 = apiV1;
+	private final Path apiExportPath;
+
+	public BreakingChangesGeneratorVisitor(NewApiQueue queue, Path outputPath) {
 		this.queue = queue;
+
+		this.apiExportPath = outputPath.resolve(Constants.API_JSON);
 	}
 
 	public Visit symbol(Symbol it) {
@@ -42,7 +47,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
-		new RemoveInterfaceStrategy(i, queue).breakApi(apiV1);
+		new RemoveInterfaceStrategy(i, queue).breakApi(apiExportPath);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {

@@ -56,7 +56,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		try {
 			initializeBenchmarkThreads();
 
-			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
+			var visitor = new BreakingChangesGeneratorVisitor(newApiQueue, outputPath);
 			visitor.$(v1Api).visit();
 
 			informAllBenchmarksGenerationIsOver();
