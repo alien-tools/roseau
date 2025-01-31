@@ -6,7 +6,6 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 
 /**
  * A member of a type declaration, either a {@link FieldDecl} or {@link ExecutableDecl}.

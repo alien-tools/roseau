@@ -6,48 +6,52 @@ import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.utils.StringUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
+/**
+ * @see TypeReferenceFactory
+ */
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
 	private final List<ITypeReference> typeArguments;
 	@JsonIgnore
-	private SpoonAPIFactory factory;
+	private SpoonAPIFactory factory = null;
 	@JsonIgnore
-	private T resolvedApiType;
-
-	private static final ConcurrentHashMap<String, TypeDecl> typeCache = new ConcurrentHashMap<>();
+	private boolean resolutionAttempted = false;
+	// Would intuitively make sense as WeakReference but:
+	//   - There should not be any TypeReference outside the API, so they're gc'd together
+	//   - These are the only references towards types outside the API, which would get randomly gc'd
+	@JsonIgnore
+	private T resolvedApiType = null;
 
 	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
 	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
 
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	@JsonCreator
-	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
+	TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.typeArguments = Objects.requireNonNull(typeArguments);
 	}
 
-	public TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
+	TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
 		this(qualifiedName, typeArguments);
 		this.factory = Objects.requireNonNull(factory);
 	}
 
-	public TypeReference(String qualifiedName) {
+	private TypeReference(String qualifiedName) {
 		this(qualifiedName, Collections.emptyList());
-	}
-
-	public TypeReference(T resolvedApiType) {
-		this(resolvedApiType.getQualifiedName());
-		this.resolvedApiType = Objects.requireNonNull(resolvedApiType);
 	}
 
 	@Override
@@ -71,22 +75,27 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	/**
-	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly and cached if necessary,
+	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary,
 	 * or {@link Optional<T>.empty()} if it cannot be resolved.
 	 */
 	public Optional<T> getResolvedApiType() {
-		if (resolvedApiType == null && factory != null)
-			// Safe as long as we don't have two types with same FQN of different kinds (e.g. class vs interface)
-			resolvedApiType = (T) typeCache.computeIfAbsent(qualifiedName, fqn -> factory.convertCtType(fqn));
+		if (resolutionAttempted)
+			return Optional.ofNullable(resolvedApiType);
+
+		if (factory != null) {
+			// Safe as long as we don't have two types of different kinds (eg. class vs interface) with same FQN
+			resolve((T) factory.convertCtType(qualifiedName));
+		}
 
 		if (resolvedApiType == null)
-			System.err.printf("Warning: %s couldn't be resolved, results may be innacurate%n", qualifiedName);
+			LOGGER.warn("Warning: {} couldn't be resolved, results may be inaccurate", qualifiedName);
 
 		return Optional.ofNullable(resolvedApiType);
 	}
 
-	public void setResolvedApiType(T type) {
-		resolvedApiType = Objects.requireNonNull(type);
+	public void resolve(T type) {
+		resolvedApiType = type;
+		resolutionAttempted = true;
 	}
 
 	@Override

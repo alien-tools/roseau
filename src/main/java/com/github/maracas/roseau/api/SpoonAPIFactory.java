@@ -162,19 +162,19 @@ public class SpoonAPIFactory {
 		);
 	}
 
-	private RecordDecl convertCtRecord(CtRecord record) {
+	private RecordDecl convertCtRecord(CtRecord rcrd) {
 		return new RecordDecl(
-			record.getQualifiedName(),
-			convertSpoonVisibility(record.getVisibility()),
-			convertSpoonNonAccessModifiers(record.getModifiers()),
-			convertSpoonAnnotations(record.getAnnotations()),
-			convertSpoonPosition(record.getPosition()),
-			createTypeReferences(record.getSuperInterfaces()),
-			convertCtFormalTypeParameters(record),
-			convertCtFields(record),
-			convertCtMethods(record),
-			createTypeReference(record.getDeclaringType()),
-			convertCtConstructors(record)
+			rcrd.getQualifiedName(),
+			convertSpoonVisibility(rcrd.getVisibility()),
+			convertSpoonNonAccessModifiers(rcrd.getModifiers()),
+			convertSpoonAnnotations(rcrd.getAnnotations()),
+			convertSpoonPosition(rcrd.getPosition()),
+			createTypeReferences(rcrd.getSuperInterfaces()),
+			convertCtFormalTypeParameters(rcrd),
+			convertCtFields(rcrd),
+			convertCtMethods(rcrd),
+			createTypeReference(rcrd.getDeclaringType()),
+			convertCtConstructors(rcrd)
 		);
 	}
 
@@ -386,9 +386,9 @@ public class SpoonAPIFactory {
 	 * cannot be accessed from client code, they can be from the API itself, and sub-classes can leak internals.
 	 */
 	private boolean isEffectivelyFinal(CtType<?> type) {
-		if (type instanceof CtClass<?> cls)
-			if (!cls.getConstructors().isEmpty()
-				&& cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
+		if (type instanceof CtClass<?> cls &&
+				!cls.getConstructors().isEmpty() &&
+				cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
 				return true;
 
 		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);

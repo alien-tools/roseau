@@ -17,6 +17,16 @@ public final class FieldDecl extends TypeMemberDecl {
 	}
 
 	/**
+	 * Checks whether the current field shadows the supplied field
+	 *
+	 * @param other The other field
+	 * @return whether this shadows other
+	 */
+	public boolean isShadowing(FieldDecl other) {
+		return getSimpleName().equals(other.getSimpleName()) && getContainingType().isSubtypeOf(other.getContainingType());
+	}
+
+	/**
 	 * Generates a string representation of the FieldDeclaration.
 	 *
 	 * @return A formatted string containing the field's qualifiedName, data type, type, visibility,

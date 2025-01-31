@@ -23,8 +23,10 @@ public record ArrayTypeReference(ITypeReference componentType, int dimension) im
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return other instanceof ArrayTypeReference atr
-			&& dimension == atr.dimension() && componentType.isSubtypeOf(atr.componentType());
+		if (other instanceof ArrayTypeReference(ITypeReference otherType, int otherDimension))
+			return dimension == otherDimension && componentType.isSubtypeOf(otherType);
+
+		return false;
 	}
 
 	@Override
