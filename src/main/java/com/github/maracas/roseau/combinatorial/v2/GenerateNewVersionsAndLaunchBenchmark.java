@@ -116,6 +116,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();
 		System.out.println("Total benchmark errors: " + totalErrors);
 
-		ExplorerUtils.removeDirectory(tmpPath);
+		if (totalErrors == 0)
+			ExplorerUtils.removeDirectory(tmpPath);
 	}
 }

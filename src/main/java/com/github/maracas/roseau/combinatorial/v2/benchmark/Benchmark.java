@@ -80,7 +80,8 @@ public final class Benchmark implements Runnable {
 			}
 		}
 
-		ExplorerUtils.removeDirectory(benchmarkWorkingPath);
+		if (errorsCount == 0)
+			ExplorerUtils.removeDirectory(benchmarkWorkingPath);
 	}
 
 	public void informsBreakingApisGenerationIsOver() {
