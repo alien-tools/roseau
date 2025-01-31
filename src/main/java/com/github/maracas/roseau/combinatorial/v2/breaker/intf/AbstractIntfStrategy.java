@@ -7,8 +7,8 @@ import com.github.maracas.roseau.combinatorial.v2.breaker.AbstractApiBreakerStra
 abstract class AbstractIntfStrategy extends AbstractApiBreakerStrategy {
 	protected final InterfaceDecl intf;
 
-	AbstractIntfStrategy(InterfaceDecl intf, NewApiQueue queue) {
-		super(queue);
+	AbstractIntfStrategy(InterfaceDecl intf, NewApiQueue queue, String strategyName) {
+		super(queue, strategyName);
 
 		this.intf = intf;
 	}

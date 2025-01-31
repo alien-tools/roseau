@@ -63,13 +63,14 @@ public final class Benchmark implements Runnable {
 	@Override
 	public void run() {
 		while (isNewBreakingApisGenerationOngoing || queue.hasStillWork()) {
-			var newApi = queue.take();
-			if (newApi == null) break;
+			var strategyAndApi = queue.take();
+			if (strategyAndApi == null) break;
 
 			try {
 				System.out.println("\n--------------------------------");
 				System.out.println("Running Benchmark Thread n°" + id);
-				generateNewApiSourcesAndJar(newApi);
+				System.out.println("Breaking Change: " + strategyAndApi.getValue0());
+				generateNewApiSourcesAndJar(strategyAndApi.getValue1());
 				var newApiIsBreaking = generateGroundTruth();
 				runToolsAnalysis(newApiIsBreaking);
 				System.out.println("Benchmark Thread n°" + id + " finished");

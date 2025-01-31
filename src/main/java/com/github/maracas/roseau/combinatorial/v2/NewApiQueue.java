@@ -1,26 +1,27 @@
 package com.github.maracas.roseau.combinatorial.v2;
 
 import com.github.maracas.roseau.api.model.API;
+import org.javatuples.Pair;
 
 import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.BlockingQueue;
 
 public final class NewApiQueue {
-	private final BlockingQueue<API> queue;
+	private final BlockingQueue<Pair<String, API>> queue;
 
 	public NewApiQueue(int maxSize) {
 		queue = new ArrayBlockingQueue<>(maxSize);
 	}
 
-	public void put(API api) {
+	public void put(Pair<String, API> strategyAndApi) {
 		try {
-			queue.put(api);
+			queue.put(strategyAndApi);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
 		}
 	}
 
-	public API take() {
+	public Pair<String, API> take() {
 		try {
 			return queue.take();
 		} catch (InterruptedException e) {

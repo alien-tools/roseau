@@ -7,7 +7,7 @@ import com.github.maracas.roseau.combinatorial.v2.NewApiQueue;
 
 public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
 	public RemoveInterfaceStrategy(InterfaceDecl intf, NewApiQueue queue) {
-		super(intf, queue);
+		super(intf, queue, "RemoveInterface" + intf.getSimpleName());
 	}
 
 	@Override
