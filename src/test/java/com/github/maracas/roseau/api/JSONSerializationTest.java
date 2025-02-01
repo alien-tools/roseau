@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.extractors.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.TypeReference;

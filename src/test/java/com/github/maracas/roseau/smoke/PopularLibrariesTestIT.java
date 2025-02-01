@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.smoke;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.extractors.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.SpoonUtils;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;

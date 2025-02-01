@@ -1,11 +1,10 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.api.extractors;
 
 import com.github.maracas.roseau.api.model.API;
 
 import java.nio.file.Path;
 
-public class JarAPIExtractor implements APIExtractor {
-	@Override
+public class JavaParserAPIExtractor implements APIExtractor {
 	public API extractAPI(Path sources) {
 		throw new UnsupportedOperationException("Not yet implemented");
 	}
