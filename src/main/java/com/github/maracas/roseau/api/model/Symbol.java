@@ -90,8 +90,8 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return Objects.equals(qualifiedName, symbol.qualifiedName)
 			&& Objects.equals(visibility, symbol.visibility)
 			&& Objects.equals(modifiers, symbol.modifiers)
-			&& Objects.equals(annotations, symbol.annotations)
-			&& Objects.equals(location, symbol.location);
+			&& Objects.equals(annotations, symbol.annotations);
+			//&& Objects.equals(location, symbol.location); // FIXME
 	}
 
 	@Override
