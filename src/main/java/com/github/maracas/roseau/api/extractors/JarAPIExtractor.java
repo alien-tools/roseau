@@ -20,6 +20,7 @@ import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import com.github.maracas.roseau.diff.APIDiff;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -38,6 +39,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 
 public class JarAPIExtractor implements APIExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
@@ -128,7 +130,7 @@ public class JarAPIExtractor implements APIExtractor {
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					typeRefFactory.createTypeReference(className),
-					parseMemberType(descriptor, signature)
+					convertType(descriptor, signature)
 				));
 			}
 			return super.visitField(access, name, descriptor, signature, value);
@@ -136,10 +138,12 @@ public class JarAPIExtractor implements APIExtractor {
 
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-			if (name.equals("<init>")) {
-				constructorDecls.add(convertConstructor(access, descriptor, signature));
-			} else if (isTypeMemberExported(access)) {
-				methodDecls.add(convertMethod(access, name, descriptor, signature));
+			if (isTypeMemberExported(access)) {
+				if (name.equals("<init>")) {
+					constructorDecls.add(convertConstructor(access, descriptor, signature));
+				} else if (isTypeMemberExported(access)) {
+					methodDecls.add(convertMethod(access, name, descriptor, signature));
+				}
 			}
 			return super.visitMethod(access, name, descriptor, signature, exceptions);
 		}
@@ -154,8 +158,8 @@ public class JarAPIExtractor implements APIExtractor {
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
 				typeRefFactory.createTypeReference(className),
-				parseParameters(Type.getArgumentTypes(descriptor)),
-				parseTypeParams(signature),
+				convertParameters(Type.getArgumentTypes(descriptor)),
+				convertTypeParameters(signature),
 				Collections.emptyList()
 			);
 		}
@@ -168,39 +172,59 @@ public class JarAPIExtractor implements APIExtractor {
 				Collections.emptyList(),
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
-				parseMemberType(Type.getReturnType(descriptor).getDescriptor(), signature),
-				parseParameters(Type.getArgumentTypes(descriptor)),
-				parseTypeParams(signature),
+				convertType(Type.getReturnType(descriptor).getDescriptor(), signature),
+				convertParameters(Type.getArgumentTypes(descriptor)),
+				convertTypeParameters(signature),
 				Collections.emptyList()
 			);
 		}
 
-		private List<ParameterDecl> parseParameters(Type[] paramTypes) {
-			List<ParameterDecl> params = new ArrayList<>();
-			for (Type param : paramTypes) {
-				params.add(new ParameterDecl(
-					"param",
-					parseMemberType(param.getDescriptor(), null),
-					false
-				));
+		private class TypeParamSignatureVisitor extends SignatureVisitor {
+			public TypeParamSignatureVisitor() {
+				super(ASM_VERSION);
 			}
-			return params;
+
+			@Override
+			public void visitFormalTypeParameter(String name) {
+				typeParameterDecls.add(new FormalTypeParameter(name, Collections.emptyList()));
+			}
 		}
 
-		private List<FormalTypeParameter> parseTypeParams(String signature) {
-			if (signature == null) return Collections.emptyList();
+		private List<ParameterDecl> convertParameters(Type[] paramTypes) {
+			return Arrays.stream(paramTypes)
+				.map(t -> new ParameterDecl("param", convertType(t.getDescriptor(), null), false))
+				.toList();
+		}
+
+		private List<FormalTypeParameter> convertTypeParameters(String signature) {
+			if (signature == null)
+				return Collections.emptyList();
 			List<FormalTypeParameter> params = new ArrayList<>();
 			SignatureReader reader = new SignatureReader(signature);
-			reader.accept(new TypeParamSignatureVisitor());
+			//reader.accept(new TypeParamSignatureVisitor());
+			var visitor = new APISignatureVisitor();
+			reader.accept(visitor);
+			System.out.println("Got " + visitor.toString());
 			return params;
 		}
 
-		private ITypeReference parseMemberType(String descriptor, String signature) {
+		private ITypeReference convertType(String descriptor, String signature) {
 			Type type = Type.getType(descriptor);
 			if (type.getSort() == Type.ARRAY) {
-				ITypeReference component = parseMemberType(type.getElementType().getDescriptor(), signature);
+				ITypeReference component = convertType(type.getElementType().getDescriptor(), signature);
 				return typeRefFactory.createArrayTypeReference(component, type.getDimensions());
 			} else if (type.getSort() == Type.OBJECT) {
+				if (signature != null) { // Type-parameterized type
+					SignatureReader reader = new SignatureReader(signature);
+					APISignatureVisitor visitor = new APISignatureVisitor();
+					reader.accept(visitor);
+					List<ITypeReference> typeArguments = visitor.getTypeArguments().stream()
+						.map(this::internalToFqn)
+						.map(arg -> (ITypeReference) typeRefFactory.createTypeReference(arg))
+						.toList();
+					return typeRefFactory.createTypeReference(
+						type.getClassName(), typeArguments);
+				}
 				return typeRefFactory.createTypeReference(type.getClassName());
 			} else {
 				return typeRefFactory.createPrimitiveTypeReference(type.getClassName());
@@ -312,24 +336,23 @@ public class JarAPIExtractor implements APIExtractor {
 
 			super.visitEnd();
 		}
-
-		private class TypeParamSignatureVisitor extends SignatureVisitor {
-			public TypeParamSignatureVisitor() {
-				super(ASM_VERSION);
-			}
-
-			@Override
-			public void visitFormalTypeParameter(String name) {
-				typeParameterDecls.add(new FormalTypeParameter(name, Collections.emptyList()));
-			}
-		}
 	}
 
 	public static void main(String[] args) {
 		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src/main"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
 
-		sourcesApi.getAllTypes().forEach(sourceType -> {
+		var diff = new APIDiff(jarApi, sourcesApi);
+		var bcs = diff.diff();
+		System.out.println("JAR to sources: " + bcs.size());
+		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
+
+		var diff2 = new APIDiff(sourcesApi, jarApi);
+		var bcs2 = diff2.diff();
+		System.out.println("Sources to JAR: " + bcs2.size());
+		System.out.println(bcs2.stream().map(Object::toString).collect(Collectors.joining("\n")));
+
+		/*sourcesApi.getAllTypes().forEach(sourceType -> {
 			var fqn = sourceType.getQualifiedName();
 			var jarTypeOpt = jarApi.findType(fqn);
 
@@ -347,6 +370,6 @@ public class JarAPIExtractor implements APIExtractor {
 					System.out.printf("%s matches%n", fqn);
 				}
 			}
-		});
+		});*/
 	}
 }
