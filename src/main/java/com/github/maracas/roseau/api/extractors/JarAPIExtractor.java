@@ -58,7 +58,7 @@ public class JarAPIExtractor implements APIExtractor {
 						ClassReader reader = new ClassReader(is);
 						ApiClassVisitor visitor = new ApiClassVisitor(typeRefFactory);
 						reader.accept(visitor, PARSING_OPTIONS);
-						TypeDecl typeDecl = visitor.getTypeDecl();
+						var typeDecl = visitor.getTypeDecl();
 						if (typeDecl != null)
 							typeDecls.add(typeDecl);
 					} catch (IOException e) {
@@ -142,7 +142,8 @@ public class JarAPIExtractor implements APIExtractor {
 				if (name.equals("<init>")) {
 					constructorDecls.add(convertConstructor(access, descriptor, signature));
 				} else if (isTypeMemberExported(access)) {
-					methodDecls.add(convertMethod(access, name, descriptor, signature));
+					if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
+						methodDecls.add(convertMethod(access, name, descriptor, signature));
 				}
 			}
 			return super.visitMethod(access, name, descriptor, signature, exceptions);
@@ -150,6 +151,12 @@ public class JarAPIExtractor implements APIExtractor {
 
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature) {
 			// Constructors should return the type of the type they construct to match with sources extraction
+			// Constructors of inner classes take their outer class as argument?
+			Type[] originalParams = Type.getArgumentTypes(descriptor);
+			List<ParameterDecl> params =
+				className.contains("$") && originalParams.length >= 1
+					? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
+					: convertParameters(originalParams);
 			return new ConstructorDecl(
 				String.format("%s.<init>", className),
 				convertAccess(access),
@@ -158,7 +165,7 @@ public class JarAPIExtractor implements APIExtractor {
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
 				typeRefFactory.createTypeReference(className),
-				convertParameters(Type.getArgumentTypes(descriptor)),
+				params,
 				convertTypeParameters(signature),
 				Collections.emptyList()
 			);
@@ -201,10 +208,8 @@ public class JarAPIExtractor implements APIExtractor {
 				return Collections.emptyList();
 			List<FormalTypeParameter> params = new ArrayList<>();
 			SignatureReader reader = new SignatureReader(signature);
-			//reader.accept(new TypeParamSignatureVisitor());
 			var visitor = new APISignatureVisitor();
 			reader.accept(visitor);
-			System.out.println("Got " + visitor.toString());
 			return params;
 		}
 
@@ -222,8 +227,7 @@ public class JarAPIExtractor implements APIExtractor {
 						.map(this::internalToFqn)
 						.map(arg -> (ITypeReference) typeRefFactory.createTypeReference(arg))
 						.toList();
-					return typeRefFactory.createTypeReference(
-						type.getClassName(), typeArguments);
+					return typeRefFactory.createTypeReference(type.getClassName(), typeArguments);
 				}
 				return typeRefFactory.createTypeReference(type.getClassName());
 			} else {
@@ -243,6 +247,12 @@ public class JarAPIExtractor implements APIExtractor {
 			if ((access & Opcodes.ACC_STATIC) != 0) modifiers.add(Modifier.STATIC);
 			if ((access & Opcodes.ACC_FINAL) != 0) modifiers.add(Modifier.FINAL);
 			if ((access & Opcodes.ACC_ABSTRACT) != 0) modifiers.add(Modifier.ABSTRACT);
+			if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) modifiers.add(Modifier.SYNCHRONIZED);
+			if ((access & Opcodes.ACC_VOLATILE) != 0) modifiers.add(Modifier.VOLATILE);
+			if ((access & Opcodes.ACC_TRANSIENT) != 0) modifiers.add(Modifier.TRANSIENT);
+			if ((access & Opcodes.ACC_NATIVE) != 0) modifiers.add(Modifier.NATIVE);
+			if ((access & Opcodes.ACC_STRICT) != 0) modifiers.add(Modifier.STRICTFP);
+			// FIXME: sealed, non-sealed, default
 			return modifiers;
 		}
 
@@ -253,7 +263,8 @@ public class JarAPIExtractor implements APIExtractor {
 
 		private boolean isTypeMemberExported(int access) {
 			// FIXME
-			return (access & Opcodes.ACC_PUBLIC) != 0;
+			return (access & Opcodes.ACC_PUBLIC) != 0
+				|| (access & Opcodes.ACC_PROTECTED) != 0;
 		}
 
 		@Override
@@ -288,10 +299,26 @@ public class JarAPIExtractor implements APIExtractor {
 					enclosingType
 				);
 			} else if ((access & Opcodes.ACC_ENUM) != 0) {
+				// Enums should have a default constructor
+				constructorDecls.add(new ConstructorDecl(
+					String.format("%s.<init>", className),
+					AccessModifier.PUBLIC,
+					EnumSet.noneOf(Modifier.class),
+					Collections.emptyList(),
+					SourceLocation.NO_LOCATION,
+					typeRefFactory.createTypeReference(className),
+					typeRefFactory.createTypeReference(className),
+					Collections.emptyList(),
+					Collections.emptyList(),
+					Collections.emptyList()
+				));
+				// FIXME: for some reason, Enums are abstract when extracted from sources?
+				EnumSet<Modifier> mods = convertModifiers(access);
+				mods.add(Modifier.ABSTRACT);
 				type = new EnumDecl(
 					className,
 					convertAccess(access),
-					convertModifiers(access),
+					mods,
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
@@ -331,8 +358,9 @@ public class JarAPIExtractor implements APIExtractor {
 				);
 			}
 
-			if (isTypeExported(access))
-				typeDecl = type;
+			// if (isTypeExported(access))
+			// need to keep unexported types for type resolution
+			typeDecl = type;
 
 			super.visitEnd();
 		}
