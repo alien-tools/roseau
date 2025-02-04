@@ -83,6 +83,7 @@ public class JarAPIExtractor implements APIExtractor {
 		private List<MethodDecl> methodDecls = new ArrayList<>();
 		private List<ConstructorDecl> constructorDecls = new ArrayList<>();
 		private List<FormalTypeParameter> typeParameterDecls = new ArrayList<>();
+		private boolean isSealed;
 		private TypeDecl typeDecl;
 
 		public ApiClassVisitor(TypeReferenceFactory typeRefFactory) {
@@ -147,6 +148,13 @@ public class JarAPIExtractor implements APIExtractor {
 				}
 			}
 			return super.visitMethod(access, name, descriptor, signature, exceptions);
+		}
+
+		@Override
+		public void visitPermittedSubclass(String permittedSubclass) {
+			// Roseau's current API model does not care about the list of permitted subclasses
+			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
+			isSealed = true;
 		}
 
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions) {
@@ -281,12 +289,16 @@ public class JarAPIExtractor implements APIExtractor {
 			String[] parts = className.split("\\$");
 			TypeReference<TypeDecl> enclosingType = parts.length > 1 ?
 				typeRefFactory.createTypeReference(String.join("$", Arrays.copyOf(parts, parts.length - 1))) : null;
+			AccessModifier visibility = convertAccess(access);
+			EnumSet<Modifier> modifiers = convertModifiers(access);
+			if (isSealed)
+				modifiers.add(Modifier.SEALED);
 
 			if ((access & Opcodes.ACC_ANNOTATION) != 0) {
 				type = new AnnotationDecl(
 					className,
-					convertAccess(access),
-					convertModifiers(access),
+					visibility,
+					modifiers,
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					fieldDecls,
@@ -296,8 +308,8 @@ public class JarAPIExtractor implements APIExtractor {
 			} else if ((access & Opcodes.ACC_INTERFACE) != 0) {
 				type = new InterfaceDecl(
 					className,
-					convertAccess(access),
-					convertModifiers(access),
+					visibility,
+					modifiers,
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
@@ -321,12 +333,11 @@ public class JarAPIExtractor implements APIExtractor {
 					Collections.emptyList()
 				));
 				// FIXME: for some reason, Enums are abstract when extracted from sources?
-				EnumSet<Modifier> mods = convertModifiers(access);
-				mods.add(Modifier.ABSTRACT);
+				modifiers.add(Modifier.ABSTRACT);
 				type = new EnumDecl(
 					className,
-					convertAccess(access),
-					mods,
+					visibility,
+					modifiers,
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
@@ -338,8 +349,8 @@ public class JarAPIExtractor implements APIExtractor {
 			} else if ((access & Opcodes.ACC_RECORD) != 0) {
 				type = new RecordDecl(
 					className,
-					convertAccess(access),
-					convertModifiers(access),
+					visibility,
+					modifiers,
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
@@ -352,8 +363,8 @@ public class JarAPIExtractor implements APIExtractor {
 			} else {
 				type = new ClassDecl(
 					className,
-					convertAccess(access),
-					convertModifiers(access),
+					visibility,
+					modifiers,
 					Collections.emptyList(),
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
