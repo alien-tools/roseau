@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.extractors;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AccessModifier;
+import com.github.maracas.roseau.api.model.Annotation;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
@@ -21,6 +22,7 @@ import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import com.github.maracas.roseau.diff.APIDiff;
+import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
@@ -83,6 +85,7 @@ public class JarAPIExtractor implements APIExtractor {
 		private List<MethodDecl> methodDecls = new ArrayList<>();
 		private List<ConstructorDecl> constructorDecls = new ArrayList<>();
 		private List<FormalTypeParameter> typeParameterDecls = new ArrayList<>();
+		private List<String> annotations = new ArrayList<>();
 		private boolean isSealed = false;
 		private TypeDecl typeDecl;
 
@@ -97,6 +100,9 @@ public class JarAPIExtractor implements APIExtractor {
 
 		private String internalToFqn(String internalName) {
 			return internalName.replace('/', '.');
+		}
+		private String descriptorToFqn(String descriptor) {
+			return Type.getType(descriptor).getClassName();
 		}
 
 		@Override
@@ -123,31 +129,54 @@ public class JarAPIExtractor implements APIExtractor {
 
 		@Override
 		public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-			if (isTypeMemberExported(access)) {
-				fieldDecls.add(new FieldDecl(
-					String.format("%s.%s", className, name),
-					convertAccess(access),
-					convertModifiers(access),
-					Collections.emptyList(),
-					SourceLocation.NO_LOCATION,
-					typeRefFactory.createTypeReference(className),
-					convertType(descriptor, signature)
-				));
-			}
-			return super.visitField(access, name, descriptor, signature, value);
+			return new FieldVisitor(ASM_VERSION) {
+				List<String> annotations = new ArrayList<>();
+
+				@Override
+				public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+					annotations.add(descriptor);
+					return super.visitAnnotation(descriptor, visible);
+				}
+				@Override
+				public void visitEnd() {
+					if (isTypeMemberExported(access)) {
+						fieldDecls.add(new FieldDecl(
+							String.format("%s.%s", className, name),
+							convertAccess(access),
+							convertModifiers(access),
+							annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
+							SourceLocation.NO_LOCATION,
+							typeRefFactory.createTypeReference(className),
+							convertType(descriptor, signature)
+						));
+					}
+				}
+			};
 		}
 
 		@Override
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-			if (isTypeMemberExported(access)) {
-				if (name.equals("<init>")) {
-					constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions));
-				} else if (isTypeMemberExported(access)) {
-					if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
-						methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions));
+			return new MethodVisitor(ASM_VERSION) {
+				List<String> annotations = new ArrayList<>();
+
+				@Override
+				public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+					annotations.add(descriptor);
+					return super.visitAnnotation(descriptor, visible);
 				}
-			}
-			return super.visitMethod(access, name, descriptor, signature, exceptions);
+
+				@Override
+				public void visitEnd() {
+					if (isTypeMemberExported(access)) {
+						if (name.equals("<init>")) {
+							constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions, annotations));
+						} else if (isTypeMemberExported(access)) {
+							if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
+								methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions, annotations));
+						}
+					}
+				}
+			};
 		}
 
 		@Override
@@ -164,7 +193,14 @@ public class JarAPIExtractor implements APIExtractor {
 			}
 		}
 
-		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions) {
+		@Override
+		public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
+			annotations.add(descriptor);
+			return super.visitAnnotation(descriptor, visible);
+		}
+
+		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
+		                                           List<String> annotations) {
 			// Constructors should return the type of the type they construct to match with sources extraction
 			// Constructors of inner classes take their outer class as argument?
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
@@ -176,7 +212,7 @@ public class JarAPIExtractor implements APIExtractor {
 				String.format("%s.<init>", className),
 				convertAccess(access),
 				convertModifiers(access),
-				Collections.emptyList(),
+				annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
 				typeRefFactory.createTypeReference(className),
@@ -190,12 +226,13 @@ public class JarAPIExtractor implements APIExtractor {
 			);
 		}
 
-		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
+		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
+		                                 List<String> annotations) {
 			return new MethodDecl(
 				String.format("%s.%s", className, name),
 				convertAccess(access),
 				convertModifiers(access),
-				Collections.emptyList(),
+				annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
 				convertType(Type.getReturnType(descriptor).getDescriptor(), signature),
@@ -298,6 +335,9 @@ public class JarAPIExtractor implements APIExtractor {
 				typeRefFactory.createTypeReference(String.join("$", Arrays.copyOf(parts, parts.length - 1))) : null;
 			AccessModifier visibility = convertAccess(access);
 			EnumSet<Modifier> modifiers = convertModifiers(access);
+			List<Annotation> anns = annotations.stream()
+				.map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann))))
+				.toList();
 			if (isSealed)
 				modifiers.add(Modifier.SEALED);
 
@@ -306,7 +346,7 @@ public class JarAPIExtractor implements APIExtractor {
 					className,
 					visibility,
 					modifiers,
-					Collections.emptyList(),
+					anns,
 					SourceLocation.NO_LOCATION,
 					fieldDecls,
 					methodDecls,
@@ -317,7 +357,7 @@ public class JarAPIExtractor implements APIExtractor {
 					className,
 					visibility,
 					modifiers,
-					Collections.emptyList(),
+					anns,
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
 					typeParameterDecls,
@@ -331,7 +371,7 @@ public class JarAPIExtractor implements APIExtractor {
 					String.format("%s.<init>", className),
 					AccessModifier.PUBLIC,
 					EnumSet.noneOf(Modifier.class),
-					Collections.emptyList(),
+					anns,
 					SourceLocation.NO_LOCATION,
 					typeRefFactory.createTypeReference(className),
 					typeRefFactory.createTypeReference(className),
@@ -345,7 +385,7 @@ public class JarAPIExtractor implements APIExtractor {
 					className,
 					visibility,
 					modifiers,
-					Collections.emptyList(),
+					anns,
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
 					fieldDecls,
@@ -358,7 +398,7 @@ public class JarAPIExtractor implements APIExtractor {
 					className,
 					visibility,
 					modifiers,
-					Collections.emptyList(),
+					anns,
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
 					Collections.emptyList(),
@@ -372,7 +412,7 @@ public class JarAPIExtractor implements APIExtractor {
 					className,
 					visibility,
 					modifiers,
-					Collections.emptyList(),
+					anns,
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
 					typeParameterDecls,
@@ -392,9 +432,14 @@ public class JarAPIExtractor implements APIExtractor {
 		}
 	}
 
-	public static void main(String[] args) {
-		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
+	public static void main(String[] args) throws Exception {
+//		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
+//		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
+		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
+
+		jarApi.writeJson(Path.of("jar.json"));
+		sourcesApi.writeJson(Path.of("sources.json"));
 
 		var diff = new APIDiff(jarApi, sourcesApi);
 		var bcs = diff.diff();
