@@ -83,7 +83,7 @@ public class JarAPIExtractor implements APIExtractor {
 		private List<MethodDecl> methodDecls = new ArrayList<>();
 		private List<ConstructorDecl> constructorDecls = new ArrayList<>();
 		private List<FormalTypeParameter> typeParameterDecls = new ArrayList<>();
-		private boolean isSealed;
+		private boolean isSealed = false;
 		private TypeDecl typeDecl;
 
 		public ApiClassVisitor(TypeReferenceFactory typeRefFactory) {
@@ -155,6 +155,13 @@ public class JarAPIExtractor implements APIExtractor {
 			// Roseau's current API model does not care about the list of permitted subclasses
 			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
 			isSealed = true;
+		}
+
+		@Override
+		public void visitInnerClass(String name, String outerName, String innerName, int access) {
+			if (internalToFqn(name).equals(className)) {
+				this.access = access;
+			}
 		}
 
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions) {
