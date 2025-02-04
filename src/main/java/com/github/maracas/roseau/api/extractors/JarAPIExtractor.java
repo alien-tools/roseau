@@ -30,7 +30,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
-import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -39,7 +38,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
@@ -84,7 +85,7 @@ public class JarAPIExtractor implements APIExtractor {
 		private List<FieldDecl> fieldDecls = new ArrayList<>();
 		private List<MethodDecl> methodDecls = new ArrayList<>();
 		private List<ConstructorDecl> constructorDecls = new ArrayList<>();
-		private List<FormalTypeParameter> typeParameterDecls = new ArrayList<>();
+		private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 		private List<String> annotations = new ArrayList<>();
 		private boolean isSealed = false;
 		private TypeDecl typeDecl;
@@ -121,7 +122,9 @@ public class JarAPIExtractor implements APIExtractor {
 
 			if (signature != null) {
 				SignatureReader reader = new SignatureReader(signature);
-				reader.accept(new TypeParamSignatureVisitor());
+				APISignatureVisitor signatureVisitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory);
+				reader.accept(signatureVisitor);
+				formalTypeParameters = signatureVisitor.getFormalTypeParameters();
 			}
 
 			super.visit(version, access, name, signature, superName, interfaces);
@@ -137,6 +140,7 @@ public class JarAPIExtractor implements APIExtractor {
 					annotations.add(descriptor);
 					return super.visitAnnotation(descriptor, visible);
 				}
+
 				@Override
 				public void visitEnd() {
 					if (isTypeMemberExported(access)) {
@@ -158,6 +162,14 @@ public class JarAPIExtractor implements APIExtractor {
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			return new MethodVisitor(ASM_VERSION) {
 				List<String> annotations = new ArrayList<>();
+				List<String> parameterNames = new ArrayList<>();
+
+				@Override
+				public void visitParameter(final String name, final int access) {
+					System.out.println("param " + name);
+					parameterNames.add(name);
+					super.visitParameter(name, access);
+				}
 
 				@Override
 				public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -169,10 +181,10 @@ public class JarAPIExtractor implements APIExtractor {
 				public void visitEnd() {
 					if (isTypeMemberExported(access)) {
 						if (name.equals("<init>")) {
-							constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions, annotations));
+							constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions, parameterNames, annotations));
 						} else if (isTypeMemberExported(access)) {
 							if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
-								methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions, annotations));
+								methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions, parameterNames, annotations));
 						}
 					}
 				}
@@ -200,14 +212,14 @@ public class JarAPIExtractor implements APIExtractor {
 		}
 
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
-		                                           List<String> annotations) {
+		                                           List<String> parameterNames, List<String> annotations) {
 			// Constructors should return the type of the type they construct to match with sources extraction
 			// Constructors of inner classes take their outer class as argument?
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
 			List<ParameterDecl> params =
 				className.contains("$") && originalParams.length >= 1
-					? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
-					: convertParameters(originalParams);
+					? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length), signature, parameterNames)
+					: convertParameters(originalParams, signature, parameterNames);
 			return new ConstructorDecl(
 				String.format("%s.<init>", className),
 				convertAccess(access),
@@ -217,7 +229,7 @@ public class JarAPIExtractor implements APIExtractor {
 				typeRefFactory.createTypeReference(className),
 				typeRefFactory.createTypeReference(className),
 				params,
-				convertTypeParameters(signature),
+				convertFormalTypeParameters(signature),
 				exceptions != null ?
 						Arrays.stream(exceptions)
 							.map(e -> typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
@@ -227,7 +239,7 @@ public class JarAPIExtractor implements APIExtractor {
 		}
 
 		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
-		                                 List<String> annotations) {
+		                                 List<String> parameterNames, List<String> annotations) {
 			return new MethodDecl(
 				String.format("%s.%s", className, name),
 				convertAccess(access),
@@ -236,8 +248,8 @@ public class JarAPIExtractor implements APIExtractor {
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
 				convertType(Type.getReturnType(descriptor).getDescriptor(), signature),
-				convertParameters(Type.getArgumentTypes(descriptor)),
-				convertTypeParameters(signature),
+				convertParameters(Type.getArgumentTypes(descriptor), signature, parameterNames),
+				convertFormalTypeParameters(signature),
 				exceptions != null ?
 					Arrays.stream(exceptions)
 						.map(e -> typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
@@ -246,31 +258,13 @@ public class JarAPIExtractor implements APIExtractor {
 			);
 		}
 
-		private class TypeParamSignatureVisitor extends SignatureVisitor {
-			public TypeParamSignatureVisitor() {
-				super(ASM_VERSION);
-			}
-
-			@Override
-			public void visitFormalTypeParameter(String name) {
-				typeParameterDecls.add(new FormalTypeParameter(name, Collections.emptyList()));
-			}
-		}
-
-		private List<ParameterDecl> convertParameters(Type[] paramTypes) {
-			return Arrays.stream(paramTypes)
-				.map(t -> new ParameterDecl("param", convertType(t.getDescriptor(), null), false))
-				.toList();
-		}
-
-		private List<FormalTypeParameter> convertTypeParameters(String signature) {
+		private List<FormalTypeParameter> convertFormalTypeParameters(String signature) {
 			if (signature == null)
 				return Collections.emptyList();
-			List<FormalTypeParameter> params = new ArrayList<>();
 			SignatureReader reader = new SignatureReader(signature);
-			var visitor = new APISignatureVisitor();
+			var visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory);
 			reader.accept(visitor);
-			return params;
+			return visitor.getFormalTypeParameters();
 		}
 
 		private ITypeReference convertType(String descriptor, String signature) {
@@ -281,18 +275,25 @@ public class JarAPIExtractor implements APIExtractor {
 			} else if (type.getSort() == Type.OBJECT) {
 				if (signature != null) { // Type-parameterized type
 					SignatureReader reader = new SignatureReader(signature);
-					APISignatureVisitor visitor = new APISignatureVisitor();
+					APISignatureVisitor visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory);
 					reader.accept(visitor);
-					List<ITypeReference> typeArguments = visitor.getTypeArguments().stream()
-						.map(this::internalToFqn)
-						.map(arg -> (ITypeReference) typeRefFactory.createTypeReference(arg))
-						.toList();
-					return typeRefFactory.createTypeReference(type.getClassName(), typeArguments);
+					return visitor.getType();
 				}
 				return typeRefFactory.createTypeReference(type.getClassName());
 			} else {
 				return typeRefFactory.createPrimitiveTypeReference(type.getClassName());
 			}
+		}
+
+		private List<ParameterDecl> convertParameters(Type[] paramTypes, String signature, List<String> parameterNames) {
+			List<ParameterDecl> params = new ArrayList<>();
+
+			for (int i = 0; i < paramTypes.length; i++) {
+				String name = parameterNames.size() > i ? parameterNames.get(i) : "param";
+				params.add(new ParameterDecl(name, convertType(paramTypes[i].getDescriptor(), signature), false));
+			}
+
+			return params;
 		}
 
 		private AccessModifier convertAccess(int access) {
@@ -360,7 +361,7 @@ public class JarAPIExtractor implements APIExtractor {
 					anns,
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
-					typeParameterDecls,
+					formalTypeParameters,
 					fieldDecls,
 					methodDecls,
 					enclosingType
@@ -415,7 +416,7 @@ public class JarAPIExtractor implements APIExtractor {
 					anns,
 					SourceLocation.NO_LOCATION,
 					interfaceDecls,
-					typeParameterDecls,
+					formalTypeParameters,
 					fieldDecls,
 					methodDecls,
 					enclosingType,
@@ -433,10 +434,14 @@ public class JarAPIExtractor implements APIExtractor {
 	}
 
 	public static void main(String[] args) throws Exception {
+		// FIXME: SYNCHRONIZED on everything for whatever reason
+
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
-		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
+//		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
+//		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
+		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
 
 		jarApi.writeJson(Path.of("jar.json"));
 		sourcesApi.writeJson(Path.of("sources.json"));

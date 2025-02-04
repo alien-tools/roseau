@@ -1,158 +1,110 @@
 package com.github.maracas.roseau.api.extractors;
 
+import com.github.maracas.roseau.api.model.FormalTypeParameter;
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public class APISignatureVisitor extends SignatureVisitor {
-	private final StringBuilder stringBuilder;
-	private final List<String> typeArguments = new ArrayList<>();
-	private boolean hasFormals;
-	private boolean hasParameters;
-	private int argumentStack;
+	private final TypeReferenceFactory typeRefFactory;
+	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
+	private String currentTypeParameter;
+	private List<ITypeReference> currentBounds;
+	ITypeReference type;
 
-	public APISignatureVisitor() {
-		this(new StringBuilder());
+	public APISignatureVisitor(int api, TypeReferenceFactory typeRefFactory) {
+		super(api);
+		this.typeRefFactory = typeRefFactory;
 	}
 
-	private APISignatureVisitor(StringBuilder stringBuilder) {
-		super(589824);
-		this.argumentStack = 1;
-		this.stringBuilder = stringBuilder;
+	private String internalToFqn(String internalName) {
+		return internalName.replace('/', '.');
 	}
 
+	@Override
 	public void visitFormalTypeParameter(String name) {
-		if (!this.hasFormals) {
-			this.hasFormals = true;
-			this.stringBuilder.append('<');
+		if (currentTypeParameter != null && currentBounds != null) {
+			formalTypeParameters.add(new FormalTypeParameter(currentTypeParameter, currentBounds));
 		}
 
-		this.stringBuilder.append(name);
-		this.stringBuilder.append(':');
+		// Start a new type parameter
+		currentTypeParameter = name;
+		currentBounds = new ArrayList<>();
 	}
 
+	@Override
 	public SignatureVisitor visitClassBound() {
-		return this;
+		return new TypeReferenceCollector(api, currentBounds);
 	}
 
+	@Override
 	public SignatureVisitor visitInterfaceBound() {
-		this.stringBuilder.append(':');
-		return this;
+		return new TypeReferenceCollector(api, currentBounds);
 	}
 
-	public SignatureVisitor visitSuperclass() {
-		this.endFormals();
-		return this;
-	}
-
-	public SignatureVisitor visitInterface() {
-		return this;
-	}
-
-	public SignatureVisitor visitParameterType() {
-		this.endFormals();
-		if (!this.hasParameters) {
-			this.hasParameters = true;
-			this.stringBuilder.append('(');
-		}
-
-		return this;
-	}
-
+	@Override
 	public SignatureVisitor visitReturnType() {
-		this.endFormals();
-		if (!this.hasParameters) {
-			this.stringBuilder.append('(');
-		}
+		return new SignatureVisitor(api) {
+			String returnType = null;
+			List<ITypeReference> bounds = new ArrayList();
 
-		this.stringBuilder.append(')');
-		return this;
+			@Override
+			public void visitClassType(String name) {
+				returnType = name;
+			}
+
+			@Override
+			public void visitTypeVariable(final String name) {
+				bounds.add(typeRefFactory.createTypeParameterReference(internalToFqn(name)));
+			}
+
+			@Override
+			public void visitEnd() {
+				type = typeRefFactory.createTypeReference(
+					internalToFqn(returnType),
+					bounds
+				);
+			}
+		};
 	}
 
-	public SignatureVisitor visitExceptionType() {
-		this.stringBuilder.append('^');
-		return this;
-	}
-
-	public void visitBaseType(char descriptor) {
-		this.stringBuilder.append(descriptor);
-	}
-
-	public void visitTypeVariable(String name) {
-		this.stringBuilder.append('T');
-		this.stringBuilder.append(name);
-		this.stringBuilder.append(';');
-	}
-
-	public SignatureVisitor visitArrayType() {
-		this.stringBuilder.append('[');
-		return this;
-	}
-
-	public void visitClassType(String name) {
-		this.stringBuilder.append('L');
-		this.stringBuilder.append(name);
-		this.typeArguments.add(name);
-		this.argumentStack <<= 1;
-	}
-
-	public void visitInnerClassType(String name) {
-		this.endArguments();
-		this.stringBuilder.append('.');
-		this.stringBuilder.append(name);
-		this.argumentStack <<= 1;
-	}
-
-	public void visitTypeArgument() {
-		if ((this.argumentStack & 1) == 0) {
-			this.argumentStack |= 1;
-			this.stringBuilder.append('<');
-		}
-
-		this.stringBuilder.append('*');
-	}
-
-	public SignatureVisitor visitTypeArgument(char wildcard) {
-		if ((this.argumentStack & 1) == 0) {
-			this.argumentStack |= 1;
-			this.stringBuilder.append('<');
-		}
-
-		if (wildcard != '=') {
-			this.stringBuilder.append(wildcard);
-		}
-
-		return (this.argumentStack & Integer.MIN_VALUE) == 0 ? this : new APISignatureVisitor(this.stringBuilder);
-	}
-
+	@Override
 	public void visitEnd() {
-		this.endArguments();
-		this.stringBuilder.append(';');
+		// Store the collected type parameter
+		if (currentTypeParameter != null && currentBounds != null) {
+			formalTypeParameters.add(new FormalTypeParameter(currentTypeParameter, currentBounds));
+		}
 	}
 
-	public List<String> getTypeArguments() {
-		// First is the receiving type
-		return typeArguments.stream().skip(1).toList();
+	public List<FormalTypeParameter> getFormalTypeParameters() {
+		return formalTypeParameters;
 	}
 
-	public String toString() {
-		return this.stringBuilder.toString();
+	public ITypeReference getType() {
+		return type;
 	}
 
-	private void endFormals() {
-		if (this.hasFormals) {
-			this.hasFormals = false;
-			this.stringBuilder.append('>');
+	// Helper class to collect type references
+	private class TypeReferenceCollector extends SignatureVisitor {
+		private final List<ITypeReference> bounds;
+
+		public TypeReferenceCollector(int api, List<ITypeReference> bounds) {
+			super(api);
+			this.bounds = bounds;
 		}
 
-	}
-
-	private void endArguments() {
-		if ((this.argumentStack & 1) == 1) {
-			this.stringBuilder.append('>');
+		@Override
+		public void visitClassType(String name) {
+			bounds.add(typeRefFactory.createTypeReference(internalToFqn(name)));
 		}
 
-		this.argumentStack >>>= 1;
+		@Override
+		public void visitTypeVariable(final String name) {
+			bounds.add(typeRefFactory.createTypeParameterReference(name));
+		}
 	}
 }
