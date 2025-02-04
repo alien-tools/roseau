@@ -140,16 +140,16 @@ public class JarAPIExtractor implements APIExtractor {
 		public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			if (isTypeMemberExported(access)) {
 				if (name.equals("<init>")) {
-					constructorDecls.add(convertConstructor(access, descriptor, signature));
+					constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions));
 				} else if (isTypeMemberExported(access)) {
 					if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
-						methodDecls.add(convertMethod(access, name, descriptor, signature));
+						methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions));
 				}
 			}
 			return super.visitMethod(access, name, descriptor, signature, exceptions);
 		}
 
-		private ConstructorDecl convertConstructor(int access, String descriptor, String signature) {
+		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions) {
 			// Constructors should return the type of the type they construct to match with sources extraction
 			// Constructors of inner classes take their outer class as argument?
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
@@ -167,11 +167,15 @@ public class JarAPIExtractor implements APIExtractor {
 				typeRefFactory.createTypeReference(className),
 				params,
 				convertTypeParameters(signature),
-				Collections.emptyList()
+				exceptions != null ?
+						Arrays.stream(exceptions)
+							.map(e -> typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
+							.toList() :
+					Collections.emptyList()
 			);
 		}
 
-		private MethodDecl convertMethod(int access, String name, String descriptor, String signature) {
+		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
 			return new MethodDecl(
 				String.format("%s.%s", className, name),
 				convertAccess(access),
@@ -182,7 +186,11 @@ public class JarAPIExtractor implements APIExtractor {
 				convertType(Type.getReturnType(descriptor).getDescriptor(), signature),
 				convertParameters(Type.getArgumentTypes(descriptor)),
 				convertTypeParameters(signature),
-				Collections.emptyList()
+				exceptions != null ?
+					Arrays.stream(exceptions)
+						.map(e -> typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
+						.toList() :
+					Collections.emptyList()
 			);
 		}
 
