@@ -5,6 +5,7 @@ import org.revapi.API;
 import org.revapi.AnalysisContext;
 import org.revapi.Revapi;
 import org.revapi.base.FileArchive;
+import org.revapi.java.JavaApiAnalyzer;
 
 import java.nio.file.Path;
 
@@ -18,7 +19,8 @@ public final class RevapiTool extends AbstractTool {
 		long startTime = System.currentTimeMillis();
 
 		var revapi = Revapi.builder()
-				.withAllExtensionsFromThreadContextClassLoader()
+				.withAnalyzers(JavaApiAnalyzer.class)
+				.withReporters(SilentReporter.class)
 				.build();
 
 		var v1Archive = new FileArchive(v1Path.toFile());
@@ -33,9 +35,14 @@ public final class RevapiTool extends AbstractTool {
 
 		boolean isBreaking = false;
 		try (var results = revapi.analyze(analysisContext)) {
-			isBreaking = !results.isSuccess();
-		} catch (Exception ignored) {
-		}
+			for (var entry : results.getExtensions().getReporters().entrySet()) {
+				var reporter = entry.getKey();
+
+				if (reporter.getInstance() instanceof SilentReporter silentReporter) {
+					isBreaking = silentReporter.hasReports();
+				}
+			}
+		} catch (Exception ignored) {}
 
 		long executionTime = System.currentTimeMillis() - startTime;
 		return new ToolResult(executionTime, isBreaking);
