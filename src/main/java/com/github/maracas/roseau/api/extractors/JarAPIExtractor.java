@@ -274,6 +274,7 @@ public class JarAPIExtractor implements APIExtractor {
 				return typeRefFactory.createArrayTypeReference(component, type.getDimensions());
 			} else if (type.getSort() == Type.OBJECT) {
 				if (signature != null) { // Type-parameterized type
+					System.out.println("signature="+signature);
 					SignatureReader reader = new SignatureReader(signature);
 					APISignatureVisitor visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory);
 					reader.accept(visitor);

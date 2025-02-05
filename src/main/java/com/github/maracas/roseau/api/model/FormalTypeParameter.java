@@ -13,4 +13,9 @@ public record FormalTypeParameter(
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(bounds);
 	}
+
+	@Override
+	public String toString() {
+		return String.format("%s extends %s", name, bounds.stream().map(ITypeReference::getQualifiedName).toList());
+	}
 }
