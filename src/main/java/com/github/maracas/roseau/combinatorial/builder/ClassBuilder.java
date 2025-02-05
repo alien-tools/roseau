@@ -17,4 +17,16 @@ public sealed class ClassBuilder extends TypeDeclBuilder permits EnumBuilder, Re
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass,
 				constructors, permittedTypes);
 	}
+
+	public static ClassBuilder from(ClassDecl decl) {
+		var builder = new ClassBuilder();
+
+		TypeDeclBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+
+		builder.superClass = decl.getSuperClass().orElse(null);
+		builder.constructors = decl.getConstructors();
+		builder.permittedTypes = decl.getPermittedTypes();
+
+		return builder;
+	}
 }

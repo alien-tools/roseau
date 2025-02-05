@@ -12,4 +12,14 @@ public final class EnumBuilder extends ClassBuilder {
 		return new EnumDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 				fields, methods, enclosingType, constructors, values);
 	}
+
+	public static EnumBuilder from(EnumDecl decl) {
+		var builder = new EnumBuilder();
+
+		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+
+		builder.values = decl.getValues();
+
+		return builder;
+	}
 }

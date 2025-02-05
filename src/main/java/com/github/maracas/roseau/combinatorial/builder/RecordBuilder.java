@@ -7,4 +7,12 @@ public final class RecordBuilder extends ClassBuilder {
 		return new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 				formalTypeParameters, fields, methods, enclosingType, constructors);
 	}
+
+	public static RecordBuilder from(RecordDecl decl) {
+		var builder = new RecordBuilder();
+
+		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+
+		return builder;
+	}
 }

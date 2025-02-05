@@ -26,16 +26,22 @@ public final class ApiBuilder implements Builder<API> {
 		api.getAllTypes().forEach(typeDecl -> {
 			switch (typeDecl) {
 				case EnumDecl enumDecl:
+					var enumBuilder = EnumBuilder.from(enumDecl);
+					apiBuilder.allTypes.put(enumDecl.getQualifiedName(), enumBuilder);
 					break;
 				case RecordDecl recordDecl:
+					var recordBuilder = RecordBuilder.from(recordDecl);
+					apiBuilder.allTypes.put(recordDecl.getQualifiedName(), recordBuilder);
 					break;
 				case ClassDecl classDecl:
+					var classBuilder = ClassBuilder.from(classDecl);
+					apiBuilder.allTypes.put(classDecl.getQualifiedName(), classBuilder);
 					break;
 				case InterfaceDecl interfaceDecl:
 					var interfaceBuilder = InterfaceBuilder.from(interfaceDecl);
 					apiBuilder.allTypes.put(interfaceDecl.getQualifiedName(), interfaceBuilder);
 					break;
-				case AnnotationDecl annotationDecl:
+				case AnnotationDecl ignored:
 					break;
 			}
 		});
