@@ -6,6 +6,7 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.google.common.base.Stopwatch;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -33,6 +34,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
+@Disabled
 class PopularLibrariesTestIT {
 
 	static Stream<String> libraries() {

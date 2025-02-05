@@ -150,9 +150,10 @@ public class JarAPIExtractor implements APIExtractor {
 				@Override
 				public void visitEnd() {
 					if (isTypeMemberExported(access)) {
-						APISignatureVisitor visitor = null;
+						System.out.println("Visiting field " + descriptor + " " + signature);
+						TypeVisitor visitor = null;
 						if (signature != null) {
-							visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
+							visitor = new TypeVisitor(ASM_VERSION, typeRefFactory, "");
 							new SignatureReader(signature).accept(visitor);
 						}
 						fieldDecls.add(new FieldDecl(
@@ -162,7 +163,7 @@ public class JarAPIExtractor implements APIExtractor {
 							annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
 							SourceLocation.NO_LOCATION,
 							typeRefFactory.createTypeReference(className),
-							convertType(descriptor, visitor)
+							signature != null ? visitor.getType() : convertType(descriptor, null)
 						));
 					}
 				}
@@ -267,13 +268,13 @@ public class JarAPIExtractor implements APIExtractor {
 
 		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
 		                                 List<String> parameterNames, List<String> annotations) {
+			System.out.println("######### Visiting " + className + "." + name + "[" + signature + "]");
+
 			APISignatureVisitor visitor = null;
 			if (signature != null) {
 				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
 				new SignatureReader(signature).accept(visitor);
 			}
-
-			System.out.println("######### Visiting " + className + "." + name + "[" + signature + "]");
 
 			return new MethodDecl(
 				String.format("%s.%s", className, name),
@@ -473,10 +474,10 @@ public class JarAPIExtractor implements APIExtractor {
 
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
-//		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
-//		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
-		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
+		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
+//		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
+//		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
 
 		jarApi.writeJson(Path.of("jar.json"));
 		sourcesApi.writeJson(Path.of("sources.json"));

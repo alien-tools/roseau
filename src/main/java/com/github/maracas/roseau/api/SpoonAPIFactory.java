@@ -272,7 +272,11 @@ public class SpoonAPIFactory {
 	private FormalTypeParameter convertCtTypeParameter(CtTypeParameter parameter) {
 		return new FormalTypeParameter(
 			parameter.getSimpleName(),
-			convertCtTypeParameterBounds(parameter.getSuperclass())
+			convertCtTypeParameterBounds(parameter.getSuperclass() != null
+				// If there are no bounds, we make the bound to java.lang.Object explicit
+				? parameter.getSuperclass()
+				: typeFactory.objectType()
+			)
 		);
 	}
 

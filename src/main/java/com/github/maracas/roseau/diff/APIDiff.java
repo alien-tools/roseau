@@ -91,7 +91,12 @@ public class APIDiff {
 		t1.getAllMethods().forEach(m1 ->
 			t2.findMethod(m1.getSignature()).ifPresentOrElse(
 				// There is a matching method
-				m2 -> diffMethod(m1, m2),
+				m2 -> {
+					if (!m2.getQualifiedName().equals(m1.getQualifiedName())) {
+						System.out.println(m1.getQualifiedName() + " <> " + m2.getQualifiedName());
+					}
+					diffMethod(m1, m2);
+				},
 				// The method has been removed
 				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1, null)
 			)
@@ -131,11 +136,8 @@ public class APIDiff {
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		if (t1.getAllSuperTypes().anyMatch(sup -> sup.isExported() && !t2.isSubtypeOf(sup))) {
-			System.out.println(t1.getAllSuperTypes());
-			System.out.println(t2.getAllSuperTypes());
+		if (t1.getAllSuperTypes().anyMatch(sup -> sup.isExported() && !t2.isSubtypeOf(sup)))
 			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2);
-		}
 
 		diffFormalTypeParameters(t1, t2);
 

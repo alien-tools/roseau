@@ -7,10 +7,14 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 
 public class APISignatureVisitor extends SignatureVisitor {
 	TypeReferenceFactory factory;
@@ -22,7 +26,6 @@ public class APISignatureVisitor extends SignatureVisitor {
 	List<ITypeReference> currentTypeBounds = new ArrayList<>();
 	List<ParameterDecl> parameters = new ArrayList<>();
 	ITypeReference currentParameterType = null;
-	TypeVisitor lastVisitor = null;
 	boolean isBound = false;
 	boolean isReturnType = false;
 	String prefix = "";
@@ -30,6 +33,10 @@ public class APISignatureVisitor extends SignatureVisitor {
 	List<TypeReference<InterfaceDecl>> superInterfaces = new ArrayList<>();
 	List<TypeVisitor> interfaceVisitors = new ArrayList<>();
 	TypeVisitor returnTypeVisitor = null;
+	TypeVisitor superClassVisitor = null;
+	Map<String, List<TypeVisitor>> formalTypeParameterVisitors = new LinkedHashMap<>(); // preserve ordering
+	List<TypeVisitor> currentVisitors = new ArrayList<>();
+	List<TypeVisitor> parameterVisitors = new ArrayList<>();
 
 	APISignatureVisitor(int api, TypeReferenceFactory factory, String prefix) {
 		super(api);
@@ -38,23 +45,29 @@ public class APISignatureVisitor extends SignatureVisitor {
 	}
 
 	public List<FormalTypeParameter> getFormalTypeParameters() {
-		return formalTypeParameters;
+		return formalTypeParameterVisitors.entrySet().stream()
+			.map(e -> new FormalTypeParameter(e.getKey(),
+				e.getValue().stream()
+					.map(TypeVisitor::getType)
+					.toList()
+			))
+			.toList();
 	}
 
 	public ITypeReference getReturnType() {
-//		if (lastVisitor != null) {
-//			return lastVisitor.getType();
-//		}
-//		return returnType;
-		return returnTypeVisitor.getType();
+		if (returnTypeVisitor != null)
+			return returnTypeVisitor.getType();
+		return null;
 	}
 
 	public List<ParameterDecl> getParameters() {
-		return parameters;
+		return parameterVisitors.stream()
+			.map(v -> new ParameterDecl("p", v.getType(), false))
+			.toList();
 	}
 
 	public TypeReference<ClassDecl> getSuperclass() {
-		return superClass;
+		return (TypeReference<ClassDecl>) superClassVisitor.getType();
 	}
 
 	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
@@ -65,40 +78,10 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 	public void endFormalTypeParameter() {
 		if (currentFormalTypeParameter != null) {
-			if (lastVisitor != null) {
-				currentBounds.add(lastVisitor.getType());
-				lastVisitor = null;
-			}
-			formalTypeParameters.add(new FormalTypeParameter(currentFormalTypeParameter, List.copyOf(currentBounds)));
-		}
-		currentFormalTypeParameter = null;
-		currentBounds.clear();
-	}
-
-	public void endSuperclass() {
-		if (lastVisitor != null) {
-			superClass = (TypeReference<ClassDecl>) lastVisitor.getType();
-			lastVisitor = null;
-		} else {
-			System.out.println("No visitor when endSuperclass()");
-		}
-	}
-
-	public void endInterface() {
-		if (lastVisitor != null) {
-			superInterfaces.add((TypeReference<InterfaceDecl>) lastVisitor.getType());
-			lastVisitor = null;
-		} else {
-			System.out.println("No visitor when endInterface()");
-		}
-	}
-
-	public void endParameterType() {
-		if (lastVisitor != null) {
-			parameters.add(new ParameterDecl("p", lastVisitor.getType(), false));
-			lastVisitor = null;
-		} else {
-			System.out.println("No visitor when endParameterType()");
+			System.out.println("Saving ftp " + currentFormalTypeParameter + "[" + currentVisitors.stream().map(TypeVisitor::getType).toList() + "]");
+			formalTypeParameterVisitors.put(currentFormalTypeParameter, currentVisitors);
+			currentFormalTypeParameter = null;
+			currentVisitors = new ArrayList<>();
 		}
 	}
 
@@ -109,62 +92,56 @@ public class APISignatureVisitor extends SignatureVisitor {
 	public void visitFormalTypeParameter(String name) {
 		System.out.println(prefix + "visitFormalTypeParameter("+name+")");
 		endFormalTypeParameter();
-		endInterface();
 		currentFormalTypeParameter = name;
 	}
 
 	public SignatureVisitor visitClassBound() {
 		System.out.println(prefix + "visitClassBound()");
-		if (lastVisitor != null)
-			currentBounds.add(lastVisitor.getType());
-		lastVisitor = new TypeVisitor(api, factory, "");
-		return lastVisitor;
+		var v = new TypeVisitor(api, factory, "");
+		currentVisitors.add(v);
+		return v;
 	}
 
 	public SignatureVisitor visitInterfaceBound() {
 		System.out.println(prefix + "visitInterfaceBound()");
-		if (lastVisitor != null)
-			currentBounds.add(lastVisitor.getType());
-		lastVisitor = new TypeVisitor(api, factory, "");
-		return lastVisitor;
+		var v = new TypeVisitor(api, factory, "");
+		currentVisitors.add(v);
+		return v;
 	}
 
 	public SignatureVisitor visitSuperclass() {
 		endFormalTypeParameter();
 		System.out.println(prefix + "visitSuperclass()");
-		lastVisitor = new TypeVisitor(api, factory, "");
-		return lastVisitor;
+		superClassVisitor = new TypeVisitor(api, factory, "");
+		return superClassVisitor;
 	}
 
 	public SignatureVisitor visitInterface() {
-		endSuperclass();
-		endInterface();
 		System.out.println(prefix + "visitInterface()");
-		lastVisitor = new TypeVisitor(api, factory, "");
-		interfaceVisitors.add(lastVisitor);
-		return lastVisitor;
+		var v = new TypeVisitor(api, factory, "");
+		interfaceVisitors.add(v);
+		return v;
 	}
 
 	public SignatureVisitor visitParameterType() {
 		System.out.println(prefix + "visitParameterType()");
 		endFormalTypeParameter();
-		endParameterType();
-		lastVisitor = new TypeVisitor(api, factory, "");
-		return lastVisitor;
+		var v = new TypeVisitor(api, factory, "");
+		parameterVisitors.add(v);
+		return v;
 	}
 
 	public SignatureVisitor visitReturnType() {
 		System.out.println(prefix + "visitReturnType()");
-		endParameterType();
-		lastVisitor = new TypeVisitor(api, factory, "");
-		returnTypeVisitor = lastVisitor;
-		return lastVisitor;
+		endFormalTypeParameter();
+		var v = new TypeVisitor(api, factory, "");
+		returnTypeVisitor = v;
+		return v;
 	}
 
 	public SignatureVisitor visitExceptionType() {
 		System.out.println(prefix + "visitExceptionType()");
-		lastVisitor = new TypeVisitor(api, factory, "");
-		return lastVisitor;
+		return this;
 	}
 
 	public void visitBaseType(char descriptor) {
@@ -185,8 +162,8 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 	public SignatureVisitor visitArrayType() {
 		System.out.println(prefix + "visitArrayType()");
-		lastVisitor = new TypeVisitor(api, factory, "");
-		return lastVisitor;
+		var v = new TypeVisitor(api, factory, "");
+		return v;
 	}
 
 	public void visitClassType(String name) {
@@ -312,10 +289,23 @@ class TypeVisitor extends SignatureVisitor {
 	}
 
 	@Override
+	public void visitTypeArgument() { // If this is called, it's an unbounded wildcard
+		System.out.println(prefix + "\tvisitTypeArgument()");
+		type = factory.createTypeReference(type.getQualifiedName(), List.of(
+			factory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true)
+		));
+	}
+
+	@Override
 	public void visitEnd() {
 		System.out.println(prefix + "\tvisitEnd()");
 		if (!visitors.isEmpty()) {
-			type = factory.createTypeReference(type.getQualifiedName(), visitors.stream().map(TypeVisitor::getType).toList());
+			if (type instanceof WildcardTypeReference wtr) {
+				var newBounds = visitors.stream().map(TypeVisitor::getType).toList();
+				type = factory.createWildcardTypeReference(List.of(factory.createTypeReference(wtr.bounds().getLast().getQualifiedName(), newBounds)), currentWildcard == EXTENDS);
+			} else {
+				type = factory.createTypeReference(type.getQualifiedName(), visitors.stream().map(TypeVisitor::getType).toList());
+			}
 		}
 	}
 

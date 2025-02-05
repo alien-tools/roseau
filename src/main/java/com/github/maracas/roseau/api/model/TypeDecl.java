@@ -232,7 +232,8 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	public boolean isSubtypeOf(ITypeReference other) {
-		return Objects.equals(qualifiedName, other.getQualifiedName())
+		return other.equals(TypeReference.OBJECT)
+			|| Objects.equals(qualifiedName, other.getQualifiedName())
 			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup, other));
 	}
 
