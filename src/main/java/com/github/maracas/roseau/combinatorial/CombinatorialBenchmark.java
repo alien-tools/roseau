@@ -1,12 +1,9 @@
 package com.github.maracas.roseau.combinatorial;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
-import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.api.GenerateCombinatorialApi;
 import com.github.maracas.roseau.combinatorial.client.GenerateApiClients;
 import com.github.maracas.roseau.combinatorial.v2.GenerateNewVersionsAndLaunchBenchmark;
 
-import java.io.IOException;
 import java.nio.file.Path;
 
 public final class CombinatorialBenchmark {
@@ -23,8 +20,7 @@ public final class CombinatorialBenchmark {
 		try {
 			var apiGeneration = new GenerateCombinatorialApi(outputPath);
 			apiGeneration.run();
-
-			var api = getAndExportGeneratedApi(outputPath);
+			var api = apiGeneration.getApi();
 
 			var clientsGeneration = new GenerateApiClients(api, outputPath);
 			clientsGeneration.run();
@@ -37,20 +33,5 @@ public final class CombinatorialBenchmark {
 
 			System.exit(1);
 		}
-	}
-
-	private static API getAndExportGeneratedApi(Path outputPath) {
-		var apiPath = outputPath.resolve(Constants.API_FOLDER);
-		var apiExtractor = new SpoonAPIExtractor();
-		var api = apiExtractor.extractAPI(apiPath);
-
-		try {
-			var exportPath = outputPath.resolve(Constants.API_JSON);
-			api.writeJson(exportPath);
-		} catch (IOException e) {
-			throw new RuntimeException("Failed to export generated API", e);
-		}
-
-		return api;
 	}
 }
