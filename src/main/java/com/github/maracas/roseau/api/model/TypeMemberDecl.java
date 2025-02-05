@@ -11,7 +11,7 @@ import java.util.Objects;
  * A member of a type declaration, either a {@link FieldDecl} or {@link ExecutableDecl}.
  * Type members have a type and belong to some containing type.
  */
-public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl {
+public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl, RecordComponentDecl {
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 

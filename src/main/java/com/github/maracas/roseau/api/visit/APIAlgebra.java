@@ -1,19 +1,6 @@
 package com.github.maracas.roseau.api.visit;
 
-import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.Annotation;
-import com.github.maracas.roseau.api.model.AnnotationDecl;
-import com.github.maracas.roseau.api.model.ClassDecl;
-import com.github.maracas.roseau.api.model.ConstructorDecl;
-import com.github.maracas.roseau.api.model.EnumDecl;
-import com.github.maracas.roseau.api.model.FieldDecl;
-import com.github.maracas.roseau.api.model.FormalTypeParameter;
-import com.github.maracas.roseau.api.model.InterfaceDecl;
-import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.ParameterDecl;
-import com.github.maracas.roseau.api.model.RecordDecl;
-import com.github.maracas.roseau.api.model.Symbol;
-import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
@@ -42,6 +29,7 @@ public interface APIAlgebra<T> {
 	T wildcardTypeReference(WildcardTypeReference it);
 	T annotation(Annotation it);
 	T formalTypeParameter(FormalTypeParameter it);
+	T recordComponentDecl(RecordComponentDecl it);
 
 	default T $(API it) {
 		return api(it);
@@ -56,6 +44,7 @@ public interface APIAlgebra<T> {
 			case AnnotationDecl a  -> annotationDecl(a);
 			case MethodDecl m      -> methodDecl(m);
 			case ConstructorDecl c -> constructorDecl(c);
+			case RecordComponentDecl rC -> recordComponentDecl(rC);
 			case FieldDecl f       -> fieldDecl(f);
 		};
 	}

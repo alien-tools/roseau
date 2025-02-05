@@ -139,6 +139,16 @@ public class ClientWriter extends AbstractWriter {
 		writeCodeInFile(name, code);
 	}
 
+	public void writeRecordComponentRead(RecordComponentDecl recordComponentDecl, RecordDecl containingRecord) {
+		var imports = getImportsForType(containingRecord);
+		var name = "%sRecordComponentRead".formatted(recordComponentDecl.getPrettyQualifiedName());
+
+		var caller = getContainingTypeAccessForTypeMember(containingRecord, recordComponentDecl);
+		var recordComponentReadCode = "var val = %s.%s();".formatted(caller, recordComponentDecl.getSimpleName());
+
+		writeCodeInMain(imports, name, recordComponentReadCode);
+	}
+
 	public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
 		var imports = getImportsForType(interfaceDecl);
 		var name = "%sInterfaceExtension".formatted(interfaceDecl.getPrettyQualifiedName());
@@ -213,111 +223,6 @@ public class ClientWriter extends AbstractWriter {
 		writeCodeInMain(imports, name, code);
 	}
 
-	private String getImportsForType(TypeDecl typeDecl) {
-		return "import %s;".formatted(typeDecl.getQualifiedName());
-	}
-
-	private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
-		if (typeMemberDecl.isStatic()) return typeDecl.getSimpleName();
-		else if (typeDecl.isEnum()) return generateAccessToFirstEnumValue((EnumDecl) typeDecl);
-		else if (typeDecl.isClass()) return generateEasiestConstructorInvocationForClass((ClassDecl) typeDecl);
-
-		throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
-	}
-
-	private String implementRequiredConstructor(ClassDecl classDecl, String className) {
-		var constructors = getSortedConstructors(classDecl);
-
-		if (constructors.isEmpty()) return "";
-
-		var firstConstructor = constructors.getFirst();
-		var params = getParamsForExecutableInvocation(firstConstructor);
-		var exceptions = getExceptionsForExecutableInvocation(firstConstructor);
-
-		return params.isBlank() && exceptions.isBlank()
-				? ""
-				: "\t%s()%s {\n\t\tsuper(%s);\n\t}\n".formatted(
-				className,
-				exceptions.isBlank() ? "" : " throws %s".formatted(exceptions),
-				params
-		);
-	}
-
-	private String generateAccessToFirstEnumValue(EnumDecl enumDecl) {
-		return "%s.%s".formatted(enumDecl.getSimpleName(), enumDecl.getValues().getFirst());
-	}
-
-	private String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
-		var sortedConstructors = getSortedConstructors(classDecl);
-
-		if (sortedConstructors.isEmpty()) return "new %s()".formatted(classDecl.getSimpleName());
-
-		var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
-		return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
-	}
-
-	private String implementNecessaryMethods(TypeDecl typeDecl) {
-		var methods = typeDecl.getAllMethodsToImplement();
-		return methods.map(this::overrideMethod).collect(Collectors.joining("\n\n"));
-	}
-
-	private String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
-		return executableDecl.getParameters().stream()
-				.filter(p -> !p.isVarargs())
-				.map(p -> getDefaultValueForType(p.type().getQualifiedName()))
-				.collect(Collectors.joining(", "));
-	}
-
-	private String getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
-		return executableDecl.getThrownCheckedExceptions().stream()
-				.map(TypeReference::getQualifiedName)
-				.collect(Collectors.joining(", "));
-	}
-
-	private String overrideMethod(MethodDecl methodDecl) {
-		return "\t@Override\n" + implementMethod(methodDecl);
-	}
-
-	private String implementMethod(MethodDecl methodDecl) {
-		var methodReturnTypeName = methodDecl.getType().getQualifiedName();
-		var methodSignature = methodDecl.toString().replace("abstract ", "");
-
-		if (methodDecl.isNative()) {
-			return "\t" + methodSignature + ";";
-		}
-
-		return methodReturnTypeName.equals("void")
-				? "\t" + methodSignature + " {}"
-				: "\t%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
-	}
-
-	private String generateMethodDeclaration(String functionName, String functionCode) {
-		return "\tpublic void %s() {\n\t\t%s\n\t}".formatted(functionName, functionCode);
-	}
-
-	private String generateMethodDeclaration(String functionName, String functionCode, String exceptions) {
-		return exceptions.isBlank()
-				? generateMethodDeclaration(functionName, functionCode)
-				: "\tpublic void %s() throws %s {\n\t\t%s\n\t}".formatted(functionName, exceptions, functionCode);
-	}
-
-	private String getDefaultValueForType(String typeName) {
-		if (typeName.contains("String") && !typeName.contains("[]")) return "\"\"";
-
-		return switch (typeName) {
-			case "int", "long", "float", "double", "byte", "short" -> "0";
-			case "char" -> "'c'";
-			case "boolean" -> "false";
-			default -> "(%s) null".formatted(typeName);
-		};
-	}
-
-	private List<ConstructorDecl> getSortedConstructors(ClassDecl classDecl) {
-		return classDecl.getConstructors().stream()
-				.sorted(Comparator.comparingInt(c -> c.getParameters().size()))
-				.toList();
-	}
-
 	private void writeCodeInMain(String imports, String clientName, String code) {
 		var mainClassCode = ClientTemplates.MAIN_CLASS_TEMPLATE.formatted(imports, clientName, code);
 
@@ -348,5 +253,128 @@ public class ClientWriter extends AbstractWriter {
 		} catch (IOException e) {
 			System.err.println("Error writing client code to file: " + e.getMessage());
 		}
+	}
+
+	private static String getImportsForType(TypeDecl typeDecl) {
+		return "import %s;".formatted(typeDecl.getQualifiedName());
+	}
+
+	private static String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
+		if (typeMemberDecl.isStatic()) return typeDecl.getSimpleName();
+		else if (typeDecl.isEnum()) return generateAccessToFirstEnumValue((EnumDecl) typeDecl);
+		else if (typeDecl.isClass()) return generateEasiestConstructorInvocationForClass((ClassDecl) typeDecl);
+
+		throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
+	}
+
+	private static String implementRequiredConstructor(ClassDecl classDecl, String className) {
+		var constructors = getSortedConstructors(classDecl);
+
+		if (constructors.isEmpty()) return "";
+
+		var firstConstructor = constructors.getFirst();
+		var params = getParamsForExecutableInvocation(firstConstructor);
+		var exceptions = getExceptionsForExecutableInvocation(firstConstructor);
+
+		return params.isBlank() && exceptions.isBlank()
+				? ""
+				: "\t%s()%s {\n\t\tsuper(%s);\n\t}\n".formatted(
+				className,
+				exceptions.isBlank() ? "" : " throws %s".formatted(exceptions),
+				params
+		);
+	}
+
+	private static String generateAccessToFirstEnumValue(EnumDecl enumDecl) {
+		return "%s.%s".formatted(enumDecl.getSimpleName(), enumDecl.getValues().getFirst());
+	}
+
+	private static String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
+		if (classDecl.isRecord()) return generateConstructorInvocationForRecord((RecordDecl) classDecl);
+
+		var sortedConstructors = getSortedConstructors(classDecl);
+
+		if (sortedConstructors.isEmpty()) return "new %s()".formatted(classDecl.getSimpleName());
+
+		var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
+		return "new %s(%s)".formatted(classDecl.getSimpleName(), params);
+	}
+
+	private static String generateConstructorInvocationForRecord(RecordDecl recordDecl) {
+		var recordsComponents = recordDecl.getRecordComponents();
+
+		if (recordsComponents.isEmpty()) return "new %s()".formatted(recordDecl.getSimpleName());
+
+		var params = getValuesForRecordComponents(recordsComponents);
+		return "new %s(%s)".formatted(recordDecl.getSimpleName(), params);
+	}
+
+	private static String implementNecessaryMethods(TypeDecl typeDecl) {
+		var methods = typeDecl.getAllMethodsToImplement();
+		return methods.map(ClientWriter::overrideMethod).collect(Collectors.joining("\n\n"));
+	}
+
+	private static String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
+		return executableDecl.getParameters().stream()
+				.filter(p -> !p.isVarargs())
+				.map(p -> getDefaultValueForType(p.type().getQualifiedName()))
+				.collect(Collectors.joining(", "));
+	}
+
+	private static String getValuesForRecordComponents(List<RecordComponentDecl> recordComponents) {
+		return recordComponents.stream()
+				.filter(rC -> !rC.isVarargs())
+				.map(rC -> getDefaultValueForType(rC.getType().getQualifiedName()))
+				.collect(Collectors.joining(", "));
+	}
+
+	private static String getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
+		return executableDecl.getThrownCheckedExceptions().stream()
+				.map(TypeReference::getQualifiedName)
+				.collect(Collectors.joining(", "));
+	}
+
+	private static String overrideMethod(MethodDecl methodDecl) {
+		return "\t@Override\n" + implementMethod(methodDecl);
+	}
+
+	private static String implementMethod(MethodDecl methodDecl) {
+		var methodReturnTypeName = methodDecl.getType().getQualifiedName();
+		var methodSignature = methodDecl.toString().replace("abstract ", "");
+
+		if (methodDecl.isNative()) {
+			return "\t" + methodSignature + ";";
+		}
+
+		return methodReturnTypeName.equals("void")
+				? "\t" + methodSignature + " {}"
+				: "\t%s { return %s; }".formatted(methodSignature, getDefaultValueForType(methodReturnTypeName));
+	}
+
+	private static String generateMethodDeclaration(String functionName, String functionCode) {
+		return "\tpublic void %s() {\n\t\t%s\n\t}".formatted(functionName, functionCode);
+	}
+
+	private static String generateMethodDeclaration(String functionName, String functionCode, String exceptions) {
+		return exceptions.isBlank()
+				? generateMethodDeclaration(functionName, functionCode)
+				: "\tpublic void %s() throws %s {\n\t\t%s\n\t}".formatted(functionName, exceptions, functionCode);
+	}
+
+	private static String getDefaultValueForType(String typeName) {
+		if (typeName.contains("String") && !typeName.contains("[]")) return "\"\"";
+
+		return switch (typeName) {
+			case "int", "long", "float", "double", "byte", "short" -> "0";
+			case "char" -> "'c'";
+			case "boolean" -> "false";
+			default -> "(%s) null".formatted(typeName);
+		};
+	}
+
+	private static List<ConstructorDecl> getSortedConstructors(ClassDecl classDecl) {
+		return classDecl.getConstructors().stream()
+				.sorted(Comparator.comparingInt(c -> c.getParameters().size()))
+				.toList();
 	}
 }

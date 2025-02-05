@@ -26,6 +26,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 			case ClassDecl c: breakClassDecl(c); break;
 			case InterfaceDecl i: breakInterfaceDecl(i); break;
 			case ConstructorDecl c: breakConstructorDecl(c); break;
+			case RecordComponentDecl rC: breakRecordComponentDecl(rC); break;
 			case FieldDecl f: breakFieldDecl(f); break;
 			case MethodDecl m: breakMethodDecl(m); break;
 			case AnnotationDecl ignored: break;
@@ -52,6 +53,10 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 	private void breakConstructorDecl(ConstructorDecl c) {
 		// Do something with the constructor
+	}
+
+	private void breakRecordComponentDecl(RecordComponentDecl f) {
+		// Do something with the field
 	}
 
 	private void breakFieldDecl(FieldDecl f) {

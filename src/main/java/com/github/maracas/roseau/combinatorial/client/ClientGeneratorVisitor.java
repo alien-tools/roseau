@@ -14,17 +14,41 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		this.writer = writer;
 	}
 
+	@Override
 	public Visit symbol(Symbol it) {
 		if (it.isExported()) {
 			switch (it) {
-				case EnumDecl e: generateClassClients(e); break;
-				case RecordDecl r: generateClassClients(r); break;
-				case ClassDecl c: generateClassClients(c); break;
-				case InterfaceDecl i: generateInterfaceClients(i); break;
-				case ConstructorDecl c: generateConstructorClients(c); break;
-				case FieldDecl f: generateFieldClients(f); break;
-				case MethodDecl m: generateMethodClients(m); break;
-				case AnnotationDecl ignored: break;
+				case EnumDecl e:
+					generateClassClients(e);
+					break;
+				case RecordDecl r:
+					generateClassClients(r);
+					break;
+				case ClassDecl c:
+					generateClassClients(c);
+					break;
+				case InterfaceDecl i:
+					generateInterfaceClients(i);
+					break;
+				case ConstructorDecl c:
+					generateConstructorClients(c);
+					break;
+				case FieldDecl f:
+					generateFieldClients(f);
+					break;
+				case MethodDecl m:
+					generateMethodClients(m);
+					break;
+				default:
+					break;
+			}
+		} else {
+			switch (it) {
+				case RecordComponentDecl rC:
+					generateRecordComponentClients(rC);
+					break;
+				default:
+					break;
 			}
 		}
 
@@ -101,7 +125,17 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		}
 	}
 
-	private Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
+	private void generateRecordComponentClients(RecordComponentDecl it) {
+		var containingTypeOpt = getContainingTypeFromTypeMember(it);
+		if (containingTypeOpt.isEmpty()) return;
+		var containingType = containingTypeOpt.get();
+
+		if (containingType instanceof RecordDecl recordDecl) {
+			writer.writeRecordComponentRead(it, recordDecl);
+		}
+	}
+
+	private static Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
 		if (typeMemberDecl.getContainingType().getResolvedApiType().isEmpty()) return Optional.empty();
 
 		return Optional.of(typeMemberDecl.getContainingType().getResolvedApiType().get());

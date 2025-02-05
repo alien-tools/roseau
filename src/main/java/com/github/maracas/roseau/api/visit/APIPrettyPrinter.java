@@ -1,20 +1,6 @@
 package com.github.maracas.roseau.api.visit;
 
-import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.AccessModifier;
-import com.github.maracas.roseau.api.model.Annotation;
-import com.github.maracas.roseau.api.model.AnnotationDecl;
-import com.github.maracas.roseau.api.model.ClassDecl;
-import com.github.maracas.roseau.api.model.ConstructorDecl;
-import com.github.maracas.roseau.api.model.EnumDecl;
-import com.github.maracas.roseau.api.model.FieldDecl;
-import com.github.maracas.roseau.api.model.FormalTypeParameter;
-import com.github.maracas.roseau.api.model.InterfaceDecl;
-import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.Modifier;
-import com.github.maracas.roseau.api.model.ParameterDecl;
-import com.github.maracas.roseau.api.model.RecordDecl;
-import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
@@ -151,11 +137,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
-			it.getRecordComponents().map(f -> "%s %s".formatted(f.getType().toString(), f.getSimpleName())).collect(Collectors.joining(", ")),
+			it.getRecordComponents().stream().map(rC -> $(rC).print()).collect(Collectors.joining(", ")),
 			it.getImplementedInterfaces().isEmpty()
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
-			it.getStaticDeclaredFields().map(f -> $(f).print()).collect(Collectors.joining("\n")),
+			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n")),
 			""
@@ -198,6 +184,11 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 		return () -> it.isVarargs()
 				? "%s ...%s".formatted(it.type().getQualifiedName(), it.name())
 				: "%s %s".formatted(it.type().getQualifiedName(), it.name());
+	}
+
+	@Override
+	public Print recordComponentDecl(RecordComponentDecl it) {
+		return it::toString;
 	}
 
 	@Override

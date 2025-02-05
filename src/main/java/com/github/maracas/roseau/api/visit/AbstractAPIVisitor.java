@@ -1,28 +1,13 @@
 package com.github.maracas.roseau.api.visit;
 
-import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.Annotation;
-import com.github.maracas.roseau.api.model.AnnotationDecl;
-import com.github.maracas.roseau.api.model.ClassDecl;
-import com.github.maracas.roseau.api.model.ConstructorDecl;
-import com.github.maracas.roseau.api.model.EnumDecl;
-import com.github.maracas.roseau.api.model.ExecutableDecl;
-import com.github.maracas.roseau.api.model.FieldDecl;
-import com.github.maracas.roseau.api.model.FormalTypeParameter;
-import com.github.maracas.roseau.api.model.InterfaceDecl;
-import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.ParameterDecl;
-import com.github.maracas.roseau.api.model.RecordDecl;
-import com.github.maracas.roseau.api.model.Symbol;
-import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.TypeMemberDecl;
+import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
-public class AbstractAPIVisitor implements APIAlgebra<Visit> {
+public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit api(API it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}
@@ -53,7 +38,10 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit recordDecl(RecordDecl it) {
-		return classDecl(it);
+		return () -> {
+			classDecl(it).visit();
+			it.getRecordComponents().forEach(rc -> $(rc).visit());
+		};
 	}
 
 	@Override
@@ -109,6 +97,11 @@ public class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	@Override
 	public Visit formalTypeParameter(FormalTypeParameter it) {
 		return () -> it.bounds().forEach(b -> $(b).visit());
+	}
+
+	@Override
+	public Visit recordComponentDecl(RecordComponentDecl it) {
+		return typeMemberDecl(it);
 	}
 
 	public Visit symbol(Symbol it) {

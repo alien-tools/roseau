@@ -1,20 +1,6 @@
 package com.github.maracas.roseau.api;
 
-import com.github.maracas.roseau.api.model.AccessModifier;
-import com.github.maracas.roseau.api.model.Annotation;
-import com.github.maracas.roseau.api.model.AnnotationDecl;
-import com.github.maracas.roseau.api.model.ClassDecl;
-import com.github.maracas.roseau.api.model.ConstructorDecl;
-import com.github.maracas.roseau.api.model.EnumDecl;
-import com.github.maracas.roseau.api.model.FieldDecl;
-import com.github.maracas.roseau.api.model.FormalTypeParameter;
-import com.github.maracas.roseau.api.model.InterfaceDecl;
-import com.github.maracas.roseau.api.model.MethodDecl;
-import com.github.maracas.roseau.api.model.Modifier;
-import com.github.maracas.roseau.api.model.ParameterDecl;
-import com.github.maracas.roseau.api.model.RecordDecl;
-import com.github.maracas.roseau.api.model.SourceLocation;
-import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -174,7 +160,8 @@ public class SpoonAPIFactory {
 			convertCtFields(rcrd),
 			convertCtMethods(rcrd),
 			createTypeReference(rcrd.getDeclaringType()),
-			convertCtConstructors(rcrd)
+			convertCtConstructors(rcrd),
+			convertCtRecordComponents(rcrd)
 		);
 	}
 
@@ -290,6 +277,23 @@ public class SpoonAPIFactory {
 			.toList();
 	}
 
+	private List<RecordComponentDecl> convertCtRecordComponents(CtRecord r) {
+		return r.getRecordComponents().stream()
+			.map(rC -> convertCtRecordComponent(rC, r))
+			.toList();
+	}
+
+	private RecordComponentDecl convertCtRecordComponent(CtRecordComponent rC, CtRecord r) {
+		return new RecordComponentDecl(
+				makeQualifiedName(rC, r),
+				convertSpoonAnnotations(rC.getAnnotations()),
+				convertSpoonPosition(rC.getPosition()),
+				createTypeReference(r),
+				createITypeReference(rC.getType()),
+				false
+		);
+	}
+
 	private List<String> convertCtEnumValues(CtEnum<?> enm) {
 		return enm.getEnumValues().stream()
 			.map(CtTypeMember::getSimpleName)
@@ -396,5 +400,9 @@ public class SpoonAPIFactory {
 
 	private String makeQualifiedName(CtTypeMember member) {
 		return String.format("%s.%s", member.getDeclaringType().getQualifiedName(), member.getSimpleName());
+	}
+
+	private String makeQualifiedName(CtNamedElement member, CtType<?> declaringType) {
+		return String.format("%s.%s", declaringType.getQualifiedName(), member.getSimpleName());
 	}
 }

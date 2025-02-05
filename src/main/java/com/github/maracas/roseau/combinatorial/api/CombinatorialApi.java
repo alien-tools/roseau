@@ -288,13 +288,13 @@ public final class CombinatorialApi {
 							IntStream.range(0, recordComponentTypes.size()).forEach(recordComponentTypeIndex -> {
 								var recordComponentType = recordComponentTypes.get(recordComponentTypeIndex);
 
-								FieldBuilder fieldBuilder = new FieldBuilder();
-								fieldBuilder.qualifiedName = "c" + recordComponentTypeIndex;
-								fieldBuilder.type = recordComponentType;
-								fieldBuilder.visibility = PUBLIC;
-								fieldBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+								var recordComponentBuilder = new RecordComponentBuilder();
+								recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
+								recordComponentBuilder.type = recordComponentType;
+								recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+								// TODO : Varargs
 
-								recordBuilder.fields.add(fieldBuilder.make());
+								recordBuilder.recordComponents.add(recordComponentBuilder.make());
 							});
 
 							store(recordBuilder);
