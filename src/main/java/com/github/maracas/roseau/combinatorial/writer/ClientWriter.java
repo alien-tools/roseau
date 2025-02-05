@@ -315,13 +315,21 @@ public class ClientWriter extends AbstractWriter {
 
 	private static String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
 		return executableDecl.getParameters().stream()
-				.map(p -> getDefaultValueForType(p.type().getQualifiedName()))
+				.map(p -> {
+					var value = getDefaultValueForType(p.type().getQualifiedName());
+
+					return p.isVarargs() ? "%s, %s".formatted(value, value) : value;
+				})
 				.collect(Collectors.joining(", "));
 	}
 
 	private static String getValuesForRecordComponents(List<RecordComponentDecl> recordComponents) {
 		return recordComponents.stream()
-				.map(rC -> getDefaultValueForType(rC.getType().getQualifiedName()))
+				.map(rC -> {
+					var value = getDefaultValueForType(rC.getType().getQualifiedName());
+
+					return rC.isVarargs() ? "%s, %s".formatted(value, value) : value;
+				})
 				.collect(Collectors.joining(", "));
 	}
 

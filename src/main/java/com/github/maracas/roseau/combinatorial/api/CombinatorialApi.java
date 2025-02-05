@@ -29,19 +29,18 @@ public final class CombinatorialApi {
 			.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
 			.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
 			.collect(Collectors.toSet());
-	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT);
-//	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
-//			.stream()
-//			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
-//			.collect(Collectors.toSet());
+	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+			.collect(Collectors.toSet());
 	static final Set<Set<Modifier>> recordModifiers = powerSet(FINAL);
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 
 	static final List<ITypeReference> fieldTypes = List.of(
 			typeReferenceFactory.createPrimitiveTypeReference("int"), // Primitive
-			typeReferenceFactory.createTypeReference("java.lang.Integer"), // Boxed
+			typeReferenceFactory.createTypeReference("java.lang.Boolean"), // Boxed
 			typeReferenceFactory.createTypeReference("java.lang.Thread"), // Object reference
-			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("int"), 1) // Array
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("char"), 1) // Array
 	);
 
 	static final List<List<ITypeReference>> methodParamsTypes = powerSet(fieldTypes)
@@ -90,9 +89,9 @@ public final class CombinatorialApi {
 
 	private void createTypes() {
 		createInterfaces();
-//		createClasses();
-//		createRecords();
-//		createEnums();
+		createClasses();
+		createRecords();
+		createEnums();
 	}
 
 	private void weaveFields() {
@@ -246,7 +245,10 @@ public final class CombinatorialApi {
 					classBuilder.visibility = visibility;
 					classBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-					addConstructorToClassBuilder(classBuilder, PUBLIC, List.of(), List.of());
+					// Default empty public constructor
+					addConstructorToClassBuilder(classBuilder, PUBLIC, List.of(), List.of(), false);
+
+					// Constructors different params types and count
 					IntStream.range(1, paramsCountToConstructorsParamsTypes.size()).forEach(paramsCount -> {
 						var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
 
@@ -254,9 +256,31 @@ public final class CombinatorialApi {
 							var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
 							var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
 
-							addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes, constructorExceptions);
+							addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes, constructorExceptions, false);
 						});
 					});
+
+					// Varargs
+					IntStream.range(0, paramsCountToConstructorsParamsTypes.size() - 1).forEach(paramsCount ->
+						fieldTypes.forEach(varArgsParamType -> {
+							var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
+							var constructorParamsTypes = constructorsParamsTypesForParamsCount.get(constructorCounter % constructorsParamsTypesForParamsCount.size());
+
+							if (!constructorParamsTypes.isEmpty()) {
+								var paramTypeBeforeVarargs = constructorParamsTypes.getLast();
+								if (varArgsParamType.getQualifiedName().equals(paramTypeBeforeVarargs.getQualifiedName())) {
+									return;
+								}
+							}
+
+							var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
+							var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
+							var constructorParamsTypesWithVarargs = new ArrayList<>(constructorParamsTypes);
+							constructorParamsTypesWithVarargs.add(varArgsParamType);
+
+							addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypesWithVarargs, constructorExceptions, true);
+						})
+					);
 
 					store(classBuilder);
 					classBuilders.add(classBuilder);
@@ -558,7 +582,8 @@ public final class CombinatorialApi {
 		methodCounter++;
 	}
 
-	private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params, List<TypeReference<ClassDecl>> exceptions) {
+	private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params,
+													 List<TypeReference<ClassDecl>> exceptions, boolean lastParamIsVarargs) {
 		var constructorBuilder = new ConstructorBuilder();
 		constructorBuilder.qualifiedName = classBuilder.qualifiedName;
 		constructorBuilder.visibility = visibility;
@@ -568,7 +593,8 @@ public final class CombinatorialApi {
 
 		IntStream.range(0, params.size()).forEach(constructorParamTypeIndex -> {
 			var constructorsParamType = params.get(constructorParamTypeIndex);
-			constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, false));
+			boolean isVarargs = lastParamIsVarargs && constructorParamTypeIndex == params.size() - 1;
+			constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, isVarargs));
 		});
 
 		classBuilder.constructors.add(constructorBuilder.make());
