@@ -261,8 +261,9 @@ public class ClientWriter extends AbstractWriter {
 
 	private static String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
 		if (typeMemberDecl.isStatic()) return typeDecl.getSimpleName();
-		else if (typeDecl.isEnum()) return generateAccessToFirstEnumValue((EnumDecl) typeDecl);
-		else if (typeDecl.isClass()) return generateEasiestConstructorInvocationForClass((ClassDecl) typeDecl);
+		else if (typeDecl instanceof EnumDecl enumDecl) return generateAccessToFirstEnumValue(enumDecl);
+		else if (typeDecl instanceof RecordDecl recordDecl) return generateConstructorInvocationForRecord(recordDecl);
+		else if (typeDecl instanceof ClassDecl classDecl) return generateEasiestConstructorInvocationForClass(classDecl);
 
 		throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
 	}
@@ -290,8 +291,6 @@ public class ClientWriter extends AbstractWriter {
 	}
 
 	private static String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
-		if (classDecl.isRecord()) return generateConstructorInvocationForRecord((RecordDecl) classDecl);
-
 		var sortedConstructors = getSortedConstructors(classDecl);
 
 		if (sortedConstructors.isEmpty()) return "new %s()".formatted(classDecl.getSimpleName());
@@ -316,14 +315,12 @@ public class ClientWriter extends AbstractWriter {
 
 	private static String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
 		return executableDecl.getParameters().stream()
-				.filter(p -> !p.isVarargs())
 				.map(p -> getDefaultValueForType(p.type().getQualifiedName()))
 				.collect(Collectors.joining(", "));
 	}
 
 	private static String getValuesForRecordComponents(List<RecordComponentDecl> recordComponents) {
 		return recordComponents.stream()
-				.filter(rC -> !rC.isVarargs())
 				.map(rC -> getDefaultValueForType(rC.getType().getQualifiedName()))
 				.collect(Collectors.joining(", "));
 	}
