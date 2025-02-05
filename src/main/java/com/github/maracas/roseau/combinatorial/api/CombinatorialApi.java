@@ -12,16 +12,8 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-import static com.github.maracas.roseau.api.model.AccessModifier.PROTECTED;
-import static com.github.maracas.roseau.api.model.AccessModifier.PUBLIC;
-import static com.github.maracas.roseau.api.model.Modifier.ABSTRACT;
-import static com.github.maracas.roseau.api.model.Modifier.DEFAULT;
-import static com.github.maracas.roseau.api.model.Modifier.FINAL;
-import static com.github.maracas.roseau.api.model.Modifier.NATIVE;
-import static com.github.maracas.roseau.api.model.Modifier.NON_SEALED;
-import static com.github.maracas.roseau.api.model.Modifier.SEALED;
-import static com.github.maracas.roseau.api.model.Modifier.STATIC;
-import static com.github.maracas.roseau.api.model.Modifier.SYNCHRONIZED;
+import static com.github.maracas.roseau.api.model.AccessModifier.*;
+import static com.github.maracas.roseau.api.model.Modifier.*;
 
 public final class CombinatorialApi {
 	static final SpoonAPIFactory apiFactory = new SpoonAPIFactory();
@@ -273,33 +265,68 @@ public final class CombinatorialApi {
 	}
 
 	private void createRecords() {
-		var recordsComponentTypes = methodParamsTypes.stream()
-				.filter(types -> types.size() <= paramsCount)
-				.toList();
+		var paramsCountToRecordsComponentTypes = getParamsCountToParamsTypesMap();
 
 		topLevelVisibilities.forEach(visibility ->
-				recordModifiers.forEach(modifiers ->
-						recordsComponentTypes.forEach(recordComponentTypes -> {
+				recordModifiers.forEach(modifiers -> {
+					// Record components different types and count
+					IntStream.range(0, paramsCount + 1).forEach(recordComponentParamsCount -> {
+						var recordsComponentsTypesForParamsCount = paramsCountToRecordsComponentTypes.get(recordComponentParamsCount);
+
+						recordsComponentsTypesForParamsCount.forEach(recordsParamsTypes -> {
 							var recordBuilder = new RecordBuilder();
 							recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
 							recordBuilder.visibility = visibility;
 							recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-							IntStream.range(0, recordComponentTypes.size()).forEach(recordComponentTypeIndex -> {
-								var recordComponentType = recordComponentTypes.get(recordComponentTypeIndex);
+							IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
+								var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
 
 								var recordComponentBuilder = new RecordComponentBuilder();
 								recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
 								recordComponentBuilder.type = recordComponentType;
 								recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
-								// TODO : Varargs
 
 								recordBuilder.recordComponents.add(recordComponentBuilder.make());
 							});
 
 							store(recordBuilder);
-						})
-				)
+						});
+					});
+
+					// Varargs
+					IntStream.range(1, paramsCount + 1).forEach(recordComponentParamsCount ->
+							fieldTypes.forEach(varArgsParamType -> {
+								var recordsComponentsTypesForParamsCount = paramsCountToRecordsComponentTypes.get(recordComponentParamsCount - 1);
+								var recordsParamsTypes = recordsComponentsTypesForParamsCount.get(symbolCounter % recordsComponentsTypesForParamsCount.size());
+
+								var recordBuilder = new RecordBuilder();
+								recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
+								recordBuilder.visibility = visibility;
+								recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+
+								IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
+									var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
+
+									var recordComponentBuilder = new RecordComponentBuilder();
+									recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
+									recordComponentBuilder.type = recordComponentType;
+									recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+
+									recordBuilder.recordComponents.add(recordComponentBuilder.make());
+								});
+
+								var varArgsRecordComponentBuilder = new RecordComponentBuilder();
+								varArgsRecordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentParamsCount);
+								varArgsRecordComponentBuilder.type = varArgsParamType;
+								varArgsRecordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+								varArgsRecordComponentBuilder.isVarargs = true;
+								recordBuilder.recordComponents.add(varArgsRecordComponentBuilder.make());
+
+								store(recordBuilder);
+							})
+					);
+				})
 		);
 	}
 
