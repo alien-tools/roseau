@@ -26,6 +26,7 @@ import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
@@ -90,6 +91,7 @@ public class JarAPIExtractor implements APIExtractor {
 		private List<String> annotations = new ArrayList<>();
 		private boolean isSealed = false;
 		private TypeDecl typeDecl;
+		private String filename;
 
 		public ApiClassVisitor(TypeReferenceFactory typeRefFactory) {
 			super(ASM_VERSION);
@@ -122,10 +124,13 @@ public class JarAPIExtractor implements APIExtractor {
 				.toList();
 
 			if (signature != null) {
+				System.out.println("cls sign = " + signature);
 				SignatureReader reader = new SignatureReader(signature);
 				APISignatureVisitor signatureVisitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
 				reader.accept(signatureVisitor);
 				formalTypeParameters = signatureVisitor.getFormalTypeParameters();
+				superClassDecl = signatureVisitor.getSuperclass();
+				interfaceDecls = signatureVisitor.getSuperInterfaces();
 			}
 
 			super.visit(version, access, name, signature, superName, interfaces);
@@ -171,9 +176,8 @@ public class JarAPIExtractor implements APIExtractor {
 				List<String> parameterNames = new ArrayList<>();
 
 				@Override
-				public void visitParameter(final String name, final int access) {
-					System.out.println("param " + name);
-					parameterNames.add(name);
+				public void visitParameter(String name, int access) {
+					parameterNames.add(name != null ? name : "p");
 					super.visitParameter(name, access);
 				}
 
@@ -181,6 +185,12 @@ public class JarAPIExtractor implements APIExtractor {
 				public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 					annotations.add(descriptor);
 					return super.visitAnnotation(descriptor, visible);
+				}
+
+				@Override
+				public void visitLineNumber(int line, Label start) {
+					System.out.println("Found " + name + " @ " + line + " (" + start + ")");
+					super.visitLineNumber(line, start);
 				}
 
 				@Override
@@ -215,6 +225,11 @@ public class JarAPIExtractor implements APIExtractor {
 		public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 			annotations.add(descriptor);
 			return super.visitAnnotation(descriptor, visible);
+		}
+
+		@Override
+		public void visitSource(String source, String debug) {
+			filename = source;
 		}
 
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
@@ -257,6 +272,8 @@ public class JarAPIExtractor implements APIExtractor {
 				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
 				new SignatureReader(signature).accept(visitor);
 			}
+
+			System.out.println("######### Visiting " + className + "." + name + "[" + signature + "]");
 
 			return new MethodDecl(
 				String.format("%s.%s", className, name),
@@ -323,7 +340,7 @@ public class JarAPIExtractor implements APIExtractor {
 			if ((access & Opcodes.ACC_STATIC) != 0) modifiers.add(Modifier.STATIC);
 			if ((access & Opcodes.ACC_FINAL) != 0) modifiers.add(Modifier.FINAL);
 			if ((access & Opcodes.ACC_ABSTRACT) != 0) modifiers.add(Modifier.ABSTRACT);
-			if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) modifiers.add(Modifier.SYNCHRONIZED);
+			//if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) modifiers.add(Modifier.SYNCHRONIZED);
 			if ((access & Opcodes.ACC_VOLATILE) != 0) modifiers.add(Modifier.VOLATILE);
 			if ((access & Opcodes.ACC_TRANSIENT) != 0) modifiers.add(Modifier.TRANSIENT);
 			if ((access & Opcodes.ACC_NATIVE) != 0) modifiers.add(Modifier.NATIVE);
@@ -356,6 +373,9 @@ public class JarAPIExtractor implements APIExtractor {
 				.toList();
 			if (isSealed)
 				modifiers.add(Modifier.SEALED);
+			SourceLocation location = new SourceLocation(
+				Path.of(filename != null ? filename : "<unknown>"),
+				-1);
 
 			if ((access & Opcodes.ACC_ANNOTATION) != 0) {
 				type = new AnnotationDecl(
@@ -363,7 +383,7 @@ public class JarAPIExtractor implements APIExtractor {
 					visibility,
 					modifiers,
 					anns,
-					SourceLocation.NO_LOCATION,
+					location,
 					fieldDecls,
 					methodDecls,
 					enclosingType
@@ -374,7 +394,7 @@ public class JarAPIExtractor implements APIExtractor {
 					visibility,
 					modifiers,
 					anns,
-					SourceLocation.NO_LOCATION,
+					location,
 					interfaceDecls,
 					formalTypeParameters,
 					fieldDecls,
@@ -388,7 +408,7 @@ public class JarAPIExtractor implements APIExtractor {
 					AccessModifier.PUBLIC,
 					EnumSet.noneOf(Modifier.class),
 					anns,
-					SourceLocation.NO_LOCATION,
+					location,
 					typeRefFactory.createTypeReference(className),
 					typeRefFactory.createTypeReference(className),
 					Collections.emptyList(),
@@ -402,7 +422,7 @@ public class JarAPIExtractor implements APIExtractor {
 					visibility,
 					modifiers,
 					anns,
-					SourceLocation.NO_LOCATION,
+					location,
 					interfaceDecls,
 					fieldDecls,
 					methodDecls,
@@ -415,7 +435,7 @@ public class JarAPIExtractor implements APIExtractor {
 					visibility,
 					modifiers,
 					anns,
-					SourceLocation.NO_LOCATION,
+					location,
 					interfaceDecls,
 					Collections.emptyList(),
 					fieldDecls,
@@ -429,7 +449,7 @@ public class JarAPIExtractor implements APIExtractor {
 					visibility,
 					modifiers,
 					anns,
-					SourceLocation.NO_LOCATION,
+					location,
 					interfaceDecls,
 					formalTypeParameters,
 					fieldDecls,

@@ -131,8 +131,11 @@ public class APIDiff {
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		if (t1.getAllSuperTypes().anyMatch(sup -> sup.isExported() && !t2.isSubtypeOf(sup)))
+		if (t1.getAllSuperTypes().anyMatch(sup -> sup.isExported() && !t2.isSubtypeOf(sup))) {
+			System.out.println(t1.getAllSuperTypes());
+			System.out.println(t2.getAllSuperTypes());
 			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2);
+		}
 
 		diffFormalTypeParameters(t1, t2);
 

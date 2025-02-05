@@ -1,8 +1,11 @@
 package com.github.maracas.roseau.api.extractors;
 
+import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;
+import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import org.objectweb.asm.signature.SignatureVisitor;
 
@@ -22,7 +25,11 @@ public class APISignatureVisitor extends SignatureVisitor {
 	TypeVisitor lastVisitor = null;
 	boolean isBound = false;
 	boolean isReturnType = false;
-	String prefix;
+	String prefix = "";
+	TypeReference<ClassDecl> superClass = null;
+	List<TypeReference<InterfaceDecl>> superInterfaces = new ArrayList<>();
+	List<TypeVisitor> interfaceVisitors = new ArrayList<>();
+	TypeVisitor returnTypeVisitor = null;
 
 	APISignatureVisitor(int api, TypeReferenceFactory factory, String prefix) {
 		super(api);
@@ -35,14 +42,25 @@ public class APISignatureVisitor extends SignatureVisitor {
 	}
 
 	public ITypeReference getReturnType() {
-		if (lastVisitor != null) {
-			return lastVisitor.getType();
-		}
-		return returnType;
+//		if (lastVisitor != null) {
+//			return lastVisitor.getType();
+//		}
+//		return returnType;
+		return returnTypeVisitor.getType();
 	}
 
 	public List<ParameterDecl> getParameters() {
 		return parameters;
+	}
+
+	public TypeReference<ClassDecl> getSuperclass() {
+		return superClass;
+	}
+
+	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
+		return interfaceVisitors.stream()
+			.map(v -> (TypeReference<InterfaceDecl>) v.getType())
+			.toList();
 	}
 
 	public void endFormalTypeParameter() {
@@ -57,12 +75,30 @@ public class APISignatureVisitor extends SignatureVisitor {
 		currentBounds.clear();
 	}
 
+	public void endSuperclass() {
+		if (lastVisitor != null) {
+			superClass = (TypeReference<ClassDecl>) lastVisitor.getType();
+			lastVisitor = null;
+		} else {
+			System.out.println("No visitor when endSuperclass()");
+		}
+	}
+
+	public void endInterface() {
+		if (lastVisitor != null) {
+			superInterfaces.add((TypeReference<InterfaceDecl>) lastVisitor.getType());
+			lastVisitor = null;
+		} else {
+			System.out.println("No visitor when endInterface()");
+		}
+	}
+
 	public void endParameterType() {
 		if (lastVisitor != null) {
 			parameters.add(new ParameterDecl("p", lastVisitor.getType(), false));
 			lastVisitor = null;
 		} else {
-			System.out.println("Should have a visitor");
+			System.out.println("No visitor when endParameterType()");
 		}
 	}
 
@@ -73,6 +109,7 @@ public class APISignatureVisitor extends SignatureVisitor {
 	public void visitFormalTypeParameter(String name) {
 		System.out.println(prefix + "visitFormalTypeParameter("+name+")");
 		endFormalTypeParameter();
+		endInterface();
 		currentFormalTypeParameter = name;
 	}
 
@@ -93,14 +130,18 @@ public class APISignatureVisitor extends SignatureVisitor {
 	}
 
 	public SignatureVisitor visitSuperclass() {
+		endFormalTypeParameter();
 		System.out.println(prefix + "visitSuperclass()");
 		lastVisitor = new TypeVisitor(api, factory, "");
 		return lastVisitor;
 	}
 
 	public SignatureVisitor visitInterface() {
+		endSuperclass();
+		endInterface();
 		System.out.println(prefix + "visitInterface()");
 		lastVisitor = new TypeVisitor(api, factory, "");
+		interfaceVisitors.add(lastVisitor);
 		return lastVisitor;
 	}
 
@@ -116,6 +157,7 @@ public class APISignatureVisitor extends SignatureVisitor {
 		System.out.println(prefix + "visitReturnType()");
 		endParameterType();
 		lastVisitor = new TypeVisitor(api, factory, "");
+		returnTypeVisitor = lastVisitor;
 		return lastVisitor;
 	}
 
@@ -218,6 +260,47 @@ class TypeVisitor extends SignatureVisitor {
 			type = factory.createWildcardTypeReference(List.of(current), false);
 		else if (currentWildcard == EXTENDS)
 			type = factory.createWildcardTypeReference(List.of(current), true);
+	}
+
+	@Override
+	public void visitBaseType(char descriptor) {
+		System.out.println(prefix + "\tvisitBaseType("+descriptor+")");
+		switch (descriptor) {
+			case 'V':
+				type = factory.createPrimitiveTypeReference("void");
+				break;
+			case 'B':
+				type = factory.createPrimitiveTypeReference("byte");
+				break;
+			case 'J':
+				type = factory.createPrimitiveTypeReference("long");
+				break;
+			case 'Z':
+				type = factory.createPrimitiveTypeReference("boolean");
+				break;
+			case 'I':
+				type = factory.createPrimitiveTypeReference("int");
+				break;
+			case 'S':
+				type = factory.createPrimitiveTypeReference("short");
+				break;
+			case 'C':
+				type = factory.createPrimitiveTypeReference("char");
+				break;
+			case 'F':
+				type = factory.createPrimitiveTypeReference("float");
+				break;
+			// case 'D':
+			default:
+				type = factory.createPrimitiveTypeReference("double");
+				break;
+		}
+	}
+
+	@Override
+	public SignatureVisitor visitArrayType() {
+		System.out.println(prefix + "\tvisitArrayType()");
+		return this;
 	}
 
 	@Override
