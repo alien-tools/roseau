@@ -5,6 +5,7 @@ import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
+import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
 
 import java.nio.file.Path;
 

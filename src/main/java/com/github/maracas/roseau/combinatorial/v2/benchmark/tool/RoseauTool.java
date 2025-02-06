@@ -3,7 +3,7 @@ package com.github.maracas.roseau.combinatorial.v2.benchmark.tool;
 import com.github.maracas.roseau.api.APIExtractor;
 import com.github.maracas.roseau.api.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.combinatorial.v2.benchmark.ToolResult;
+import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ToolResult;
 import com.github.maracas.roseau.diff.APIDiff;
 
 import java.nio.file.Path;
@@ -26,6 +26,6 @@ public final class RoseauTool extends AbstractTool {
 		var isBreaking = !diff.getBreakingChanges().isEmpty();
 
 		long executionTime = System.currentTimeMillis() - startTime;
-		return new ToolResult(executionTime, isBreaking);
+		return new ToolResult("Roseau", executionTime, isBreaking);
 	}
 }

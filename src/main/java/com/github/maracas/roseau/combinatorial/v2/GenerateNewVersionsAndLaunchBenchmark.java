@@ -6,7 +6,9 @@ import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.StepExecutionException;
 import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.Benchmark;
+import com.github.maracas.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
+import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -19,6 +21,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private final int maxParallelAnalysis;
 
 	private final NewApiQueue newApiQueue;
+	private final ResultsProcessQueue resultsQueue;
 
 	private final Map<Benchmark, Thread> benchmarkThreads = new HashMap<>();
 
@@ -37,6 +40,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		this.maxParallelAnalysis = maxParallelAnalysis;
 
 		newApiQueue = new NewApiQueue(maxParallelAnalysis);
+		resultsQueue = new ResultsProcessQueue();
 
 		v1SourcesPath = outputPath.resolve(Constants.API_FOLDER);
 		clientsSourcesPath = outputPath.resolve(Constants.CLIENTS_FOLDER);
@@ -95,7 +99,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		System.out.println("\n-- Starting benchmark threads --");
 
 		for (int i = 0; i < maxParallelAnalysis; i++) {
-			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, clientsSourcesPath, v1SourcesPath, v1JarPath, tmpPath);
+			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, resultsQueue, clientsSourcesPath, v1SourcesPath, v1JarPath, tmpPath);
 			var thread = new Thread(benchmark);
 			thread.start();
 

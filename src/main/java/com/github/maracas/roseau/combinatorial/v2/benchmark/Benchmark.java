@@ -3,7 +3,9 @@ package com.github.maracas.roseau.combinatorial.v2.benchmark;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
-import com.github.maracas.roseau.combinatorial.v2.NewApiQueue;
+import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
+import com.github.maracas.roseau.combinatorial.v2.queue.ResultsProcessQueue;
+import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ToolResult;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.AbstractTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.JapicmpTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RevapiTool;
@@ -12,6 +14,7 @@ import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 import com.github.maracas.roseau.combinatorial.writer.ApiWriter;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 public final class Benchmark implements Runnable {
@@ -22,7 +25,8 @@ public final class Benchmark implements Runnable {
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
-	private final NewApiQueue queue;
+	private final NewApiQueue apiQueue;
+	private final ResultsProcessQueue resultsQueue;
 
 	private final List<AbstractTool> tools;
 
@@ -35,7 +39,8 @@ public final class Benchmark implements Runnable {
 
 	public Benchmark(
 			String id,
-			NewApiQueue queue,
+			NewApiQueue apiQueue,
+			ResultsProcessQueue resultsQueue,
 			Path clientsSourcesPath,
 			Path v1SourcesPath,
 			Path v1JarPath,
@@ -49,7 +54,8 @@ public final class Benchmark implements Runnable {
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
 
-		this.queue = queue;
+		this.apiQueue = apiQueue;
+		this.resultsQueue = resultsQueue;
 
 		this.tools = List.of(
 				new JapicmpTool(v1JarPath, v2JarPath),
@@ -62,17 +68,22 @@ public final class Benchmark implements Runnable {
 
 	@Override
 	public void run() {
-		while (isNewBreakingApisGenerationOngoing || queue.hasStillWork()) {
-			var strategyAndApi = queue.take();
+		while (isNewBreakingApisGenerationOngoing || apiQueue.hasStillWork()) {
+			var strategyAndApi = apiQueue.take();
 			if (strategyAndApi == null) break;
 
 			try {
+				var strategy = strategyAndApi.getValue0();
+				var api = strategyAndApi.getValue1();
+
 				System.out.println("\n--------------------------------");
 				System.out.println("Running Benchmark Thread n°" + id);
-				System.out.println("Breaking Change: " + strategyAndApi.getValue0());
-				generateNewApiSourcesAndJar(strategyAndApi.getValue1());
+				System.out.println("Breaking Change: " + strategy);
+
+				generateNewApiSourcesAndJar(api);
 				var newApiIsBreaking = generateGroundTruth();
-				runToolsAnalysis(newApiIsBreaking);
+				runToolsAnalysis(strategy, newApiIsBreaking);
+
 				System.out.println("Benchmark Thread n°" + id + " finished");
 				System.out.println("--------------------------------\n");
 			} catch (Exception e) {
@@ -117,15 +128,17 @@ public final class Benchmark implements Runnable {
 		return !errors.isEmpty();
 	}
 
-	private void runToolsAnalysis(boolean isBreaking) {
+	private void runToolsAnalysis(String strategy, boolean isBreaking) {
 		System.out.println("\n--------------------------------");
 		System.out.println("     Running Tools Analysis");
 
+		var results = new ArrayList<ToolResult>();
 		for (var tool : tools) {
 			System.out.println("--------------------------------");
 			System.out.println(" Running " + tool.getClass().getSimpleName());
 
 			var result = tool.detectBreakingChanges();
+			results.add(result);
 
 			System.out.println(" Execution Time: " + result.executionTime() + "ms");
 			System.out.println(" Tool Result   : " + (result.isBreaking() ? "Breaking" : "Not Breaking"));
@@ -134,5 +147,7 @@ public final class Benchmark implements Runnable {
 		}
 
 		System.out.println("--------------------------------\n");
+
+		resultsQueue.put(strategy, results);
 	}
 }

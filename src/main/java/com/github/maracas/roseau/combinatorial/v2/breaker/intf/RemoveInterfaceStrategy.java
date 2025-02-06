@@ -2,7 +2,7 @@ package com.github.maracas.roseau.combinatorial.v2.breaker.intf;
 
 import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.combinatorial.builder.*;
-import com.github.maracas.roseau.combinatorial.v2.NewApiQueue;
+import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
 	public RemoveInterfaceStrategy(InterfaceDecl intf, NewApiQueue queue) {

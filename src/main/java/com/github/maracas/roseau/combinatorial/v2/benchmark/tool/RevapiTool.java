@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.combinatorial.v2.benchmark.tool;
 
-import com.github.maracas.roseau.combinatorial.v2.benchmark.ToolResult;
+import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ToolResult;
 import org.revapi.API;
 import org.revapi.AnalysisContext;
 import org.revapi.Revapi;
@@ -45,6 +45,6 @@ public final class RevapiTool extends AbstractTool {
 		} catch (Exception ignored) {}
 
 		long executionTime = System.currentTimeMillis() - startTime;
-		return new ToolResult(executionTime, isBreaking);
+		return new ToolResult("Revapi", executionTime, isBreaking);
 	}
 }

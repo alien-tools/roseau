@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.combinatorial.v2.benchmark.tool;
 
-import com.github.maracas.roseau.combinatorial.v2.benchmark.ToolResult;
+import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ToolResult;
 import japicmp.cmp.JApiCmpArchive;
 import japicmp.cmp.JarArchiveComparator;
 import japicmp.cmp.JarArchiveComparatorOptions;
@@ -28,6 +28,6 @@ public final class JapicmpTool extends AbstractTool {
 		var isBreaking = !jApiClasses.isEmpty();
 
 		long executionTime = System.currentTimeMillis() - startTime;
-		return new ToolResult(executionTime, isBreaking);
+		return new ToolResult("japicmp", executionTime, isBreaking);
 	}
 }

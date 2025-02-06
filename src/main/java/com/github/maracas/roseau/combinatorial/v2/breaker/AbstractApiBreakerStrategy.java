@@ -3,8 +3,7 @@ package com.github.maracas.roseau.combinatorial.v2.breaker;
 import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.builder.ApiBuilder;
-import com.github.maracas.roseau.combinatorial.v2.NewApiQueue;
-import org.javatuples.Pair;
+import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,7 +26,7 @@ public abstract class AbstractApiBreakerStrategy {
 			var mutableApi = ApiBuilder.from(api, factory);
 			applyBreakToMutableApi(api, mutableApi);
 
-			queue.put(new Pair<>(strategyName, mutableApi.make()));
+			queue.put(strategyName, mutableApi.make());
 		} catch (IOException e) {
 			throw new RuntimeException("Failed to break API", e);
 		}
