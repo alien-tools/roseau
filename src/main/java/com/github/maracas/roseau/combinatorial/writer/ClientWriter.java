@@ -271,6 +271,7 @@ public class ClientWriter extends AbstractWriter {
 
 	private static String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
 		if (typeMemberDecl.isStatic()) return typeDecl.getSimpleName();
+		else if (typeDecl instanceof InterfaceDecl) return typeDecl.getSimpleName();
 		else if (typeDecl instanceof EnumDecl enumDecl) return generateAccessToFirstEnumValue(enumDecl);
 		else if (typeDecl instanceof RecordDecl recordDecl) return generateConstructorInvocationForRecord(recordDecl);
 		else if (typeDecl instanceof ClassDecl classDecl) return generateEasiestConstructorInvocationForClass(classDecl);
