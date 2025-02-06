@@ -98,7 +98,7 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 
 		writer.writeFieldRead(it, containingType);
 
-		if (!it.isFinal()) {
+		if (!it.isFinal() && containingType.isClass()) {
 			writer.writeFieldWrite(it, containingType);
 		}
 	}
