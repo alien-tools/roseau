@@ -314,14 +314,13 @@ public class JarAPIExtractor implements APIExtractor {
 		}
 
 		private ITypeReference convertType(String descriptor, APISignatureVisitor visitor) {
+			if (visitor != null)
+				return visitor.getReturnType();
 			Type type = Type.getType(descriptor);
 			if (type.getSort() == Type.ARRAY) {
 				ITypeReference component = convertType(type.getElementType().getDescriptor(), visitor);
 				return typeRefFactory.createArrayTypeReference(component, type.getDimensions());
 			} else if (type.getSort() == Type.OBJECT) {
-				if (visitor != null) { // Type-parameterized type
-					return visitor.getReturnType();
-				}
 				return typeRefFactory.createTypeReference(type.getClassName());
 			} else {
 				return typeRefFactory.createPrimitiveTypeReference(type.getClassName());
