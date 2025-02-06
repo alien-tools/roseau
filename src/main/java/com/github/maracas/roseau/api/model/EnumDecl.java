@@ -9,13 +9,13 @@ import java.util.Objects;
 
 public final class EnumDecl extends ClassDecl {
 	// Just duplicating the simpleName of fields extending CtEnumValue for now, but we should probably refactor this
-	private final List<String> values;
+	private final List<EnumValueDecl> values;
 
 	public EnumDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                List<Annotation> annotations, SourceLocation location,
 	                List<TypeReference<InterfaceDecl>> implementedInterfaces, List<FieldDecl> fields,
 	                List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType,
-					List<ConstructorDecl> constructors, List<String> values) {
+					List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
 			fields, methods, enclosingType, null, constructors, List.of());
 
@@ -27,7 +27,7 @@ public final class EnumDecl extends ClassDecl {
 		return true;
 	}
 
-	public List<String> getValues() {
+	public List<EnumValueDecl> getValues() {
 		return Collections.unmodifiableList(values);
 	}
 

@@ -260,7 +260,7 @@ public final class CombinatorialApi {
 						});
 					});
 
-					// Varargs
+					// Constructors with Varargs
 					IntStream.range(0, paramsCountToConstructorsParamsTypes.size() - 1).forEach(paramsCount ->
 						fieldTypes.forEach(varArgsParamType -> {
 							var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
@@ -302,17 +302,7 @@ public final class CombinatorialApi {
 							recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
 							recordBuilder.visibility = visibility;
 							recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-
-							IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
-								var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
-
-								var recordComponentBuilder = new RecordComponentBuilder();
-								recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
-								recordComponentBuilder.type = recordComponentType;
-								recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
-
-								recordBuilder.recordComponents.add(recordComponentBuilder.make());
-							});
+							addRecordComponentsToRecordBuilder(recordBuilder, recordsParamsTypes);
 
 							store(recordBuilder);
 						});
@@ -328,17 +318,7 @@ public final class CombinatorialApi {
 								recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
 								recordBuilder.visibility = visibility;
 								recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-
-								IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
-									var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
-
-									var recordComponentBuilder = new RecordComponentBuilder();
-									recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
-									recordComponentBuilder.type = recordComponentType;
-									recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
-
-									recordBuilder.recordComponents.add(recordComponentBuilder.make());
-								});
+								addRecordComponentsToRecordBuilder(recordBuilder, recordsParamsTypes);
 
 								var varArgsRecordComponentBuilder = new RecordComponentBuilder();
 								varArgsRecordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentParamsCount);
@@ -361,8 +341,8 @@ public final class CombinatorialApi {
 					enumBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
 					enumBuilder.visibility = visibility;
 					enumBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					for (int i = 0; i < enumValuesCount; i++)
-						enumBuilder.values.add("V" + i);
+					addEnumValuesToEnumBuilder(enumBuilder);
+
 					store(enumBuilder);
 				})
 		);
@@ -458,18 +438,7 @@ public final class CombinatorialApi {
 					intfBuilder.qualifiedName = "%s.I%s".formatted(apiPackageName, ++symbolCounter);
 					intfBuilder.visibility = visibility;
 					intfBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-
-					extendingIntfBuilders.forEach(extendingIntfBuilder -> {
-						var extendingIntf = extendingIntfBuilder.make();
-
-						intfBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(extendingIntf.getQualifiedName()));
-						extendingIntf.getAllMethods()
-								.forEach(m -> intfBuilder.methods.add(generateMethodForTypeDeclBuilder(m, intfBuilder)));
-
-						if (extendingIntf.isSealed()) {
-							extendingIntfBuilder.permittedTypes.add(intfBuilder.qualifiedName);
-						}
-					});
+					addImplementedInterfacesToTypeDeclBuilder(intfBuilder, extendingIntfBuilders);
 
 					store(intfBuilder);
 					if (depth > 0)
@@ -495,18 +464,7 @@ public final class CombinatorialApi {
 					clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
 					clsBuilder.visibility = visibility;
 					clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-
-					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
-						var implementingIntf = implementingIntfBuilder.make();
-
-						clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-						implementingIntf.getAllMethods()
-								.forEach(m -> clsBuilder.methods.add(generateMethodForTypeDeclBuilder(m, clsBuilder)));
-
-						if (implementingIntf.isSealed()) {
-							implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
-						}
-					});
+					addImplementedInterfacesToTypeDeclBuilder(clsBuilder, implementingIntfBuilders);
 
 					store(clsBuilder);
 				})
@@ -520,18 +478,7 @@ public final class CombinatorialApi {
 					rcdBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
 					rcdBuilder.visibility = visibility;
 					rcdBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-
-					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
-						var implementingIntf = implementingIntfBuilder.make();
-
-						rcdBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-						implementingIntf.getAllMethods()
-								.forEach(m -> rcdBuilder.methods.add(generateMethodForTypeDeclBuilder(m, rcdBuilder)));
-
-						if (implementingIntf.isSealed()) {
-							implementingIntfBuilder.permittedTypes.add(rcdBuilder.qualifiedName);
-						}
-					});
+					addImplementedInterfacesToTypeDeclBuilder(rcdBuilder, implementingIntfBuilders);
 
 					store(rcdBuilder);
 				})
@@ -541,26 +488,14 @@ public final class CombinatorialApi {
 	private void createNewEnumsImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
 		topLevelVisibilities.forEach(visibility ->
 				enumModifiers.forEach(modifiers -> {
-					var enmBuilder = new EnumBuilder();
-					enmBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
-					enmBuilder.visibility = visibility;
-					enmBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					for (int i = 0; i < enumValuesCount; i++)
-						enmBuilder.values.add("V" + i);
+					var enumBuilder = new EnumBuilder();
+					enumBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
+					enumBuilder.visibility = visibility;
+					enumBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+					addImplementedInterfacesToTypeDeclBuilder(enumBuilder, implementingIntfBuilders);
+					addEnumValuesToEnumBuilder(enumBuilder);
 
-					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
-						var implementingIntf = implementingIntfBuilder.make();
-
-						enmBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-						implementingIntf.getAllMethods()
-								.forEach(m -> enmBuilder.methods.add(generateMethodForTypeDeclBuilder(m, enmBuilder)));
-
-						if (implementingIntf.isSealed()) {
-							implementingIntfBuilder.permittedTypes.add(enmBuilder.qualifiedName);
-						}
-					});
-
-					store(enmBuilder);
+					store(enumBuilder);
 				})
 		);
 	}
@@ -599,6 +534,46 @@ public final class CombinatorialApi {
 
 		classBuilder.constructors.add(constructorBuilder.make());
 		constructorCounter++;
+	}
+
+	private static void addImplementedInterfacesToTypeDeclBuilder(TypeDeclBuilder builder, List<InterfaceBuilder> implementingIntfBuilders) {
+		implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+			var implementingIntf = implementingIntfBuilder.make();
+
+			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
+			implementingIntf.getAllMethods()
+					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+
+			if (implementingIntf.isSealed()) {
+				implementingIntfBuilder.permittedTypes.add(builder.qualifiedName);
+			}
+		});
+	}
+
+	private static void addRecordComponentsToRecordBuilder(RecordBuilder recordBuilder, List<ITypeReference> recordsParamsTypes) {
+		IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
+			var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
+
+			var recordComponentBuilder = new RecordComponentBuilder();
+			recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
+			recordComponentBuilder.type = recordComponentType;
+			recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+
+			recordBuilder.recordComponents.add(recordComponentBuilder.make());
+		});
+	}
+
+	private static void addEnumValuesToEnumBuilder(EnumBuilder enumBuilder) {
+		var enumTypeReference = typeReferenceFactory.createTypeReference(enumBuilder.qualifiedName);
+
+		for (int i = 0; i < enumValuesCount; i++) {
+			var enumValueBuilder = new EnumValueBuilder();
+			enumValueBuilder.qualifiedName = "%s.V%s".formatted(enumBuilder.qualifiedName, i);
+			enumValueBuilder.containingType = enumTypeReference;
+			enumValueBuilder.type = enumTypeReference;
+
+			enumBuilder.values.add(enumValueBuilder.make());
+		}
 	}
 
 	private static FieldDecl generateFieldForTypeDeclBuilder(FieldDecl field, TypeDeclBuilder builder) {

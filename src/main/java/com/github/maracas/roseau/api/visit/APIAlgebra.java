@@ -29,6 +29,7 @@ public interface APIAlgebra<T> {
 	T wildcardTypeReference(WildcardTypeReference it);
 	T annotation(Annotation it);
 	T formalTypeParameter(FormalTypeParameter it);
+	T enumValueDecl(EnumValueDecl it);
 	T recordComponentDecl(RecordComponentDecl it);
 
 	default T $(API it) {
@@ -44,6 +45,7 @@ public interface APIAlgebra<T> {
 			case AnnotationDecl a  -> annotationDecl(a);
 			case MethodDecl m      -> methodDecl(m);
 			case ConstructorDecl c -> constructorDecl(c);
+			case EnumValueDecl eV -> enumValueDecl(eV);
 			case RecordComponentDecl rC -> recordComponentDecl(rC);
 			case FieldDecl f       -> fieldDecl(f);
 		};

@@ -277,27 +277,37 @@ public class SpoonAPIFactory {
 			.toList();
 	}
 
-	private List<RecordComponentDecl> convertCtRecordComponents(CtRecord r) {
-		return r.getRecordComponents().stream()
-			.map(rC -> convertCtRecordComponent(rC, r))
+	private List<RecordComponentDecl> convertCtRecordComponents(CtRecord rcrd) {
+		return rcrd.getRecordComponents().stream()
+			.map(rcrdCpt -> convertCtRecordComponent(rcrdCpt, rcrd))
 			.toList();
 	}
 
-	private RecordComponentDecl convertCtRecordComponent(CtRecordComponent rC, CtRecord r) {
+	private RecordComponentDecl convertCtRecordComponent(CtRecordComponent rcrdCpt, CtRecord rcrd) {
 		return new RecordComponentDecl(
-				makeQualifiedName(rC, r),
-				convertSpoonAnnotations(rC.getAnnotations()),
-				convertSpoonPosition(rC.getPosition()),
-				createTypeReference(r),
-				createITypeReference(rC.getType()),
+				makeQualifiedName(rcrdCpt, rcrd),
+				convertSpoonAnnotations(rcrdCpt.getAnnotations()),
+				convertSpoonPosition(rcrdCpt.getPosition()),
+				createTypeReference(rcrd),
+				createITypeReference(rcrdCpt.getType()),
 				false
 		);
 	}
 
-	private List<String> convertCtEnumValues(CtEnum<?> enm) {
+	private List<EnumValueDecl> convertCtEnumValues(CtEnum<?> enm) {
 		return enm.getEnumValues().stream()
-			.map(CtTypeMember::getSimpleName)
+			.map(this::convertCtEnumValue)
 			.toList();
+	}
+
+	private EnumValueDecl convertCtEnumValue(CtEnumValue<?> enmVal) {
+		return new EnumValueDecl(
+			makeQualifiedName(enmVal),
+			convertSpoonAnnotations(enmVal.getAnnotations()),
+			convertSpoonPosition(enmVal.getPosition()),
+			createTypeReference(enmVal.getDeclaringType()),
+			createITypeReference(enmVal.getType())
+		);
 	}
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {

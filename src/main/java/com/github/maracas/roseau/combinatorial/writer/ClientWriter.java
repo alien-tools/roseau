@@ -84,6 +84,16 @@ public class ClientWriter extends AbstractWriter {
 		writeCodeInMain(imports, name, "", classDecl.getSimpleName());
 	}
 
+	public void writeEnumValueRead(EnumValueDecl enumValueDecl, EnumDecl containingEnum) {
+		var imports = getImportsForType(containingEnum);
+		var name = "%sEnumValueRead".formatted(enumValueDecl.getPrettyQualifiedName());
+
+		var caller = getContainingTypeAccessForTypeMember(containingEnum, enumValueDecl);
+		var enumValueReadCode = "var val = %s.%s;".formatted(caller, enumValueDecl.getSimpleName());
+
+		writeCodeInMain(imports, name, enumValueReadCode);
+	}
+
 	public void writeFieldRead(FieldDecl fieldDecl, TypeDecl containingType) {
 		var imports = getImportsForType(containingType);
 		var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());

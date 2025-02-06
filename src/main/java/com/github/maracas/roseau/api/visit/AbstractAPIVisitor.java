@@ -28,7 +28,10 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit enumDecl(EnumDecl it) {
-		return classDecl(it);
+		return () -> {
+			classDecl(it).visit();
+			it.getValues().forEach(eV -> $(eV).visit());
+		};
 	}
 
 	@Override
@@ -40,7 +43,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit recordDecl(RecordDecl it) {
 		return () -> {
 			classDecl(it).visit();
-			it.getRecordComponents().forEach(rc -> $(rc).visit());
+			it.getRecordComponents().forEach(rC -> $(rC).visit());
 		};
 	}
 
@@ -97,6 +100,11 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	@Override
 	public Visit formalTypeParameter(FormalTypeParameter it) {
 		return () -> it.bounds().forEach(b -> $(b).visit());
+	}
+
+	@Override
+	public Visit enumValueDecl(EnumValueDecl it) {
+		return typeMemberDecl(it);
 	}
 
 	@Override

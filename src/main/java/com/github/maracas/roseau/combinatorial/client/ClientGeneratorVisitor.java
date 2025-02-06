@@ -18,37 +18,20 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	public Visit symbol(Symbol it) {
 		if (it.isExported()) {
 			switch (it) {
-				case EnumDecl e:
-					generateClassClients(e);
-					break;
-				case RecordDecl r:
-					generateClassClients(r);
-					break;
-				case ClassDecl c:
-					generateClassClients(c);
-					break;
-				case InterfaceDecl i:
-					generateInterfaceClients(i);
-					break;
-				case ConstructorDecl c:
-					generateConstructorClients(c);
-					break;
-				case FieldDecl f:
-					generateFieldClients(f);
-					break;
-				case MethodDecl m:
-					generateMethodClients(m);
-					break;
-				default:
-					break;
+				case EnumDecl e: generateClassClients(e); break;
+				case RecordDecl r: generateClassClients(r); break;
+				case ClassDecl c: generateClassClients(c); break;
+				case InterfaceDecl i: generateInterfaceClients(i); break;
+				case ConstructorDecl c: generateConstructorClients(c); break;
+				case EnumValueDecl eV: generateEnumValueClients(eV); break;
+				case FieldDecl f: generateFieldClients(f); break;
+				case MethodDecl m: generateMethodClients(m); break;
+				default: break;
 			}
 		} else {
 			switch (it) {
-				case RecordComponentDecl rC:
-					generateRecordComponentClients(rC);
-					break;
-				default:
-					break;
+				case RecordComponentDecl rC: generateRecordComponentClients(rC); break;
+				default: break;
 			}
 		}
 
@@ -95,6 +78,16 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 
 		if (!containingClass.isEffectivelyAbstract()) {
 			writer.writeConstructorInvocation(it, containingClass);
+		}
+	}
+
+	private void generateEnumValueClients(EnumValueDecl it) {
+		var containingTypeOpt = getContainingTypeFromTypeMember(it);
+		if (containingTypeOpt.isEmpty()) return;
+		var containingType = containingTypeOpt.get();
+
+		if (containingType instanceof EnumDecl enumDecl) {
+			writer.writeEnumValueRead(it, enumDecl);
 		}
 	}
 
