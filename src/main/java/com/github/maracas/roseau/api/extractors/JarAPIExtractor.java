@@ -23,6 +23,7 @@ import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import com.github.maracas.roseau.diff.APIDiff;
+import com.google.common.util.concurrent.ClosingFuture;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.ClassVisitor;
@@ -41,7 +42,9 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.jar.JarFile;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class JarAPIExtractor implements APIExtractor {
@@ -77,9 +80,10 @@ public class JarAPIExtractor implements APIExtractor {
 	}
 
 	private static class ApiClassVisitor extends ClassVisitor {
+		private static final Pattern PATTERN = Pattern.compile(".*\\$\\d+.*");
 		private final TypeReferenceFactory typeRefFactory;
 		private String className;
-		private int access;
+		private int classAccess;
 		private TypeReference<ClassDecl> superClassDecl;
 		private List<TypeReference<InterfaceDecl>> interfaceDecls = new ArrayList<>();
 		private List<FieldDecl> fieldDecls = new ArrayList<>();
@@ -110,7 +114,7 @@ public class JarAPIExtractor implements APIExtractor {
 		@Override
 		public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 			className = internalToFqn(name);
-			this.access = access;
+			this.classAccess = access;
 
 			if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0)
 				System.out.println("Bridge or synthetic class: " + className);
@@ -130,7 +134,8 @@ public class JarAPIExtractor implements APIExtractor {
 				APISignatureVisitor signatureVisitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, false, "");
 				reader.accept(signatureVisitor);
 				formalTypeParameters = signatureVisitor.getFormalTypeParameters();
-				superClassDecl = signatureVisitor.getSuperclass();
+				if (!signatureVisitor.getSuperclass().getQualifiedName().equals("java.lang.Object"))
+					superClassDecl = signatureVisitor.getSuperclass();
 				interfaceDecls = signatureVisitor.getSuperInterfaces();
 			}
 
@@ -165,7 +170,7 @@ public class JarAPIExtractor implements APIExtractor {
 						fieldDecls.add(new FieldDecl(
 							String.format("%s.%s", className, name),
 							convertAccess(access),
-							convertModifiers(access),
+							convertFieldModifiers(access),
 							annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
 							SourceLocation.NO_LOCATION,
 							typeRefFactory.createTypeReference(className),
@@ -210,7 +215,7 @@ public class JarAPIExtractor implements APIExtractor {
 					if (isTypeMemberExported(access)) {
 						if (name.equals("<init>")) {
 							constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions, parameterNames, annotations));
-						} else if (isTypeMemberExported(access)) {
+						} else {
 							if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
 								methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions, parameterNames, annotations));
 						}
@@ -224,13 +229,15 @@ public class JarAPIExtractor implements APIExtractor {
 			// Roseau's current API model does not care about the list of permitted subclasses
 			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
 			isSealed = true;
+			super.visitPermittedSubclass(permittedSubclass);
 		}
 
 		@Override
 		public void visitInnerClass(String name, String outerName, String innerName, int access) {
 			if (internalToFqn(name).equals(className)) {
-				this.access = access;
+				this.classAccess = access;
 			}
+			super.visitInnerClass(name, outerName, innerName, access);
 		}
 
 		@Override
@@ -242,6 +249,7 @@ public class JarAPIExtractor implements APIExtractor {
 		@Override
 		public void visitSource(String source, String debug) {
 			filename = source;
+			super.visitSource(source, debug);
 		}
 
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
@@ -263,7 +271,7 @@ public class JarAPIExtractor implements APIExtractor {
 			return new ConstructorDecl(
 				String.format("%s.<init>", className),
 				convertAccess(access),
-				convertModifiers(access),
+				convertMethodModifiers(access),
 				annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
@@ -272,7 +280,7 @@ public class JarAPIExtractor implements APIExtractor {
 				convertFormalTypeParameters(visitor),
 				exceptions != null ?
 						Arrays.stream(exceptions)
-							.map(e -> typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
+							.map(e -> (ITypeReference) typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
 							.toList() :
 					Collections.emptyList()
 			);
@@ -281,18 +289,26 @@ public class JarAPIExtractor implements APIExtractor {
 		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
 		                                 List<String> parameterNames, List<String> annotations) {
 			boolean isVarargs = (access & Opcodes.ACC_VARARGS) != 0;
+			boolean isDefault = (classAccess & Opcodes.ACC_INTERFACE) != 0
+				&& (access & Opcodes.ACC_ABSTRACT) == 0
+				&& (access & Opcodes.ACC_STATIC) == 0
+				&& (access & Opcodes.ACC_PRIVATE) == 0;
+			EnumSet<Modifier> mods = convertMethodModifiers(access);
+			if (isDefault)
+				mods.add(Modifier.DEFAULT);
 			System.out.println("######### Visiting " + className + "." + name + "[" + signature + "](" + isVarargs + ")");
 
 			APISignatureVisitor visitor = null;
 			if (signature != null) {
 				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, isVarargs, "");
 				new SignatureReader(signature).accept(visitor);
+				System.out.println("EXC="+visitor.getThrownExceptions());
 			}
 
 			return new MethodDecl(
 				String.format("%s.%s", className, name),
 				convertAccess(access),
-				convertModifiers(access),
+				mods,
 				annotations.stream().map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann)))).toList(),
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
@@ -301,7 +317,7 @@ public class JarAPIExtractor implements APIExtractor {
 				convertFormalTypeParameters(visitor),
 				exceptions != null ?
 					Arrays.stream(exceptions)
-						.map(e -> typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
+						.map(e -> (ITypeReference) typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
 						.toList() :
 					Collections.emptyList()
 			);
@@ -356,17 +372,33 @@ public class JarAPIExtractor implements APIExtractor {
 			return AccessModifier.PACKAGE_PRIVATE;
 		}
 
-		private EnumSet<Modifier> convertModifiers(int access) {
+		private EnumSet<Modifier> convertClassModifiers(int access) {
+			EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+			if ((access & Opcodes.ACC_FINAL) != 0) modifiers.add(Modifier.FINAL);
+			if ((access & Opcodes.ACC_ABSTRACT) != 0) modifiers.add(Modifier.ABSTRACT);
+			if ((access & Opcodes.ACC_STATIC) != 0) modifiers.add(Modifier.STATIC); // shouldn't work on classes
+			// FIXME: sealed, non-sealed
+			return modifiers;
+		}
+
+		private EnumSet<Modifier> convertFieldModifiers(int access) {
+			EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+			if ((access & Opcodes.ACC_STATIC) != 0) modifiers.add(Modifier.STATIC);
+			if ((access & Opcodes.ACC_FINAL) != 0) modifiers.add(Modifier.FINAL);
+			if ((access & Opcodes.ACC_VOLATILE) != 0) modifiers.add(Modifier.VOLATILE);
+			if ((access & Opcodes.ACC_TRANSIENT) != 0) modifiers.add(Modifier.TRANSIENT);
+			return modifiers;
+		}
+
+		private EnumSet<Modifier> convertMethodModifiers(int access) {
 			EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
 			if ((access & Opcodes.ACC_STATIC) != 0) modifiers.add(Modifier.STATIC);
 			if ((access & Opcodes.ACC_FINAL) != 0) modifiers.add(Modifier.FINAL);
 			if ((access & Opcodes.ACC_ABSTRACT) != 0) modifiers.add(Modifier.ABSTRACT);
-			//if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) modifiers.add(Modifier.SYNCHRONIZED);
-			if ((access & Opcodes.ACC_VOLATILE) != 0) modifiers.add(Modifier.VOLATILE);
-			if ((access & Opcodes.ACC_TRANSIENT) != 0) modifiers.add(Modifier.TRANSIENT);
+			if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) modifiers.add(Modifier.SYNCHRONIZED);
 			if ((access & Opcodes.ACC_NATIVE) != 0) modifiers.add(Modifier.NATIVE);
 			if ((access & Opcodes.ACC_STRICT) != 0) modifiers.add(Modifier.STRICTFP);
-			// FIXME: sealed, non-sealed, default
+			// FIXME: default
 			return modifiers;
 		}
 
@@ -383,12 +415,18 @@ public class JarAPIExtractor implements APIExtractor {
 
 		@Override
 		public void visitEnd() {
+			if (PATTERN.matcher(className).matches())
+				return;
+			// if ((classAccess & Opcodes.ACC_MODULE) != 0) doesn't work?
+			if (className.endsWith("package-info") || className.endsWith("module-info"))
+				return;
+
 			TypeDecl type;
 			String[] parts = className.split("\\$");
 			TypeReference<TypeDecl> enclosingType = parts.length > 1 ?
 				typeRefFactory.createTypeReference(String.join("$", Arrays.copyOf(parts, parts.length - 1))) : null;
-			AccessModifier visibility = convertAccess(access);
-			EnumSet<Modifier> modifiers = convertModifiers(access);
+			AccessModifier visibility = convertAccess(classAccess);
+			EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
 			List<Annotation> anns = annotations.stream()
 				.map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann))))
 				.toList();
@@ -398,7 +436,7 @@ public class JarAPIExtractor implements APIExtractor {
 				Path.of(filename != null ? filename : "<unknown>"),
 				-1);
 
-			if ((access & Opcodes.ACC_ANNOTATION) != 0) {
+			if ((classAccess & Opcodes.ACC_ANNOTATION) != 0) {
 				type = new AnnotationDecl(
 					className,
 					visibility,
@@ -409,7 +447,7 @@ public class JarAPIExtractor implements APIExtractor {
 					methodDecls,
 					enclosingType
 				);
-			} else if ((access & Opcodes.ACC_INTERFACE) != 0) {
+			} else if ((classAccess & Opcodes.ACC_INTERFACE) != 0) {
 				type = new InterfaceDecl(
 					className,
 					visibility,
@@ -422,7 +460,7 @@ public class JarAPIExtractor implements APIExtractor {
 					methodDecls,
 					enclosingType
 				);
-			} else if ((access & Opcodes.ACC_ENUM) != 0) {
+			} else if ((classAccess & Opcodes.ACC_ENUM) != 0) {
 				// Enums should have a default constructor
 				constructorDecls.add(new ConstructorDecl(
 					String.format("%s.<init>", className),
@@ -450,7 +488,7 @@ public class JarAPIExtractor implements APIExtractor {
 					enclosingType,
 					constructorDecls
 				);
-			} else if ((access & Opcodes.ACC_RECORD) != 0) {
+			} else if ((classAccess & Opcodes.ACC_RECORD) != 0) {
 				type = new RecordDecl(
 					className,
 					visibility,
@@ -494,23 +532,28 @@ public class JarAPIExtractor implements APIExtractor {
 
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
-		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-32/guava/target/guava-HEAD-jre-SNAPSHOT.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-32/guava/src"));
+		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
 
-		jarApi.writeJson(Path.of("jar.json"));
-		sourcesApi.writeJson(Path.of("sources.json"));
+		System.out.println("jarvssources");
+		diffAPIs(jarApi, sourcesApi);
+		System.out.println("sourcesvsjar");
+		diffAPIs(sourcesApi, jarApi);
 
-		var diff = new APIDiff(jarApi, sourcesApi);
-		var bcs = diff.diff();
-		System.out.println("JAR to sources: " + bcs.size());
-		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
-
-		var diff2 = new APIDiff(sourcesApi, jarApi);
-		var bcs2 = diff2.diff();
-		System.out.println("Sources to JAR: " + bcs2.size());
-		System.out.println(bcs2.stream().map(Object::toString).collect(Collectors.joining("\n")));
+//		jarApi.writeJson(Path.of("jar.json"));
+//		sourcesApi.writeJson(Path.of("sources.json"));
+//
+//		var diff = new APIDiff(jarApi, sourcesApi);
+//		var bcs = diff.diff();
+//		System.out.println("JAR to sources: " + bcs.size());
+//		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
+//
+//		var diff2 = new APIDiff(sourcesApi, jarApi);
+//		var bcs2 = diff2.diff();
+//		System.out.println("Sources to JAR: " + bcs2.size());
+//		System.out.println(bcs2.stream().map(Object::toString).collect(Collectors.joining("\n")));
 
 		/*sourcesApi.getAllTypes().forEach(sourceType -> {
 			var fqn = sourceType.getQualifiedName();
@@ -531,5 +574,87 @@ public class JarAPIExtractor implements APIExtractor {
 				}
 			}
 		});*/
+	}
+
+	static void diffAPIs(API api1, API api2) {
+		api1.getAllTypes().forEach(t1 -> {
+			var optT2 = api2.findType(t1.getQualifiedName());
+
+			optT2.ifPresentOrElse(t2 -> {
+				System.out.println("###" + t1.getQualifiedName());
+
+				if (!t1.getClass().equals(t2.getClass()))
+					System.out.printf("\t%s != %s%n", t1, t2);
+
+				if (!t1.getModifiers().equals(t2.getModifiers()))
+					System.out.printf("\t%s[%s] %s != %s%n", t1.getQualifiedName(), t1.isEnum(), t1.getModifiers(), t2.getModifiers());
+
+				if (t1.getVisibility() != t2.getVisibility())
+					System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getVisibility(), t2.getVisibility());
+
+				if (t1.getFormalTypeParameters().size() != t2.getFormalTypeParameters().size())
+					System.out.printf("\t%s != %s%n", t1.getFormalTypeParameters(), t2.getFormalTypeParameters());
+				for (int i = 0; i < t1.getFormalTypeParameters().size(); i++)
+					if (!t1.getFormalTypeParameters().get(i).equals(t2.getFormalTypeParameters().get(i)))
+						System.out.printf("\t%s != %s%n", t1.getFormalTypeParameters().get(i), t2.getFormalTypeParameters().get(i));
+
+				if (t1.getImplementedInterfaces().size() != t2.getImplementedInterfaces().size())
+					System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getImplementedInterfaces(), t2.getImplementedInterfaces());
+				for (int i = 0; i < t1.getImplementedInterfaces().size(); i++)
+					if (!t1.getImplementedInterfaces().get(i).equals(t2.getImplementedInterfaces().get(i)))
+						System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getImplementedInterfaces().get(i), t2.getImplementedInterfaces().get(i));
+
+				if (t1.getDeclaredFields().size() != t2.getDeclaredFields().size())
+					System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getDeclaredFields(), t2.getDeclaredFields());
+				t1.getDeclaredFields().forEach(f1 -> {
+					if (!t2.getDeclaredFields().contains(f1)) {
+						System.out.printf("\tNo match for field %s: %s%n", f1, t2.getDeclaredFields());
+					}
+				});
+
+				if (t1.getDeclaredMethods().size() != t2.getDeclaredMethods().size())
+					System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getDeclaredMethods(), t2.getDeclaredMethods());
+				t1.getDeclaredMethods().forEach(m1 -> {
+					if (!t2.getDeclaredMethods().stream().anyMatch(m2 -> {
+						if (!Objects.equals(m1.getQualifiedName(), m2.getQualifiedName()))
+							return false;
+						if (!Objects.equals(m1.getFormalTypeParameters(), m2.getFormalTypeParameters()))
+							return false;
+						if (!Objects.equals(m1.getParameters().stream().map(ParameterDecl::type).toList(), m2.getParameters().stream().map(ParameterDecl::type).toList()))
+							return false;
+						if (!Objects.equals(m1.getType(), m2.getType()))
+							return false;
+						if (!Objects.equals(m1.getVisibility(), m2.getVisibility()))
+							return false;
+						if (!Objects.equals(m1.getModifiers(), m2.getModifiers()))
+							return false;
+						if (!Objects.equals(m1.getThrownExceptions(), m2.getThrownExceptions()))
+							return false;
+						return true;
+					})) {
+						System.out.printf("\tNo match for method %s: %s%n", m1, t2.getDeclaredMethods());
+					}
+				});
+
+				//				if (t1.getDeclaredMethods().size() != t2.getDeclaredMethods().size())
+//					System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getDeclaredMethods(), t2.getDeclaredMethods());
+//				for (int i = 0; i < t1.getDeclaredMethods().size(); i++)
+//					if (!t1.getDeclaredMethods().get(i).equals(t2.getDeclaredMethods().get(i)))
+//						System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), t1.getDeclaredMethods().get(i), t2.getDeclaredMethods().get(i));
+
+				if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
+					var sup1 = c1.getSuperClass();
+					var sup2 = c2.getSuperClass();
+
+					if (sup1.isPresent() != sup2.isPresent())
+						System.out.printf("\t%s %s != %s%n", c1.getQualifiedName(), sup1, sup2);
+					if (sup1.isPresent()) {
+						if (!sup1.get().equals(sup2.get())) {
+							System.out.printf("\t%s %s != %s%n", c1.getQualifiedName(), sup1.get(), sup2.get());
+						}
+					}
+				}
+			}, () -> System.out.printf("%s not found%n", t1.getQualifiedName()));
+		});
 	}
 }

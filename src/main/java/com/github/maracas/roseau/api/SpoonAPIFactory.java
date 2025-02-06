@@ -220,7 +220,7 @@ public class SpoonAPIFactory {
 			createITypeReference(method.getType()),
 			convertCtParameters(method),
 			convertCtFormalTypeParameters(method),
-			createTypeReferences(new ArrayList<>(method.getThrownTypes()))
+			createITypeReferences(new ArrayList<>(method.getThrownTypes()))
 		);
 	}
 
@@ -235,7 +235,7 @@ public class SpoonAPIFactory {
 			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
 			convertCtFormalTypeParameters(cons),
-			createTypeReferences(new ArrayList<>(cons.getThrownTypes()))
+			createITypeReferences(new ArrayList<>(cons.getThrownTypes()))
 		);
 	}
 
@@ -379,7 +379,8 @@ public class SpoonAPIFactory {
 		 * }
 		 * public class B extends A {} // package 'pkg'
 		 */
-		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
+		//return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
+		return member.isPublic() || member.isProtected();
 	}
 
 	private boolean isParentExported(CtTypeMember member) {

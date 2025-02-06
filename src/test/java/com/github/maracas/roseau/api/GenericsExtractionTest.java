@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api;
 
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import org.junit.jupiter.api.Test;
@@ -186,5 +187,18 @@ class GenericsExtractionTest {
 				assertThat(wcRef.upper(), is(false));
 			}
 		}
+	}
+
+	@Test
+	void throwable_generic() {
+		var api = buildAPI("""
+			public class A {
+				public <X extends Throwable> void m() throws X {}
+			}""");
+
+		var a = assertClass(api, "A");
+		var m = assertMethod(a, "m()");
+
+		assertThat(m.getThrownExceptions().getFirst(), is(instanceOf(TypeParameterReference.class)));
 	}
 }

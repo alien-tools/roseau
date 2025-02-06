@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -18,13 +19,15 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	protected final List<FormalTypeParameter> formalTypeParameters;
 
-	protected final List<TypeReference<ClassDecl>> thrownExceptions;
+	//protected final List<TypeReference<ClassDecl>> thrownExceptions;
+	// Actually, one may throw a type parameter: <X extends Throwable> m() throws X
+	protected final List<ITypeReference> thrownExceptions;
 
 	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,
-	                         List<TypeReference<ClassDecl>> thrownExceptions) {
+	                         List<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		this.parameters = Objects.requireNonNull(parameters);
 		this.formalTypeParameters = Objects.requireNonNull(formalTypeParameters);
@@ -87,13 +90,13 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return Collections.unmodifiableList(formalTypeParameters);
 	}
 
-	public List<TypeReference<ClassDecl>> getThrownExceptions() {
+	public List<ITypeReference> getThrownExceptions() {
 		return Collections.unmodifiableList(thrownExceptions);
 	}
 
-	public List<TypeReference<ClassDecl>> getThrownCheckedExceptions() {
+	public List<ITypeReference> getThrownCheckedExceptions() {
 		return thrownExceptions.stream()
-			.filter(e -> e.getResolvedApiType().map(ClassDecl::isCheckedException).orElse(false))
+			.filter(e -> e.isSubtypeOf(TypeReference.EXCEPTION) && !e.isSubtypeOf(TypeReference.RUNTIME_EXCEPTION))
 			.toList();
 	}
 

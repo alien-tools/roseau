@@ -12,6 +12,7 @@ import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,15 +32,15 @@ public class APISignatureVisitor extends SignatureVisitor {
 	boolean isBound = false;
 	boolean isReturnType = false;
 	String prefix = "";
-	TypeReference<ClassDecl> superClass = null;
 	List<TypeReference<InterfaceDecl>> superInterfaces = new ArrayList<>();
 	List<TypeVisitor> interfaceVisitors = new ArrayList<>();
 	TypeVisitor returnTypeVisitor = null;
-	TypeVisitor superClassVisitor = null;
 	Map<String, List<TypeVisitor>> formalTypeParameterVisitors = new LinkedHashMap<>(); // preserve ordering
 	List<TypeVisitor> currentVisitors = new ArrayList<>();
 	List<TypeVisitor> parameterVisitors = new ArrayList<>();
+	Supplier<TypeReference<ClassDecl>> superClass = null;
 	boolean isVarargs;
+	List<Supplier<ITypeReference>> thrownVisitors = new ArrayList<>();
 
 	APISignatureVisitor(int api, TypeReferenceFactory factory, boolean isVarargs, String prefix) {
 		super(api);
@@ -77,13 +78,17 @@ public class APISignatureVisitor extends SignatureVisitor {
 	}
 
 	public TypeReference<ClassDecl> getSuperclass() {
-		return (TypeReference<ClassDecl>) superClassVisitor.getType();
+		return superClass.get();
 	}
 
 	public List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
 		return interfaceVisitors.stream()
 			.map(v -> (TypeReference<InterfaceDecl>) v.getType())
 			.toList();
+	}
+
+	public List<ITypeReference> getThrownExceptions() {
+		return thrownVisitors.stream().map(Supplier::get).toList();
 	}
 
 	public void endFormalTypeParameter() {
@@ -122,8 +127,9 @@ public class APISignatureVisitor extends SignatureVisitor {
 	public SignatureVisitor visitSuperclass() {
 		endFormalTypeParameter();
 		System.out.println(prefix + "visitSuperclass()");
-		superClassVisitor = new TypeVisitor(api, factory, isVarargs, "");
-		return superClassVisitor;
+		var v = new TypeVisitor(api, factory, isVarargs, "");
+		superClass = () -> (TypeReference<ClassDecl>) v.getType();
+		return v;
 	}
 
 	public SignatureVisitor visitInterface() {
@@ -151,7 +157,9 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 	public SignatureVisitor visitExceptionType() {
 		System.out.println(prefix + "visitExceptionType()");
-		return this;
+		var v = new TypeVisitor(api, factory, isVarargs, "");
+		thrownVisitors.add(() -> v.getType());
+		return v;
 	}
 
 	public void visitBaseType(char descriptor) {
@@ -253,13 +261,17 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 		@Override
 		public void visitInnerClassType(String name) {
-			System.out.println(prefix + "\tvisitInnerClassType()");
+			System.out.println(prefix + "\tvisitInnerClassType("+name+")");
+			// Discard what we had already (a visitClassType with possible type args)
+			// and just register the inner, most precise type
+			visitors.clear();
+			visitClassType(type.getQualifiedName() + "$" + name);
 			super.visitInnerClassType(name);
 		}
 
 		@Override
 		public void visitFormalTypeParameter(String name) {
-			System.out.println(prefix + "\tvisitFormalTypeParameter()");
+			System.out.println(prefix + "\tvisitFormalTypeParameter("+name+")");
 			super.visitFormalTypeParameter(name);
 		}
 

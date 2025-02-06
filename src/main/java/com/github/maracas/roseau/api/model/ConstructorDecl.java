@@ -12,7 +12,7 @@ public final class ConstructorDecl extends ExecutableDecl {
 	                       List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                       ITypeReference type, List<ParameterDecl> parameters,
 	                       List<FormalTypeParameter> formalTypeParameters,
-	                       List<TypeReference<ClassDecl>> thrownExceptions) {
+	                       List<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type,
 			parameters, formalTypeParameters, thrownExceptions);
 	}
