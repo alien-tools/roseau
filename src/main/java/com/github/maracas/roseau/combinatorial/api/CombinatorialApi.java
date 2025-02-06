@@ -77,8 +77,8 @@ public final class CombinatorialApi {
 	public void build() {
 		createTypes();
 
-//		weaveFields();
-//		weaveMethods();
+		weaveFields();
+		weaveMethods();
 
 		createHierarchies();
 	}

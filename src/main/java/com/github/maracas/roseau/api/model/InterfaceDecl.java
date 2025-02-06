@@ -6,6 +6,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
 
 public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 	private final List<String> permittedTypes;
@@ -24,6 +25,11 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 	@Override
 	public boolean isInterface() {
 		return true;
+	}
+
+	@Override
+	public Stream<MethodDecl> getAllMethodsToImplement() {
+		return getAllMethods().filter(m -> !m.isDefault() && !m.isStatic());
 	}
 
 	@Override
