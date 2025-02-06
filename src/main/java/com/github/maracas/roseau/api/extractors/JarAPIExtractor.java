@@ -17,6 +17,7 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -31,7 +32,6 @@ import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
-import org.xmlet.htmlapifaster.A;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,9 +40,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 
@@ -114,6 +112,9 @@ public class JarAPIExtractor implements APIExtractor {
 			className = internalToFqn(name);
 			this.access = access;
 
+			if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0)
+				System.out.println("Bridge or synthetic class: " + className);
+
 			// We don't want Object as explicit superclass
 			if (superName != null && !superName.equals("java/lang/Object"))
 				superClassDecl = typeRefFactory.createTypeReference(internalToFqn(superName));
@@ -126,7 +127,7 @@ public class JarAPIExtractor implements APIExtractor {
 			if (signature != null) {
 				System.out.println("cls sign = " + signature);
 				SignatureReader reader = new SignatureReader(signature);
-				APISignatureVisitor signatureVisitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
+				APISignatureVisitor signatureVisitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, false, "");
 				reader.accept(signatureVisitor);
 				formalTypeParameters = signatureVisitor.getFormalTypeParameters();
 				superClassDecl = signatureVisitor.getSuperclass();
@@ -149,11 +150,16 @@ public class JarAPIExtractor implements APIExtractor {
 
 				@Override
 				public void visitEnd() {
+					if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0) {
+						System.out.println("Bridge or synthetic field: " + name);
+						return;
+					}
+
 					if (isTypeMemberExported(access)) {
 						System.out.println("Visiting field " + descriptor + " " + signature);
-						TypeVisitor visitor = null;
+						APISignatureVisitor.TypeVisitor visitor = null;
 						if (signature != null) {
-							visitor = new TypeVisitor(ASM_VERSION, typeRefFactory, "");
+							visitor = new APISignatureVisitor.TypeVisitor(ASM_VERSION, typeRefFactory, false, "");
 							new SignatureReader(signature).accept(visitor);
 						}
 						fieldDecls.add(new FieldDecl(
@@ -196,6 +202,11 @@ public class JarAPIExtractor implements APIExtractor {
 
 				@Override
 				public void visitEnd() {
+					if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0) {
+						System.out.println("Bridge or synthetic method: " + name);
+						return;
+					}
+
 					if (isTypeMemberExported(access)) {
 						if (name.equals("<init>")) {
 							constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions, parameterNames, annotations));
@@ -236,8 +247,9 @@ public class JarAPIExtractor implements APIExtractor {
 		private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
 		                                           List<String> parameterNames, List<String> annotations) {
 			APISignatureVisitor visitor = null;
+			boolean isVarargs = (access & Opcodes.ACC_VARARGS) != 0;
 			if (signature != null) {
-				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
+				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, isVarargs, "");
 				new SignatureReader(signature).accept(visitor);
 			}
 
@@ -246,8 +258,8 @@ public class JarAPIExtractor implements APIExtractor {
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
 			List<ParameterDecl> params =
 				className.contains("$") && originalParams.length >= 1
-					? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length), visitor, parameterNames)
-					: convertParameters(originalParams, visitor, parameterNames);
+					? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length), visitor, parameterNames, isVarargs)
+					: convertParameters(originalParams, visitor, parameterNames, isVarargs);
 			return new ConstructorDecl(
 				String.format("%s.<init>", className),
 				convertAccess(access),
@@ -268,11 +280,12 @@ public class JarAPIExtractor implements APIExtractor {
 
 		private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
 		                                 List<String> parameterNames, List<String> annotations) {
-			System.out.println("######### Visiting " + className + "." + name + "[" + signature + "]");
+			boolean isVarargs = (access & Opcodes.ACC_VARARGS) != 0;
+			System.out.println("######### Visiting " + className + "." + name + "[" + signature + "](" + isVarargs + ")");
 
 			APISignatureVisitor visitor = null;
 			if (signature != null) {
-				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, "");
+				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, isVarargs, "");
 				new SignatureReader(signature).accept(visitor);
 			}
 
@@ -284,7 +297,7 @@ public class JarAPIExtractor implements APIExtractor {
 				SourceLocation.NO_LOCATION,
 				typeRefFactory.createTypeReference(className),
 				convertType(Type.getReturnType(descriptor).getDescriptor(), visitor),
-				convertParameters(Type.getArgumentTypes(descriptor), visitor, parameterNames),
+				convertParameters(Type.getArgumentTypes(descriptor), visitor, parameterNames, isVarargs),
 				convertFormalTypeParameters(visitor),
 				exceptions != null ?
 					Arrays.stream(exceptions)
@@ -315,7 +328,7 @@ public class JarAPIExtractor implements APIExtractor {
 			}
 		}
 
-		private List<ParameterDecl> convertParameters(Type[] paramTypes, APISignatureVisitor visitor, List<String> parameterNames) {
+		private List<ParameterDecl> convertParameters(Type[] paramTypes, APISignatureVisitor visitor, List<String> parameterNames, boolean isVarargs) {
 			if (visitor != null)
 				return visitor.getParameters();
 
@@ -323,7 +336,15 @@ public class JarAPIExtractor implements APIExtractor {
 
 			for (int i = 0; i < paramTypes.length; i++) {
 				String name = parameterNames.size() > i ? parameterNames.get(i) : "param";
-				params.add(new ParameterDecl(name, convertType(paramTypes[i].getDescriptor(), visitor), false));
+				if (i == paramTypes.length - 1) {
+					ITypeReference type = convertType(paramTypes[i].getDescriptor(), visitor);
+					if (isVarargs && type instanceof ArrayTypeReference atr)
+						params.add(new ParameterDecl(name, atr.componentType(), true));
+					else
+						params.add(new ParameterDecl(name, type, false));
+				}
+				else
+					params.add(new ParameterDecl(name, convertType(paramTypes[i].getDescriptor(), visitor), false));
 			}
 
 			return params;
@@ -474,8 +495,8 @@ public class JarAPIExtractor implements APIExtractor {
 
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
-		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
+		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-32/guava/target/guava-HEAD-jre-SNAPSHOT.jar"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-32/guava/src"));
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
 

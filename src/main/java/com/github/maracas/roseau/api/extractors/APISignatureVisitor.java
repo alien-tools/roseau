@@ -11,7 +11,6 @@ import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -37,11 +36,13 @@ public class APISignatureVisitor extends SignatureVisitor {
 	Map<String, List<TypeVisitor>> formalTypeParameterVisitors = new LinkedHashMap<>(); // preserve ordering
 	List<TypeVisitor> currentVisitors = new ArrayList<>();
 	List<TypeVisitor> parameterVisitors = new ArrayList<>();
+	boolean isVarargs;
 
-	APISignatureVisitor(int api, TypeReferenceFactory factory, String prefix) {
+	APISignatureVisitor(int api, TypeReferenceFactory factory, boolean isVarargs, String prefix) {
 		super(api);
 		this.factory = factory;
 		this.prefix = prefix;
+		this.isVarargs = isVarargs;
 	}
 
 	public List<FormalTypeParameter> getFormalTypeParameters() {
@@ -61,9 +62,14 @@ public class APISignatureVisitor extends SignatureVisitor {
 	}
 
 	public List<ParameterDecl> getParameters() {
-		return parameterVisitors.stream()
-			.map(v -> new ParameterDecl("p", v.getType(), false))
-			.toList();
+		var ret = new ArrayList<ParameterDecl>();
+		for (int i = 0; i < parameterVisitors.size(); i++) {
+			if (i == parameterVisitors.size() - 1)
+				ret.add(new ParameterDecl("p", parameterVisitors.get(i).getType(), isVarargs));
+			else
+				ret.add(new ParameterDecl("p", parameterVisitors.get(i).getType(), false));
+		}
+		return ret;
 	}
 
 	public TypeReference<ClassDecl> getSuperclass() {
@@ -97,14 +103,14 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 	public SignatureVisitor visitClassBound() {
 		System.out.println(prefix + "visitClassBound()");
-		var v = new TypeVisitor(api, factory, "");
+		var v = new TypeVisitor(api, factory, isVarargs, "");
 		currentVisitors.add(v);
 		return v;
 	}
 
 	public SignatureVisitor visitInterfaceBound() {
 		System.out.println(prefix + "visitInterfaceBound()");
-		var v = new TypeVisitor(api, factory, "");
+		var v = new TypeVisitor(api, factory, isVarargs, "");
 		currentVisitors.add(v);
 		return v;
 	}
@@ -112,13 +118,13 @@ public class APISignatureVisitor extends SignatureVisitor {
 	public SignatureVisitor visitSuperclass() {
 		endFormalTypeParameter();
 		System.out.println(prefix + "visitSuperclass()");
-		superClassVisitor = new TypeVisitor(api, factory, "");
+		superClassVisitor = new TypeVisitor(api, factory, isVarargs, "");
 		return superClassVisitor;
 	}
 
 	public SignatureVisitor visitInterface() {
 		System.out.println(prefix + "visitInterface()");
-		var v = new TypeVisitor(api, factory, "");
+		var v = new TypeVisitor(api, factory, isVarargs, "");
 		interfaceVisitors.add(v);
 		return v;
 	}
@@ -126,7 +132,7 @@ public class APISignatureVisitor extends SignatureVisitor {
 	public SignatureVisitor visitParameterType() {
 		System.out.println(prefix + "visitParameterType()");
 		endFormalTypeParameter();
-		var v = new TypeVisitor(api, factory, "");
+		var v = new TypeVisitor(api, factory, isVarargs, "");
 		parameterVisitors.add(v);
 		return v;
 	}
@@ -134,7 +140,7 @@ public class APISignatureVisitor extends SignatureVisitor {
 	public SignatureVisitor visitReturnType() {
 		System.out.println(prefix + "visitReturnType()");
 		endFormalTypeParameter();
-		var v = new TypeVisitor(api, factory, "");
+		var v = new TypeVisitor(api, factory, isVarargs, "");
 		returnTypeVisitor = v;
 		return v;
 	}
@@ -162,7 +168,7 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 	public SignatureVisitor visitArrayType() {
 		System.out.println(prefix + "visitArrayType()");
-		var v = new TypeVisitor(api, factory, "");
+		var v = new TypeVisitor(api, factory, isVarargs, "");
 		return v;
 	}
 
@@ -188,128 +194,137 @@ public class APISignatureVisitor extends SignatureVisitor {
 
 	public SignatureVisitor visitTypeArgument(char wildcard) {
 		System.out.println(prefix + "visitTypeArgument("+wildcard+")");
-		return new TypeVisitor(api, factory, prefix);
+		return new TypeVisitor(api, factory, isVarargs, prefix);
 	}
 
 	public void visitEnd() {
 		System.out.println(prefix + "visitEnd()");
 	}
-}
 
-class TypeVisitor extends SignatureVisitor {
-	TypeReferenceFactory factory;
-	ITypeReference type;
-	List<ITypeReference> currentTypeArguments = new ArrayList<>();
-	String prefix;
-	List<TypeVisitor> visitors = new ArrayList<>();
-	char currentWildcard = INSTANCEOF;
+	public static class TypeVisitor extends SignatureVisitor {
+		TypeReferenceFactory factory;
+		ITypeReference type;
+		List<ITypeReference> currentTypeArguments = new ArrayList<>();
+		String prefix;
+		List<TypeVisitor> visitors = new ArrayList<>();
+		char currentWildcard = INSTANCEOF;
+		boolean isArray = false;
+		boolean isVarargs = false;
 
-	TypeVisitor(int api, TypeReferenceFactory factory, String prefix) {
-		super(api);
-		this.factory = factory;
-		this.prefix = prefix;
-	}
-
-	TypeVisitor(int api, TypeReferenceFactory factory, char wildcard, String prefix) {
-		this(api, factory, prefix);
-		this.currentWildcard = wildcard;
-	}
-
-	@Override
-	public void visitTypeVariable(String name) {
-		System.out.println(prefix + "\tvisitTypeVariable("+name+")("+ currentWildcard +")");
-		ITypeReference current = factory.createTypeParameterReference(name);
-		if (currentWildcard == INSTANCEOF)
-			type = current;
-		else if (currentWildcard == SUPER)
-			type = factory.createWildcardTypeReference(List.of(current), false);
-		else if (currentWildcard == EXTENDS)
-			type = factory.createWildcardTypeReference(List.of(current), true);
-	}
-
-	@Override
-	public void visitClassType(String name) {
-		System.out.println(prefix + "\tvisitClassType("+name+")("+ currentWildcard +")");
-		ITypeReference current = factory.createTypeReference(name.replace('/', '.'));
-		if (currentWildcard == INSTANCEOF)
-			type = current;
-		else if (currentWildcard == SUPER)
-			type = factory.createWildcardTypeReference(List.of(current), false);
-		else if (currentWildcard == EXTENDS)
-			type = factory.createWildcardTypeReference(List.of(current), true);
-	}
-
-	@Override
-	public void visitBaseType(char descriptor) {
-		System.out.println(prefix + "\tvisitBaseType("+descriptor+")");
-		switch (descriptor) {
-			case 'V':
-				type = factory.createPrimitiveTypeReference("void");
-				break;
-			case 'B':
-				type = factory.createPrimitiveTypeReference("byte");
-				break;
-			case 'J':
-				type = factory.createPrimitiveTypeReference("long");
-				break;
-			case 'Z':
-				type = factory.createPrimitiveTypeReference("boolean");
-				break;
-			case 'I':
-				type = factory.createPrimitiveTypeReference("int");
-				break;
-			case 'S':
-				type = factory.createPrimitiveTypeReference("short");
-				break;
-			case 'C':
-				type = factory.createPrimitiveTypeReference("char");
-				break;
-			case 'F':
-				type = factory.createPrimitiveTypeReference("float");
-				break;
-			// case 'D':
-			default:
-				type = factory.createPrimitiveTypeReference("double");
-				break;
+		TypeVisitor(int api, TypeReferenceFactory factory, boolean isVarargs, String prefix) {
+			super(api);
+			this.factory = factory;
+			this.prefix = prefix;
+			this.isVarargs = isVarargs;
 		}
-	}
 
-	@Override
-	public SignatureVisitor visitArrayType() {
-		System.out.println(prefix + "\tvisitArrayType()");
-		return this;
-	}
+		TypeVisitor(int api, TypeReferenceFactory factory, char wildcard, boolean isVarargs, String prefix) {
+			this(api, factory, isVarargs, prefix);
+			this.currentWildcard = wildcard;
+			this.isVarargs = isVarargs;
+		}
 
-	@Override
-	public SignatureVisitor visitTypeArgument(char wildcard) {
-		System.out.println(prefix + "\tvisitTypeArgument("+wildcard+")");
-		TypeVisitor visitor = new TypeVisitor(api, factory, wildcard, prefix + "\t");
-		visitors.add(visitor);
-		return visitor;
-	}
+		@Override
+		public void visitTypeVariable(String name) {
+			System.out.println(prefix + "\tvisitTypeVariable("+name+")("+ currentWildcard +")");
+			ITypeReference current = factory.createTypeParameterReference(name);
+			if (currentWildcard == INSTANCEOF)
+				type = current;
+			else if (currentWildcard == SUPER)
+				type = factory.createWildcardTypeReference(List.of(current), false);
+			else if (currentWildcard == EXTENDS)
+				type = factory.createWildcardTypeReference(List.of(current), true);
+		}
 
-	@Override
-	public void visitTypeArgument() { // If this is called, it's an unbounded wildcard
-		System.out.println(prefix + "\tvisitTypeArgument()");
-		type = factory.createTypeReference(type.getQualifiedName(), List.of(
-			factory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true)
-		));
-	}
+		@Override
+		public void visitClassType(String name) {
+			System.out.println(prefix + "\tvisitClassType("+name+")("+ currentWildcard +")");
+			ITypeReference current = factory.createTypeReference(name.replace('/', '.'));
+			if (currentWildcard == INSTANCEOF)
+				type = current;
+			else if (currentWildcard == SUPER)
+				type = factory.createWildcardTypeReference(List.of(current), false);
+			else if (currentWildcard == EXTENDS)
+				type = factory.createWildcardTypeReference(List.of(current), true);
+		}
 
-	@Override
-	public void visitEnd() {
-		System.out.println(prefix + "\tvisitEnd()");
-		if (!visitors.isEmpty()) {
-			if (type instanceof WildcardTypeReference wtr) {
-				var newBounds = visitors.stream().map(TypeVisitor::getType).toList();
-				type = factory.createWildcardTypeReference(List.of(factory.createTypeReference(wtr.bounds().getLast().getQualifiedName(), newBounds)), currentWildcard == EXTENDS);
-			} else {
-				type = factory.createTypeReference(type.getQualifiedName(), visitors.stream().map(TypeVisitor::getType).toList());
+		@Override
+		public void visitBaseType(char descriptor) {
+			System.out.println(prefix + "\tvisitBaseType("+descriptor+")");
+			switch (descriptor) {
+				case 'V':
+					type = factory.createPrimitiveTypeReference("void");
+					break;
+				case 'B':
+					type = factory.createPrimitiveTypeReference("byte");
+					break;
+				case 'J':
+					type = factory.createPrimitiveTypeReference("long");
+					break;
+				case 'Z':
+					type = factory.createPrimitiveTypeReference("boolean");
+					break;
+				case 'I':
+					type = factory.createPrimitiveTypeReference("int");
+					break;
+				case 'S':
+					type = factory.createPrimitiveTypeReference("short");
+					break;
+				case 'C':
+					type = factory.createPrimitiveTypeReference("char");
+					break;
+				case 'F':
+					type = factory.createPrimitiveTypeReference("float");
+					break;
+				// case 'D':
+				default:
+					type = factory.createPrimitiveTypeReference("double");
+					break;
 			}
 		}
-	}
 
-	public ITypeReference getType() {
-		return type;
+		@Override
+		public SignatureVisitor visitArrayType() {
+			System.out.println(prefix + "\tvisitArrayType()");
+			System.out.println("isVarargs="+isVarargs);
+			if (!isVarargs)
+				isArray = true;
+			return this;
+		}
+
+		@Override
+		public SignatureVisitor visitTypeArgument(char wildcard) {
+			System.out.println(prefix + "\tvisitTypeArgument("+wildcard+")");
+			TypeVisitor visitor = new TypeVisitor(api, factory, wildcard, isVarargs, prefix + "\t");
+			visitors.add(visitor);
+			return visitor;
+		}
+
+		@Override
+		public void visitTypeArgument() { // If this is called, it's an unbounded wildcard
+			System.out.println(prefix + "\tvisitTypeArgument()");
+			type = factory.createTypeReference(type.getQualifiedName(), List.of(
+				factory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true)
+			));
+		}
+
+		@Override
+		public void visitEnd() {
+			System.out.println(prefix + "\tvisitEnd()");
+			if (!visitors.isEmpty()) {
+				if (type instanceof WildcardTypeReference wtr) {
+					var newBounds = visitors.stream().map(TypeVisitor::getType).toList();
+					type = factory.createWildcardTypeReference(List.of(factory.createTypeReference(wtr.bounds().getLast().getQualifiedName(), newBounds)), currentWildcard == EXTENDS);
+				} else {
+					type = factory.createTypeReference(type.getQualifiedName(), visitors.stream().map(TypeVisitor::getType).toList());
+				}
+			}
+		}
+
+		public ITypeReference getType() {
+			return isArray
+				? factory.createArrayTypeReference(type, 1) // FIXME
+				: type;
+		}
 	}
 }
