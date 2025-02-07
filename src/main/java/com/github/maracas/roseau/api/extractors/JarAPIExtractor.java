@@ -39,6 +39,7 @@ import java.io.InputStream;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -216,8 +217,9 @@ public class JarAPIExtractor implements APIExtractor {
 						if (name.equals("<init>")) {
 							constructorDecls.add(convertConstructor(access, descriptor, signature, exceptions, parameterNames, annotations));
 						} else {
-							if (!name.equals("values") && !name.equals("valueOf")) // FIXME: annoying Enum synthetic methods
-								methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions, parameterNames, annotations));
+							if ((classAccess & Opcodes.ACC_ENUM) != 0 && (name.equals("values") || name.equals("valueOf")))
+								return;
+							methodDecls.add(convertMethod(access, name, descriptor, signature, exceptions, parameterNames, annotations));
 						}
 					}
 				}
@@ -278,11 +280,7 @@ public class JarAPIExtractor implements APIExtractor {
 				typeRefFactory.createTypeReference(className),
 				params,
 				convertFormalTypeParameters(visitor),
-				exceptions != null ?
-						Arrays.stream(exceptions)
-							.map(e -> (ITypeReference) typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
-							.toList() :
-					Collections.emptyList()
+				convertThrownExceptions(exceptions, visitor)
 			);
 		}
 
@@ -302,7 +300,6 @@ public class JarAPIExtractor implements APIExtractor {
 			if (signature != null) {
 				visitor = new APISignatureVisitor(ASM_VERSION, typeRefFactory, isVarargs, "");
 				new SignatureReader(signature).accept(visitor);
-				System.out.println("EXC="+visitor.getThrownExceptions());
 			}
 
 			return new MethodDecl(
@@ -315,12 +312,18 @@ public class JarAPIExtractor implements APIExtractor {
 				convertType(Type.getReturnType(descriptor).getDescriptor(), visitor),
 				convertParameters(Type.getArgumentTypes(descriptor), visitor, parameterNames, isVarargs),
 				convertFormalTypeParameters(visitor),
-				exceptions != null ?
-					Arrays.stream(exceptions)
-						.map(e -> (ITypeReference) typeRefFactory.<ClassDecl>createTypeReference(internalToFqn(e)))
-						.toList() :
-					Collections.emptyList()
+				convertThrownExceptions(exceptions, visitor)
 			);
+		}
+
+		private List<ITypeReference> convertThrownExceptions(String[] exceptions, APISignatureVisitor visitor) {
+			if (visitor != null && !visitor.getThrownExceptions().isEmpty())
+				return visitor.getThrownExceptions();
+			if (exceptions != null)
+				return Arrays.stream(exceptions)
+					.map(e -> (ITypeReference) typeRefFactory.createTypeReference(internalToFqn(e)))
+					.toList();
+			return Collections.emptyList();
 		}
 
 		private List<FormalTypeParameter> convertFormalTypeParameters(APISignatureVisitor visitor) {
@@ -474,8 +477,8 @@ public class JarAPIExtractor implements APIExtractor {
 //					Collections.emptyList(),
 //					Collections.emptyList()
 //				));
-				// FIXME: for some reason, Enums are abstract when extracted from sources?
-				modifiers.add(Modifier.ABSTRACT);
+				// FIXME: for some reason, Enums are abstract
+				modifiers.remove(Modifier.ABSTRACT);
 				type = new EnumDecl(
 					className,
 					visibility,
@@ -532,18 +535,19 @@ public class JarAPIExtractor implements APIExtractor {
 
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/target/comp-changes-old-0.0.1.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/maracas/test-data/comp-changes/old/src"));
-		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
-		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
+		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-32/guava/target/guava-HEAD-jre-SNAPSHOT.jar"));
+		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-32/guava/src"));
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
+
+		jarApi.writeJson(Path.of("jar.json"));
+		sourcesApi.writeJson(Path.of("sources.json"));
 
 //		System.out.println("jarvssources");
 //		diffAPIs(jarApi, sourcesApi);
 //		System.out.println("sourcesvsjar");
 //		diffAPIs(sourcesApi, jarApi);
 
-		jarApi.writeJson(Path.of("jar.json"));
-		sourcesApi.writeJson(Path.of("sources.json"));
 
 		var diff = new APIDiff(jarApi, sourcesApi);
 		var bcs = diff.diff();
