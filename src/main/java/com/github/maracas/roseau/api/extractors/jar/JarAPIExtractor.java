@@ -27,7 +27,7 @@ import java.util.stream.Stream;
 
 public class JarAPIExtractor implements APIExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
-	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES; // | ClassReader.SKIP_DEBUG;
+	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES | ClassReader.SKIP_DEBUG;
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	@Override
