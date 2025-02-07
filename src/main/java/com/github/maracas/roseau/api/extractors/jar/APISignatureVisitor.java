@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api.extractors;
+package com.github.maracas.roseau.api.extractors.jar;
 
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;
@@ -12,11 +12,9 @@ import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 public class APISignatureVisitor extends SignatureVisitor {
