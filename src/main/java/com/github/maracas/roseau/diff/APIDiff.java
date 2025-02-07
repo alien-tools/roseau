@@ -89,14 +89,9 @@ public class APIDiff {
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
 		t1.getAllMethods().forEach(m1 ->
-			t2.findMethod(m1.getSignature()).ifPresentOrElse(
+			t2.findMethod(m1.getSignature(), m1.isVarargs()).ifPresentOrElse(
 				// There is a matching method
-				m2 -> {
-					if (!m2.getQualifiedName().equals(m1.getQualifiedName())) {
-						System.out.println(m1.getQualifiedName() + " <> " + m2.getQualifiedName());
-					}
-					diffMethod(m1, m2);
-				},
+				m2 -> diffMethod(m1, m2),
 				// The method has been removed
 				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1, null)
 			)
@@ -147,9 +142,6 @@ public class APIDiff {
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
 		if (!c1.isEffectivelyFinal() && c2.isEffectivelyFinal())
-			bc(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
-
-		if (!c1.isSealed() && c2.isSealed())
 			bc(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
 
 		if (!c1.isEffectivelyAbstract() && c2.isEffectivelyAbstract())

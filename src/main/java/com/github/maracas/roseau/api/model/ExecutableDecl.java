@@ -56,8 +56,14 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * Varargs and generics not included
 	 */
 	public String getSignature() {
-		return "%s(%s)".formatted(simpleName,
-			parameters.stream().map(ParameterDecl::type).map(ITypeReference::getQualifiedName).collect(Collectors.joining(",")));
+		return "%s(%s)%s".formatted(
+			simpleName,
+			parameters.stream()
+				.map(ParameterDecl::type)
+				.map(ITypeReference::getQualifiedName)
+				.collect(Collectors.joining(",")),
+			isVarargs() ? "..." : ""
+		);
 	}
 
 	/**

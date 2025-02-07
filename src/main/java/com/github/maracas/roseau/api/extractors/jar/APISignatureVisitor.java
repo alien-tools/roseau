@@ -4,6 +4,7 @@ import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
 import com.github.maracas.roseau.api.model.ParameterDecl;
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
@@ -190,7 +191,13 @@ class APISignatureVisitor extends SignatureVisitor {
 		@Override
 		public SignatureVisitor visitArrayType() {
 			TypeVisitor<ITypeReference> visitor = new TypeVisitor<>(api, factory);
-			visitors.add(() -> factory.createArrayTypeReference(visitor.getType(), 1));
+			visitors.add(() -> {
+				// If we've got an array, just increment the dimension
+				if (visitor.getType() instanceof ArrayTypeReference atr)
+					return factory.createArrayTypeReference(atr.componentType(), atr.dimension() + 1);
+				else
+					return factory.createArrayTypeReference(visitor.getType(), 1);
+			});
 			return visitor;
 		}
 

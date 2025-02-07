@@ -72,6 +72,11 @@ public class JarAPIExtractor implements APIExtractor {
 		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/target/guava-31.1-jre.jar"));
 		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/guava-31.1/guava/src"));
 
+		try {
+			jarApi.writeJson(Path.of("jar.json"));
+			sourcesApi.writeJson(Path.of("sources.json"));
+		} catch (Exception e) {}
+
 //		diffAPIs(jarApi, sourcesApi);
 //		diffAPIs(sourcesApi, jarApi);
 		diffBCs(jarApi, sourcesApi);

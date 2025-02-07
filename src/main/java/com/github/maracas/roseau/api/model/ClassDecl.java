@@ -55,15 +55,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public Optional<ConstructorDecl> findConstructor(String signature, boolean varargs) {
-		List<ConstructorDecl> matchingCons = getConstructors().stream()
+		return getConstructors().stream()
 			.filter(cons -> Objects.equals(signature, cons.getSignature()))
-			.toList();
-
-		if (matchingCons.isEmpty())
-			return Optional.empty();
-		if (matchingCons.size() == 1)
-			return Optional.of(matchingCons.getFirst());
-		return matchingCons.stream().filter(cons -> cons.isVarargs() == varargs).findFirst();
+			.findFirst();
 	}
 
 	@Override

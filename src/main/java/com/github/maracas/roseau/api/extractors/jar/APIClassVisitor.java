@@ -271,14 +271,18 @@ class APIClassVisitor extends ClassVisitor {
 			formalTypeParameters = visitor.getFormalTypeParameters();
 			thrownExceptions = visitor.getThrownExceptions();
 		} else {
-			// Constructors of inner classes take their outer class as argument?
+			// Constructors of inner non-static classes take their outer class as implicit first parameter
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
-			parameters = className.contains("$") && originalParams.length >= 1
+			parameters = (className.contains("$") && !isStatic(classAccess))
 				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
 				: convertParameters(originalParams);
 			formalTypeParameters = Collections.emptyList();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
+
+		// Last parameter is a T[], but the API representation is T...
+		if (isVarargs(access))
+			parameters = convertVarargParameter(parameters);
 
 		// Constructors should return the type of the type they construct to match with sources extraction
 		return new ConstructorDecl(String.format("%s.<init>", className), convertVisibility(access),
@@ -312,19 +316,29 @@ class APIClassVisitor extends ClassVisitor {
 		}
 
 		// Last parameter is a T[], but the API representation is T...
-		if (isVarargs(access) && !parameters.isEmpty()) {
-			List<ParameterDecl> params = new ArrayList<>(parameters);
-			ParameterDecl last = params.getLast();
-			if (last.type() instanceof ArrayTypeReference atr) {
-				params.set(params.size() - 1, new ParameterDecl(last.name(), atr.componentType(), true));
-			}
-			parameters = params;
-		}
+		if (isVarargs(access))
+			parameters = convertVarargParameter(parameters);
 
 		return new MethodDecl(String.format("%s.%s", className, name), convertVisibility(access),
 			convertMethodModifiers(access), convertAnnotations(annotations), SourceLocation.NO_LOCATION,
 			typeRefFactory.createTypeReference(className), returnType, parameters,
 			formalTypeParameters, thrownExceptions);
+	}
+
+	private List<ParameterDecl> convertVarargParameter(List<ParameterDecl> parameters) {
+		if (!parameters.isEmpty()) {
+			List<ParameterDecl> params = new ArrayList<>(parameters);
+			ParameterDecl last = params.getLast();
+			if (last.type() instanceof ArrayTypeReference atr) {
+				// If this is a multi-dimensional array, remove one dimension, otherwise make it a regular reference
+				if (atr.dimension() > 1)
+					params.set(params.size() - 1, new ParameterDecl(last.name(),
+						typeRefFactory.createArrayTypeReference(atr.componentType(), atr.dimension() - 1), true));
+				else
+					params.set(params.size() - 1, new ParameterDecl(last.name(), atr.componentType(), true));
+			}
+			return params;
+		} else return Collections.emptyList();
 	}
 
 	private List<Annotation> convertAnnotations(List<String> annotationDescriptors) {
@@ -426,6 +440,10 @@ class APIClassVisitor extends ClassVisitor {
 
 	private boolean isVarargs(int access) {
 		return (access & Opcodes.ACC_VARARGS) != 0;
+	}
+
+	private boolean isStatic(int access) {
+		return (access & Opcodes.ACC_STATIC) != 0;
 	}
 
 	// No Opcodes.ACC_DEFAULT, so that's how we get it
