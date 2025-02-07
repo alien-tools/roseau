@@ -257,10 +257,15 @@ public class SpoonAPIFactory {
 		// We need to keep track of default constructors in the API model.
 		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
-		return cls.getConstructors().stream()
-			.filter(cons -> isExported(cons) || cons.isImplicit())
+		var ret = cls.getConstructors().stream()
+			.filter(cons -> isExported(cons))
 			.map(this::convertCtConstructor)
 			.toList();
+
+		if (ret.stream().anyMatch(cons -> cons.getVisibility() == AccessModifier.PRIVATE)) {
+			System.out.println(ret); throw new RuntimeException("mmmh");
+		}
+		return ret;
 	}
 
 	private List<FormalTypeParameter> convertCtFormalTypeParameters(CtFormalTypeDeclarer declarer) {

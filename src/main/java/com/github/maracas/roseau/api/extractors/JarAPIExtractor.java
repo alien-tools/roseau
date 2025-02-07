@@ -116,7 +116,7 @@ public class JarAPIExtractor implements APIExtractor {
 			className = internalToFqn(name);
 			this.classAccess = access;
 
-			if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0)
+			if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_SYNTHETIC) != 0)
 				System.out.println("Bridge or synthetic class: " + className);
 
 			// We don't want Object as explicit superclass
@@ -155,7 +155,7 @@ public class JarAPIExtractor implements APIExtractor {
 
 				@Override
 				public void visitEnd() {
-					if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0) {
+					if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_SYNTHETIC) != 0) {
 						System.out.println("Bridge or synthetic field: " + name);
 						return;
 					}
@@ -207,7 +207,7 @@ public class JarAPIExtractor implements APIExtractor {
 
 				@Override
 				public void visitEnd() {
-					if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_BRIDGE) != 0) {
+					if ((access & Opcodes.ACC_BRIDGE) != 0 || (access & Opcodes.ACC_SYNTHETIC) != 0) {
 						System.out.println("Bridge or synthetic method: " + name);
 						return;
 					}
@@ -462,18 +462,18 @@ public class JarAPIExtractor implements APIExtractor {
 				);
 			} else if ((classAccess & Opcodes.ACC_ENUM) != 0) {
 				// Enums should have a default constructor
-				constructorDecls.add(new ConstructorDecl(
-					String.format("%s.<init>", className),
-					AccessModifier.PUBLIC,
-					EnumSet.noneOf(Modifier.class),
-					anns,
-					location,
-					typeRefFactory.createTypeReference(className),
-					typeRefFactory.createTypeReference(className),
-					Collections.emptyList(),
-					Collections.emptyList(),
-					Collections.emptyList()
-				));
+//				constructorDecls.add(new ConstructorDecl(
+//					String.format("%s.<init>", className),
+//					AccessModifier.PUBLIC,
+//					EnumSet.noneOf(Modifier.class),
+//					anns,
+//					location,
+//					typeRefFactory.createTypeReference(className),
+//					typeRefFactory.createTypeReference(className),
+//					Collections.emptyList(),
+//					Collections.emptyList(),
+//					Collections.emptyList()
+//				));
 				// FIXME: for some reason, Enums are abstract when extracted from sources?
 				modifiers.add(Modifier.ABSTRACT);
 				type = new EnumDecl(
@@ -537,23 +537,23 @@ public class JarAPIExtractor implements APIExtractor {
 //		var jarApi = new JarAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/target/asmtest-1.0-SNAPSHOT.jar"));
 //		var sourcesApi = new SpoonAPIExtractor().extractAPI(Path.of("/home/dig/repositories/asmtest/src"));
 
-		System.out.println("jarvssources");
-		diffAPIs(jarApi, sourcesApi);
-		System.out.println("sourcesvsjar");
-		diffAPIs(sourcesApi, jarApi);
+//		System.out.println("jarvssources");
+//		diffAPIs(jarApi, sourcesApi);
+//		System.out.println("sourcesvsjar");
+//		diffAPIs(sourcesApi, jarApi);
 
-//		jarApi.writeJson(Path.of("jar.json"));
-//		sourcesApi.writeJson(Path.of("sources.json"));
-//
-//		var diff = new APIDiff(jarApi, sourcesApi);
-//		var bcs = diff.diff();
-//		System.out.println("JAR to sources: " + bcs.size());
-//		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
-//
-//		var diff2 = new APIDiff(sourcesApi, jarApi);
-//		var bcs2 = diff2.diff();
-//		System.out.println("Sources to JAR: " + bcs2.size());
-//		System.out.println(bcs2.stream().map(Object::toString).collect(Collectors.joining("\n")));
+		jarApi.writeJson(Path.of("jar.json"));
+		sourcesApi.writeJson(Path.of("sources.json"));
+
+		var diff = new APIDiff(jarApi, sourcesApi);
+		var bcs = diff.diff();
+		System.out.println("JAR to sources: " + bcs.size());
+		System.out.println(bcs.stream().map(Object::toString).collect(Collectors.joining("\n")));
+
+		var diff2 = new APIDiff(sourcesApi, jarApi);
+		var bcs2 = diff2.diff();
+		System.out.println("Sources to JAR: " + bcs2.size());
+		System.out.println(bcs2.stream().map(Object::toString).collect(Collectors.joining("\n")));
 
 		/*sourcesApi.getAllTypes().forEach(sourceType -> {
 			var fqn = sourceType.getQualifiedName();
@@ -653,6 +653,30 @@ public class JarAPIExtractor implements APIExtractor {
 							System.out.printf("\t%s %s != %s%n", c1.getQualifiedName(), sup1.get(), sup2.get());
 						}
 					}
+
+					if (c1.getConstructors().size() != c2.getConstructors().size())
+						System.out.printf("\t%s %s != %s%n", t1.getQualifiedName(), c1.getConstructors(), c2.getConstructors());
+					c1.getConstructors().forEach(cons1 -> {
+						if (!c2.getConstructors().stream().anyMatch(cons2 -> {
+							if (!Objects.equals(cons1.getQualifiedName(), cons2.getQualifiedName()))
+								return false;
+							if (!Objects.equals(cons1.getFormalTypeParameters(), cons2.getFormalTypeParameters()))
+								return false;
+							if (!Objects.equals(cons1.getParameters().stream().map(ParameterDecl::type).toList(), cons2.getParameters().stream().map(ParameterDecl::type).toList()))
+								return false;
+							if (!Objects.equals(cons1.getType(), cons2.getType()))
+								return false;
+							if (!Objects.equals(cons1.getVisibility(), cons2.getVisibility()))
+								return false;
+							if (!Objects.equals(cons1.getModifiers(), cons2.getModifiers()))
+								return false;
+							if (!Objects.equals(cons1.getThrownExceptions(), cons2.getThrownExceptions()))
+								return false;
+							return true;
+						})) {
+							System.out.printf("\tNo match for constructor %s: %s%n", cons1, c2.getConstructors());
+						}
+					});
 				}
 			}, () -> System.out.printf("%s not found%n", t1.getQualifiedName()));
 		});
