@@ -35,6 +35,7 @@ build/
 .DS_Store
 
 ### Generated ###
+logs/
 output/
 results/
 tmp/

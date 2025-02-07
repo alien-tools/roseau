@@ -4,6 +4,8 @@ import com.github.maracas.roseau.api.model.*;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.client.ClientTemplates;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -13,6 +15,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClientWriter extends AbstractWriter {
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	private static final String clientsPackageName = Constants.CLIENTS_FOLDER;
 
 	public ClientWriter(Path outputDir) {
@@ -261,7 +265,7 @@ public class ClientWriter extends AbstractWriter {
 
 			Files.write(filePath, fullCode);
 		} catch (IOException e) {
-			System.err.println("Error writing client code to file: " + e.getMessage());
+			LOGGER.error("Error writing client code to file: " + e.getMessage());
 		}
 	}
 

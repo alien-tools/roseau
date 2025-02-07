@@ -29,11 +29,10 @@ public final class CombinatorialApi {
 			.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
 			.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
 			.collect(Collectors.toSet());
-	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT);
-//	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
-//			.stream()
-//			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
-//			.collect(Collectors.toSet());
+	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+			.collect(Collectors.toSet());
 	static final Set<Set<Modifier>> recordModifiers = powerSet(FINAL);
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 
@@ -78,10 +77,10 @@ public final class CombinatorialApi {
 	public void build() {
 		createTypes();
 
-//		weaveFields();
-//		weaveMethods();
+		weaveFields();
+		weaveMethods();
 
-//		createHierarchies();
+		createHierarchies();
 	}
 
 	public API getAPI() {
@@ -90,9 +89,9 @@ public final class CombinatorialApi {
 
 	private void createTypes() {
 		createInterfaces();
-//		createClasses();
-//		createRecords();
-//		createEnums();
+		createClasses();
+		createRecords();
+		createEnums();
 	}
 
 	private void weaveFields() {

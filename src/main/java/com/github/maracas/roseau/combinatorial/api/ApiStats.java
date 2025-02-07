@@ -1,8 +1,12 @@
 package com.github.maracas.roseau.combinatorial.api;
 
 import com.github.maracas.roseau.api.model.*;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 final class ApiStats {
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	private static int constructorsCount;
 	private static int methodsCount;
 	private static int fieldsCount;
@@ -41,21 +45,21 @@ final class ApiStats {
 			}
 		}
 
-		System.out.println("--------------------------------");
-		System.out.println("---------- API stats -----------");
-		System.out.println("--------------------------------");
-		System.out.println(api.getAllTypes().count() + " types");
-		System.out.println("--------------------------------");
-		System.out.println(classesCount + " classes");
-		System.out.println(interfacesCount + " interfaces");
-		System.out.println(enumsCount + " enums");
-		System.out.println(recordsCount + " records");
-		System.out.println("--------------------------------");
-		System.out.println(constructorsCount + " constructors");
-		System.out.println(methodsCount + " methods");
-		System.out.println(fieldsCount + " fields");
-		System.out.println(enumValuesCount + " enum values");
-		System.out.println("--------------------------------");
+		LOGGER.info("--------------------------------");
+		LOGGER.info("---------- API stats -----------");
+		LOGGER.info("--------------------------------");
+		LOGGER.info(api.getAllTypes().count() + " types");
+		LOGGER.info("--------------------------------");
+		LOGGER.info(classesCount + " classes");
+		LOGGER.info(interfacesCount + " interfaces");
+		LOGGER.info(enumsCount + " enums");
+		LOGGER.info(recordsCount + " records");
+		LOGGER.info("--------------------------------");
+		LOGGER.info(constructorsCount + " constructors");
+		LOGGER.info(methodsCount + " methods");
+		LOGGER.info(fieldsCount + " fields");
+		LOGGER.info(enumValuesCount + " enum values");
+		LOGGER.info("--------------------------------\n");
 	}
 
 	private static void countEntities(TypeDecl type) {

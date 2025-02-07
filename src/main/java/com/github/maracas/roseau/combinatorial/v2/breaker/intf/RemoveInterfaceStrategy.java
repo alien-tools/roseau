@@ -11,7 +11,7 @@ public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(API api, ApiBuilder mutableApi) {
-		System.out.println("Removing interface " + intf.getPrettyQualifiedName());
+		LOGGER.info("Removing interface " + intf.getPrettyQualifiedName());
 
 		mutableApi.allTypes.remove(intf.getQualifiedName());
 		mutableApi.allTypes.values().forEach(typeBuilder -> {

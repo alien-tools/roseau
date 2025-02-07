@@ -12,6 +12,8 @@ import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RevapiTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RoseauTool;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 import com.github.maracas.roseau.combinatorial.writer.ApiWriter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.javatuples.Pair;
 
 import java.nio.file.Path;
@@ -19,6 +21,8 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Benchmark implements Runnable {
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	private final String id;
 
 	private final Path benchmarkWorkingPath;
@@ -50,7 +54,7 @@ public final class Benchmark implements Runnable {
 			Path tmpPath,
 			API v1Api
 	) {
-		System.out.println("Creating Benchmark " + id);
+		LOGGER.info("Creating Benchmark " + id);
 		this.id = id;
 
 		this.benchmarkWorkingPath = tmpPath.resolve(id);
@@ -82,19 +86,19 @@ public final class Benchmark implements Runnable {
 				var strategy = strategyAndApi.getValue0();
 				var v2Api = strategyAndApi.getValue1();
 
-				System.out.println("\n--------------------------------");
-				System.out.println("Running Benchmark Thread n°" + id);
-				System.out.println("Breaking Change: " + strategy);
+				LOGGER.info("--------------------------------");
+				LOGGER.info("Running Benchmark Thread n°" + id);
+				LOGGER.info("Breaking Change: " + strategy);
 
 				generateNewApiSourcesAndJar(v2Api);
 				var newApiIsBreaking = generateGroundTruth();
 				runToolsAnalysis(strategy, v2Api, newApiIsBreaking);
 
-				System.out.println("Benchmark Thread n°" + id + " finished");
-				System.out.println("--------------------------------\n");
+				LOGGER.info("Benchmark Thread n°" + id + " finished");
+				LOGGER.info("--------------------------------\n");
 			} catch (Exception e) {
 				errorsCount++;
-				System.out.println("Benchmark Thread n°" + id + " failed: " + e.getMessage());
+				LOGGER.info("Benchmark Thread n°" + id + " failed: " + e.getMessage());
 			}
 		}
 
@@ -113,21 +117,21 @@ public final class Benchmark implements Runnable {
 	private void generateNewApiSourcesAndJar(API api) {
 		ExplorerUtils.cleanOrCreateDirectory(benchmarkWorkingPath);
 
-		System.out.println("\nGenerating new API Sources");
+		LOGGER.info("Generating new API Sources");
 		if (!apiWriter.createOutputHierarchy())
 			throw new RuntimeException("Failed to create new api sources hierarchy");
 		apiWriter.write(api);
-		System.out.println("Generated to " + v2SourcesPath);
+		LOGGER.info("Generated to " + v2SourcesPath);
 
-		System.out.println("\nGenerating new API Jar");
+		LOGGER.info("Generating new API Jar");
 		var errors = compiler.packageApiToJar(v2SourcesPath, v2JarPath);
 		if (!errors.isEmpty())
 			throw new RuntimeException("Failed to package new api to jar");
-		System.out.println("Generated to " + v2JarPath);
+		LOGGER.info("Generated to " + v2JarPath);
 	}
 
 	private boolean generateGroundTruth() {
-		System.out.println("\nGenerating Ground Truth");
+		LOGGER.info("Generating Ground Truth");
 
 		var tmpClientsBinPath = benchmarkWorkingPath.resolve(Constants.BINARIES_FOLDER);
 		var errors = compiler.compileClientWithApi(clientsSourcesPath, v2JarPath, tmpClientsBinPath);
@@ -135,13 +139,13 @@ public final class Benchmark implements Runnable {
 	}
 
 	private void runToolsAnalysis(String strategy, API v2Api, boolean isBreaking) {
-		System.out.println("\n--------------------------------");
-		System.out.println("     Running Tools Analysis");
+		LOGGER.info("--------------------------------");
+		LOGGER.info("     Running Tools Analysis");
 
 		var results = new ArrayList<ToolResult>();
 		for (var tool : tools) {
-			System.out.println("--------------------------------");
-			System.out.println(" Running " + tool.getClass().getSimpleName());
+			LOGGER.info("--------------------------------");
+			LOGGER.info(" Running " + tool.getClass().getSimpleName());
 
 			if (tool instanceof RoseauTool roseauTool) {
 				roseauTool.setApis(v1Api, v2Api);
@@ -149,19 +153,19 @@ public final class Benchmark implements Runnable {
 
 			var result = tool.detectBreakingChanges();
 			if (result == null) {
-				System.out.println(" Tool Result: N/A");
+				LOGGER.info(" Tool Result: N/A");
 				continue;
 			}
 
 			results.add(result);
 
-			System.out.println(" Execution Time: " + result.executionTime() + "ms");
-			System.out.println(" Tool Result   : " + (result.isBreaking() ? "Breaking" : "Not Breaking"));
-			System.out.println(" Expected      : " + (isBreaking ? "Breaking" : "Not Breaking"));
-			System.out.println(" Result        : " + (result.isBreaking() == isBreaking ? "OK" : "KO"));
+			LOGGER.info(" Execution Time: " + result.executionTime() + "ms");
+			LOGGER.info(" Tool Result   : " + (result.isBreaking() ? "Breaking" : "Not Breaking"));
+			LOGGER.info(" Expected      : " + (isBreaking ? "Breaking" : "Not Breaking"));
+			LOGGER.info(" Result        : " + (result.isBreaking() == isBreaking ? "OK" : "KO"));
 		}
 
-		System.out.println("--------------------------------\n");
+		LOGGER.info("--------------------------------");
 
 		resultsQueue.put(strategy, new Pair<>(isBreaking, results));
 	}

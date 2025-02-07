@@ -4,11 +4,15 @@ import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.combinatorial.builder.ApiBuilder;
 import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
 
 public abstract class AbstractApiBreakerStrategy {
+	protected static final Logger LOGGER = LogManager.getLogger();
+
 	private final NewApiQueue queue;
 	private final String strategyName;
 

@@ -10,6 +10,8 @@ import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ResultsWriter
 import com.github.maracas.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.HashMap;
@@ -18,6 +20,8 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	private final API v1Api;
 	private final int maxParallelAnalysis;
 
@@ -81,25 +85,25 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	}
 
 	private void packageV1Api() throws StepExecutionException {
-		System.out.println("\n------- Packaging V1 API -------");
+		LOGGER.info("------- Packaging V1 API -------");
 
 		var errors = compiler.packageApiToJar(v1SourcesPath, v1JarPath);
 
 		if (!errors.isEmpty())
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't package V1 API: " + formatCompilerErrors(errors));
 
-		System.out.println("-------- V1 API packaged -------\n");
+		LOGGER.info("-------- V1 API packaged -------\n");
 	}
 
 	private void compileClients() throws StepExecutionException {
-		System.out.println("\n------- Compiling clients ------");
+		LOGGER.info("------- Compiling clients ------");
 
 		var errors = compiler.compileClientWithApi(clientsSourcesPath, v1JarPath, clientsBinPath);
 
 		if (!errors.isEmpty())
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile clients: " + formatCompilerErrors(errors));
 
-		System.out.println("------- Clients compiled -------\n");
+		LOGGER.info("------- Clients compiled -------\n");
 	}
 
 	private static String formatCompilerErrors(List<?> errors) {
@@ -107,7 +111,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	}
 
 	private void initializeBenchmarkThreads() {
-		System.out.println("\n-- Starting benchmark threads --");
+		LOGGER.info("-- Starting benchmark threads --");
 
 		for (int i = 0; i < maxParallelAnalysis; i++) {
 			var benchmark = new Benchmark(
@@ -122,16 +126,16 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 			benchmarkThreads.put(benchmark, thread);
 		}
 
-		System.out.println("--- All bench threads started --\n");
+		LOGGER.info("--- All bench threads started --\n");
 	}
 
 	private void initializeResultsThread() {
-		System.out.println("\n---- Starting results thread ---");
+		LOGGER.info("---- Starting results thread ---");
 
 		resultsWriter = new ResultsWriter(resultsQueue);
 		new Thread(resultsWriter).start();
 
-		System.out.println("---- Results thread started ----\n");
+		LOGGER.info("---- Results thread started ----\n");
 	}
 
 	private void informAllBenchmarksGenerationIsOver() {
@@ -141,9 +145,9 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		for (var thread : benchmarkThreads.values())
 			try { thread.join(); } catch (InterruptedException ignored) {}
 
-		System.out.println("-- All bench threads finished --");
+		LOGGER.info("-- All bench threads finished --");
 		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();
-		System.out.println("Total benchmark errors: " + totalErrors);
+		LOGGER.info("Total benchmark errors: " + totalErrors);
 
 		if (totalErrors == 0)
 			ExplorerUtils.removeDirectory(tmpPath);
@@ -152,7 +156,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	}
 
 	private void informResultsThreadNoMoreResults() {
-		System.out.println("\n----- Closing results file -----");
+		LOGGER.info("----- Closing results file -----");
 
 		if (resultsWriter != null) {
 			resultsWriter.informNoMoreResults();

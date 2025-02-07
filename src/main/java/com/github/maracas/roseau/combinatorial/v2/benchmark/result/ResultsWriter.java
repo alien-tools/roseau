@@ -3,6 +3,8 @@ package com.github.maracas.roseau.combinatorial.v2.benchmark.result;
 import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
 import com.github.maracas.roseau.combinatorial.v2.queue.ResultsProcessQueue;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.FileWriter;
 import java.nio.file.Path;
@@ -11,6 +13,8 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public final class ResultsWriter implements Runnable {
+	private static final Logger LOGGER = LogManager.getLogger();
+
 	private final Path resultsPath = Path.of(Constants.RESULTS_FOLDER);
 	private final ResultsProcessQueue resultsQueue;
 
@@ -59,7 +63,7 @@ public final class ResultsWriter implements Runnable {
 					resultsSortedByToolNames.collect(Collectors.joining(","))
 			));
 		} catch (Exception e) {
-			System.out.println("Error while adding results to file");
+			LOGGER.error("Error while adding results to file");
 		}
 	}
 
@@ -76,7 +80,7 @@ public final class ResultsWriter implements Runnable {
 
 			return true;
 		} catch (Exception e) {
-			System.out.println("Error while creating results file");
+			LOGGER.error("Error while creating results file");
 			return false;
 		}
 	}
@@ -86,7 +90,7 @@ public final class ResultsWriter implements Runnable {
 			try {
 				resultsFileWriter.close();
 			} catch (Exception e) {
-				System.out.println("Error while closing results file");
+				LOGGER.error("Error while closing results file");
 			}
 		}
 	}
