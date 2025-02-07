@@ -36,6 +36,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
+import java.util.stream.IntStream;
 
 class APIClassVisitor extends ClassVisitor {
 	private final TypeReferenceFactory typeRefFactory;
@@ -90,7 +91,7 @@ class APIClassVisitor extends ClassVisitor {
 
 		if (signature != null) {
 			SignatureReader reader = new SignatureReader(signature);
-			APISignatureVisitor signatureVisitor = new APISignatureVisitor(api, typeRefFactory, false, "");
+			APISignatureVisitor signatureVisitor = new APISignatureVisitor(api, typeRefFactory);
 			reader.accept(signatureVisitor);
 			formalTypeParameters = signatureVisitor.getFormalTypeParameters();
 			// We don't want Object as explicit superclass
@@ -246,7 +247,7 @@ class APIClassVisitor extends ClassVisitor {
 		ITypeReference fieldType;
 		if (signature != null) {
 			APISignatureVisitor.TypeVisitor visitor = new APISignatureVisitor.TypeVisitor(
-				api, typeRefFactory, false, "");
+				api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			fieldType = visitor.getType();
 		} else {
@@ -265,7 +266,7 @@ class APIClassVisitor extends ClassVisitor {
 		List<FormalTypeParameter> formalTypeParameters;
 
 		if (signature != null) {
-			APISignatureVisitor visitor = new APISignatureVisitor(api, typeRefFactory, isVarargs(access), "");
+			APISignatureVisitor visitor = new APISignatureVisitor(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			parameters = visitor.getParameters();
 			formalTypeParameters = visitor.getFormalTypeParameters();
@@ -274,8 +275,8 @@ class APIClassVisitor extends ClassVisitor {
 			// Constructors of inner classes take their outer class as argument?
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
 			parameters = className.contains("$") && originalParams.length >= 1
-				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length), isVarargs(access))
-				: convertParameters(originalParams, isVarargs(access));
+				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
+				: convertParameters(originalParams);
 			formalTypeParameters = Collections.emptyList();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
@@ -296,7 +297,7 @@ class APIClassVisitor extends ClassVisitor {
 		List<ITypeReference> thrownExceptions;
 
 		if (signature != null) {
-			APISignatureVisitor visitor = new APISignatureVisitor(api, typeRefFactory, isVarargs(access), "");
+			APISignatureVisitor visitor = new APISignatureVisitor(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			returnType = visitor.getReturnType();
 			parameters = visitor.getParameters();
@@ -306,9 +307,19 @@ class APIClassVisitor extends ClassVisitor {
 				: visitor.getThrownExceptions();
 		} else {
 			returnType = convertType(Type.getReturnType(descriptor).getDescriptor());
-			parameters = convertParameters(Type.getArgumentTypes(descriptor), isVarargs(access));
+			parameters = convertParameters(Type.getArgumentTypes(descriptor));
 			formalTypeParameters = Collections.emptyList();
 			thrownExceptions = convertThrownExceptions(exceptions);
+		}
+
+		// Last parameter is a T[], but the API representation is T...
+		if (isVarargs(access) && !parameters.isEmpty()) {
+			List<ParameterDecl> params = new ArrayList<>(parameters);
+			ParameterDecl last = params.getLast();
+			if (last.type() instanceof ArrayTypeReference atr) {
+				params.set(params.size() - 1, new ParameterDecl(last.name(), atr.componentType(), true));
+			}
+			parameters = params;
 		}
 
 		return new MethodDecl(String.format("%s.%s", className, name), convertVisibility(access),
@@ -345,21 +356,11 @@ class APIClassVisitor extends ClassVisitor {
 		}
 	}
 
-	private List<ParameterDecl> convertParameters(Type[] paramTypes, boolean isVarargs) {
-		List<ParameterDecl> params = new ArrayList<>();
-
-		for (int i = 0; i < paramTypes.length; i++) {
-			String name = String.format("p%d", i);
-			ITypeReference type = convertType(paramTypes[i].getDescriptor());
-
-			// If the method is varargs, the last parameter is an array: we need to convert it to a varargs parameter
-			if (isVarargs && i == paramTypes.length - 1 && type instanceof ArrayTypeReference atr)
-				params.add(new ParameterDecl(name, atr.componentType(), true));
-			else
-				params.add(new ParameterDecl(name, type, false));
-		}
-
-		return params;
+	private List<ParameterDecl> convertParameters(Type[] paramTypes) {
+		return IntStream.range(0, paramTypes.length)
+			.mapToObj(i -> new ParameterDecl(String.format("p%d", i),
+				convertType(paramTypes[i].getDescriptor()), false))
+			.toList();
 	}
 
 	private AccessModifier convertVisibility(int access) {
