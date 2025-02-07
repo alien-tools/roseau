@@ -36,6 +36,7 @@ build/
 
 ### Generated ###
 output/
+results/
 tmp/
 
 sample/

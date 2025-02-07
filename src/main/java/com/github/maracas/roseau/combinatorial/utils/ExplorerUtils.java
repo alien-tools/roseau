@@ -44,6 +44,13 @@ public final class ExplorerUtils {
 		}
 	}
 
+	public static boolean createDirectoryIfNecessary(Path path) {
+		var directoryExists = checkPathExists(path);
+		if (directoryExists) return true;
+
+		return path.toFile().mkdirs();
+	}
+
 	public static List<File> getFilesInPath(Path path, String extension) {
 		return FileUtils.listFiles(path.toFile(), new String[]{extension}, true).stream().toList();
 	}

@@ -6,6 +6,7 @@ import com.github.maracas.roseau.combinatorial.Constants;
 import com.github.maracas.roseau.combinatorial.StepExecutionException;
 import com.github.maracas.roseau.combinatorial.utils.ExplorerUtils;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.Benchmark;
+import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ResultsWriter;
 import com.github.maracas.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 import com.github.maracas.roseau.combinatorial.v2.queue.NewApiQueue;
@@ -24,6 +25,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private final ResultsProcessQueue resultsQueue;
 
 	private final Map<Benchmark, Thread> benchmarkThreads = new HashMap<>();
+	private ResultsWriter resultsWriter = null;
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
@@ -59,6 +61,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		try {
 			initializeBenchmarkThreads();
+			initializeResultsThread();
 
 			var visitor = new BreakingChangesGeneratorVisitor(newApiQueue, outputPath);
 			visitor.$(v1Api).visit();
@@ -109,11 +112,20 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		System.out.println("--- All bench threads started --\n");
 	}
 
+	private void initializeResultsThread() {
+		System.out.println("\n---- Starting results thread ---");
+
+		resultsWriter = new ResultsWriter(resultsQueue);
+		new Thread(resultsWriter).start();
+
+		System.out.println("---- Results thread started ----\n");
+	}
+
 	private void informAllBenchmarksGenerationIsOver() {
-		for (Benchmark benchmark : benchmarkThreads.keySet())
+		for (var benchmark : benchmarkThreads.keySet())
 			benchmark.informsBreakingApisGenerationIsOver();
 
-		for (Thread thread : benchmarkThreads.values())
+		for (var thread : benchmarkThreads.values())
 			try { thread.join(); } catch (InterruptedException ignored) {}
 
 		System.out.println("-- All bench threads finished --");
@@ -122,5 +134,15 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		if (totalErrors == 0)
 			ExplorerUtils.removeDirectory(tmpPath);
+
+		informResultsThreadNoMoreResults();
+	}
+
+	private void informResultsThreadNoMoreResults() {
+		System.out.println("\n----- Closing results file -----");
+
+		if (resultsWriter != null) {
+			resultsWriter.informNoMoreResults();
+		}
 	}
 }

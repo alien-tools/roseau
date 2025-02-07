@@ -12,6 +12,7 @@ import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RevapiTool;
 import com.github.maracas.roseau.combinatorial.v2.benchmark.tool.RoseauTool;
 import com.github.maracas.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
 import com.github.maracas.roseau.combinatorial.writer.ApiWriter;
+import org.javatuples.Pair;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -148,6 +149,6 @@ public final class Benchmark implements Runnable {
 
 		System.out.println("--------------------------------\n");
 
-		resultsQueue.put(strategy, results);
+		resultsQueue.put(strategy, new Pair<>(isBreaking, results));
 	}
 }
