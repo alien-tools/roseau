@@ -71,19 +71,19 @@ class APIClassVisitor extends ClassVisitor {
 		classAccess = access;
 
 		if (ANONYMOUS_PATTERN.matcher(className).matches()) {
-			LOGGER.info("Skipping anonymous class %s", className);
+			LOGGER.info("Skipping anonymous class {}", className);
 			shouldSkip = true;
 			return;
 		}
 
 		if (className.endsWith("package-info") || className.endsWith("module-info")) {
-			LOGGER.info("Skipping package/module-info %s", className);
+			LOGGER.info("Skipping package/module-info {}", className);
 			shouldSkip = true;
 			return;
 		}
 
 		if (isSynthetic(classAccess)) {
-			LOGGER.info("Skipping synthetic class %s", className);
+			LOGGER.info("Skipping synthetic class {}", className);
 			shouldSkip = true;
 			return;
 		}
@@ -117,12 +117,12 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 
 		if (isSynthetic(access)) {
-			LOGGER.info("Skipping synthetic field %s", name);
+			LOGGER.info("Skipping synthetic field {}", name);
 			return null;
 		}
 
 		if (!isTypeMemberExported(access)) {
-			LOGGER.info("Skipping unexported field %s", name);
+			LOGGER.info("Skipping unexported field {}", name);
 			return null;
 		}
 
@@ -148,12 +148,12 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 
 		if (isSynthetic(access) || isBridge(access)) {
-			LOGGER.info("Skipping synthetic/bridge method %s", name);
+			LOGGER.info("Skipping synthetic/bridge method {}", name);
 			return null;
 		}
 
 		if (!isTypeMemberExported(access)) {
-			LOGGER.info("Skipping unexported method %s", name);
+			LOGGER.info("Skipping unexported method {}", name);
 			return null;
 		}
 
@@ -273,7 +273,7 @@ class APIClassVisitor extends ClassVisitor {
 		} else {
 			// Constructors of inner non-static classes take their outer class as implicit first parameter
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
-			parameters = (className.contains("$") && !isStatic(classAccess))
+			parameters = (className.contains("$") && !isStatic(classAccess) && originalParams.length >= 1)
 				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
 				: convertParameters(originalParams);
 			formalTypeParameters = Collections.emptyList();

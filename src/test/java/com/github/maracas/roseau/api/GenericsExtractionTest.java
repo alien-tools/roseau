@@ -5,6 +5,8 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
@@ -25,7 +27,7 @@ class GenericsExtractionTest {
 
 		var t = a.getFormalTypeParameters().getFirst();
 		assertThat(t.name(), is(equalTo("T")));
-		assertThat(t.bounds(), is(empty()));
+		assertThat(t.bounds(), is(equalTo(List.of(TypeReference.OBJECT))));
 	}
 
 	@Test
@@ -78,7 +80,7 @@ class GenericsExtractionTest {
 		var t = a.getFormalTypeParameters().getFirst();
 		var u = a.getFormalTypeParameters().get(1);
 		assertThat(t.name(), is(equalTo("T")));
-		assertThat(t.bounds(), is(empty()));
+		assertThat(t.bounds(), is(equalTo(List.of(TypeReference.OBJECT))));
 		assertThat(u.name(), is(equalTo("U")));
 		assertThat(u.bounds(), hasSize(1));
 		assertThat(u.bounds().getFirst().getQualifiedName(), is(equalTo("T")));
@@ -96,7 +98,7 @@ class GenericsExtractionTest {
 		var t = a.getFormalTypeParameters().getFirst();
 		var u = a.getFormalTypeParameters().get(1);
 		assertThat(t.name(), is(equalTo("T")));
-		assertThat(t.bounds(), is(empty()));
+		assertThat(t.bounds(), is(equalTo(List.of(TypeReference.OBJECT))));
 		assertThat(u.name(), is(equalTo("U")));
 		assertThat(u.bounds(), hasSize(1));
 		assertThat(u.bounds().getFirst().getQualifiedName(), is(equalTo("X")));

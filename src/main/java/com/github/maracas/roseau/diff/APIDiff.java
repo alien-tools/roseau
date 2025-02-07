@@ -204,8 +204,9 @@ public class APIDiff {
 		if (cons1.isPublic() && cons2.isProtected())
 			bc(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cons1, cons2);
 
-		if (cons1.isVarargs() && !cons2.isVarargs())
-			bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, cons1, cons2);
+		// We report that as a CONSTRUCTOR_REMOVED
+		//if (cons1.isVarargs() && !cons2.isVarargs())
+		//	bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, cons1, cons2);
 
 		diffThrownExceptions(cons1, cons2);
 		diffFormalTypeParameters(cons1, cons2);
@@ -223,8 +224,9 @@ public class APIDiff {
 	}
 
 	private void diffParameters(ExecutableDecl e1, ExecutableDecl e2) {
-		if (e1.isVarargs() && !e2.isVarargs())
-			bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, e1, e2);
+		// We report that as a METHOD_REMOVED
+		//if (e1.isVarargs() && !e2.isVarargs())
+		//	bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, e1, e2);
 
 		// We checked executable signatures, so we know params are equals modulo type arguments
 		for (int i = 0; i < e1.getParameters().size(); i++) {

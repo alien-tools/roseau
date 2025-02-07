@@ -77,8 +77,8 @@ public class JarAPIExtractor implements APIExtractor {
 			sourcesApi.writeJson(Path.of("sources.json"));
 		} catch (Exception e) {}
 
-//		diffAPIs(jarApi, sourcesApi);
-//		diffAPIs(sourcesApi, jarApi);
+		diffAPIs(jarApi, sourcesApi);
+		diffAPIs(sourcesApi, jarApi);
 		diffBCs(jarApi, sourcesApi);
 		diffBCs(sourcesApi, jarApi);
 	}

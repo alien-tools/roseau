@@ -2,6 +2,7 @@ package com.github.maracas.roseau.smoke;
 
 import com.github.maracas.roseau.api.SpoonUtils;
 import com.github.maracas.roseau.api.extractors.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.extractors.jar.JarAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
@@ -69,6 +70,7 @@ class PopularLibrariesTestIT {
 		String version = parts[2];
 
 		try {
+			Path binaryJar = downloadBinaryJar(groupId, artifactId, version);
 			Path sourcesJar = downloadSourcesJar(groupId, artifactId, version);
 			Path sourcesDir = extractSourcesJar(sourcesJar);
 
@@ -79,34 +81,41 @@ class PopularLibrariesTestIT {
 			sw.reset();
 			sw.start();
 
-			SpoonAPIExtractor extractor = new SpoonAPIExtractor();
-			API api = extractor.extractAPI(model);
-			long apiTime = sw.elapsed().toMillis();
+			SpoonAPIExtractor sourcesExtractor = new SpoonAPIExtractor();
+			API sourcesApi = sourcesExtractor.extractAPI(model);
+			long sourcesApiTime = sw.elapsed().toMillis();
 			sw.reset();
 			sw.start();
 
-			APIDiff diff = new APIDiff(api, api);
+			JarAPIExtractor jarExtractor = new JarAPIExtractor();
+			API jarApi = jarExtractor.extractAPI(binaryJar);
+			long jarApiTime = sw.elapsed().toMillis();
+			sw.reset();
+			sw.start();
+
+			APIDiff diff = new APIDiff(sourcesApi, jarApi);
 			List<BreakingChange> bcs = diff.diff();
 			long diffTime = sw.elapsed().toMillis();
 
 			// Stats
 			long loc = countLinesOfCode(sourcesDir);
-			long numTypes = api.getAllTypes().count();
-			int numMethods = api.getAllTypes()
+			long numTypes = sourcesApi.getAllTypes().count();
+			int numMethods = sourcesApi.getAllTypes()
 				.mapToInt(type -> type.getDeclaredMethods().size())
 				.sum();
-			int numFields = api.getAllTypes()
+			int numFields = sourcesApi.getAllTypes()
 				.mapToInt(type -> type.getDeclaredFields().size())
 				.sum();
 
 			// Check everything went well
-			assertFalse(api.getAllTypes().findAny().isEmpty());
+			assertFalse(sourcesApi.getAllTypes().findAny().isEmpty());
 			assertTrue(bcs.isEmpty(), "Breaking changes detected: " + bcs);
 
 			System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
 					"\tParsing: %dms API: %sms Diff: %dms%n" +
+					"\tJAR API: %dms%n" +
 					"\tBreaking changes: %d%n",
-				libraryGAV, loc, numTypes, numMethods, numFields, parsingTime, apiTime, diffTime, bcs.size());
+				libraryGAV, loc, numTypes, numMethods, numFields, parsingTime, sourcesApiTime, diffTime, jarApiTime, bcs.size());
 
 			cleanup(sourcesJar, sourcesDir);
 		} catch (Exception e) {
@@ -115,9 +124,16 @@ class PopularLibrariesTestIT {
 	}
 
 	private Path downloadSourcesJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
-		String url = String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s-sources.jar",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version);
+		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s-sources.jar",
+			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+	}
 
+	private Path downloadBinaryJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
+			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+	}
+
+	private Path download(String url) throws IOException, InterruptedException {
 		HttpClient client = HttpClient.newHttpClient();
 		HttpRequest request = HttpRequest.newBuilder()
 			.uri(URI.create(url))
@@ -128,7 +144,7 @@ class PopularLibrariesTestIT {
 
 		if (response.statusCode() != 200) {
 			Files.deleteIfExists(tempFile);
-			throw new IOException("Failed to download sources JAR: HTTP " + response.statusCode());
+			throw new IOException("Failed to download JAR: HTTP " + response.statusCode());
 		}
 
 		return tempFile;

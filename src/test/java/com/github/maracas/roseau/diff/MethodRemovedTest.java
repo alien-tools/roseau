@@ -183,6 +183,6 @@ class MethodRemovedTest {
 			    public void m(String s, int... i) {}
 			}""";
 
-		assertNoBC(BreakingChangeKind.METHOD_REMOVED, buildDiff(v1, v2));
+		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 }
