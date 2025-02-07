@@ -26,6 +26,8 @@ public final class Benchmark implements Runnable {
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
+	private final API v1Api;
+
 	private final NewApiQueue apiQueue;
 	private final ResultsProcessQueue resultsQueue;
 
@@ -33,7 +35,7 @@ public final class Benchmark implements Runnable {
 
 	private final ApiWriter apiWriter;
 
-	private boolean isNewBreakingApisGenerationOngoing = true;
+	private boolean isNewApisGenerationOngoing = true;
 	private int errorsCount = 0;
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
@@ -45,7 +47,8 @@ public final class Benchmark implements Runnable {
 			Path clientsSourcesPath,
 			Path v1SourcesPath,
 			Path v1JarPath,
-			Path tmpPath
+			Path tmpPath,
+			API v1Api
 	) {
 		System.out.println("Creating Benchmark " + id);
 		this.id = id;
@@ -54,6 +57,8 @@ public final class Benchmark implements Runnable {
 		this.clientsSourcesPath = clientsSourcesPath;
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
+
+		this.v1Api = v1Api;
 
 		this.apiQueue = apiQueue;
 		this.resultsQueue = resultsQueue;
@@ -69,21 +74,21 @@ public final class Benchmark implements Runnable {
 
 	@Override
 	public void run() {
-		while (isNewBreakingApisGenerationOngoing || apiQueue.hasStillWork()) {
+		while (isNewApisGenerationOngoing || apiQueue.hasStillWork()) {
 			var strategyAndApi = apiQueue.take();
 			if (strategyAndApi == null) break;
 
 			try {
 				var strategy = strategyAndApi.getValue0();
-				var api = strategyAndApi.getValue1();
+				var v2Api = strategyAndApi.getValue1();
 
 				System.out.println("\n--------------------------------");
 				System.out.println("Running Benchmark Thread n°" + id);
 				System.out.println("Breaking Change: " + strategy);
 
-				generateNewApiSourcesAndJar(api);
+				generateNewApiSourcesAndJar(v2Api);
 				var newApiIsBreaking = generateGroundTruth();
-				runToolsAnalysis(strategy, newApiIsBreaking);
+				runToolsAnalysis(strategy, v2Api, newApiIsBreaking);
 
 				System.out.println("Benchmark Thread n°" + id + " finished");
 				System.out.println("--------------------------------\n");
@@ -97,8 +102,8 @@ public final class Benchmark implements Runnable {
 			ExplorerUtils.removeDirectory(benchmarkWorkingPath);
 	}
 
-	public void informsBreakingApisGenerationIsOver() {
-		isNewBreakingApisGenerationOngoing = false;
+	public void informsApisGenerationIsOver() {
+		isNewApisGenerationOngoing = false;
 	}
 
 	public int getErrorsCount() {
@@ -129,7 +134,7 @@ public final class Benchmark implements Runnable {
 		return !errors.isEmpty();
 	}
 
-	private void runToolsAnalysis(String strategy, boolean isBreaking) {
+	private void runToolsAnalysis(String strategy, API v2Api, boolean isBreaking) {
 		System.out.println("\n--------------------------------");
 		System.out.println("     Running Tools Analysis");
 
@@ -138,7 +143,16 @@ public final class Benchmark implements Runnable {
 			System.out.println("--------------------------------");
 			System.out.println(" Running " + tool.getClass().getSimpleName());
 
+			if (tool instanceof RoseauTool roseauTool) {
+				roseauTool.setApis(v1Api, v2Api);
+			}
+
 			var result = tool.detectBreakingChanges();
+			if (result == null) {
+				System.out.println(" Tool Result: N/A");
+				continue;
+			}
+
 			results.add(result);
 
 			System.out.println(" Execution Time: " + result.executionTime() + "ms");

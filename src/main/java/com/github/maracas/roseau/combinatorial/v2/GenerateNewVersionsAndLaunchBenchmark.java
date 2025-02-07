@@ -81,17 +81,25 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	}
 
 	private void packageV1Api() throws StepExecutionException {
+		System.out.println("\n------- Packaging V1 API -------");
+
 		var errors = compiler.packageApiToJar(v1SourcesPath, v1JarPath);
 
 		if (!errors.isEmpty())
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't package V1 API: " + formatCompilerErrors(errors));
+
+		System.out.println("-------- V1 API packaged -------\n");
 	}
 
 	private void compileClients() throws StepExecutionException {
+		System.out.println("\n------- Compiling clients ------");
+
 		var errors = compiler.compileClientWithApi(clientsSourcesPath, v1JarPath, clientsBinPath);
 
 		if (!errors.isEmpty())
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile clients: " + formatCompilerErrors(errors));
+
+		System.out.println("------- Clients compiled -------\n");
 	}
 
 	private static String formatCompilerErrors(List<?> errors) {
@@ -102,7 +110,12 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		System.out.println("\n-- Starting benchmark threads --");
 
 		for (int i = 0; i < maxParallelAnalysis; i++) {
-			var benchmark = new Benchmark(String.valueOf(i), newApiQueue, resultsQueue, clientsSourcesPath, v1SourcesPath, v1JarPath, tmpPath);
+			var benchmark = new Benchmark(
+					String.valueOf(i),
+					newApiQueue, resultsQueue,
+					clientsSourcesPath, v1SourcesPath, v1JarPath, tmpPath,
+					v1Api
+			);
 			var thread = new Thread(benchmark);
 			thread.start();
 
@@ -123,7 +136,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private void informAllBenchmarksGenerationIsOver() {
 		for (var benchmark : benchmarkThreads.keySet())
-			benchmark.informsBreakingApisGenerationIsOver();
+			benchmark.informsApisGenerationIsOver();
 
 		for (var thread : benchmarkThreads.values())
 			try { thread.join(); } catch (InterruptedException ignored) {}
