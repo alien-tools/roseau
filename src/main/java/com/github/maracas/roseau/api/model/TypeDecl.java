@@ -226,7 +226,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
-	public Optional<MethodDecl> findMethod(String signature, boolean varargs) {
+	public Optional<MethodDecl> findMethod(String signature) {
 		return getAllMethods()
 			.filter(m -> Objects.equals(signature, m.getSignature()))
 			.findFirst();

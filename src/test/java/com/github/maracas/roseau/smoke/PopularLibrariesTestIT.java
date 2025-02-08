@@ -41,19 +41,19 @@ class PopularLibrariesTestIT {
 		return Stream.of(
 			"com.google.guava:guava:32.1.3-jre",
 			"org.apache.commons:commons-lang3:3.14.0",
-			"org.eclipse.collections:eclipse-collections:11.1.0",
+			//"org.eclipse.collections:eclipse-collections:11.1.0", // Won't work without eclipse-collections-api
+			"org.eclipse.collections:eclipse-collections-api:11.1.0",
 			"org.springframework:spring-core:6.1.5",
 			"io.dropwizard:dropwizard-core:4.0.1",
 			"io.quarkus:quarkus-core:3.6.5",
 			"io.projectreactor:reactor-core:3.6.3",
 			"org.reactivestreams:reactive-streams:1.0.4",
-			"org.apache.spark:spark-core_2.13:3.5.0",
 			"org.apache.kafka:kafka-clients:3.6.0",
 			"com.fasterxml.jackson.core:jackson-databind:2.16.1",
 			"com.google.code.gson:gson:2.10.1",
 			"org.junit.jupiter:junit-jupiter-api:5.10.1",
 			"org.testng:testng:7.8.0",
-			"org.mockito:mockito-core:5.7.0",
+			"org.mockito:mockito-core:5.7.0", // Fails cause one of the .class file is actually a .raw file?!
 			"com.squareup:javapoet:1.13.0",
 			"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
@@ -82,15 +82,15 @@ class PopularLibrariesTestIT {
 			sw.reset();
 			sw.start();
 
-			SpoonAPIExtractor sourcesExtractor = new SpoonAPIExtractor();
-			API sourcesApi = sourcesExtractor.extractAPI(model);
-			long sourcesApiTime = sw.elapsed().toMillis();
-			sw.reset();
-			sw.start();
-
 			JarAPIExtractor jarExtractor = new JarAPIExtractor();
 			API jarApi = jarExtractor.extractAPI(binaryJar);
 			long jarApiTime = sw.elapsed().toMillis();
+			sw.reset();
+			sw.start();
+
+			SpoonAPIExtractor sourcesExtractor = new SpoonAPIExtractor();
+			API sourcesApi = sourcesExtractor.extractAPI(model);
+			long sourcesApiTime = sw.elapsed().toMillis();
 			sw.reset();
 			sw.start();
 
@@ -116,7 +116,11 @@ class PopularLibrariesTestIT {
 					"\tJAR to Sources BCs: %d%n" +
 					"\tSources to JAR BCs: %d%n",
 				libraryGAV, loc, numTypes, numMethods, numFields, parsingTime, sourcesApiTime, diffTime, jarApiTime,
-				sourcesToJarBCs.size(), sourcesToJarBCs.size());
+				jarToSourcesBCs.size(), sourcesToJarBCs.size());
+
+			cleanup(sourcesJar);
+			cleanup(binaryJar);
+			cleanup(sourcesDir);
 
 			// Check everything went well
 			assertFalse(sourcesApi.getAllTypes().findAny().isEmpty());
@@ -124,8 +128,6 @@ class PopularLibrariesTestIT {
 				jarToSourcesBCs.stream().map(BreakingChange::toString).collect(Collectors.joining("\n")));
 			assertTrue(sourcesToJarBCs.isEmpty(), "Sources to JAR BCs:\n" +
 				sourcesToJarBCs.stream().map(BreakingChange::toString).collect(Collectors.joining("\n")));
-
-			cleanup(sourcesJar, sourcesDir);
 		} catch (Exception e) {
 			fail("Failed to process " + libraryGAV, e);
 		}
@@ -192,9 +194,11 @@ class PopularLibrariesTestIT {
 			.sum();
 	}
 
-	private void cleanup(Path jarPath, Path sourcesDir) throws IOException {
-		Files.deleteIfExists(jarPath);
-		deleteDirectory(sourcesDir);
+	private void cleanup(Path path) throws IOException {
+		if (path.toFile().isDirectory())
+			deleteDirectory(path);
+		else
+			Files.deleteIfExists(path);
 	}
 
 	private void deleteDirectory(Path path) throws IOException {

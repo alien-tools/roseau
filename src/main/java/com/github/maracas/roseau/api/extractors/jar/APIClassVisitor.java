@@ -269,7 +269,9 @@ class APIClassVisitor extends ClassVisitor {
 			new SignatureReader(signature).accept(visitor);
 			parameters = visitor.getParameters();
 			formalTypeParameters = visitor.getFormalTypeParameters();
-			thrownExceptions = visitor.getThrownExceptions();
+			thrownExceptions = visitor.getThrownExceptions().isEmpty()
+				? convertThrownExceptions(exceptions)
+				: visitor.getThrownExceptions();
 		} else {
 			// Constructors of inner non-static classes take their outer class as implicit first parameter
 			Type[] originalParams = Type.getArgumentTypes(descriptor);

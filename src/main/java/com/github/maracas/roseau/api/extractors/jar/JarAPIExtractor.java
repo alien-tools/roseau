@@ -39,6 +39,8 @@ public class JarAPIExtractor implements APIExtractor {
 			List<TypeDecl> typeDecls =
 				jar.stream()
 					.filter(entry -> entry.getName().endsWith(".class") && !entry.isDirectory())
+					// Multi-release JARs store version-specific class files there, so we could have duplicates
+					.filter(entry -> !entry.getName().startsWith("META-INF/versions/"))
 					.flatMap(entry -> {
 						try (InputStream is = jar.getInputStream(entry)) {
 							ClassReader reader = new ClassReader(is);
