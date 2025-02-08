@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -235,6 +236,15 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return other.equals(TypeReference.OBJECT)
 			|| Objects.equals(qualifiedName, other.getQualifiedName())
 			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup, other));
+	}
+
+	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
+		var resolved = formalTypeParameters.stream()
+			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
+			.findFirst();
+
+		return resolved.or(
+			() -> enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
 	}
 
 	@Override

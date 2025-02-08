@@ -71,19 +71,19 @@ class APIClassVisitor extends ClassVisitor {
 		classAccess = access;
 
 		if (ANONYMOUS_PATTERN.matcher(className).matches()) {
-			LOGGER.info("Skipping anonymous class {}", className);
+			LOGGER.debug("Skipping anonymous class {}", className);
 			shouldSkip = true;
 			return;
 		}
 
 		if (className.endsWith("package-info") || className.endsWith("module-info")) {
-			LOGGER.info("Skipping package/module-info {}", className);
+			LOGGER.debug("Skipping package/module-info {}", className);
 			shouldSkip = true;
 			return;
 		}
 
 		if (isSynthetic(classAccess)) {
-			LOGGER.info("Skipping synthetic class {}", className);
+			LOGGER.debug("Skipping synthetic class {}", className);
 			shouldSkip = true;
 			return;
 		}
@@ -117,12 +117,12 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 
 		if (isSynthetic(access)) {
-			LOGGER.info("Skipping synthetic field {}", name);
+			LOGGER.debug("Skipping synthetic field {}", name);
 			return null;
 		}
 
 		if (!isTypeMemberExported(access)) {
-			LOGGER.info("Skipping unexported field {}", name);
+			LOGGER.debug("Skipping unexported field {}", name);
 			return null;
 		}
 
@@ -148,17 +148,17 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 
 		if (isSynthetic(access) || isBridge(access)) {
-			LOGGER.info("Skipping synthetic/bridge method {}", name);
+			LOGGER.debug("Skipping synthetic/bridge method {}", name);
 			return null;
 		}
 
 		if (!isTypeMemberExported(access)) {
-			LOGGER.info("Skipping unexported method {}", name);
+			LOGGER.debug("Skipping unexported method {}", name);
 			return null;
 		}
 
 		if (isEnum(classAccess) && (name.equals("values") || name.equals("valueOf"))) {
-			LOGGER.info("Skipping enum's values()/valueOf()");
+			LOGGER.debug("Skipping enum's values()/valueOf()");
 			return null;
 		}
 

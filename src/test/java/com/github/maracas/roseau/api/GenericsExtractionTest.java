@@ -11,11 +11,11 @@ import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.fail;
 
 class GenericsExtractionTest {
 	@Test
@@ -202,5 +202,59 @@ class GenericsExtractionTest {
 		var m = assertMethod(a, "m()");
 
 		assertThat(m.getThrownExceptions().getFirst(), is(instanceOf(TypeParameterReference.class)));
+	}
+
+	@Test
+	void method_type_parameter_resolution() {
+		var api = buildAPI("""
+			public class A<T extends String> {
+				public class B<U extends Number> {
+					public <V> void m(T t, U v, V u) {}
+				}
+			}""");
+
+		var b = assertClass(api, "A$B");
+		assertMethod(b, "m(java.lang.String,java.lang.Number,java.lang.Object)");
+	}
+
+	@Test
+	void method_type_parameter_resolution_hiding() {
+		var api = buildAPI("""
+			public class A<T extends String> {
+				public class B<T extends Number> {
+					public <T> void m(T t, T v, T u) {}
+				}
+			}""");
+
+		var b = assertClass(api, "A$B");
+		assertMethod(b, "m(java.lang.Object,java.lang.Object,java.lang.Object)");
+	}
+
+	@Test
+	void class_type_parameter_resolution() {
+		var api = buildAPI("""
+			public class A<T, U extends String, V extends Number> extends ArrayList<U> implements Supplier<V> {
+				public V get() { return null; }
+			}""");
+
+		var a = assertClass(api, "A");
+		var u = a.getFormalTypeParameters().get(1);
+		var v = a.getFormalTypeParameters().get(2);
+		var uRef = a.getSuperClass().get().getTypeArguments().getFirst();
+		var vRef = a.getImplementedInterfaces().getFirst().getTypeArguments().getFirst();
+		var get = assertMethod(a, "get()");
+		var mvRef = get.getType();
+
+		if (uRef instanceof TypeParameterReference tpr)
+			assertThat(a.resolveTypeParameter(tpr).get(), is(equalTo(u)));
+		else fail();
+
+		if (vRef instanceof TypeParameterReference tpr)
+			assertThat(a.resolveTypeParameter(tpr).get(), is(equalTo(v)));
+		else fail();
+
+		if (mvRef instanceof TypeParameterReference tpr)
+			assertThat(get.resolveTypeParameter(tpr).get(), is(equalTo(v)));
+		else fail();
 	}
 }

@@ -2,6 +2,8 @@ package com.github.maracas.roseau.api;
 
 import org.junit.jupiter.api.Test;
 
+import java.util.Collection;
+
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
@@ -161,5 +163,79 @@ class MethodsOverloadingTest {
 
 		assertThat(d.getAllMethods().toList(), hasSize(1));
 		assertEquals("K.m", d.getAllMethods().toList().getFirst().getQualifiedName());
+	}
+
+	@Test
+	void overloading_varargs() {
+		var api = buildAPI("""
+			public class A {
+				public void m(int a) {}
+				public void m(int... a) {}
+			}""");
+
+		var a = assertClass(api, "A");
+		assertThat(a.getDeclaredMethods(), hasSize(2));
+
+		var m1 = assertMethod(a, "m(int)");
+		var m2 = assertMethod(a, "m(int[])");
+
+		assertFalse(m1.isOverloading(m1));
+		assertTrue(m1.isOverloading(m2));
+		assertTrue(m2.isOverloading(m1));
+		assertFalse(m2.isOverloading(m2));
+	}
+
+	@Test
+	void overriding_varargs_hierarchy() {
+		var api = buildAPI("""
+			public class A {
+				public void m(Object... a) {}
+				public void n(Object[] a) {}
+			}
+			public class B extends A {
+				@Override public void m(Object[] a) {}
+				@Override public void n(Object... a) {}
+			}""");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "B");
+
+		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(b.getDeclaredMethods(), hasSize(2));
+
+		var ma = assertMethod(a, "m(java.lang.Object[])");
+		var mb = assertMethod(b, "m(java.lang.Object[])");
+		var na = assertMethod(a, "n(java.lang.Object[])");
+		var nb = assertMethod(b, "n(java.lang.Object[])");
+
+		assertFalse(ma.isOverriding(mb));
+		assertFalse(na.isOverriding(nb));
+
+		assertTrue(mb.isOverriding(ma));
+		assertTrue(nb.isOverriding(na));
+	}
+
+	@Test
+	void overloading_erasure() {
+		var api = buildAPI("""
+			public class A<V extends String> {
+				public <T extends String> void m(T a) {}
+				public <T extends Number> void m(T a) {}
+				public <T> void m(T a) {}
+			}""");
+
+		var a = assertClass(api, "A");
+		assertThat(a.getDeclaredMethods(), hasSize(3));
+
+		var m1 = assertMethod(a, "m(java.lang.String)");
+		var m2 = assertMethod(a, "m(java.lang.Number)");
+		var m3 = assertMethod(a, "m(java.lang.Object)");
+
+		assertTrue(m1.isOverloading(m2));
+		assertTrue(m1.isOverloading(m3));
+		assertTrue(m2.isOverloading(m1));
+		assertTrue(m2.isOverloading(m3));
+		assertTrue(m3.isOverloading(m1));
+		assertTrue(m3.isOverloading(m2));
 	}
 }

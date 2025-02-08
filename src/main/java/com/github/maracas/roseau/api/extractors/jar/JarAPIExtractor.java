@@ -46,13 +46,13 @@ public class JarAPIExtractor implements APIExtractor {
 							reader.accept(visitor, PARSING_OPTIONS);
 							return Optional.ofNullable(visitor.getTypeDecl()).stream();
 						} catch (IOException e) {
-							LOGGER.error("Error processing JAR entry", e);
+							LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
 							return Stream.empty();
 						}
 					})
 					.toList();
 
-			return new API(typeDecls, new SpoonAPIFactory());
+			return new API(typeDecls, apiFactory);
 		} catch (IOException e) {
 			throw new RuntimeException("Error processing JAR file", e);
 		}

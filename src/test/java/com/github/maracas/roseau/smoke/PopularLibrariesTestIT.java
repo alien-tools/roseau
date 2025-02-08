@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -93,8 +94,10 @@ class PopularLibrariesTestIT {
 			sw.reset();
 			sw.start();
 
-			APIDiff diff = new APIDiff(sourcesApi, jarApi);
-			List<BreakingChange> bcs = diff.diff();
+			APIDiff jarToSourcesDiff = new APIDiff(jarApi, sourcesApi);
+			List<BreakingChange> jarToSourcesBCs = jarToSourcesDiff.diff();
+			APIDiff sourcesToJarDiff = new APIDiff(sourcesApi, jarApi);
+			List<BreakingChange> sourcesToJarBCs = sourcesToJarDiff.diff();
 			long diffTime = sw.elapsed().toMillis();
 
 			// Stats
@@ -107,15 +110,20 @@ class PopularLibrariesTestIT {
 				.mapToInt(type -> type.getDeclaredFields().size())
 				.sum();
 
-			// Check everything went well
-			assertFalse(sourcesApi.getAllTypes().findAny().isEmpty());
-			assertTrue(bcs.isEmpty(), "Breaking changes detected: " + bcs);
-
 			System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
 					"\tParsing: %dms API: %sms Diff: %dms%n" +
 					"\tJAR API: %dms%n" +
-					"\tBreaking changes: %d%n",
-				libraryGAV, loc, numTypes, numMethods, numFields, parsingTime, sourcesApiTime, diffTime, jarApiTime, bcs.size());
+					"\tJAR to Sources BCs: %d%n" +
+					"\tSources to JAR BCs: %d%n",
+				libraryGAV, loc, numTypes, numMethods, numFields, parsingTime, sourcesApiTime, diffTime, jarApiTime,
+				sourcesToJarBCs.size(), sourcesToJarBCs.size());
+
+			// Check everything went well
+			assertFalse(sourcesApi.getAllTypes().findAny().isEmpty());
+			assertTrue(jarToSourcesBCs.isEmpty(), "JAR to Sources BCs:\n" +
+				jarToSourcesBCs.stream().map(BreakingChange::toString).collect(Collectors.joining("\n")));
+			assertTrue(sourcesToJarBCs.isEmpty(), "Sources to JAR BCs:\n" +
+				sourcesToJarBCs.stream().map(BreakingChange::toString).collect(Collectors.joining("\n")));
 
 			cleanup(sourcesJar, sourcesDir);
 		} catch (Exception e) {

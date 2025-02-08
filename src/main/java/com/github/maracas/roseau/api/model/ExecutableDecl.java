@@ -3,11 +3,13 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -52,18 +54,31 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return equals(other) || Objects.equals(getSignature(), other.getSignature());
 	}
 
-	/**
-	 * Varargs and generics not included
-	 */
 	public String getSignature() {
-		return "%s(%s)%s".formatted(
-			simpleName,
+		return "%s(%s)".formatted(simpleName,
 			parameters.stream()
-				.map(ParameterDecl::type)
-				.map(ITypeReference::getQualifiedName)
-				.collect(Collectors.joining(",")),
-			isVarargs() ? "..." : ""
+				.map(p -> String.format("%s%s", getErasure(p.type()).getQualifiedName(), p.isVarargs() ? "[]" : ""))
+				.collect(Collectors.joining(","))
 		);
+	}
+
+	public ITypeReference getErasure(ITypeReference type) {
+		return switch (type) {
+			case WildcardTypeReference wtr -> wtr.bounds().getFirst();
+			case TypeParameterReference tpr -> resolveTypeParameter(tpr)
+				.map(t -> t.bounds().getFirst())
+				.orElse(TypeReference.OBJECT);
+			default -> type;
+		};
+	}
+
+	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
+		var resolved = formalTypeParameters.stream()
+			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
+			.findFirst();
+
+		return resolved.or(
+			() -> containingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
 	}
 
 	/**
