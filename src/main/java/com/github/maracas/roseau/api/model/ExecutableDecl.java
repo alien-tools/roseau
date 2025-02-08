@@ -50,11 +50,20 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @param other The ExecutableDecl to compare the signature with
 	 * @return true if they have the same signature, false otherwise
 	 */
-	public boolean hasSameSignature(ExecutableDecl other) {
-		return equals(other) || Objects.equals(getSignature(), other.getSignature());
+	public boolean hasSameErasure(ExecutableDecl other) {
+		return equals(other) || Objects.equals(getErasure(), other.getErasure());
 	}
 
+	// §8.4.2
 	public String getSignature() {
+		return "%s(%s)".formatted(simpleName,
+			parameters.stream()
+				.map(p -> String.format("%s%s", p.type(), p.isVarargs() ? "[]" : ""))
+				.collect(Collectors.joining(","))
+		);
+	}
+
+	public String getErasure() {
 		return "%s(%s)".formatted(simpleName,
 			parameters.stream()
 				.map(p -> String.format("%s%s", getErasure(p.type()).getQualifiedName(), p.isVarargs() ? "[]" : ""))
@@ -92,7 +101,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public boolean isOverloading(ExecutableDecl other) {
 		return Objects.equals(getSimpleName(), other.getSimpleName())
-			&& !hasSameSignature(other)
+			&& !hasSameErasure(other)
 			&& containingType.isSameHierarchy(other.getContainingType());
 	}
 

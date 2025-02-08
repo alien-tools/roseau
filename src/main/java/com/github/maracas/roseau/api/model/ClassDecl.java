@@ -54,9 +54,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			(constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()));
 	}
 
-	public Optional<ConstructorDecl> findConstructor(String signature) {
+	public Optional<ConstructorDecl> findConstructor(String erasure) {
 		return getConstructors().stream()
-			.filter(cons -> Objects.equals(signature, cons.getSignature()))
+			.filter(cons -> Objects.equals(erasure, cons.getErasure()))
 			.findFirst();
 	}
 

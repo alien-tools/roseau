@@ -57,7 +57,7 @@ public final class MethodDecl extends ExecutableDecl {
 		Objects.requireNonNull(other);
 		if (equals(other))
 			return true;
-		if (hasSameSignature(other)) {
+		if (hasSameErasure(other)) {
 			if (getContainingType().isSubtypeOf(other.getContainingType()))
 				return true;
 			if (!isAbstract() && other.isAbstract())

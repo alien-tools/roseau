@@ -166,6 +166,26 @@ class APISignatureVisitor extends SignatureVisitor {
 		}
 
 		@Override
+		public SignatureVisitor visitArrayType() {
+			TypeVisitor<ITypeReference> visitor = new TypeVisitor<>(api, factory);
+			visitors.add(() -> {
+				// If we've got an array, just increment the dimension
+				ITypeReference arrayType = visitor.getType() instanceof ArrayTypeReference atr
+					? factory.createArrayTypeReference(atr.componentType(), atr.dimension() + 1)
+					: factory.createArrayTypeReference(visitor.getType(), 1);
+
+				// If we're currently building a wildcard, we must wrap it
+				return switch (wildcard) {
+					case INSTANCEOF -> arrayType;
+					case EXTENDS -> factory.createWildcardTypeReference(List.of(arrayType), true);
+					case SUPER -> factory.createWildcardTypeReference(List.of(arrayType), false);
+					default -> throw new IllegalStateException("ASM is drunk");
+				};
+			});
+			return visitor;
+		}
+
+		@Override
 		public void visitBaseType(char descriptor) {
 			type = switch (descriptor) {
 				case 'V' -> factory.createPrimitiveTypeReference("void");
@@ -186,19 +206,6 @@ class APISignatureVisitor extends SignatureVisitor {
 			// and just register the inner, most precise type
 			visitors.clear();
 			visitClassType(String.format("%s$%s", type.getQualifiedName(), name));
-		}
-
-		@Override
-		public SignatureVisitor visitArrayType() {
-			TypeVisitor<ITypeReference> visitor = new TypeVisitor<>(api, factory);
-			visitors.add(() -> {
-				// If we've got an array, just increment the dimension
-				if (visitor.getType() instanceof ArrayTypeReference atr)
-					return factory.createArrayTypeReference(atr.componentType(), atr.dimension() + 1);
-				else
-					return factory.createArrayTypeReference(visitor.getType(), 1);
-			});
-			return visitor;
 		}
 
 		@Override

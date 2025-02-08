@@ -45,7 +45,8 @@ class PopularLibrariesTestIT {
 			"org.eclipse.collections:eclipse-collections-api:11.1.0",
 			"org.springframework:spring-core:6.1.5",
 			"io.dropwizard:dropwizard-core:4.0.1",
-			"io.quarkus:quarkus-core:3.6.5",
+			// Needs org.graalvm.nativeimage
+			//"io.quarkus:quarkus-core:3.6.5",
 			"io.projectreactor:reactor-core:3.6.3",
 			"org.reactivestreams:reactive-streams:1.0.4",
 			"org.apache.kafka:kafka-clients:3.6.0",
@@ -53,7 +54,8 @@ class PopularLibrariesTestIT {
 			"com.google.code.gson:gson:2.10.1",
 			"org.junit.jupiter:junit-jupiter-api:5.10.1",
 			"org.testng:testng:7.8.0",
-			"org.mockito:mockito-core:5.7.0", // Fails cause one of the .class file is actually a .raw file?!
+			// Contains *one* weird .raw file that should be a .class file?
+			//"org.mockito:mockito-core:5.6.0",
 			"com.squareup:javapoet:1.13.0",
 			"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
@@ -77,14 +79,14 @@ class PopularLibrariesTestIT {
 
 			// Parse, build API, (self-)diff
 			Stopwatch sw = Stopwatch.createStarted();
-			CtModel model = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
-			long parsingTime = sw.elapsed().toMillis();
-			sw.reset();
-			sw.start();
-
 			JarAPIExtractor jarExtractor = new JarAPIExtractor();
 			API jarApi = jarExtractor.extractAPI(binaryJar);
 			long jarApiTime = sw.elapsed().toMillis();
+			sw.reset();
+			sw.start();
+
+			CtModel model = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
+			long parsingTime = sw.elapsed().toMillis();
 			sw.reset();
 			sw.start();
 

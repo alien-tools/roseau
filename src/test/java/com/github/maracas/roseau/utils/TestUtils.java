@@ -104,13 +104,13 @@ public class TestUtils {
 			return findField.get();
 	}
 
-	public static MethodDecl assertMethod(TypeDecl decl, String signature) {
+	public static MethodDecl assertMethod(TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
-			.filter(m -> m.getSignature().equals(signature))
+			.filter(m -> m.getErasure().equals(erasure))
 			.toList();
 
 		if (findMethod.isEmpty())
-			throw new AssertionFailedError("No such method", signature, "No such method");
+			throw new AssertionFailedError("No such method", erasure, "No such method");
 		return findMethod.getFirst();
 	}
 

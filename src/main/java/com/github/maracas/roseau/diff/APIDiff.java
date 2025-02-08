@@ -89,7 +89,7 @@ public class APIDiff {
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
 		t1.getAllMethods().forEach(m1 ->
-			t2.findMethod(m1.getSignature()).ifPresentOrElse(
+			t2.findMethod(m1.getErasure()).ifPresentOrElse(
 				// There is a matching method
 				m2 -> diffMethod(m1, m2),
 				// The method has been removed
@@ -100,7 +100,7 @@ public class APIDiff {
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
 		c1.getConstructors().forEach(cons1 ->
-			c2.findConstructor(cons1.getSignature()).ifPresentOrElse(
+			c2.findConstructor(cons1.getErasure()).ifPresentOrElse(
 				// There is a matching constructor
 				cons2 -> diffConstructor(cons1, cons2),
 				// The constructor has been removed
@@ -112,7 +112,7 @@ public class APIDiff {
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
 		t2.getAllMethods()
 			.filter(MethodDecl::isAbstract)
-			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
+			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameErasure(m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);

@@ -171,7 +171,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 					.map(TypeReference::getResolvedApiType)
 					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
 			).collect(Collectors.toMap(
-				MethodDecl::getSignature,
+				MethodDecl::getErasure,
 				Function.identity(),
 				(m1, m2) -> m1.isOverriding(m2) ? m1 : m2
 			)).values().stream().toList();
@@ -226,9 +226,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
-	public Optional<MethodDecl> findMethod(String signature) {
+	public Optional<MethodDecl> findMethod(String erasure) {
 		return getAllMethods()
-			.filter(m -> Objects.equals(signature, m.getSignature()))
+			.filter(m -> Objects.equals(erasure, m.getErasure()))
 			.findFirst();
 	}
 
