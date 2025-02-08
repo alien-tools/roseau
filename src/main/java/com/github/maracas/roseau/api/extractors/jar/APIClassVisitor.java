@@ -26,6 +26,7 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
+import org.objectweb.asm.RecordComponentVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 
@@ -34,7 +35,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
-import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 class APIClassVisitor extends ClassVisitor {
@@ -42,6 +42,7 @@ class APIClassVisitor extends ClassVisitor {
 	private String className;
 	private int classAccess;
 	private TypeDecl typeDecl;
+	private TypeReference<TypeDecl> enclosingType;
 	private TypeReference<ClassDecl> superClass;
 	private List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
 	private List<FieldDecl> fields = new ArrayList<>();
@@ -51,8 +52,7 @@ class APIClassVisitor extends ClassVisitor {
 	private List<String> annotations = new ArrayList<>();
 	private boolean isSealed = false;
 	private boolean shouldSkip = false;
-
-	private static final Pattern ANONYMOUS_PATTERN = Pattern.compile(".*\\$\\d+.*");
+	private int recordComponents = 0;
 
 	private static final Logger LOGGER = LogManager.getLogger();
 
@@ -66,15 +66,16 @@ class APIClassVisitor extends ClassVisitor {
 	}
 
 	@Override
+	public void visitSource(String source, String debug) {
+		// Skipping our non-Java JVM friends
+		if (!shouldSkip && source != null && !source.endsWith(".java"))
+			shouldSkip = true;
+	}
+
+	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 		className = bytecodeToFqn(name);
 		classAccess = access;
-
-		if (ANONYMOUS_PATTERN.matcher(className).matches()) {
-			LOGGER.debug("Skipping anonymous class {}", className);
-			shouldSkip = true;
-			return;
-		}
 
 		if (className.endsWith("package-info") || className.endsWith("module-info")) {
 			LOGGER.debug("Skipping package/module-info {}", className);
@@ -107,8 +108,6 @@ class APIClassVisitor extends ClassVisitor {
 				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
 				.toList();
 		}
-
-		super.visit(version, access, name, signature, superName, interfaces);
 	}
 
 	@Override
@@ -132,7 +131,7 @@ class APIClassVisitor extends ClassVisitor {
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 				annotations.add(descriptor);
-				return super.visitAnnotation(descriptor, visible);
+				return null;
 			}
 
 			@Override
@@ -140,6 +139,15 @@ class APIClassVisitor extends ClassVisitor {
 				fields.add(convertField(access, name, descriptor, signature, annotations));
 			}
 		};
+	}
+
+	@Override
+	public RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) {
+		// These are private final fields, we don't want them
+		// Just keeping track of them to know which default constructor to exclude below
+		if (!shouldSkip)
+			++recordComponents;
+		return null;
 	}
 
 	@Override
@@ -157,8 +165,26 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 		}
 
-		if (isEnum(classAccess) && (name.equals("values") || name.equals("valueOf"))) {
-			LOGGER.debug("Skipping enum's values()/valueOf()");
+		// FIXME: stupid heuristics below to mark non-source but non-synthetic stuff
+		if (isEnum(classAccess) && (
+			   (name.equals("values") && descriptor.startsWith("()[L"))
+			|| (name.equals("valueOf") && descriptor.startsWith("(Ljava/lang/String;)L"))
+		)) {
+			LOGGER.debug("Skipping {}'s values()/valueOf()", className);
+			return null;
+		}
+
+		if (isRecord(classAccess) && (
+			   (name.equals("toString") && descriptor.equals("()Ljava/lang/String;"))
+			|| (name.equals("equals") && descriptor.equals("(Ljava/lang/Object;)Z"))
+		  || (name.equals("hashCode") && descriptor.equals("()I"))
+		)) {
+			LOGGER.debug("Skipping {}}'s toString()/hashCode()/equals()", className);
+			return null;
+		}
+
+		if (isRecord(classAccess) && (name.equals("<init>") && Type.getArgumentCount(descriptor) == recordComponents)) {
+			LOGGER.debug("Skipping {}'s default constructor", className);
 			return null;
 		}
 
@@ -168,7 +194,7 @@ class APIClassVisitor extends ClassVisitor {
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 				annotations.add(descriptor);
-				return super.visitAnnotation(descriptor, visible);
+				return null;
 			}
 
 			@Override
@@ -183,34 +209,40 @@ class APIClassVisitor extends ClassVisitor {
 
 	@Override
 	public void visitPermittedSubclass(String permittedSubclass) {
-		// Roseau's current API model does not care about the list of permitted subclasses
-		// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
-		isSealed = true;
-		super.visitPermittedSubclass(permittedSubclass);
+		if (!shouldSkip) {
+			// Roseau's current API model does not care about the list of permitted subclasses
+			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
+			isSealed = true;
+		}
 	}
 
 	@Override
 	public void visitInnerClass(String name, String outerName, String innerName, int access) {
-		// When visiting an inner type, we need to update the access flags
-		if (bytecodeToFqn(name).equals(className)) {
-			this.classAccess = access;
+		if (shouldSkip || !bytecodeToFqn(name).equals(className))
+			return;
+
+		if (outerName != null && innerName != null) {
+			// Nested/inner types
+			classAccess = access;
+			enclosingType = typeRefFactory.createTypeReference(bytecodeToFqn(outerName));
+		} else {
+			// Anonymous/local types
+			shouldSkip = true;
 		}
-		super.visitInnerClass(name, outerName, innerName, access);
 	}
 
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-		annotations.add(descriptor);
-		return super.visitAnnotation(descriptor, visible);
+		if (!shouldSkip)
+			annotations.add(descriptor);
+		return null;
 	}
 
 	@Override
 	public void visitEnd() {
-		String[] parts = className.split("\\$");
-		TypeReference<TypeDecl> enclosingType = parts.length > 1
-			? typeRefFactory.createTypeReference(
-				String.join("$", Arrays.copyOf(parts, parts.length - 1)))
-			: null;
+		if (shouldSkip)
+			return;
+
 		AccessModifier visibility = convertVisibility(classAccess);
 		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
 		List<Annotation> anns = convertAnnotations(annotations);
@@ -219,26 +251,24 @@ class APIClassVisitor extends ClassVisitor {
 		if (isSealed)
 			modifiers.add(Modifier.SEALED);
 
-		if ((classAccess & Opcodes.ACC_ANNOTATION) != 0) {
+		if (isAnnotation(classAccess)) {
 			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
 				fields, methods, enclosingType);
-		} else if ((classAccess & Opcodes.ACC_INTERFACE) != 0) {
+		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
-		} else if ((classAccess & Opcodes.ACC_ENUM) != 0) {
+		} else if (isEnum(classAccess)) {
 			// For some reason, enums are abstract?
 			modifiers.remove(Modifier.ABSTRACT);
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, fields, methods, enclosingType, constructors);
-		} else if ((classAccess & Opcodes.ACC_RECORD) != 0) {
+		} else if (isRecord(classAccess)) {
 			typeDecl = new RecordDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors);
 		} else {
 			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors);
 		}
-
-		super.visitEnd();
 	}
 
 	private FieldDecl convertField(int access, String name, String descriptor, String signature,
@@ -275,7 +305,7 @@ class APIClassVisitor extends ClassVisitor {
 		} else {
 			// Constructors of inner non-static classes take their outer class as implicit first parameter
 			Type[] originalParams = Type.getArgumentTypes(descriptor);
-			parameters = (className.contains("$") && !isStatic(classAccess) && originalParams.length >= 1)
+			parameters = (enclosingType != null && !isStatic(classAccess) && originalParams.length >= 1)
 				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
 				: convertParameters(originalParams);
 			formalTypeParameters = Collections.emptyList();
@@ -438,6 +468,18 @@ class APIClassVisitor extends ClassVisitor {
 
 	private boolean isEnum(int access) {
 		return (access & Opcodes.ACC_ENUM) != 0;
+	}
+
+	private boolean isRecord(int access) {
+		return (access & Opcodes.ACC_RECORD) != 0;
+	}
+
+	private boolean isAnnotation(int access) {
+		return (access & Opcodes.ACC_ANNOTATION) != 0;
+	}
+
+	private boolean isInterface(int access) {
+		return (access & Opcodes.ACC_INTERFACE) != 0;
 	}
 
 	private boolean isVarargs(int access) {

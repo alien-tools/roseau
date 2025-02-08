@@ -65,6 +65,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	@Override
 	public boolean isExported() {
+		if (enclosingType != null && enclosingType.getQualifiedName().equals(qualifiedName)) {
+			throw new RuntimeException(qualifiedName);
+		}
 		boolean isExported = isPublic() || (isProtected() && !isEffectivelyFinal());
 		boolean isParentExported = !isNested() || enclosingType.isExported();
 

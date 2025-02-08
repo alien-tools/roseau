@@ -257,4 +257,161 @@ class GenericsExtractionTest {
 			assertThat(get.resolveTypeParameter(tpr).get(), is(equalTo(v)));
 		else fail();
 	}
+
+	@Test
+	void llm_generated_generics() {
+		var api = buildAPI("""
+			public class DeepseekGenerics<
+				// Primary type parameters with complex bounds
+				T extends Comparable<T> & Serializable,                        // Intersection type
+				U extends ArrayList<Number> & Cloneable,                       // Class & interface bound
+				V extends Map<String, ? super List<? extends T>>,              // Nested wildcards
+				W extends Number & Comparable<? super W>                       // Class + interface with super
+				> {
+			
+				// Fields with complex generic types
+				private Map<? super List<? extends T>, ? extends Set<?>> nestedWildcards;
+				private List<Map.Entry<U, ? extends Map<T, ?>>> nestedTypeArgs;
+				private V complexDependentType;
+				private U boundedField;
+			
+				// Generic constructor with independent type parameters
+				public <S extends Map<? extends T, ? super U> & Cloneable> DeepseekGenerics(S param) {}
+			
+				// Method with nested wildcards and type parameter bounds
+				public <A extends List<? extends T>,
+					B extends Map<A, ? super Set<? extends W>>>
+				Map<A, B> complexMethod(A a, B b) {
+					return null;
+				}
+			
+				// Intersection type in method type parameter
+				public <S extends Number & Comparable<? super S>>
+				void intersectionTypeMethod(List<? extends S> numbers) {}
+			
+				// Recursive bound with nested type arguments
+				public <X extends Comparable<X>>
+				Map<X, List<? extends X>> recursiveBoundMethod(X input) {
+					return null;
+				}
+			
+				// Wildcard combinations with super/extends
+				public void wildcardStorm(
+					List<? super ArrayList<? extends T>> contravariantList,
+					Set<? extends HashMap<? super W, ? extends U>> covariantSet) {}
+			
+				// Generic method with dependent type parameters
+				public <K extends V, L extends Map<K, ? extends U>>
+				L dependentTypesMethod(K key) {
+					return null;
+				}
+			
+				// Complex return type with multiple nesting
+				public List<Map<? super Map.Entry<U, V>,
+					? extends Set<List<? extends W>>>>
+				ultimateReturnType() {
+					return null;
+				}
+			
+				// Static generic method with intersection type
+				public static <N extends Object & Comparable<? super N>>
+				N staticGenericMethod(N param) {
+					return param;
+				}
+			
+				// Method with type parameter in throws clause
+				public <P extends Exception> void genericThrows() throws P {}
+			
+				// Nested generic class
+				class InnerClass<Q extends Map<T, W>> {
+					// Field using enclosing class's type parameters
+					private Q nestedTypeField;
+			
+					// Method with nested type parameters
+					public <R extends List<Q> & Serializable>
+					Map<R, ? extends Q> innerMethod(R param) {
+						return null;
+					}
+				}
+			
+				// Generic interface implementation
+				interface GenericInterface<S extends Comparable<? super S>> {
+					S method();
+				}
+			
+				// Implementation with complex type argument
+				private GenericInterface<? extends W> genericInterfaceImpl =
+					() -> null;
+			
+				// Method with capture-generating wildcard combination
+				public void captureHelper(List<?> wildcardList) {
+					helper(wildcardList);
+				}
+			
+				// Helper method to generate capture error
+				private <C> void helper(List<C> typedList) {}
+			
+				// Generic field with nested wildcards
+				private U nestedList;
+				private V complexMap;
+				private List<? super T> superList;
+				private List<? extends T> extendsList;
+			
+				// Generic method with multiple bounds and nested wildcards
+				public <X extends Comparable<X> & Serializable> void methodWithMultipleBounds(X value) {
+					// Implementation omitted
+				}
+			
+				// Method returning a wildcard type
+				public List<? extends Number> getWildcardNumberList() {
+					return new ArrayList<>();
+				}
+			
+				// Generic method with dependent types
+				public <A extends T, B extends List<A>> B dependentTypeMethod(A element) {
+					return null; // Placeholder
+				}
+			
+				// Intersection type in method parameter
+				public void processIntersectionType(List<? extends Number> list, Map<String, ? super Integer> map) {
+					// Implementation omitted
+				}
+			
+				// Recursive generic bound: T must be comparable to its own type
+				public <R extends Comparable<R>> R recursiveGenericMethod(R value) {
+					return value;
+				}
+			
+				// Method using multiple generics in parameters and return types
+				public <K, W extends List<K>> W genericMethod(K key, W list) {
+					return list;
+				}
+			
+				// Nested type arguments with wildcards
+				public Map<List<? extends T>, Set<? super U>> getNestedGenericTypes() {
+					return new HashMap<>();
+				}
+			
+				// Generic array workaround: Using List instead of direct generic arrays
+				public <E> List<E>[] createGenericArray(int size) {
+					return new List[size]; // Warning: Generic array creation
+				}
+			
+				// A method with a wildcard capture scenario
+				public void captureWildcard(List<?> unknownList) {
+					helperMethod(unknownList);
+				}
+				private <E> void helperMethod(List<E> list) {
+					// Capture the wildcard
+				}
+			
+				// Factory method using generics
+				public static <Z> GPTGenerics<?, ?, ?> createComplexInstance() {
+					return null; // Placeholder
+				}
+			}""");
+
+		// FIXME
+
+	}
 }
