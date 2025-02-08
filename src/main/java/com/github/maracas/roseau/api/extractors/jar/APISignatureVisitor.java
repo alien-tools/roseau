@@ -142,27 +142,13 @@ class APISignatureVisitor extends SignatureVisitor {
 
 		@Override
 		public void visitTypeVariable(String name) {
-			type = switch (wildcard) {
-				case INSTANCEOF -> factory.createTypeParameterReference(name);
-				case SUPER -> factory.createWildcardTypeReference(
-					List.of(factory.createTypeParameterReference(name)), false);
-				case EXTENDS -> factory.createWildcardTypeReference(
-					List.of(factory.createTypeParameterReference(name)), true);
-				default -> throw new IllegalStateException("ASM is drunk");
-			};
+			type = wrapWildcard(factory.createTypeParameterReference(name));
 		}
 
 		@Override
 		public void visitClassType(String name) {
 			String typeName = name.replace('/', '.');
-			type = switch (wildcard) {
-				case INSTANCEOF -> factory.createTypeReference(typeName);
-				case SUPER -> factory.createWildcardTypeReference(
-					List.of(factory.createTypeReference(typeName)), false);
-				case EXTENDS -> factory.createWildcardTypeReference(
-					List.of(factory.createTypeReference(typeName)), true);
-				default -> throw new IllegalStateException("ASM is drunk");
-			};
+			type = wrapWildcard(factory.createTypeReference(typeName));
 		}
 
 		@Override
@@ -174,15 +160,19 @@ class APISignatureVisitor extends SignatureVisitor {
 					? factory.createArrayTypeReference(atr.componentType(), atr.dimension() + 1)
 					: factory.createArrayTypeReference(visitor.getType(), 1);
 
-				// If we're currently building a wildcard, we must wrap it
-				return switch (wildcard) {
-					case INSTANCEOF -> arrayType;
-					case EXTENDS -> factory.createWildcardTypeReference(List.of(arrayType), true);
-					case SUPER -> factory.createWildcardTypeReference(List.of(arrayType), false);
-					default -> throw new IllegalStateException("ASM is drunk");
-				};
+				return wrapWildcard(arrayType);
 			});
 			return visitor;
+		}
+
+		// If we're currently (wildcard != INSTANCEOF) building a wildcard, wrap it
+		private ITypeReference wrapWildcard(ITypeReference wrapped) {
+			return switch (wildcard) {
+				case INSTANCEOF -> wrapped;
+				case SUPER -> factory.createWildcardTypeReference(List.of(wrapped), false);
+				case EXTENDS -> factory.createWildcardTypeReference(List.of(wrapped), true);
+				default -> throw new IllegalStateException("ASM is drunk");
+			};
 		}
 
 		@Override
