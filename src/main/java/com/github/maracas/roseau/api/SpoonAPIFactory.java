@@ -258,8 +258,7 @@ public class SpoonAPIFactory {
 		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
 		return cls.getConstructors().stream()
-			.filter(cons -> isExported(cons) ||
-				(cons.isImplicit() && !cons.isPrivate()))
+			.filter(this::isExported)
 			.map(this::convertCtConstructor)
 			.toList();
 	}

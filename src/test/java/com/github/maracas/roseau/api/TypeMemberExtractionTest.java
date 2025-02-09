@@ -199,8 +199,6 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
-		System.out.println(a.getDeclaredMethods());
-		System.out.println(a.getDeclaredFields());
 		assertThat(a.getDeclaredFields(), hasSize(1));
 		assertThat(a.getDeclaredMethods(), hasSize(1));
 

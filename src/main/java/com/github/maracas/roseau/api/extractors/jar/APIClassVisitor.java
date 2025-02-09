@@ -15,6 +15,7 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
+import com.github.maracas.roseau.api.model.TypeMemberDecl;
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
@@ -51,6 +52,8 @@ class APIClassVisitor extends ClassVisitor {
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	private List<String> annotations = new ArrayList<>();
 	private boolean isSealed = false;
+	private boolean hasNonPrivateConstructor = false;
+	private boolean hasEnumConstantBody = false;
 	private boolean shouldSkip = false;
 	private int recordComponents = 0;
 
@@ -94,15 +97,10 @@ class APIClassVisitor extends ClassVisitor {
 			APISignatureVisitor signatureVisitor = new APISignatureVisitor(api, typeRefFactory);
 			reader.accept(signatureVisitor);
 			formalTypeParameters = signatureVisitor.getFormalTypeParameters();
-			// We don't want Object as explicit superclass
-			if (!signatureVisitor.getSuperclass().getQualifiedName().equals("java.lang.Object"))
-				superClass = signatureVisitor.getSuperclass();
+			superClass = signatureVisitor.getSuperclass();
 			implementedInterfaces = signatureVisitor.getSuperInterfaces();
 		} else {
-			// We don't want Object as explicit superclass
-			if (superName != null && !superName.equals("java/lang/Object"))
-				superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
-
+			superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
 			implementedInterfaces = Arrays.stream(interfaces)
 				.map(this::bytecodeToFqn)
 				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
@@ -158,6 +156,10 @@ class APIClassVisitor extends ClassVisitor {
 		if (isSynthetic(access) || isBridge(access)) {
 			LOGGER.debug("Skipping synthetic/bridge method {}", name);
 			return null;
+		}
+
+		if (name.equals("<init>") && convertVisibility(access) != AccessModifier.PRIVATE) {
+			hasNonPrivateConstructor = true;
 		}
 
 		if (!isTypeMemberExported(access)) {
@@ -218,6 +220,8 @@ class APIClassVisitor extends ClassVisitor {
 
 	@Override
 	public void visitInnerClass(String name, String outerName, String innerName, int access) {
+		hasEnumConstantBody = true;
+
 		if (shouldSkip || !bytecodeToFqn(name).equals(className))
 			return;
 
@@ -251,6 +255,19 @@ class APIClassVisitor extends ClassVisitor {
 		if (isSealed)
 			modifiers.add(Modifier.SEALED);
 
+		if (isEffectivelyFinal(classAccess)) {
+			// We initially included all PUBLIC/PROTECTED type members
+			// Now that we know whether the enclosing type is effectively final, we can filter
+			fields.removeIf(TypeMemberDecl::isProtected);
+			methods.removeIf(TypeMemberDecl::isProtected);
+			constructors.removeIf(TypeMemberDecl::isProtected);
+		}
+
+		// We don't want those as explicit superclasses
+		if (superClass != null &&
+			List.of("java.lang.Object", "java.lang.Record").contains(superClass.getQualifiedName()))
+			superClass = null;
+
 		if (isAnnotation(classAccess)) {
 			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
 				fields, methods, enclosingType);
@@ -258,8 +275,8 @@ class APIClassVisitor extends ClassVisitor {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		} else if (isEnum(classAccess)) {
-			// For some reason, enums are abstract?
-			modifiers.remove(Modifier.ABSTRACT);
+			if (hasEnumConstantBody && !isFinal(classAccess))
+				modifiers.add(Modifier.SEALED);
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, fields, methods, enclosingType, constructors);
 		} else if (isRecord(classAccess)) {
@@ -417,7 +434,12 @@ class APIClassVisitor extends ClassVisitor {
 
 	private boolean isTypeMemberExported(int access) {
 		AccessModifier visibility = convertVisibility(access);
-		return visibility == AccessModifier.PUBLIC ||  visibility == AccessModifier.PROTECTED;
+		return visibility == AccessModifier.PUBLIC || visibility == AccessModifier.PROTECTED;
+	}
+
+	private boolean isEffectivelyFinal(int access) {
+		// FIXME: non-sealed
+		return isFinal(access) || isSealed || (isClass(classAccess) && !hasNonPrivateConstructor);
 	}
 
 	private EnumSet<Modifier> convertClassModifiers(int access) {
@@ -474,6 +496,10 @@ class APIClassVisitor extends ClassVisitor {
 		return (access & Opcodes.ACC_RECORD) != 0;
 	}
 
+	private boolean isClass(int access) {
+		return !isEnum(access) && !isRecord(access) && !isInterface(access) && !isAnnotation(access);
+	}
+
 	private boolean isAnnotation(int access) {
 		return (access & Opcodes.ACC_ANNOTATION) != 0;
 	}
@@ -488,6 +514,10 @@ class APIClassVisitor extends ClassVisitor {
 
 	private boolean isStatic(int access) {
 		return (access & Opcodes.ACC_STATIC) != 0;
+	}
+
+	private boolean isFinal(int access) {
+		return (access & Opcodes.ACC_FINAL) != 0;
 	}
 
 	// No Opcodes.ACC_DEFAULT, so that's how we get it

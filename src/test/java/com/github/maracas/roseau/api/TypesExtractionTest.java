@@ -190,7 +190,7 @@ class TypesExtractionTest {
 		var a = assertClass(api, "A");
 		assertFalse(a.isFinal());
 		assertFalse(a.isSealed());
-		assertFalse(a.isEffectivelyFinal());
+		assertTrue(a.isEffectivelyFinal());
 
 		var b = assertClass(api, "B");
 		assertFalse(b.isFinal());
@@ -210,7 +210,7 @@ class TypesExtractionTest {
 		var e = assertClass(api, "E");
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
-		assertFalse(e.isEffectivelyFinal());
+		assertTrue(e.isEffectivelyFinal());
 
 		var f = assertClass(api, "F");
 		assertTrue(f.isFinal());
