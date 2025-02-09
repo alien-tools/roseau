@@ -6,6 +6,7 @@ import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
+import static com.github.maracas.roseau.utils.TestUtils.assertNoType;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -164,7 +165,7 @@ class TypesExtractionTest {
 	}
 
 	@Test
-	void final_classes() {
+	void final_public_classes() {
 		var api = buildAPI("""
         public class A {}
         public final class B {}""");

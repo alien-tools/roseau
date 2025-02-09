@@ -65,9 +65,6 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	@Override
 	public boolean isExported() {
-		if (enclosingType != null && enclosingType.getQualifiedName().equals(qualifiedName)) {
-			throw new RuntimeException(qualifiedName);
-		}
 		boolean isExported = isPublic() || (isProtected() && !isEffectivelyFinal());
 		boolean isParentExported = !isNested() || enclosingType.isExported();
 
@@ -164,7 +161,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	/**
 	 * Returns all methods that can be invoked on this type, including those declared in its super types.
-	 * Returns the most concrete implementation for each unique method signature.
+	 * Returns the most concrete implementation for each unique method erasure.
 	 */
 	public Stream<MethodDecl> getAllMethods() {
 		if (allMethods == null) {

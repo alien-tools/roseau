@@ -257,15 +257,11 @@ public class SpoonAPIFactory {
 		// We need to keep track of default constructors in the API model.
 		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
-		var ret = cls.getConstructors().stream()
-			.filter(cons -> isExported(cons))
+		return cls.getConstructors().stream()
+			.filter(cons -> isExported(cons) ||
+				(cons.isImplicit() && !cons.isPrivate()))
 			.map(this::convertCtConstructor)
 			.toList();
-
-		if (ret.stream().anyMatch(cons -> cons.getVisibility() == AccessModifier.PRIVATE)) {
-			System.out.println(ret); throw new RuntimeException("mmmh");
-		}
-		return ret;
 	}
 
 	private List<FormalTypeParameter> convertCtFormalTypeParameters(CtFormalTypeDeclarer declarer) {
@@ -384,8 +380,7 @@ public class SpoonAPIFactory {
 		 * }
 		 * public class B extends A {} // package 'pkg'
 		 */
-		//return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
-		return member.isPublic() || member.isProtected();
+		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
 	}
 
 	private boolean isParentExported(CtTypeMember member) {
@@ -402,7 +397,8 @@ public class SpoonAPIFactory {
 				cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
 				return true;
 
-		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
+		return (type.isFinal() || type.hasModifier(ModifierKind.SEALED))
+			&& !type.hasModifier(ModifierKind.NON_SEALED);
 	}
 
 	private String makeQualifiedName(CtTypeMember member) {

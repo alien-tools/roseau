@@ -95,6 +95,13 @@ public class TestUtils {
 		}
 	}
 
+	public static void assertNoType(API api, String name) {
+		Optional<TypeDecl> findType = api.findType(name);
+
+		if (findType.isPresent())
+			throw new AssertionFailedError("Unexpected type", "No such type", findType.get().getQualifiedName());
+	}
+
 	public static FieldDecl assertField(TypeDecl decl, String name) {
 		Optional<FieldDecl> findField = decl.findField(name);
 
@@ -102,6 +109,13 @@ public class TestUtils {
 			throw new AssertionFailedError("No such field", name, "No such field");
 		else
 			return findField.get();
+	}
+
+	public static void assertNoField(TypeDecl decl, String name) {
+		Optional<FieldDecl> findField = decl.findField(name);
+
+		if (findField.isPresent())
+			throw new AssertionFailedError("Unexpected field", "No such field", findField.get().getQualifiedName());
 	}
 
 	public static MethodDecl assertMethod(TypeDecl decl, String erasure) {

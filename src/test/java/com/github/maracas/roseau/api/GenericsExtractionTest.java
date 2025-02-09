@@ -261,7 +261,7 @@ class GenericsExtractionTest {
 	@Test
 	void llm_generated_generics() {
 		var api = buildAPI("""
-			public class DeepseekGenerics<
+			public class ComplexGenerics<
 				// Primary type parameters with complex bounds
 				T extends Comparable<T> & Serializable,                        // Intersection type
 				U extends ArrayList<Number> & Cloneable,                       // Class & interface bound
@@ -276,7 +276,7 @@ class GenericsExtractionTest {
 				private U boundedField;
 			
 				// Generic constructor with independent type parameters
-				public <S extends Map<? extends T, ? super U> & Cloneable> DeepseekGenerics(S param) {}
+				public <S extends Map<? extends T, ? super U> & Cloneable> ComplexGenerics(S param) {}
 			
 				// Method with nested wildcards and type parameter bounds
 				public <A extends List<? extends T>,
@@ -412,6 +412,5 @@ class GenericsExtractionTest {
 			}""");
 
 		// FIXME
-
 	}
 }

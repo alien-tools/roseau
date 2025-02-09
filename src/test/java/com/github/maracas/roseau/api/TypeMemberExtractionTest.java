@@ -10,6 +10,7 @@ import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertField;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
+import static com.github.maracas.roseau.utils.TestUtils.assertNoField;
 import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -198,6 +199,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(a.isExported());
+		System.out.println(a.getDeclaredMethods());
+		System.out.println(a.getDeclaredFields());
 		assertThat(a.getDeclaredFields(), hasSize(1));
 		assertThat(a.getDeclaredMethods(), hasSize(1));
 
