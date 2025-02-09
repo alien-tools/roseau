@@ -16,7 +16,7 @@ public final class MethodDecl extends ExecutableDecl {
 	public MethodDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                  List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                  ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
-	                  List<TypeReference<ClassDecl>> thrownExceptions) {
+	                  List<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type, parameters,
 			formalTypeParameters, thrownExceptions);
 	}
@@ -57,7 +57,7 @@ public final class MethodDecl extends ExecutableDecl {
 		Objects.requireNonNull(other);
 		if (equals(other))
 			return true;
-		if (hasSameSignature(other)) {
+		if (hasSameErasure(other)) {
 			if (getContainingType().isSubtypeOf(other.getContainingType()))
 				return true;
 			if (!isAbstract() && other.isAbstract())

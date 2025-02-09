@@ -89,7 +89,7 @@ public class APIDiff {
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
 		t1.getAllMethods().forEach(m1 ->
-			t2.findMethod(m1.getSignature()).ifPresentOrElse(
+			t2.findMethod(m1.getErasure()).ifPresentOrElse(
 				// There is a matching method
 				m2 -> diffMethod(m1, m2),
 				// The method has been removed
@@ -100,7 +100,7 @@ public class APIDiff {
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
 		c1.getConstructors().forEach(cons1 ->
-			c2.findConstructor(cons1.getSignature(), cons1.isVarargs()).ifPresentOrElse(
+			c2.findConstructor(cons1.getErasure()).ifPresentOrElse(
 				// There is a matching constructor
 				cons2 -> diffConstructor(cons1, cons2),
 				// The constructor has been removed
@@ -112,7 +112,7 @@ public class APIDiff {
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
 		t2.getAllMethods()
 			.filter(MethodDecl::isAbstract)
-			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameSignature(m2)))
+			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameErasure(m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface())
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
@@ -142,9 +142,6 @@ public class APIDiff {
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
 		if (!c1.isEffectivelyFinal() && c2.isEffectivelyFinal())
-			bc(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
-
-		if (!c1.isSealed() && c2.isSealed())
 			bc(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
 
 		if (!c1.isEffectivelyAbstract() && c2.isEffectivelyAbstract())
@@ -207,8 +204,9 @@ public class APIDiff {
 		if (cons1.isPublic() && cons2.isProtected())
 			bc(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cons1, cons2);
 
-		if (cons1.isVarargs() && !cons2.isVarargs())
-			bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, cons1, cons2);
+		// We report that as a CONSTRUCTOR_REMOVED
+		//if (cons1.isVarargs() && !cons2.isVarargs())
+		//	bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, cons1, cons2);
 
 		diffThrownExceptions(cons1, cons2);
 		diffFormalTypeParameters(cons1, cons2);
@@ -226,8 +224,9 @@ public class APIDiff {
 	}
 
 	private void diffParameters(ExecutableDecl e1, ExecutableDecl e2) {
-		if (e1.isVarargs() && !e2.isVarargs())
-			bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, e1, e2);
+		// We report that as a METHOD_REMOVED
+		//if (e1.isVarargs() && !e2.isVarargs())
+		//	bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, e1, e2);
 
 		// We checked executable signatures, so we know params are equals modulo type arguments
 		for (int i = 0; i < e1.getParameters().size(); i++) {

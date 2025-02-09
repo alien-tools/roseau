@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -160,7 +161,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	/**
 	 * Returns all methods that can be invoked on this type, including those declared in its super types.
-	 * Returns the most concrete implementation for each unique method signature.
+	 * Returns the most concrete implementation for each unique method erasure.
 	 */
 	public Stream<MethodDecl> getAllMethods() {
 		if (allMethods == null) {
@@ -170,7 +171,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 					.map(TypeReference::getResolvedApiType)
 					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
 			).collect(Collectors.toMap(
-				MethodDecl::getSignature,
+				MethodDecl::getErasure,
 				Function.identity(),
 				(m1, m2) -> m1.isOverriding(m2) ? m1 : m2
 			)).values().stream().toList();
@@ -225,15 +226,25 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.findFirst();
 	}
 
-	public Optional<MethodDecl> findMethod(String signature) {
+	public Optional<MethodDecl> findMethod(String erasure) {
 		return getAllMethods()
-			.filter(m -> Objects.equals(m.getSignature(), signature))
+			.filter(m -> Objects.equals(erasure, m.getErasure()))
 			.findFirst();
 	}
 
 	public boolean isSubtypeOf(ITypeReference other) {
-		return Objects.equals(qualifiedName, other.getQualifiedName())
+		return other.equals(TypeReference.OBJECT)
+			|| Objects.equals(qualifiedName, other.getQualifiedName())
 			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup, other));
+	}
+
+	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
+		var resolved = formalTypeParameters.stream()
+			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
+			.findFirst();
+
+		return resolved.or(
+			() -> enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
 	}
 
 	@Override

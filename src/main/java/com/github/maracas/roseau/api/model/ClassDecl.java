@@ -11,6 +11,7 @@ import java.util.stream.Stream;
 
 /**
  * A class declaration is a {@link TypeDecl} with an optional superclass and list of {@link ConstructorDecl}.
+ * {@link ClassDecl}s without superclass implicitly extend {@code java.lang.Object}.
  */
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
@@ -25,7 +26,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	                 List<ConstructorDecl> constructors) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
-		this.superClass = superClass;
+		this.superClass = superClass != null ? superClass : TypeReference.OBJECT;
 		this.constructors = Objects.requireNonNull(constructors);
 	}
 
@@ -54,16 +55,10 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			(constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected()));
 	}
 
-	public Optional<ConstructorDecl> findConstructor(String signature, boolean varargs) {
-		List<ConstructorDecl> matchingCons = getConstructors().stream()
-			.filter(cons -> Objects.equals(signature, cons.getSignature()))
-			.toList();
-
-		if (matchingCons.isEmpty())
-			return Optional.empty();
-		if (matchingCons.size() == 1)
-			return Optional.of(matchingCons.getFirst());
-		return matchingCons.stream().filter(cons -> cons.isVarargs() == varargs).findFirst();
+	public Optional<ConstructorDecl> findConstructor(String erasure) {
+		return getConstructors().stream()
+			.filter(cons -> Objects.equals(erasure, cons.getErasure()))
+			.findFirst();
 	}
 
 	@Override
@@ -75,14 +70,14 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
-		return superClass == null
-			? Stream.empty()
-			: Stream.concat(Stream.of(superClass),
-					superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty));
+		if (superClass.equals(TypeReference.OBJECT) || superClass.equals(TypeReference.RECORD))
+			return Stream.empty();
+		return Stream.concat(Stream.of(superClass),
+			superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty));
 	}
 
-	public Optional<TypeReference<ClassDecl>> getSuperClass() {
-		return Optional.ofNullable(superClass);
+	public TypeReference<ClassDecl> getSuperClass() {
+		return superClass;
 	}
 
 	public List<ConstructorDecl> getConstructors() {

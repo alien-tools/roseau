@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.diff.changes;
 
+import com.github.maracas.roseau.api.model.ExecutableDecl;
 import com.github.maracas.roseau.api.model.Symbol;
 
 import java.util.Objects;
@@ -20,9 +21,17 @@ public record BreakingChange(
 		Objects.requireNonNull(impactedSymbol);
 	}
 
+	public String printSymbol(Symbol s) {
+		if (s == null)
+			return "";
+		if (s instanceof ExecutableDecl e)
+			return String.format("%s.%s", e.getContainingType().getQualifiedName(), e.getSignature());
+		return s.getQualifiedName();
+	}
+
 	@Override
 	public String toString() {
-		return "BC[kind=%s, impactedSymbol=%s, newSymbol=%s]".formatted(kind, impactedSymbol.getQualifiedName(),
-			newSymbol != null ? newSymbol.getQualifiedName() : "");
+		return "BC[kind=%s, impactedSymbol=%s, newSymbol=%s]".formatted(kind,
+			printSymbol(impactedSymbol), printSymbol(newSymbol));
 	}
 }

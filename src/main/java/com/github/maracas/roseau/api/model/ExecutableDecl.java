@@ -1,12 +1,15 @@
 package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
+import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
@@ -18,13 +21,15 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	protected final List<FormalTypeParameter> formalTypeParameters;
 
-	protected final List<TypeReference<ClassDecl>> thrownExceptions;
+	// Thrown exceptions aren't necessarily TypeReference<ClassDecl>
+	// e.g.: <X extends Throwable> m() throws X
+	protected final List<ITypeReference> thrownExceptions;
 
 	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,
-	                         List<TypeReference<ClassDecl>> thrownExceptions) {
+	                         List<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		this.parameters = Objects.requireNonNull(parameters);
 		this.formalTypeParameters = Objects.requireNonNull(formalTypeParameters);
@@ -45,16 +50,42 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @param other The ExecutableDecl to compare the signature with
 	 * @return true if they have the same signature, false otherwise
 	 */
-	public boolean hasSameSignature(ExecutableDecl other) {
-		return equals(other) || Objects.equals(getSignature(), other.getSignature());
+	public boolean hasSameErasure(ExecutableDecl other) {
+		return equals(other) || Objects.equals(getErasure(), other.getErasure());
 	}
 
-	/**
-	 * Varargs and generics not included
-	 */
+	// §8.4.2
 	public String getSignature() {
 		return "%s(%s)".formatted(simpleName,
-			parameters.stream().map(ParameterDecl::type).map(ITypeReference::getQualifiedName).collect(Collectors.joining(",")));
+			parameters.stream()
+				.map(p -> String.format("%s%s", p.type(), p.isVarargs() ? "[]" : ""))
+				.collect(Collectors.joining(","))
+		);
+	}
+
+	public String getErasure() {
+		return "%s(%s)".formatted(simpleName,
+			parameters.stream()
+				.map(p -> String.format("%s%s", getErasure(p.type()).getQualifiedName(), p.isVarargs() ? "[]" : ""))
+				.collect(Collectors.joining(","))
+		);
+	}
+
+	public ITypeReference getErasure(ITypeReference type) {
+		return switch (type) {
+			case WildcardTypeReference wtr -> wtr.bounds().getFirst();
+			case TypeParameterReference tpr ->
+				resolveTypeParameter(tpr).map(t -> t.bounds().getFirst()).orElse(TypeReference.OBJECT);
+			default -> type;
+		};
+	}
+
+	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
+		var resolved = formalTypeParameters.stream()
+			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
+			.findFirst();
+
+		return resolved.or(() -> containingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
 	}
 
 	/**
@@ -68,7 +99,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public boolean isOverloading(ExecutableDecl other) {
 		return Objects.equals(getSimpleName(), other.getSimpleName())
-			&& !hasSameSignature(other)
+			&& !hasSameErasure(other)
 			&& containingType.isSameHierarchy(other.getContainingType());
 	}
 
@@ -87,13 +118,13 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return Collections.unmodifiableList(formalTypeParameters);
 	}
 
-	public List<TypeReference<ClassDecl>> getThrownExceptions() {
+	public List<ITypeReference> getThrownExceptions() {
 		return Collections.unmodifiableList(thrownExceptions);
 	}
 
-	public List<TypeReference<ClassDecl>> getThrownCheckedExceptions() {
+	public List<ITypeReference> getThrownCheckedExceptions() {
 		return thrownExceptions.stream()
-			.filter(e -> e.getResolvedApiType().map(ClassDecl::isCheckedException).orElse(false))
+			.filter(e -> e.isSubtypeOf(TypeReference.EXCEPTION) && !e.isSubtypeOf(TypeReference.RUNTIME_EXCEPTION))
 			.toList();
 	}
 
