@@ -81,13 +81,13 @@ class APIClassVisitor extends ClassVisitor {
 		classAccess = access;
 
 		if (className.endsWith("package-info") || className.endsWith("module-info")) {
-			LOGGER.debug("Skipping package/module-info {}", className);
+			LOGGER.trace("Skipping package/module-info {}", className);
 			shouldSkip = true;
 			return;
 		}
 
 		if (isSynthetic(classAccess)) {
-			LOGGER.debug("Skipping synthetic class {}", className);
+			LOGGER.trace("Skipping synthetic class {}", className);
 			shouldSkip = true;
 			return;
 		}
@@ -114,12 +114,12 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 
 		if (isSynthetic(access)) {
-			LOGGER.debug("Skipping synthetic field {}", name);
+			LOGGER.trace("Skipping synthetic field {}", name);
 			return null;
 		}
 
 		if (!isTypeMemberExported(access)) {
-			LOGGER.debug("Skipping unexported field {}", name);
+			LOGGER.trace("Skipping unexported field {}", name);
 			return null;
 		}
 
@@ -154,7 +154,7 @@ class APIClassVisitor extends ClassVisitor {
 			return null;
 
 		if (isSynthetic(access) || isBridge(access)) {
-			LOGGER.debug("Skipping synthetic/bridge method {}", name);
+			LOGGER.trace("Skipping synthetic/bridge method {}", name);
 			return null;
 		}
 
@@ -163,7 +163,7 @@ class APIClassVisitor extends ClassVisitor {
 		}
 
 		if (!isTypeMemberExported(access)) {
-			LOGGER.debug("Skipping unexported method {}", name);
+			LOGGER.trace("Skipping unexported method {}", name);
 			return null;
 		}
 
@@ -171,7 +171,7 @@ class APIClassVisitor extends ClassVisitor {
 		if (isEnum(classAccess) &&
 			((name.equals("values") && descriptor.startsWith("()[L")) ||
 				(name.equals("valueOf") && descriptor.startsWith("(Ljava/lang/String;)L")))) {
-			LOGGER.debug("Skipping {}'s values()/valueOf()", className);
+			LOGGER.trace("Skipping {}'s values()/valueOf()", className);
 			return null;
 		}
 
@@ -179,12 +179,12 @@ class APIClassVisitor extends ClassVisitor {
 			((name.equals("toString") && descriptor.equals("()Ljava/lang/String;")) ||
 				(name.equals("equals") && descriptor.equals("(Ljava/lang/Object;)Z")) ||
 				(name.equals("hashCode") && descriptor.equals("()I")))) {
-			LOGGER.debug("Skipping {}'s toString()/hashCode()/equals()", className);
+			LOGGER.trace("Skipping {}'s toString()/hashCode()/equals()", className);
 			return null;
 		}
 
 		if (isRecord(classAccess) && (name.equals("<init>") && Type.getArgumentCount(descriptor) == recordComponents)) {
-			LOGGER.debug("Skipping {}'s default constructor", className);
+			LOGGER.trace("Skipping {}'s default constructor", className);
 			return null;
 		}
 
