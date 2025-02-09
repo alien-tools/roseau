@@ -33,6 +33,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private T resolvedApiType = null;
 
 	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
+	public static final TypeReference<ClassDecl> RECORD = new TypeReference<>("java.lang.Record");
 	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
 

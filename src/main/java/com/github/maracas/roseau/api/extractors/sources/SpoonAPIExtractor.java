@@ -1,5 +1,8 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.api.extractors.sources;
 
+import com.github.maracas.roseau.api.SpoonAPIFactory;
+import com.github.maracas.roseau.api.SpoonUtils;
+import com.github.maracas.roseau.api.extractors.APIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import spoon.reflect.CtModel;

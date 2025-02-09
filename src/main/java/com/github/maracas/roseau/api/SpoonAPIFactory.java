@@ -220,7 +220,7 @@ public class SpoonAPIFactory {
 			createITypeReference(method.getType()),
 			convertCtParameters(method),
 			convertCtFormalTypeParameters(method),
-			createTypeReferences(new ArrayList<>(method.getThrownTypes()))
+			createITypeReferences(new ArrayList<>(method.getThrownTypes()))
 		);
 	}
 
@@ -235,7 +235,7 @@ public class SpoonAPIFactory {
 			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
 			convertCtFormalTypeParameters(cons),
-			createTypeReferences(new ArrayList<>(cons.getThrownTypes()))
+			createITypeReferences(new ArrayList<>(cons.getThrownTypes()))
 		);
 	}
 
@@ -258,7 +258,7 @@ public class SpoonAPIFactory {
 		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
 		return cls.getConstructors().stream()
-			.filter(cons -> isExported(cons) || cons.isImplicit())
+			.filter(this::isExported)
 			.map(this::convertCtConstructor)
 			.toList();
 	}
@@ -272,7 +272,11 @@ public class SpoonAPIFactory {
 	private FormalTypeParameter convertCtTypeParameter(CtTypeParameter parameter) {
 		return new FormalTypeParameter(
 			parameter.getSimpleName(),
-			convertCtTypeParameterBounds(parameter.getSuperclass())
+			convertCtTypeParameterBounds(parameter.getSuperclass() != null
+				// If there are no bounds, we make the bound to java.lang.Object explicit
+				? parameter.getSuperclass()
+				: typeFactory.objectType()
+			)
 		);
 	}
 
@@ -392,10 +396,11 @@ public class SpoonAPIFactory {
 				cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
 				return true;
 
-		return type.isFinal() || type.hasModifier(ModifierKind.SEALED);
+		return (type.isFinal() || type.hasModifier(ModifierKind.SEALED))
+			&& !type.hasModifier(ModifierKind.NON_SEALED);
 	}
 
 	private String makeQualifiedName(CtTypeMember member) {
-		return String.format("%s.%s", member.getDeclaringType().getQualifiedName(), member.getSimpleName());
+		return member.getDeclaringType().getQualifiedName() + "." + member.getSimpleName();
 	}
 }

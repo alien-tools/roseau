@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.differential;
 
-/*import com.github.maracas.roseau.api.SpoonAPIExtractor;
+/*import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;

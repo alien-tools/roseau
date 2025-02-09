@@ -12,7 +12,7 @@ public final class RecordDecl extends ClassDecl {
 	                  List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
 	                  TypeReference<TypeDecl> enclosingType, List<ConstructorDecl> constructors) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
-			fields, methods, enclosingType, null, constructors);
+			fields, methods, enclosingType, TypeReference.RECORD, constructors);
 	}
 
 	@Override

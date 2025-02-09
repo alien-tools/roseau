@@ -70,9 +70,14 @@ class ClassNowFinalTest {
 	@Test
 	void enummm() {
 		// JLS §8.9:
-		// An enum class E is implicitly sealed if its declaration contains at least one enum
-		// constant that has a class body. The permitted direct subclasses (§8.1.6) of E are
-		// the anonymous classes implicitly declared by the enum constants that have a class body
+		// An enum class is either implicitly final or implicitly sealed, as follows:
+		//    An enum class is implicitly final if its declaration contains no enum constants
+		//    that have a class body (§8.9.1).
+
+		//    An enum class E is implicitly sealed if its declaration contains at least one enum
+		//    constant that has a class body. The permitted direct subclasses (§8.1.6) of E are
+		//    the anonymous classes implicitly declared by the enum constants that have a
+		//    class body.
 		var v1 = """
 			public enum E {
 				A;
@@ -82,6 +87,6 @@ class ClassNowFinalTest {
 				A, S { };
 			}""";
 
-		assertBC("E", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertNoBC(buildDiff(v1, v2));
 	}
 }

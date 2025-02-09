@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.utils;
 
-import com.github.maracas.roseau.api.SpoonAPIExtractor;
+import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
@@ -95,6 +95,13 @@ public class TestUtils {
 		}
 	}
 
+	public static void assertNoType(API api, String name) {
+		Optional<TypeDecl> findType = api.findType(name);
+
+		if (findType.isPresent())
+			throw new AssertionFailedError("Unexpected type", "No such type", findType.get().getQualifiedName());
+	}
+
 	public static FieldDecl assertField(TypeDecl decl, String name) {
 		Optional<FieldDecl> findField = decl.findField(name);
 
@@ -104,13 +111,20 @@ public class TestUtils {
 			return findField.get();
 	}
 
-	public static MethodDecl assertMethod(TypeDecl decl, String signature) {
+	public static void assertNoField(TypeDecl decl, String name) {
+		Optional<FieldDecl> findField = decl.findField(name);
+
+		if (findField.isPresent())
+			throw new AssertionFailedError("Unexpected field", "No such field", findField.get().getQualifiedName());
+	}
+
+	public static MethodDecl assertMethod(TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
-			.filter(m -> m.getSignature().equals(signature))
+			.filter(m -> m.getErasure().equals(erasure))
 			.toList();
 
 		if (findMethod.isEmpty())
-			throw new AssertionFailedError("No such method", signature, "No such method");
+			throw new AssertionFailedError("No such method", erasure, "No such method");
 		return findMethod.getFirst();
 	}
 

@@ -108,14 +108,11 @@ class TypeReferencesExtractionTest {
 			}""");
 		var b = assertClass(api, "B");
 
-		assertTrue(b.getSuperClass().isPresent());
 		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(2));
 
-		if (b.getSuperClass().get() instanceof TypeReference<?> ref) {
-			assertThat(ref.getQualifiedName(), is(equalTo("A")));
-			assertTrue(ref.getResolvedApiType().isPresent());
-		}
+		assertThat(b.getSuperClass().getQualifiedName(), is(equalTo("A")));
+		assertTrue(b.getSuperClass().getResolvedApiType().isPresent());
 	}
 
 	@Test
@@ -129,14 +126,10 @@ class TypeReferencesExtractionTest {
 			}""");
 		var b = assertClass(api, "B");
 
-		assertTrue(b.getSuperClass().isPresent());
 		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(2));
-
-		if (b.getSuperClass().get() instanceof TypeReference<?> ref) {
-			assertThat(ref.getQualifiedName(), is(equalTo("A")));
-			assertTrue(ref.getResolvedApiType().isPresent());
-		}
+		assertThat(b.getSuperClass().getQualifiedName(), is(equalTo("A")));
+		assertTrue(b.getSuperClass().getResolvedApiType().isPresent());
 	}
 
 	@Test
@@ -147,14 +140,10 @@ class TypeReferencesExtractionTest {
 			}""");
 		var b = assertClass(api, "B");
 
-		assertTrue(b.getSuperClass().isPresent());
 		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(1));
-
-		if (b.getSuperClass().get() instanceof TypeReference<?> ref) {
-			assertThat(ref.getQualifiedName(), is(equalTo("Unknown")));
-			assertFalse(ref.getResolvedApiType().isPresent());
-		}
+		assertThat(b.getSuperClass().getQualifiedName(), is(equalTo("Unknown")));
+		assertFalse(b.getSuperClass().getResolvedApiType().isPresent());
 	}
 
 	@Test
@@ -192,10 +181,8 @@ class TypeReferencesExtractionTest {
 			public class B extends java.lang.Thread {}""");
 		var a = assertClass(api, "A");
 		var b = assertClass(api, "B");
-		var superA = a.getSuperClass().get();
-		var superB = b.getSuperClass().get();
 
-		assertThat(superA, sameInstance(superB));
+		assertThat(a.getSuperClass(), sameInstance(b.getSuperClass()));
 	}
 
 	@Test

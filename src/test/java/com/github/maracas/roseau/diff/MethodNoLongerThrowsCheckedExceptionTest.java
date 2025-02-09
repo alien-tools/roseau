@@ -99,4 +99,19 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 
 		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
+
+	@Test
+	void method_no_longer_throws_type_parameter() {
+		var v1 = """
+			public class A {
+				public <T extends Exception> void m() throws E {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends Exception> void m() {}
+			}""";
+
+		// FIXME
+		// assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
 }

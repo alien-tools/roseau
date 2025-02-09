@@ -8,7 +8,6 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 /**
  * Flyweight {@link ITypeReference} factory.
@@ -31,31 +30,31 @@ public class SpoonTypeReferenceFactory implements TypeReferenceFactory {
 	@Override
 	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName,
 	                                                                 List<ITypeReference> typeArguments) {
-		return cache(String.valueOf(Objects.hash("TR", qualifiedName, typeArguments)),
+		return cache("TR" + qualifiedName + typeArguments.toString(),
 			() -> new TypeReference<>(qualifiedName, typeArguments, apiFactory));
 	}
 
 	@Override
 	public PrimitiveTypeReference createPrimitiveTypeReference(String qualifiedName) {
-		return cache(String.valueOf(Objects.hash("PTR", qualifiedName)),
+		return cache("PTR" + qualifiedName,
 			() -> new PrimitiveTypeReference(qualifiedName));
 	}
 
 	@Override
 	public ArrayTypeReference createArrayTypeReference(ITypeReference componentType, int dimension) {
-		return cache(String.valueOf(Objects.hash("ATR", componentType, dimension)),
+		return cache("ATR" + componentType + dimension,
 			() -> new ArrayTypeReference(componentType, dimension));
 	}
 
 	@Override
 	public TypeParameterReference createTypeParameterReference(String qualifiedName) {
-		return cache(String.valueOf(Objects.hash("TPR", qualifiedName)),
+		return cache("TPR" + qualifiedName,
 			() -> new TypeParameterReference(qualifiedName));
 	}
 
 	@Override
 	public WildcardTypeReference createWildcardTypeReference(List<ITypeReference> bounds, boolean upper) {
-		return cache(String.valueOf(Objects.hash("WTR", bounds, upper)),
+		return cache("WTR" + bounds + upper,
 			() -> new WildcardTypeReference(bounds, upper));
 	}
 }
