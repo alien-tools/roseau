@@ -1,6 +1,7 @@
 package com.github.maracas.roseau.api;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
@@ -15,6 +16,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasItems;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeHierarchyExtractionTest {
@@ -27,7 +29,7 @@ class TypeHierarchyExtractionTest {
 		var s = assertClass(api, "S");
 		var a = assertClass(api, "A");
 		assertThat(a.getImplementedInterfaces(), is(empty()));
-		assertThat(a.getSuperClass().get().getResolvedApiType().get(), is(equalTo(s)));
+		assertThat(a.getSuperClass().getResolvedApiType().get(), is(equalTo(s)));
 	}
 
 	@Test
@@ -38,7 +40,7 @@ class TypeHierarchyExtractionTest {
 			class A implements I, J {}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(a.getSuperClass().isEmpty());
+		assertTrue(a.getSuperClass().equals(TypeReference.OBJECT));
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 		assertThat(a.getImplementedInterfaces().get(1).getQualifiedName(), is(equalTo("J")));
@@ -60,7 +62,7 @@ class TypeHierarchyExtractionTest {
 		var c = assertClass(api, "C");
 		assertThat(c.getImplementedInterfaces(), hasSize(1));
 		assertThat(c.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("A")));
-		assertTrue(c.getSuperClass().isEmpty());
+		assertTrue(c.getSuperClass().equals(TypeReference.OBJECT));
 	}
 
 	@Test
@@ -71,7 +73,7 @@ class TypeHierarchyExtractionTest {
 			class A extends S implements I {}""");
 
 		var a = assertClass(api, "A");
-		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("S")));
+		assertThat(a.getSuperClass().getQualifiedName(), is(equalTo("S")));
 		assertThat(a.getImplementedInterfaces(), hasSize(1));
 		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
@@ -108,7 +110,7 @@ class TypeHierarchyExtractionTest {
 			enum E implements I {}""");
 
 		var e = assertEnum(api, "E");
-		assertTrue(e.getSuperClass().isEmpty());
+		assertEquals(TypeReference.OBJECT, e.getSuperClass());
 		assertThat(e.getImplementedInterfaces(), hasSize(1));
 		assertThat(e.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
@@ -120,7 +122,7 @@ class TypeHierarchyExtractionTest {
 			record R() implements I {}""");
 
 		var r = assertRecord(api, "R");
-		assertTrue(r.getSuperClass().isEmpty());
+		assertEquals(TypeReference.RECORD, r.getSuperClass());
 		assertThat(r.getImplementedInterfaces(), hasSize(1));
 		assertThat(r.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
@@ -141,7 +143,7 @@ class TypeHierarchyExtractionTest {
 
 		var a = assertClass(api, "A");
 
-		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("E")));
+		assertThat(a.getSuperClass().getQualifiedName(), is(equalTo("E")));
 		assertThat(a.getAllSuperClasses().toList(), hasSize(3));
 		assertThat(a.getAllSuperClasses().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("C"), equalTo("D"), equalTo("E")));
@@ -168,7 +170,7 @@ class TypeHierarchyExtractionTest {
 
 		var a = assertClass(api, "A");
 
-		assertThat(a.getSuperClass().get().getQualifiedName(), is(equalTo("E")));
+		assertThat(a.getSuperClass().getQualifiedName(), is(equalTo("E")));
 		assertThat(a.getAllSuperClasses().toList(), hasSize(3));
 		assertThat(a.getAllSuperClasses().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("E"), equalTo("D"), equalTo("java.lang.Thread")));

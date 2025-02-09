@@ -265,7 +265,7 @@ class APIClassVisitor extends ClassVisitor {
 
 		// We don't want those as explicit superclasses
 		if (superClass != null &&
-			List.of("java.lang.Object", "java.lang.Record").contains(superClass.getQualifiedName()))
+			List.of(TypeReference.OBJECT, TypeReference.RECORD).contains(superClass.getQualifiedName()))
 			superClass = null;
 
 		if (isAnnotation(classAccess)) {

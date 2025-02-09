@@ -240,7 +240,7 @@ class GenericsExtractionTest {
 		var a = assertClass(api, "A");
 		var u = a.getFormalTypeParameters().get(1);
 		var v = a.getFormalTypeParameters().get(2);
-		var uRef = a.getSuperClass().get().getTypeArguments().getFirst();
+		var uRef = a.getSuperClass().getTypeArguments().getFirst();
 		var vRef = a.getImplementedInterfaces().getFirst().getTypeArguments().getFirst();
 		var get = assertMethod(a, "get()");
 		var mvRef = get.getType();
