@@ -48,27 +48,6 @@ class PopularLibrariesTestIT {
 
 	static Stream<String> libraries() {
 		return Stream.of(
-			"com.google.dagger:dagger:2.55",
-			"ch.qos.logback:logback-core:1.5.16",
-			//"ch.qos.logback:logback-classic:1.5.16",
-			"org.apache.logging.log4j:log4j-core:2.24.3",
-			"org.apache.logging.log4j:log4j-api:2.24.3",
-			"org.slf4j:slf4j-simple:2.0.16",
-			"org.slf4j:slf4j-api:2.0.16",
-			"com.fasterxml.jackson.core:jackson-core:2.18.2",
-			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
-			"fr.inria.gforge.spoon:spoon-core:11.2.0",
-			"commons-logging:commons-logging:1.3.5",
-			"org.springframework:spring-web:6.2.2",
-			"com.h2database:h2:2.3.232",
-			"org.hamcrest:hamcrest:3.0",
-			"org.springframework:spring-beans:6.2.2",
-			"org.osgi:org.osgi.core:6.0.0",
-			"com.alibaba:fastjson:2.0.54",
-			"commons-collections:commons-collections:3.2.2",
-			"org.json:json:20250107",
-			"commons-beanutils:commons-beanutils:1.10.0",
-			"com.squareup.retrofit2:retrofit:2.11.0",
 			"org.assertj:assertj-core:3.27.3",
 			"commons-codec:commons-codec:1.18.0",
 			"com.google.guava:guava:32.1.3-jre",
@@ -85,7 +64,28 @@ class PopularLibrariesTestIT {
 			"com.squareup:javapoet:1.13.0",
 			"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
-			"com.google.auto.service:auto-service:1.1.1"
+			"com.google.auto.service:auto-service:1.1.1",
+			"com.google.dagger:dagger:2.55",
+			"ch.qos.logback:logback-core:1.5.16",
+			//"ch.qos.logback:logback-classic:1.5.16",
+			//"org.apache.logging.log4j:log4j-core:2.24.3", // external libs
+			"org.apache.logging.log4j:log4j-api:2.24.3",
+			"org.slf4j:slf4j-simple:2.0.16",
+			"org.slf4j:slf4j-api:2.0.16",
+			//"com.fasterxml.jackson.core:jackson-core:2.18.2", // shaded
+			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
+			//"fr.inria.gforge.spoon:spoon-core:11.2.0",
+			"commons-logging:commons-logging:1.3.5",
+			//"org.springframework:spring-web:6.2.2",
+			"com.h2database:h2:2.3.232",
+			"org.hamcrest:hamcrest:3.0",
+			//"org.springframework:spring-beans:6.2.2",
+			"org.osgi:org.osgi.core:6.0.0",
+			//"com.alibaba:fastjson:2.0.54",
+			"commons-collections:commons-collections:3.2.2",
+			"org.json:json:20250107",
+			"commons-beanutils:commons-beanutils:1.10.0",
+			//"com.squareup.retrofit2:retrofit:2.11.0"
 		);
 	}
 
@@ -103,7 +103,7 @@ class PopularLibrariesTestIT {
 			Path sourcesJar = downloadSourcesJar(groupId, artifactId, version);
 			Path sourcesDir = extractSourcesJar(sourcesJar);
 
-			// Parse, build API, (self-)diff
+			// JAR API
 			Stopwatch sw = Stopwatch.createStarted();
 			JarAPIExtractor jarExtractor = new JarAPIExtractor();
 			API jarApi = jarExtractor.extractAPI(binaryJar);
@@ -111,21 +111,18 @@ class PopularLibrariesTestIT {
 			sw.reset();
 			sw.start();
 
+			// Sources parsing
 			CtModel model = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
 			long parsingTime = sw.elapsed().toMillis();
 			sw.reset();
 			sw.start();
 
+			// Sources API
 			SpoonAPIExtractor sourcesExtractor = new SpoonAPIExtractor();
 			API sourcesApi = sourcesExtractor.extractAPI(model);
 			long sourcesApiTime = sw.elapsed().toMillis();
 			sw.reset();
 			sw.start();
-
-			System.out.println("jarvssources");
-			diffAPIs(jarApi, sourcesApi);
-			System.out.println("sourcesvsjar");
-			diffAPIs(sourcesApi, jarApi);
 
 			APIDiff jarToSourcesDiff = new APIDiff(jarApi, sourcesApi);
 			List<BreakingChange> jarToSourcesBCs = jarToSourcesDiff.diff();
@@ -151,6 +148,11 @@ class PopularLibrariesTestIT {
 				libraryGAV, loc, numTypes, numMethods, numFields, parsingTime, sourcesApiTime, diffTime, jarApiTime,
 				jarToSourcesBCs.size(), sourcesToJarBCs.size());
 
+			System.out.println("JAR to Sources API diff:");
+			diffAPIs(jarApi, sourcesApi);
+			System.out.println("Sources to JAR API diff:");
+			diffAPIs(sourcesApi, jarApi);
+
 			if (!jarToSourcesBCs.isEmpty() || !sourcesToJarBCs.isEmpty()) {
 				System.out.println("JAR to Sources BCs:");
 				System.out.println(jarToSourcesBCs.stream()
@@ -166,6 +168,7 @@ class PopularLibrariesTestIT {
 
 			// Check everything went well
 			assertFalse(sourcesApi.getAllTypes().findAny().isEmpty());
+			assertFalse(jarApi.getAllTypes().findAny().isEmpty());
 			assertTrue(jarToSourcesBCs.isEmpty());
 			assertTrue(sourcesToJarBCs.isEmpty());
 		} catch (Exception e) {
