@@ -1,11 +1,11 @@
 package com.github.maracas.roseau.api.extractors.jar;
 
-import com.github.maracas.roseau.api.SpoonAPIFactory;
 import com.github.maracas.roseau.api.extractors.APIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import com.github.maracas.roseau.spoon.SpoonAPIFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;

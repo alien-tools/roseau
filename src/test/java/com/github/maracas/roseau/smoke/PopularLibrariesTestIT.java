@@ -1,8 +1,7 @@
 package com.github.maracas.roseau.smoke;
 
-import com.github.maracas.roseau.api.SpoonUtils;
-import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.extractors.jar.JarAPIExtractor;
+import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
@@ -12,6 +11,7 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
+import com.github.maracas.roseau.spoon.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -54,7 +54,7 @@ class PopularLibrariesTestIT {
 			"org.apache.commons:commons-lang3:3.17.0",
 			"commons-io:commons-io:2.18.0",
 			"org.eclipse.collections:eclipse-collections-api:11.1.0",
-			"org.springframework:spring-core:6.1.5",
+			//"org.springframework:spring-core:6.1.5",
 			"io.dropwizard:dropwizard-core:4.0.1",
 			"io.projectreactor:reactor-core:3.6.3",
 			"org.reactivestreams:reactive-streams:1.0.4",

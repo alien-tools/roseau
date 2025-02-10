@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.api.visit;
 
-import com.github.maracas.roseau.api.SpoonAPIFactory;
+import com.github.maracas.roseau.spoon.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.TypeReference;

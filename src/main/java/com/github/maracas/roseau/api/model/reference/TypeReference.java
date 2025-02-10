@@ -2,7 +2,7 @@ package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.maracas.roseau.api.SpoonAPIFactory;
+import com.github.maracas.roseau.spoon.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import org.apache.logging.log4j.LogManager;

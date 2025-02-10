@@ -109,10 +109,11 @@
     </dependencyManagement>
 
     <dependencies>
+				<!-- Temporarily on beta for INRIA/spoon/pull/6162 -->
         <dependency>
             <groupId>fr.inria.gforge.spoon</groupId>
             <artifactId>spoon-core</artifactId>
-            <version>10.4.2</version>
+            <version>11.2.1-beta-3</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -160,7 +161,7 @@
         <!-- Process Spoon's slf4j logs with ours -->
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j-impl</artifactId>
+            <artifactId>log4j-slf4j2-impl</artifactId>
             <scope>runtime</scope>
         </dependency>
         <dependency>
