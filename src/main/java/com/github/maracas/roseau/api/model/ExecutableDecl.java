@@ -10,7 +10,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.stream.Collectors;
 
 /**
  * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}.
@@ -56,28 +55,40 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	// §8.4.2
 	public String getSignature() {
-		return "%s(%s)".formatted(simpleName,
-			parameters.stream()
-				.map(p -> String.format("%s%s", p.type(), p.isVarargs() ? "[]" : ""))
-				.collect(Collectors.joining(","))
-		);
+		var sb = new StringBuilder();
+		sb.append(simpleName);
+		sb.append("(");
+		for (int i = 0; i < parameters.size(); i++) {
+			var p = parameters.get(i);
+			sb.append(p.type());
+			if (p.isVarargs())
+				sb.append("[]");
+			if (i < parameters.size() - 1)
+				sb.append(",");
+		}
+		return sb.toString();
 	}
 
 	public String getErasure() {
-		return "%s(%s)".formatted(simpleName,
-			parameters.stream()
-				.map(p -> String.format("%s%s", getErasure(p.type()).getQualifiedName(), p.isVarargs() ? "[]" : ""))
-				.collect(Collectors.joining(","))
-		);
-	}
-
-	public ITypeReference getErasure(ITypeReference type) {
-		return switch (type) {
-			case WildcardTypeReference wtr -> wtr.bounds().getFirst();
-			case TypeParameterReference tpr ->
-				resolveTypeParameter(tpr).map(t -> t.bounds().getFirst()).orElse(TypeReference.OBJECT);
-			default -> type;
-		};
+		var sb = new StringBuilder();
+		sb.append(simpleName);
+		sb.append("(");
+		for (int i = 0; i < parameters.size(); i++) {
+			var p = parameters.get(i);
+			var erasedType = switch (p.type()) {
+				case WildcardTypeReference wtr -> wtr.bounds().getFirst();
+				case TypeParameterReference tpr ->
+					resolveTypeParameter(tpr).map(t -> t.bounds().getFirst()).orElse(TypeReference.OBJECT);
+				default -> p.type();
+			};
+			sb.append(erasedType.getQualifiedName());
+			if (p.isVarargs())
+				sb.append("[]");
+			if (i < parameters.size() - 1)
+				sb.append(",");
+		}
+		sb.append(")");
+		return sb.toString();
 	}
 
 	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
