@@ -19,7 +19,7 @@ import java.util.Optional;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
-public class JarAPIExtractor implements APIExtractor {
+public class AsmAPIExtractor implements APIExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;// | ClassReader.SKIP_DEBUG;
 	private static final Logger LOGGER = LogManager.getLogger();
@@ -38,7 +38,7 @@ public class JarAPIExtractor implements APIExtractor {
 					.flatMap(entry -> {
 						try (InputStream is = jar.getInputStream(entry)) {
 							ClassReader reader = new ClassReader(is);
-							APIClassVisitor visitor = new APIClassVisitor(ASM_VERSION, typeRefFactory);
+							AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, typeRefFactory);
 							reader.accept(visitor, PARSING_OPTIONS);
 							return Optional.ofNullable(visitor.getTypeDecl()).stream();
 						} catch (IOException e) {

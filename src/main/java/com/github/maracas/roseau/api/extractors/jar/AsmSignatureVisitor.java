@@ -18,7 +18,7 @@ import java.util.SequencedMap;
 import java.util.function.Supplier;
 import java.util.stream.IntStream;
 
-class APISignatureVisitor extends SignatureVisitor {
+class AsmSignatureVisitor extends SignatureVisitor {
 	private TypeReferenceFactory typeRefFactory;
 	private TypeVisitor<TypeReference<ClassDecl>> superClassVisitor = null;
 	private TypeVisitor<ITypeReference> returnTypeVisitor = null;
@@ -28,7 +28,7 @@ class APISignatureVisitor extends SignatureVisitor {
 	// preserve visit ordering
 	private SequencedMap<String, List<TypeVisitor<ITypeReference>>> formalTypeParameterVisitors = new LinkedHashMap<>();
 
-	APISignatureVisitor(int api, TypeReferenceFactory typeRefFactory) {
+	AsmSignatureVisitor(int api, TypeReferenceFactory typeRefFactory) {
 		super(api);
 		this.typeRefFactory = typeRefFactory;
 	}

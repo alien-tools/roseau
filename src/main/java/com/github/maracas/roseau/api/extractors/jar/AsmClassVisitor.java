@@ -38,7 +38,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.IntStream;
 
-class APIClassVisitor extends ClassVisitor {
+class AsmClassVisitor extends ClassVisitor {
 	private final TypeReferenceFactory typeRefFactory;
 	private String className = null;
 	private int classAccess = 0;
@@ -59,7 +59,7 @@ class APIClassVisitor extends ClassVisitor {
 
 	private static final Logger LOGGER = LogManager.getLogger();
 
-	APIClassVisitor(int api, TypeReferenceFactory typeRefFactory) {
+	AsmClassVisitor(int api, TypeReferenceFactory typeRefFactory) {
 		super(api);
 		this.typeRefFactory = typeRefFactory;
 	}
@@ -94,13 +94,14 @@ class APIClassVisitor extends ClassVisitor {
 
 		if (signature != null) {
 			SignatureReader reader = new SignatureReader(signature);
-			APISignatureVisitor signatureVisitor = new APISignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor signatureVisitor = new AsmSignatureVisitor(api, typeRefFactory);
 			reader.accept(signatureVisitor);
 			formalTypeParameters = signatureVisitor.getFormalTypeParameters();
 			superClass = signatureVisitor.getSuperclass();
 			implementedInterfaces = signatureVisitor.getSuperInterfaces();
 		} else {
-			superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
+			if (superName != null)
+				superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
 			implementedInterfaces = Arrays.stream(interfaces)
 				.map(this::bytecodeToFqn)
 				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
@@ -288,8 +289,8 @@ class APIClassVisitor extends ClassVisitor {
 	                               List<String> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
-			APISignatureVisitor.TypeVisitor<ITypeReference> visitor =
-				new APISignatureVisitor.TypeVisitor<>(api, typeRefFactory);
+			AsmSignatureVisitor.TypeVisitor<ITypeReference> visitor =
+				new AsmSignatureVisitor.TypeVisitor<>(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			fieldType = visitor.getType();
 		} else {
@@ -308,7 +309,7 @@ class APIClassVisitor extends ClassVisitor {
 		List<FormalTypeParameter> formalTypeParameters;
 
 		if (signature != null) {
-			APISignatureVisitor visitor = new APISignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			parameters = visitor.getParameters();
 			formalTypeParameters = visitor.getFormalTypeParameters();
@@ -344,7 +345,7 @@ class APIClassVisitor extends ClassVisitor {
 		List<ITypeReference> thrownExceptions;
 
 		if (signature != null) {
-			APISignatureVisitor visitor = new APISignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			returnType = visitor.getReturnType();
 			parameters = visitor.getParameters();

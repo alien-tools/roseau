@@ -1,6 +1,6 @@
 package com.github.maracas.roseau.smoke;
 
-import com.github.maracas.roseau.api.extractors.jar.JarAPIExtractor;
+import com.github.maracas.roseau.api.extractors.jar.AsmAPIExtractor;
 import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.ClassDecl;
@@ -105,7 +105,7 @@ class PopularLibrariesTestIT {
 
 			// JAR API
 			Stopwatch sw = Stopwatch.createStarted();
-			JarAPIExtractor jarExtractor = new JarAPIExtractor();
+			AsmAPIExtractor jarExtractor = new AsmAPIExtractor();
 			API jarApi = jarExtractor.extractAPI(binaryJar);
 			long jarApiTime = sw.elapsed().toMillis();
 			sw.reset();
