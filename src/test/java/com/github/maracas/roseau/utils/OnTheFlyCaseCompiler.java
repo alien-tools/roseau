@@ -6,7 +6,6 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
-import org.apache.commons.lang3.RandomStringUtils;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.Diagnostic;
@@ -37,7 +36,7 @@ public class OnTheFlyCaseCompiler {
 	}
 
 	private Path saveSource(String source, String className) throws IOException {
-		Path sources = workingDirectory.resolve(RandomStringUtils.randomAlphabetic(8).toLowerCase()).resolve("src");
+		Path sources = workingDirectory.resolve(source.toLowerCase()).resolve("src");
 		Path sourcePath = sources.resolve("%s.java".formatted(className));
 		sources.toFile().mkdirs();
 		Files.writeString(sourcePath, source);
