@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api.extractors;
+package com.github.maracas.roseau.extractors;
 
 import com.github.maracas.roseau.api.model.API;
 

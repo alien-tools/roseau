@@ -2,7 +2,6 @@ package com.github.maracas.roseau.api.model.reference;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.github.maracas.roseau.spoon.SpoonAPIFactory;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import org.apache.logging.log4j.LogManager;
@@ -23,7 +22,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
 	private final List<ITypeReference> typeArguments;
 	@JsonIgnore
-	private SpoonAPIFactory factory = null;
+	private ReflectiveTypeFactory factory = new ReflectiveTypeFactory();
 	@JsonIgnore
 	private boolean resolutionAttempted = false;
 	// Would intuitively make sense as WeakReference but:
@@ -45,11 +44,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		this.typeArguments = Objects.requireNonNull(typeArguments);
 	}
 
-	TypeReference(String qualifiedName, List<ITypeReference> typeArguments, SpoonAPIFactory factory) {
-		this(qualifiedName, typeArguments);
-		this.factory = Objects.requireNonNull(factory);
-	}
-
 	private TypeReference(String qualifiedName) {
 		this(qualifiedName, Collections.emptyList());
 	}
@@ -61,12 +55,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	public List<ITypeReference> getTypeArguments() {
 		return typeArguments;
-	}
-
-	public SpoonAPIFactory getFactory() { return factory; }
-
-	public void setFactory(SpoonAPIFactory factory) {
-		this.factory = Objects.requireNonNull(factory);
 	}
 
 	/**

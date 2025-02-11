@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.extractors;
 
 import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;

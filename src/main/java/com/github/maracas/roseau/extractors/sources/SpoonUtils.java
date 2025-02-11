@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.spoon;
+package com.github.maracas.roseau.extractors.sources;
 
 import spoon.Launcher;
 import spoon.MavenLauncher;

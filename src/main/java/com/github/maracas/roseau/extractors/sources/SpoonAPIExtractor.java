@@ -1,10 +1,8 @@
-package com.github.maracas.roseau.api.extractors.sources;
+package com.github.maracas.roseau.extractors.sources;
 
-import com.github.maracas.roseau.api.extractors.APIExtractor;
+import com.github.maracas.roseau.extractors.APIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.spoon.SpoonAPIFactory;
-import com.github.maracas.roseau.spoon.SpoonUtils;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
@@ -37,7 +35,7 @@ public class SpoonAPIExtractor implements APIExtractor {
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
 			.toList();
 
-		return new API(allTypes, factory);
+		return new API(allTypes);
 	}
 
 	// Returns all types within a package

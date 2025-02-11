@@ -1,13 +1,13 @@
 package com.github.maracas.roseau;
 
-import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
+import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.formatter.BreakingChangesFormatter;
 import com.github.maracas.roseau.diff.formatter.BreakingChangesFormatterFactory;
-import com.github.maracas.roseau.spoon.SpoonUtils;
+import com.github.maracas.roseau.extractors.sources.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;

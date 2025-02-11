@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.spoon;
+package com.github.maracas.roseau.extractors.sources;
 
 import com.github.maracas.roseau.api.model.AccessModifier;
 import com.github.maracas.roseau.api.model.Annotation;
@@ -16,7 +16,7 @@ import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
-import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
+import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import spoon.Launcher;
@@ -60,11 +60,7 @@ public class SpoonAPIFactory {
 
 	public SpoonAPIFactory() {
 		this.typeFactory = new Launcher().createFactory().Type();
-		this.typeReferenceFactory = new SpoonTypeReferenceFactory(this);
-	}
-
-	public TypeReferenceFactory getTypeReferenceFactory() {
-		return typeReferenceFactory;
+		this.typeReferenceFactory = new CachedTypeReferenceFactory();
 	}
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {

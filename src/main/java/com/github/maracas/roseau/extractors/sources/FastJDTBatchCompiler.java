@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.spoon;
+package com.github.maracas.roseau.extractors.sources;
 
 import org.eclipse.jdt.core.compiler.CompilationProgress;
 import org.eclipse.jdt.internal.compiler.IErrorHandlingPolicy;

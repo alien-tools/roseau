@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.extractors;
 
 import org.junit.jupiter.api.Test;
 

@@ -1,11 +1,10 @@
-package com.github.maracas.roseau.api.extractors.jar;
+package com.github.maracas.roseau.extractors.jar;
 
-import com.github.maracas.roseau.api.extractors.APIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.api.model.reference.SpoonTypeReferenceFactory;
+import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
-import com.github.maracas.roseau.spoon.SpoonAPIFactory;
+import com.github.maracas.roseau.extractors.APIExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -26,8 +25,7 @@ public class AsmAPIExtractor implements APIExtractor {
 
 	@Override
 	public API extractAPI(Path sources) {
-		SpoonAPIFactory apiFactory = new SpoonAPIFactory();
-		TypeReferenceFactory typeRefFactory = new SpoonTypeReferenceFactory(apiFactory);
+		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
 
 		try (JarFile jar = new JarFile(sources.toFile())) {
 			List<TypeDecl> typeDecls =
@@ -49,7 +47,7 @@ public class AsmAPIExtractor implements APIExtractor {
 					})
 					.toList();
 
-			return new API(typeDecls, apiFactory);
+			return new API(typeDecls);
 		} catch (IOException e) {
 			throw new RuntimeException("Error processing JAR file", e);
 		}

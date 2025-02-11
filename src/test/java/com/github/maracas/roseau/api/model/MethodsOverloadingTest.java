@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.api.model;
 
 import org.junit.jupiter.api.Test;
 
@@ -65,8 +65,6 @@ class MethodsOverloadingTest {
 		assertThat(i.getAllMethods().toList(), hasSize(1));
 		assertThat(a.getAllMethods().toList(), hasSize(3));
 		assertThat(c.getAllMethods().toList(), hasSize(4));
-
-		var factory = api.getFactory();
 
 		var im = assertMethod(i, "m()");
 		var amInt = assertMethod(a, "m(int)");

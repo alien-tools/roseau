@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.api.extractors.jar;
+package com.github.maracas.roseau.extractors.jar;
 
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.FormalTypeParameter;

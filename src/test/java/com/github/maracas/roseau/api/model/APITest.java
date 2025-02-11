@@ -1,11 +1,9 @@
-package com.github.maracas.roseau.api;
+package com.github.maracas.roseau.api.model;
 
-import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
-import com.github.maracas.roseau.api.model.API;
-import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
+import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -14,12 +12,11 @@ import java.nio.file.Path;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
 import static org.hamcrest.MatcherAssert.assertThat;
 
-class JSONSerializationTest {
+class APITest {
 	@Test
-	void api_json_round_trip() throws IOException {
+	void json_round_trip() throws IOException {
 		Path sources = Path.of("src/test/resources/api-showcase");
 		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
 		API orig = extractor.extractAPI(sources);
@@ -27,7 +24,7 @@ class JSONSerializationTest {
 		Path json = Path.of("roundtrip.json");
 		orig.writeJson(json);
 
-		API res = API.fromJson(json, orig.getFactory());
+		API res = API.fromJson(json);
 		Files.delete(json);
 
 		assertThat(res, is(equalTo(orig)));
@@ -36,7 +33,6 @@ class JSONSerializationTest {
 			@Override
 			public <T extends TypeDecl> Visit typeReference(TypeReference<T> ref) {
 				return () -> {
-					assertThat(ref + " doesn't have a factory", ref.getFactory(), is(notNullValue()));
 					assertThat(ref + " cannot be resolved", ref.getResolvedApiType().isPresent(), is(true));
 				};
 			}

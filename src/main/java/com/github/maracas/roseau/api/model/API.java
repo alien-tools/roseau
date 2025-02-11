@@ -1,15 +1,11 @@
 package com.github.maracas.roseau.api.model;
 
-import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
-import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
-import com.github.maracas.roseau.spoon.SpoonAPIFactory;
 import com.github.maracas.roseau.api.visit.APITypeResolver;
 import com.google.common.collect.ImmutableMap;
 
@@ -29,28 +25,23 @@ import java.util.stream.Stream;
  */
 public final class API {
 	private final ImmutableMap<String, TypeDecl> allTypes;
-	@JsonIgnore
-	private final SpoonAPIFactory factory;
 
 	/**
-	 * Initializes an API from the given list of {@link TypeDecl} and the given {@link SpoonAPIFactory}.
+	 * Initializes an API from the given list of {@link TypeDecl}.
 	 * Every {@link com.github.maracas.roseau.api.model.reference.TypeReference} in the given list of types
-	 * is visited to resolve within-library types and assign the {@code factory} for later type resolutions.
+	 * is visited to resolve within-library types.
 	 *
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
-	 * @param factory Passed around to every type reference for later {@link TypeDecl} inference and resolution
 	 */
-	public API(@JsonProperty("allTypes") List<TypeDecl> types, @JacksonInject SpoonAPIFactory factory) {
+	public API(@JsonProperty("allTypes") List<TypeDecl> types) {
 		this.allTypes = Objects.requireNonNull(types).stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
 				Function.identity()
 			));
-		this.factory = Objects.requireNonNull(factory);
 
-		// Whenever we create an API instance, we need to make sure to resolve within-library types and to pass
-		// the factory around to lazily resolve type references later
-		new APITypeResolver(this, factory).resolve();
+		// Whenever we create an API instance, we need to make sure to resolve within-library types
+		new APITypeResolver(this).resolve();
 	}
 
 	/**
@@ -121,15 +112,6 @@ public final class API {
 	}
 
 	/**
-	 * Retrieves the {@link SpoonAPIFactory} associated with this API.
-	 *
-	 * @return The SpoonAPIFactory instance.
-	 */
-	public SpoonAPIFactory getFactory() {
-		return factory;
-	}
-
-	/**
 	 * Serializes the API as Json to the specified file
 	 *
 	 * @param  jsonFile    The {@link Path} to write to
@@ -148,15 +130,13 @@ public final class API {
 	 * Parses the given Json file as an API
 	 *
 	 * @param  jsonFile The {@link Path} to read Json from
-	 * @param  factory  The {@link SpoonAPIFactory} that should be injected in the parsed objects
 	 * @return The API generated from the Json file
 	 * @throws IOException If the file cannot be parsed
 	 */
-	public static API fromJson(Path jsonFile, SpoonAPIFactory factory) throws IOException {
+	public static API fromJson(Path jsonFile) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
 		mapper.registerModule(new Jdk8Module()); // For Optional<>
 		mapper.registerModule(new ParanamerModule()); // For @JsonCreator
-		mapper.setInjectableValues(new InjectableValues.Std().addValue(SpoonAPIFactory.class, factory));
 		return mapper.readValue(jsonFile.toFile(), API.class);
 	}
 

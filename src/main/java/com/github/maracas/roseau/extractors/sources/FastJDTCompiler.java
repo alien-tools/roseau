@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.spoon;
+package com.github.maracas.roseau.extractors.sources;
 
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;

@@ -1,7 +1,7 @@
 package com.github.maracas.roseau.smoke;
 
-import com.github.maracas.roseau.api.extractors.jar.AsmAPIExtractor;
-import com.github.maracas.roseau.api.extractors.sources.SpoonAPIExtractor;
+import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
+import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.ClassDecl;
 import com.github.maracas.roseau.api.model.ConstructorDecl;
@@ -11,7 +11,7 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
-import com.github.maracas.roseau.spoon.SpoonUtils;
+import com.github.maracas.roseau.extractors.sources.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
