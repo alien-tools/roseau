@@ -1,13 +1,14 @@
 package com.github.maracas.roseau.combinatorial.v2.benchmark.tool;
 
 import com.github.maracas.roseau.combinatorial.v2.benchmark.result.ToolResult;
-import org.revapi.API;
-import org.revapi.AnalysisContext;
-import org.revapi.Revapi;
+import org.revapi.*;
+import org.revapi.base.CollectingReporter;
 import org.revapi.base.FileArchive;
 import org.revapi.java.JavaApiAnalyzer;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 
 public final class RevapiTool extends AbstractTool {
 	public RevapiTool(Path v1Path, Path v2Path) {
@@ -20,7 +21,7 @@ public final class RevapiTool extends AbstractTool {
 
 		var revapi = Revapi.builder()
 				.withAnalyzers(JavaApiAnalyzer.class)
-				.withReporters(SilentReporter.class)
+				.withReporters(CollectingReporter.class)
 				.build();
 
 		var v1Archive = new FileArchive(v1Path.toFile());
@@ -35,11 +36,22 @@ public final class RevapiTool extends AbstractTool {
 
 		boolean isBreaking = false;
 		try (var results = revapi.analyze(analysisContext)) {
-			for (var entry : results.getExtensions().getReporters().entrySet()) {
-				var reporter = entry.getKey();
+			var collectingReporters = results.getExtensions()
+					.getReporters().keySet().stream()
+					.filter(r -> r.getInstance() instanceof CollectingReporter)
+					.map(r -> (CollectingReporter) r.getInstance())
+					.toList();
 
-				if (reporter.getInstance() instanceof SilentReporter silentReporter) {
-					isBreaking = silentReporter.hasReports();
+			for (var reporter: collectingReporters) {
+				for (var report: reporter.getReports()) {
+					for (var difference: report.getDifferences()) {
+						var isBinaryBreaking = difference.classification.get(CompatibilityType.BINARY).equals(DifferenceSeverity.BREAKING);
+						var isSourceBreaking = difference.classification.get(CompatibilityType.SOURCE).equals(DifferenceSeverity.BREAKING);
+
+						if (isBinaryBreaking || isSourceBreaking) {
+							isBreaking = true;
+						}
+					}
 				}
 			}
 		} catch (Exception ignored) {}
