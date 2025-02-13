@@ -66,6 +66,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			if (i < parameters.size() - 1)
 				sb.append(",");
 		}
+		sb.append(")");
 		return sb.toString();
 	}
 
