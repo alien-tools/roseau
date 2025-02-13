@@ -91,7 +91,16 @@ public class WalkGuava {
 					var diffTime = sw.elapsed().toMillis();
 					System.out.println("Found " + bcs.size() + " breaking changes:");
 
-					var line = "%s|%s|%s|%d|%d|%d|%s%n".formatted(commit.getName(), authorDate, commit.getShortMessage(),
+					long numTypes = api.getExportedTypes().count();
+					int numMethods = api.getExportedTypes()
+						.mapToInt(type -> type.getDeclaredMethods().size())
+						.sum();
+					int numFields = api.getExportedTypes()
+						.mapToInt(type -> type.getDeclaredFields().size())
+						.sum();
+
+					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%s%n".formatted(commit.getName(), authorDate, commit.getShortMessage(),
+						numTypes, numMethods, numFields,
 						apiTime, diffTime, bcs.size(), bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
 					Files.write(Path.of("git.csv"), line.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
 				}
