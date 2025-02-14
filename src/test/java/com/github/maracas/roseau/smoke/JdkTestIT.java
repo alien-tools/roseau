@@ -22,8 +22,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @Disabled("Not sure how to share/download JDK's sources and binaries; set JDK_BIN_PATH & JDK_SRC_PATH")
 class JdkTestIT {
-	static final String JDK_BIN_PATH = "jdk21/bin";
-	static final String JDK_SRC_PATH = "jdk21/sources";
+	static final String JDK_BIN_PATH = "/home/dig/jdk21/bin";
+	static final String JDK_SRC_PATH = "/home/dig/jdk21/sources";
 
 	static Stream<Path> jmods() throws IOException {
 		return Files.list(Path.of(JDK_BIN_PATH, "jmods"));
