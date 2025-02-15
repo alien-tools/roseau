@@ -221,7 +221,13 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
 			.findFirst();
 
-		return resolved.or(() -> enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
+		if (resolved.isPresent()) {
+			return resolved;
+		} else if (enclosingType != null) {
+			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr));
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	public Optional<ITypeReference> resolveTypeParameterBound(TypeParameterReference tpr) {
@@ -233,8 +239,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			} else {
 				return Optional.of(ftp.get().bounds().getFirst());
 			}
-		} else {
+		} else if (enclosingType != null) {
 			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameterBound(tpr));
+		} else {
+			return Optional.empty();
 		}
 	}
 
