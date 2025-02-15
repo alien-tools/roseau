@@ -3,12 +3,8 @@ package com.github.maracas.roseau.extractors.sources;
 import spoon.Launcher;
 import spoon.MavenLauncher;
 import spoon.SpoonException;
-import spoon.SpoonModelBuilder;
 import spoon.reflect.CtModel;
-import spoon.reflect.factory.Factory;
 import spoon.support.compiler.SpoonProgress;
-import spoon.support.compiler.jdt.JDTBasedSpoonCompiler;
-import spoon.support.compiler.jdt.JDTBatchCompiler;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,37 +69,18 @@ public final class SpoonUtils {
 		if (!location.toFile().exists())
 			throw new IllegalArgumentException(location + " does not exist");
 
-		// Default launcher
-		Launcher launcher = new Launcher() {
-			@Override
-			protected SpoonModelBuilder getCompilerInstance(Factory factory) {
-				return new JDTBasedSpoonCompiler(factory) {
-					@Override
-					protected JDTBatchCompiler createBatchCompiler() {
-						return new FastJDTBatchCompiler(this, environment, requestor);
-					}
-				};
-			}
-		};
+		// Custom "fast" launcher
+		Launcher launcher = new FastLauncher();
 		launcher.addInputResource(location.toString());
 
 		// If we manage to successfully parse it as a Maven project, use that instead
 		if (Files.exists(location.resolve("pom.xml"))) {
-			MavenLauncher mavenLauncher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE) {
-				@Override
-				protected SpoonModelBuilder getCompilerInstance(Factory factory) {
-					return new JDTBasedSpoonCompiler(factory) {
-						@Override
-						protected JDTBatchCompiler createBatchCompiler() {
-							return new FastJDTBatchCompiler(this, environment, requestor);
-						}
-					};
-				}
-			};
+			MavenLauncher mavenLauncher = new FastMavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
 
 			// Fallback if we don't find those
-			if (mavenLauncher.getPomFile().getSourceDirectories().isEmpty())
+			if (mavenLauncher.getPomFile().getSourceDirectories().isEmpty()) {
 				launcher.addInputResource(location.toString());
+			}
 
 			launcher = mavenLauncher;
 		}

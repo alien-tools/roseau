@@ -22,7 +22,7 @@ import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
-public class AbstractAPIVisitor implements APIAlgebra<Visit> {
+public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit api(API it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}

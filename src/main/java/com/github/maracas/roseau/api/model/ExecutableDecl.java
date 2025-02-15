@@ -6,10 +6,10 @@ import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}.
@@ -24,7 +24,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	// e.g.: <X extends Throwable> m() throws X
 	protected final List<ITypeReference> thrownExceptions;
 
-	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
+	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,
@@ -43,16 +43,6 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return false;
 	}
 
-	/**
-	 * Checks whether the given ExecutableDecl has the same signature as the current instance.
-	 *
-	 * @param other The ExecutableDecl to compare the signature with
-	 * @return true if they have the same signature, false otherwise
-	 */
-	public boolean hasSameErasure(ExecutableDecl other) {
-		return equals(other) || Objects.equals(getErasure(), other.getErasure());
-	}
-
 	// §8.4.2
 	public String getSignature() {
 		var sb = new StringBuilder();
@@ -61,10 +51,12 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		for (int i = 0; i < parameters.size(); i++) {
 			var p = parameters.get(i);
 			sb.append(p.type());
-			if (p.isVarargs())
+			if (p.isVarargs()) {
 				sb.append("[]");
-			if (i < parameters.size() - 1)
+			}
+			if (i < parameters.size() - 1) {
 				sb.append(",");
+			}
 		}
 		sb.append(")");
 		return sb.toString();
@@ -92,6 +84,16 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return sb.toString();
 	}
 
+	/**
+	 * Checks whether the given ExecutableDecl has the same erasure as the current instance.
+	 *
+	 * @param other The ExecutableDecl to compare the erasure with
+	 * @return true if they have the same erasure, false otherwise
+	 */
+	public boolean hasSameErasure(ExecutableDecl other) {
+		return Objects.equals(getErasure(), Objects.requireNonNull(other).getErasure());
+	}
+
 	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
 		var resolved = formalTypeParameters.stream()
 			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
@@ -110,16 +112,9 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @return whether the two executables override each other
 	 */
 	public boolean isOverloading(ExecutableDecl other) {
-		return Objects.equals(getSimpleName(), other.getSimpleName())
-			&& !hasSameErasure(other)
-			&& containingType.isSameHierarchy(other.getContainingType());
-	}
-
-	/**
-	 * Checks whether this executable can be supplied with a variable number of arguments
-	 */
-	public boolean isVarargs() {
-		return !parameters.isEmpty() && parameters.getLast().isVarargs();
+		return Objects.equals(getSimpleName(), other.getSimpleName()) &&
+			!hasSameErasure(other) &&
+			containingType.isSameHierarchy(other.getContainingType());
 	}
 
 	public List<ParameterDecl> getParameters() {

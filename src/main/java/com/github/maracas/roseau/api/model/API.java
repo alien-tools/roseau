@@ -63,7 +63,9 @@ public final class API {
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
 		TypeDecl find = allTypes.get(qualifiedName);
 
-		return find != null && find.isExported() ? Optional.of(find) : Optional.empty();
+		return find != null && find.isExported()
+			? Optional.of(find)
+			: Optional.empty();
 	}
 
 	/**
@@ -135,8 +137,10 @@ public final class API {
 	 */
 	public static API fromJson(Path jsonFile) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new Jdk8Module()); // For Optional<>
-		mapper.registerModule(new ParanamerModule()); // For @JsonCreator
+		// For Optional<>
+		mapper.registerModule(new Jdk8Module());
+		// For @JsonCreator
+		mapper.registerModule(new ParanamerModule());
 		return mapper.readValue(jsonFile.toFile(), API.class);
 	}
 

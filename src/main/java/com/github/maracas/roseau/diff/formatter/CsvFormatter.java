@@ -6,8 +6,6 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class CsvFormatter implements BreakingChangesFormatter {
-	private static final String EXTENSION = "csv";
-
 	@Override
 	public String format(List<BreakingChange> changes) {
 		StringBuilder sb = new StringBuilder();
@@ -20,10 +18,5 @@ public class CsvFormatter implements BreakingChangesFormatter {
 			bc.kind().getNature())
 		).collect(Collectors.joining(System.lineSeparator())));
 		return sb.toString();
-	}
-
-	@Override
-	public String getFileExtension() {
-		return EXTENSION;
 	}
 }

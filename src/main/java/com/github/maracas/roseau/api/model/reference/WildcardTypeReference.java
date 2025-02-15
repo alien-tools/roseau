@@ -9,10 +9,12 @@ import java.util.stream.Collectors;
  */
 public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) implements ITypeReference {
 	public WildcardTypeReference {
-		if (bounds == null || bounds.isEmpty())
+		if (bounds == null || bounds.isEmpty()) {
 			throw new IllegalArgumentException("Wildcards must have at least one bound (Object included)");
-		if (!upper && bounds.size() > 1)
+		}
+		if (!upper && bounds.size() > 1) {
 			throw new IllegalArgumentException("Wildcards cannot have multiple lower bounds");
+		}
 	}
 
 	@Override
@@ -23,16 +25,18 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
 		if (other instanceof WildcardTypeReference wtr) {
-			// Always subtype of unbounded wildcard
-			if (wtr.isUnbounded())
+			if (wtr.isUnbounded()) {
+				// Always subtype of unbounded wildcard
 				return true;
+			}
 
-			// Upper bounds can be made weaker
-			if (upper())
+			if (upper()) {
+				// Upper bounds can be made weaker
 				return wtr.upper() && hasStricterBoundsThan(wtr);
-			// Changing the (one) lower bound to a subtype is fine
-			else
+			} else {
+				// Changing the (one) lower bound to a subtype is fine
 				return !wtr.upper() && wtr.bounds().getFirst().isSubtypeOf(bounds().getFirst());
+			}
 		}
 
 		return false;

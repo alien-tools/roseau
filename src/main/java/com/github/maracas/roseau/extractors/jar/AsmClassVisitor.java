@@ -438,7 +438,6 @@ class AsmClassVisitor extends ClassVisitor {
 		return isFinal(access) || isSealed || (isClass(classAccess) && !hasNonPrivateConstructor);
 	}
 
-	// FIXME: non-sealed?
 	private EnumSet<Modifier> convertClassModifiers(int access) {
 		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
 		if ((access & Opcodes.ACC_FINAL) != 0)    modifiers.add(Modifier.FINAL);

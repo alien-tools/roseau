@@ -8,8 +8,9 @@ import java.util.Objects;
 /**
  * A breaking change identified during the comparison of two APIs.
  *
- * @param kind           The kind of the breaking change.
- * @param impactedSymbol The element associated with the breaking change.
+ * @param kind           The kind of breaking change
+ * @param impactedSymbol The symbol associated with the breaking change
+ * @param newSymbol      If applicable, the corresponding symbol in the new version
  */
 public record BreakingChange(
 	BreakingChangeKind kind,
@@ -21,12 +22,14 @@ public record BreakingChange(
 		Objects.requireNonNull(impactedSymbol);
 	}
 
-	public String printSymbol(Symbol s) {
-		if (s == null)
+	private String printSymbol(Symbol s) {
+		if (s == null) {
 			return "";
-		if (s instanceof ExecutableDecl e)
+		} else if (s instanceof ExecutableDecl e) {
 			return String.format("%s.%s", e.getContainingType().getQualifiedName(), e.getSignature());
-		return s.getQualifiedName();
+		} else {
+			return s.getQualifiedName();
+		}
 	}
 
 	@Override
