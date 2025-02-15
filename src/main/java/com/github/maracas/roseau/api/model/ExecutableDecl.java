@@ -70,15 +70,16 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			var p = parameters.get(i);
 			var erasedType = switch (p.type()) {
 				case WildcardTypeReference wtr -> wtr.bounds().getFirst();
-				case TypeParameterReference tpr ->
-					resolveTypeParameter(tpr).map(t -> t.bounds().getFirst()).orElse(TypeReference.OBJECT);
+				case TypeParameterReference tpr -> resolveTypeParameterBound(tpr).orElse(TypeReference.OBJECT);
 				default -> p.type();
 			};
 			sb.append(erasedType.getQualifiedName());
-			if (p.isVarargs())
+			if (p.isVarargs()) {
 				sb.append("[]");
-			if (i < parameters.size() - 1)
+			}
+			if (i < parameters.size() - 1) {
 				sb.append(",");
+			}
 		}
 		sb.append(")");
 		return sb.toString();
@@ -100,6 +101,20 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 			.findFirst();
 
 		return resolved.or(() -> containingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
+	}
+
+	public Optional<ITypeReference> resolveTypeParameterBound(TypeParameterReference tpr) {
+		var ftp = resolveTypeParameter(tpr);
+
+		if (ftp.isPresent()) {
+			if (ftp.get().bounds().getFirst() instanceof TypeParameterReference tpr2) {
+				return resolveTypeParameterBound(tpr2);
+			} else {
+				return Optional.of(ftp.get().bounds().getFirst());
+			}
+		} else {
+			return containingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameterBound(tpr));
+		}
 	}
 
 	/**

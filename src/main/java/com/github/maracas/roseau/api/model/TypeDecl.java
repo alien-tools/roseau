@@ -224,6 +224,20 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return resolved.or(() -> enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
 	}
 
+	public Optional<ITypeReference> resolveTypeParameterBound(TypeParameterReference tpr) {
+		var ftp = resolveTypeParameter(tpr);
+
+		if (ftp.isPresent()) {
+			if (ftp.get().bounds().getFirst() instanceof TypeParameterReference tpr2) {
+				return resolveTypeParameterBound(tpr2);
+			} else {
+				return Optional.of(ftp.get().bounds().getFirst());
+			}
+		} else {
+			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameterBound(tpr));
+		}
+	}
+
 	@Override
 	public boolean equals(Object o) {
 		if (this == o) return true;
