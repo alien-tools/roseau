@@ -6,6 +6,8 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.Diagnostic;
@@ -20,6 +22,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.jar.Attributes;
@@ -134,14 +137,13 @@ public class OnTheFlyCaseCompiler {
 			API v2 = extractor.extractAPI(srcFile2.getParent());
 			APIDiff diff = new APIDiff(v1, v2);
 
-			//		Files.deleteIfExists(workingDirectory);
-
 			List<Diagnostic<? extends JavaFileObject>> errors1 = otf.compileClient(clientFile, clsFile1.getParent());
 			if (!errors1.isEmpty())
 				throw new RuntimeException("On-the-fly case did not compile with the first version:\n" +
 					errors1.stream().map(d -> d.getMessage(null)).collect(Collectors.joining(System.lineSeparator())));
 
 			List<Diagnostic<? extends JavaFileObject>> errors2 = otf.compileClient(clientFile, clsFile2.getParent());
+			MoreFiles.deleteRecursively(workingDirectory, RecursiveDeleteOption.ALLOW_INSECURE);
 			return new CaseResult(diff.diff(), errors2);
 		} catch (IOException e) {
 			throw new RuntimeException("On-the-fly failed", e);

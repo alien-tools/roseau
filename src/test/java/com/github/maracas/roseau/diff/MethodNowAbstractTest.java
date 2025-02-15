@@ -85,6 +85,6 @@ class MethodNowAbstractTest {
         public abstract void m();
       }""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 5, buildDiff(v1, v2));
+		assertBC("A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 }

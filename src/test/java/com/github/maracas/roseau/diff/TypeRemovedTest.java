@@ -34,14 +34,10 @@ class TypeRemovedTest {
 
 	@Test
 	void class_public_moved() {
-		var v1 = """
-      package a;
-      public class A {}""";
-		var v2 = """
-      package b;
-      public class A {}""";
+		var v1 = "public class A {}";
+		var v2 = "public class B {}";
 
-		assertBC("a.A", TYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test

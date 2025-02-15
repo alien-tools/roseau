@@ -29,7 +29,7 @@ class SuperTypeRemovedTest {
 			public class A {}
 			public class B {}""";
 
-		assertBC("B", BreakingChangeKind.SUPERTYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -57,7 +57,7 @@ class SuperTypeRemovedTest {
 			class B {}
 			public class C extends B {}""";
 
-		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 3, buildDiff(v1, v2));
+		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -81,7 +81,7 @@ class SuperTypeRemovedTest {
 			public interface A {}
 			public class B {}""";
 
-		assertBC("B", BreakingChangeKind.SUPERTYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -109,7 +109,7 @@ class SuperTypeRemovedTest {
 			class B {}
 			public class C extends B {}""";
 
-		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 3, buildDiff(v1, v2));
+		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -123,6 +123,6 @@ class SuperTypeRemovedTest {
       interface B {}
       public interface C extends B {}""";
 
-		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 3, buildDiff(v1, v2));
+		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 }

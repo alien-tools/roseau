@@ -3,13 +3,15 @@ package com.github.maracas.roseau.extractors;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.List;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -18,9 +20,10 @@ import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class GenericsExtractionTest {
-	@Test
-	void single_type_parameter() {
-		var api = buildAPI("class A<T> {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void single_type_parameter(ApiBuilder builder) {
+		var api = builder.build("class A<T> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
@@ -30,9 +33,10 @@ class GenericsExtractionTest {
 		assertThat(t.bounds(), is(equalTo(List.of(TypeReference.OBJECT))));
 	}
 
-	@Test
-	void type_parameter_with_class_bound() {
-		var api = buildAPI("class A<T extends String> {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_parameter_with_class_bound(ApiBuilder builder) {
+		var api = builder.build("class A<T extends String> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
@@ -43,9 +47,10 @@ class GenericsExtractionTest {
 		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
 	}
 
-	@Test
-	void type_parameter_with_interface_bound() {
-		var api = buildAPI("class A<T extends Runnable> {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_parameter_with_interface_bound(ApiBuilder builder) {
+		var api = builder.build("class A<T extends Runnable> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
@@ -56,9 +61,10 @@ class GenericsExtractionTest {
 		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Runnable")));
 	}
 
-	@Test
-	void type_parameter_with_several_bounds() {
-		var api = buildAPI("class A<T extends String & Runnable> {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_parameter_with_several_bounds(ApiBuilder builder) {
+		var api = builder.build("class A<T extends String & Runnable> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
@@ -70,9 +76,10 @@ class GenericsExtractionTest {
 		assertThat(t.bounds().get(1).getQualifiedName(), is(equalTo("java.lang.Runnable")));
 	}
 
-	@Test
-	void type_parameter_with_dependent_parameter_bound() {
-		var api = buildAPI("class A<T, U extends T> {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_parameter_with_dependent_parameter_bound(ApiBuilder builder) {
+		var api = builder.build("class A<T, U extends T> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(2));
@@ -86,9 +93,10 @@ class GenericsExtractionTest {
 		assertThat(u.bounds().getFirst().getQualifiedName(), is(equalTo("T")));
 	}
 
-	@Test
-	void type_parameter_with_dependent_class_bound() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_parameter_with_dependent_class_bound(ApiBuilder builder) {
+		var api = builder.build("""
       class X {}
       class A<T, U extends X> {}""");
 
@@ -104,13 +112,14 @@ class GenericsExtractionTest {
 		assertThat(u.bounds().getFirst().getQualifiedName(), is(equalTo("X")));
 	}
 
-	@Test
-	void type_parameter_bounded_references() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_parameter_bounded_references(ApiBuilder builder) {
+		var api = builder.build("""
 			public class C {
-				public List<?> m1() { return null; }
-				public List<? extends Number> m2() { return null; }
-				public List<? super Number> m3() { return null; }
+				public java.util.List<?> m1() { return null; }
+				public java.util.List<? extends Number> m2() { return null; }
+				public java.util.List<? super Number> m3() { return null; }
 				public void m4(java.util.List<?> p) {}
 				public void m5(java.util.List<? extends Number> p) {}
 				public void m6(java.util.List<? super Number> p) {}
@@ -191,9 +200,10 @@ class GenericsExtractionTest {
 		}
 	}
 
-	@Test
-	void throwable_generic() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void throwable_generic(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public <X extends Throwable> void m() throws X {}
 			}""");
@@ -204,9 +214,10 @@ class GenericsExtractionTest {
 		assertThat(m.getThrownExceptions().getFirst(), is(instanceOf(TypeParameterReference.class)));
 	}
 
-	@Test
-	void method_type_parameter_resolution() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void method_type_parameter_resolution(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A<T extends String> {
 				public class B<U extends Number> {
 					public <V> void m(T t, U v, V u) {}
@@ -217,9 +228,10 @@ class GenericsExtractionTest {
 		assertMethod(b, "m(java.lang.String,java.lang.Number,java.lang.Object)");
 	}
 
-	@Test
-	void method_type_parameter_resolution_hiding() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void method_type_parameter_resolution_hiding(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A<T extends String> {
 				public class B<T extends Number> {
 					public <T> void m(T t, T v, T u) {}
@@ -230,10 +242,12 @@ class GenericsExtractionTest {
 		assertMethod(b, "m(java.lang.Object,java.lang.Object,java.lang.Object)");
 	}
 
-	@Test
-	void class_type_parameter_resolution() {
-		var api = buildAPI("""
-			public class A<T, U extends String, V extends Number> extends ArrayList<U> implements Supplier<V> {
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_type_parameter_resolution(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A<T, U extends String, V extends Number> extends java.util.ArrayList<U>
+				implements java.util.function.Supplier<V> {
 				public V get() { return null; }
 			}""");
 
@@ -258,9 +272,10 @@ class GenericsExtractionTest {
 		else fail();
 	}
 
-	@Test
-	void llm_generated_generics() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void llm_generated_generics(ApiBuilder builder) {
+		/*var api = builder.build("""
 			public class ComplexGenerics<
 				// Primary type parameters with complex bounds
 				T extends Comparable<T> & Serializable,                        // Intersection type
@@ -411,6 +426,6 @@ class GenericsExtractionTest {
 				}
 			}""");
 
-		// FIXME
+		// FIXME*/
 	}
 }

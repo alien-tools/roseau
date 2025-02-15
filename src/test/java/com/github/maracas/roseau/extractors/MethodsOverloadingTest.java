@@ -1,20 +1,23 @@
-package com.github.maracas.roseau.api.model;
+package com.github.maracas.roseau.extractors;
 
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MethodsOverloadingTest {
-	@Test
-	void overloading_methods() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overloading_methods(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public void m() {}
 				public void m(int a) {}
@@ -38,9 +41,10 @@ class MethodsOverloadingTest {
 		}
 	}
 
-	@Test
-	void overloading_methods_hierarchy() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overloading_methods_hierarchy(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface I {
 				void m();
 			}
@@ -116,9 +120,10 @@ class MethodsOverloadingTest {
 		assertFalse(cmDouble.isOverloading(cmDouble));
 	}
 
-	@Test
-	void overloading_varargs() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overloading_varargs(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public void m(int a) {}
 				public void m(int... a) {}
@@ -136,9 +141,10 @@ class MethodsOverloadingTest {
 		assertFalse(m2.isOverloading(m2));
 	}
 
-	@Test
-	void overloading_erasure() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overloading_erasure(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A<V extends String> {
 				public <T extends String> void m(T a) {}
 				public <T extends Number> void m(T a) {}

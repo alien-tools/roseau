@@ -1,6 +1,5 @@
 package com.github.maracas.roseau.utils;
 
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
@@ -13,13 +12,36 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
+import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
+import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.VirtualFile;
 
+import javax.tools.FileObject;
+import javax.tools.ForwardingJavaFileManager;
+import javax.tools.JavaCompiler;
+import javax.tools.JavaFileObject;
+import javax.tools.SimpleJavaFileObject;
+import javax.tools.StandardJavaFileManager;
+import javax.tools.ToolProvider;
+import java.io.ByteArrayOutputStream;
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.net.URI;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
+import java.util.jar.JarOutputStream;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 public class TestUtils {
@@ -148,25 +170,148 @@ public class TestUtils {
 		return (AnnotationDecl) assertType(api, name, "annotation");
 	}
 
-	public static CtModel buildModel(String sources) {
+	public static CtModel buildModel(Map<String, String> sourcesMap) {
 		Launcher launcher = new Launcher();
 
-		launcher.addInputResource(new VirtualFile(sources, "A.java"));
+		sourcesMap.forEach((typeName, sources) -> {
+			launcher.addInputResource(new VirtualFile(sources, typeName + ".java"));
+		});
 		launcher.getEnvironment().setComplianceLevel(17);
 		launcher.getEnvironment().setLevel("TRACE");
 
 		return launcher.buildModel();
 	}
 
-	public static API buildAPI(String sources) {
-		CtModel m = buildModel(sources);
-		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
-		return extractor.extractAPI(m);
+	public static Map<String, String> buildSourcesMap(String sources) {
+		Pattern typePattern = Pattern.compile(
+			"(?m)^(?!\\s)(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
+				"(class|interface|@interface|enum|record)\\s+(\\w+)");
+		Matcher matcher = typePattern.matcher(sources);
+
+		List<Integer> typeStartIndices = new ArrayList<>();
+		List<String> typeNames = new ArrayList<>();
+		while (matcher.find()) {
+			typeStartIndices.add(matcher.start());
+			typeNames.add(matcher.group(2));
+		}
+
+		Map<String, String> sourcesMap = new HashMap<>();
+		for (int i = 0; i < typeStartIndices.size(); i++) {
+			var startPos = typeStartIndices.get(i);
+			var endPos = i < typeStartIndices.size() - 1 ? typeStartIndices.get(i + 1) : sources.length();
+			var typeName = typeNames.get(i);
+			sourcesMap.put(typeName, sources.substring(startPos, endPos));
+		}
+
+		return sourcesMap;
+	}
+
+	public static API buildSourcesAPI(String sources) {
+		Map<String, String> sourcesMap = buildSourcesMap(sources);
+		CtModel m = buildModel(sourcesMap);
+		return new SpoonAPIExtractor().extractAPI(m);
+	}
+
+	public static API buildJarAPI(String sources) {
+		Map<String, String> sourcesMap = buildSourcesMap(sources);
+		JarFile jar = buildJar(sourcesMap);
+		return new AsmAPIExtractor().extractAPI(jar);
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		APIDiff apiDiff = new APIDiff(buildAPI(sourcesV1), buildAPI(sourcesV2));
+		APIDiff apiDiff = new APIDiff(buildSourcesAPI(sourcesV1), buildSourcesAPI(sourcesV2));
 		apiDiff.diff();
 		return apiDiff.getBreakingChanges();
+	}
+
+	public static JarFile buildJar(Map<String, String> sourcesMap) {
+		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
+		StandardJavaFileManager stdFileManager = compiler.getStandardFileManager(null, null, null);
+		MemoryJavaFileManager fileManager = new MemoryJavaFileManager(stdFileManager);
+
+		List<JavaFileObject> compilationUnits = new ArrayList<>();
+		for (Map.Entry<String, String> entry : sourcesMap.entrySet()) {
+			String className = entry.getKey();
+			String sourceCode = entry.getValue();
+			compilationUnits.add(new MemorySourceJavaFileObject(className, sourceCode));
+		}
+
+		List<String> options = List.of(
+			"-source", "21",
+			"-target", "21",
+			"-proc:none");
+		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, null, options, null, compilationUnits);
+		Boolean success = task.call();
+		if (success == null || !success) {
+			throw new IllegalStateException("Compilation failed.");
+		}
+
+		ByteArrayOutputStream jarByteStream = new ByteArrayOutputStream();
+		try (JarOutputStream jarOut = new JarOutputStream(jarByteStream)) {
+			for (Map.Entry<String, ByteArrayOutputStream> entry : fileManager.getCompiledClasses().entrySet()) {
+				String className = entry.getKey();
+				ByteArrayOutputStream classByteStream = entry.getValue();
+				String entryName = className.replace('.', '/') + ".class";
+				JarEntry jarEntry = new JarEntry(entryName);
+				jarOut.putNextEntry(jarEntry);
+				jarOut.write(classByteStream.toByteArray());
+				jarOut.closeEntry();
+			}
+		} catch (IOException e) {
+			throw new RuntimeException("Error while creating JAR file", e);
+		}
+
+		try {
+			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
+			tempJarFile.deleteOnExit();
+			try (FileOutputStream fos = new FileOutputStream(tempJarFile)) {
+				fos.write(jarByteStream.toByteArray());
+			}
+			return new JarFile(tempJarFile);
+		} catch (IOException e) {
+			throw new RuntimeException("Error while creating temporary JarFile", e);
+		}
+	}
+
+	private static class MemoryJavaFileManager extends ForwardingJavaFileManager<StandardJavaFileManager> {
+		private final Map<String, ByteArrayOutputStream> compiledClasses = new HashMap<>();
+
+		protected MemoryJavaFileManager(StandardJavaFileManager fileManager) {
+			super(fileManager);
+		}
+
+		@Override
+		public JavaFileObject getJavaFileForOutput(Location location, String className,
+		                                           JavaFileObject.Kind kind, FileObject sibling)
+			throws IOException {
+			ByteArrayOutputStream baos = new ByteArrayOutputStream();
+			compiledClasses.put(className, baos);
+			return new SimpleJavaFileObject(
+				URI.create("mem:///" + className.replace('.', '/') + kind.extension), kind) {
+				@Override
+				public OutputStream openOutputStream() {
+					return baos;
+				}
+			};
+		}
+
+		public Map<String, ByteArrayOutputStream> getCompiledClasses() {
+			return compiledClasses;
+		}
+	}
+
+	private static class MemorySourceJavaFileObject extends SimpleJavaFileObject {
+		private final String sourceCode;
+
+		public MemorySourceJavaFileObject(String className, String sourceCode) {
+			super(URI.create("string:///" + className.replace('.', '/') + Kind.SOURCE.extension),
+				Kind.SOURCE);
+			this.sourceCode = sourceCode;
+		}
+
+		@Override
+		public CharSequence getCharContent(boolean ignoreEncodingErrors) {
+			return sourceCode;
+		}
 	}
 }
