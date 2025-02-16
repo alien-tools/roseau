@@ -58,9 +58,9 @@ public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
 	private final TypeReferenceFactory typeReferenceFactory;
 
-	public SpoonAPIFactory() {
+	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory) {
 		this.typeFactory = new Launcher().createFactory().Type();
-		this.typeReferenceFactory = new CachedTypeReferenceFactory();
+		this.typeReferenceFactory = typeReferenceFactory;
 	}
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {

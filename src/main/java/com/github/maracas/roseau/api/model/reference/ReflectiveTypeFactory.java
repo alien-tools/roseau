@@ -10,8 +10,8 @@ import com.github.maracas.roseau.extractors.sources.SpoonAPIFactory;
 class ReflectiveTypeFactory {
 	private final SpoonAPIFactory spoonFactory;
 
-	ReflectiveTypeFactory() {
-		spoonFactory = new SpoonAPIFactory();
+	ReflectiveTypeFactory(TypeReferenceFactory typeReferenceFactory) {
+		spoonFactory = new SpoonAPIFactory(typeReferenceFactory);
 	}
 
 	TypeDecl convertCtType(String qualifiedName) {

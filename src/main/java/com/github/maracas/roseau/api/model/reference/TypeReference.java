@@ -19,7 +19,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
 	private final List<ITypeReference> typeArguments;
 	@JsonIgnore
-	private final ReflectiveTypeFactory factory = new ReflectiveTypeFactory();
+	private final ReflectiveTypeFactory factory;
 	@JsonIgnore
 	private boolean resolutionAttempted;
 	// Would intuitively make sense as WeakReference but:
@@ -36,15 +36,16 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private static final Logger LOGGER = LogManager.getLogger();
 
 	@JsonCreator
-	TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
+	TypeReference(String qualifiedName, List<ITypeReference> typeArguments, ReflectiveTypeFactory factory) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.typeArguments = Objects.requireNonNull(typeArguments);
 		this.resolutionAttempted = false;
 		this.resolvedApiType = null;
+		this.factory = factory;
 	}
 
 	private TypeReference(String qualifiedName) {
-		this(qualifiedName, Collections.emptyList());
+		this(qualifiedName, Collections.emptyList(), null);
 	}
 
 	@Override
