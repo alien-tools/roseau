@@ -207,6 +207,12 @@
             <version>1.4.0</version>
             <scope>test</scope>
         </dependency>
+        <dependency>
+            <groupId>com.github.siom79.japicmp</groupId>
+            <artifactId>japicmp</artifactId>
+            <version>0.23.1</version>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <distributionManagement>

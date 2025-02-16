@@ -73,7 +73,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 	}
 
 	@Test
-	void method_no_throws_subtype() {
+	void method_now_throws_subtype() {
 		var v1 = """
 			public class A {
 				public void m() throws Exception {}
@@ -87,7 +87,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 	}
 
 	@Test
-	void method_no_throws_supertype() {
+	void method_now_throws_supertype() {
 		var v1 = """
 			public class A {
 				public void m() throws java.io.IOException {}

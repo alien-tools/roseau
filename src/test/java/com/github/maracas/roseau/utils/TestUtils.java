@@ -14,6 +14,19 @@ import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
 import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
+import japicmp.cmp.JApiCmpArchive;
+import japicmp.cmp.JarArchiveComparator;
+import japicmp.cmp.JarArchiveComparatorOptions;
+import japicmp.config.Options;
+import japicmp.model.JApiAnnotation;
+import japicmp.model.JApiClass;
+import japicmp.model.JApiCompatibilityChange;
+import japicmp.model.JApiConstructor;
+import japicmp.model.JApiField;
+import japicmp.model.JApiImplementedInterface;
+import japicmp.model.JApiMethod;
+import japicmp.model.JApiSuperclass;
+import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -32,8 +45,10 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -220,8 +235,61 @@ public class TestUtils {
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		APIDiff apiDiff = new APIDiff(buildSourcesAPI(sourcesV1), buildSourcesAPI(sourcesV2));
-		apiDiff.diff();
-		return apiDiff.getBreakingChanges();
+		var roseauBCs = apiDiff.diff();
+
+		/*try {
+			var jApiBCs = buildJApiCmpDiff(sourcesV1, sourcesV2);
+
+			if (roseauBCs.size() != jApiBCs.size()) {
+				System.out.printf("Roseau  found %d BCs: %s%n", roseauBCs.size(), roseauBCs);
+				System.out.printf("JApiCmp found %d BCs: %s%n", jApiBCs.size(), jApiBCs);
+			}
+		} catch (Exception e) {
+			System.out.println("JApiCmp comparison failed: " + e.getMessage());
+		}*/
+
+		return roseauBCs;
+	}
+
+	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) {
+		Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
+		Map<String, String> sourcesMap2 = buildSourcesMap(sourcesV2);
+		Path jar1 = Path.of(buildJar(sourcesMap1).getName());
+		Path jar2 = Path.of(buildJar(sourcesMap2).getName());
+
+		Options opts = Options.newDefault();
+		opts.setOutputOnlyModifications(true);
+		opts.setIgnoreMissingClasses(true);
+		var comparatorOptions = JarArchiveComparatorOptions.of(opts);
+		var jarArchiveComparator = new JarArchiveComparator(comparatorOptions);
+		var v1Archive = new JApiCmpArchive(jar1.toFile(), "1.0.0");
+		var v2Archive = new JApiCmpArchive(jar2.toFile(), "2.0.0");
+		List<JApiClass> jApiClasses = jarArchiveComparator.compare(v1Archive, v2Archive);
+		List<JApiCompatibilityChange> bcs = new ArrayList<>();
+		Filter.filter(jApiClasses, new Filter.FilterVisitor() {
+			@Override public void visit(Iterator<JApiClass> iterator, JApiClass jApiClass) {
+				bcs.addAll(jApiClass.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiMethod> iterator, JApiMethod jApiMethod) {
+				bcs.addAll(jApiMethod.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiConstructor> iterator, JApiConstructor jApiConstructor) {
+				bcs.addAll(jApiConstructor.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiImplementedInterface> iterator, JApiImplementedInterface jApiImplementedInterface) {
+				bcs.addAll(jApiImplementedInterface.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiField> iterator, JApiField jApiField) {
+				bcs.addAll(jApiField.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiAnnotation> iterator, JApiAnnotation jApiAnnotation) {
+				bcs.addAll(jApiAnnotation.getCompatibilityChanges());
+			}
+			@Override public void visit(JApiSuperclass jApiSuperclass) {
+				bcs.addAll(jApiSuperclass.getCompatibilityChanges());
+			}
+		});
+		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
 	}
 
 	public static JarFile buildJar(Map<String, String> sourcesMap) {
