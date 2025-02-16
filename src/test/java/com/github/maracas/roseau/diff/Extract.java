@@ -57,7 +57,8 @@ public class Extract {
 				.findFirst()
 				.orElseThrow();
 
-			var caseName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL, m.getSimpleName());
+			var caseName = CaseFormat.LOWER_UNDERSCORE.to(CaseFormat.LOWER_CAMEL,
+				m.getDeclaringType().getSimpleName() + "_" + m.getSimpleName());
 			var code1 = v1.toString().startsWith("\"\"\"")
 				? v1.toString().substring(3, v1.toString().length() - 3)
 				: v1.toString().substring(1, v1.toString().length() - 1);
@@ -68,6 +69,9 @@ public class Extract {
 			buildSourcesMap(code1).forEach((typeName, code) -> {
 				try {
 					var v1path = LIB_V1.resolve(caseName).resolve(typeName + ".java");
+					if (v1path.toFile().exists()) {
+						System.err.println("Exists: " + v1path);
+					}
 					v1path.getParent().toFile().mkdirs();
 					v1path.toFile().createNewFile();
 					Files.writeString(v1path, "package testing_lib." + caseName + ";\n\n" + code + "\n");
@@ -79,6 +83,9 @@ public class Extract {
 			buildSourcesMap(code2).forEach((typeName, code) -> {
 				try {
 					var v2path = LIB_V2.resolve(caseName).resolve(typeName + ".java");
+					if (v2path.toFile().exists()) {
+						System.err.println("Exists: " + v2path);
+					}
 					v2path.getParent().toFile().mkdirs();
 					v2path.toFile().createNewFile();
 					Files.writeString(v2path, "package testing_lib." + caseName + ";\n\n" + code + "\n");
@@ -89,12 +96,16 @@ public class Extract {
 
 			try {
 				var clientPath = CLIENT.resolve(caseName).resolve("Main.java");
+				if (clientPath.toFile().exists()) {
+					System.err.println("Exists: " + clientPath);
+				}
 				clientPath.getParent().toFile().mkdirs();
 				clientPath.toFile().createNewFile();
 				Files.writeString(clientPath, "package " + caseName + ";\n\n" +
 					"public class Main {\n" +
 					"\tpublic static void main(String[] args) {\n" +
-					"\t/*" + code1 + "*/\n" +
+					"\t/*V1:\n" + code1 + "*/\n" +
+					"\t/*V2:\n" + code2 + "*/\n" +
 					"\t}\n" +
 					"}\n");
 			} catch (IOException e) {
