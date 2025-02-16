@@ -29,6 +29,6 @@ class MethodAddedToInterfaceTest {
 
 		var diff = buildDiff(v1, v2);
 		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, diff);
-		assertBC("J", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 2, diff);
+		assertBC("J", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, diff);
 	}
 }

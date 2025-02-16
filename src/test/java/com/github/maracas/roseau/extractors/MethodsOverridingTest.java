@@ -1,11 +1,13 @@
-package com.github.maracas.roseau.api.model;
+package com.github.maracas.roseau.extractors;
 
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -13,9 +15,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MethodsOverridingTest {
-	@Test
-	void overriding_multiple_sources() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overriding_multiple_sources(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface I { void m(); }
 			public interface J { void m(); }
 			public interface K extends I { default void m() {} }
@@ -54,9 +57,10 @@ class MethodsOverridingTest {
 		assertEquals("K.m", d.getAllMethods().toList().getFirst().getQualifiedName());
 	}
 
-	@Test
-	void overriding_varargs_hierarchy() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overriding_varargs_hierarchy(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public void m(Object... a) {}
 				public void n(Object[] a) {}
@@ -85,9 +89,10 @@ class MethodsOverridingTest {
 	}
 
 	// Example §8.4.2-1
-	@Test
-	void override_generics() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void override_generics(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public <T> java.util.List<T> m(java.util.Collection<T> p) { return null; }
 			}

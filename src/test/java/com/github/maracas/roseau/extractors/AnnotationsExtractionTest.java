@@ -1,21 +1,25 @@
 package com.github.maracas.roseau.extractors;
 
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertField;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 
 class AnnotationsExtractionTest {
-	@Test
-	void type_jdk_annotation() {
-		var api = buildAPI("@Deprecated public class C {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_jdk_annotation(ApiBuilder builder) {
+		var api = builder.build("""
+			@Deprecated public class C {}""");
 
 		var c = assertClass(api, "C");
 
@@ -23,11 +27,12 @@ class AnnotationsExtractionTest {
 		assertThat(c.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
 	}
 
-	@Test
-	void type_custom_annotation() {
-		var api = buildAPI("""
-			@Target(java.lang.annotation.ElementType.TYPE)
-			public @interface A {}
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_custom_annotation(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE)
+			@interface A {}
 			@A public class C {}""");
 
 		var a = assertAnnotation(api, "A");
@@ -37,9 +42,10 @@ class AnnotationsExtractionTest {
 		assertThat(c.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
 	}
 
-	@Test
-	void method_jdk_annotation() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void method_jdk_annotation(ApiBuilder builder) {
+		var api = builder.build("""
 			public class C {
 				@Deprecated public void m() {}
 			}""");
@@ -51,11 +57,12 @@ class AnnotationsExtractionTest {
 		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
 	}
 
-	@Test
-	void method_custom_annotation() {
-		var api = buildAPI("""
-			@Target(java.lang.annotation.ElementType.METHOD)
-			public @interface A {}
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void method_custom_annotation(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Target(java.lang.annotation.ElementType.METHOD)
+			@interface A {}
 			public class C {
 				@A public void m() {}
 			}""");
@@ -67,9 +74,10 @@ class AnnotationsExtractionTest {
 		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
 	}
 
-	@Test
-	void field_jdk_annotation() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void field_jdk_annotation(ApiBuilder builder) {
+		var api = builder.build("""
 			public class C {
 				@Deprecated public int f;
 			}""");
@@ -81,11 +89,12 @@ class AnnotationsExtractionTest {
 		assertThat(f.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
 	}
 
-	@Test
-	void field_custom_annotation() {
-		var api = buildAPI("""
-			@Target(java.lang.annotation.ElementType.FIELD)
-			public @interface A {}
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void field_custom_annotation(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Target(java.lang.annotation.ElementType.FIELD)
+			@interface A {}
 			public class C {
 				@A public int f;
 			}""");

@@ -110,7 +110,7 @@ class FieldTypeChangedTest {
 				public J f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 4, buildDiff(v1, v2));
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -128,7 +128,7 @@ class FieldTypeChangedTest {
 				public I f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 4, buildDiff(v1, v2));
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -146,7 +146,7 @@ class FieldTypeChangedTest {
 				public J f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 4, buildDiff(v1, v2));
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -220,7 +220,7 @@ class FieldTypeChangedTest {
 				public java.util.List<J> f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 4, buildDiff(v1, v2));
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -238,7 +238,7 @@ class FieldTypeChangedTest {
 				public java.util.List<I> f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 4, buildDiff(v1, v2));
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

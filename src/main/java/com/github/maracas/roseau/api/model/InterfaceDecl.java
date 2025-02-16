@@ -2,11 +2,11 @@ package com.github.maracas.roseau.api.model;
 
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.util.EnumSet;
 import java.util.List;
+import java.util.Set;
 
 public final class InterfaceDecl extends TypeDecl {
-	public InterfaceDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
+	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                     List<Annotation> annotations, SourceLocation location,
 	                     List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                     List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,

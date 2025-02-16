@@ -10,7 +10,7 @@ public enum BreakingChangeNature {
 	ADDITION,
 
 	/**
-	 * Indicates that the breaking change results from changing an exiting API element.
+	 * Indicates that the breaking change results from changing an existing API symbol.
 	 */
 	MUTATION,
 

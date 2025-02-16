@@ -3,9 +3,9 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
  * Extends the {@link ExecutableDecl} class and complements it with method-specific information
  */
 public final class MethodDecl extends ExecutableDecl {
-	public MethodDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
+	public MethodDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                  List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                  ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
 	                  List<ITypeReference> thrownExceptions) {
@@ -55,15 +55,19 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	public boolean isOverriding(MethodDecl other) {
 		Objects.requireNonNull(other);
-		if (equals(other))
+		if (equals(other)) {
 			return true;
+		}
 		if (hasSameErasure(other)) {
-			if (getContainingType().isSubtypeOf(other.getContainingType()))
+			if (getContainingType().isSubtypeOf(other.getContainingType())) {
 				return true;
-			if (!isAbstract() && other.isAbstract())
+			}
+			if (!isAbstract() && other.isAbstract()) {
 				return true;
-			if (!isDefault() && !isAbstract() && other.isDefault())
+			}
+			if (!isDefault() && !isAbstract() && other.isDefault()) {
 				return true;
+			}
 		}
 		return false;
 	}
@@ -72,9 +76,9 @@ public final class MethodDecl extends ExecutableDecl {
 	public String toString() {
 		return "%s %s %s %s(%s)".formatted(
 			visibility,
-			modifiers.stream().map(Object::toString).collect(Collectors.joining(" ")),
+			modifiers.stream().map(Modifier::toString).collect(Collectors.joining(" ")),
 			type,
 			getSimpleName(),
-			parameters.stream().map(Object::toString).collect(Collectors.joining(", ")));
+			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", ")));
 	}
 }

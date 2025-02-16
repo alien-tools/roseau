@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api.model.reference;
 
+import java.util.List;
 import java.util.Objects;
 
 public record PrimitiveTypeReference(String qualifiedName) implements ITypeReference {
@@ -14,7 +15,23 @@ public record PrimitiveTypeReference(String qualifiedName) implements ITypeRefer
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		return equals(other); // FIXME
+		if (equals(other)) {
+			return true;
+		}
+
+		// Narrowing is fine, widening isn't
+		if (other instanceof PrimitiveTypeReference ptr) {
+			return switch (qualifiedName) {
+				case "byte" ->          List.of("short", "int", "long", "float", "double").contains(ptr.qualifiedName);
+				case "short", "char" -> List.of("int", "long", "float", "double").contains(ptr.qualifiedName);
+				case "int" ->           List.of("long", "float", "double").contains(ptr.qualifiedName);
+				case "long" ->          List.of("float", "double").contains(ptr.qualifiedName);
+				case "float" ->         Objects.equals("double", ptr.qualifiedName);
+				default -> false;
+			};
+		}
+
+		return false;
 	}
 
 	@Override

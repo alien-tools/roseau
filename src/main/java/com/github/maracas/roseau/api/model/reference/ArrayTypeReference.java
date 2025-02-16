@@ -5,8 +5,9 @@ import java.util.Objects;
 public record ArrayTypeReference(ITypeReference componentType, int dimension) implements ITypeReference {
 	public ArrayTypeReference {
 		Objects.requireNonNull(componentType);
-		if (dimension < 1)
+		if (dimension < 1) {
 			throw new IllegalArgumentException("array dimension < 1");
+		}
 	}
 
 	@Override
@@ -16,8 +17,9 @@ public record ArrayTypeReference(ITypeReference componentType, int dimension) im
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
-		if (other instanceof ArrayTypeReference(ITypeReference otherType, int otherDimension))
+		if (other instanceof ArrayTypeReference(ITypeReference otherType, int otherDimension)) {
 			return dimension == otherDimension && componentType.isSubtypeOf(otherType);
+		}
 
 		return false;
 	}

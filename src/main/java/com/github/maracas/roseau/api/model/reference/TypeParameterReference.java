@@ -3,6 +3,10 @@ package com.github.maracas.roseau.api.model.reference;
 import java.util.Objects;
 
 public record TypeParameterReference(String qualifiedName) implements ITypeReference {
+	public TypeParameterReference {
+		Objects.requireNonNull(qualifiedName);
+	}
+
 	@Override
 	public String getQualifiedName() {
 		return qualifiedName;
@@ -10,6 +14,7 @@ public record TypeParameterReference(String qualifiedName) implements ITypeRefer
 
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
+		// FIXME
 		return Objects.equals(qualifiedName, other.getQualifiedName());
 	}
 

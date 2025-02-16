@@ -4,13 +4,15 @@ import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.PrimitiveTypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertField;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
@@ -20,9 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeMemberExtractionTest {
-	@Test
-	void members_within_package_private_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_package_private_class(ApiBuilder builder) {
+		var api = builder.build("""
 			class A {
 			  private int f1;
 			  protected int f2;
@@ -40,9 +43,10 @@ class TypeMemberExtractionTest {
 		assertThat(a.getDeclaredMethods(), hasSize(2));
 	}
 
-	@Test
-	void members_within_public_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_public_class(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 			  private int f1;
 			  protected int f2;
@@ -70,9 +74,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m3.isPublic());
 	}
 
-	@Test
-	void members_within_public_interface() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_public_interface(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 			 	public int f1 = 0;
 			 	int f2 = 0;
@@ -96,9 +101,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m2.isPublic());
 	}
 
-	@Test
-	void members_within_nested_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_nested_class(ApiBuilder builder) {
+		var api = builder.build("""
 			public class B {
 			  protected class A {
 			    private int f1;
@@ -128,9 +134,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m3.isPublic());
 	}
 
-	@Test
-	void members_within_final_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_final_class(ApiBuilder builder) {
+		var api = builder.build("""
 			public final class A {
 				private int f1;
 			  protected int f2;
@@ -154,9 +161,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m3.isPublic());
 	}
 
-	@Test
-	void members_within_sealed_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_sealed_class(ApiBuilder builder) {
+		var api = builder.build("""
 			public sealed class A permits B {
 				private int f1;
 			  protected int f2;
@@ -181,9 +189,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m3.isPublic());
 	}
 
-	@Test
-	void members_within_effectively_final_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_within_effectively_final_class(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 			  private A() {} // subclass-inaccessible constructor
 				private int f1;
@@ -208,9 +217,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m3.isPublic());
 	}
 
-	@Test
-	void final_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void final_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 			  public int f1;
 			  public final int f2 = 0;
@@ -234,9 +244,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m2.isFinal());
 	}
 
-	@Test
-	void static_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void static_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 			  public int f1;
 			  public static int f2;
@@ -260,9 +271,10 @@ class TypeMemberExtractionTest {
 		assertTrue(m2.isStatic());
 	}
 
-	@Test
-	void void_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void void_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 				void m();
 			}""");
@@ -274,9 +286,10 @@ class TypeMemberExtractionTest {
 		assertThat(m.getType().getQualifiedName(), is(equalTo("void")));
 	}
 
-	@Test
-	void primitive_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void primitive_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 				int f = 2;
 				int m();
@@ -293,9 +306,10 @@ class TypeMemberExtractionTest {
 		assertThat(m.getType().getQualifiedName(), is(equalTo("int")));
 	}
 
-	@Test
-	void jdk_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void jdk_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 				String f = null;
 				String m();
@@ -312,9 +326,10 @@ class TypeMemberExtractionTest {
 		assertThat(m.getType().getQualifiedName(), is(equalTo("java.lang.String")));
 	}
 
-	@Test
-	void api_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void api_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface I {}
 			public interface A {
 				I f = null;
@@ -332,9 +347,10 @@ class TypeMemberExtractionTest {
 		assertThat(m.getType().getQualifiedName(), is(equalTo("I")));
 	}
 
-	@Test
-	void unknown_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(value = ApiBuilderType.class, names = {"SOURCES"})
+	void unknown_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 				U f = null;
 				U m();
@@ -351,9 +367,10 @@ class TypeMemberExtractionTest {
 		assertThat(m.getType().getQualifiedName(), is(equalTo("U")));
 	}
 
-	@Test
-	void array_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void array_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 				int[] f = {};
 				int[] m();
@@ -380,9 +397,10 @@ class TypeMemberExtractionTest {
 		}
 	}
 
-	@Test
-	void multidimensional_array_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void multidimensional_array_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public interface A {
 				String[][] f1 = {{""}};
 				int[][] f2 = {{}};
@@ -421,9 +439,10 @@ class TypeMemberExtractionTest {
 		}
 	}
 
-	@Test
-	void generic_members() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void generic_members(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A<T> {
 				public T f = null;
 				public T m1() { return null; }
@@ -445,9 +464,10 @@ class TypeMemberExtractionTest {
 		assertThat(m2.getType().getQualifiedName(), is(equalTo("U")));
 	}
 
-	@Test
-	void generic_members_with_bounds() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void generic_members_with_bounds(ApiBuilder builder) {
+		var api = builder.build("""
 				public class A<T extends String> {
 					public T f = null;
 					public <U extends T> U m() { return null; }

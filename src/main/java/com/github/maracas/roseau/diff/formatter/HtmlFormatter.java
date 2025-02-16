@@ -13,8 +13,6 @@ import java.util.List;
 import java.util.Map;
 
 public class HtmlFormatter implements BreakingChangesFormatter {
-	private static final String EXTENSION = "html";
-
 	@Override
 	public String format(List<BreakingChange> changes) {
 		StringBuilder sb = new StringBuilder();
@@ -26,7 +24,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.addAttr("name", "viewport")
 			.addAttr("content", "width=device-width, initial-scale=1.0")
 			.__()
-			.title().text("Maracas Breaking Changes Report").__()
+			.title().text("Roseau Breaking Changes Report").__()
 			.link()
 			.addAttr("href", "https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css")
 			.addAttr("rel", "stylesheet")
@@ -40,10 +38,8 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.table().addAttr("class", "table")
 			.of(table -> getImpactedApiTree(changes).forEach(node ->
 				table.tr().of(tr -> appendNode(tr, node)).__()
-					.of(theTable -> node.children.forEach(member ->
-							theTable.tr().of(tr -> appendNode(tr, member)).__()
-						)
-					)))
+					.of(theTable -> node.children.forEach(member -> theTable.tr().of(tr -> appendNode(tr, member)).__()))
+			))
 			.__()
 			.__()
 			.__();
@@ -52,14 +48,17 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 
 	private static void appendNode(Tr<?> tr, Node node) {
 		tr
-			.td().span().addAttr("class", "badge bg-info").text(node.type.substring(0, node.type.length() - 4)).__().__()
+			.td().span().addAttr("class", "badge bg-info")
+			.text(node.type.substring(0, node.type.length() - 4)).__().__()
 			.of(theTr -> {
-				if (node instanceof TypeNode)
+				if (node instanceof TypeNode) {
 					theTr.td().addAttr("colspan", "2").text(node.name);
-				else
+				} else {
 					theTr.td().__().td().text(node.name);
+				}
 			})
-			.td().of(td -> node.breakingChanges.forEach(change -> td.span().addAttr("class", "badge bg-danger").text(change.kind().toString())))
+			.td().of(td -> node.breakingChanges.forEach(change ->
+				td.span().addAttr("class", "badge bg-danger").text(change.kind().toString())))
 			.__();
 	}
 
@@ -94,43 +93,37 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 	}
 
 	private static class Node {
-		public final String name;
-		public final String type;
-		public final List<BreakingChange> breakingChanges;
+		final String name;
+		final String type;
+		final List<BreakingChange> breakingChanges;
 
-		public Node(String name, String type) {
+		Node(String name, String type) {
 			this.name = name;
 			this.type = type;
 			this.breakingChanges = new ArrayList<>();
 		}
 
-		public void addBreakingChange(BreakingChange bc) {
+		void addBreakingChange(BreakingChange bc) {
 			breakingChanges.add(bc);
 		}
 	}
 
 	private static class TypeNode extends Node {
-		public final List<MemberNode> children;
+		final List<MemberNode> children;
 
-		public TypeNode(String name, String type, List<MemberNode> children) {
+		TypeNode(String name, String type, List<MemberNode> children) {
 			super(name, type);
 			this.children = new ArrayList<>();
 		}
 
-		public void addChild(MemberNode child) {
+		void addChild(MemberNode child) {
 			this.children.add(child);
 		}
 	}
 
 	private static class MemberNode extends Node {
-		public MemberNode(String name, String type) {
+		MemberNode(String name, String type) {
 			super(name, type);
 		}
 	}
-
-	@Override
-	public String getFileExtension() {
-		return EXTENSION;
-	}
-
 }

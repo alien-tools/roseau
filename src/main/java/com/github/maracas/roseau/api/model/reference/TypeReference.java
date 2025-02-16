@@ -15,21 +15,18 @@ import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
-/**
- * @see TypeReferenceFactory
- */
 public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	private final String qualifiedName;
 	private final List<ITypeReference> typeArguments;
 	@JsonIgnore
-	private ReflectiveTypeFactory factory = new ReflectiveTypeFactory();
+	private final ReflectiveTypeFactory factory = new ReflectiveTypeFactory();
 	@JsonIgnore
-	private boolean resolutionAttempted = false;
+	private boolean resolutionAttempted;
 	// Would intuitively make sense as WeakReference but:
 	//   - There should not be any TypeReference outside the API, so they're gc'd together
 	//   - These are the only references towards types outside the API, which would get randomly gc'd
 	@JsonIgnore
-	private T resolvedApiType = null;
+	private T resolvedApiType;
 
 	public static final TypeReference<ClassDecl> OBJECT = new TypeReference<>("java.lang.Object");
 	public static final TypeReference<ClassDecl> RECORD = new TypeReference<>("java.lang.Record");
@@ -42,6 +39,8 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.typeArguments = Objects.requireNonNull(typeArguments);
+		this.resolutionAttempted = false;
+		this.resolvedApiType = null;
 	}
 
 	private TypeReference(String qualifiedName) {
@@ -54,7 +53,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	public List<ITypeReference> getTypeArguments() {
-		return typeArguments;
+		return Collections.unmodifiableList(typeArguments);
 	}
 
 	/**
@@ -62,16 +61,16 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	 * or {@link Optional<T>.empty()} if it cannot be resolved.
 	 */
 	public Optional<T> getResolvedApiType() {
-		if (resolutionAttempted)
+		if (resolutionAttempted) {
 			return Optional.ofNullable(resolvedApiType);
-
-		if (factory != null) {
-			// Safe as long as we don't have two types of different kinds (eg. class vs interface) with same FQN
-			resolve((T) factory.convertCtType(qualifiedName));
 		}
 
-		if (resolvedApiType == null)
+		// Safe as long as we don't have two types of different kinds (eg. class vs interface) with same FQN
+		resolve((T) factory.convertCtType(qualifiedName));
+
+		if (resolvedApiType == null) {
 			LOGGER.warn("Warning: {} couldn't be resolved, results may be inaccurate", qualifiedName);
+		}
 
 		return Optional.ofNullable(resolvedApiType);
 	}
@@ -84,25 +83,23 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
 		// Always a subtype of Object
-		if (other.equals(OBJECT))
+		if (other.equals(OBJECT)) {
 			return true;
+		}
 
-		// Subtype of a wildcard if bounds are compatible
-		// FIXME: what if upper() or !upper()?
-		if (other instanceof WildcardTypeReference wtr && wtr.bounds().stream().allMatch(this::isSubtypeOf))
-			return true;
-
-		// Subtype of another type if it's a super type (or self) and type parameters are compatible
-		if (other instanceof TypeReference<?> tr)
-			return Stream.concat(Stream.of(this), getAllSuperTypes())
-				.anyMatch(sup -> Objects.equals(sup.qualifiedName, tr.qualifiedName) && typeParametersCompatible(tr));
-
-		return false;
+		return switch (other) {
+			// FIXME: what if upper() or !upper()?
+			case WildcardTypeReference wtr -> wtr.bounds().stream().allMatch(this::isSubtypeOf);
+			case TypeReference<?> tr -> Stream.concat(Stream.of(this), getAllSuperTypes())
+				.anyMatch(sup -> Objects.equals(sup.qualifiedName, tr.qualifiedName) && hasCompatibleTypeParameters(tr));
+			default -> false;
+		};
 	}
 
-	private boolean typeParametersCompatible(TypeReference<?> other) {
-		if (typeArguments.size() != other.typeArguments.size())
+	private boolean hasCompatibleTypeParameters(TypeReference<?> other) {
+		if (typeArguments.size() != other.typeArguments.size()) {
 			return false;
+		}
 
 		return IntStream.range(0, typeArguments.size())
 			.allMatch(i -> typeArguments.get(i).isSubtypeOf(other.typeArguments.get(i)));
@@ -126,8 +123,11 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	@Override
 	public String toString() {
-		return "%s%s".formatted(qualifiedName, typeArguments.isEmpty() ? ""
-			: "<%s>".formatted(typeArguments.stream().map(Object::toString).collect(Collectors.joining(","))));
+		if (typeArguments.isEmpty()) {
+			return qualifiedName;
+		}
+		return "%s<%s>".formatted(qualifiedName,
+			typeArguments.stream().map(ITypeReference::toString).collect(Collectors.joining(",")));
 	}
 
 	@Override
@@ -135,7 +135,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		if (this == o) return true;
 		if (o == null || getClass() != o.getClass()) return false;
 		TypeReference<?> other = (TypeReference<?>) o;
-
 		return Objects.equals(qualifiedName, other.qualifiedName) && Objects.equals(typeArguments, other.typeArguments);
 	}
 

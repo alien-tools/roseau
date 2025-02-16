@@ -8,8 +8,6 @@ import org.json.JSONObject;
 import java.util.List;
 
 public class JsonFormatter implements BreakingChangesFormatter {
-	private static final String EXTENSION = "json";
-
 	/**
 	 * Formats the list of breaking changes in JSON format
 	 */
@@ -40,10 +38,5 @@ public class JsonFormatter implements BreakingChangesFormatter {
 		position.put("path", location.file());
 		position.put("line", location.line());
 		return position;
-	}
-
-	@Override
-	public String getFileExtension() {
-		return EXTENSION;
 	}
 }

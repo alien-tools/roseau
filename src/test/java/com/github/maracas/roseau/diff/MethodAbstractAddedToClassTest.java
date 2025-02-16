@@ -31,6 +31,6 @@ class MethodAbstractAddedToClassTest {
 
 		var diff = buildDiff(v1, v2);
 		assertBC("A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
-		assertBC("B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 2, diff);
+		assertBC("B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
 	}
 }

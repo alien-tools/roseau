@@ -14,7 +14,7 @@ import java.util.function.Supplier;
  * within a given factory.
  */
 public class CachedTypeReferenceFactory implements TypeReferenceFactory {
-	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>();
+	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>(100);
 
 	private <U extends ITypeReference> U cache(String key, Supplier<U> f) {
 		return (U) referencesCache.computeIfAbsent(key, k -> f.get());

@@ -1,22 +1,25 @@
 package com.github.maracas.roseau.extractors;
 
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypesExtractionTest {
-	@Test
-	void package_private_class() {
-		var api = buildAPI("class A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void package_private_class(ApiBuilder builder) {
+		var api = builder.build("class A {}");
 
 		var a = assertClass(api, "A");
 
@@ -25,9 +28,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void public_class() {
-		var api = buildAPI("public class A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void public_class(ApiBuilder builder) {
+		var api = builder.build("public class A {}");
 
 		var a = assertClass(api, "A");
 
@@ -36,9 +40,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void package_private_interface() {
-		var api = buildAPI("interface A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void package_private_interface(ApiBuilder builder) {
+		var api = builder.build("interface A {}");
 
 		var a = assertInterface(api, "A");
 
@@ -47,9 +52,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void public_interface() {
-		var api = buildAPI("public interface A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void public_interface(ApiBuilder builder) {
+		var api = builder.build("public interface A {}");
 
 		var a = assertInterface(api, "A");
 
@@ -58,9 +64,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void package_private_record() {
-		var api = buildAPI("record A() {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void package_private_record(ApiBuilder builder) {
+		var api = builder.build("record A() {}");
 
 		var a = assertRecord(api, "A");
 
@@ -69,9 +76,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void public_record() {
-		var api = buildAPI("public record A() {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void public_record(ApiBuilder builder) {
+		var api = builder.build("public record A() {}");
 
 		var a = assertRecord(api, "A");
 
@@ -80,9 +88,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void package_private_enum() {
-		var api = buildAPI("enum A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void package_private_enum(ApiBuilder builder) {
+		var api = builder.build("enum A {}");
 
 		var a = assertEnum(api, "A");
 
@@ -91,9 +100,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void public_enum() {
-		var api = buildAPI("public enum A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void public_enum(ApiBuilder builder) {
+		var api = builder.build("public enum A {}");
 
 		var a = assertEnum(api, "A");
 
@@ -102,9 +112,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void package_private_annotation() {
-		var api = buildAPI("@interface A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void package_private_annotation(ApiBuilder builder) {
+		var api = builder.build("@interface A {}");
 
 		var a = assertAnnotation(api, "A");
 
@@ -113,9 +124,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void public_annotation() {
-		var api = buildAPI("public @interface A {}");
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void public_annotation(ApiBuilder builder) {
+		var api = builder.build("public @interface A {}");
 
 		var a = assertAnnotation(api, "A");
 
@@ -124,9 +136,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void local_class_is_ignored() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void local_class_is_ignored(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public void m() {
 					class Local {}
@@ -137,9 +150,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void anonymous_class_is_ignored() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void anonymous_class_is_ignored(ApiBuilder builder) {
+		var api = builder.build("""
 			public class A {
 				public void m() {
 					Runnable r = () -> {};
@@ -150,9 +164,10 @@ class TypesExtractionTest {
 		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 
-	@Test
-	void abstract_classes() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void abstract_classes(ApiBuilder builder) {
+		var api = builder.build("""
         public class A {}
         public abstract class B {}""");
 
@@ -163,9 +178,10 @@ class TypesExtractionTest {
 		assertTrue(b.isAbstract());
 	}
 
-	@Test
-	void final_public_classes() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void final_public_classes(ApiBuilder builder) {
+		var api = builder.build("""
         public class A {}
         public final class B {}""");
 
@@ -176,9 +192,10 @@ class TypesExtractionTest {
 		assertTrue(b.isFinal());
 	}
 
-	@Test
-	void sealed_classes() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_classes(ApiBuilder builder) {
+		var api = builder.build("""
 			class A {}
 			sealed class B permits C, D, E {}
 			sealed class C extends B permits F {}
@@ -217,9 +234,10 @@ class TypesExtractionTest {
 		assertTrue(f.isEffectivelyFinal());
 	}
 
-	@Test
-	void sealed_interfaces() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_interfaces(ApiBuilder builder) {
+		var api = builder.build("""
 			interface A {}
 			sealed interface B permits C, D {}
 			sealed interface C extends B permits E {}
@@ -252,9 +270,10 @@ class TypesExtractionTest {
 		assertTrue(e.isEffectivelyFinal());
 	}
 
-	@Test
-	void checked_exceptions() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void checked_exceptions(ApiBuilder builder) {
+		var api = builder.build("""
 			class A {}
 			class B extends Exception {}
 			class C extends RuntimeException {}
@@ -275,5 +294,62 @@ class TypesExtractionTest {
 
 		var e = assertClass(api, "E");
 		assertFalse(e.isCheckedException());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void record_is_final(ApiBuilder builder) {
+		var api = builder.build("public record A() {}");
+		var a = assertRecord(api, "A");
+		assertTrue(a.isFinal(), "Records should be implicitly final");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void abstract_sealed_class(ApiBuilder builder) {
+		var api = builder.build("""
+        public abstract sealed class A permits B {}
+        final class B extends A {}
+        """);
+		var a = assertClass(api, "A");
+		assertTrue(a.isAbstract());
+		assertTrue(a.isSealed());
+
+		var b = assertClass(api, "B");
+		assertTrue(b.isFinal());
+		assertFalse(b.isSealed());
+		assertTrue(b.isFinal());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void interface_is_implicitly_abstract(ApiBuilder builder) {
+		var api = builder.build("public interface A {}");
+		var a = assertInterface(api, "A");
+		assertTrue(a.isAbstract());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_is_final(ApiBuilder builder) {
+		var api = builder.build("public enum A {}");
+		var a = assertEnum(api, "A");
+		assertTrue(a.isFinal());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_constant_specific_class_body(ApiBuilder builder) {
+		var api = builder.build("""
+        public enum A {
+            ONE {
+                @Override public String toString() { return "one"; }
+            },
+            TWO;
+        }
+        """);
+		assertEnum(api, "A");
+		// Even though ONE has its own class body, only the enum A should be extracted.
+		assertThat(api.getAllTypes().toList(), hasSize(1));
 	}
 }

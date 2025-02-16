@@ -2,14 +2,16 @@ package com.github.maracas.roseau.extractors;
 
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
-import org.junit.jupiter.api.Test;
+import com.github.maracas.roseau.utils.ApiBuilder;
+import com.github.maracas.roseau.utils.ApiBuilderType;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
-import static com.github.maracas.roseau.utils.TestUtils.buildAPI;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
@@ -20,9 +22,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TypeHierarchyExtractionTest {
-	@Test
-	void class_extends_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_extends_class(ApiBuilder builder) {
+		var api = builder.build("""
 			class S {}
 			class A extends S {}""");
 
@@ -32,9 +35,10 @@ class TypeHierarchyExtractionTest {
 		assertThat(a.getSuperClass().getResolvedApiType().get(), is(equalTo(s)));
 	}
 
-	@Test
-	void class_implements_interfaces() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_implements_interfaces(ApiBuilder builder) {
+		var api = builder.build("""
 			interface I {}
 			interface J {}
 			class A implements I, J {}""");
@@ -47,13 +51,14 @@ class TypeHierarchyExtractionTest {
 	}
 
 	// Surprisingly allowed
-	@Test
-	void class_extends_annotation() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_extends_annotation(ApiBuilder builder) {
+		var api = builder.build("""
 			@interface A {}
 			class C implements A {
 				@Override
-				public Class<? extends Annotation> annotationType() {
+				public Class<? extends java.lang.annotation.Annotation> annotationType() {
 					return null;
 				}
 			}""");
@@ -65,9 +70,10 @@ class TypeHierarchyExtractionTest {
 		assertTrue(c.getSuperClass().equals(TypeReference.OBJECT));
 	}
 
-	@Test
-	void class_implements_interface_and_extends_class() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_implements_interface_and_extends_class(ApiBuilder builder) {
+		var api = builder.build("""
 			interface I {}
 			class S {}
 			class A extends S implements I {}""");
@@ -78,9 +84,10 @@ class TypeHierarchyExtractionTest {
 		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
-	@Test
-	void interface_extends_interfaces() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void interface_extends_interfaces(ApiBuilder builder) {
+		var api = builder.build("""
 			interface I {}
 			interface J {}
 			interface A extends I, J {}""");
@@ -92,9 +99,10 @@ class TypeHierarchyExtractionTest {
 	}
 
 	// Surprisingly allowed
-	@Test
-	void interface_extends_annotation() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void interface_extends_annotation(ApiBuilder builder) {
+		var api = builder.build("""
 			@interface I {}
 			interface A extends I {}""");
 
@@ -103,9 +111,10 @@ class TypeHierarchyExtractionTest {
 		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
-	@Test
-	void enum_implements_interface() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_implements_interface(ApiBuilder builder) {
+		var api = builder.build("""
 			interface I {}
 			enum E implements I {}""");
 
@@ -115,9 +124,10 @@ class TypeHierarchyExtractionTest {
 		assertThat(e.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
-	@Test
-	void record_implements_interface() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void record_implements_interface(ApiBuilder builder) {
+		var api = builder.build("""
 			interface I {}
 			record R() implements I {}""");
 
@@ -127,9 +137,10 @@ class TypeHierarchyExtractionTest {
 		assertThat(r.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
 
-	@Test
-	void class_implements_hierarchy() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_implements_hierarchy(ApiBuilder builder) {
+		var api = builder.build("""
 			interface I {}
 			interface J {}
 			interface K {}
@@ -154,9 +165,10 @@ class TypeHierarchyExtractionTest {
 			hasItems(equalTo("I"), equalTo("J"), equalTo("K"), equalTo("L"), equalTo("M"), equalTo("N")));
 	}
 
-	@Test
-	void class_implements_jdk_hierarchy() {
-		var api = buildAPI("""
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_implements_jdk_hierarchy(ApiBuilder builder) {
+		var api = builder.build("""
 			interface M extends Runnable {}
 			interface N extends Comparable<String>, Cloneable {}
 			class D extends Thread implements M {}
@@ -179,5 +191,72 @@ class TypeHierarchyExtractionTest {
 		assertThat(a.getAllImplementedInterfaces().toList(), hasSize(5));
 		assertThat(a.getAllImplementedInterfaces().map(ITypeReference::getQualifiedName).toList(),
 			hasItems(equalTo("M"), equalTo("N"), equalTo("java.lang.Comparable"), equalTo("java.lang.Runnable"), equalTo("java.lang.Cloneable")));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void class_extends_generic_class(ApiBuilder builder) {
+		var api = builder.build("""
+		class GenericBase<T> {}
+		class GenericChild extends GenericBase<String> {}
+		""");
+
+		assertClass(api, "GenericBase");
+		var child = assertClass(api, "GenericChild");
+		assertThat(child.getSuperClass().getQualifiedName(), is(equalTo("GenericBase")));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void interface_extends_generic_interface(ApiBuilder builder) {
+		var api = builder.build("""
+		interface Generic<T> {}
+		interface Specialized extends Generic<String> {}
+		""");
+
+		var specialized = assertInterface(api, "Specialized");
+		assertThat(specialized.getImplementedInterfaces(), hasSize(1));
+		assertThat(specialized.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("Generic")));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void diamond_inheritance_interface(ApiBuilder builder) {
+		var api = builder.build("""
+		interface A {}
+		interface B extends A {}
+		interface C extends A {}
+		interface D extends B, C {}
+		""");
+
+		var d = assertInterface(api, "D");
+		assertThat(d.getImplementedInterfaces().stream().map(ITypeReference::getQualifiedName).toList(),
+			hasItems(equalTo("B"), equalTo("C")));
+		assertThat(d.getAllImplementedInterfaces().map(ITypeReference::getQualifiedName).toList(),
+			hasItems(equalTo("A"), equalTo("B"), equalTo("C")));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void nested_classes(ApiBuilder builder) {
+		var api = builder.build("""
+		class Outer {
+			class Inner {}
+			static class Nested {}
+			interface InnerInterface {}
+			enum InnerEnum {}
+		}
+		""");
+
+		assertClass(api, "Outer");
+		var inner = assertClass(api, "Outer$Inner");
+		var nested = assertClass(api, "Outer$Nested");
+		var innerInterface = assertInterface(api, "Outer$InnerInterface");
+		var innerEnum = assertEnum(api, "Outer$InnerEnum");
+
+		assertThat(inner.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
+		assertThat(nested.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
+		assertThat(innerInterface.getImplementedInterfaces(), is(empty()));
+		assertThat(innerEnum.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 	}
 }

@@ -3,19 +3,19 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * A member of a type declaration, either a {@link FieldDecl} or {@link ExecutableDecl}.
  * Type members have a type and belong to some containing type.
  */
-public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember permits FieldDecl, ExecutableDecl {
+public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, ExecutableDecl {
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
-	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
+	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
@@ -23,39 +23,18 @@ public abstract sealed class TypeMemberDecl extends Symbol implements TypeMember
 		this.type = Objects.requireNonNull(type);
 	}
 
-	@Override
 	public TypeReference<TypeDecl> getContainingType() {
 		return containingType;
 	}
 
-	@Override
 	public ITypeReference getType() {
 		return type;
 	}
 
 	@Override
 	public boolean isExported() {
-		return containingType.isExported() && (isPublic() || (isProtected() && !containingType.isEffectivelyFinal()));
-	}
-
-	@Override
-	public boolean isStatic() {
-		return modifiers.contains(Modifier.STATIC);
-	}
-
-	@Override
-	public boolean isFinal() {
-		return modifiers.contains(Modifier.FINAL);
-	}
-
-	@Override
-	public boolean isPublic() {
-		return AccessModifier.PUBLIC == visibility;
-	}
-
-	@Override
-	public boolean isProtected() {
-		return AccessModifier.PROTECTED == visibility;
+		return containingType.isExported() &&
+			(isPublic() || (isProtected() && !containingType.isEffectivelyFinal()));
 	}
 
 	@Override
