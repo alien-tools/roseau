@@ -104,7 +104,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 	void method_no_longer_throws_type_parameter() {
 		var v1 = """
 			public class A {
-				public <T extends Exception> void m() throws E {}
+				public <T extends Exception> void m() throws T {}
 			}""";
 		var v2 = """
 			public class A {
