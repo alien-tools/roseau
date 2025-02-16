@@ -17,6 +17,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 public class Extract {
 	static final Path LIB_V1 = Path.of("lib-v1/src/testing_lib");
@@ -102,6 +103,7 @@ public class Extract {
 				clientPath.getParent().toFile().mkdirs();
 				clientPath.toFile().createNewFile();
 				Files.writeString(clientPath, "package " + caseName + ";\n\n" +
+					"import testing_lib." + caseName + ".*;\n\n" +
 					"public class Main {\n" +
 					"\tpublic static void main(String[] args) {\n" +
 					"\t/*V1:\n" + code1 + "*/\n" +
