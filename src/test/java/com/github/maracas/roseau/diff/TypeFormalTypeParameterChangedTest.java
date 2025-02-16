@@ -58,8 +58,8 @@ class TypeFormalTypeParameterChangedTest {
 
 	@Test
 	void second_bound_removed() {
-		var v1 = "public class A<T extends String & Runnable> {}";
-		var v2 = "public class A<T extends String> {}";
+		var v1 = "public class A<T extends CharSequence & Runnable> {}";
+		var v2 = "public class A<T extends CharSequence> {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
@@ -227,8 +227,8 @@ class TypeFormalTypeParameterChangedTest {
 
 	@Test
 	void bound_generic_wildcard_to_type() {
-		var v1 = "public class A<T extends java.util.List<? extends String>> {}";
-		var v2 = "public class A<T extends java.util.List<String>> {}";
+		var v1 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
+		var v2 = "public class A<T extends java.util.List<CharSequence>> {}";
 
 		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}

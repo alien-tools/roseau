@@ -62,7 +62,9 @@ class MethodNowAbstractTest {
       public abstract class A {
         public abstract void m();
       }
-      public class B extends A {}""";
+      public class B extends A {
+        public void m() {}
+      }""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
