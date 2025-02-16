@@ -21,6 +21,7 @@ import java.util.regex.Pattern;
 public class Extract {
 	static final Path LIB_V1 = Path.of("lib-v1/src/testing_lib");
 	static final Path LIB_V2 = Path.of("lib-v2/src/testing_lib");
+	static final Path CLIENT = Path.of("client/src");
 
 	public static void main(String[] args) {
 		LIB_V1.toFile().mkdirs();
@@ -65,8 +66,8 @@ public class Extract {
 				: v2.toString().substring(1, v2.toString().length() - 1);
 
 			buildSourcesMap(code1).forEach((typeName, code) -> {
-				var v1path = LIB_V1.resolve(caseName).resolve(typeName + ".java");
 				try {
+					var v1path = LIB_V1.resolve(caseName).resolve(typeName + ".java");
 					v1path.getParent().toFile().mkdirs();
 					v1path.toFile().createNewFile();
 					Files.writeString(v1path, "package testing_lib." + caseName + ";\n\n" + code + "\n");
@@ -76,8 +77,8 @@ public class Extract {
 			});
 
 			buildSourcesMap(code2).forEach((typeName, code) -> {
-				var v2path = LIB_V2.resolve(caseName).resolve(typeName + ".java");
 				try {
+					var v2path = LIB_V2.resolve(caseName).resolve(typeName + ".java");
 					v2path.getParent().toFile().mkdirs();
 					v2path.toFile().createNewFile();
 					Files.writeString(v2path, "package testing_lib." + caseName + ";\n\n" + code + "\n");
@@ -85,6 +86,20 @@ public class Extract {
 					e.printStackTrace();
 				}
 			});
+
+			try {
+				var clientPath = CLIENT.resolve(caseName).resolve("Main.java");
+				clientPath.getParent().toFile().mkdirs();
+				clientPath.toFile().createNewFile();
+				Files.writeString(clientPath, "package " + caseName + ";\n\n" +
+					"public class Main {\n" +
+					"\tpublic static void main(String[] args) {\n" +
+					"\t/*" + code1 + "*/\n" +
+					"\t}\n" +
+					"}\n");
+			} catch (IOException e) {
+				e.printStackTrace();
+			}
 		});
 	}
 
