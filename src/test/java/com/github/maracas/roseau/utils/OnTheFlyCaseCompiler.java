@@ -1,11 +1,11 @@
 package com.github.maracas.roseau.utils;
 
-import com.github.maracas.roseau.extractors.APIExtractor;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
+import com.github.maracas.roseau.extractors.APIExtractor;
+import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.opentest4j.AssertionFailedError;
@@ -20,9 +20,9 @@ import java.io.BufferedInputStream;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import java.util.jar.Attributes;
@@ -38,8 +38,47 @@ public class OnTheFlyCaseCompiler {
 		this.workingDirectory = workingDirectory;
 	}
 
-	private Path saveSource(String source, String className) throws IOException {
-		Path sources = workingDirectory.resolve(source.toLowerCase()).resolve("src");
+	public static void assertBC(String snippet1, String snippet2, String clientSnippet,
+	                            String symbol, BreakingChangeKind kind, int line) {
+		CaseResult res = roseauCase(snippet1, snippet2, clientSnippet);
+		if (!res.isBinaryBreaking() && !res.isSourceBreaking())
+			throw new AssertionFailedError("No breaking change detected");
+		TestUtils.assertBC(symbol, kind, line, res.bcs());
+	}
+
+	public static void assertNoBC(String snippet1, String snippet2, String clientSnippet) {
+		CaseResult res = roseauCase(snippet1, snippet2, clientSnippet);
+		if (!res.compilationErrors().isEmpty())
+			throw new AssertionFailedError("Compilation error", "No error", res.oneLineCompilationError());
+		if (res.linkingError() != null)
+			throw new AssertionFailedError("Linking error", "No error", res.oneLineLinkingError());
+		TestUtils.assertNoBC(res.bcs());
+	}
+
+	record CaseResult(
+		List<BreakingChange> bcs,
+		List<Diagnostic<? extends JavaFileObject>> compilationErrors,
+		Exception linkingError
+	) {
+		boolean isBinaryBreaking() {
+			return linkingError != null;
+		}
+
+		boolean isSourceBreaking() {
+			return !compilationErrors.isEmpty();
+		}
+
+		String oneLineCompilationError() {
+			return compilationErrors.stream().map(d -> d.toString().replace("\n", " ")).collect(Collectors.joining(", "));
+		}
+
+		String oneLineLinkingError() {
+			return linkingError != null ? linkingError.getMessage().replace("\n", " ") : "";
+		}
+	}
+
+	private Path saveSource(String directory, String className, String source) throws IOException {
+		Path sources = workingDirectory.resolve(directory).resolve("src");
 		Path sourcePath = sources.resolve("%s.java".formatted(className));
 		sources.toFile().mkdirs();
 		Files.writeString(sourcePath, source);
@@ -49,10 +88,10 @@ public class OnTheFlyCaseCompiler {
 	private void createJar(Path jar, Collection<Path> classFiles) throws IOException {
 		Manifest manifest = new Manifest();
 		manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-		JarOutputStream target = new JarOutputStream(new FileOutputStream(jar.toFile()), manifest);
-		for (Path classFile : classFiles)
-			addToJar(classFile, target);
-		target.close();
+		try (JarOutputStream target = new JarOutputStream(new FileOutputStream(jar.toFile()), manifest)) {
+			for (Path classFile : classFiles)
+				addToJar(classFile, target);
+		}
 	}
 
 	private void addToJar(Path source, JarOutputStream target) throws IOException {
@@ -97,9 +136,8 @@ public class OnTheFlyCaseCompiler {
 		StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null);
 		Iterable<? extends JavaFileObject> cus = fileManager.getJavaFileObjects(clientSource);
 		List<String> options = List.of(
-			"-source", "21",
-			"--enable-preview", // Simpler main()
-			"-classpath", libraryPath.toString());
+			"-classpath", libraryPath.toString()
+		);
 
 		JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, cus);
 		task.call();
@@ -109,61 +147,86 @@ public class OnTheFlyCaseCompiler {
 			.toList();
 	}
 
-	public static CaseResult roseauCase(String snippet1, String snippet2, String clientSnippet) {
+	private Exception linkClient(Path clientDir, Path libraryDir) {
+		try {
+			Path clientClassFile = clientDir.resolve("Client.class");
+			if (!Files.exists(clientClassFile))
+				throw new RuntimeException("Compiled client class not found at: " + clientClassFile);
+
+			String classpath = clientDir + System.getProperty("path.separator") + libraryDir;
+
+			ProcessBuilder pb = new ProcessBuilder(
+				"java",
+				"-cp", classpath,
+				"Client"
+			);
+			pb.redirectErrorStream(true);
+			Process process = pb.start();
+			int exitCode = process.waitFor();
+			if (exitCode != 0) {
+				return new RuntimeException(new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
+			}
+			return null;
+		} catch (IOException | InterruptedException e) {
+			return e;
+		}
+	}
+
+	private static CaseResult roseauCase(String snippet1, String snippet2, String clientSnippet) {
 		try {
 			Path workingDirectory = Files.createTempDirectory("roseau-otf");
 			OnTheFlyCaseCompiler otf = new OnTheFlyCaseCompiler(workingDirectory);
 
-			Path srcFile1 = otf.saveSource(snippet1, "A");
+			// --- Compile API version 1 ---
+			Path srcFile1 = otf.saveSource("v1", "A", snippet1);
 			Path clsFile1 = otf.compileLibrary("A", srcFile1);
-			Path jar1 = workingDirectory.resolve("old.jar");
+			Path srcDir1 = srcFile1.getParent();
+			Path clsDir1 = clsFile1.getParent();
+			Path jar1 = workingDirectory.resolve("v1.jar");
 			otf.createJar(jar1, List.of(clsFile1));
 
-			Path srcFile2 = otf.saveSource(snippet2, "A");
+			// --- Compile API version 2 ---
+			Path srcFile2 = otf.saveSource("v2", "A", snippet2);
 			Path clsFile2 = otf.compileLibrary("A", srcFile2);
-			Path jar2 = workingDirectory.resolve("new.jar");
+			Path srcDir2 = srcFile2.getParent();
+			Path clsDir2 = clsFile2.getParent();
+			Path jar2 = workingDirectory.resolve("v2.jar");
 			otf.createJar(jar2, List.of(clsFile2));
 
-			Path clientPath = workingDirectory.resolve("client");
-			Path clientFile = clientPath.resolve("src/main/java/Client.java");
+			// --- Prepare client code ---
+			Path clientPath = workingDirectory.resolve("client/src");
+			Path clientFile = clientPath.resolve("Client.java");
 			clientFile.getParent().toFile().mkdirs();
-			Files.writeString(clientFile, clientSnippet);
-			Path pomFile = clientPath.resolve("pom.xml");
-			clientFile.toFile().getParentFile().mkdirs();
-			Files.writeString(pomFile, "<project></project>");
+			Files.writeString(clientFile, """
+				public class Client {
+					public static void main(String[] args) {
+						%s
+					}
+				}""".formatted(clientSnippet));
 
+			// --- Extract APIs and compute diff ---
 			APIExtractor extractor = new SpoonAPIExtractor();
-			API v1 = extractor.extractAPI(srcFile1.getParent());
-			API v2 = extractor.extractAPI(srcFile2.getParent());
-			APIDiff diff = new APIDiff(v1, v2);
+			API v1 = extractor.extractAPI(srcDir1);
+			API v2 = extractor.extractAPI(srcDir2);
+			List<BreakingChange> bcs = new APIDiff(v1, v2).diff();
 
-			List<Diagnostic<? extends JavaFileObject>> errors1 = otf.compileClient(clientFile, clsFile1.getParent());
-			if (!errors1.isEmpty())
-				throw new RuntimeException("On-the-fly case did not compile with the first version:\n" +
-					errors1.stream().map(d -> d.getMessage(null)).collect(Collectors.joining(System.lineSeparator())));
+			// --- Compile client against API v1 (sanity check) ---
+			List<Diagnostic<? extends JavaFileObject>> compilationErrors1 = otf.compileClient(clientFile, clsDir1);
+			if (!compilationErrors1.isEmpty())
+				throw new RuntimeException("Client did not compile against the first version:\n" +
+					compilationErrors1.stream().map(d -> d.getMessage(null)).collect(Collectors.joining(System.lineSeparator())));
 
-			List<Diagnostic<? extends JavaFileObject>> errors2 = otf.compileClient(clientFile, clsFile2.getParent());
+			// --- Link client against API V2 ---
+			Exception linkingError2 = otf.linkClient(clientPath, clsDir2);
+
+			// --- Compile client against API v2 ---
+			// We do this last to avoid having a Client.class compiled against v2 above
+			List<Diagnostic<? extends JavaFileObject>> compilationErrors2 = otf.compileClient(clientFile, clsDir2);
+
 			MoreFiles.deleteRecursively(workingDirectory, RecursiveDeleteOption.ALLOW_INSECURE);
-			return new CaseResult(diff.diff(), errors2);
+			return new CaseResult(bcs, compilationErrors2, linkingError2);
 		} catch (IOException e) {
 			throw new RuntimeException("On-the-fly failed", e);
 		}
-	}
-
-	record CaseResult(List<BreakingChange> bcs, List<Diagnostic<? extends JavaFileObject>> errors) {}
-
-	public static void assertBC(String snippet1, String snippet2, String clientSnippet,
-	                            String symbol, BreakingChangeKind kind, int line) {
-		CaseResult res = roseauCase(snippet1, snippet2, clientSnippet);
-		if (res.errors().isEmpty())
-			throw new AssertionFailedError("No breaking change detected by the compiler");
-		TestUtils.assertBC(symbol, kind, line, res.bcs());
-	}
-
-	public static void assertNoBC(String snippet1, String snippet2, String clientSnippet) {
-		CaseResult res = roseauCase(snippet1, snippet2, clientSnippet);
-		if (!res.errors().isEmpty())
-			throw new AssertionFailedError("Compiler returned an error", "No error", res.errors());
-		TestUtils.assertNoBC(res.bcs());
 	}
 }
