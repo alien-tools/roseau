@@ -7,11 +7,11 @@ import com.github.maracas.roseau.extractors.sources.SpoonAPIFactory;
  * Creates {@link TypeDecl} instances reflectively to represent and navigate types outside the API.
  * Current implementation simply delegates this job to Spoon, without classpath, so this just resolves JDK types.
  */
-class ReflectiveTypeFactory {
+public class ReflectiveTypeFactory {
 	private final SpoonAPIFactory spoonFactory;
 
-	ReflectiveTypeFactory() {
-		spoonFactory = new SpoonAPIFactory();
+	public ReflectiveTypeFactory(TypeReferenceFactory typeReferenceFactory) {
+		spoonFactory = new SpoonAPIFactory(typeReferenceFactory);
 	}
 
 	TypeDecl convertCtType(String qualifiedName) {

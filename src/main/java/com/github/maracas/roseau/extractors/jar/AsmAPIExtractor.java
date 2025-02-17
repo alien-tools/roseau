@@ -54,6 +54,6 @@ public class AsmAPIExtractor implements APIExtractor {
 				})
 				.toList();
 
-		return new API(typeDecls);
+		return new API(typeDecls, typeRefFactory);
 	}
 }
