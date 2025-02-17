@@ -6,7 +6,7 @@ import org.junit.jupiter.api.Test;
 import static com.github.maracas.roseau.utils.OnTheFlyCaseCompiler.assertBC;
 import static com.github.maracas.roseau.utils.OnTheFlyCaseCompiler.assertNoBC;
 
-class OnTheFlyCases {
+class OnTheFlyCasesTest {
 	// Source-breaking, binary-breaking
 	@Test
 	void class_now_abstract() {
