@@ -5,10 +5,12 @@ import japicmp.cmp.JApiCmpArchive;
 import japicmp.cmp.JarArchiveComparator;
 import japicmp.cmp.JarArchiveComparatorOptions;
 import japicmp.config.Options;
-import japicmp.model.AccessModifier;
-import japicmp.model.JApiClass;
+import japicmp.model.*;
+import japicmp.output.Filter;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 
 public final class JapicmpTool extends AbstractTool {
@@ -32,8 +34,32 @@ public final class JapicmpTool extends AbstractTool {
 		var v2Archive = new JApiCmpArchive(v2Path.toFile(), "2.0.0");
 
 		List<JApiClass> jApiClasses = jarArchiveComparator.compare(v1Archive, v2Archive);
-		var realBreakingClasses = jApiClasses.stream()
-				.filter(cls -> !cls.isBinaryCompatible() || !cls.isSourceCompatible())
+		List<JApiCompatibilityChange> allBreakingChanges = new ArrayList<>();
+		Filter.filter(jApiClasses, new Filter.FilterVisitor() {
+			@Override public void visit(Iterator<JApiClass> iterator, JApiClass jApiClass) {
+				allBreakingChanges.addAll(jApiClass.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiMethod> iterator, JApiMethod jApiMethod) {
+				allBreakingChanges.addAll(jApiMethod.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiConstructor> iterator, JApiConstructor jApiConstructor) {
+				allBreakingChanges.addAll(jApiConstructor.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiImplementedInterface> iterator, JApiImplementedInterface jApiImplementedInterface) {
+				allBreakingChanges.addAll(jApiImplementedInterface.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiField> iterator, JApiField jApiField) {
+				allBreakingChanges.addAll(jApiField.getCompatibilityChanges());
+			}
+			@Override public void visit(Iterator<JApiAnnotation> iterator, JApiAnnotation jApiAnnotation) {
+				allBreakingChanges.addAll(jApiAnnotation.getCompatibilityChanges());
+			}
+			@Override public void visit(JApiSuperclass jApiSuperclass) {
+				allBreakingChanges.addAll(jApiSuperclass.getCompatibilityChanges());
+			}
+		});
+		var realBreakingClasses = allBreakingChanges.stream()
+				.filter(bc -> !bc.isBinaryCompatible() || !bc.isSourceCompatible())
 				.toList();
 		var isBreaking = !realBreakingClasses.isEmpty();
 
