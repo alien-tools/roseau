@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 public class AsmAPIExtractor implements APIExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(AsmAPIExtractor.class);
 
 	@Override
 	public API extractAPI(Path sources) {

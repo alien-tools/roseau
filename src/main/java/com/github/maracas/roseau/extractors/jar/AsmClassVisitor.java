@@ -57,7 +57,7 @@ class AsmClassVisitor extends ClassVisitor {
 	private boolean shouldSkip = false;
 	private int recordComponents = 0;
 
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(AsmClassVisitor.class);
 
 	AsmClassVisitor(int api, TypeReferenceFactory typeRefFactory) {
 		super(api);

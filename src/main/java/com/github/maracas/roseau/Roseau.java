@@ -61,7 +61,7 @@ final class Roseau implements Callable<Integer>  {
 			defaultValue = "CSV")
 	private BreakingChangesFormatterFactory format;
 
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
 	private static final Duration SPOON_TIMEOUT = Duration.ofSeconds(60L);
 	private static final String RED_TEXT = "\u001B[31m";
 	private static final String BOLD = "\u001B[1m";

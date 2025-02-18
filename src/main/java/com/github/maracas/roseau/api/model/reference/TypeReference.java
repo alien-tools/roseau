@@ -33,7 +33,7 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	public static final TypeReference<ClassDecl> EXCEPTION = new TypeReference<>("java.lang.Exception");
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
 
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(TypeReference.class);
 
 	@JsonCreator
 	TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
