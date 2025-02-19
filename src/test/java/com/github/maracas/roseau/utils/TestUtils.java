@@ -13,7 +13,10 @@ import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
+import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
 import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 import japicmp.cmp.JApiCmpArchive;
 import japicmp.cmp.JarArchiveComparator;
 import japicmp.cmp.JarArchiveComparatorOptions;
@@ -45,6 +48,7 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -231,6 +235,28 @@ public class TestUtils {
 		Map<String, String> sourcesMap = buildSourcesMap(sources);
 		JarFile jar = buildJar(sourcesMap);
 		return new AsmAPIExtractor().extractAPI(jar);
+	}
+
+	public static API buildJdtAPI(String sources) {
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			Path sourcesPath = writeSources(sourcesMap);
+			API api = new JdtAPIExtractor().extractAPI(sourcesPath);
+			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
+			System.out.println("Got " + api);
+			return api;
+		} catch (IOException e) {
+			e.printStackTrace();
+			return null;
+		}
+	}
+
+	public static Path writeSources(Map<String, String> sourcesMap) throws IOException {
+		Path tempDir = Files.createTempDirectory("sources");
+		for (Map.Entry<String, String> entry : sourcesMap.entrySet()) {
+			Files.writeString(tempDir.resolve(entry.getKey() + ".java"), entry.getValue());
+		}
+		return tempDir;
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {

@@ -14,5 +14,11 @@ public enum ApiBuilderType implements ApiBuilder {
 		public API build(String sources) {
 			return TestUtils.buildJarAPI(sources);
 		}
+	},
+	JDT {
+		@Override
+		public API build(String sources) {
+			return TestUtils.buildJdtAPI(sources);
+		}
 	}
 }
