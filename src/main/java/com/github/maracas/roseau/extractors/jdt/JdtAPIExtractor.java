@@ -63,7 +63,8 @@ public class JdtAPIExtractor implements APIExtractor {
 			ASTParser parser = ASTParser.newParser(AST.JLS21);
 			parser.setKind(ASTParser.K_COMPILATION_UNIT);
 			parser.setResolveBindings(true);
-			parser.setBindingsRecovery(true);
+			parser.setBindingsRecovery(false);
+			parser.setIgnoreMethodBodies(true);
 
 			// 4. Set compiler options (adjust the version as needed)
 			Map<String, String> options = JavaCore.getOptions();
