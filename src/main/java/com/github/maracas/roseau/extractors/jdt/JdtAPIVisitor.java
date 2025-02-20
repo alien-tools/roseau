@@ -575,7 +575,8 @@ class JdtAPIVisitor extends ASTVisitor {
 			return typeRefFactory.createPrimitiveTypeReference(binding.getName());
 		}
 		if (binding.isArray()) {
-			return typeRefFactory.createArrayTypeReference(makeTypeReference(binding.getComponentType()), binding.getDimensions());
+			return typeRefFactory.createArrayTypeReference(makeTypeReference(binding.getElementType()),
+				binding.getDimensions());
 		}
 		if (binding.isParameterizedType()) {
 			var tas = Arrays.stream(binding.getTypeArguments())
