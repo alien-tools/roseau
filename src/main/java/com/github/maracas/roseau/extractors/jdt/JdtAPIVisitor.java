@@ -588,8 +588,9 @@ class JdtAPIVisitor extends ASTVisitor {
 			return typeRefFactory.createTypeParameterReference(binding.getName());
 		}
 		if (binding.isWildcardType()) {
-			// FIXME
-			return TypeReference.OBJECT;
+			if (binding.getBound() != null)
+				return typeRefFactory.createWildcardTypeReference(List.of(makeTypeReference(binding.getBound())), binding.isUpperbound());
+			return typeRefFactory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true);
 		}
 		return typeRefFactory.createTypeReference(roseauFqn(binding));
 	}

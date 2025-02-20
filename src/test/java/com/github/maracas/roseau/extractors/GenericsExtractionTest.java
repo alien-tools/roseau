@@ -136,71 +136,59 @@ class GenericsExtractionTest {
 		var m5 = assertMethod(c, "m5(java.util.List)");
 		var m6 = assertMethod(c, "m6(java.util.List)");
 
-		assertThat(m1.getType(), instanceOf(TypeReference.class));
 		if (m1.getType() instanceof TypeReference<?> typeRef) {
 			assertThat(typeRef.getTypeArguments(), hasSize(1));
-			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
 				assertThat(wcRef.bounds().getFirst(), is(equalTo(TypeReference.OBJECT)));
 				assertThat(wcRef.upper(), is(true));
-			}
-		}
+			} else fail();
+		} else fail();
 
-		assertThat(m2.getType(), instanceOf(TypeReference.class));
 		if (m2.getType() instanceof TypeReference<?> typeRef) {
 			assertThat(typeRef.getTypeArguments(), hasSize(1));
-			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
 				assertThat(wcRef.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Number")));
 				assertThat(wcRef.upper(), is(true));
-			}
-		}
+			} else fail();
+		} else fail();
 
-		assertThat(m3.getType(), instanceOf(TypeReference.class));
 		if (m3.getType() instanceof TypeReference<?> typeRef) {
 			assertThat(typeRef.getTypeArguments(), hasSize(1));
-			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
 				assertThat(wcRef.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Number")));
 				assertThat(wcRef.upper(), is(false));
-			}
-		}
+			} else fail();
+		} else fail();
 
-		assertThat(m4.getParameters().getFirst().type(), instanceOf(TypeReference.class));
 		if (m4.getParameters().getFirst().type() instanceof TypeReference<?> typeRef) {
 			assertThat(typeRef.getTypeArguments(), hasSize(1));
-			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
 				assertThat(wcRef.bounds().getFirst(), is(equalTo(TypeReference.OBJECT)));
 				assertThat(wcRef.upper(), is(true));
-			}
-		}
+			} else fail();
+		} else fail();
 
-		assertThat(m5.getParameters().getFirst().type(), instanceOf(TypeReference.class));
 		if (m5.getParameters().getFirst().type() instanceof TypeReference<?> typeRef) {
 			assertThat(typeRef.getTypeArguments(), hasSize(1));
-			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
 				assertThat(wcRef.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Number")));
 				assertThat(wcRef.upper(), is(true));
-			}
-		}
+			} else fail();
+		} else fail();
 
-		assertThat(m6.getParameters().getFirst().type(), instanceOf(TypeReference.class));
 		if (m6.getParameters().getFirst().type() instanceof TypeReference<?> typeRef) {
 			assertThat(typeRef.getTypeArguments(), hasSize(1));
-			assertThat(typeRef.getTypeArguments().getFirst(), instanceOf(WildcardTypeReference.class));
 			if (typeRef.getTypeArguments().getFirst() instanceof WildcardTypeReference wcRef) {
 				assertThat(wcRef.bounds(), hasSize(1));
 				assertThat(wcRef.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.Number")));
 				assertThat(wcRef.upper(), is(false));
-			}
-		}
+			} else fail();
+		} else fail();
 	}
 
 	@ParameterizedTest
