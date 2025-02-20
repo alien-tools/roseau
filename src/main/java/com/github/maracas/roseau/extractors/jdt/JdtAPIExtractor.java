@@ -71,7 +71,6 @@ public class JdtAPIExtractor implements APIExtractor {
 //					}
 					JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
 					ast.accept(visitor);
-					typeDecls.addAll(visitor.getCollectedTypeDecls());
 				}
 			};
 
