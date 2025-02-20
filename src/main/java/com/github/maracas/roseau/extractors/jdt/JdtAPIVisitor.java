@@ -144,17 +144,17 @@ class JdtAPIVisitor extends ASTVisitor {
 
 		// Process fields, methods and constructors from the body declarations
 		List<FieldDecl> fields = Arrays.stream(binding.getDeclaredFields())
-			.filter(field -> isExported(field))
+			.filter(field -> isExported(field, type))
 			.map(field -> convertFieldDeclaration(field, binding))
 			.toList();
 
 		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method))
+			.filter(method -> !method.isConstructor() && isExported(method, type))
 			.map(method -> convertMethod(method, binding))
 			.toList();
 
 		List<ConstructorDecl> constructors = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> method.isConstructor() && isExported(method))
+			.filter(method -> method.isConstructor() && isExported(method, type))
 			.map(cons -> convertConstructor(cons, binding))
 			.toList();
 
@@ -203,45 +203,51 @@ class JdtAPIVisitor extends ASTVisitor {
 		else return roseauFqn(type.getDeclaringClass()) + "$" + type.getName();
 	}
 
-	private boolean isExported(ITypeBinding type) {
+	private boolean isExported(ITypeBinding type, AbstractTypeDeclaration ast) {
 		var visibility = convertVisibility(type.getModifiers());
 
-		return (visibility == AccessModifier.PUBLIC || (visibility == AccessModifier.PROTECTED && !isEffectivelyFinal(type)))
-			&& isParentExported(type.getDeclaringClass());
+		return (visibility == AccessModifier.PUBLIC || (visibility == AccessModifier.PROTECTED && !isEffectivelyFinal(type, ast)))
+			&& isParentExported(type.getDeclaringClass(), ast);
 	}
 
-	private boolean isExported(IVariableBinding field) {
+	private boolean isExported(IVariableBinding field, AbstractTypeDeclaration parentType) {
 		var visibility = convertVisibility(field.getModifiers());
 		var parent = field.getDeclaringClass();
 
-		return visibility == AccessModifier.PUBLIC || (visibility == AccessModifier.PROTECTED && !isEffectivelyFinal(parent));
+		return visibility == AccessModifier.PUBLIC || (visibility == AccessModifier.PROTECTED && !isEffectivelyFinal(parent, parentType));
 	}
 
-	private boolean isExported(IMethodBinding method) {
+	private boolean isExported(IMethodBinding method, AbstractTypeDeclaration parentType) {
 		var visibility = convertVisibility(method.getModifiers());
 		var parent = method.getDeclaringClass();
 
-		return visibility == AccessModifier.PUBLIC || (visibility == AccessModifier.PROTECTED && !isEffectivelyFinal(parent));
+		return visibility == AccessModifier.PUBLIC || (visibility == AccessModifier.PROTECTED && !isEffectivelyFinal(parent, parentType));
 	}
 
-	private boolean isParentExported(ITypeBinding type) {
+	private boolean isParentExported(ITypeBinding type, AbstractTypeDeclaration ast) {
 		if (type.getDeclaringClass() == null)
 			return true;
-		return isExported(type.getDeclaringClass());
+		return isExported(type.getDeclaringClass(), ast);
 	}
 
-	// FIXME: fails cause of https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
-	private boolean isEffectivelyFinal(ITypeBinding type) {
-		if (type.isEnum() || type.isRecord())
+	private boolean isEffectivelyFinal(ITypeBinding binding, AbstractTypeDeclaration type) {
+		if (binding.isEnum() || binding.isRecord())
 			return true;
 
-		var modifiers = convertModifiers(type.getModifiers());
+		var modifiers = convertModifiers(binding.getModifiers());
+
+		// https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
+		if (convertModifiers(type.getModifiers()).contains(Modifier.SEALED))
+			modifiers.add(Modifier.SEALED);
+		if (convertModifiers(type.getModifiers()).contains(Modifier.NON_SEALED))
+			modifiers.add(Modifier.NON_SEALED);
+
 		var isFinal = modifiers.contains(Modifier.FINAL);
 		var isSealed = modifiers.contains(Modifier.SEALED);
 		var isNonSealed = modifiers.contains(Modifier.NON_SEALED);
 
-		if (type.isClass()) {
-			var cons = Arrays.stream(type.getDeclaredMethods())
+		if (binding.isClass()) {
+			var cons = Arrays.stream(binding.getDeclaredMethods())
 				.filter(m -> m.isConstructor())
 				.toList();
 			if (!cons.isEmpty() && cons.stream().allMatch(c -> convertVisibility(c.getModifiers()) == AccessModifier.PRIVATE))
@@ -296,17 +302,17 @@ class JdtAPIVisitor extends ASTVisitor {
 		List<FormalTypeParameter> typeParams = Collections.emptyList();
 
 		List<FieldDecl> fields = Arrays.stream(binding.getDeclaredFields())
-			.filter(field -> isExported(field))
+			.filter(field -> isExported(field, enumDecl))
 			.map(field -> convertFieldDeclaration(field, binding))
 			.toList();
 
 		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method))
+			.filter(method -> !method.isSynthetic() && !method.isConstructor() && isExported(method, enumDecl))
 			.map(method -> convertMethod(method, binding))
 			.toList();
 
 		List<ConstructorDecl> constructors = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> method.isConstructor() && isExported(method))
+			.filter(method -> method.isConstructor() && isExported(method, enumDecl))
 			.map(cons -> convertConstructor(cons, binding))
 			.toList();
 
@@ -350,12 +356,12 @@ class JdtAPIVisitor extends ASTVisitor {
 			.map(intf -> (TypeReference<InterfaceDecl>) makeTypeReference(intf)).toList());
 
 		List<FieldDecl> fields = Arrays.stream(binding.getDeclaredFields())
-			.filter(field -> isExported(field))
+			.filter(field -> isExported(field, annotationDecl))
 			.map(field -> convertFieldDeclaration(field, binding))
 			.toList();
 
 		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method))
+			.filter(method -> !method.isConstructor() && isExported(method, annotationDecl))
 			.map(method -> convertMethod(method, binding))
 			.toList();
 
@@ -405,17 +411,17 @@ class JdtAPIVisitor extends ASTVisitor {
 
 		// Process fields, methods and constructors from the body declarations
 		List<FieldDecl> fields = Arrays.stream(binding.getDeclaredFields())
-			.filter(field -> isExported(field))
+			.filter(field -> isExported(field, recordDecl))
 			.map(field -> convertFieldDeclaration(field, binding))
 			.toList();
 
 		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method))
+			.filter(method -> !method.isConstructor() && isExported(method, recordDecl))
 			.map(method -> convertMethod(method, binding))
 			.toList();
 
 		List<ConstructorDecl> constructors = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> method.isConstructor() && isExported(method))
+			.filter(method -> method.isConstructor() && isExported(method, recordDecl))
 			.map(cons -> convertConstructor(cons, binding))
 			.toList();
 

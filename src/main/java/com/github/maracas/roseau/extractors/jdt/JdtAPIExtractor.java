@@ -4,10 +4,7 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
-import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.extractors.APIExtractor;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
-import com.google.common.base.Stopwatch;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
@@ -22,27 +19,6 @@ import java.util.List;
 import java.util.Map;
 
 public class JdtAPIExtractor implements APIExtractor {
-	public static void main(String[] args) {
-		var sw = Stopwatch.createUnstarted();
-		var sources = Path.of("src/main/java");
-//		for (int i = 0; i < 5; i++) {
-			sw.reset().start();
-			var api1 = new JdtAPIExtractor().extractAPI(sources);
-			System.out.printf("JDT took %dms (%d types)%n", sw.elapsed().toMillis(), api1.getAllTypes().count());
-			sw.reset().start();
-			var api2 = new SpoonAPIExtractor().extractAPI(sources);
-			System.out.printf("Spoon took %dms (%d types)%n", sw.elapsed().toMillis(), api2.getAllTypes().count());
-			var bcs = new APIDiff(api1, api2).diff();
-			System.out.println(bcs.size());
-			try {
-				api1.writeJson(Path.of("jdt.json"));
-				api2.writeJson(Path.of("spoon.json"));
-			} catch (IOException e) {
-				throw new RuntimeException(e);
-			}
-//		}
-	}
-
 	@Override
 	public API extractAPI(Path sources) {
 		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
