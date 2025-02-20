@@ -4,6 +4,7 @@ import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import com.github.maracas.roseau.extractors.ChangedFilesProvider;
 import com.github.maracas.roseau.extractors.IncrementalAPIExtractor;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.dom.AST;
@@ -15,26 +16,22 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
+import java.util.stream.Stream;
 
 public class IncrementalJdtAPIExtractor implements IncrementalAPIExtractor {
 	@Override
-	public API refreshAPI(Path sources, Set<Path> deleted, Set<Path> updated, Set<Path> created, API oldApi) {
+	public API refreshAPI(Path sources, ChangedFilesProvider.ChangedFiles changedFiles, API previousApi) {
 		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
 
 		List<TypeDecl> typeDecls = new ArrayList<>();
-		oldApi.getAllTypes().forEach(d -> {
+		previousApi.getAllTypes().forEach(d -> {
 			Path source = d.getLocation().file();
-			if (!(deleted.contains(source) || updated.contains(source)))
+			if (!(changedFiles.deletedFiles().contains(source) || changedFiles.updatedFiles().contains(source)))
 				typeDecls.add(d);
 		});
 
-		// 1. Recursively collect all .java files
-		List<Path> javaFiles = updated.stream().toList();
-		javaFiles.addAll(created);
-
 		// 2. Prepare an array of absolute paths (as Strings) for the ASTParser
-		String[] sourceFilePaths = javaFiles.stream()
+		String[] sourceFilePaths = Stream.concat(changedFiles.updatedFiles().stream(), changedFiles.createdFiles().stream())
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
 
@@ -61,19 +58,18 @@ public class IncrementalJdtAPIExtractor implements IncrementalAPIExtractor {
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
-//					System.out.println("Parsed file: " + sourceFilePath);
-//					IProblem[] problems = ast.getProblems();
-//					if (problems != null && problems.length > 0) {
-//						for (IProblem problem : problems) {
-//							String severity = problem.isError() ? "Error" : "Warning";
-//							System.out.printf("%s: %s at line %d%n", severity,
-//								problem.getMessage(), problem.getSourceLineNumber());
-//						}
-//					} else {
-//						System.out.println("No issues in " + sourceFilePath);
+//				System.out.println("Parsed file: " + sourceFilePath);
+//				IProblem[] problems = ast.getProblems();
+//				if (problems != null && problems.length > 0) {
+//					for (IProblem problem : problems) {
+//						String severity = problem.isError() ? "Error" : "Warning";
+//						System.out.printf("%s: %s at line %d%n", severity,
+//							problem.getMessage(), problem.getSourceLineNumber());
 //					}
+//				} else {
+//					System.out.println("No issues in " + sourceFilePath);
+//				}
 				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
-				visitor.getCollectedTypeDecls().addAll(typeDecls);
 				ast.accept(visitor);
 				typeDecls.addAll(visitor.getCollectedTypeDecls());
 			}
