@@ -243,7 +243,6 @@ public class TestUtils {
 			Path sourcesPath = writeSources(sourcesMap);
 			API api = new JdtAPIExtractor().extractAPI(sourcesPath);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			System.out.println("Got " + api);
 			return api;
 		} catch (IOException e) {
 			e.printStackTrace();
