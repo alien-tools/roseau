@@ -89,6 +89,11 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		resolutionAttempted = true;
 	}
 
+	public void discard() {
+		resolvedApiType = null;
+		resolutionAttempted = false;
+	}
+
 	@Override
 	public boolean isSubtypeOf(ITypeReference other) {
 		// Always a subtype of Object

@@ -31,6 +31,7 @@ public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements Incre
 		// Parse, collect, and merge the updated files
 		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
 		typeDecls.addAll(parseTypes(filesToParse, sources, typeRefFactory));
+
 		return new API(typeDecls, typeRefFactory);
 	}
 }
