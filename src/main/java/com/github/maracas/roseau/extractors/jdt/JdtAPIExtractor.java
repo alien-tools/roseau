@@ -5,7 +5,10 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import com.github.maracas.roseau.extractors.APIExtractor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
+import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
@@ -17,70 +20,68 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.stream.Stream;
 
 public class JdtAPIExtractor implements APIExtractor {
+	private static final Logger LOGGER = LogManager.getLogger(JdtAPIExtractor.class);
+
 	@Override
 	public API extractAPI(Path sources) {
-		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
-		List<TypeDecl> typeDecls = new ArrayList<>();
-
-		try {
-			// 1. Recursively collect all .java files
-			List<Path> javaFiles = Files.walk(sources)
-				.filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".java"))
+		try (Stream<Path> files = Files.walk(sources)) {
+			List<Path> sourceFiles = files
+				.filter(f -> Files.isRegularFile(f) && f.toString().endsWith(".java"))
 				.toList();
 
-			// 2. Prepare an array of absolute paths (as Strings) for the ASTParser
-			String[] sourceFilePaths = javaFiles.stream()
-				.map(p -> p.toAbsolutePath().toString())
-				.toArray(String[]::new);
-
-			// 3. Set up the ASTParser with the desired language level (JLS17 here) and enable bindings.
-			ASTParser parser = ASTParser.newParser(AST.JLS21);
-			parser.setKind(ASTParser.K_COMPILATION_UNIT);
-			parser.setResolveBindings(true);
-			parser.setBindingsRecovery(false);
-			parser.setIgnoreMethodBodies(true);
-
-			// 4. Set compiler options (adjust the version as needed)
-			Map<String, String> options = JavaCore.getOptions();
-			options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_21);
-			options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
-			options.put(JavaCore.COMPILER_CODEGEN_TARGET_PLATFORM, JavaCore.VERSION_21);
-			parser.setCompilerOptions(options);
-
-			// 5. Set the environment for binding resolution.
-			//    The source path is the given source directory.
-			String[] sourcePathEntries = new String[]{sources.toAbsolutePath().toString()};
-			parser.setEnvironment(null, sourcePathEntries, null, true);
-
-			// 6. Create a FileASTRequestor to receive the CompilationUnits as they are parsed.
-			FileASTRequestor requestor = new FileASTRequestor() {
-				@Override
-				public void acceptAST(String sourceFilePath, CompilationUnit ast) {
-//					System.out.println("Parsed file: " + sourceFilePath);
-//					IProblem[] problems = ast.getProblems();
-//					if (problems != null && problems.length > 0) {
-//						for (IProblem problem : problems) {
-//							String severity = problem.isError() ? "Error" : "Warning";
-//							System.out.printf("%s: %s at line %d%n", severity,
-//								problem.getMessage(), problem.getSourceLineNumber());
-//						}
-//					} else {
-//						System.out.println("No issues in " + sourceFilePath);
-//					}
-					JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
-					ast.accept(visitor);
-					typeDecls.addAll(visitor.getCollectedTypeDecls());
-				}
-			};
-
-			// 7. Parse all Java files. The third argument (binding keys) is empty here.
-			parser.createASTs(sourceFilePaths, null, new String[0], requestor, null);
+			TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
+			List<TypeDecl> parsedTypes = parseTypes(sourceFiles, sources, typeRefFactory);
+			return new API(parsedTypes, typeRefFactory);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
+	}
 
-		return new API(typeDecls, typeRefFactory);
+	List<TypeDecl> parseTypes(List<Path> sourcesToParse, Path sourcesRoot, TypeReferenceFactory typeRefFactory) {
+		List<TypeDecl> typeDecls = new ArrayList<>();
+
+		String[] sourcesArray = sourcesToParse.stream()
+			.map(p -> p.toAbsolutePath().toString())
+			.toArray(String[]::new);
+
+		Map<String, String> options = JavaCore.getOptions();
+		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_21);
+		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
+
+		String[] sourcesRootArray = { sourcesRoot.toAbsolutePath().toString() };
+
+		ASTParser parser = ASTParser.newParser(AST.JLS21);
+		parser.setKind(ASTParser.K_COMPILATION_UNIT);
+		parser.setResolveBindings(true);
+		parser.setBindingsRecovery(false);
+		parser.setStatementsRecovery(false);
+		parser.setIgnoreMethodBodies(true);
+		parser.setCompilerOptions(options);
+		parser.setEnvironment(null, sourcesRootArray, null, true);
+
+		// Receive parsed ASTs and forward them to the visitor
+		FileASTRequestor requestor = new FileASTRequestor() {
+			@Override
+			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
+				IProblem[] problems = ast.getProblems();
+				if (problems != null) {
+					for (IProblem problem : problems) {
+						LOGGER.warn("Error [{}:{}]: {}", sourceFilePath, problem.getSourceLineNumber(), problem.getMessage());
+					}
+				}
+
+				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
+				ast.accept(visitor);
+				typeDecls.addAll(visitor.getCollectedTypeDecls());
+			}
+		};
+
+		// Start parsing and forwarding ASTs
+		parser.createASTs(sourcesArray, null, new String[0], requestor, null);
+
+		return typeDecls;
 	}
 }
