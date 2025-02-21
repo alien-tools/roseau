@@ -24,7 +24,7 @@ class APITest {
 		Path json = Path.of("roundtrip.json");
 		orig.writeJson(json);
 
-		API res = API.fromJson(json);
+		API res = API.fromJson(json, orig.getFactory());
 		Files.delete(json);
 
 		assertThat(res, is(equalTo(orig)));

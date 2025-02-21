@@ -53,7 +53,7 @@ class ConstructorRemovedTest {
 	}
 
 	@Test
-	void class_constructor_now_protected_default() {
+	void class_constructor_now_protected() {
 		var v1 = """
 			public class A {
 				public A(int i) {}
@@ -69,7 +69,7 @@ class ConstructorRemovedTest {
 	}
 
 	@Test
-	void class_constructor_now_protected() {
+	void class_constructor_now_protected_default() {
 		var v1 = "public class A {}";
 		var v2 = """
 			public class A {

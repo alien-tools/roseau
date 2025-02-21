@@ -7,10 +7,10 @@ import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -50,7 +50,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	@JsonIgnore
 	protected List<FieldDecl> allFields;
 
-	protected TypeDecl(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
+	protected TypeDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                   List<Annotation> annotations, SourceLocation location,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
@@ -95,19 +95,17 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return false;
 	}
 
-	public boolean isStatic() {
-		return modifiers.contains(Modifier.STATIC);
-	}
-
-	public boolean isFinal() {
-		return modifiers.contains(Modifier.FINAL);
-	}
-
 	public boolean isSealed() {
 		return modifiers.contains(Modifier.SEALED);
 	}
 
-	public boolean isNonSealed() { return modifiers.contains(Modifier.NON_SEALED); }
+	public boolean isNonSealed() {
+		return modifiers.contains(Modifier.NON_SEALED);
+	}
+
+	public boolean isAbstract() {
+		return modifiers.contains(Modifier.ABSTRACT);
+	}
 
 	/**
 	 * Checks whether this type is effectively final, i.e. if it cannot be extended regardless
@@ -119,26 +117,6 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
 		//        is explicitly marked as non-sealed...
 		return (isFinal() || isSealed()) && !isNonSealed();
-	}
-
-	public boolean isPublic() {
-		return AccessModifier.PUBLIC == visibility;
-	}
-
-	public boolean isProtected() {
-		return AccessModifier.PROTECTED == visibility;
-	}
-
-	public boolean isPrivate() {
-		return AccessModifier.PRIVATE == visibility;
-	}
-
-	public boolean isPackagePrivate() {
-		return AccessModifier.PACKAGE_PRIVATE == visibility;
-	}
-
-	public boolean isAbstract() {
-		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
 	/**
@@ -235,7 +213,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	public boolean isSubtypeOf(ITypeReference other) {
 		return other.equals(TypeReference.OBJECT)
 			|| Objects.equals(qualifiedName, other.getQualifiedName())
-			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup, other));
+			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup.getQualifiedName(), other.getQualifiedName()));
 	}
 
 	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
@@ -243,8 +221,29 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
 			.findFirst();
 
-		return resolved.or(
-			() -> enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
+		if (resolved.isPresent()) {
+			return resolved;
+		} else if (enclosingType != null) {
+			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr));
+		} else {
+			return Optional.empty();
+		}
+	}
+
+	public Optional<ITypeReference> resolveTypeParameterBound(TypeParameterReference tpr) {
+		var ftp = resolveTypeParameter(tpr);
+
+		if (ftp.isPresent()) {
+			if (ftp.get().bounds().getFirst() instanceof TypeParameterReference tpr2) {
+				return resolveTypeParameterBound(tpr2);
+			} else {
+				return Optional.of(ftp.get().bounds().getFirst());
+			}
+		} else if (enclosingType != null) {
+			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameterBound(tpr));
+		} else {
+			return Optional.empty();
+		}
 	}
 
 	@Override

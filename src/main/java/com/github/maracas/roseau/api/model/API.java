@@ -1,11 +1,16 @@
 package com.github.maracas.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JacksonInject;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
+import com.fasterxml.jackson.databind.InjectableValues;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
+import com.github.maracas.roseau.api.model.reference.ReflectiveTypeFactory;
+import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import com.github.maracas.roseau.api.visit.APITypeResolver;
 import com.google.common.collect.ImmutableMap;
 
@@ -25,6 +30,8 @@ import java.util.stream.Stream;
  */
 public final class API {
 	private final ImmutableMap<String, TypeDecl> allTypes;
+	@JsonIgnore
+	private final TypeReferenceFactory factory;
 
 	/**
 	 * Initializes an API from the given list of {@link TypeDecl}.
@@ -33,15 +40,16 @@ public final class API {
 	 *
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public API(@JsonProperty("allTypes") List<TypeDecl> types) {
+	public API(@JsonProperty("allTypes") List<TypeDecl> types, @JacksonInject TypeReferenceFactory factory) {
 		this.allTypes = Objects.requireNonNull(types).stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
 				Function.identity()
 			));
+		this.factory = Objects.requireNonNull(factory);
 
 		// Whenever we create an API instance, we need to make sure to resolve within-library types
-		new APITypeResolver(this).resolve();
+		new APITypeResolver(this, new ReflectiveTypeFactory(factory)).resolve();
 	}
 
 	/**
@@ -63,7 +71,9 @@ public final class API {
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
 		TypeDecl find = allTypes.get(qualifiedName);
 
-		return find != null && find.isExported() ? Optional.of(find) : Optional.empty();
+		return find != null && find.isExported()
+			? Optional.of(find)
+			: Optional.empty();
 	}
 
 	/**
@@ -133,11 +143,18 @@ public final class API {
 	 * @return The API generated from the Json file
 	 * @throws IOException If the file cannot be parsed
 	 */
-	public static API fromJson(Path jsonFile) throws IOException {
+	public static API fromJson(Path jsonFile, TypeReferenceFactory factory) throws IOException {
 		ObjectMapper mapper = new ObjectMapper();
-		mapper.registerModule(new Jdk8Module()); // For Optional<>
-		mapper.registerModule(new ParanamerModule()); // For @JsonCreator
+		// For Optional<>
+		mapper.registerModule(new Jdk8Module());
+		// For @JsonCreator
+		mapper.registerModule(new ParanamerModule());
+		mapper.setInjectableValues(new InjectableValues.Std().addValue(TypeReferenceFactory.class, factory));
 		return mapper.readValue(jsonFile.toFile(), API.class);
+	}
+
+	public TypeReferenceFactory getFactory() {
+		return factory;
 	}
 
 	@Override

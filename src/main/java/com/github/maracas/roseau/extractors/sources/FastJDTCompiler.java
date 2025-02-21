@@ -22,7 +22,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 
 class FastJDTCompiler extends Compiler {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(FastJDTCompiler.class);
 
 	FastJDTCompiler(INameEnvironment environment, IErrorHandlingPolicy policy, CompilerOptions options,
 	                ICompilerRequestor requestor, IProblemFactory problemFactory, PrintWriter out,

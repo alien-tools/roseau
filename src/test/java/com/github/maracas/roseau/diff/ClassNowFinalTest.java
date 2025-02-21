@@ -36,8 +36,8 @@ class ClassNowFinalTest {
 
 	@Test
 	void record_now_final() {
-		var v1 = "record A() {}";
-		var v2 = "final record A() {}";
+		var v1 = "public record A() {}";
+		var v2 = "public final record A() {}";
 
 		assertNoBC(buildDiff(v1, v2));
 	}

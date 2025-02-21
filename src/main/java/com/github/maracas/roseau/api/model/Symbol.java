@@ -3,7 +3,6 @@ package com.github.maracas.roseau.api.model;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
-import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -26,7 +25,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
 	 * List of non-access modifiers applied to the symbol.
 	 */
-	protected final EnumSet<Modifier> modifiers;
+	protected final Set<Modifier> modifiers;
 
 	/**
 	 * Symbol annotations
@@ -43,7 +42,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	 */
 	protected final String simpleName;
 
-	protected Symbol(String qualifiedName, AccessModifier visibility, EnumSet<Modifier> modifiers,
+	protected Symbol(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.visibility = Objects.requireNonNull(visibility);
@@ -75,6 +74,30 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public String getSimpleName() {
 		return simpleName;
+	}
+
+	public boolean isPublic() {
+		return AccessModifier.PUBLIC == visibility;
+	}
+
+	public boolean isProtected() {
+		return AccessModifier.PROTECTED == visibility;
+	}
+
+	public boolean isPrivate() {
+		return AccessModifier.PRIVATE == visibility;
+	}
+
+	public boolean isPackagePrivate() {
+		return AccessModifier.PACKAGE_PRIVATE == visibility;
+	}
+
+	public boolean isStatic() {
+		return modifiers.contains(Modifier.STATIC);
+	}
+
+	public boolean isFinal() {
+		return modifiers.contains(Modifier.FINAL);
 	}
 
 	/**

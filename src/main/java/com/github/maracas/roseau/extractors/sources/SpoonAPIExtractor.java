@@ -1,5 +1,7 @@
 package com.github.maracas.roseau.extractors.sources;
 
+import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
+import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import com.github.maracas.roseau.extractors.APIExtractor;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
@@ -29,13 +31,14 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	public API extractAPI(CtModel model) {
-		SpoonAPIFactory factory = new SpoonAPIFactory();
+		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
+		SpoonAPIFactory factory = new SpoonAPIFactory(typeRefFactory);
 
 		List<TypeDecl> allTypes = model.getAllPackages().stream().parallel()
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
 			.toList();
 
-		return new API(allTypes);
+		return new API(allTypes, typeRefFactory);
 	}
 
 	// Returns all types within a package

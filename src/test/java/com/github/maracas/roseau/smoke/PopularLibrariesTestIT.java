@@ -13,6 +13,9 @@ import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.extractors.sources.SpoonUtils;
 import com.google.common.base.Stopwatch;
+import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -87,6 +90,13 @@ class PopularLibrariesTestIT {
 			"commons-beanutils:commons-beanutils:1.10.0"
 			//"com.squareup.retrofit2:retrofit:2.11.0"
 		);
+	}
+
+	@BeforeAll
+	static void setUp() {
+		// Way too noisy 'cause of missing classpath
+		Configurator.setLevel("spoon", Level.ERROR);
+		Configurator.setLevel("com.github.maracas.roseau", Level.ERROR);
 	}
 
 	@ParameterizedTest(name = "{0}")

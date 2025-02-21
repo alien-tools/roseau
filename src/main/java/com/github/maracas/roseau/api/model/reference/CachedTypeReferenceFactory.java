@@ -14,7 +14,12 @@ import java.util.function.Supplier;
  * within a given factory.
  */
 public class CachedTypeReferenceFactory implements TypeReferenceFactory {
-	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>();
+	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>(100);
+	private final ReflectiveTypeFactory reflectiveTypeFactory;
+
+	public CachedTypeReferenceFactory() {
+		this.reflectiveTypeFactory = new ReflectiveTypeFactory(this);
+	}
 
 	private <U extends ITypeReference> U cache(String key, Supplier<U> f) {
 		return (U) referencesCache.computeIfAbsent(key, k -> f.get());
@@ -24,7 +29,7 @@ public class CachedTypeReferenceFactory implements TypeReferenceFactory {
 	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName,
 	                                                                 List<ITypeReference> typeArguments) {
 		return cache("TR" + qualifiedName + typeArguments.toString(),
-			() -> new TypeReference<>(qualifiedName, typeArguments));
+			() -> new TypeReference<>(qualifiedName, typeArguments, reflectiveTypeFactory));
 	}
 
 	@Override

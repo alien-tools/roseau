@@ -39,12 +39,12 @@ class MethodNowFinalTest {
 	@Test
 	void method_now_final_in_effectively_final_class() {
 		var v1 = """
-			public final class A {
+			public class A {
 				private A() {}
 				public void m() {}
 			}""";
 		var v2 = """
-			public final class A {
+			public class A {
 				private A() {}
 				public final void m() {}
 			}""";
@@ -69,6 +69,6 @@ class MethodNowFinalTest {
 				public final void m() {}
 			}""";
 
-		assertBC("B.m", BreakingChangeKind.METHOD_NOW_FINAL, 5, buildDiff(v1, v2));
+		assertBC("B.m", BreakingChangeKind.METHOD_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 }
