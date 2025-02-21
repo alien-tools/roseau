@@ -44,7 +44,7 @@ class TypeHierarchyExtractionTest {
 			class A implements I, J {}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(a.getSuperClass().equals(TypeReference.OBJECT));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT));
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 		assertThat(a.getImplementedInterfaces().get(1).getQualifiedName(), is(equalTo("J")));

@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
@@ -68,9 +69,10 @@ public class JdtAPIExtractor implements APIExtractor {
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
 				IProblem[] problems = ast.getProblems();
 				if (problems != null) {
-					for (IProblem problem : problems) {
-						LOGGER.warn("Error [{}:{}]: {}", sourceFilePath, problem.getSourceLineNumber(), problem.getMessage());
-					}
+					Arrays.stream(problems)
+						.filter(IProblem::isError)
+						.forEach(p -> LOGGER.warn("{} [{}:{}]: {}", p.isError() ? "error" : "warning",
+							sourceFilePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 
 				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);

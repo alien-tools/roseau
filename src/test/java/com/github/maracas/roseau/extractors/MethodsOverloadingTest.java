@@ -145,8 +145,8 @@ class MethodsOverloadingTest {
 	@EnumSource(ApiBuilderType.class)
 	void overloading_erasure(ApiBuilder builder) {
 		var api = builder.build("""
-			public class A<V extends String> {
-				public <T extends String> void m(T a) {}
+			public class A<V extends CharSequence> {
+				public <T extends CharSequence> void m(T a) {}
 				public <T extends Number> void m(T a) {}
 				public <T> void m(T a) {}
 			}""");
@@ -154,7 +154,7 @@ class MethodsOverloadingTest {
 		var a = assertClass(api, "A");
 		assertThat(a.getDeclaredMethods(), hasSize(3));
 
-		var m1 = assertMethod(a, "m(java.lang.String)");
+		var m1 = assertMethod(a, "m(java.lang.CharSequence)");
 		var m2 = assertMethod(a, "m(java.lang.Number)");
 		var m3 = assertMethod(a, "m(java.lang.Object)");
 

@@ -39,7 +39,7 @@ class GenericsExtractionTest {
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void type_parameter_with_class_bound(ApiBuilder builder) {
-		var api = builder.build("class A<T extends String> {}");
+		var api = builder.build("class A<T extends CharSequence> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
@@ -47,7 +47,7 @@ class GenericsExtractionTest {
 		var t = a.getFormalTypeParameters().getFirst();
 		assertThat(t.name(), is(equalTo("T")));
 		assertThat(t.bounds(), hasSize(1));
-		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
+		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.CharSequence")));
 	}
 
 	@ParameterizedTest
@@ -67,7 +67,7 @@ class GenericsExtractionTest {
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void type_parameter_with_several_bounds(ApiBuilder builder) {
-		var api = builder.build("class A<T extends String & Runnable> {}");
+		var api = builder.build("class A<T extends CharSequence & Runnable> {}");
 
 		var a = assertClass(api, "A");
 		assertThat(a.getFormalTypeParameters(), hasSize(1));
@@ -75,7 +75,7 @@ class GenericsExtractionTest {
 		var t = a.getFormalTypeParameters().getFirst();
 		assertThat(t.name(), is(equalTo("T")));
 		assertThat(t.bounds(), hasSize(2));
-		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.String")));
+		assertThat(t.bounds().getFirst().getQualifiedName(), is(equalTo("java.lang.CharSequence")));
 		assertThat(t.bounds().get(1).getQualifiedName(), is(equalTo("java.lang.Runnable")));
 	}
 
@@ -209,21 +209,21 @@ class GenericsExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void method_type_parameter_resolution(ApiBuilder builder) {
 		var api = builder.build("""
-			public class A<T extends String> {
+			public class A<T extends CharSequence> {
 				public class B<U extends Number> {
 					public <V> void m(T t, U v, V u) {}
 				}
 			}""");
 
 		var b = assertClass(api, "A$B");
-		assertMethod(b, "m(java.lang.String,java.lang.Number,java.lang.Object)");
+		assertMethod(b, "m(java.lang.CharSequence,java.lang.Number,java.lang.Object)");
 	}
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void method_type_parameter_resolution_hiding(ApiBuilder builder) {
 		var api = builder.build("""
-			public class A<T extends String> {
+			public class A<T extends CharSequence> {
 				public class B<T extends Number> {
 					public <T> void m(T t, T v, T u) {}
 				}
@@ -238,7 +238,7 @@ class GenericsExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void class_type_parameter_resolution(ApiBuilder builder) {
 		var api = builder.build("""
-			public class A<T, U extends String, V extends Number> extends java.util.ArrayList<U>
+			public class A<T, U extends CharSequence, V extends Number> extends java.util.ArrayList<U>
 				implements java.util.function.Supplier<V> {
 				public V get() { return null; }
 			}""");
@@ -253,7 +253,7 @@ class GenericsExtractionTest {
 
 		if (uRef instanceof TypeParameterReference tpr) {
 			assertThat(a.resolveTypeParameter(tpr).get(), is(equalTo(u)));
-			assertThat(a.resolveTypeParameterBound(tpr).get().getQualifiedName(), is(equalTo("java.lang.String")));
+			assertThat(a.resolveTypeParameterBound(tpr).get().getQualifiedName(), is(equalTo("java.lang.CharSequence")));
 		} else fail();
 
 		if (vRef instanceof TypeParameterReference tpr) {
