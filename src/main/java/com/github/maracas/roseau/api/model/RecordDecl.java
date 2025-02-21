@@ -28,4 +28,14 @@ public final class RecordDecl extends ClassDecl {
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
 	}
+
+	@Override
+	public RecordDecl deepCopy() {
+		return new RecordDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
+			location, TypeReference.deepCopy(implementedInterfaces),
+			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
+			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
+			getEnclosingType().map(TypeReference::deepCopy).orElse(null),
+			constructors.stream().map(ConstructorDecl::deepCopy).toList());
+	}
 }

@@ -11,7 +11,7 @@ import java.util.Set;
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}.
  * Symbols have a fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated.
  */
-public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
+public abstract sealed class Symbol implements DeepCopyable<Symbol> permits TypeDecl, TypeMemberDecl {
 	/**
 	 * The qualifiedName of the symbol.
 	 */

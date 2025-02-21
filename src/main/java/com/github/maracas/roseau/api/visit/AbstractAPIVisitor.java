@@ -78,7 +78,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-		return () -> {};
+		return () -> it.getTypeArguments().forEach(ta -> $(ta).visit());
 	}
 
 	@Override
@@ -88,7 +88,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit arrayTypeReference(ArrayTypeReference it) {
-		return () -> {};
+		return () -> $(it.componentType()).visit();
 	}
 
 	@Override
@@ -98,7 +98,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit wildcardTypeReference(WildcardTypeReference it) {
-		return () -> {};
+		return () -> it.bounds().forEach(b -> $(b).visit());
 	}
 
 	@Override
@@ -118,8 +118,8 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	public Visit typeDecl(TypeDecl it) {
 		return () -> {
 			symbol(it).visit();
-			it.getFormalTypeParameters().forEach(ftp -> $(ftp).visit());
 			it.getImplementedInterfaces().forEach(intf -> $(intf).visit());
+			it.getFormalTypeParameters().forEach(ftp -> $(ftp).visit());
 			it.getDeclaredFields().forEach(field -> $(field).visit());
 			it.getDeclaredMethods().forEach(meth -> $(meth).visit());
 			it.getEnclosingType().ifPresent(t -> $(t).visit());
@@ -138,8 +138,8 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {
 			typeMemberDecl(it).visit();
 			it.getParameters().forEach(p -> $(p).visit());
-			it.getThrownExceptions().forEach(e -> $(e).visit());
 			it.getFormalTypeParameters().forEach(ftp -> $(ftp).visit());
+			it.getThrownExceptions().forEach(e -> $(e).visit());
 		};
 	}
 }

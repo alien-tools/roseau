@@ -27,4 +27,12 @@ public final class AnnotationDecl extends TypeDecl {
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
 	}
+
+	@Override
+	public AnnotationDecl deepCopy() {
+		return new AnnotationDecl(qualifiedName, visibility, modifiers,
+			annotations.stream().map(Annotation::deepCopy).toList(), location,
+			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
+			getEnclosingType().map(TypeReference::deepCopy).orElse(null));
+	}
 }

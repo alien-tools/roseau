@@ -28,4 +28,14 @@ public final class InterfaceDecl extends TypeDecl {
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
 	}
+
+	@Override
+	public InterfaceDecl deepCopy() {
+		return new InterfaceDecl(qualifiedName, visibility, modifiers,
+			annotations.stream().map(Annotation::deepCopy).toList(), location,
+			TypeReference.deepCopy(implementedInterfaces),
+			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
+			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
+			getEnclosingType().map(TypeReference::deepCopy).orElse(null));
+	}
 }

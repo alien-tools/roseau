@@ -22,6 +22,7 @@ public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements Incre
 		// Copying unchanged types to the new API
 		List<TypeDecl> typeDecls = new ArrayList<>(previousApi.getAllTypes()
 			.filter(t -> !discarded.contains(t.getLocation().file()))
+			.map(TypeDecl::deepCopy)
 			.toList());
 
 		// Collect files to be parsed

@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.api.model;
 
+import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -106,5 +107,15 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public int hashCode() {
 		return Objects.hash(super.hashCode(), superClass, constructors);
+	}
+
+	@Override
+	public ClassDecl deepCopy() {
+		return new ClassDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
+			location, TypeReference.deepCopy(implementedInterfaces),
+			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
+			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
+			getEnclosingType().map(TypeReference::deepCopy).orElse(null), superClass.deepCopy(),
+			constructors.stream().map(ConstructorDecl::deepCopy).toList());
 	}
 }

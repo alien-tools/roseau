@@ -28,4 +28,13 @@ public final class EnumDecl extends ClassDecl {
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
 	}
+
+	@Override
+	public EnumDecl deepCopy() {
+		return new EnumDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
+			location, TypeReference.deepCopy(implementedInterfaces),
+			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
+			getEnclosingType().map(TypeReference::deepCopy).orElse(null),
+			constructors.stream().map(ConstructorDecl::deepCopy).toList());
+	}
 }
