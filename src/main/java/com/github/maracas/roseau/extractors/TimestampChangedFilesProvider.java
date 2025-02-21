@@ -52,4 +52,8 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 			throw new RuntimeException(e);
 		}
 	}
+
+	public Path getSources() {
+		return sources;
+	}
 }

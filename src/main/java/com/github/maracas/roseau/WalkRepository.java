@@ -25,18 +25,21 @@ import java.util.stream.Collectors;
 
 public class WalkRepository {
 	public static void main(String[] args) throws Exception {
+		var walk = new WalkRepository();
 		// Roseau
-		// walk("https://github.com/alien-tools/roseau", Path.of("walk-roseau"), "main", "v0.0.2", "src/main/java");
+		// walk.walk("https://github.com/alien-tools/roseau", Path.of("walk-roseau"), "main", "v0.0.2", "src/main/java");
 
 		// Guava
-		walk("https://github.com/google/guava", Path.of("walk-guava"), "master", "v10.0", List.of("guava/src"));
+		//walk.walk("https://github.com/google/guava", Path.of("walk-guava"), "master", "dc5915eb1072c61ff2c3c704af4ae36b25f97b6c",
+		walk.walk("https://github.com/google/guava", Path.of("walk-guava"), "master", "b146e2bb8d049de9f23e2784da4ddfac37671565",
+			List.of("guava/src", "src"));
 
 		// commons-lang
-		// walk("https://github.com/apache/commons-lang", Path.of("walk-commons-lang"), "master",
+		// walk.walk("https://github.com/apache/commons-lang", Path.of("walk-commons-lang"), "master",
 		// 	"LANG_1_0_B1", List.of("src/main/java", "src/java"));
 	}
 
-	public static void walk(String url, Path clone, String branch, String tagName, List<String> srcRoot) throws Exception {
+	void walk(String url, Path clone, String branch, String tagName, List<String> srcRoots) throws Exception {
 		Git git;
 		var repoDir = clone.toFile();
 
@@ -75,73 +78,84 @@ public class WalkRepository {
 		RevCommit commit = null;
 		API previousApi = null;
 		var sw = Stopwatch.createUnstarted();
-		var provider = new TimestampChangedFilesProvider(clone.resolve(srcRoot.getFirst()).toAbsolutePath());
+		var provider = new TimestampChangedFilesProvider(resolveSources(clone, srcRoots));
 		var incrementalExtractor = new IncrementalJdtAPIExtractor();
 		while ((commit = walk.next()) != null) {
-			Date commitDate = Date.from(commit.getAuthorIdent().getWhenAsInstant());
+			try {
+				Date commitDate = Date.from(commit.getAuthorIdent().getWhenAsInstant());
 
-			System.out.printf("Checkout %s @ %s...", commit.getName(), commitDate);
-			sw.reset().start();
-			git.checkout().setName(commit.getName()).call();
-			var checkoutTime = sw.elapsed().toMillis();
-			System.out.printf(" done in %sms%n", checkoutTime);
+				System.out.printf("Checkout %s @ %s...", commit.getName(), commitDate);
+				sw.reset().start();
+				git.checkout().setName(commit.getName()).call();
+				var checkoutTime = sw.elapsed().toMillis();
+				System.out.printf(" done in %sms%n", checkoutTime);
 
-			API api = null;
-			long apiTime = 0;
-			var changedFiles = provider.getChangedFiles();
-			if (previousApi == null) {
-				System.out.print("Extracting API...");
-				sw.reset().start();
-				api = Files.exists(clone.resolve(srcRoot.get(0)))
-					? extractor.extractAPI(clone.resolve(srcRoot.get(0)))
-					: extractor.extractAPI(clone.resolve(srcRoot.get(1)));
-				apiTime = sw.elapsed().toMillis();
-				System.out.printf(" done in %sms%n", apiTime);
-			} else {
-				System.out.printf("Partial update:%n\t%d created: %s%n\t%d removed: %s%n\t%d changed: %s%n",
-					changedFiles.createdFiles().size(), changedFiles.createdFiles().stream()
-						.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
-					changedFiles.deletedFiles().size(), changedFiles.deletedFiles().stream()
-						.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
-					changedFiles.updatedFiles().size(), changedFiles.updatedFiles().stream()
-						.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")));
-				System.out.print("Extracting partial API...");
-				sw.reset().start();
-				api = Files.exists(clone.resolve(srcRoot.get(0)))
-					? incrementalExtractor.refreshAPI(clone.resolve(srcRoot.get(0)), changedFiles, previousApi)
-					: incrementalExtractor.refreshAPI(clone.resolve(srcRoot.get(1)), changedFiles, previousApi);
-				apiTime = sw.elapsed().toMillis();
-				System.out.printf(" done in %sms%n", apiTime);
+				Path srcRoot = resolveSources(clone, srcRoots);
+				if (!provider.getSources().equals(srcRoot))
+					provider = new TimestampChangedFilesProvider(srcRoot);
+
+				API api = null;
+				long apiTime = 0;
+				var changedFiles = provider.getChangedFiles();
+				if (previousApi == null) {
+					System.out.print("Extracting API...");
+					sw.reset().start();
+					api = extractor.extractAPI(srcRoot);
+					apiTime = sw.elapsed().toMillis();
+					System.out.printf(" done in %sms%n", apiTime);
+				} else {
+					System.out.printf("Partial update:%n\t%d created: %s%n\t%d removed: %s%n\t%d changed: %s%n",
+						changedFiles.createdFiles().size(), changedFiles.createdFiles().stream()
+							.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
+						changedFiles.deletedFiles().size(), changedFiles.deletedFiles().stream()
+							.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
+						changedFiles.updatedFiles().size(), changedFiles.updatedFiles().stream()
+							.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")));
+					System.out.print("Extracting partial API...");
+					sw.reset().start();
+					api = incrementalExtractor.refreshAPI(srcRoot, changedFiles, previousApi);
+					apiTime = sw.elapsed().toMillis();
+					System.out.printf(" done in %sms%n", apiTime);
+				}
+
+				if (previousApi != null) {
+					System.out.print("Diffing...");
+					sw.reset().start();
+					var bcs = new APIDiff(previousApi, api).diff();
+					var diffTime = sw.elapsed().toMillis();
+					System.out.printf(" done in %sms%n", diffTime);
+					System.out.printf("Found %d breaking changes%n", bcs.size());
+
+					long numTypes = api.getExportedTypes().count();
+					int numMethods = api.getExportedTypes()
+						.mapToInt(type -> type.getDeclaredMethods().size())
+						.sum();
+					int numFields = api.getExportedTypes()
+						.mapToInt(type -> type.getDeclaredFields().size())
+						.sum();
+
+					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(commit.getName(), commitDate,
+						commit.getShortMessage().replace("|", ""),
+						changedFiles.createdFiles().size(), changedFiles.deletedFiles().size(), changedFiles.updatedFiles().size(),
+						numTypes, numMethods, numFields,
+						checkoutTime, apiTime, diffTime, bcs.size(),
+						bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
+					Files.write(Path.of("git.csv"), line.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+				}
+
+				previousApi = api;
+				provider.refresh(previousApi, Instant.now().toEpochMilli());
+			} catch (Exception e) {
+				e.printStackTrace();
 			}
-
-			if (previousApi != null) {
-				System.out.print("Diffing...");
-				sw.reset().start();
-				var bcs = new APIDiff(previousApi, api).diff();
-				var diffTime = sw.elapsed().toMillis();
-				System.out.printf(" done in %sms%n", diffTime);
-				System.out.printf("Found %d breaking changes%n", bcs.size());
-
-				long numTypes = api.getExportedTypes().count();
-				int numMethods = api.getExportedTypes()
-					.mapToInt(type -> type.getDeclaredMethods().size())
-					.sum();
-				int numFields = api.getExportedTypes()
-					.mapToInt(type -> type.getDeclaredFields().size())
-					.sum();
-
-				var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(commit.getName(), commitDate,
-					commit.getShortMessage().replace("|", ""),
-					changedFiles.createdFiles().size(), changedFiles.deletedFiles().size(), changedFiles.updatedFiles().size(),
-					numTypes, numMethods, numFields,
-					checkoutTime, apiTime, diffTime, bcs.size(),
-					bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
-				Files.write(Path.of("git.csv"), line.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
-			}
-
-			previousApi = api;
-			provider.refresh(previousApi, Instant.now().toEpochMilli());
 		}
 	}
-}
 
+	Path resolveSources(Path clone, List<String> srcRoot) {
+		return srcRoot.stream()
+			.map(src -> clone.resolve(src).toAbsolutePath())
+			.filter(src -> src.toFile().exists())
+			.findFirst()
+			.get();
+	}
+}
