@@ -38,4 +38,9 @@ public record PrimitiveTypeReference(String qualifiedName) implements ITypeRefer
 	public String toString() {
 		return qualifiedName;
 	}
+
+	@Override
+	public PrimitiveTypeReference deepCopy() {
+		return this;
+	}
 }

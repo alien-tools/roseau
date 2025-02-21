@@ -28,4 +28,9 @@ public record ArrayTypeReference(ITypeReference componentType, int dimension) im
 	public String toString() {
 		return getQualifiedName();
 	}
+
+	@Override
+	public ArrayTypeReference deepCopy() {
+		return new ArrayTypeReference(componentType.deepCopy(), dimension);
+	}
 }

@@ -9,7 +9,7 @@ import java.util.Objects;
 public record FormalTypeParameter(
 	String name,
 	List<ITypeReference> bounds
-) {
+) implements DeepCopyable<FormalTypeParameter> {
 	public FormalTypeParameter {
 		Objects.requireNonNull(name);
 		Objects.requireNonNull(bounds);
@@ -20,5 +20,10 @@ public record FormalTypeParameter(
 	@Override
 	public String toString() {
 		return String.format("%s extends %s", name, bounds.stream().map(ITypeReference::getQualifiedName).toList());
+	}
+
+	@Override
+	public FormalTypeParameter deepCopy() {
+		return new FormalTypeParameter(name, ITypeReference.deepCopy(bounds));
 	}
 }

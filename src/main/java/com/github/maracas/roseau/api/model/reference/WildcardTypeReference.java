@@ -59,4 +59,9 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 		return "? %s %s".formatted(upper ? "extends" : "super",
 			bounds.stream().map(Object::toString).collect(Collectors.joining("&")));
 	}
+
+	@Override
+	public WildcardTypeReference deepCopy() {
+		return new WildcardTypeReference(ITypeReference.deepCopy(bounds), upper);
+	}
 }

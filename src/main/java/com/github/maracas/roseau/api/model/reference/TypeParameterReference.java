@@ -22,4 +22,9 @@ public record TypeParameterReference(String qualifiedName) implements ITypeRefer
 	public String toString() {
 		return qualifiedName;
 	}
+
+	@Override
+	public TypeParameterReference deepCopy() {
+		return this;
+	}
 }

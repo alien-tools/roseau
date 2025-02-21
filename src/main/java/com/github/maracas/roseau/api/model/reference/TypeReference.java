@@ -3,6 +3,7 @@ package com.github.maracas.roseau.api.model.reference;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.DeepCopyable;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -135,6 +136,12 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 		return getResolvedApiType().map(TypeDecl::getAllSuperTypes).orElseGet(Stream::empty);
 	}
 
+	public static <T extends TypeDecl> List<TypeReference<T>> deepCopy(List<TypeReference<T>> refs) {
+		return refs.stream()
+			.map(TypeReference::deepCopy)
+			.toList();
+	}
+
 	@Override
 	public String toString() {
 		if (typeArguments.isEmpty()) {
@@ -155,5 +162,10 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	@Override
 	public int hashCode() {
 		return Objects.hash(qualifiedName, typeArguments);
+	}
+
+	@Override
+	public TypeReference<T> deepCopy() {
+		return new TypeReference<>(qualifiedName, ITypeReference.deepCopy(typeArguments));
 	}
 }

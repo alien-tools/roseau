@@ -9,8 +9,13 @@ import java.util.Objects;
  *
  * @param actualAnnotation The annotation declaration this annotation is an instance of
  */
-public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) {
+public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) implements DeepCopyable<Annotation> {
 	public Annotation {
 		Objects.requireNonNull(actualAnnotation);
+	}
+
+	@Override
+	public Annotation deepCopy() {
+		return new Annotation(actualAnnotation.deepCopy());
 	}
 }

@@ -23,7 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IncrementalAPIExtractorTest {
 	@Test
-	void old_references_are_reset(@TempDir Path wd) throws IOException, InterruptedException {
+	void old_references_are_reset(@TempDir Path wd) throws Exception {
 		var provider = new TimestampChangedFilesProvider(wd);
 
 		Files.writeString(wd.resolve("I.java"), "public interface I {}");
@@ -49,13 +49,15 @@ class IncrementalAPIExtractorTest {
 		var r2 = assertRecord(api2, "R");
 
 		assertThat(i1, is(not(equalTo(i2))));
-		assertThat(c1, is(sameInstance(c2)));
-		assertThat(r1, is(sameInstance(r2)));
+		assertThat(c1, is(equalTo(c2)));
+		assertThat(c1, is(not(sameInstance(c2))));
+		assertThat(r1, is(equalTo(r2)));
+		assertThat(r1, is(not(sameInstance(r2))));
 
 		assertThat(c1.getImplementedInterfaces().getFirst().getResolvedApiType().get(), is(sameInstance(i1)));
 		assertThat(c2.getImplementedInterfaces().getFirst().getResolvedApiType().get(), is(sameInstance(i2)));
 
-		assertFalse(c1.findMethod("m").isPresent());
-		assertTrue(c2.findMethod("m").isPresent());
+		assertFalse(c1.findMethod("m()").isPresent());
+		assertTrue(c2.findMethod("m()").isPresent());
 	}
 }

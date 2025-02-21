@@ -37,4 +37,10 @@ public final class FieldDecl extends TypeMemberDecl {
 	public String toString() {
 		return "%s %s %s".formatted(visibility, type, qualifiedName);
 	}
+
+	@Override
+	public FieldDecl deepCopy() {
+		return new FieldDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
+			location, containingType.deepCopy(), type.deepCopy());
+	}
 }

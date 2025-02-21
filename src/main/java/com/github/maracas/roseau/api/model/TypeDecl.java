@@ -263,4 +263,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	public int hashCode() {
 		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 	}
+
+	@Override
+	public abstract TypeDecl deepCopy();
 }

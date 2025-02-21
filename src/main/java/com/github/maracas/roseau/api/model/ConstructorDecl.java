@@ -27,4 +27,13 @@ public final class ConstructorDecl extends ExecutableDecl {
 		return "%s %s(%s)".formatted(visibility, getSimpleName(),
 			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", ")));
 	}
+
+	@Override
+	public ConstructorDecl deepCopy() {
+		return new ConstructorDecl(qualifiedName, visibility, modifiers,
+			annotations.stream().map(Annotation::deepCopy).toList(), location, containingType.deepCopy(), type.deepCopy(),
+			parameters.stream().map(ParameterDecl::deepCopy).toList(),
+			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
+			ITypeReference.deepCopy(thrownExceptions));
+	}
 }
