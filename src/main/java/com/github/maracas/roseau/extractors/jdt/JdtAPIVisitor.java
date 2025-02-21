@@ -23,6 +23,7 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
@@ -104,10 +105,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 			modifiers.add(Modifier.NON_SEALED);
 		}
 
+		// §8.9
+		if (type instanceof EnumDeclaration enm &&
+			enm.enumConstants().stream().anyMatch(cons ->
+				((EnumConstantDeclaration) cons).getAnonymousClassDeclaration() != null)) {
+				modifiers.add(Modifier.SEALED);
+		}
+
 		List<TypeReference<InterfaceDecl>> implementedInterfaces = Arrays.stream(binding.getInterfaces())
 			.map(intf -> (TypeReference<InterfaceDecl>) makeTypeReference(intf)).toList();
 
-		TypeReference<ClassDecl> superClassRef = binding.getSuperclass() != null
+		TypeReference<ClassDecl> superClassRef = binding.isClass() && binding.getSuperclass() != null
 			? (TypeReference<ClassDecl>) makeTypeReference(binding.getSuperclass())
 			: null;
 
@@ -117,7 +125,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 			.toList();
 
 		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method, type))
+			.filter(method -> !method.isConstructor() && isExported(method, type) &&
+				!isEnumMethod(method) && !method.isSyntheticRecordMethod())
 			.map(method -> convertMethod(method, binding))
 			.toList();
 
@@ -145,9 +154,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 			case RecordDeclaration r ->
 				new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, constructors);
-			case AnnotationTypeDeclaration a ->
-				new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
+			case AnnotationTypeDeclaration a -> {
+				modifiers.add(Modifier.ABSTRACT); // FIXME: annotations should be implicitly abstract
+				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
 					fields, methods, enclosingType);
+			}
 			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
 		};
 
@@ -245,9 +256,12 @@ final class JdtAPIVisitor extends ASTVisitor {
 	// Convert JDT-style Outer.Inner to Roseau-style Outer$Inner
 	private String toRoseauFqn(ITypeBinding type) {
 		if (type.getDeclaringClass() == null) {
-			return type.getQualifiedName();
+			return type.getBinaryName();
 		}
-		return toRoseauFqn(type.getDeclaringClass()) + "$" + type.getName();
+		// FIXME: doubly-nested types' getName() can contain generics...
+		int last = type.getName().indexOf('<');
+		var simpleName = last > 0 ? type.getName().substring(0, last) : type.getName();
+		return toRoseauFqn(type.getDeclaringClass()) + "$" + simpleName;
 	}
 
 	// FIXME: we need to carry the AbstractTypeDeclaration in the utilities below to account for
@@ -298,6 +312,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 		var isNonSealed = org.eclipse.jdt.core.dom.Modifier.isNonSealed(type.getModifiers());
 
 		return (isFinal || isSealed) && !isNonSealed;
+	}
+
+	private boolean isEnumMethod(IMethodBinding binding) {
+		if (binding.getDeclaringClass().isEnum()) {
+			if (binding.getName().equals("valueOf") && binding.getParameterTypes().length == 1 &&
+				binding.getParameterTypes()[0].getQualifiedName().equals("java.lang.String")) {
+				return true;
+			}
+			return binding.getName().equals("values") && binding.getParameterTypes().length == 0;
+		}
+		return false;
 	}
 
 	// Available on TypeDeclaration, but not Enum/Record/Annotation, even though they can contain inner types

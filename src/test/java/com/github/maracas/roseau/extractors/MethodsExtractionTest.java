@@ -47,7 +47,7 @@ class MethodsExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"SOURCES"})
+	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
 	void strictfp_methods(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A {

@@ -44,7 +44,7 @@ class TypeHierarchyExtractionTest {
 			class A implements I, J {}""");
 
 		var a = assertClass(api, "A");
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 		assertThat(a.getImplementedInterfaces().get(1).getQualifiedName(), is(equalTo("J")));
@@ -119,7 +119,7 @@ class TypeHierarchyExtractionTest {
 			enum E implements I {}""");
 
 		var e = assertEnum(api, "E");
-		assertEquals(TypeReference.OBJECT, e.getSuperClass());
+		assertEquals(TypeReference.ENUM, e.getSuperClass());
 		assertThat(e.getImplementedInterfaces(), hasSize(1));
 		assertThat(e.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("I")));
 	}
@@ -257,6 +257,6 @@ class TypeHierarchyExtractionTest {
 		assertThat(inner.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 		assertThat(nested.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 		assertThat(innerInterface.getImplementedInterfaces(), is(empty()));
-		assertThat(innerEnum.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
+		assertThat(innerEnum.getSuperClass(), is(equalTo(TypeReference.ENUM)));
 	}
 }

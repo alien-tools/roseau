@@ -225,13 +225,13 @@ public class TestUtils {
 		return sourcesMap;
 	}
 
-	public static API buildSourcesAPI(String sources) {
+	public static API buildSpoonAPI(String sources) {
 		Map<String, String> sourcesMap = buildSourcesMap(sources);
 		CtModel m = buildModel(sourcesMap);
 		return new SpoonAPIExtractor().extractAPI(m);
 	}
 
-	public static API buildJarAPI(String sources) {
+	public static API buildAsmAPI(String sources) {
 		Map<String, String> sourcesMap = buildSourcesMap(sources);
 		JarFile jar = buildJar(sourcesMap);
 		return new AsmAPIExtractor().extractAPI(jar);
@@ -259,7 +259,7 @@ public class TestUtils {
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		APIDiff apiDiff = new APIDiff(buildSourcesAPI(sourcesV1), buildSourcesAPI(sourcesV2));
+		APIDiff apiDiff = new APIDiff(buildSpoonAPI(sourcesV1), buildSpoonAPI(sourcesV2));
 		var roseauBCs = apiDiff.diff();
 
 		/*try {

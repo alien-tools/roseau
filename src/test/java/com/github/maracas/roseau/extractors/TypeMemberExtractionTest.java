@@ -348,7 +348,7 @@ class TypeMemberExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"SOURCES"})
+	@EnumSource(value = ApiBuilderType.class, names = {"ASM", "JDT"}, mode = EnumSource.Mode.EXCLUDE)
 	void unknown_members(ApiBuilder builder) {
 		var api = builder.build("""
 			public interface A {

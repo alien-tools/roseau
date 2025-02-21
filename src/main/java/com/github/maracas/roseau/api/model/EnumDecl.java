@@ -12,7 +12,7 @@ public final class EnumDecl extends ClassDecl {
 	                List<TypeReference<InterfaceDecl>> implementedInterfaces, List<FieldDecl> fields,
 	                List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType, List<ConstructorDecl> constructors) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
-			fields, methods, enclosingType, null, constructors);
+			fields, methods, enclosingType, TypeReference.ENUM, constructors);
 	}
 
 	@Override

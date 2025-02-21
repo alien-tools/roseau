@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.extractors;
 
+import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.utils.ApiBuilder;
 import com.github.maracas.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -11,7 +12,9 @@ import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -156,7 +159,8 @@ class TypesExtractionTest {
 		var api = builder.build("""
 			public class A {
 				public void m() {
-					Runnable r = () -> {};
+					Runnable r1 = () -> {};
+					Runnable r2 = new Runnable() { public void run() {} };
 				}
 			}""");
 
@@ -180,7 +184,7 @@ class TypesExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void final_public_classes(ApiBuilder builder) {
+	void final_classes(ApiBuilder builder) {
 		var api = builder.build("""
         public class A {}
         public final class B {}""");
@@ -227,6 +231,9 @@ class TypesExtractionTest {
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
 		assertTrue(e.isEffectivelyFinal());
+		// FIXME
+		//assertTrue(e.isNonSealed());
+		//assertFalse(e.isEffectivelyFinal());
 
 		var f = assertClass(api, "F");
 		assertTrue(f.isFinal());
@@ -272,7 +279,7 @@ class TypesExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void checked_exceptions(ApiBuilder builder) {
+	void exception_types(ApiBuilder builder) {
 		var api = builder.build("""
 			class A {}
 			class B extends Exception {}
@@ -282,18 +289,23 @@ class TypesExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertFalse(a.isCheckedException());
+		assertFalse(a.isUncheckedException());
 
 		var b = assertClass(api, "B");
 		assertTrue(b.isCheckedException());
+		assertFalse(b.isUncheckedException());
 
 		var c = assertClass(api, "C");
 		assertFalse(c.isCheckedException());
+		assertTrue(c.isUncheckedException());
 
 		var d = assertClass(api, "D");
 		assertTrue(d.isCheckedException());
+		assertFalse(d.isUncheckedException());
 
 		var e = assertClass(api, "E");
 		assertFalse(e.isCheckedException());
+		assertTrue(e.isUncheckedException());
 	}
 
 	@ParameterizedTest
@@ -302,6 +314,22 @@ class TypesExtractionTest {
 		var api = builder.build("public record A() {}");
 		var a = assertRecord(api, "A");
 		assertTrue(a.isFinal(), "Records should be implicitly final");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void record_inherits_record(ApiBuilder builder) {
+		var api = builder.build("public record A() {}");
+		var a = assertRecord(api, "A");
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void record_no_synthetic_methods(ApiBuilder builder) {
+		var api = builder.build("public record A() {}");
+		var a = assertRecord(api, "A");
+		assertThat(a.getDeclaredMethods(), hasSize(0));
 	}
 
 	@ParameterizedTest
@@ -318,7 +346,6 @@ class TypesExtractionTest {
 		var b = assertClass(api, "B");
 		assertTrue(b.isFinal());
 		assertFalse(b.isSealed());
-		assertTrue(b.isFinal());
 	}
 
 	@ParameterizedTest
@@ -342,14 +369,53 @@ class TypesExtractionTest {
 	void enum_with_constant_specific_class_body(ApiBuilder builder) {
 		var api = builder.build("""
         public enum A {
-            ONE {
-                @Override public String toString() { return "one"; }
-            },
-            TWO;
+          ONE {
+            @Override public String toString() { return "one"; }
+          },
+          TWO;
         }
         """);
-		assertEnum(api, "A");
+		var a = assertEnum(api, "A");
 		// Even though ONE has its own class body, only the enum A should be extracted.
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		// §8.9: An enum class E is implicitly sealed if its declaration contains
+		// at least one enum constant that has a class bod
+		assertThat(a.isSealed(), is(true));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_inherits_enum(ApiBuilder builder) {
+		var api = builder.build("public enum A { X; }");
+		var a = assertEnum(api, "A");
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
+	}
+	public class A<T> {
+		public class B<U> {
+			public class C extends A {}
+		}
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_no_synthetic_methods(ApiBuilder builder) {
+		var api = builder.build("public enum A { X; }");
+		var a = assertEnum(api, "A");
+		assertThat(a.getDeclaredMethods(), hasSize(0));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void type_names(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A<T> {
+				public class B<U> {
+					public class C extends B {}
+				}
+			}""");
+
+		assertClass(api, "A");
+		assertClass(api, "A$B");
+		assertClass(api, "A$B$C");
 	}
 }
