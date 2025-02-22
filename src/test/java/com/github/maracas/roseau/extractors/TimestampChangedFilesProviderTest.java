@@ -13,6 +13,7 @@ import java.util.Set;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TimestampChangedFilesProviderTest {
 	void touch(Path file) throws IOException {
@@ -46,9 +47,7 @@ class TimestampChangedFilesProviderTest {
 		Thread.sleep(10);
 
 		var changes = provider.getChangedFiles();
-		assertEquals(Set.of(), changes.updatedFiles());
-		assertEquals(Set.of(), changes.deletedFiles());
-		assertEquals(Set.of(), changes.createdFiles());
+		assertTrue(changes.hasNoChanges());
 	}
 
 	@Test
@@ -111,5 +110,12 @@ class TimestampChangedFilesProviderTest {
 	void unknown_sources_should_throw() {
 		assertThrows(IllegalArgumentException.class,
 			() -> new TimestampChangedFilesProvider(Paths.get("unknown"), Set.of()));
+	}
+
+	@Test
+	void a_file_cannot_be_in_two_states() {
+		var a = Paths.get("A.java");
+		assertThrows(IllegalArgumentException.class,
+			() -> new ChangedFilesProvider.ChangedFiles(Set.of(a), Set.of(), Set.of(a)));
 	}
 }
