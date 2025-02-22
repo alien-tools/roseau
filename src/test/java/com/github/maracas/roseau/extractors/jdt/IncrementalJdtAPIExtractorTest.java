@@ -1,7 +1,6 @@
-package com.github.maracas.roseau.extractors;
+package com.github.maracas.roseau.extractors.jdt;
 
-import com.github.maracas.roseau.extractors.jdt.IncrementalJdtAPIExtractor;
-import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
+import com.github.maracas.roseau.extractors.TimestampChangedFilesProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -17,10 +16,9 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 
-class IncrementalAPIExtractorTest {
+class IncrementalJdtAPIExtractorTest {
 	@Test
 	void old_references_are_reset(@TempDir Path wd) throws Exception {
 		var provider = new TimestampChangedFilesProvider(wd);

@@ -18,7 +18,6 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
-import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
@@ -29,6 +28,7 @@ import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
+import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -43,11 +43,13 @@ import java.util.Set;
 final class JdtAPIVisitor extends ASTVisitor {
 	private final List<TypeDecl> collectedTypeDecls = new ArrayList<>();
 	private final CompilationUnit cu;
+	private final String packageName;
 	private final String filePath;
 	private final TypeReferenceFactory typeRefFactory;
 
 	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
 		this.cu = cu;
+		this.packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
 		this.filePath = filePath;
 		this.typeRefFactory = factory;
 	}
@@ -81,13 +83,13 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	private void processAbstractTypeDeclaration(AbstractTypeDeclaration type) {
-		if (isAnonymousOrLocal(type)) {
-			return;
-		}
-
 		ITypeBinding binding = type.resolveBinding();
 		if (binding == null) {
 			throw new IllegalStateException("No binding for " + type.getName());
+		}
+
+		if (binding.isAnonymous() || binding.isLocal()) {
+			return;
 		}
 
 		String qualifiedName = toRoseauFqn(binding);
@@ -371,9 +373,22 @@ final class JdtAPIVisitor extends ASTVisitor {
 		return result;
 	}
 
-	private boolean isAnonymousOrLocal(ASTNode node) {
-		ASTNode parent = node.getParent();
-		return !(parent instanceof CompilationUnit || parent instanceof AbstractTypeDeclaration);
+	private String lookupUnresolvedName(String simpleName) {
+		List<?> imports = cu.imports();
+		for (Object imp : imports) {
+			if (imp instanceof ImportDeclaration id) {
+				// Only consider single type imports.
+				if (!id.isOnDemand()) {
+					String fqn = id.getName().getFullyQualifiedName();
+					// If the fully qualified name ends with '.' + simpleName, we assume a match.
+					if (fqn.endsWith("." + simpleName)) {
+						return fqn;
+					}
+				}
+			}
+		}
+		// Otherwise, assume it's a same-package type
+		return packageName + "." + simpleName;
 	}
 
 	private ITypeReference makeTypeReference(ITypeBinding binding) {
@@ -399,6 +414,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 					List.of(makeTypeReference(binding.getBound())), binding.isUpperbound());
 			}
 			return typeRefFactory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true);
+		}
+		// JDT attempts to recover the FQN of missing bindings; if it fails, the unresolved type
+		// is assumed to be in the current package. Try to fallback to imported types, or the current package.
+		if (binding.isRecovered() && binding.getQualifiedName().startsWith(packageName)) {
+			return typeRefFactory.createTypeReference(lookupUnresolvedName(binding.getName()));
 		}
 		return typeRefFactory.createTypeReference(toRoseauFqn(binding));
 	}

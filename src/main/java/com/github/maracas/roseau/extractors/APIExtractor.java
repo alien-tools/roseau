@@ -28,5 +28,8 @@ import java.nio.file.Path;
  * </pre>
  */
 public interface APIExtractor {
+	/**
+	 * @throws APIExtractionException if anything went wrong
+	 */
 	API extractAPI(Path sources);
 }
