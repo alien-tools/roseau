@@ -10,8 +10,9 @@ public record SourceLocation(
 	Path file,
 	int line
 ) {
-	public SourceLocation {
-		Objects.requireNonNull(file);
+	public SourceLocation(Path file, int line) {
+		this.file = Objects.requireNonNull(file).toAbsolutePath();
+		this.line = line;
 	}
 
 	/**
@@ -21,6 +22,6 @@ public record SourceLocation(
 
 	@Override
 	public String toString() {
-		return "%s:%s".formatted(file.toAbsolutePath().toString(), line);
+		return file + ":" + line;
 	}
 }
