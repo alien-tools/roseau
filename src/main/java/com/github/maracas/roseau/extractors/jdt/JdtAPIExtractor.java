@@ -91,8 +91,13 @@ public class JdtAPIExtractor implements APIExtractor {
 		};
 
 		// Start parsing and forwarding ASTs
-		parser.createASTs(sourcesArray, null, new String[0], requestor, null);
-		return typeDecls;
+		try {
+			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
+			return typeDecls;
+		} catch (RuntimeException e) {
+			// Catching JDT's internal messy errors
+			throw new APIExtractionException("Failed to parse code from " + sourcesRoot, e);
+		}
 	}
 
 	private boolean isRegularJavaFile(Path file) {
