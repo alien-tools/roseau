@@ -18,6 +18,8 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
@@ -46,6 +48,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private final String packageName;
 	private final String filePath;
 	private final TypeReferenceFactory typeRefFactory;
+
+	private static final Logger LOGGER = LogManager.getLogger(JdtAPIVisitor.class);
 
 	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
 		this.cu = cu;
@@ -85,7 +89,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private void processAbstractTypeDeclaration(AbstractTypeDeclaration type) {
 		ITypeBinding binding = type.resolveBinding();
 		if (binding == null) {
-			throw new IllegalStateException("No binding for " + type.getName());
+			LOGGER.warn("No binding for {}; skipping", type.getName().getFullyQualifiedName());
+			return;
 		}
 
 		if (binding.isAnonymous() || binding.isLocal()) {
