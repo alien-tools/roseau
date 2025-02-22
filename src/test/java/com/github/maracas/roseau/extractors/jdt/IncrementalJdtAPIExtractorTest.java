@@ -21,16 +21,14 @@ import static org.junit.jupiter.api.Assertions.*;
 class IncrementalJdtAPIExtractorTest {
 	@Test
 	void old_references_are_reset(@TempDir Path wd) throws Exception {
-		var provider = new TimestampChangedFilesProvider(wd);
-
 		Files.writeString(wd.resolve("I.java"), "public interface I {}");
 		Files.writeString(wd.resolve("C.java"), "public class C implements I {}");
 		Files.writeString(wd.resolve("R.java"), "public record R() {}");
 
 		var extractor = new JdtAPIExtractor();
 		var api1 = extractor.extractAPI(wd);
+		var provider = new TimestampChangedFilesProvider(wd, api1.getFileLocations());
 
-		provider.refresh(api1, Instant.now().toEpochMilli());
 		Thread.sleep(10); // Legit need it ;)
 		Files.writeString(wd.resolve("I.java"), "public interface I { void m(); }");
 		var changedFiles = provider.getChangedFiles();

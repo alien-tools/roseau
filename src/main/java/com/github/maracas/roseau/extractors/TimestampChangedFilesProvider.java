@@ -1,55 +1,62 @@
 package com.github.maracas.roseau.extractors;
 
-import com.github.maracas.roseau.api.model.API;
+import com.github.maracas.roseau.RoseauException;
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Instant;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 	private final Path sources;
-	private API previousApi;
-	private long timestamp;
+	private final Set<Path> previousFiles;
+	private final long timestamp;
 
-	public TimestampChangedFilesProvider(Path sources) {
-		this.sources = sources;
+	public TimestampChangedFilesProvider(Path sources, Set<Path> previousFiles, long timestamp) {
+		this.sources = Objects.requireNonNull(sources);
+		Preconditions.checkArgument(Files.exists(sources), "Directory not found:" + sources);
+		this.previousFiles = Objects.requireNonNull(previousFiles);
+		this.timestamp = timestamp;
 	}
 
-	public void refresh(API previousApi, long timestamp) {
-		this.previousApi = previousApi;
-		this.timestamp = timestamp;
+	public TimestampChangedFilesProvider(Path sources, Set<Path> previousFiles) {
+		this(sources, previousFiles, Instant.now().toEpochMilli());
 	}
 
 	@Override
 	public ChangedFiles getChangedFiles() {
 		try (Stream<Path> files = Files.walk(sources)) {
 			Set<Path> currentFiles = files
-				.filter(p -> Files.isRegularFile(p) && p.toString().endsWith(".java") &&
-					!p.endsWith("package-info.java") && !p.endsWith("module-info.java"))
+				.filter(this::isRegularJavaFile)
 				.map(Path::toAbsolutePath)
 				.collect(Collectors.toSet());
 
-			if (previousApi == null) {
+			if (previousFiles.isEmpty()) {
 				return new ChangedFiles(Set.of(), Set.of(), currentFiles);
 			}
 
-			Set<Path> previousFiles = previousApi.getAllTypes()
-				.map(d -> d.getLocation().file().toAbsolutePath())
-				.collect(Collectors.toSet());
-
-			Set<Path> removedFiles = Sets.difference(previousFiles, currentFiles);
+			Set<Path> deletedFiles = Sets.difference(previousFiles, currentFiles);
 			Set<Path> createdFiles = Sets.difference(currentFiles, previousFiles);
 			Set<Path> updatedFiles = currentFiles.stream()
 				.filter(f -> previousFiles.contains(f) && f.toFile().lastModified() > timestamp)
 				.collect(Collectors.toSet());
 
-			return new ChangedFiles(updatedFiles, removedFiles, createdFiles);
+			return new ChangedFiles(updatedFiles, deletedFiles, createdFiles);
 		} catch (IOException e) {
-			throw new RuntimeException(e);
+			throw new RoseauException("Failed to read changed files from " + sources, e);
 		}
+	}
+
+	private boolean isRegularJavaFile(Path file) {
+		return Files.isRegularFile(file) &&
+			file.toString().endsWith(".java") &&
+			!file.endsWith("package-info.java") &&
+			!file.endsWith("module-info.java");
 	}
 }

@@ -19,6 +19,7 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -155,6 +156,13 @@ public final class API {
 
 	public TypeReferenceFactory getFactory() {
 		return factory;
+	}
+
+	public Set<Path> getFileLocations() {
+		return getAllTypes()
+			.filter(t -> !t.location.equals(SourceLocation.NO_LOCATION))
+			.map(t -> t.getLocation().file())
+			.collect(Collectors.toSet());
 	}
 
 	@Override
