@@ -32,7 +32,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {
 			typeDecl(it).visit();
 			$(it.getSuperClass()).visit();
-			it.getConstructors().forEach(cons -> $(cons).visit());
+			it.getDeclaredConstructors().forEach(cons -> $(cons).visit());
 		};
 	}
 

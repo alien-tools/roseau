@@ -128,7 +128,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
 			.filter(method -> !method.isConstructor() && isExported(method, type) &&
-				!isEnumMethod(method) && !method.isSyntheticRecordMethod())
+				!isEnumMethod(method) && !isSyntheticRecordMethod(method))
 			.map(method -> convertMethod(method, binding))
 			.toList();
 
@@ -268,11 +268,6 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	// FIXME: we need to carry the AbstractTypeDeclaration in the utilities below to account for
 	// https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
-	private boolean isExported(ITypeBinding type, AbstractTypeDeclaration ast) {
-		return (org.eclipse.jdt.core.dom.Modifier.isPublic(type.getModifiers()) ||
-			(org.eclipse.jdt.core.dom.Modifier.isProtected(type.getModifiers()) && !isEffectivelyFinal(type, ast)))
-			&& isParentExported(type.getDeclaringClass(), ast);
-	}
 
 	private boolean isExported(IVariableBinding field, AbstractTypeDeclaration containingType) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(field.getModifiers()) ||
@@ -284,13 +279,6 @@ final class JdtAPIVisitor extends ASTVisitor {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(method.getModifiers()) ||
 			(org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers()) &&
 				!isEffectivelyFinal(method.getDeclaringClass(), containingType));
-	}
-
-	private boolean isParentExported(ITypeBinding type, AbstractTypeDeclaration ast) {
-		if (type.getDeclaringClass() == null) {
-			return true;
-		}
-		return isExported(type.getDeclaringClass(), ast);
 	}
 
 	private boolean isEffectivelyFinal(ITypeBinding binding, AbstractTypeDeclaration type) {
@@ -325,6 +313,12 @@ final class JdtAPIVisitor extends ASTVisitor {
 			return binding.getName().equals("values") && binding.getParameterTypes().length == 0;
 		}
 		return false;
+	}
+
+	// We want the accessors, not the equals/hashCode/toString unless explicitly overriden...
+	private boolean isSyntheticRecordMethod(IMethodBinding binding) {
+		return binding.isSyntheticRecordMethod() &&
+			Set.of("toString", "equals", "hashCode").contains(binding.getName());
 	}
 
 	// Available on TypeDeclaration, but not Enum/Record/Annotation, even though they can contain inner types

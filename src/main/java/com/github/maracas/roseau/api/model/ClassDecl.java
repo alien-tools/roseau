@@ -51,7 +51,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
-		if (superClass.equals(TypeReference.OBJECT) || superClass.equals(TypeReference.RECORD)) {
+		if (qualifiedName.equals(TypeReference.OBJECT.getQualifiedName())) {
 			return Stream.empty();
 		}
 		return Stream.concat(Stream.of(superClass),
@@ -71,7 +71,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public Optional<ConstructorDecl> findConstructor(String erasure) {
-		return getConstructors().stream()
+		return getDeclaredConstructors().stream()
 			.filter(cons -> Objects.equals(erasure, cons.getErasure()))
 			.findFirst();
 	}
@@ -80,7 +80,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return superClass;
 	}
 
-	public List<ConstructorDecl> getConstructors() {
+	public List<ConstructorDecl> getDeclaredConstructors() {
 		return Collections.unmodifiableList(constructors);
 	}
 

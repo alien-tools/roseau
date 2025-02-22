@@ -16,7 +16,6 @@ import com.github.maracas.roseau.api.model.RecordDecl;
 import com.github.maracas.roseau.api.model.SourceLocation;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
-import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
 import spoon.Launcher;
@@ -351,12 +350,6 @@ public class SpoonAPIFactory {
 			: SourceLocation.NO_LOCATION;
 	}
 
-	private boolean isExported(CtType<?> type) {
-		return
-			(type.isPublic() || (type.isProtected() && !isEffectivelyFinal(type)))
-				&& isParentExported(type);
-	}
-
 	private boolean isExported(CtTypeMember member) {
 		/*
 		 * This is kinda tricky due to API types leaking internal types. In the following,
@@ -376,10 +369,6 @@ public class SpoonAPIFactory {
 		 * public class B extends A {} // package 'pkg'
 		 */
 		return member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getDeclaringType()));
-	}
-
-	private boolean isParentExported(CtTypeMember member) {
-		return member.getDeclaringType() == null || isExported(member.getDeclaringType());
 	}
 
 	/**

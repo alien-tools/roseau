@@ -160,7 +160,7 @@ public final class API {
 
 	public Set<Path> getFileLocations() {
 		return getAllTypes()
-			.filter(t -> !t.location.equals(SourceLocation.NO_LOCATION))
+			.filter(t -> !t.getLocation().equals(SourceLocation.NO_LOCATION))
 			.map(t -> t.getLocation().file())
 			.collect(Collectors.toSet());
 	}

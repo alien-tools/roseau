@@ -184,11 +184,6 @@ class AsmClassVisitor extends ClassVisitor {
 			return null;
 		}
 
-		if (isRecord(classAccess) && (name.equals("<init>") && Type.getArgumentCount(descriptor) == recordComponents)) {
-			LOGGER.trace("Skipping {}'s default constructor", className);
-			return null;
-		}
-
 		return new MethodVisitor(api) {
 			List<String> annotations = new ArrayList<>();
 

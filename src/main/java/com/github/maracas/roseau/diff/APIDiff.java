@@ -99,7 +99,7 @@ public class APIDiff {
 	}
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
-		c1.getConstructors().forEach(cons1 ->
+		c1.getDeclaredConstructors().forEach(cons1 ->
 			c2.findConstructor(cons1.getErasure()).ifPresentOrElse(
 				// There is a matching constructor
 				cons2 -> diffConstructor(cons1, cons2),

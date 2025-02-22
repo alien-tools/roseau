@@ -3,6 +3,7 @@ package com.github.maracas.roseau.utils;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.AnnotationDecl;
 import com.github.maracas.roseau.api.model.ClassDecl;
+import com.github.maracas.roseau.api.model.ConstructorDecl;
 import com.github.maracas.roseau.api.model.EnumDecl;
 import com.github.maracas.roseau.api.model.FieldDecl;
 import com.github.maracas.roseau.api.model.InterfaceDecl;
@@ -167,6 +168,16 @@ public class TestUtils {
 		if (findMethod.isEmpty())
 			throw new AssertionFailedError("No such method", erasure, "No such method");
 		return findMethod.getFirst();
+	}
+
+	public static ConstructorDecl assertConstructor(ClassDecl decl, String erasure) {
+		List<ConstructorDecl> findCons = decl.getDeclaredConstructors().stream()
+			.filter(m -> m.getErasure().equals(erasure))
+			.toList();
+
+		if (findCons.isEmpty())
+			throw new AssertionFailedError("No such constructor", erasure, "No such constructor");
+		return findCons.getFirst();
 	}
 
 	public static ClassDecl assertClass(API api, String name) {

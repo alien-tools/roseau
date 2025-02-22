@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.extractors;
 
+import com.github.maracas.roseau.api.model.MethodDecl;
 import com.github.maracas.roseau.utils.ApiBuilder;
 import com.github.maracas.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -9,6 +10,8 @@ import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -44,17 +47,17 @@ class MethodsOverridingTest {
 		assertThat(k.getAllMethods().toList(), hasSize(1));
 		assertEquals("K.m", k.getAllMethods().toList().getFirst().getQualifiedName());
 
-		assertThat(a.getAllMethods().toList(), hasSize(1));
-		assertEquals("A.m", a.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(a.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(a.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
 
-		assertThat(b.getAllMethods().toList(), hasSize(1));
-		assertEquals("A.m", b.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(b.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(b.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
 
-		assertThat(c.getAllMethods().toList(), hasSize(1));
-		assertEquals("C.m", c.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(c.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(c.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("C.m"));
 
-		assertThat(d.getAllMethods().toList(), hasSize(1));
-		assertEquals("K.m", d.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(d.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(d.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("K.m"));
 	}
 
 	@ParameterizedTest

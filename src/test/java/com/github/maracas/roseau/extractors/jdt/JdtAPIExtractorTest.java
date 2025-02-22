@@ -89,7 +89,6 @@ class JdtAPIExtractorTest {
 
 		var extractor = new JdtAPIExtractor();
 		var api = extractor.extractAPI(wd);
-		System.out.println(api);
 
 		assertThat(api, is(notNullValue()));
 		assertThat(api.getAllTypes().count(), is(1L));

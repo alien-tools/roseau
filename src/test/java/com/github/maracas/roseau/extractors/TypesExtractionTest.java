@@ -8,8 +8,10 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.assertConstructor;
 import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
+import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -29,6 +31,7 @@ class TypesExtractionTest {
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 	}
 
 	@ParameterizedTest
@@ -41,6 +44,7 @@ class TypesExtractionTest {
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 	}
 
 	@ParameterizedTest
@@ -77,6 +81,7 @@ class TypesExtractionTest {
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
 	}
 
 	@ParameterizedTest
@@ -89,6 +94,7 @@ class TypesExtractionTest {
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
 	}
 
 	@ParameterizedTest
@@ -101,6 +107,7 @@ class TypesExtractionTest {
 		assertFalse(a.isExported());
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
 	}
 
 	@ParameterizedTest
@@ -113,6 +120,7 @@ class TypesExtractionTest {
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
 	}
 
 	@ParameterizedTest
@@ -137,6 +145,34 @@ class TypesExtractionTest {
 		assertTrue(a.isExported());
 		assertTrue(a.isPublic());
 		assertThat(api.getAllTypes().toList(), hasSize(1));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void default_object_methods(ApiBuilder builder) {
+		var api = builder.build("""
+				public interface I {}
+				public class C {}
+				public record R() {}
+				public @interface A {}
+				public enum E {}""");
+
+		var i = assertInterface(api, "I");
+		var c = assertClass(api, "C");
+		var r = assertRecord(api, "R");
+		var a = assertAnnotation(api, "A");
+		var e = assertEnum(api, "E");
+
+		assertThat(i.getDeclaredMethods(), hasSize(0));
+		assertThat(i.getAllMethods().count(), is(0L));
+		assertThat(c.getDeclaredMethods(), hasSize(0));
+		assertThat(c.getAllMethods().count(), is(11L)); // java.lang.Object's defaults
+		assertThat(r.getDeclaredMethods(), hasSize(0));
+		assertThat(r.getAllMethods().count(), is(11L)); // java.lang.Record simply @Overrides three of Object's
+		assertThat(a.getDeclaredMethods(), hasSize(0));
+		assertThat(a.getAllMethods().count(), is(0L));
+		assertThat(e.getDeclaredMethods(), hasSize(0));
+		assertThat(e.getAllMethods().count(), is(18L)); // java.lang.Enum's defaults + java.lang.Object's defaults
 	}
 
 	@ParameterizedTest
@@ -330,6 +366,21 @@ class TypesExtractionTest {
 		var api = builder.build("public record A() {}");
 		var a = assertRecord(api, "A");
 		assertThat(a.getDeclaredMethods(), hasSize(0));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void record_components(ApiBuilder builder) {
+		var api = builder.build("public record A(int a, String b) {}");
+
+		var a = assertRecord(api, "A");
+		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertConstructor(a, "<init>(int,java.lang.String)");
+
+		var ma = assertMethod(a, "a()");
+		var mb = assertMethod(a, "b()");
+		assertThat(ma.getType().getQualifiedName(), is(equalTo("int")));
+		assertThat(mb.getType().getQualifiedName(), is(equalTo("java.lang.String")));
 	}
 
 	@ParameterizedTest

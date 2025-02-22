@@ -17,7 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 class APITest {
 	@Test
 	void json_round_trip() throws IOException {
-		Path sources = Path.of("src/test/resources/api-showcase");
+		Path sources = Path.of("src/main/java");
 		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
 		API orig = extractor.extractAPI(sources);
 

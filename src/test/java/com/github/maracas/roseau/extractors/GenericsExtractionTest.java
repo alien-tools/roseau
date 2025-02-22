@@ -633,7 +633,7 @@ class GenericsExtractionTest {
 		assertThat(((TypeParameterReference) elWc.bounds().get(0)).getQualifiedName(), is(equalTo("T")));
 
 		// Constructor: public <S extends Map<? extends T, ? super U> & Cloneable> ComplexGenerics(S param)
-		var ctors = cg.getConstructors();
+		var ctors = cg.getDeclaredConstructors();
 		assertThat(ctors, hasSize(1));
 		var ctor = ctors.get(0);
 		assertThat(ctor.getFormalTypeParameters(), hasSize(1));

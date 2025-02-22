@@ -16,7 +16,10 @@ import com.github.maracas.roseau.extractors.sources.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -34,6 +37,7 @@ import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Comparator;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -46,11 +50,9 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.fail;
 
+@TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopularLibrariesTestIT {
-
 	static Stream<String> libraries() {
 		return Stream.of(
 			"org.assertj:assertj-core:3.27.3",
@@ -94,122 +96,158 @@ class PopularLibrariesTestIT {
 		);
 	}
 
-	@BeforeAll
-	static void setUp() {
-		// Way too noisy 'cause of missing classpath
-		Configurator.setLevel("spoon", Level.ERROR);
-		Configurator.setLevel("com.github.maracas.roseau", Level.ERROR);
-	}
-
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("libraries")
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibrary(String libraryGAV) {
-		String[] parts = libraryGAV.split(":");
-		String groupId = parts[0];
-		String artifactId = parts[1];
-		String version = parts[2];
+		Stopwatch sw = Stopwatch.createUnstarted();
+		Path binaryJar = binaryJars.get(libraryGAV);
+		Path sourcesDir = sourcesDirs.get(libraryGAV);
 
-		try {
-			Stopwatch sw = Stopwatch.createUnstarted();
-			Path binaryJar = downloadBinaryJar(groupId, artifactId, version);
-			Path sourcesJar = downloadSourcesJar(groupId, artifactId, version);
-			Path sourcesDir = extractSourcesJar(sourcesJar);
+		// ASM API
+		AsmAPIExtractor asmExtractor = new AsmAPIExtractor();
+		sw.reset().start();
+		API asmApi = asmExtractor.extractAPI(binaryJar);
+		long asmApiTime = sw.elapsed().toMillis();
 
-			// ASM API
-			AsmAPIExtractor asmExtractor = new AsmAPIExtractor();
-			sw.reset().start();
-			API asmApi = asmExtractor.extractAPI(binaryJar);
-			long asmApiTime = sw.elapsed().toMillis();
+		// JDT API
+		JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
+		sw.reset().start();
+		API jdtApi = jdtExtractor.extractAPI(sourcesDir);
+		long jdtApiTime = sw.elapsed().toMillis();
 
-			// JDT API
-			JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
-			sw.reset().start();
-			API jdtApi = jdtExtractor.extractAPI(sourcesDir);
-			long jdtApiTime = sw.elapsed().toMillis();
+		// Spoon parsing
+		sw.reset().start();
+		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
+		long spoonParsingTime = sw.elapsed().toMillis();
 
-			// Spoon parsing
-			sw.reset().start();
-			CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
-			long spoonParsingTime = sw.elapsed().toMillis();
+		// Spoon API
+		SpoonAPIExtractor spoonExtractor = new SpoonAPIExtractor();
+		sw.reset().start();
+		API spoonApi = spoonExtractor.extractAPI(spoonModel);
+		long spoonApiTime = sw.elapsed().toMillis();
 
-			// Spoon API
-			SpoonAPIExtractor spoonExtractor = new SpoonAPIExtractor();
-			sw.reset().start();
-			API spoonApi = spoonExtractor.extractAPI(spoonModel);
-			long spoonApiTime = sw.elapsed().toMillis();
+		// Diffs
+		List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff();
+		List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff();
+		List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff();
+		List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff();
+		List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff();
+		sw.reset().start();
+		List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff();
+		long diffTime = sw.elapsed().toMillis();
 
-			// Diffs
-			List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff();
-			List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff();
-			List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff();
-			List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff();
-			List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff();
-			sw.reset().start();
-			List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff();
-			long diffTime = sw.elapsed().toMillis();
+		// Stats
+		long loc = countLinesOfCode(sourcesDir);
+		long numTypes = spoonApi.getAllTypes().count();
+		int numMethods = spoonApi.getAllTypes()
+			.mapToInt(type -> type.getDeclaredMethods().size())
+			.sum();
+		int numFields = spoonApi.getAllTypes()
+			.mapToInt(type -> type.getDeclaredFields().size())
+			.sum();
 
-			// Stats
-			long loc = countLinesOfCode(sourcesDir);
-			long numTypes = spoonApi.getAllTypes().count();
-			int numMethods = spoonApi.getAllTypes()
-				.mapToInt(type -> type.getDeclaredMethods().size())
-				.sum();
-			int numFields = spoonApi.getAllTypes()
-				.mapToInt(type -> type.getDeclaredFields().size())
-				.sum();
+		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
+				"\tSpoon: %dms parsing; %dms API; %dms diff%n" +
+				"\tASM: %dms%n" +
+				"\tJDT: %dms%n" +
+				"\tBCs: %s %s %s %s %s %s%n",
+			libraryGAV, loc, numTypes, numMethods, numFields,
+			spoonParsingTime, spoonApiTime, diffTime,
+			asmApiTime,
+			jdtApiTime,
+			asmToSpoonBCs, asmToJdtBCs, jdtToSpoonBCs, jdtToAsmBCs, spoonToAsmBCs, spoonToJdtBCs);
 
-			System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
-					"\tSpoon: %dms parsing; %dms API; %dms diff%n" +
-					"\tASM: %dms%n" +
-					"\tJDT: %dms%n" +
-					"\tBCs: %s %s %s %s %s %s%n",
-				libraryGAV, loc, numTypes, numMethods, numFields,
-				spoonParsingTime, spoonApiTime, diffTime,
-				asmApiTime,
-				jdtApiTime,
-				asmToSpoonBCs, asmToJdtBCs, jdtToSpoonBCs, jdtToAsmBCs, spoonToAsmBCs, spoonToJdtBCs);
+		System.out.println("### JDT to Sources API diff:");
+		diffAPIs(jdtApi, spoonApi);
+		System.out.println("### Sources to JDT API diff:");
+		diffAPIs(spoonApi, jdtApi);
 
-			System.out.println("### JDT to Sources API diff:");
-			diffAPIs(jdtApi, spoonApi);
-			System.out.println("### Sources to JDT API diff:");
-			diffAPIs(spoonApi, jdtApi);
-
-			if (!asmToSpoonBCs.isEmpty() || !spoonToAsmBCs.isEmpty()) {
-				System.out.println("JAR to Sources BCs:");
-				System.out.println(asmToSpoonBCs.stream()
-					.map(BreakingChange::toString).collect(Collectors.joining("\n")));
-				System.out.println("Sources to JAR BCs:");
-				System.out.println(spoonToAsmBCs.stream()
-					.map(BreakingChange::toString).collect(Collectors.joining("\n")));
-			}
-
-			cleanup(sourcesJar);
-			cleanup(binaryJar);
-			cleanup(sourcesDir);
-
-			// Check everything went well
-			assertFalse(spoonApi.getAllTypes().findAny().isEmpty());
-			assertFalse(asmApi.getAllTypes().findAny().isEmpty());
-			assertFalse(jdtApi.getAllTypes().findAny().isEmpty());
-//			assertEquals(0, asmToSpoonBCs.size() + asmToJdtBCs.size() + jdtToSpoonBCs.size() +
-//				jdtToAsmBCs.size() + spoonToAsmBCs.size() + spoonToJdtBCs.size());
-		} catch (Exception e) {
-			fail("Failed to process " + libraryGAV, e);
+		if (!asmToSpoonBCs.isEmpty() || !spoonToAsmBCs.isEmpty()) {
+			System.out.println("JAR to Sources BCs:");
+			System.out.println(asmToSpoonBCs.stream()
+				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
+			System.out.println("Sources to JAR BCs:");
+			System.out.println(spoonToAsmBCs.stream()
+				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
 		}
+
+		// Check everything went well
+		assertFalse(spoonApi.getAllTypes().findAny().isEmpty());
+		assertFalse(asmApi.getAllTypes().findAny().isEmpty());
+		assertFalse(jdtApi.getAllTypes().findAny().isEmpty());
+		// assertEquals(0, asmToSpoonBCs.size() + asmToJdtBCs.size() + jdtToSpoonBCs.size() +
+		// 	jdtToAsmBCs.size() + spoonToAsmBCs.size() + spoonToJdtBCs.size());
 	}
 
-	private Path downloadSourcesJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+	@Disabled("Benchmark only")
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("libraries")
+	@Timeout(value = 2, unit = TimeUnit.MINUTES)
+	void analyzeLibrarySpoon(String libraryGAV) {
+		Path sourcesDir = sourcesDirs.get(libraryGAV);
+
+		// Spoon API
+		SpoonAPIExtractor spoonExtractor = new SpoonAPIExtractor();
+		API spoonApi = spoonExtractor.extractAPI(sourcesDir);
+
+		// Diff
+		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff();
+
+		// Check everything went well
+		assertFalse(spoonApi.getAllTypes().findAny().isEmpty());
+		assertEquals(0, bcs.size());
+	}
+
+	@Disabled("Benchmark only")
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("libraries")
+	@Timeout(value = 2, unit = TimeUnit.MINUTES)
+	void analyzeLibraryJdt(String libraryGAV) {
+		Path sourcesDir = sourcesDirs.get(libraryGAV);
+
+		// JDT API
+		JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
+		API jdtApi = jdtExtractor.extractAPI(sourcesDir);
+
+		// Diff
+		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff();
+
+		// Check everything went well
+		assertFalse(jdtApi.getAllTypes().findAny().isEmpty());
+		assertEquals(0, bcs.size());
+	}
+
+	@Disabled("Benchmark only")
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("libraries")
+	@Timeout(value = 2, unit = TimeUnit.MINUTES)
+	void analyzeLibraryAsm(String libraryGAV) {
+		Path binaryJar = binaryJars.get(libraryGAV);
+
+		// ASM API
+		AsmAPIExtractor asmExtractor = new AsmAPIExtractor();
+		API asmApi = asmExtractor.extractAPI(binaryJar);
+
+		// Diff
+		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff();
+
+		// Check everything went well
+		assertFalse(asmApi.getAllTypes().findAny().isEmpty());
+		assertEquals(0, bcs.size());
+	}
+
+	private static Path downloadSourcesJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s-sources.jar",
 			groupId.replace('.', '/'), artifactId, version, artifactId, version));
 	}
 
-	private Path downloadBinaryJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+	private static Path downloadBinaryJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
 			groupId.replace('.', '/'), artifactId, version, artifactId, version));
 	}
 
-	private Path download(String url) throws IOException, InterruptedException {
+	private static Path download(String url) throws IOException, InterruptedException {
 		HttpClient client = HttpClient.newHttpClient();
 		HttpRequest request = HttpRequest.newBuilder()
 			.uri(URI.create(url))
@@ -226,7 +264,7 @@ class PopularLibrariesTestIT {
 		return tempFile;
 	}
 
-	private Path extractSourcesJar(Path jarPath) throws IOException {
+	private static Path extractSourcesJar(Path jarPath) throws IOException {
 		Path outputDir = Files.createTempDirectory("sources-");
 		try (JarFile jar = new JarFile(jarPath.toFile())) {
 			Enumeration<JarEntry> entries = jar.entries();
@@ -246,18 +284,22 @@ class PopularLibrariesTestIT {
 		return outputDir;
 	}
 
-	private long countLinesOfCode(Path sourcesDir) throws IOException {
-		return Files.walk(sourcesDir)
-			.filter(path -> path.toString().endsWith(".java"))
-			.mapToLong(path -> {
-				try (BufferedReader reader = Files.newBufferedReader(path)) {
-					return reader.lines().count();
-				} catch (IOException e) {
-					System.err.println("Failed to count lines in " + path + ": " + e.getMessage());
-					return 0;
-				}
-			})
-			.sum();
+	private long countLinesOfCode(Path sourcesDir) {
+		try (Stream<Path> files = Files.walk(sourcesDir)) {
+			return files
+				.filter(path -> path.toString().endsWith(".java"))
+				.mapToLong(path -> {
+					try (BufferedReader reader = Files.newBufferedReader(path)) {
+						return reader.lines().count();
+					} catch (IOException e) {
+						System.err.println("Failed to count lines in " + path + ": " + e.getMessage());
+						return 0L;
+					}
+				})
+				.sum();
+		} catch (IOException ignored) {
+			return -1L;
+		}
 	}
 
 	private void cleanup(Path path) throws IOException {
@@ -279,6 +321,56 @@ class PopularLibrariesTestIT {
 					}
 				});
 		}
+	}
+
+	private static final Map<String, Path> binaryJars = new HashMap<>();
+	private static final Map<String, Path> sourcesJars = new HashMap<>();
+	private static final Map<String, Path> sourcesDirs = new HashMap<>();
+
+	@BeforeAll
+	static void setUp() {
+		// Way too noisy 'cause of missing classpath
+		Configurator.setLevel("spoon", Level.ERROR);
+		Configurator.setLevel("com.github.maracas.roseau", Level.ERROR);
+
+		// Prepare data for all tests
+		libraries().forEach(libraryGAV -> {
+			try {
+				String[] parts = libraryGAV.split(":");
+				String groupId = parts[0];
+				String artifactId = parts[1];
+				String version = parts[2];
+
+				Path binaryJar = downloadBinaryJar(groupId, artifactId, version);
+				Path sourcesJar = downloadSourcesJar(groupId, artifactId, version);
+				Path sourcesDir = extractSourcesJar(sourcesJar);
+
+				binaryJars.put(libraryGAV, binaryJar);
+				sourcesJars.put(libraryGAV, sourcesJar);
+				sourcesDirs.put(libraryGAV, sourcesDir);
+			} catch (Exception e) {
+				throw new RuntimeException("Failed to download " + libraryGAV, e);
+			}
+		});
+	}
+
+	@AfterAll
+	void tearDown() {
+		binaryJars.values().forEach(path -> {
+			try {
+				cleanup(path);
+			} catch (Exception ignored) {}
+		});
+		sourcesJars.values().forEach(path -> {
+			try {
+				cleanup(path);
+			} catch (Exception ignored) {}
+		});
+		sourcesDirs.values().forEach(path -> {
+			try {
+				cleanup(path);
+			} catch (Exception ignored) {}
+		});
 	}
 
 	private static boolean diffAPIs(API api1, API api2) {
@@ -353,7 +445,7 @@ class PopularLibrariesTestIT {
 		}
 
 		if (type1 instanceof ClassDecl class1 && type2 instanceof ClassDecl class2) {
-			if (!diffConstructors(class1.getConstructors(), class2.getConstructors())) {
+			if (!diffConstructors(class1.getDeclaredConstructors(), class2.getDeclaredConstructors())) {
 				equal = false;
 			}
 

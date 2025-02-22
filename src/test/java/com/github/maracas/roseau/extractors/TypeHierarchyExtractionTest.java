@@ -155,9 +155,9 @@ class TypeHierarchyExtractionTest {
 		var a = assertClass(api, "A");
 
 		assertThat(a.getSuperClass().getQualifiedName(), is(equalTo("E")));
-		assertThat(a.getAllSuperClasses().toList(), hasSize(3));
+		assertThat(a.getAllSuperClasses().toList(), hasSize(4));
 		assertThat(a.getAllSuperClasses().map(ITypeReference::getQualifiedName).toList(),
-			hasItems(equalTo("C"), equalTo("D"), equalTo("E")));
+			hasItems(equalTo("java.lang.Object"), equalTo("C"), equalTo("D"), equalTo("E")));
 
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getAllImplementedInterfaces().toList(), hasSize(6));
@@ -183,9 +183,9 @@ class TypeHierarchyExtractionTest {
 		var a = assertClass(api, "A");
 
 		assertThat(a.getSuperClass().getQualifiedName(), is(equalTo("E")));
-		assertThat(a.getAllSuperClasses().toList(), hasSize(3));
+		assertThat(a.getAllSuperClasses().toList(), hasSize(4));
 		assertThat(a.getAllSuperClasses().map(ITypeReference::getQualifiedName).toList(),
-			hasItems(equalTo("E"), equalTo("D"), equalTo("java.lang.Thread")));
+			hasItems(equalTo("java.lang.Object"), equalTo("E"), equalTo("D"), equalTo("java.lang.Thread")));
 
 		assertThat(a.getImplementedInterfaces(), hasSize(2));
 		assertThat(a.getAllImplementedInterfaces().toList(), hasSize(5));

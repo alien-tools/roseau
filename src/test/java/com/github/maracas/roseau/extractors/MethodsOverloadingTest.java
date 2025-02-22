@@ -67,8 +67,8 @@ class MethodsOverloadingTest {
 		assertThat(c.getDeclaredMethods(), hasSize(3));
 
 		assertThat(i.getAllMethods().toList(), hasSize(1));
-		assertThat(a.getAllMethods().toList(), hasSize(3));
-		assertThat(c.getAllMethods().toList(), hasSize(4));
+		assertThat(a.getAllMethods().toList(), hasSize(3 + 11)); // java.lang.Object's methods
+		assertThat(c.getAllMethods().toList(), hasSize(4 + 11)); // java.lang.Object's methods
 
 		var im = assertMethod(i, "m()");
 		var amInt = assertMethod(a, "m(int)");
