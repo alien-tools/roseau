@@ -335,7 +335,6 @@ class PopularLibrariesTestIT {
 	}
 
 	private static final Map<String, Path> binaryJars = new HashMap<>();
-	private static final Map<String, Path> sourcesJars = new HashMap<>();
 	private static final Map<String, Path> sourcesDirs = new HashMap<>();
 	private static final Multimap<String, Path> classpaths = ArrayListMultimap.create();
 
@@ -346,7 +345,7 @@ class PopularLibrariesTestIT {
 		Configurator.setLevel("com.github.maracas.roseau", Level.ERROR);
 
 		// Prepare data for all tests
-		libraries().forEach(libraryGAV -> {
+		libraries().parallel().forEach(libraryGAV -> {
 			try {
 				String[] parts = libraryGAV.split(":");
 				String groupId = parts[0];
@@ -379,11 +378,6 @@ class PopularLibrariesTestIT {
 	@AfterAll
 	void tearDown() {
 		binaryJars.values().forEach(path -> {
-			try {
-				cleanup(path);
-			} catch (Exception ignored) {}
-		});
-		sourcesJars.values().forEach(path -> {
 			try {
 				cleanup(path);
 			} catch (Exception ignored) {}
