@@ -1,8 +1,9 @@
 package com.github.maracas.roseau.smoke;
 
-import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.diff.APIDiff;
+import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
+import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
+import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.extractors.sources.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Disabled;
@@ -36,11 +37,22 @@ class JdkTestIT {
 		var moduleName = jmod.getFileName().toString().replace(".jmod", "");
 		var src = Path.of(String.format("%s/src/%s/share/classes", JDK_SRC_PATH, moduleName));
 		var sw = Stopwatch.createUnstarted();
-		var srcExtractor = new SpoonAPIExtractor();
-		var binExtractor = new AsmAPIExtractor();
+		var spoonExtractor = new SpoonAPIExtractor();
+		var asmExtractor = new AsmAPIExtractor();
+		var jdtExtractor = new JdtAPIExtractor();
 
 		if (!src.toFile().exists())
 			fail("No sources for " + jmod);
+
+		sw.reset().start();
+		var jarApi = asmExtractor.extractAPI(jmod);
+		var jarApiTime = sw.elapsed().toMillis();
+		System.out.printf("ASM API took %dms (%d types)%n", jarApiTime, jarApi.getAllTypes().count());
+
+		sw.reset().start();
+		var jdtApi = jdtExtractor.extractAPI(src);
+		var jdtApiTime = sw.elapsed().toMillis();
+		System.out.printf("JDT API took %dms (%d types)%n", jdtApiTime, jdtApi.getAllTypes().count());
 
 		sw.reset().start();
 		var model = SpoonUtils.buildModel(src, Duration.ofMinutes(1));
@@ -48,14 +60,9 @@ class JdkTestIT {
 		System.out.printf("Parsing took %dms%n", parsingTime);
 
 		sw.reset().start();
-		var srcApi = srcExtractor.extractAPI(model);
+		var srcApi = spoonExtractor.extractAPI(model);
 		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("API from sources took %dms (%d types)%n", apiTime, srcApi.getAllTypes().count());
-
-		sw.reset().start();
-		var jarApi = binExtractor.extractAPI(jmod);
-		var jarApiTime = sw.elapsed().toMillis();
-		System.out.printf("API from binary took %dms (%d types)%n", jarApiTime, jarApi.getAllTypes().count());
+		System.out.printf("Spoon API took %dms (%d types)%n", apiTime, srcApi.getAllTypes().count());
 
 		sw.reset().start();
 		var bcs = new APIDiff(srcApi, srcApi).diff();

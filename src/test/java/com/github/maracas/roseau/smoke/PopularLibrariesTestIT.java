@@ -9,11 +9,14 @@ import com.github.maracas.roseau.api.model.ParameterDecl;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
+import com.github.maracas.roseau.extractors.MavenClasspathBuilder;
 import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
 import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
 import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
 import com.github.maracas.roseau.extractors.sources.SpoonUtils;
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
@@ -111,9 +114,10 @@ class PopularLibrariesTestIT {
 		long asmApiTime = sw.elapsed().toMillis();
 
 		// JDT API
+		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
 		JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
 		sw.reset().start();
-		API jdtApi = jdtExtractor.extractAPI(sourcesDir);
+		API jdtApi = jdtExtractor.extractAPI(sourcesDir, classpath);
 		long jdtApiTime = sw.elapsed().toMillis();
 
 		// Spoon parsing
@@ -205,10 +209,11 @@ class PopularLibrariesTestIT {
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibraryJdt(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
+		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
 
 		// JDT API
 		JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
-		API jdtApi = jdtExtractor.extractAPI(sourcesDir);
+		API jdtApi = jdtExtractor.extractAPI(sourcesDir, classpath);
 
 		// Diff
 		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff();
@@ -244,6 +249,11 @@ class PopularLibrariesTestIT {
 
 	private static Path downloadBinaryJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
+			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+	}
+
+	private static Path downloadPom(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.pom",
 			groupId.replace('.', '/'), artifactId, version, artifactId, version));
 	}
 
@@ -302,30 +312,32 @@ class PopularLibrariesTestIT {
 		}
 	}
 
-	private void cleanup(Path path) throws IOException {
+	private static void cleanup(Path path) throws IOException {
 		if (path.toFile().isDirectory())
 			deleteDirectory(path);
 		else
 			Files.deleteIfExists(path);
 	}
 
-	private void deleteDirectory(Path path) throws IOException {
+	private static void deleteDirectory(Path path) throws IOException {
 		if (Files.exists(path)) {
-			Files.walk(path)
-				.sorted(Comparator.reverseOrder())
-				.forEach(p -> {
-					try {
-						Files.delete(p);
-					} catch (IOException e) {
-						System.err.println("Failed to delete " + p + ": " + e.getMessage());
-					}
-				});
+			try (Stream<Path> files = Files.walk(path)) {
+				files.sorted(Comparator.reverseOrder())
+					.forEach(p -> {
+						try {
+							Files.delete(p);
+						} catch (IOException e) {
+							System.err.println("Failed to delete " + p + ": " + e.getMessage());
+						}
+					});
+			}
 		}
 	}
 
 	private static final Map<String, Path> binaryJars = new HashMap<>();
 	private static final Map<String, Path> sourcesJars = new HashMap<>();
 	private static final Map<String, Path> sourcesDirs = new HashMap<>();
+	private static final Multimap<String, Path> classpaths = ArrayListMultimap.create();
 
 	@BeforeAll
 	static void setUp() {
@@ -343,11 +355,21 @@ class PopularLibrariesTestIT {
 
 				Path binaryJar = downloadBinaryJar(groupId, artifactId, version);
 				Path sourcesJar = downloadSourcesJar(groupId, artifactId, version);
+				Path pom = downloadPom(groupId, artifactId, version);
 				Path sourcesDir = extractSourcesJar(sourcesJar);
 
+				try {
+					List<Path> classpath = new MavenClasspathBuilder().buildClasspath(pom);
+					classpaths.putAll(libraryGAV, classpath);
+				} catch (Exception e) {
+					e.printStackTrace();
+				}
+
 				binaryJars.put(libraryGAV, binaryJar);
-				sourcesJars.put(libraryGAV, sourcesJar);
 				sourcesDirs.put(libraryGAV, sourcesDir);
+
+				cleanup(sourcesJar);
+				cleanup(pom);
 			} catch (Exception e) {
 				throw new RuntimeException("Failed to download " + libraryGAV, e);
 			}

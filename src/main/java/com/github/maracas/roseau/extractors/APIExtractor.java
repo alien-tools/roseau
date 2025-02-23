@@ -1,5 +1,6 @@
 package com.github.maracas.roseau.extractors;
 
+import com.github.maracas.roseau.RoseauException;
 import com.github.maracas.roseau.api.model.API;
 
 import java.nio.file.Path;
@@ -29,7 +30,7 @@ import java.nio.file.Path;
  */
 public interface APIExtractor {
 	/**
-	 * @throws APIExtractionException if anything went wrong
+	 * @throws RoseauException if anything went wrong
 	 */
 	API extractAPI(Path sources);
 }

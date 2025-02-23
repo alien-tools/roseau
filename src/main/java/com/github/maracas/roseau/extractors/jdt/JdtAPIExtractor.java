@@ -1,10 +1,10 @@
 package com.github.maracas.roseau.extractors.jdt;
 
+import com.github.maracas.roseau.RoseauException;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.CachedTypeReferenceFactory;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
-import com.github.maracas.roseau.extractors.APIExtractionException;
 import com.github.maracas.roseau.extractors.APIExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -30,21 +30,27 @@ public class JdtAPIExtractor implements APIExtractor {
 
 	@Override
 	public API extractAPI(Path sources) {
+		return extractAPI(sources, List.of());
+	}
+
+	public API extractAPI(Path sources, List<Path> classpath) {
+		Objects.requireNonNull(classpath);
 		try (Stream<Path> files = Files.walk(Objects.requireNonNull(sources))) {
 			List<Path> sourceFiles = files
 				.filter(this::isRegularJavaFile)
 				.toList();
 
 			TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
-			List<TypeDecl> parsedTypes = parseTypes(sourceFiles, sources, typeRefFactory);
+			List<TypeDecl> parsedTypes = parseTypes(sourceFiles, sources, classpath, typeRefFactory);
 			return new API(parsedTypes, typeRefFactory);
 		} catch (IOException e) {
-			throw new APIExtractionException("Failed to retrieve sources at " + sources, e);
+			throw new RoseauException("Failed to retrieve sources at " + sources, e);
 		}
 	}
 
-	List<TypeDecl> parseTypes(List<Path> sourcesToParse, Path sourcesRoot, TypeReferenceFactory typeRefFactory) {
-		List<TypeDecl> typeDecls = new ArrayList<>();
+	List<TypeDecl> parseTypes(List<Path> sourcesToParse, Path sourcesRoot, List<Path> classpath,
+	                          TypeReferenceFactory typeRefFactory) {
+		List<TypeDecl> typeDecls = new ArrayList<>(sourcesToParse.size());
 
 		String[] sourcesArray = sourcesToParse.stream()
 			.map(p -> p.toAbsolutePath().toString())
@@ -55,6 +61,9 @@ public class JdtAPIExtractor implements APIExtractor {
 		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
 
 		String[] sourcesRootArray = { sourcesRoot.toAbsolutePath().toString() };
+		String[] classpathEntries = classpath.stream()
+			.map(p -> p.toAbsolutePath().toString())
+			.toArray(String[]::new);
 
 		ASTParser parser = ASTParser.newParser(AST.JLS21);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
@@ -65,7 +74,7 @@ public class JdtAPIExtractor implements APIExtractor {
 		parser.setStatementsRecovery(false);
 		parser.setIgnoreMethodBodies(true);
 		parser.setCompilerOptions(options);
-		parser.setEnvironment(null, sourcesRootArray, null, true);
+		parser.setEnvironment(classpathEntries, sourcesRootArray, null, true);
 
 		// Receive parsed ASTs and forward them to the visitor
 		FileASTRequestor requestor = new FileASTRequestor() {
@@ -80,13 +89,9 @@ public class JdtAPIExtractor implements APIExtractor {
 							sourceFilePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 
-				try {
-					JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
-					ast.accept(visitor);
-					typeDecls.addAll(visitor.getCollectedTypeDecls());
-				} catch (RuntimeException e) {
-					throw new APIExtractionException("Failed to extract API from " + sourceFilePath, e);
-				}
+				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
+				ast.accept(visitor);
+				typeDecls.addAll(visitor.getCollectedTypeDecls());
 			}
 		};
 
@@ -96,7 +101,7 @@ public class JdtAPIExtractor implements APIExtractor {
 			return typeDecls;
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
-			throw new APIExtractionException("Failed to parse code from " + sourcesRoot, e);
+			throw new RoseauException("Failed to parse code from " + sourcesRoot, e);
 		}
 	}
 

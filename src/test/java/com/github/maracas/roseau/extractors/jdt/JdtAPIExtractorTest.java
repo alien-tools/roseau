@@ -1,7 +1,7 @@
 package com.github.maracas.roseau.extractors.jdt;
 
+import com.github.maracas.roseau.RoseauException;
 import com.github.maracas.roseau.api.model.ClassDecl;
-import com.github.maracas.roseau.extractors.APIExtractionException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -29,7 +29,7 @@ class JdtAPIExtractorTest {
 	@Test
 	void parse_invalid_location_throws() {
 		var extractor = new JdtAPIExtractor();
-		assertThrows(APIExtractionException.class, () -> extractor.extractAPI(Path.of("invalid")));
+		assertThrows(RoseauException.class, () -> extractor.extractAPI(Path.of("invalid")));
 	}
 
 	@Test
@@ -82,9 +82,10 @@ class JdtAPIExtractorTest {
 			import unknown.B;
 			import unknown.D;
 			import java.util.List;
-			public class A extends unknown.A implements B {
+			public class A<T> extends unknown.A implements B {
 				public List<unknown.C> f;
 				public D m(unknown.E[] p1, F p2) { return null; }
+				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
 			}""");
 
 		var extractor = new JdtAPIExtractor();

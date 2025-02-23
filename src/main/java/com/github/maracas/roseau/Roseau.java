@@ -106,7 +106,7 @@ final class Roseau implements Callable<Integer>  {
 			return buildJarAPI(path);
 	}
 
-	private List<BreakingChange> diff(Path v1path, Path v2path, Path report) {
+	private List<BreakingChange> diff(Path v1path, Path v2path) {
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1path));
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2path));
 
@@ -173,7 +173,7 @@ final class Roseau implements Callable<Integer>  {
 		}
 
 		if (diffMode) {
-			List<BreakingChange> bcs = diff(v1, v2, reportPath);
+			List<BreakingChange> bcs = diff(v1, v2);
 
 			if (bcs.isEmpty()) {
 				System.out.println("No breaking changes found.");
