@@ -28,14 +28,5 @@ class APITest {
 		Files.delete(json);
 
 		assertThat(res, is(equalTo(orig)));
-
-		new AbstractAPIVisitor() {
-			@Override
-			public <T extends TypeDecl> Visit typeReference(TypeReference<T> ref) {
-				return () -> {
-					assertThat(ref + " cannot be resolved", ref.getResolvedApiType().isPresent(), is(true));
-				};
-			}
-		}.$(res).visit();
 	}
 }

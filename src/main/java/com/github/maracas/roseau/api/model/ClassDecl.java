@@ -55,7 +55,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			return Stream.empty();
 		}
 		return Stream.concat(Stream.of(superClass),
-			superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty));
+			superClass.getResolvedApiType().getAllSuperClasses());
 	}
 
 	public boolean isCheckedException() {

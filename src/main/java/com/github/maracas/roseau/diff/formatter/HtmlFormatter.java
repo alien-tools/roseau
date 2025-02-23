@@ -72,7 +72,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 					nodes.get(sym).addBreakingChange(change);
 					break;
 				case TypeMemberDecl tmd:
-					TypeDecl container = tmd.getContainingType().getResolvedApiType().get();
+					TypeDecl container = tmd.getContainingType().getResolvedApiType();
 					nodes.computeIfAbsent(container, k -> fromTypeDecl(container));
 					nodes.computeIfAbsent(sym, k -> fromTypeMemberDecl(tmd));
 					if (!((TypeNode) nodes.get(container)).children.contains(nodes.get(sym)))

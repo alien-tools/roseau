@@ -125,10 +125,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 */
 	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
 		return Stream.concat(formalTypeParameters.stream(),
-				containingType.getResolvedApiType()
-					.map(TypeDecl::getFormalTypeParametersInScope)
-					.orElse(Collections.emptyList())
-					.stream())
+				containingType.getResolvedApiType().getFormalTypeParametersInScope().stream())
 			.toList();
 	}
 

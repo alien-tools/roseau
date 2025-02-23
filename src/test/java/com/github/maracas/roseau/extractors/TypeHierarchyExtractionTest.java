@@ -32,7 +32,7 @@ class TypeHierarchyExtractionTest {
 		var s = assertClass(api, "S");
 		var a = assertClass(api, "A");
 		assertThat(a.getImplementedInterfaces(), is(empty()));
-		assertThat(a.getSuperClass().getResolvedApiType().get(), is(equalTo(s)));
+		assertThat(a.getSuperClass().getResolvedApiType(), is(equalTo(s)));
 	}
 
 	@ParameterizedTest

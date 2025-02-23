@@ -133,7 +133,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 */
 	public Stream<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces() {
 		return getAllSuperTypes()
-			.filter(ref -> ref.getResolvedApiType().map(TypeDecl::isInterface).orElse(false))
+			.filter(ref -> ref.getResolvedApiType().isInterface())
 			.distinct();
 	}
 
@@ -147,7 +147,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				methods.stream(),
 				getAllSuperTypes()
 					.map(TypeReference::getResolvedApiType)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
+					.flatMap(t -> t.getDeclaredMethods().stream())
 			).collect(Collectors.toMap(
 				MethodDecl::getErasure,
 				Function.identity(),
@@ -167,7 +167,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 				fields.stream(),
 				getAllSuperTypes()
 					.map(TypeReference::getResolvedApiType)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
+					.flatMap(t -> t.getDeclaredFields().stream())
 			).collect(Collectors.toMap(
 				FieldDecl::getSimpleName,
 				Function.identity(),
@@ -221,10 +221,8 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 */
 	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
 		return Stream.concat(formalTypeParameters.stream(),
-			getEnclosingType().flatMap(TypeReference::getResolvedApiType)
-				.map(TypeDecl::getFormalTypeParametersInScope)
-				.orElse(Collections.emptyList())
-				.stream())
+			getEnclosingType().map(t -> t.getResolvedApiType().getFormalTypeParameters()).orElse(Collections.emptyList())
+			.stream())
 			.toList();
 	}
 

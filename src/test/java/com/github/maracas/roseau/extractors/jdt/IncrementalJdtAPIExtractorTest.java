@@ -52,8 +52,8 @@ class IncrementalJdtAPIExtractorTest {
 		assertThat(c1.getImplementedInterfaces().getFirst(), is(equalTo(c2.getImplementedInterfaces().getFirst())));
 		assertThat(c1.getImplementedInterfaces().getFirst(), is(not(sameInstance(c2.getImplementedInterfaces().getFirst()))));
 
-		assertThat(c1.getImplementedInterfaces().getFirst().getResolvedApiType().get(), is(sameInstance(i1)));
-		assertThat(c2.getImplementedInterfaces().getFirst().getResolvedApiType().get(), is(sameInstance(i2)));
+		assertThat(c1.getImplementedInterfaces().getFirst().getResolvedApiType(), is(sameInstance(i1)));
+		assertThat(c2.getImplementedInterfaces().getFirst().getResolvedApiType(), is(sameInstance(i2)));
 
 		assertFalse(c1.findMethod("m()").isPresent());
 		assertTrue(c2.findMethod("m()").isPresent());

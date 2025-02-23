@@ -12,12 +12,11 @@ import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertField;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class TypeReferencesExtractionTest {
@@ -42,7 +41,6 @@ class TypeReferencesExtractionTest {
 
 		if (f.getType() instanceof TypeReference<?> ref) {
 			assertThat(ref.getQualifiedName(), is(equalTo("java.lang.String")));
-			assertTrue(ref.getResolvedApiType().isPresent());
 		} else fail();
 	}
 
@@ -59,7 +57,6 @@ class TypeReferencesExtractionTest {
 
 		if (f.getType() instanceof TypeReference<?> ref) {
 			assertThat(ref.getQualifiedName(), is(equalTo("I")));
-			assertTrue(ref.getResolvedApiType().isPresent());
 		} else fail();
 	}
 
@@ -76,7 +73,6 @@ class TypeReferencesExtractionTest {
 
 		if (f.getType() instanceof TypeReference<?> ref) {
 			assertThat(ref.getQualifiedName(), is(equalTo("I")));
-			assertTrue(ref.getResolvedApiType().isPresent());
 		} else fail();
 	}
 
@@ -101,7 +97,6 @@ class TypeReferencesExtractionTest {
 
 		if (f.getType() instanceof TypeReference<?> ref) {
 			assertThat(ref.getQualifiedName(), is(equalTo("Unknown")));
-			assertFalse(ref.getResolvedApiType().isPresent());
 		} else fail();
 	}
 
@@ -121,7 +116,6 @@ class TypeReferencesExtractionTest {
 		assertThat(b.getAllMethods().toList(), hasSize(2 + 11));  // java.lang.Object's default
 
 		assertThat(b.getSuperClass().getQualifiedName(), is(equalTo("A")));
-		assertTrue(b.getSuperClass().getResolvedApiType().isPresent());
 	}
 
 	@ParameterizedTest
@@ -139,7 +133,6 @@ class TypeReferencesExtractionTest {
 		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(2 + 11)); // java.Lang.Object's defaults
 		assertThat(b.getSuperClass().getQualifiedName(), is(equalTo("A")));
-		assertTrue(b.getSuperClass().getResolvedApiType().isPresent());
 	}
 
 	@ParameterizedTest
@@ -154,7 +147,6 @@ class TypeReferencesExtractionTest {
 		assertThat(b.getDeclaredMethods(), hasSize(1));
 		assertThat(b.getAllMethods().toList(), hasSize(1));
 		assertThat(b.getSuperClass().getQualifiedName(), is(equalTo("Unknown")));
-		assertFalse(b.getSuperClass().getResolvedApiType().isPresent());
 	}
 
 	@ParameterizedTest
@@ -226,8 +218,17 @@ class TypeReferencesExtractionTest {
 		assertThat(f12.getType(), equalTo(f22.getType()));
 		assertThat(f12.getType(), not((sameInstance(f22.getType()))));
 
-		assertThat(((TypeReference<?>) f12.getType()).getResolvedApiType().get(), equalTo(c1));
-		assertThat(((TypeReference<?>) f22.getType()).getResolvedApiType().get(), equalTo(c2));
+		assertThat(((TypeReference<?>) f12.getType()).getResolvedApiType(), equalTo(c1));
+		assertThat(((TypeReference<?>) f22.getType()).getResolvedApiType(), equalTo(c2));
 		assertThat(c1, not(equalTo(c2)));
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
+	void unknown_supertypes(ApiBuilder builder) {
+		var api = builder.build("public class A extends unknown.Class implements unknown.Interface {}");
+
+		var a = assertClass(api, "A");
+		assertThat(a.getAllMethods().toList(), hasSize(11)); // java.lang.Object
 	}
 }
