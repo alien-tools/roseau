@@ -216,34 +216,16 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup.getQualifiedName(), other.getQualifiedName()));
 	}
 
-	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
-		var resolved = formalTypeParameters.stream()
-			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
-			.findFirst();
-
-		if (resolved.isPresent()) {
-			return resolved;
-		} else if (enclosingType != null) {
-			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr));
-		} else {
-			return Optional.empty();
-		}
-	}
-
-	public Optional<ITypeReference> resolveTypeParameterBound(TypeParameterReference tpr) {
-		var ftp = resolveTypeParameter(tpr);
-
-		if (ftp.isPresent()) {
-			if (ftp.get().bounds().getFirst() instanceof TypeParameterReference tpr2) {
-				return resolveTypeParameterBound(tpr2);
-			} else {
-				return Optional.of(ftp.get().bounds().getFirst());
-			}
-		} else if (enclosingType != null) {
-			return enclosingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameterBound(tpr));
-		} else {
-			return Optional.empty();
-		}
+	/**
+	 * Returns the list of formal type parameters in this type's scope, including from its containing type
+	 */
+	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
+		return Stream.concat(formalTypeParameters.stream(),
+			getEnclosingType().flatMap(TypeReference::getResolvedApiType)
+				.map(TypeDecl::getFormalTypeParametersInScope)
+				.orElse(Collections.emptyList())
+				.stream())
+			.toList();
 	}
 
 	@Override

@@ -160,6 +160,20 @@ public class TestUtils {
 			throw new AssertionFailedError("Unexpected field", "No such field", findField.get().getQualifiedName());
 	}
 
+	public static void assertNoMethod(TypeDecl decl, String erasure) {
+		Optional<MethodDecl> findMethod = decl.findMethod(erasure);
+
+		if (findMethod.isPresent())
+			throw new AssertionFailedError("Unexpected method", "No such method", findMethod.get().getErasure());
+	}
+
+	public static void assertNoConstructor(ClassDecl decl, String erasure) {
+		Optional<ConstructorDecl> findCons = decl.findConstructor(erasure);
+
+		if (findCons.isPresent())
+			throw new AssertionFailedError("Unexpected constructor", "No such constructor", findCons.get().getErasure());
+	}
+
 	public static MethodDecl assertMethod(TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
 			.filter(m -> m.getErasure().equals(erasure))

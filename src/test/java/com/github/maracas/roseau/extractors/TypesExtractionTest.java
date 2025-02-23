@@ -12,6 +12,7 @@ import static com.github.maracas.roseau.utils.TestUtils.assertConstructor;
 import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
+import static com.github.maracas.roseau.utils.TestUtils.assertNoConstructor;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -177,6 +178,23 @@ class TypesExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
+	void default_constructors(ApiBuilder builder) {
+		var api = builder.build("""
+				public class C {}
+				public record R() {}
+				public enum E {}""");
+
+		var c = assertClass(api, "C");
+		var r = assertRecord(api, "R");
+		var e = assertEnum(api, "E");
+
+		assertConstructor(c, "<init>()");
+		assertConstructor(r, "<init>()");
+		assertNoConstructor(e, "<init>()");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
 	void local_class_is_ignored(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A {
@@ -194,8 +212,8 @@ class TypesExtractionTest {
 	void anonymous_class_is_ignored(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A {
+				public Runnable r1 = () -> {};
 				public void m() {
-					Runnable r1 = () -> {};
 					Runnable r2 = new Runnable() { public void run() {} };
 				}
 			}""");
@@ -440,11 +458,6 @@ class TypesExtractionTest {
 		var api = builder.build("public enum A { X; }");
 		var a = assertEnum(api, "A");
 		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
-	}
-	public class A<T> {
-		public class B<U> {
-			public class C extends A {}
-		}
 	}
 
 	@ParameterizedTest

@@ -1,15 +1,16 @@
 package com.github.maracas.roseau.api.model;
 
+import com.github.maracas.roseau.api.model.reference.ArrayTypeReference;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeParameterReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
-import com.github.maracas.roseau.api.model.reference.WildcardTypeReference;
 
 import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
  * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}.
@@ -68,12 +69,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		sb.append("(");
 		for (int i = 0; i < parameters.size(); i++) {
 			var p = parameters.get(i);
-			var erasedType = switch (p.type()) {
-				case WildcardTypeReference wtr -> wtr.bounds().getFirst();
-				case TypeParameterReference tpr -> resolveTypeParameterBound(tpr).orElse(TypeReference.OBJECT);
-				default -> p.type();
-			};
-			sb.append(erasedType.getQualifiedName());
+			sb.append(getErasedType(p.type()).getQualifiedName());
 			if (p.isVarargs()) {
 				sb.append("[]");
 			}
@@ -83,6 +79,14 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		}
 		sb.append(")");
 		return sb.toString();
+	}
+
+	private ITypeReference getErasedType(ITypeReference ref) {
+		return switch (ref) {
+			case TypeParameterReference tpr -> resolveTypeParameterBound(tpr);
+			case ArrayTypeReference(var t, var dimension) -> new ArrayTypeReference(getErasedType(t), dimension);
+			default -> ref;
+		};
 	}
 
 	/**
@@ -96,25 +100,36 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
-		var resolved = formalTypeParameters.stream()
+		return getFormalTypeParametersInScope().stream()
 			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
 			.findFirst();
-
-		return resolved.or(() -> containingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameter(tpr)));
 	}
 
-	public Optional<ITypeReference> resolveTypeParameterBound(TypeParameterReference tpr) {
-		var ftp = resolveTypeParameter(tpr);
+	public ITypeReference resolveTypeParameterBound(TypeParameterReference tpr) {
+		var resolved = resolveTypeParameter(tpr);
 
-		if (ftp.isPresent()) {
-			if (ftp.get().bounds().getFirst() instanceof TypeParameterReference tpr2) {
+		if (resolved.isPresent()) {
+			var bound = resolved.get().bounds().getFirst();
+			if (bound instanceof TypeParameterReference tpr2) {
 				return resolveTypeParameterBound(tpr2);
 			} else {
-				return Optional.of(ftp.get().bounds().getFirst());
+				return bound;
 			}
 		} else {
-			return containingType.getResolvedApiType().flatMap(t -> t.resolveTypeParameterBound(tpr));
+			return TypeReference.OBJECT;
 		}
+	}
+
+	/**
+	 * Returns the list of formal type parameters in this method's scope, including from its containing type
+	 */
+	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
+		return Stream.concat(formalTypeParameters.stream(),
+				containingType.getResolvedApiType()
+					.map(TypeDecl::getFormalTypeParametersInScope)
+					.orElse(Collections.emptyList())
+					.stream())
+			.toList();
 	}
 
 	/**
@@ -130,6 +145,10 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return Objects.equals(getSimpleName(), other.getSimpleName()) &&
 			!hasSameErasure(other) &&
 			containingType.isSameHierarchy(other.getContainingType());
+	}
+
+	public boolean isVarargs() {
+		return !parameters.isEmpty() && parameters.getLast().isVarargs();
 	}
 
 	public List<ParameterDecl> getParameters() {

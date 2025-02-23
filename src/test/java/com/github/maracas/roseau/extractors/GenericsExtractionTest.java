@@ -207,7 +207,7 @@ class GenericsExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void method_type_parameter_resolution(ApiBuilder builder) {
+	void method_arguments_type_parameter_resolution(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A<T extends CharSequence> {
 				public class B<U extends Number> {
@@ -221,7 +221,7 @@ class GenericsExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void method_type_parameter_resolution_hiding(ApiBuilder builder) {
+	void method_arguments_type_parameter_resolution_hiding(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A<T extends CharSequence> {
 				public class B<T extends Number> {
@@ -233,10 +233,9 @@ class GenericsExtractionTest {
 		assertMethod(b, "m(java.lang.Object,java.lang.Object,java.lang.Object)");
 	}
 
-	// Had to have some fun with o3 ;)
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void class_type_parameter_resolution(ApiBuilder builder) {
+	void method_type_parameter_resolution(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A<T, U extends CharSequence, V extends Number> extends java.util.ArrayList<U>
 				implements java.util.function.Supplier<V> {
@@ -244,29 +243,17 @@ class GenericsExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		var u = a.getFormalTypeParameters().get(1);
 		var v = a.getFormalTypeParameters().get(2);
-		var uRef = a.getSuperClass().getTypeArguments().getFirst();
-		var vRef = a.getImplementedInterfaces().getFirst().getTypeArguments().getFirst();
 		var get = assertMethod(a, "get()");
 		var mvRef = get.getType();
 
-		if (uRef instanceof TypeParameterReference tpr) {
-			assertThat(a.resolveTypeParameter(tpr).get(), is(equalTo(u)));
-			assertThat(a.resolveTypeParameterBound(tpr).get().getQualifiedName(), is(equalTo("java.lang.CharSequence")));
-		} else fail();
-
-		if (vRef instanceof TypeParameterReference tpr) {
-			assertThat(a.resolveTypeParameter(tpr).get(), is(equalTo(v)));
-			assertThat(a.resolveTypeParameterBound(tpr).get().getQualifiedName(), is(equalTo("java.lang.Number")));
-		} else fail();
-
 		if (mvRef instanceof TypeParameterReference tpr) {
 			assertThat(get.resolveTypeParameter(tpr).get(), is(equalTo(v)));
-			assertThat(a.resolveTypeParameterBound(tpr).get().getQualifiedName(), is(equalTo("java.lang.Number")));
+			assertThat(get.resolveTypeParameterBound(tpr).getQualifiedName(), is(equalTo("java.lang.Number")));
 		} else fail();
 	}
 
+	// Had to have some fun with o3 ;)
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void llm_generated_generics(ApiBuilder builder) {

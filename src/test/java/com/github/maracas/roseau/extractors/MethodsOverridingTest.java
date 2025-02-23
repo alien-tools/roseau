@@ -10,7 +10,6 @@ import static com.github.maracas.roseau.utils.TestUtils.assertClass;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertMethod;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -110,5 +109,48 @@ class MethodsOverridingTest {
 
 		assertTrue(mb.isOverriding(ma));
 		assertFalse(ma.isOverriding(mb));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void covariant_overriding(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A<T> {
+				public int m1() { return 0; } // Invariant
+				public CharSequence m2() { return ""; }
+				public T m3() { return null; }
+				public Number m4() { return 0; }
+				public java.util.List<Number> m5() { return null; }
+			}
+			public class B<T, U extends T> extends A<T> {
+				@Override public int m1() { return 0; }
+				@Override public String m2() { return ""; }
+				@Override public U m3() { return null; }
+				@Override public Integer m4() { return 0; }
+				@Override public java.util.ArrayList<Number> m5() { return null; }
+			}""");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "B");
+		assertThat(a.getDeclaredMethods(), hasSize(5));
+		assertThat(b.getDeclaredMethods(), hasSize(5));
+
+		var m1a = assertMethod(a, "m1()");
+		var m2a = assertMethod(a, "m2()");
+		var m3a = assertMethod(a, "m3()");
+		var m4a = assertMethod(a, "m4()");
+		var m5a = assertMethod(a, "m5()");
+
+		var m1b = assertMethod(b, "m1()");
+		var m2b = assertMethod(b, "m2()");
+		var m3b = assertMethod(b, "m3()");
+		var m4b = assertMethod(b, "m4()");
+		var m5b = assertMethod(b, "m5()");
+
+		assertTrue(m1b.isOverriding(m1a));
+		assertTrue(m2b.isOverriding(m2a));
+		assertTrue(m3b.isOverriding(m3a));
+		assertTrue(m4b.isOverriding(m4a));
+		assertTrue(m5b.isOverriding(m5a));
 	}
 }

@@ -7,6 +7,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import static com.github.maracas.roseau.utils.TestUtils.assertAnnotation;
 import static com.github.maracas.roseau.utils.TestUtils.assertClass;
+import static com.github.maracas.roseau.utils.TestUtils.assertConstructor;
 import static com.github.maracas.roseau.utils.TestUtils.assertEnum;
 import static com.github.maracas.roseau.utils.TestUtils.assertInterface;
 import static com.github.maracas.roseau.utils.TestUtils.assertRecord;
@@ -411,11 +412,11 @@ class NestedTypesExtractionTest {
 	void nested_types_in_enum(ApiBuilder builder) {
 		var api = builder.build("""
         public enum A {
-            ONE, TWO;
-            class B {}
-            interface C {}
-            enum D {}
-            @interface E {}
+          ONE, TWO;
+          class B {}
+          interface C {}
+          enum D {}
+          @interface E {}
         }
         """);
 		assertEnum(api, "A");
@@ -465,8 +466,8 @@ class NestedTypesExtractionTest {
 	void nested_sealed_class(ApiBuilder builder) {
 		var api = builder.build("""
         public class A {
-            sealed class B permits C {}
-            final class C extends B {}
+          sealed class B permits C {}
+          final class C extends B {}
         }
         """);
 		assertClass(api, "A");
@@ -494,5 +495,22 @@ class NestedTypesExtractionTest {
 		// C is a static member of B.
 		assertTrue(c.isNested());
 		assertTrue(c.isStatic());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void nested_constructors(ApiBuilder builder) {
+		var api = builder.build("""
+        public class A {
+          public class B {}
+          public static class C {}
+        }""");
+
+		assertClass(api, "A");
+		var b = assertClass(api, "A$B");
+		var c = assertClass(api, "A$C");
+
+		assertConstructor(b, "<init>()");
+		assertConstructor(c, "<init>()");
 	}
 }
