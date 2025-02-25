@@ -1,8 +1,8 @@
 package com.github.maracas.roseau.extractors.sources;
 
+import com.github.maracas.roseau.RoseauException;
 import spoon.Launcher;
 import spoon.MavenLauncher;
-import spoon.SpoonException;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.SpoonProgress;
 
@@ -27,7 +27,7 @@ public final class SpoonUtils {
 	 * @param location The path to the source code
 	 * @param timeout  The maximum duration to wait for the model to be built
 	 * @return The built Spoon model
-	 * @throws SpoonException If there is an error in building the Spoon model
+	 * @throws RoseauException If there is an error in building the Spoon model
 	 */
 	public static CtModel buildModel(Path location, Duration timeout) {
 		return buildModel(launcherFor(location), location, timeout);
@@ -40,7 +40,7 @@ public final class SpoonUtils {
 	 * @param location The path to the source code
 	 * @param timeout  The maximum duration to wait for the model to be built
 	 * @return The built Spoon model
-	 * @throws SpoonException If there is an error in building the Spoon model
+	 * @throws RoseauException If there is an error in building the Spoon model
 	 */
 	public static CtModel buildModel(Launcher launcher, Path location, Duration timeout) {
 		long timeoutSeconds = timeout != null ? timeout.getSeconds() : Long.MAX_VALUE;
@@ -49,12 +49,12 @@ public final class SpoonUtils {
 		try {
 			return future.get(timeoutSeconds, TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
-			throw new SpoonException("Couldn't build Spoon model for %s in < %ds".formatted(location, timeoutSeconds), e);
+			throw new RoseauException("Couldn't build Spoon model for %s in < %ds".formatted(location, timeoutSeconds), e);
 		} catch (ExecutionException e) {
-			throw new SpoonException("Couldn't build Spoon model from " + location, e);
+			throw new RoseauException("Couldn't build Spoon model from " + location, e);
 		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
-			throw new SpoonException("Interrupted while building Spoon model from " + location, e);
+			throw new RoseauException("Interrupted while building Spoon model from " + location, e);
 		}
 	}
 
@@ -113,7 +113,7 @@ public final class SpoonUtils {
 			@Override
 			public void step(Process process, String task, int taskId, int nbTask) {
 				if (Thread.interrupted()) {
-					throw new SpoonException("Process interrupted");
+					throw new RoseauException("Process interrupted");
 				}
 			}
 		});

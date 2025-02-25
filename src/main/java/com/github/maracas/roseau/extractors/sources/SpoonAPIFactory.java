@@ -18,6 +18,8 @@ import com.github.maracas.roseau.api.model.TypeDecl;
 import com.github.maracas.roseau.api.model.reference.ITypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.model.reference.TypeReferenceFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
@@ -56,6 +58,8 @@ import java.util.stream.Stream;
 public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
 	private final TypeReferenceFactory typeReferenceFactory;
+
+	private static final Logger LOGGER = LogManager.getLogger(SpoonAPIFactory.class);
 
 	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory) {
 		this.typeFactory = new Launcher().createFactory().Type();
@@ -107,7 +111,13 @@ public class SpoonAPIFactory {
 
 	public TypeDecl convertCtType(String qualifiedName) {
 		CtTypeReference<?> ref = typeFactory.createReference(qualifiedName);
-		return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
+		// Spoon's null newShadowClass thingy
+		try {
+			return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
+		} catch (Exception e) {
+			LOGGER.warn("Couldn't convert {}", qualifiedName, e);
+			return null;
+		}
 	}
 
 	private ClassDecl convertCtClass(CtClass<?> cls) {
