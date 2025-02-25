@@ -51,7 +51,8 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
-		if (qualifiedName.equals(TypeReference.OBJECT.getQualifiedName())) {
+		if (superClass.getQualifiedName().equals(getQualifiedName())) {
+			// Houston, we have a problem
 			return Stream.empty();
 		}
 		return Stream.concat(Stream.of(superClass),

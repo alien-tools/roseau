@@ -124,7 +124,14 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	 */
 	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return implementedInterfaces.stream()
-			.flatMap(ref -> Stream.concat(Stream.of(ref), ref.getAllSuperTypes()))
+			.flatMap(ref -> {
+				if (ref.getQualifiedName().equals(getQualifiedName())) {
+					// Houston, we have a problem
+					return Stream.of(ref);
+				} else {
+					return Stream.concat(Stream.of(ref), ref.getAllSuperTypes());
+				}
+			})
 			.distinct();
 	}
 

@@ -91,7 +91,7 @@ class PopularLibrariesTestIT {
 			"org.hamcrest:hamcrest:3.0",
 			//"org.springframework:spring-beans:6.2.2",
 			"org.osgi:org.osgi.core:6.0.0",
-			//"com.alibaba:fastjson:2.0.54",
+			"com.alibaba:fastjson:2.0.54",
 			"commons-collections:commons-collections:3.2.2",
 			"org.json:json:20250107",
 			"commons-beanutils:commons-beanutils:1.10.0"
