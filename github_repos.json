@@ -1,0 +1,37 @@
+[
+  {
+    "name": "guava",
+    "url": "https://github.com/google/guava",
+    "branch": "master",
+    "tag": "b146e2bb8d049de9f23e2784da4ddfac37671565",
+    "sources": ["guava/src", "src"]
+  },
+  {
+    "name": "commons-lang",
+    "url": "https://github.com/apache/commons-lang",
+    "branch": "master",
+    "tag": "LANG_1_0_B1",
+    "sources": ["src/main/java", "src/java"]
+  },
+  {
+    "name": "h2database",
+    "url": "https://github.com/h2database/h2database",
+    "branch": "master",
+    "tag": "version-1.4.177",
+    "sources": ["h2/src/main"]
+  },
+  {
+    "name": "jackson-databind",
+    "url": "https://github.com/FasterXML/jackson-databind",
+    "branch": "master",
+    "tag": "jackson-databind-2.0.0",
+    "sources": ["src/main/java"]
+  },
+  {
+    "name": "jdk",
+    "url": "https://github.com/openjdk/jdk",
+    "branch": "master",
+    "tag": "jdk8-b120",
+    "sources": ["jdk/src", "src"]
+  }
+]

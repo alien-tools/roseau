@@ -1,5 +1,7 @@
 package com.github.maracas.roseau;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.github.maracas.roseau.api.model.API;
 import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
@@ -14,7 +16,7 @@ import org.eclipse.jgit.revwalk.RevSort;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
-import java.nio.charset.StandardCharsets;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -24,43 +26,47 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class WalkRepository {
+	private final static Path clonesPath = Path.of("clones");
+	private final static Path resultsPath = Path.of("results");
+
+	private final static File githubReposFile = new File("github_repos.json").getAbsoluteFile();
+
+	private final static Stopwatch sw = Stopwatch.createUnstarted();
+
+	private final static String headerCsv = "commit|date|message|createdFilesCount|deletedFilesCount|updatedFilesCount|typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|checkoutTime|apiTime|diffTime|breakingChangesCount|breakingChanges\n";
+
 	public static void main(String[] args) throws Exception {
-		var walk = new WalkRepository();
-		// Roseau
-		// walk.walk("https://github.com/alien-tools/roseau", Path.of("walk-roseau"), "main", "v0.0.2", "src/main/java");
-
-		// Guava
-		//walk.walk("https://github.com/google/guava", Path.of("walk-guava"), "master", "dc5915eb1072c61ff2c3c704af4ae36b25f97b6c",
-		walk.walk("https://github.com/google/guava", Path.of("walk-guava"), "master", "b146e2bb8d049de9f23e2784da4ddfac37671565",
-			List.of("guava/src", "src"));
-
-		// commons-lang
-		// walk.walk("https://github.com/apache/commons-lang", Path.of("walk-commons-lang"), "master",
-		// 	"LANG_1_0_B1", List.of("src/main/java", "src/java"));
-	}
-
-	void walk(String url, Path clone, String branch, String tagName, List<String> srcRoots) throws Exception {
-		Git git;
-		var repoDir = clone.toFile();
-
-		// Clone the repository if it doesn't exist
-		if (!repoDir.exists()) {
-			System.out.printf("Cloning %s...%n", url);
-			git = Git.cloneRepository()
-				.setURI(url)
-				.setDirectory(repoDir)
-				.setBranch(branch)
-				.call();
-		} else {
-			FileRepositoryBuilder builder = new FileRepositoryBuilder();
-			Repository repository = builder.setGitDir(clone.resolve(".git").toFile())
-				.build();
-			git = new Git(repository);
+		if (!githubReposFile.exists()) {
+			throw new IllegalStateException("No github_repos.json file found");
+		}
+		if (!resultsPath.toFile().exists()) {
+			Files.createDirectories(resultsPath);
 		}
 
-		// Rewind to HEAD
-		git.checkout().setName(branch).call();
+		var walk = new WalkRepository();
 
+		var githubRepos = new ObjectMapper().readValue(githubReposFile, new TypeReference<List<GithubRepo>>() {});
+		githubRepos.forEach(repo -> {
+			try {
+				walk.walk(repo);
+			} catch (Exception e) {
+				e.printStackTrace();
+			}
+		});
+	}
+
+	void walk(GithubRepo repo) throws Exception {
+		var name = repo.name();
+		var url = repo.url();
+		var branch = repo.branch();
+		var tagName = repo.tag();
+		var srcRoots = repo.sources();
+		var clonePath = clonesPath.resolve(name);
+		var resultsFilePath = resultsPath.resolve(name + ".csv");
+
+		Files.writeString(resultsFilePath, headerCsv, StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+
+		var git = getGit(url, clonePath, branch);
 		var repository = git.getRepository();
 		var walk = new RevWalk(repository);
 
@@ -75,75 +81,97 @@ public class WalkRepository {
 		walk.markUninteresting(tag);
 
 		var extractor = new JdtAPIExtractor();
-		RevCommit commit = null;
-		API previousApi = null;
-		var sw = Stopwatch.createUnstarted();
-		var provider = new TimestampChangedFilesProvider(resolveSources(clone, srcRoots));
 		var incrementalExtractor = new IncrementalJdtAPIExtractor();
+		var provider = new TimestampChangedFilesProvider(resolveSources(clonePath, srcRoots));
+
+		RevCommit commit;
+		API previousApi = null;
 		while ((commit = walk.next()) != null) {
 			try {
 				Date commitDate = Date.from(commit.getAuthorIdent().getWhenAsInstant());
-
 				System.out.printf("Checkout %s @ %s...", commit.getName(), commitDate);
 				sw.reset().start();
+
 				git.checkout().setName(commit.getName()).call();
+
 				var checkoutTime = sw.elapsed().toMillis();
 				System.out.printf(" done in %sms%n", checkoutTime);
 
-				Path srcRoot = resolveSources(clone, srcRoots);
+				Path srcRoot = resolveSources(clonePath, srcRoots);
 				if (!provider.getSources().equals(srcRoot))
 					provider = new TimestampChangedFilesProvider(srcRoot);
 
-				API api = null;
-				long apiTime = 0;
-				var changedFiles = provider.getChangedFiles();
 				if (previousApi == null) {
 					System.out.print("Extracting API...");
 					sw.reset().start();
-					api = extractor.extractAPI(srcRoot);
-					apiTime = sw.elapsed().toMillis();
+
+					previousApi = extractor.extractAPI(srcRoot);
+
+					var apiTime = sw.elapsed().toMillis();
 					System.out.printf(" done in %sms%n", apiTime);
 				} else {
+					var changedFiles = provider.getChangedFiles();
 					System.out.printf("Partial update:%n\t%d created: %s%n\t%d removed: %s%n\t%d changed: %s%n",
-						changedFiles.createdFiles().size(), changedFiles.createdFiles().stream()
-							.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
-						changedFiles.deletedFiles().size(), changedFiles.deletedFiles().stream()
-							.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
-						changedFiles.updatedFiles().size(), changedFiles.updatedFiles().stream()
-							.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")));
+							changedFiles.createdFiles().size(), changedFiles.createdFiles().stream()
+									.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
+							changedFiles.deletedFiles().size(), changedFiles.deletedFiles().stream()
+									.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")),
+							changedFiles.updatedFiles().size(), changedFiles.updatedFiles().stream()
+									.map(p -> p.getFileName().toString()).collect(Collectors.joining(", ")));
+
 					System.out.print("Extracting partial API...");
 					sw.reset().start();
-					api = incrementalExtractor.refreshAPI(srcRoot, changedFiles, previousApi);
-					apiTime = sw.elapsed().toMillis();
-					System.out.printf(" done in %sms%n", apiTime);
-				}
 
-				if (previousApi != null) {
+					var nextApi = incrementalExtractor.refreshAPI(srcRoot, changedFiles, previousApi);
+
+					var apiTime = sw.elapsed().toMillis();
+					System.out.printf(" done in %sms%n", apiTime);
+
 					System.out.print("Diffing...");
 					sw.reset().start();
-					var bcs = new APIDiff(previousApi, api).diff();
+
+					var bcs = new APIDiff(previousApi, nextApi).diff();
+
 					var diffTime = sw.elapsed().toMillis();
 					System.out.printf(" done in %sms%n", diffTime);
 					System.out.printf("Found %d breaking changes%n", bcs.size());
 
-					long numTypes = api.getExportedTypes().count();
-					int numMethods = api.getExportedTypes()
-						.mapToInt(type -> type.getDeclaredMethods().size())
-						.sum();
-					int numFields = api.getExportedTypes()
-						.mapToInt(type -> type.getDeclaredFields().size())
-						.sum();
+					var numTypes = nextApi.getExportedTypes().count();
+					var numMethods = nextApi.getExportedTypes()
+							.mapToInt(type -> type.getDeclaredMethods().size())
+							.sum();
+					var numFields = nextApi.getExportedTypes()
+							.mapToInt(type -> type.getDeclaredFields().size())
+							.sum();
+					var numDeprecatedAnnotations = nextApi.getExportedTypes()
+							.mapToLong(type -> {
+								var typeDeprecated = type.getAnnotations().stream()
+										.filter(a -> a.actualAnnotation().getQualifiedName().equals("java.lang.Deprecated"))
+										.count();
+								var fieldsDeprecated = type.getDeclaredFields().stream()
+										.filter(f -> f.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals("java.lang.Deprecated")))
+										.count();
+								var methodsDeprecated = type.getDeclaredMethods().stream()
+										.filter(m -> m.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals("java.lang.Deprecated")))
+										.count();
 
-					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(commit.getName(), commitDate,
-						commit.getShortMessage().replace("|", ""),
-						changedFiles.createdFiles().size(), changedFiles.deletedFiles().size(), changedFiles.updatedFiles().size(),
-						numTypes, numMethods, numFields,
-						checkoutTime, apiTime, diffTime, bcs.size(),
-						bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
-					Files.write(Path.of("git.csv"), line.getBytes(StandardCharsets.UTF_8), StandardOpenOption.APPEND);
+								return typeDeprecated + fieldsDeprecated + methodsDeprecated;
+							})
+							.sum();
+
+					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
+							commit.getName(), commitDate,
+							commit.getShortMessage().replace("|", ""),
+							changedFiles.createdFiles().size(), changedFiles.deletedFiles().size(), changedFiles.updatedFiles().size(),
+							numTypes, numMethods, numFields, numDeprecatedAnnotations,
+							checkoutTime, apiTime, diffTime,
+							bcs.size(), bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
+
+					Files.writeString(resultsFilePath, line, StandardOpenOption.APPEND);
+
+					previousApi = nextApi;
 				}
 
-				previousApi = api;
 				provider.refresh(previousApi, Instant.now().toEpochMilli());
 			} catch (Exception e) {
 				e.printStackTrace();
@@ -151,11 +179,37 @@ public class WalkRepository {
 		}
 	}
 
-	Path resolveSources(Path clone, List<String> srcRoot) {
-		return srcRoot.stream()
-			.map(src -> clone.resolve(src).toAbsolutePath())
-			.filter(src -> src.toFile().exists())
-			.findFirst()
-			.get();
+	private static Git getGit(String url, Path clone, String branch) throws Exception {
+		var repoDir = clone.toFile();
+
+		Git git;
+		if (repoDir.exists()) {
+			FileRepositoryBuilder builder = new FileRepositoryBuilder();
+			Repository repository = builder.setGitDir(clone.resolve(".git").toFile()).build();
+
+			git = new Git(repository);
+		} else {
+			System.out.printf("Cloning %s...%n", url);
+
+			git = Git.cloneRepository()
+					.setURI(url)
+					.setDirectory(repoDir)
+					.setBranch(branch)
+					.call();
+		}
+
+		git.checkout().setName(branch).call();
+
+		return git;
 	}
+
+	private static Path resolveSources(Path clone, List<String> srcRoot) {
+		return srcRoot.stream()
+				.map(src -> clone.resolve(src).toAbsolutePath())
+				.filter(src -> src.toFile().exists())
+				.findFirst()
+				.get();
+	}
+
+	private record GithubRepo(String name, String url, String branch, String tag, List<String> sources) {}
 }
