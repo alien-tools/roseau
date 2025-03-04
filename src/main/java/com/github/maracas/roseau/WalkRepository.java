@@ -175,6 +175,8 @@ public class WalkRepository {
 				provider.refresh(previousApi, Instant.now().toEpochMilli());
 			} catch (Exception e) {
 				e.printStackTrace();
+
+				previousApi = null;
 			}
 		}
 	}
