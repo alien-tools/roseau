@@ -35,7 +35,7 @@
     "sources": ["src/main/java"]
   },
   {
-    "name": "commons-collection",
+    "name": "commons-collections",
     "url": "https://github.com/apache/commons-collections",
     "branch": "master",
     "tag": "commons-collections-4.2",

@@ -90,7 +90,7 @@ public class WalkRepository {
 		API previousApi = null;
 		while ((commit = walk.next()) != null) {
 			try {
-				Date commitDate = Date.from(commit.getAuthorIdent().getWhenAsInstant());
+				Date commitDate = Date.from(Instant.ofEpochSecond(commit.getCommitTime()));
 				System.out.printf("Checkout %s @ %s...", commit.getName(), commitDate);
 				sw.reset().start();
 
