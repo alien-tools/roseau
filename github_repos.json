@@ -28,10 +28,31 @@
     "sources": ["src/main/java"]
   },
   {
-    "name": "jdk",
+    "name": "roseau",
+    "url": "https://github.com/alien-tools/roseau",
+    "branch": "main",
+    "tag": "e446bf364809257d055e60fd2b6c7826d78ddce1",
+    "sources": ["src/main/java"]
+  },
+  {
+    "name": "commons-collection",
+    "url": "https://github.com/apache/commons-collections",
+    "branch": "master",
+    "tag": "commons-collections-4.2",
+    "sources": ["src/main/java"]
+  },
+  {
+    "name": "log4j-core",
+    "url": "https://github.com/apache/logging-log4j2.git",
+    "branch": "2.x",
+    "tag": "rel/2.15.0",
+    "sources": ["log4j-core/src/main/java"]
+  },
+  {
+    "name": "jdk-java.base",
     "url": "https://github.com/openjdk/jdk",
     "branch": "master",
-    "tag": "jdk8-b120",
-    "sources": ["jdk/src", "src"]
+    "tag": "jdk-11+28",
+    "sources": ["src/java.base"]
   }
 ]
