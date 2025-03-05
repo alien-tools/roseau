@@ -23,7 +23,7 @@
   {
     "name": "jackson-databind",
     "url": "https://github.com/FasterXML/jackson-databind",
-    "branch": "master",
+    "branch": "2.19",
     "tag": "jackson-databind-2.0.0",
     "sources": ["src/main/java"]
   },
@@ -47,12 +47,5 @@
     "branch": "2.x",
     "tag": "rel/2.15.0",
     "sources": ["log4j-core/src/main/java"]
-  },
-  {
-    "name": "jdk-java.base",
-    "url": "https://github.com/openjdk/jdk",
-    "branch": "master",
-    "tag": "jdk-11+28",
-    "sources": ["src/java.base"]
   }
 ]
