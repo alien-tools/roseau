@@ -33,7 +33,7 @@ public class WalkRepository {
 
 	private final static Stopwatch sw = Stopwatch.createUnstarted();
 
-	private final static String headerCsv = "commit|date|message|createdFilesCount|deletedFilesCount|updatedFilesCount|typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|checkoutTime|apiTime|diffTime|breakingChangesCount|breakingChanges\n";
+	private final static String headerCsv = "commit|date|message|createdFilesCount|deletedFilesCount|updatedFilesCount|typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|internalTypesCount|checkoutTime|apiTime|diffTime|breakingChangesCount|breakingChanges\n";
 
 	public static void main(String[] args) throws Exception {
 		if (!githubReposFile.exists()) {
@@ -143,27 +143,31 @@ public class WalkRepository {
 					var numFields = nextApi.getExportedTypes()
 							.mapToInt(type -> type.getDeclaredFields().size())
 							.sum();
+					var deprecatedAnnotationsQualifiedName = List.of("java.lang.Deprecated", "com.google.common.annotations.Beta");
 					var numDeprecatedAnnotations = nextApi.getExportedTypes()
 							.mapToLong(type -> {
 								var typeDeprecated = type.getAnnotations().stream()
-										.filter(a -> a.actualAnnotation().getQualifiedName().equals("java.lang.Deprecated"))
+										.filter(a -> deprecatedAnnotationsQualifiedName.contains(a.actualAnnotation().getQualifiedName()))
 										.count();
 								var fieldsDeprecated = type.getDeclaredFields().stream()
-										.filter(f -> f.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals("java.lang.Deprecated")))
+										.filter(f -> f.getAnnotations().stream().anyMatch(a -> deprecatedAnnotationsQualifiedName.contains(a.actualAnnotation().getQualifiedName())))
 										.count();
 								var methodsDeprecated = type.getDeclaredMethods().stream()
-										.filter(m -> m.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals("java.lang.Deprecated")))
+										.filter(m -> m.getAnnotations().stream().anyMatch(a -> deprecatedAnnotationsQualifiedName.contains(a.actualAnnotation().getQualifiedName())))
 										.count();
 
 								return typeDeprecated + fieldsDeprecated + methodsDeprecated;
 							})
 							.sum();
+					var internalTypes = nextApi.getExportedTypes()
+							.filter(t -> t.getQualifiedName().contains(".internal."))
+							.count();
 
-					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
+					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
 							commit.getName(), commitDate,
 							commit.getShortMessage().replace("|", ""),
 							changedFiles.createdFiles().size(), changedFiles.deletedFiles().size(), changedFiles.updatedFiles().size(),
-							numTypes, numMethods, numFields, numDeprecatedAnnotations,
+							numTypes, numMethods, numFields, numDeprecatedAnnotations, internalTypes,
 							checkoutTime, apiTime, diffTime,
 							bcs.size(), bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
 
