@@ -9,7 +9,9 @@ import com.github.maracas.roseau.extractors.TimestampChangedFilesProvider;
 import com.github.maracas.roseau.extractors.jdt.IncrementalJdtAPIExtractor;
 import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
 import com.google.common.base.Stopwatch;
+import org.apache.commons.io.FileUtils;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.errors.CheckoutConflictException;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevSort;
@@ -92,7 +94,23 @@ public class WalkRepository {
 				System.out.printf("Checkout %s @ %s...", commit.getName(), commitDate);
 				sw.reset().start();
 
-				git.checkout().setName(commit.getName()).call();
+				try {
+					git.checkout().setName(commit.getName()).call();
+				} catch (CheckoutConflictException e) {
+					System.err.println("\nConflict when checking out commit " + commit.getName() + " - " + e.getMessage());
+					System.err.println("Trying to clean the directory and checkout again");
+
+					try {
+						FileUtils.cleanDirectory(clonePath.toFile());
+						FileUtils.deleteDirectory(clonePath.toFile());
+
+						git = getGit(url, clonePath, branch);
+						git.checkout().setName(commit.getName()).call();
+					} catch (CheckoutConflictException e1) {
+						System.err.println(e.getMessage());
+						break;
+					}
+				}
 
 				var checkoutTime = sw.elapsed().toMillis();
 				System.out.printf(" done in %sms%n", checkoutTime);
@@ -185,13 +203,13 @@ public class WalkRepository {
 		}
 	}
 
-	private static Git getGit(String url, Path clone, String branch) throws Exception {
-		var repoDir = clone.toFile();
+	private static Git getGit(String url, Path clonePath, String branch) throws Exception {
+		var repoDir = clonePath.toFile();
 
 		Git git;
 		if (repoDir.exists()) {
 			FileRepositoryBuilder builder = new FileRepositoryBuilder();
-			Repository repository = builder.setGitDir(clone.resolve(".git").toFile()).build();
+			Repository repository = builder.setGitDir(clonePath.resolve(".git").toFile()).build();
 
 			git = new Git(repository);
 		} else {
@@ -204,9 +222,25 @@ public class WalkRepository {
 					.call();
 		}
 
-		git.checkout().setName(branch).call();
+		try {
+			git.checkout().setName(branch).call();
 
-		return git;
+			return git;
+		} catch (CheckoutConflictException | UnsupportedOperationException e) {
+			try {
+				FileUtils.cleanDirectory(repoDir);
+				FileUtils.deleteDirectory(repoDir);
+
+				git = getGit(url, clonePath, branch);
+				git.checkout().setName(branch).call();
+
+				return git;
+			} catch (CheckoutConflictException e1) {
+				System.err.println(e.getMessage());
+
+				throw e1;
+			}
+		}
 	}
 
 	private static Path resolveSources(Path clone, List<String> srcRoot) {
