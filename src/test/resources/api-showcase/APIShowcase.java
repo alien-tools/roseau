@@ -1,7 +1,7 @@
 /**
  * A GPT4-generated file showcasing Java 17 API-related constructs
  */
-package com.github.maracas.roseau;
+package io.github.alien.roseau;
 
 import java.io.Serializable;
 import java.util.Collection;
