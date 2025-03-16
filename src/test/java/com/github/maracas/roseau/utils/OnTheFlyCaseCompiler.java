@@ -5,7 +5,7 @@ import com.github.maracas.roseau.diff.APIDiff;
 import com.github.maracas.roseau.diff.changes.BreakingChange;
 import com.github.maracas.roseau.diff.changes.BreakingChangeKind;
 import com.github.maracas.roseau.extractors.APIExtractor;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
+import com.github.maracas.roseau.extractors.spoon.SpoonAPIExtractor;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.opentest4j.AssertionFailedError;

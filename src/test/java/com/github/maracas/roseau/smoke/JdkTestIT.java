@@ -1,10 +1,10 @@
 package com.github.maracas.roseau.smoke;
 
 import com.github.maracas.roseau.diff.APIDiff;
-import com.github.maracas.roseau.extractors.jar.AsmAPIExtractor;
+import com.github.maracas.roseau.extractors.asm.AsmAPIExtractor;
 import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
-import com.github.maracas.roseau.extractors.sources.SpoonUtils;
+import com.github.maracas.roseau.extractors.spoon.SpoonAPIExtractor;
+import com.github.maracas.roseau.extractors.spoon.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;

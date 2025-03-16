@@ -1,7 +1,7 @@
 package com.github.maracas.roseau.api.model.reference;
 
 import com.github.maracas.roseau.api.model.TypeDecl;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIFactory;
+import com.github.maracas.roseau.extractors.spoon.SpoonAPIFactory;
 
 /**
  * Creates {@link TypeDecl} instances reflectively to represent and navigate types outside the API.

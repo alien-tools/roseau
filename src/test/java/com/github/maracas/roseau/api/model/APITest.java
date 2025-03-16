@@ -3,12 +3,16 @@ package com.github.maracas.roseau.api.model;
 import com.github.maracas.roseau.api.model.reference.TypeReference;
 import com.github.maracas.roseau.api.visit.AbstractAPIVisitor;
 import com.github.maracas.roseau.api.visit.Visit;
-import com.github.maracas.roseau.extractors.sources.SpoonAPIExtractor;
+import com.github.maracas.roseau.extractors.APIExtractor;
+import com.github.maracas.roseau.extractors.MavenClasspathBuilder;
+import com.github.maracas.roseau.extractors.jdt.JdtAPIExtractor;
+import com.github.maracas.roseau.extractors.spoon.SpoonAPIExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
@@ -18,8 +22,10 @@ class APITest {
 	@Test
 	void json_round_trip() throws IOException {
 		Path sources = Path.of("src/main/java");
-		SpoonAPIExtractor extractor = new SpoonAPIExtractor();
-		API orig = extractor.extractAPI(sources);
+		MavenClasspathBuilder builder = new MavenClasspathBuilder();
+		List<Path> classpath = builder.buildClasspath(Path.of("."));
+		JdtAPIExtractor extractor = new JdtAPIExtractor();
+		API orig = extractor.extractAPI(sources, classpath);
 
 		Path json = Path.of("roundtrip.json");
 		orig.writeJson(json);

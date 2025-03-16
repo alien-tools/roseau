@@ -1,4 +1,4 @@
-package com.github.maracas.roseau.extractors.sources;
+package com.github.maracas.roseau.extractors.spoon;
 
 import com.github.maracas.roseau.RoseauException;
 import spoon.Launcher;
@@ -70,12 +70,12 @@ public final class SpoonUtils {
 			throw new IllegalArgumentException(location + " does not exist");
 
 		// Custom "fast" launcher
-		Launcher launcher = new FastLauncher();
+		Launcher launcher = new Launcher();
 		launcher.addInputResource(location.toString());
 
 		// If we manage to successfully parse it as a Maven project, use that instead
 		if (Files.exists(location.resolve("pom.xml"))) {
-			MavenLauncher mavenLauncher = new FastMavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
+			MavenLauncher mavenLauncher = new MavenLauncher(location.toString(), MavenLauncher.SOURCE_TYPE.APP_SOURCE);
 
 			// Fallback if we don't find those
 			if (mavenLauncher.getPomFile().getSourceDirectories().isEmpty()) {
