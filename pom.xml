@@ -9,6 +9,8 @@
     <version>0.1.0-SNAPSHOT</version>
     <packaging>pom</packaging>
     <name>Roseau parent module</name>
+    <description>Fast and accurate API breaking change analysis of Java libraries</description>
+    <url>https://github.com/alien-tools/roseau</url>
 
     <modules>
         <module>core</module>
@@ -73,5 +75,33 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <licenses>
+        <license>
+            <name>MIT</name>
+            <url>https://mit-license.org/</url>
+        </license>
+    </licenses>
+
+    <developers>
+        <developer>
+            <name>Thomas Degueule</name>
+            <email>thomas.degueule@labri.fr</email>
+        </developer>
+        <developer>
+            <name>Jean-Rémy Falleri</name>
+            <email>falleri@labri.fr</email>
+        </developer>
+        <developer>
+            <name>Corentin Latappy</name>
+            <email>corentin.latappy@labri.fr</email>
+        </developer>
+    </developers>
+
+    <scm>
+        <connection>scm:git:git://github.com/alien-tools/roseau.git</connection>
+        <developerConnection>scm:git:ssh://github.com:alien-tools/roseau.git</developerConnection>
+        <url>https://github.com/alien-tools/roseau/tree/main</url>
+    </scm>
 
 </project>
