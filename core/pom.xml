@@ -6,18 +6,12 @@
 
     <parent>
         <groupId>io.github.alien-tools</groupId>
-        <artifactId>roseau</artifactId>
+        <artifactId>roseau-parent</artifactId>
         <version>0.1.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>roseau-core</artifactId>
     <name>Roseau core APIs</name>
-
-    <properties>
-        <maven.compiler.source>21</maven.compiler.source>
-        <maven.compiler.target>21</maven.compiler.target>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-    </properties>
 
     <build>
         <plugins>
@@ -177,13 +171,5 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
-
-    <distributionManagement>
-        <repository>
-            <id>github</id>
-            <name>GitHub alien-tools Apache Maven Packages</name>
-            <url>https://maven.pkg.github.com/alien-tools/roseau</url>
-        </repository>
-    </distributionManagement>
 
 </project>
