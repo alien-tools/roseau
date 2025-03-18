@@ -4,6 +4,13 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 
 import java.util.Objects;
 
+/**
+ * An {@link ExecutableDecl}'s parameter.
+ *
+ * @param name      the name of this parameter
+ * @param type      the type of this parameter
+ * @param isVarargs whether this parameter is the variadic parameter of its {@link ExecutableDecl}
+ */
 public record ParameterDecl(
 	String name,
 	ITypeReference type,

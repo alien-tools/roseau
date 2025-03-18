@@ -8,37 +8,41 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}.
- * Symbols have a fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated.
+ * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}. Symbols
+ * are part of an {@link API}, can be referenced in client code, and are subject to breaking changes. Symbols have a
+ * fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
+ * immutable, except for lazily-resolved type references.
  */
 public abstract sealed class Symbol implements DeepCopyable<Symbol> permits TypeDecl, TypeMemberDecl {
 	/**
-	 * The qualifiedName of the symbol.
+	 * Fully qualified name of the symbol, unique within an {@link API}'s scope. Types and fields are uniquely identified
+	 * by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure of their
+	 * fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
 	 */
 	protected final String qualifiedName;
 
 	/**
-	 * The visibility of the symbol.
+	 * The symbol's visibility (e.g., PUBLIC, PRIVATE)
 	 */
 	protected final AccessModifier visibility;
 
 	/**
-	 * List of non-access modifiers applied to the symbol.
+	 * The symbol's non-access modifiers (e.g., STATIC, FINAL)
 	 */
 	protected final Set<Modifier> modifiers;
 
 	/**
-	 * Symbol annotations
+	 * Annotations placed on the symbol (e.g., @Deprecated, @Beta)
 	 */
 	protected final List<Annotation> annotations;
 
 	/**
-	 * The exact physical location of the symbol
+	 * The exact physical location of the symbol in the source (e.g., /src/pkg/T.java:4)
 	 */
 	protected final SourceLocation location;
 
 	/**
-	 * The simple (unqualified) name of the symbol
+	 * The symbol's simple (unqualified) name
 	 */
 	protected final String simpleName;
 
@@ -51,6 +55,13 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 		this.location = Objects.requireNonNull(location);
 		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
+
+	/**
+	 * Checks whether the symbol is exported/accessible from outside the API.
+	 *
+	 * @return true if this symbol can be accessed from outside the API
+	 */
+	public abstract boolean isExported();
 
 	public String getQualifiedName() {
 		return qualifiedName;
@@ -99,11 +110,6 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	public boolean isFinal() {
 		return modifiers.contains(Modifier.FINAL);
 	}
-
-	/**
-	 * Checks whether the symbol is accessible/exported in the API
-	 */
-	public abstract boolean isExported();
 
 	@Override
 	public boolean equals(Object o) {

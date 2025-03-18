@@ -13,14 +13,12 @@ import java.util.Set;
 import java.util.stream.Stream;
 
 /**
- * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}.
- * Executables may declare a list of parameters, formal type parameters, and potentially thrown exceptions.
+ * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}. Executables can declare a list of
+ * parameters, formal type parameters, and potentially thrown exceptions.
  */
 public abstract sealed class ExecutableDecl extends TypeMemberDecl permits MethodDecl, ConstructorDecl {
 	protected final List<ParameterDecl> parameters;
-
 	protected final List<FormalTypeParameter> formalTypeParameters;
-
 	// Thrown exceptions aren't necessarily TypeReference<ClassDecl>
 	// e.g.: <X extends Throwable> m() throws X
 	protected final List<ITypeReference> thrownExceptions;
@@ -36,15 +34,29 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		this.thrownExceptions = Objects.requireNonNull(thrownExceptions);
 	}
 
+	/**
+	 * Checks whether this executable is a method.
+	 *
+	 * @return true if this executable is a method and not a constructor.
+	 */
 	public boolean isMethod() {
 		return false;
 	}
 
+	/**
+	 * Checks whether this executable is a constructor.
+	 *
+	 * @return true if this executable is a constructor and not a method.
+	 */
 	public boolean isConstructor() {
 		return false;
 	}
 
-	// §8.4.2
+	/**
+	 * The unqualified signature of an executable as specified in JLS §8.4.2. Types in a signature are not erased.
+	 *
+	 * @return the executable's signature
+	 */
 	public String getSignature() {
 		var sb = new StringBuilder();
 		sb.append(simpleName);
@@ -63,6 +75,12 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return sb.toString();
 	}
 
+	/**
+	 * The unqualified erasure of the signature of an executable as specified in JLS §4.6. Types are replaced by their
+	 * erasure.
+	 *
+	 * @return the executable's signature
+	 */
 	public String getErasure() {
 		var sb = new StringBuilder();
 		sb.append(simpleName);
@@ -90,28 +108,47 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	/**
-	 * Checks whether the given ExecutableDecl has the same erasure as the current instance.
+	 * Checks whether the supplied {@link ExecutableDecl} has the same erasure as the current instance.
 	 *
-	 * @param other The ExecutableDecl to compare the erasure with
+	 * @param other The {@link ExecutableDecl} to compare erasure with
 	 * @return true if they have the same erasure, false otherwise
+	 * @throws NullPointerException if {@code other} is null
 	 */
 	public boolean hasSameErasure(ExecutableDecl other) {
 		return Objects.equals(getErasure(), Objects.requireNonNull(other).getErasure());
 	}
 
-	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference tpr) {
+	/**
+	 * Attempts to resolve the {@link FormalTypeParameter} declared by this executable and pointed by the supplied
+	 * {@link TypeParameterReference}.
+	 *
+	 * @param typeParameterReference the {@link TypeParameterReference} to resolve
+	 * @return an {@link Optional} indicating whether the referenced {@link FormalTypeParameter} was found
+	 * @throws NullPointerException if {@code typeParameterReference} is null
+	 * @see #getFormalTypeParametersInScope()
+	 */
+	public Optional<FormalTypeParameter> resolveTypeParameter(TypeParameterReference typeParameterReference) {
 		return getFormalTypeParametersInScope().stream()
-			.filter(ftp -> ftp.name().equals(tpr.getQualifiedName()))
+			.filter(ftp -> ftp.name().equals(Objects.requireNonNull(typeParameterReference).getQualifiedName()))
 			.findFirst();
 	}
 
-	public ITypeReference resolveTypeParameterBound(TypeParameterReference tpr) {
-		var resolved = resolveTypeParameter(tpr);
+	/**
+	 * Resolves the left-most bound of the supplied {@link TypeParameterReference}. Bounds are resolved recursively (e.g.
+	 * {@code <A extends B>}) within the current {@link #getFormalTypeParametersInScope()}.
+	 *
+	 * @param typeParameterReference the {@link TypeParameterReference} to resolve
+	 * @return the resolved bound, or {@link TypeReference#OBJECT}
+	 * @throws NullPointerException if {@code typeParameterReference} is null
+	 * @see #resolveTypeParameter(TypeParameterReference)
+	 */
+	public ITypeReference resolveTypeParameterBound(TypeParameterReference typeParameterReference) {
+		var resolved = resolveTypeParameter(Objects.requireNonNull(typeParameterReference));
 
 		if (resolved.isPresent()) {
 			var bound = resolved.get().bounds().getFirst();
-			if (bound instanceof TypeParameterReference tpr2) {
-				return resolveTypeParameterBound(tpr2);
+			if (bound instanceof TypeParameterReference tpr) {
+				return resolveTypeParameterBound(tpr);
 			} else {
 				return bound;
 			}
@@ -121,7 +158,10 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	/**
-	 * Returns the list of formal type parameters in this method's scope, including from its containing type
+	 * Returns the list of formal type parameters in this executable's scope, including (recursively) from its containing
+	 * types.
+	 *
+	 * @return all {@link FormalTypeParameter} in this executable's scope
 	 */
 	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
 		return Stream.concat(formalTypeParameters.stream(),
@@ -133,20 +173,26 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	/**
-	 * Checks whether the supplied executable and this instance are overloading each others.
-	 * We assume that input source code compiles, so we won't have two methods
-	 * with same name and parameters but different return types.
-	 * An executable does not overload itself.
+	 * Checks whether the supplied executable and this instance are overloading each others. Assuming that the current
+	 * {@link API} is consistent (the source compiles), there should not be two methods with the same erasure but
+	 * different return types, so an executable overloads another if it has the same name but different erasure. An
+	 * {@link ExecutableDecl} does not overload itself.
 	 *
-	 * @param other The other executable
-	 * @return whether the two executables override each other
+	 * @param other The other {@link ExecutableDecl} to check for overloading
+	 * @throws NullPointerException if {@code other} is null
+	 * @return whether the two {@link ExecutableDecl} override each other
 	 */
 	public boolean isOverloading(ExecutableDecl other) {
-		return Objects.equals(getSimpleName(), other.getSimpleName()) &&
+		return Objects.equals(getSimpleName(), Objects.requireNonNull(other).getSimpleName()) &&
 			!hasSameErasure(other) &&
 			containingType.isSameHierarchy(other.getContainingType());
 	}
 
+	/**
+	 * Checks whether this executable accepts a variable number of arguments.
+	 *
+	 * @return true if this executable is varargs
+	 */
 	public boolean isVarargs() {
 		return !parameters.isEmpty() && parameters.getLast().isVarargs();
 	}
@@ -163,6 +209,11 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return Collections.unmodifiableList(thrownExceptions);
 	}
 
+	/**
+	 * Returns the subset of this executable's thrown exceptions that are checked exceptions.
+	 *
+	 * @return the thrown checked exceptions
+	 */
 	public List<ITypeReference> getThrownCheckedExceptions() {
 		return thrownExceptions.stream()
 			.filter(e -> e.isSubtypeOf(TypeReference.EXCEPTION) && !e.isSubtypeOf(TypeReference.RUNTIME_EXCEPTION))

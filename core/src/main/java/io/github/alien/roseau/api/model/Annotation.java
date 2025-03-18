@@ -5,9 +5,9 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.Objects;
 
 /**
- * A concrete annotation on a code element
+ * An annotation on a {@link Symbol}.
  *
- * @param actualAnnotation The annotation declaration this annotation is an instance of
+ * @param actualAnnotation This annotation's annotation declaration
  */
 public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) implements DeepCopyable<Annotation> {
 	public Annotation {

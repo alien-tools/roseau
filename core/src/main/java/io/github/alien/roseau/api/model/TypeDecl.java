@@ -15,35 +15,19 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * Represents a type declaration in the API, either a {@link ClassDecl}, {@link InterfaceDecl}
- * or {@link AnnotationDecl}.
- * Type declarations may implement interfaces, declare formal type parameters, contain fields and methods,
- * and be nested within other type declarations.
+ * A type declaration in an API, either a {@link ClassDecl}, {@link InterfaceDecl}, {@link AnnotationDecl},
+ * {@link EnumDecl}, or {@link RecordDecl}. Type declarations can implement interfaces, declare formal type parameters,
+ * contain fields and methods, and be nested within other type declarations.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "typeKind")
 public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl, AnnotationDecl {
 	protected final List<TypeReference<InterfaceDecl>> implementedInterfaces;
-
-	/**
-	 * List of formal type parameters for generic types.
-	 */
 	protected final List<FormalTypeParameter> formalTypeParameters;
-
-	/**
-	 * List of fields declared within the type.
-	 */
 	protected final List<FieldDecl> fields;
-
-	/**
-	 * List of methods declared within the type.
-	 */
 	protected final List<MethodDecl> methods;
-
 	protected final TypeReference<TypeDecl> enclosingType;
 
-	/**
-	 * It kinda sucks having to cache that, but it really makes a huge difference
-	 */
+	// It kinda sucks having to cache those, but it really does make a huge difference
 	@JsonIgnore
 	protected List<MethodDecl> allMethods;
 	@JsonIgnore
@@ -107,10 +91,12 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	/**
-	 * Checks whether this type is effectively final, i.e. if it cannot be extended regardless
-	 * of its {@code final} modifier.
+	 * Checks whether this type is effectively final. A type is effectively final if it cannot be extended in subtypes,
+	 * either because it is explicitly declared {@code final}, or {@code sealed} and not {@code non-sealed}, or (in the
+	 * case of {@link ClassDecl}) because it has no subclass-accessible constructor.
 	 *
-	 * @return whether the type is effectively final
+	 * @return whether this type is effectively final
+	 * @see ClassDecl#isEffectivelyFinal()
 	 */
 	public boolean isEffectivelyFinal() {
 		// FIXME: in fact, a sealed class may not be final if one of its permitted subclass
@@ -119,7 +105,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	/**
-	 * Returns every super type in the hierarchy starting from this type, excluded.
+	 * Returns all super types recursively present in the hierarchy starting from this type, excluded. In the case of
+	 * {@link ClassDecl}, this includes super classes.
+	 *
+	 * @return all super types in this type's hierarchy
 	 */
 	public Stream<TypeReference<? extends TypeDecl>> getAllSuperTypes() {
 		return implementedInterfaces.stream()
@@ -135,7 +124,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	/**
-	 * Returns every interface implemented by this type, directly or indirectly, this type excluded.
+	 * Returns all super interfaces implemented by this type, directly or indirectly, this type excluded.
+	 *
+	 * @return all interfaces implemented by this type, directly or indirectly
 	 */
 	public Stream<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces() {
 		return getAllSuperTypes()
@@ -144,8 +135,12 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	/**
-	 * Returns all methods that can be invoked on this type, including those declared in its super types.
-	 * Returns the most concrete implementation for each unique method erasure.
+	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
+	 * method erasure, returns the most concrete implementation. The returned list is memoized for efficiency.
+	 *
+	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type as a
+	 * {@link Stream}
+	 * @see #getAllFields()
 	 */
 	public Stream<MethodDecl> getAllMethods() {
 		if (allMethods == null) {
@@ -165,7 +160,11 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	/**
-	 * Returns all fields declared by this type, including those of its super types.
+	 * Returns all fields that can be accessed on this type, including those declared in its super types. In case of
+	 * shadowing, returns the visible field. The returned list is memoized for efficiency.
+	 *
+	 * @return all {@link FieldDecl} that can be accessed on this type as a {@link Stream}
+	 * @see #getAllMethods()
 	 */
 	public Stream<FieldDecl> getAllFields() {
 		if (allFields == null) {
@@ -182,6 +181,63 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		}
 
 		return allFields.stream();
+	}
+
+	/**
+	 * Finds a {@link FieldDecl} declared by this type by simple name.
+	 *
+	 * @param simpleName the simple name of the field to find
+	 * @return an {@link Optional} indicating whether the field was found
+	 * @throws NullPointerException if {@code simpleName} is null
+	 */
+	public Optional<FieldDecl> findField(String simpleName) {
+		return getAllFields()
+			.filter(f -> Objects.equals(f.getSimpleName(), Objects.requireNonNull(simpleName)))
+			.findFirst();
+	}
+
+	/**
+	 * Finds a {@link MethodDecl} declared by this type by erasure.
+	 *
+	 * @param erasure the erasure of the method to find
+	 * @return an {@link Optional} indicating whether the method was found
+	 * @throws NullPointerException if {@code erasure} is null
+	 * @see MethodDecl#getErasure()
+	 */
+	public Optional<MethodDecl> findMethod(String erasure) {
+		return getAllMethods()
+			.filter(m -> Objects.equals(m.getErasure(), Objects.requireNonNull(erasure)))
+			.findFirst();
+	}
+
+	/**
+	 * Checks whether this type is a subtype of the supplied {@link ITypeReference}. Types are subtypes of themselves,
+	 * {@link TypeReference#OBJECT}, and all types they implement or extend.
+	 *
+	 * @param other the {@link ITypeReference} to check for subtyping
+	 * @return true if this type is a subtype of {@code other}
+	 * @throws NullPointerException if {@code other} is null
+	 */
+	public boolean isSubtypeOf(ITypeReference other) {
+		return Objects.requireNonNull(other).equals(TypeReference.OBJECT)
+			|| Objects.equals(qualifiedName, other.getQualifiedName())
+			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup.getQualifiedName(), other.getQualifiedName()));
+	}
+
+	/**
+	 * Returns the list of formal type parameters in this type's scope, including (recursively) from its enclosing
+	 * types.
+	 *
+	 * @return all {@link FormalTypeParameter} in this type's scope
+	 * @see ExecutableDecl#getFormalTypeParametersInScope()
+	 */
+	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
+		return Stream.concat(formalTypeParameters.stream(),
+				getEnclosingType().flatMap(TypeReference::getResolvedApiType)
+					.map(TypeDecl::getFormalTypeParametersInScope)
+					.orElse(Collections.emptyList())
+					.stream())
+			.toList();
 	}
 
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
@@ -202,36 +258,6 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	public Optional<TypeReference<TypeDecl>> getEnclosingType() {
 		return Optional.ofNullable(enclosingType);
-	}
-
-	public Optional<FieldDecl> findField(String name) {
-		return getAllFields()
-			.filter(f -> Objects.equals(f.getSimpleName(), name))
-			.findFirst();
-	}
-
-	public Optional<MethodDecl> findMethod(String erasure) {
-		return getAllMethods()
-			.filter(m -> Objects.equals(erasure, m.getErasure()))
-			.findFirst();
-	}
-
-	public boolean isSubtypeOf(ITypeReference other) {
-		return other.equals(TypeReference.OBJECT)
-			|| Objects.equals(qualifiedName, other.getQualifiedName())
-			|| getAllSuperTypes().anyMatch(sup -> Objects.equals(sup.getQualifiedName(), other.getQualifiedName()));
-	}
-
-	/**
-	 * Returns the list of formal type parameters in this type's scope, including from its containing type
-	 */
-	public List<FormalTypeParameter> getFormalTypeParametersInScope() {
-		return Stream.concat(formalTypeParameters.stream(),
-			getEnclosingType().flatMap(TypeReference::getResolvedApiType)
-				.map(TypeDecl::getFormalTypeParametersInScope)
-				.orElse(Collections.emptyList())
-				.stream())
-			.toList();
 	}
 
 	@Override

@@ -7,6 +7,9 @@ import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 
+/**
+ * A constructor declaration in a {@link ClassDecl}.
+ */
 public final class ConstructorDecl extends ExecutableDecl {
 	public ConstructorDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                       List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,

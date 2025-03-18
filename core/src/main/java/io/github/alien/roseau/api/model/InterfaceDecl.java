@@ -5,6 +5,9 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * An interface declaration in an {@link API}.
+ */
 public final class InterfaceDecl extends TypeDecl {
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                     List<Annotation> annotations, SourceLocation location,

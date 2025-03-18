@@ -4,7 +4,11 @@ import java.nio.file.Path;
 import java.util.Objects;
 
 /**
- * A physical source location that points to a specific line in a file
+ * A physical source location that points to a specific line in a file.
+ *
+ * @param file the pointed file
+ * @param line the pointed line in the file
+ * @see SourceLocation#NO_LOCATION
  */
 public record SourceLocation(
 	Path file,
@@ -16,7 +20,7 @@ public record SourceLocation(
 	}
 
 	/**
-	 * An unknown location for symbols that exist but are not in source code (e.g. default constructors)
+	 * An unknown location for symbols that exist but cannot be located in source code (e.g. default constructors)
 	 */
 	public static final SourceLocation NO_LOCATION = new SourceLocation(Path.of("<unknown>"), -1);
 

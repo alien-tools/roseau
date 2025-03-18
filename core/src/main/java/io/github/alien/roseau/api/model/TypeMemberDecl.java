@@ -8,8 +8,8 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A member of a type declaration, either a {@link FieldDecl} or {@link ExecutableDecl}.
- * Type members have a type and belong to some containing type.
+ * A member declared by a {@link TypeDecl}, either a {@link FieldDecl} or {@link ExecutableDecl}. Type members have a
+ * type and belong to some containing type.
  */
 public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, ExecutableDecl {
 	protected final TypeReference<TypeDecl> containingType;

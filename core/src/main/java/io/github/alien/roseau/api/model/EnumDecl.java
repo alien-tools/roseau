@@ -6,6 +6,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
+/**
+ * An enum declaration is a {@link TypeDecl} representing a Java enumeration.
+ */
 public final class EnumDecl extends ClassDecl {
 	public EnumDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                List<Annotation> annotations, SourceLocation location,

@@ -3,7 +3,7 @@ package io.github.alien.roseau.api.model;
 import java.util.Locale;
 
 /**
- * Every legal non-access modifier
+ * Every legal non-access Java modifier
  */
 public enum Modifier {
 	STATIC,

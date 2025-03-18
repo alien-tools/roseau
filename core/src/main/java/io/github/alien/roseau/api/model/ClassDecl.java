@@ -11,11 +11,10 @@ import java.util.stream.Stream;
 
 /**
  * A class declaration is a {@link TypeDecl} with an optional superclass and a list of {@link ConstructorDecl}.
- * {@link ClassDecl}s without superclass implicitly extend {@code java.lang.Object}.
+ * {@link ClassDecl} instantiated without superclass implicitly extend {@link java.lang.Object}.
  */
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
-
 	protected final List<ConstructorDecl> constructors;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
@@ -38,7 +37,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public boolean isEffectivelyFinal() {
 		// A class without a subclass-accessible constructor cannot be extended
-		// If the class had a default constructor, it would be there
+		// If the class had a default, public, or protected constructor, it would be there.
 		return super.isEffectivelyFinal() || constructors.isEmpty();
 	}
 
@@ -50,6 +49,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		).distinct();
 	}
 
+	/**
+	 * Returns all super classes extended (transitively) by this class, excluding the current class.
+	 *
+	 * @return a {@link Stream} of {@link TypeReference<ClassDecl>} to the super classes
+	 */
 	public Stream<TypeReference<ClassDecl>> getAllSuperClasses() {
 		if (superClass.getQualifiedName().equals(getQualifiedName())) {
 			// Houston, we have a problem
@@ -59,18 +63,42 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			superClass.getResolvedApiType().map(ClassDecl::getAllSuperClasses).orElseGet(Stream::empty));
 	}
 
+	/**
+	 * Checks whether the current class is a checked exception type. Checked exception types are subclasses of
+	 * {@link java.lang.Exception} but not of {@link java.lang.RuntimeException}.
+	 *
+	 * @return whether the current class is a checked exception
+	 */
 	public boolean isCheckedException() {
 		return isSubtypeOf(TypeReference.EXCEPTION) && !isUncheckedException();
 	}
 
+	/**
+	 * Checks whether the current class is an unchecked exception type. Checked exception types are subclasses of
+	 * {@link java.lang.RuntimeException}.
+	 *
+	 * @return whether the current class is an unchecked exception
+	 */
 	public boolean isUncheckedException() {
 		return isSubtypeOf(TypeReference.RUNTIME_EXCEPTION);
 	}
 
+	/**
+	 * Checks whether the current class is effectively abstract. A class is effectively abstract if it is explicitly
+	 * declared abstract or if is has no subclass-accessible constructors.
+	 *
+	 * @return whether the current class is effectively abstract
+	 */
 	public boolean isEffectivelyAbstract() {
 		return isAbstract() || constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected());
 	}
 
+	/**
+	 * Finds a constructor by its erasure.
+	 *
+	 * @param erasure The erasure to look for
+	 * @return an {@link Optional} indicating whether the constructor was found
+	 */
 	public Optional<ConstructorDecl> findConstructor(String erasure) {
 		return getDeclaredConstructors().stream()
 			.filter(cons -> Objects.equals(erasure, cons.getErasure()))
