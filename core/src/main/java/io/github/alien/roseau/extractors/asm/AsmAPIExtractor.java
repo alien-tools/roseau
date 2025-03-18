@@ -12,6 +12,7 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.io.InputStream;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
@@ -31,6 +32,11 @@ public class AsmAPIExtractor implements APIExtractor {
 		} catch (IOException e) {
 			throw new RuntimeException("Error processing JAR file", e);
 		}
+	}
+
+	@Override
+	public boolean canExtract(Path sources) {
+		return sources != null && Files.isRegularFile(sources) && sources.toString().endsWith(".jar");
 	}
 
 	public API extractAPI(JarFile jar) {

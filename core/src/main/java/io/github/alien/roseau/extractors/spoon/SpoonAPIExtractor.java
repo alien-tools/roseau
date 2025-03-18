@@ -9,6 +9,7 @@ import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
 
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
@@ -28,6 +29,11 @@ public class SpoonAPIExtractor implements APIExtractor {
 	public API extractAPI(Path sources) {
 		CtModel model = SpoonUtils.buildModel(sources, Duration.ofSeconds(Long.MAX_VALUE));
 		return extractAPI(model);
+	}
+
+	@Override
+	public boolean canExtract(Path sources) {
+		return Files.isDirectory(sources);
 	}
 
 	public API extractAPI(CtModel model) {

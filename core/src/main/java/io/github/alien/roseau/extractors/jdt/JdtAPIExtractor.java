@@ -33,6 +33,11 @@ public class JdtAPIExtractor implements APIExtractor {
 		return extractAPI(sources, List.of());
 	}
 
+	@Override
+	public boolean canExtract(Path sources) {
+		return Files.isDirectory(sources);
+	}
+
 	public API extractAPI(Path sources, List<Path> classpath) {
 		Objects.requireNonNull(classpath);
 		try (Stream<Path> files = Files.walk(Objects.requireNonNull(sources))) {
