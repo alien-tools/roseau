@@ -1,0 +1,64 @@
+package io.github.alien.roseau.extractors;
+
+import com.google.common.base.Preconditions;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+import org.apache.maven.shared.invoker.DefaultInvocationRequest;
+import org.apache.maven.shared.invoker.DefaultInvoker;
+import org.apache.maven.shared.invoker.InvocationRequest;
+import org.apache.maven.shared.invoker.InvocationResult;
+import org.apache.maven.shared.invoker.Invoker;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Arrays;
+import java.util.List;
+import java.util.Objects;
+import java.util.Properties;
+
+public class MavenClasspathBuilder {
+	private static final Logger LOGGER = LogManager.getLogger(MavenClasspathBuilder.class);
+
+	public List<Path> buildClasspath(Path pom) {
+		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(pom)));
+
+		Path classpathFile = pom.toAbsolutePath().getParent().resolve(".classpath.tmp");
+		try {
+			InvocationRequest request = new DefaultInvocationRequest();
+			request.setPomFile(pom.toAbsolutePath().toFile());
+			request.setBatchMode(true);
+			request.addArg("dependency:build-classpath");
+			request.setReactorFailureBehavior(InvocationRequest.ReactorFailureBehavior.FailNever);
+			Properties properties = new Properties();
+			properties.setProperty("mdep.outputFile", classpathFile.toAbsolutePath().toString());
+			// "An empty string indicates include all dependencies"
+			properties.setProperty("mdep.includeScope", "");
+			request.setProperties(properties);
+			request.setOutputHandler(LOGGER::debug);
+			request.setErrorHandler(LOGGER::warn);
+
+			Invoker invoker = new DefaultInvoker();
+			InvocationResult result = invoker.execute(request);
+
+			if (result.getExitCode() == 0 && Files.exists(classpathFile)) {
+				String cpString = Files.readString(classpathFile);
+				return Arrays.stream(cpString.split(":"))
+					.map(Path::of)
+					.toList();
+			} else {
+				LOGGER.warn("Failed to build Maven classpath from {}", pom, result.getExecutionException());
+			}
+		} catch (Exception e) { // We may encounter RuntimeExceptions
+			LOGGER.warn("Failed to build Maven classpath from {}", pom, e);
+		} finally {
+			try {
+				Files.deleteIfExists(classpathFile);
+			} catch (IOException e) {
+				LOGGER.warn("Couldn't delete temporary classpath file {}", classpathFile, e);
+			}
+		}
+
+		return List.of();
+	}
+}

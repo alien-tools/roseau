@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Configuration xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+               xmlns="https://logging.apache.org/xml/ns"
+               xsi:schemaLocation="
+                       https://logging.apache.org/xml/ns
+                       https://logging.apache.org/xml/ns/log4j-config-2.xsd">
+
+    <Appenders>
+        <Console name="CONSOLE">
+            <PatternLayout pattern="%p %c{1.} - %m%n"/>
+        </Console>
+    </Appenders>
+
+    <Loggers>
+        <Logger name="io.github.alien.roseau" level="WARN"/>
+        <Logger name="spoon" level="ERROR"/>
+        <Root level="ERROR">
+            <AppenderRef ref="CONSOLE"/>
+        </Root>
+    </Loggers>
+
+</Configuration>
