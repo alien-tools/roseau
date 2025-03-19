@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
 @CommandLine.Command(name = "roseau")
-final class Roseau implements Callable<Integer> {
+public final class Roseau implements Callable<Integer> {
 	@CommandLine.Option(names = "--api",
 		description = "Serialize the API model of --v1; see --json")
 	private boolean apiMode;
