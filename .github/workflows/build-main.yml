@@ -20,12 +20,17 @@ jobs:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
+          server-id: central
+          server-username: MAVEN_USERNAME
+          server-password: MAVEN_CENTRAL_TOKEN
+          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
+          gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Set up Maven
         uses: stCarolas/setup-maven@v5
         with:
           maven-version: 3.8.6
       - name: Build with Maven
-        run: mvn --batch-mode -DskipTests -Dmaven.javadoc.skip package
+        run: mvn --batch-mode -DskipTests package
       - name: Run tests
         run: mvn --batch-mode -Dmaven.test.failure.ignore verify
       - name: Build tests report
@@ -38,6 +43,8 @@ jobs:
           fail-on-error: true
       - name: Publish SNAPSHOT
         if: ${{ success() && github.event_name == 'push' }}
-        run: mvn --batch-mode -DskipTests -DdeployAtEnd deploy
+        run: mvn --batch-mode -DskipTests -Ppublish-sonatype deploy
         env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          MAVEN_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          MAVEN_CENTRAL_TOKEN: ${{ secrets.NEXUS_PASSWORD }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}

@@ -22,6 +22,6 @@ jobs:
         with:
           maven-version: 3.8.6
       - name: Build with Maven
-        run: mvn --batch-mode -DskipTests -Dmaven.javadoc.skip package
+        run: mvn --batch-mode -DskipTests package
       - name: Run tests
         run: mvn --batch-mode -Dmaven.test.failure.ignore verify
