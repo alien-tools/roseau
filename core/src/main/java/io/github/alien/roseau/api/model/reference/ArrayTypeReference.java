@@ -2,7 +2,20 @@ package io.github.alien.roseau.api.model.reference;
 
 import java.util.Objects;
 
+/**
+ * A reference to an array type (e.g., {@code String[]}).
+ *
+ * @param componentType the type of this array's component
+ * @param dimension     the array's dimension (e.g., 2 for {@code String[][]})
+ */
 public record ArrayTypeReference(ITypeReference componentType, int dimension) implements ITypeReference {
+	/**
+	 * Creates a new reference to an array type
+	 *
+	 * @param componentType the type of this array's component
+	 * @param dimension     the array's dimension
+	 * @throws IllegalArgumentException if dimension < 1
+	 */
 	public ArrayTypeReference {
 		Objects.requireNonNull(componentType);
 		if (dimension < 1) {

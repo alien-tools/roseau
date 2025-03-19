@@ -8,10 +8,13 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
 
 /**
- * Flyweight {@link ITypeReference} factory.
+ * A flyweight {@link ITypeReference} factory.
  * <br>
- * This implementation caches the created references to ensure that there is a single shared reference towards any type
- * within a given factory.
+ * This implementation caches the created references to ensure that there is only a single shared reference towards a
+ * given name within the factory. It passes a {@link ReflectiveTypeFactory} to new type references to allow them to
+ * create new {@link TypeDecl} reflectively.
+ *
+ * @see TypeReferenceFactory
  */
 public class CachedTypeReferenceFactory implements TypeReferenceFactory {
 	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>(100);
@@ -33,9 +36,9 @@ public class CachedTypeReferenceFactory implements TypeReferenceFactory {
 	}
 
 	@Override
-	public PrimitiveTypeReference createPrimitiveTypeReference(String qualifiedName) {
-		return cache("PTR" + qualifiedName,
-			() -> new PrimitiveTypeReference(qualifiedName));
+	public PrimitiveTypeReference createPrimitiveTypeReference(String simpleName) {
+		return cache("PTR" + simpleName,
+			() -> new PrimitiveTypeReference(simpleName));
 	}
 
 	@Override
@@ -45,9 +48,9 @@ public class CachedTypeReferenceFactory implements TypeReferenceFactory {
 	}
 
 	@Override
-	public TypeParameterReference createTypeParameterReference(String qualifiedName) {
-		return cache("TPR" + qualifiedName,
-			() -> new TypeParameterReference(qualifiedName));
+	public TypeParameterReference createTypeParameterReference(String simpleName) {
+		return cache("TPR" + simpleName,
+			() -> new TypeParameterReference(simpleName));
 	}
 
 	@Override

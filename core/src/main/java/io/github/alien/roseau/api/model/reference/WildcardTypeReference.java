@@ -4,10 +4,19 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 /**
- * <? extends A> and <?> are upper bounds while <? super A> isn't
- * Wildcards have >= 1 upper bounds (java.lang.Object always included) or == 1 lower bound
+ * A wildcard type reference used as part of formal type parameters declarations.
+ * <br>
+ * {@code <? extends A>} and {@code <?>} are upper bounds while {@code <? super A>} is a lower bound. Wildcards have at
+ * least one upper bounds ({@link java.lang.Object} always included) or exactly one lower bound.
  */
 public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) implements ITypeReference {
+	/**
+	 * Creates a new wildcard type reference
+	 *
+	 * @param bounds the wildcard's bounds
+	 * @param upper whether these are lower or upper bounds
+	 * @throws IllegalArgumentException if no bounds is supplied, or if there are more than one lower bound
+	 */
 	public WildcardTypeReference {
 		if (bounds == null || bounds.isEmpty()) {
 			throw new IllegalArgumentException("Wildcards must have at least one bound (Object included)");

@@ -3,6 +3,11 @@ package io.github.alien.roseau.api.model.reference;
 import java.util.List;
 import java.util.Objects;
 
+/**
+ * A reference to a primitive type (e.g., {@code int}, {@code byte}).
+ *
+ * @param qualifiedName the simple name of this primitive type
+ */
 public record PrimitiveTypeReference(String qualifiedName) implements ITypeReference {
 	public PrimitiveTypeReference {
 		Objects.requireNonNull(qualifiedName);
@@ -20,13 +25,13 @@ public record PrimitiveTypeReference(String qualifiedName) implements ITypeRefer
 		}
 
 		// Narrowing is fine, widening isn't
-		if (other instanceof PrimitiveTypeReference ptr) {
+		if (other instanceof PrimitiveTypeReference(String name)) {
 			return switch (qualifiedName) {
-				case "byte" ->          List.of("short", "int", "long", "float", "double").contains(ptr.qualifiedName);
-				case "short", "char" -> List.of("int", "long", "float", "double").contains(ptr.qualifiedName);
-				case "int" ->           List.of("long", "float", "double").contains(ptr.qualifiedName);
-				case "long" ->          List.of("float", "double").contains(ptr.qualifiedName);
-				case "float" ->         Objects.equals("double", ptr.qualifiedName);
+				case "byte" ->          List.of("short", "int", "long", "float", "double").contains(name);
+				case "short", "char" -> List.of("int", "long", "float", "double").contains(name);
+				case "int" ->           List.of("long", "float", "double").contains(name);
+				case "long" ->          List.of("float", "double").contains(name);
+				case "float" ->         Objects.equals("double", name);
 				default -> false;
 			};
 		}
