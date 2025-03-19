@@ -4,8 +4,8 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import io.github.alien.roseau.extractors.ChangedFilesProvider;
-import io.github.alien.roseau.extractors.IncrementalAPIExtractor;
+import io.github.alien.roseau.extractors.incremental.ChangedFilesProvider;
+import io.github.alien.roseau.extractors.incremental.IncrementalAPIExtractor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
@@ -16,6 +16,18 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A JDT-based incremental {@link API} extractor.
+ * <br>
+ * This implementation:
+ * <ul>
+ *   <li>Returns the previous API if no file has changed</li>
+ *   <li>Discards deleted symbols</li>
+ *   <li>Re-parses changed symbols</li>
+ *   <li>Parses new files to extract new symbols</li>
+ *   <li>Deep-copies unchanged symbols</li>
+ * </ul>
+ */
 public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements IncrementalAPIExtractor {
 	@Override
 	public API refreshAPI(Path sources, ChangedFilesProvider.ChangedFiles changedFiles, API previousApi) {

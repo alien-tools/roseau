@@ -55,6 +55,9 @@ import java.util.Objects;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * A factory of {@link TypeDecl} and {@link TypeReference} instances using Spoon. For internal use only.
+ */
 public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
 	private final TypeReferenceFactory typeReferenceFactory;
@@ -68,10 +71,14 @@ public class SpoonAPIFactory {
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {
 		return switch (typeRef) {
-			case CtArrayTypeReference<?> arrayRef -> typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getArrayType()), arrayRef.getDimensionCount());
-			case CtWildcardReference wcRef -> typeReferenceFactory.createWildcardTypeReference(convertCtTypeParameterBounds(wcRef.getBoundingType()), wcRef.isUpper());
-			case CtTypeParameterReference tpRef -> typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName());
-			case CtTypeReference<?> ref when ref.isPrimitive() -> typeReferenceFactory.createPrimitiveTypeReference(ref.getQualifiedName());
+			case CtArrayTypeReference<?> arrayRef ->
+				typeReferenceFactory.createArrayTypeReference(createITypeReference(arrayRef.getArrayType()), arrayRef.getDimensionCount());
+			case CtWildcardReference wcRef ->
+				typeReferenceFactory.createWildcardTypeReference(convertCtTypeParameterBounds(wcRef.getBoundingType()), wcRef.isUpper());
+			case CtTypeParameterReference tpRef ->
+				typeReferenceFactory.createTypeParameterReference(tpRef.getQualifiedName());
+			case CtTypeReference<?> ref when ref.isPrimitive() ->
+				typeReferenceFactory.createPrimitiveTypeReference(ref.getQualifiedName());
 			default -> createTypeReference(typeRef);
 		};
 	}
@@ -101,10 +108,10 @@ public class SpoonAPIFactory {
 	public TypeDecl convertCtType(CtType<?> type) {
 		return switch (type) {
 			case CtAnnotationType<?> a -> convertCtAnnotationType(a);
-			case CtInterface<?> i      -> convertCtInterface(i);
-			case CtRecord r            -> convertCtRecord(r);
-			case CtEnum<?> e           -> convertCtEnum(e);
-			case CtClass<?> c          -> convertCtClass(c);
+			case CtInterface<?> i -> convertCtInterface(i);
+			case CtRecord r -> convertCtRecord(r);
+			case CtEnum<?> e -> convertCtEnum(e);
+			case CtClass<?> c -> convertCtClass(c);
 			default -> throw new IllegalArgumentException("Unknown type kind: " + type);
 		};
 	}
@@ -287,7 +294,8 @@ public class SpoonAPIFactory {
 
 	private List<ITypeReference> convertCtTypeParameterBounds(CtTypeReference<?> ref) {
 		return switch (ref) {
-			case CtIntersectionTypeReference<?> intersection -> intersection.getBounds().stream().map(this::createITypeReference).toList();
+			case CtIntersectionTypeReference<?> intersection ->
+				intersection.getBounds().stream().map(this::createITypeReference).toList();
 			case CtTypeReference<?> reference -> List.of(createITypeReference(reference));
 			case null -> Collections.emptyList();
 		};
@@ -308,34 +316,34 @@ public class SpoonAPIFactory {
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {
 		return switch (visibility) {
-			case PUBLIC    -> AccessModifier.PUBLIC;
-			case PRIVATE   -> AccessModifier.PRIVATE;
+			case PUBLIC -> AccessModifier.PUBLIC;
+			case PRIVATE -> AccessModifier.PRIVATE;
 			case PROTECTED -> AccessModifier.PROTECTED;
-			case null      -> AccessModifier.PACKAGE_PRIVATE;
-			default        -> throw new IllegalArgumentException("Unknown visibility " + visibility);
+			case null -> AccessModifier.PACKAGE_PRIVATE;
+			default -> throw new IllegalArgumentException("Unknown visibility " + visibility);
 		};
 	}
 
 	private Modifier convertSpoonModifier(ModifierKind modifier) {
 		return switch (modifier) {
-			case STATIC       -> Modifier.STATIC;
-			case FINAL        -> Modifier.FINAL;
-			case ABSTRACT     -> Modifier.ABSTRACT;
+			case STATIC -> Modifier.STATIC;
+			case FINAL -> Modifier.FINAL;
+			case ABSTRACT -> Modifier.ABSTRACT;
 			case SYNCHRONIZED -> Modifier.SYNCHRONIZED;
-			case VOLATILE     -> Modifier.VOLATILE;
-			case TRANSIENT    -> Modifier.TRANSIENT;
-			case SEALED       -> Modifier.SEALED;
-			case NON_SEALED   -> Modifier.NON_SEALED;
-			case NATIVE       -> Modifier.NATIVE;
-			case STRICTFP     -> Modifier.STRICTFP;
-			default           -> throw new IllegalArgumentException("Unknown modifier " + modifier);
+			case VOLATILE -> Modifier.VOLATILE;
+			case TRANSIENT -> Modifier.TRANSIENT;
+			case SEALED -> Modifier.SEALED;
+			case NON_SEALED -> Modifier.NON_SEALED;
+			case NATIVE -> Modifier.NATIVE;
+			case STRICTFP -> Modifier.STRICTFP;
+			default -> throw new IllegalArgumentException("Unknown modifier " + modifier);
 		};
 	}
 
 	private EnumSet<Modifier> convertSpoonNonAccessModifiers(Collection<ModifierKind> modifiers) {
 		return modifiers.stream()
 			.filter(mod ->
-				     ModifierKind.PUBLIC != mod
+				ModifierKind.PUBLIC != mod
 					&& ModifierKind.PROTECTED != mod
 					&& ModifierKind.PRIVATE != mod)
 			.map(this::convertSpoonModifier)
@@ -355,8 +363,8 @@ public class SpoonAPIFactory {
 	private SourceLocation convertSpoonPosition(SourcePosition position) {
 		return position.isValidPosition()
 			? new SourceLocation(
-				position.getFile() != null ? position.getFile().toPath() : null,
-				position.getLine())
+			position.getFile() != null ? position.getFile().toPath() : null,
+			position.getLine())
 			: SourceLocation.NO_LOCATION;
 	}
 
@@ -382,14 +390,14 @@ public class SpoonAPIFactory {
 	}
 
 	/**
-	 * Checks whether the given type is effectively final _within the API_. While package-private constructors
-	 * cannot be accessed from client code, they can be from the API itself, and sub-classes can leak internals.
+	 * Checks whether the given type is effectively final _within the API_. While package-private constructors cannot be
+	 * accessed from client code, they can be from the API itself, and sub-classes can leak internals.
 	 */
 	private boolean isEffectivelyFinal(CtType<?> type) {
 		if (type instanceof CtClass<?> cls &&
-				!cls.getConstructors().isEmpty() &&
-				cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
-				return true;
+			!cls.getConstructors().isEmpty() &&
+			cls.getConstructors().stream().allMatch(CtModifiable::isPrivate))
+			return true;
 
 		return (type.isFinal() || type.hasModifier(ModifierKind.SEALED))
 			&& !type.hasModifier(ModifierKind.NON_SEALED);

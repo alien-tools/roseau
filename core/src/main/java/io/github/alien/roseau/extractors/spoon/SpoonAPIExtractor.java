@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 /**
- * Extracts an {@link API} model from source code using Spoon as back-end.
+ * A Spoon-based {@link APIExtractor}.
  */
 public class SpoonAPIExtractor implements APIExtractor {
 	/**

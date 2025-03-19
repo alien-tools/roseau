@@ -22,7 +22,17 @@ import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
+/**
+ * A default abstract implementation of {@link APIAlgebra} using {@link Visit} as the lambda type that produces no
+ * value.
+ */
 public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
+	/**
+	 * Visits the given {@link API}.
+	 *
+	 * @param it the {@link API} to visit
+	 * @return a lambda {@link Visit} that must be invoked to run the actual visit
+	 */
 	public Visit api(API it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}
@@ -83,7 +93,8 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit primitiveTypeReference(PrimitiveTypeReference it) {
-		return () -> {};
+		return () -> {
+		};
 	}
 
 	@Override
@@ -93,7 +104,8 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit typeParameterReference(TypeParameterReference it) {
-		return () -> {};
+		return () -> {
+		};
 	}
 
 	@Override

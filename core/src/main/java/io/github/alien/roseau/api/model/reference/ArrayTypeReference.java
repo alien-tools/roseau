@@ -14,7 +14,7 @@ public record ArrayTypeReference(ITypeReference componentType, int dimension) im
 	 *
 	 * @param componentType the type of this array's component
 	 * @param dimension     the array's dimension
-	 * @throws IllegalArgumentException if dimension < 1
+	 * @throws IllegalArgumentException if dimension &lt; 1
 	 */
 	public ArrayTypeReference {
 		Objects.requireNonNull(componentType);

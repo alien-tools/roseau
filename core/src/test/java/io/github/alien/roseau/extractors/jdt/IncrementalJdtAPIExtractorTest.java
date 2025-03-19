@@ -1,6 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
-import io.github.alien.roseau.extractors.ChangedFilesProvider;
+import io.github.alien.roseau.extractors.incremental.ChangedFilesProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

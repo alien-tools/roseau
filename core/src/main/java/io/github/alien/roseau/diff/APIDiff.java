@@ -23,7 +23,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Computes the list of breaking changes between two {@link API}s.
+ * Computes the list of breaking changes between two {@link API} instances.
+ * <br>
+ * The compared APIs are visited deeply to match their symbols pairwise based on their unique name, and compare their
+ * properties when their names match. This implementation visits all {@link TypeDecl} instances in parallel.
  */
 public class APIDiff {
 	/**
@@ -42,7 +45,7 @@ public class APIDiff {
 	private final Set<BreakingChange> breakingChanges;
 
 	/**
-	 * Constructs an APIDiff instance to compare two API versions for breaking changes detection.
+	 * Constructs an APIDiff instance to compare two {@link API} versions for breaking changes detection.
 	 *
 	 * @param v1 The first version of the API to compare.
 	 * @param v2 The second version of the API to compare.
@@ -52,11 +55,11 @@ public class APIDiff {
 		this.v2 = Objects.requireNonNull(v2);
 		breakingChanges = ConcurrentHashMap.newKeySet();
 	}
-	
+
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return List of all the breaking changes detected
+	 * @return the list of all identified {@link BreakingChange}
 	 */
 	public List<BreakingChange> diff() {
 		v1.getExportedTypes().parallel().forEach(t1 ->
@@ -271,10 +274,9 @@ public class APIDiff {
 	}
 
 	/**
-	 * In general, we need to distinguish how formal type parameters and parameter generics
-	 * are handled between methods and constructors: the former can be overridden (thus parameters
-	 * are immutable so that signatures in sub/super-classes match) and the latter cannot (thus
-	 * parameters can follow variance rules).
+	 * In general, we need to distinguish how formal type parameters and parameter generics are handled between methods
+	 * and constructors: the former can be overridden (thus parameters are immutable so that signatures in
+	 * sub/super-classes match) and the latter cannot (thus parameters can follow variance rules).
 	 */
 	private void diffParameterGenerics(ExecutableDecl e1, ExecutableDecl e2, TypeReference<?> t1, TypeReference<?> t2) {
 		if (t1.getTypeArguments().size() != t2.getTypeArguments().size()) {
@@ -329,7 +331,7 @@ public class APIDiff {
 		// Ok, well. Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
 		//  - it's a constructor and there were more than one
-		if (paramsCount1 > paramsCount2	&& (e1.isMethod() || paramsCount1 > 1)) {
+		if (paramsCount1 > paramsCount2 && (e1.isMethod() || paramsCount1 > 1)) {
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1, e2);
 		}
 

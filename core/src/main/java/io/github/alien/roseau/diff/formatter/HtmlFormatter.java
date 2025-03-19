@@ -12,6 +12,9 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * A formatter for {@link BreakingChange} instances that produces an HTML output.
+ */
 public class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
 	public String format(List<BreakingChange> changes) {

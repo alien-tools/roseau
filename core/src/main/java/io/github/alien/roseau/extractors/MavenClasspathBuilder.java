@@ -17,9 +17,19 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
 
+/**
+ * Utility class to automatically infer the classpath of a Maven software library. This implementation attempts to
+ * retrieve the classpath from a supplied {@code pom.xml} file using {@code mvn dependency:build-classpath}.
+ */
 public class MavenClasspathBuilder {
 	private static final Logger LOGGER = LogManager.getLogger(MavenClasspathBuilder.class);
 
+	/**
+	 * Returns the classpath of the supplied {@code pom.xml} file using {@code mvn dependency:build-classpath}.
+	 *
+	 * @param pom the {@code pom.xml} file to analyze
+	 * @return the retrieved classpath or an empty list if something went wrong
+	 */
 	public List<Path> buildClasspath(Path pom) {
 		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(pom)));
 
@@ -49,7 +59,8 @@ public class MavenClasspathBuilder {
 			} else {
 				LOGGER.warn("Failed to build Maven classpath from {}", pom, result.getExecutionException());
 			}
-		} catch (Exception e) { // We may encounter RuntimeExceptions
+		} catch (Exception e) {
+			// We may encounter RuntimeExceptions
 			LOGGER.warn("Failed to build Maven classpath from {}", pom, e);
 		} finally {
 			try {

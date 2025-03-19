@@ -14,6 +14,9 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+/**
+ * A collection of utilities for parsing and building models using Spoon.
+ */
 public final class SpoonUtils {
 	private static final int JAVA_VERSION = 21;
 
@@ -34,8 +37,8 @@ public final class SpoonUtils {
 	}
 
 	/**
-	 * Builds a Spoon model from the source code located at the given path using the supplied launcher,
-	 * with a specified timeout.
+	 * Builds a Spoon model from the source code located at the given path using the supplied launcher, with a specified
+	 * timeout.
 	 *
 	 * @param location The path to the source code
 	 * @param timeout  The maximum duration to wait for the model to be built

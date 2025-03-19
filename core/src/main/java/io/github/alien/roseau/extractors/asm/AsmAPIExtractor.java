@@ -20,6 +20,9 @@ import java.util.Optional;
 import java.util.jar.JarFile;
 import java.util.stream.Stream;
 
+/**
+ * An ASM-based {@link APIExtractor}.
+ */
 public class AsmAPIExtractor implements APIExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;
@@ -39,6 +42,12 @@ public class AsmAPIExtractor implements APIExtractor {
 		return sources != null && Files.isRegularFile(sources) && sources.toString().endsWith(".jar");
 	}
 
+	/**
+	 * Extracts the {@link API} stored in the provided JAR file.
+	 *
+	 * @param jar the JAR file to analyze
+	 * @return the extracted {@link API}
+	 */
 	public API extractAPI(JarFile jar) {
 		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
 		List<TypeDecl> typeDecls =

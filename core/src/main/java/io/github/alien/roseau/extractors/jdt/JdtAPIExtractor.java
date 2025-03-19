@@ -25,6 +25,9 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.stream.Stream;
 
+/**
+ * A JDT-based {@link APIExtractor}.
+ */
 public class JdtAPIExtractor implements APIExtractor {
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIExtractor.class);
 

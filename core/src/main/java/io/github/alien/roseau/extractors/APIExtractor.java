@@ -6,32 +6,18 @@ import io.github.alien.roseau.api.model.API;
 import java.nio.file.Path;
 
 /**
- * API extractors must keep track of inaccessible types in the resulting API because of API leaks; e.g.:
- *
- * <pre>
- * package pkg1;
- * class A {
- *  public int f;
- *  // Leaked method
- *  public void m() { System.out.println("A.m()"); }
- * }
- * public class B extends A {} // Leaking A's public members
- * package pkg2;
- * class D extends B {
- *  void leak() { m(); } // Leak, can break
- * }
- * class E extends B {
- *  public void m() {
- *    super.f = 0; // Leak, can break
- *    super.m();   // Leak, can break
- *  }
- * }
- * </pre>
+ * An {@link APIExtractor} is responsible for extracting an {@link API} from a supplied source (e.g., source code or
+ * bytecode of a library).
+ * <p>
+ * API extractors must keep track of <strong>all</strong> types in an API, including non-exported/accessible ones. This
+ * is necessary for type resolution later and to handle potentially-leaked internal types.
  */
 public interface APIExtractor {
 	/**
-	 * Extracts a new {@link API} from the data located at {@code sources}
+	 * Extracts a new {@link API} from the source located at {@code sources}
 	 *
+	 * @param sources the file or directory to analyze
+	 * @return the extracted {@link API}
 	 * @throws RoseauException if anything went wrong
 	 */
 	API extractAPI(Path sources);

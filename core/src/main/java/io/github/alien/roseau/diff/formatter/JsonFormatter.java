@@ -7,6 +7,9 @@ import org.json.JSONObject;
 
 import java.util.List;
 
+/**
+ * A formatter for {@link BreakingChange} instances that produces a JSON output.
+ */
 public class JsonFormatter implements BreakingChangesFormatter {
 	/**
 	 * Formats the list of breaking changes in JSON format

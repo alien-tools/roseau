@@ -97,8 +97,9 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	}
 
 	/**
-	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary, or
-	 * {@link Optional<T>.empty()} if it cannot be resolved.
+	 * Returns the {@link TypeDecl} pointed by this reference, constructed on-the-fly if necessary.
+	 *
+	 * @return an {@link Optional} indicating whether the type was resolved or not
 	 */
 	public Optional<T> getResolvedApiType() {
 		if (resolutionAttempted) {

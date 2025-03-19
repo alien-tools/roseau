@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.extractors.incremental.ChangedFilesProvider;
+import io.github.alien.roseau.extractors.incremental.TimestampChangedFilesProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 

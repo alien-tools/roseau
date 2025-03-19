@@ -22,7 +22,11 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
 /**
+ * An {@link API} visitor.
+ * <br>
  * Eating our own dog food with <a href="https://dx.doi.org/10.1109/MODELS.2017.23">Revisitors</a> ;)
+ *
+ * @param <T> the lambda type returned by each visit method
  */
 public interface APIAlgebra<T> {
 	T api(API it);
