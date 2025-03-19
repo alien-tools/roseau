@@ -32,15 +32,6 @@ public class JdtAPIExtractor implements APIExtractor {
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIExtractor.class);
 
 	@Override
-	public API extractAPI(Path sources) {
-		return extractAPI(sources, List.of());
-	}
-
-	@Override
-	public boolean canExtract(Path sources) {
-		return Files.isDirectory(sources);
-	}
-
 	public API extractAPI(Path sources, List<Path> classpath) {
 		Objects.requireNonNull(classpath);
 		try (Stream<Path> files = Files.walk(Objects.requireNonNull(sources))) {
@@ -54,6 +45,11 @@ public class JdtAPIExtractor implements APIExtractor {
 		} catch (IOException e) {
 			throw new RoseauException("Failed to retrieve sources at " + sources, e);
 		}
+	}
+
+	@Override
+	public boolean canExtract(Path sources) {
+		return Files.isDirectory(sources);
 	}
 
 	List<TypeDecl> parseTypes(List<Path> sourcesToParse, Path sourcesRoot, List<Path> classpath,

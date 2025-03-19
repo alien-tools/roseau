@@ -19,14 +19,9 @@ import java.util.stream.Stream;
  * A Spoon-based {@link APIExtractor}.
  */
 public class SpoonAPIExtractor implements APIExtractor {
-	/**
-	 * Extracts the {@link API} model for the source code located at {@code sources}.
-	 *
-	 * @param  sources {@link Path} to the source code to be parsed into an {@link API}
-	 * @return the extracted {@link API}
-	 */
 	@Override
-	public API extractAPI(Path sources) {
+	public API extractAPI(Path sources, List<Path> classpath) {
+		// FIXME: classpath is currently ignored
 		CtModel model = SpoonUtils.buildModel(sources, Duration.ofSeconds(Long.MAX_VALUE));
 		return extractAPI(model);
 	}

@@ -1,6 +1,7 @@
 package io.github.alien.roseau;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.base.Strings;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
@@ -9,6 +10,7 @@ import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.extractors.APIExtractor;
 import io.github.alien.roseau.extractors.APIExtractorFactory;
+import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.asm.AsmAPIExtractor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -19,6 +21,8 @@ import picocli.CommandLine;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
@@ -30,7 +34,7 @@ import java.util.stream.Collectors;
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
 @CommandLine.Command(name = "roseau")
-final class Roseau implements Callable<Integer>  {
+final class Roseau implements Callable<Integer> {
 	@CommandLine.Option(names = "--api",
 		description = "Serialize the API model of --v1; see --json")
 	private boolean apiMode;
@@ -59,12 +63,18 @@ final class Roseau implements Callable<Integer>  {
 		description = "Print debug information")
 	private boolean verbose;
 	@CommandLine.Option(names = "--fail",
-			description = "Return a non-zero code if breaking changes are detected")
+		description = "Return a non-zero code if breaking changes are detected")
 	private boolean failMode;
 	@CommandLine.Option(names = "--format",
-			description = "Format of the report; possible values: ${COMPLETION-CANDIDATES}",
-			defaultValue = "CSV")
+		description = "Format of the report; possible values: ${COMPLETION-CANDIDATES}",
+		defaultValue = "CSV")
 	private BreakingChangesFormatterFactory format;
+	@CommandLine.Option(names = "--pom",
+		description = "A pom.xml file to build a classpath from")
+	private Path pom;
+	@CommandLine.Option(names = "--classpath",
+		description = "A colon-separated list of elements to include in the classpath")
+	private String classpathString;
 
 	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
 	private static final String RED_TEXT = "\u001B[31m";
@@ -79,7 +89,26 @@ final class Roseau implements Callable<Integer>  {
 
 		if (extractor.canExtract(sources)) {
 			Stopwatch sw = Stopwatch.createStarted();
-			API api = extractor.extractAPI(sources);
+			List<Path> classpath = new ArrayList<>();
+			if (pom != null && Files.isRegularFile(pom)) {
+				MavenClasspathBuilder classpathBuilder = new MavenClasspathBuilder();
+				classpath.addAll(classpathBuilder.buildClasspath(pom));
+				LOGGER.info("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
+			}
+
+			if (!Strings.isNullOrEmpty(classpathString)) {
+				classpath.addAll(Arrays.stream(classpathString.split(":"))
+					.map(Path::of)
+					.toList());
+			}
+
+			if (classpath.isEmpty()) {
+				LOGGER.warn("No classpath provided, results may be inaccurate");
+			} else {
+				LOGGER.info("Classpath: {}", classpath);
+			}
+
+			API api = extractor.extractAPI(sources, classpath);
 			LOGGER.info("Extracting API from sources {} using {} took {}ms ({} types)",
 				sources, extractorFactory, sw.elapsed().toMillis(), api.getExportedTypes().count());
 			return api;

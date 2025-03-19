@@ -29,7 +29,7 @@ public class AsmAPIExtractor implements APIExtractor {
 	private static final Logger LOGGER = LogManager.getLogger(AsmAPIExtractor.class);
 
 	@Override
-	public API extractAPI(Path sources) {
+	public API extractAPI(Path sources, List<Path> classpath) {
 		try (JarFile jar = new JarFile(Objects.requireNonNull(sources).toFile())) {
 			return extractAPI(jar);
 		} catch (IOException e) {
