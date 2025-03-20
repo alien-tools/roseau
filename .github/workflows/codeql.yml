@@ -23,7 +23,7 @@ jobs:
           - language: actions
             build-mode: none
           - language: java-kotlin
-            build-mode: none
+            build-mode: autobuild
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
