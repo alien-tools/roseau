@@ -93,7 +93,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 		return () -> """
 			%s
 
-			%s %s enum %s %s %s {
+			%s %s enum %s %s {
 				%s;
 
 			%s
@@ -106,7 +106,6 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			prettyPrint(it.getVisibility()),
 			prettyPrint(it.getModifiers()),
 			it.getSimpleName(),
-			"",
 			it.getImplementedInterfaces().isEmpty()
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
