@@ -15,6 +15,7 @@
     <modules>
         <module>core</module>
         <module>cli</module>
+        <module>maven-plugin</module>
     </modules>
 
     <properties>
