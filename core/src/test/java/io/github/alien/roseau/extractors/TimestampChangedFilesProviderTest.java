@@ -1,6 +1,6 @@
 package io.github.alien.roseau.extractors;
 
-import io.github.alien.roseau.extractors.incremental.ChangedFilesProvider;
+import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.TimestampChangedFilesProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -118,6 +118,6 @@ class TimestampChangedFilesProviderTest {
 	void a_file_cannot_be_in_two_states() {
 		var a = Paths.get("A.java");
 		assertThrows(IllegalArgumentException.class,
-			() -> new ChangedFilesProvider.ChangedFiles(Set.of(a), Set.of(), Set.of(a)));
+			() -> new ChangedFiles(Set.of(a), Set.of(), Set.of(a)));
 	}
 }

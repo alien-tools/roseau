@@ -43,13 +43,13 @@ public class SpoonAPIExtractor implements APIExtractor {
 	}
 
 	// Returns all types within a package
-	private Stream<CtType<?>> getAllTypes(CtPackage pkg) {
+	private static Stream<CtType<?>> getAllTypes(CtPackage pkg) {
 		return pkg.getTypes().stream()
 			.flatMap(type -> Stream.concat(Stream.of(type), getNestedTypes(type)));
 	}
 
 	// Returns (recursively) nested types within a type
-	private Stream<CtType<?>> getNestedTypes(CtType<?> type) {
+	private static Stream<CtType<?>> getNestedTypes(CtType<?> type) {
 		return type.getNestedTypes().stream()
 			.flatMap(nestedType -> Stream.concat(Stream.of(nestedType), getNestedTypes(nestedType)));
 	}

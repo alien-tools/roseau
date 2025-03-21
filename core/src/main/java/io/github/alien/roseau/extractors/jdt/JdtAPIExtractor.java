@@ -36,7 +36,7 @@ public class JdtAPIExtractor implements APIExtractor {
 		Objects.requireNonNull(classpath);
 		try (Stream<Path> files = Files.walk(Objects.requireNonNull(sources))) {
 			List<Path> sourceFiles = files
-				.filter(this::isRegularJavaFile)
+				.filter(JdtAPIExtractor::isRegularJavaFile)
 				.toList();
 
 			TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
@@ -109,7 +109,7 @@ public class JdtAPIExtractor implements APIExtractor {
 		}
 	}
 
-	private boolean isRegularJavaFile(Path file) {
+	private static boolean isRegularJavaFile(Path file) {
 		return Files.isRegularFile(file) && file.toString().endsWith(".java") &&
 			!file.endsWith("package-info.java") && !file.endsWith("module-info.java");
 	}

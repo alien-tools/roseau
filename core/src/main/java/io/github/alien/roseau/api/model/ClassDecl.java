@@ -125,9 +125,15 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
 		ClassDecl classDecl = (ClassDecl) o;
 		return Objects.equals(superClass, classDecl.superClass) && Objects.equals(constructors, classDecl.constructors);
 	}

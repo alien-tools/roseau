@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.asm;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
@@ -17,8 +18,8 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.stream.Stream;
 
 /**
  * An ASM-based {@link APIExtractor}.
@@ -33,13 +34,15 @@ public class AsmAPIExtractor implements APIExtractor {
 		try (JarFile jar = new JarFile(Objects.requireNonNull(sources).toFile())) {
 			return extractAPI(jar);
 		} catch (IOException e) {
-			throw new RuntimeException("Error processing JAR file", e);
+			throw new RoseauException("Error processing JAR file", e);
 		}
 	}
 
 	@Override
 	public boolean canExtract(Path sources) {
-		return sources != null && Files.isRegularFile(sources) && sources.toString().endsWith(".jar");
+		return sources != null &&
+			Files.isRegularFile(sources) &&
+			sources.toString().endsWith(".jar");
 	}
 
 	/**
@@ -56,19 +59,21 @@ public class AsmAPIExtractor implements APIExtractor {
 				// Multi-release JARs store version-specific class files there, so we could have duplicates
 				.filter(entry -> !entry.getName().startsWith("META-INF/"))
 				.parallel()
-				.flatMap(entry -> {
-					try (InputStream is = jar.getInputStream(entry)) {
-						ClassReader reader = new ClassReader(is);
-						AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, typeRefFactory);
-						reader.accept(visitor, PARSING_OPTIONS);
-						return Optional.ofNullable(visitor.getTypeDecl()).stream();
-					} catch (IOException e) {
-						LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
-						return Stream.empty();
-					}
-				})
+				.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
 				.toList();
 
 		return new API(typeDecls, typeRefFactory);
+	}
+
+	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {
+		try (InputStream is = jar.getInputStream(entry)) {
+			ClassReader reader = new ClassReader(is);
+			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, typeRefFactory);
+			reader.accept(visitor, PARSING_OPTIONS);
+			return Optional.ofNullable(visitor.getTypeDecl());
+		} catch (IOException e) {
+			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
+			return Optional.empty();
+		}
 	}
 }

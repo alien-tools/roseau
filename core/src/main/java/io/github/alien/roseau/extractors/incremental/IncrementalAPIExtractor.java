@@ -7,7 +7,7 @@ import java.nio.file.Path;
 
 /**
  * A complement to {@link APIExtractor} that allows "refreshing" an existing {@link API} based on some
- * {@link io.github.alien.roseau.extractors.incremental.ChangedFilesProvider.ChangedFiles}.
+ * {@link ChangedFiles}.
  */
 public interface IncrementalAPIExtractor {
 	/**
@@ -19,5 +19,5 @@ public interface IncrementalAPIExtractor {
 	 * @param previousApi  the previous API to refresh
 	 * @return a fresh API instance incoporating the changes on top of deep copies of the previous API's symbols
 	 */
-	API refreshAPI(Path sources, ChangedFilesProvider.ChangedFiles changedFiles, API previousApi);
+	API refreshAPI(Path sources, ChangedFiles changedFiles, API previousApi);
 }

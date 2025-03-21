@@ -15,10 +15,10 @@ public class JsonFormatter implements BreakingChangesFormatter {
 	 * Formats the list of breaking changes in JSON format
 	 */
 	@Override
-	public String format(List<BreakingChange> breakingChanges) {
+	public String format(List<BreakingChange> changes) {
 		JSONArray jsonArray = new JSONArray();
 
-		for (BreakingChange bc : breakingChanges) {
+		for (BreakingChange bc : changes) {
 			JSONObject jsonObject = new JSONObject();
 			jsonObject.put("element", bc.impactedSymbol().getQualifiedName());
 
@@ -36,7 +36,7 @@ public class JsonFormatter implements BreakingChangesFormatter {
 		return jsonArray.toString();
 	}
 
-	private JSONObject createLocationJson(SourceLocation location) {
+	private static JSONObject createLocationJson(SourceLocation location) {
 		JSONObject position = new JSONObject();
 		position.put("path", location.file());
 		position.put("line", location.line());

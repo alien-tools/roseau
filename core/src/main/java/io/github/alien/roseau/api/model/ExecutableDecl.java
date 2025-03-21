@@ -222,9 +222,15 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
 		ExecutableDecl other = (ExecutableDecl) o;
 		return Objects.equals(parameters, other.parameters)
 			&& Objects.equals(formalTypeParameters, other.formalTypeParameters)

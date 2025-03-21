@@ -65,12 +65,7 @@ public class APIDiff {
 		v1.getExportedTypes().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
-				t2 -> {
-					diffType(t1, t2);
-					diffFields(t1, t2);
-					diffMethods(t1, t2);
-					diffAddedMethods(t1, t2);
-				},
+				t2 -> diffType(t1, t2),
 				// Type has been removed
 				() -> bc(BreakingChangeKind.TYPE_REMOVED, t1, null)
 			)
@@ -142,6 +137,9 @@ public class APIDiff {
 			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2);
 		}
 
+		diffFields(t1, t2);
+		diffMethods(t1, t2);
+		diffAddedMethods(t1, t2);
 		diffFormalTypeParameters(t1, t2);
 
 		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {

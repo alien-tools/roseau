@@ -35,19 +35,7 @@ public class MavenClasspathBuilder {
 
 		Path classpathFile = pom.toAbsolutePath().getParent().resolve(".classpath.tmp");
 		try {
-			InvocationRequest request = new DefaultInvocationRequest();
-			request.setPomFile(pom.toAbsolutePath().toFile());
-			request.setBatchMode(true);
-			request.addArg("dependency:build-classpath");
-			request.setReactorFailureBehavior(InvocationRequest.ReactorFailureBehavior.FailNever);
-			Properties properties = new Properties();
-			properties.setProperty("mdep.outputFile", classpathFile.toAbsolutePath().toString());
-			// "An empty string indicates include all dependencies"
-			properties.setProperty("mdep.includeScope", "");
-			request.setProperties(properties);
-			request.setOutputHandler(LOGGER::debug);
-			request.setErrorHandler(LOGGER::warn);
-
+			InvocationRequest request = makeClasspathRequest(pom, classpathFile);
 			Invoker invoker = new DefaultInvoker();
 			InvocationResult result = invoker.execute(request);
 
@@ -71,5 +59,21 @@ public class MavenClasspathBuilder {
 		}
 
 		return List.of();
+	}
+
+	private static InvocationRequest makeClasspathRequest(Path pom, Path classpathFile) {
+		InvocationRequest request = new DefaultInvocationRequest();
+		request.setPomFile(pom.toAbsolutePath().toFile());
+		request.setBatchMode(true);
+		request.addArg("dependency:build-classpath");
+		request.setReactorFailureBehavior(InvocationRequest.ReactorFailureBehavior.FailNever);
+		Properties properties = new Properties();
+		properties.setProperty("mdep.outputFile", classpathFile.toAbsolutePath().toString());
+		// "An empty string indicates include all dependencies"
+		properties.setProperty("mdep.includeScope", "");
+		request.setProperties(properties);
+		request.setOutputHandler(LOGGER::debug);
+		request.setErrorHandler(LOGGER::warn);
+		return request;
 	}
 }

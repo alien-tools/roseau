@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A simple provider of {@link io.github.alien.roseau.extractors.incremental.ChangedFilesProvider.ChangedFiles} that
+ * A simple provider of {@link ChangedFiles} that
  * uses timestamp-based modification times of files to infer files that have been created, updated, and deleted between
  * two instants.
  */
@@ -44,7 +44,7 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 	public ChangedFiles getChangedFiles() {
 		try (Stream<Path> files = Files.walk(sources)) {
 			Set<Path> currentFiles = files
-				.filter(this::isRegularJavaFile)
+				.filter(TimestampChangedFilesProvider::isRegularJavaFile)
 				.map(Path::toAbsolutePath)
 				.collect(Collectors.toSet());
 
@@ -64,7 +64,7 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 		}
 	}
 
-	private boolean isRegularJavaFile(Path file) {
+	private static boolean isRegularJavaFile(Path file) {
 		return Files.isRegularFile(file) &&
 			file.toString().endsWith(".java") &&
 			!file.endsWith("package-info.java") &&

@@ -27,7 +27,6 @@ import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
-import org.objectweb.asm.RecordComponentVisitor;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 
@@ -38,24 +37,23 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.stream.IntStream;
 
-class AsmClassVisitor extends ClassVisitor {
+final class AsmClassVisitor extends ClassVisitor {
 	private final TypeReferenceFactory typeRefFactory;
-	private String className = null;
-	private int classAccess = 0;
-	private TypeDecl typeDecl = null;
-	private TypeReference<TypeDecl> enclosingType = null;
-	private TypeReference<ClassDecl> superClass = null;
+	private String className;
+	private int classAccess;
+	private TypeDecl typeDecl;
+	private TypeReference<TypeDecl> enclosingType;
+	private TypeReference<ClassDecl> superClass;
 	private List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
-	private List<FieldDecl> fields = new ArrayList<>();
-	private List<MethodDecl> methods = new ArrayList<>();
-	private List<ConstructorDecl> constructors = new ArrayList<>();
+	private final List<FieldDecl> fields = new ArrayList<>();
+	private final List<MethodDecl> methods = new ArrayList<>();
+	private final List<ConstructorDecl> constructors = new ArrayList<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
-	private List<String> annotations = new ArrayList<>();
-	private boolean isSealed = false;
-	private boolean hasNonPrivateConstructor = false;
-	private boolean hasEnumConstantBody = false;
-	private boolean shouldSkip = false;
-	private int recordComponents = 0;
+	private final List<String> annotations = new ArrayList<>();
+	private boolean isSealed;
+	private boolean hasNonPrivateConstructor;
+	private boolean hasEnumConstantBody;
+	private boolean shouldSkip;
 
 	private static final Logger LOGGER = LogManager.getLogger(AsmClassVisitor.class);
 
@@ -71,8 +69,9 @@ class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitSource(String source, String debug) {
 		// Skipping our non-Java JVM friends
-		if (!shouldSkip && source != null && !source.endsWith(".java"))
+		if (source != null && !source.endsWith(".java")) {
 			shouldSkip = true;
+		}
 	}
 
 	@Override
@@ -100,10 +99,11 @@ class AsmClassVisitor extends ClassVisitor {
 			superClass = signatureVisitor.getSuperclass();
 			implementedInterfaces = signatureVisitor.getSuperInterfaces();
 		} else {
-			if (superName != null)
+			if (superName != null) {
 				superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
+			}
 			implementedInterfaces = Arrays.stream(interfaces)
-				.map(this::bytecodeToFqn)
+				.map(AsmClassVisitor::bytecodeToFqn)
 				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
 				.toList();
 		}
@@ -111,8 +111,9 @@ class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-		if (shouldSkip)
+		if (shouldSkip) {
 			return null;
+		}
 
 		if (isSynthetic(access)) {
 			LOGGER.trace("Skipping synthetic field {}", name);
@@ -125,7 +126,7 @@ class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new FieldVisitor(api) {
-			List<String> annotations = new ArrayList<>();
+			private final List<String> annotations = new ArrayList<>();
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -141,25 +142,17 @@ class AsmClassVisitor extends ClassVisitor {
 	}
 
 	@Override
-	public RecordComponentVisitor visitRecordComponent(String name, String descriptor, String signature) {
-		// These are private final fields, we don't want them
-		// Just keeping track of them to know which default constructor to exclude below
-		if (!shouldSkip)
-			++recordComponents;
-		return null;
-	}
-
-	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		if (shouldSkip)
+		if (shouldSkip) {
 			return null;
+		}
 
 		if (isSynthetic(access) || isBridge(access)) {
 			LOGGER.trace("Skipping synthetic/bridge method {}", name);
 			return null;
 		}
 
-		if (name.equals("<init>") && convertVisibility(access) != AccessModifier.PRIVATE) {
+		if ("<init>".equals(name) && convertVisibility(access) != AccessModifier.PRIVATE) {
 			hasNonPrivateConstructor = true;
 		}
 
@@ -168,24 +161,24 @@ class AsmClassVisitor extends ClassVisitor {
 			return null;
 		}
 
-		// FIXME: stupid heuristics below to mark non-source but non-synthetic stuff
-		if (isEnum(classAccess) &&
-			((name.equals("values") && descriptor.startsWith("()[L")) ||
-				(name.equals("valueOf") && descriptor.startsWith("(Ljava/lang/String;)L")))) {
+		// Stupid heuristics below to mark non-source but non-synthetic stuff
+		boolean isEnumValues = "values".equals(name) && descriptor.startsWith("()[L");
+		boolean isEnumValueOf = "valueOf".equals(name) && descriptor.startsWith("(Ljava/lang/String;)L");
+		if (isEnum(classAccess) && (isEnumValues || isEnumValueOf)) {
 			LOGGER.trace("Skipping {}'s values()/valueOf()", className);
 			return null;
 		}
 
-		if (isRecord(classAccess) &&
-			((name.equals("toString") && descriptor.equals("()Ljava/lang/String;")) ||
-				(name.equals("equals") && descriptor.equals("(Ljava/lang/Object;)Z")) ||
-				(name.equals("hashCode") && descriptor.equals("()I")))) {
+		boolean isRecordToString = "toString".equals(name) && "()Ljava/lang/String;".equals(descriptor);
+		boolean isRecordEquals = "equals".equals(name) && "(Ljava/lang/Object;)Z".equals(descriptor);
+		boolean isRecordHashCode = "hashCode".equals(name) && "()I".equals(descriptor);
+		if (isRecord(classAccess) && (isRecordToString || isRecordEquals || isRecordHashCode)) {
 			LOGGER.trace("Skipping {}'s toString()/hashCode()/equals()", className);
 			return null;
 		}
 
 		return new MethodVisitor(api) {
-			List<String> annotations = new ArrayList<>();
+			private final List<String> annotations = new ArrayList<>();
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -195,10 +188,11 @@ class AsmClassVisitor extends ClassVisitor {
 
 			@Override
 			public void visitEnd() {
-				if (name.equals("<init>"))
+				if ("<init>".equals(name)) {
 					constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations));
-				else
+				} else {
 					methods.add(convertMethod(access, name, descriptor, signature, exceptions, annotations));
+				}
 			}
 		};
 	}
@@ -206,7 +200,7 @@ class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitPermittedSubclass(String permittedSubclass) {
 		if (!shouldSkip) {
-			// Roseau's current API model does not care about the list of permitted subclasses
+			// Roseau's current API model does not care about the list of permitted subclasses,
 			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
 			isSealed = true;
 		}
@@ -217,8 +211,9 @@ class AsmClassVisitor extends ClassVisitor {
 		// Constant bodies are inner classes? Though this is not 100% accurate
 		hasEnumConstantBody = true;
 
-		if (shouldSkip || !bytecodeToFqn(name).equals(className))
+		if (shouldSkip || !bytecodeToFqn(name).equals(className)) {
 			return;
+		}
 
 		if (outerName != null && innerName != null) {
 			// Nested/inner types
@@ -232,23 +227,26 @@ class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-		if (!shouldSkip)
+		if (!shouldSkip) {
 			annotations.add(descriptor);
+		}
 		return null;
 	}
 
 	@Override
 	public void visitEnd() {
-		if (shouldSkip)
+		if (shouldSkip) {
 			return;
+		}
 
 		AccessModifier visibility = convertVisibility(classAccess);
 		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
 		List<Annotation> anns = convertAnnotations(annotations);
 		SourceLocation location = SourceLocation.NO_LOCATION;
 
-		if (isSealed)
+		if (isSealed) {
 			modifiers.add(Modifier.SEALED);
+		}
 
 		if (isEffectivelyFinal(classAccess)) {
 			// We initially included all PUBLIC/PROTECTED type members
@@ -259,8 +257,9 @@ class AsmClassVisitor extends ClassVisitor {
 		}
 
 		// Roughly §8.9
-		if (isEnum(classAccess) && hasEnumConstantBody && !isFinal(classAccess))
+		if (isEnum(classAccess) && hasEnumConstantBody && !isFinal(classAccess)) {
 			modifiers.add(Modifier.SEALED);
+		}
 
 		if (isAnnotation(classAccess)) {
 			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
@@ -284,8 +283,8 @@ class AsmClassVisitor extends ClassVisitor {
 	                               List<String> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
-			AsmSignatureVisitor.TypeVisitor<ITypeReference> visitor =
-				new AsmSignatureVisitor.TypeVisitor<>(api, typeRefFactory);
+			AsmTypeSignatureVisitor<ITypeReference> visitor =
+				new AsmTypeSignatureVisitor<>(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			fieldType = visitor.getType();
 		} else {
@@ -301,13 +300,13 @@ class AsmClassVisitor extends ClassVisitor {
 	                                           List<String> annotations) {
 		List<ParameterDecl> parameters;
 		List<ITypeReference> thrownExceptions;
-		List<FormalTypeParameter> formalTypeParameters;
+		List<FormalTypeParameter> typeParameters;
 
 		if (signature != null) {
 			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
 			new SignatureReader(signature).accept(visitor);
 			parameters = visitor.getParameters();
-			formalTypeParameters = visitor.getFormalTypeParameters();
+			typeParameters = visitor.getFormalTypeParameters();
 			thrownExceptions = visitor.getThrownExceptions().isEmpty()
 				? convertThrownExceptions(exceptions)
 				: visitor.getThrownExceptions();
@@ -317,26 +316,27 @@ class AsmClassVisitor extends ClassVisitor {
 			parameters = (enclosingType != null && !isStatic(classAccess) && originalParams.length >= 1)
 				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
 				: convertParameters(originalParams);
-			formalTypeParameters = Collections.emptyList();
+			typeParameters = Collections.emptyList();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
 
 		// Last parameter is a T[], but the API representation is T...
-		if (isVarargs(access))
+		if (isVarargs(access)) {
 			parameters = convertVarargParameter(parameters);
+		}
 
 		return new ConstructorDecl(String.format("%s.<init>", className), convertVisibility(access),
 			convertMethodModifiers(access), convertAnnotations(annotations), SourceLocation.NO_LOCATION,
 			typeRefFactory.createTypeReference(className),
 			typeRefFactory.createTypeReference(className),
-			parameters, formalTypeParameters, thrownExceptions);
+			parameters, typeParameters, thrownExceptions);
 	}
 
 	private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
 	                                 List<String> annotations) {
 		ITypeReference returnType;
 		List<ParameterDecl> parameters;
-		List<FormalTypeParameter> formalTypeParameters;
+		List<FormalTypeParameter> typeParameters;
 		List<ITypeReference> thrownExceptions;
 
 		if (signature != null) {
@@ -344,53 +344,57 @@ class AsmClassVisitor extends ClassVisitor {
 			new SignatureReader(signature).accept(visitor);
 			returnType = visitor.getReturnType();
 			parameters = visitor.getParameters();
-			formalTypeParameters = visitor.getFormalTypeParameters();
+			typeParameters = visitor.getFormalTypeParameters();
 			thrownExceptions = visitor.getThrownExceptions().isEmpty()
 				? convertThrownExceptions(exceptions)
 				: visitor.getThrownExceptions();
 		} else {
 			returnType = convertType(Type.getReturnType(descriptor).getDescriptor());
 			parameters = convertParameters(Type.getArgumentTypes(descriptor));
-			formalTypeParameters = Collections.emptyList();
+			typeParameters = Collections.emptyList();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
 
 		// Last parameter is a T[], but the API representation is T...
-		if (isVarargs(access))
+		if (isVarargs(access)) {
 			parameters = convertVarargParameter(parameters);
+		}
 
 		return new MethodDecl(String.format("%s.%s", className, name), convertVisibility(access),
 			convertMethodModifiers(access), convertAnnotations(annotations), SourceLocation.NO_LOCATION,
 			typeRefFactory.createTypeReference(className), returnType, parameters,
-			formalTypeParameters, thrownExceptions);
+			typeParameters, thrownExceptions);
 	}
 
 	private List<ParameterDecl> convertVarargParameter(List<ParameterDecl> parameters) {
-		if (parameters.isEmpty())
+		if (parameters.isEmpty()) {
 			return Collections.emptyList();
+		}
 
 		List<ParameterDecl> params = new ArrayList<>(parameters);
 		ParameterDecl last = params.getLast();
-		if (last.type() instanceof ArrayTypeReference atr) {
-			// If this is a multi-dimensional array, remove one dimension, otherwise make it a regular reference
-			if (atr.dimension() > 1)
+		if (last.type() instanceof ArrayTypeReference(ITypeReference componentType, int dimension)) {
+			// If this is a multidimensional array, remove one dimension, otherwise make it a regular reference
+			if (dimension > 1) {
 				params.set(params.size() - 1, new ParameterDecl(last.name(),
-					typeRefFactory.createArrayTypeReference(atr.componentType(), atr.dimension() - 1), true));
-			else
-				params.set(params.size() - 1, new ParameterDecl(last.name(), atr.componentType(), true));
+					typeRefFactory.createArrayTypeReference(componentType, dimension - 1), true));
+			} else {
+				params.set(params.size() - 1, new ParameterDecl(last.name(), componentType, true));
+			}
 		}
 		return params;
 	}
 
-	private List<Annotation> convertAnnotations(List<String> annotationDescriptors) {
-		return annotationDescriptors.stream()
+	private List<Annotation> convertAnnotations(List<String> descriptors) {
+		return descriptors.stream()
 			.map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann))))
 			.toList();
 	}
 
 	private List<ITypeReference> convertThrownExceptions(String[] exceptions) {
-		if (exceptions == null)
+		if (exceptions == null) {
 			return Collections.emptyList();
+		}
 
 		return Arrays.stream(exceptions)
 			.map(e -> typeRefFactory.createTypeReference(bytecodeToFqn(e)))
@@ -416,14 +420,20 @@ class AsmClassVisitor extends ClassVisitor {
 			.toList();
 	}
 
-	private AccessModifier convertVisibility(int access) {
-		if ((access & Opcodes.ACC_PUBLIC) != 0)    return AccessModifier.PUBLIC;
-		if ((access & Opcodes.ACC_PROTECTED) != 0) return AccessModifier.PROTECTED;
-		if ((access & Opcodes.ACC_PRIVATE) != 0)   return AccessModifier.PRIVATE;
+	private static AccessModifier convertVisibility(int access) {
+		if ((access & Opcodes.ACC_PUBLIC) != 0) {
+			return AccessModifier.PUBLIC;
+		}
+		if ((access & Opcodes.ACC_PROTECTED) != 0) {
+			return AccessModifier.PROTECTED;
+		}
+		if ((access & Opcodes.ACC_PRIVATE) != 0) {
+			return AccessModifier.PRIVATE;
+		}
 		return AccessModifier.PACKAGE_PRIVATE;
 	}
 
-	private boolean isTypeMemberExported(int access) {
+	private static boolean isTypeMemberExported(int access) {
 		AccessModifier visibility = convertVisibility(access);
 		return visibility == AccessModifier.PUBLIC || visibility == AccessModifier.PROTECTED;
 	}
@@ -433,80 +443,109 @@ class AsmClassVisitor extends ClassVisitor {
 		return isFinal(access) || isSealed || (isClass(classAccess) && !hasNonPrivateConstructor);
 	}
 
-	private EnumSet<Modifier> convertClassModifiers(int access) {
+	private static EnumSet<Modifier> convertClassModifiers(int access) {
 		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-		if ((access & Opcodes.ACC_FINAL) != 0)    modifiers.add(Modifier.FINAL);
-		if ((access & Opcodes.ACC_ABSTRACT) != 0) modifiers.add(Modifier.ABSTRACT);
-		if ((access & Opcodes.ACC_STATIC) != 0)   modifiers.add(Modifier.STATIC); // shouldn't work on classes, but it does?
+		if ((access & Opcodes.ACC_FINAL) != 0) {
+			modifiers.add(Modifier.FINAL);
+		}
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+			modifiers.add(Modifier.ABSTRACT);
+		}
+		if ((access & Opcodes.ACC_STATIC) != 0) {
+			// shouldn't work on classes, but it does?
+			modifiers.add(Modifier.STATIC);
+		}
 		return modifiers;
 	}
 
-	private EnumSet<Modifier> convertFieldModifiers(int access) {
+	private static EnumSet<Modifier> convertFieldModifiers(int access) {
 		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-		if ((access & Opcodes.ACC_STATIC) != 0)    modifiers.add(Modifier.STATIC);
-		if ((access & Opcodes.ACC_FINAL) != 0)     modifiers.add(Modifier.FINAL);
-		if ((access & Opcodes.ACC_VOLATILE) != 0)  modifiers.add(Modifier.VOLATILE);
-		if ((access & Opcodes.ACC_TRANSIENT) != 0) modifiers.add(Modifier.TRANSIENT);
+		if ((access & Opcodes.ACC_STATIC) != 0) {
+			modifiers.add(Modifier.STATIC);
+		}
+		if ((access & Opcodes.ACC_FINAL) != 0) {
+			modifiers.add(Modifier.FINAL);
+		}
+		if ((access & Opcodes.ACC_VOLATILE) != 0) {
+			modifiers.add(Modifier.VOLATILE);
+		}
+		if ((access & Opcodes.ACC_TRANSIENT) != 0) {
+			modifiers.add(Modifier.TRANSIENT);
+		}
 		return modifiers;
 	}
 
 	private EnumSet<Modifier> convertMethodModifiers(int access) {
 		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-		if ((access & Opcodes.ACC_STATIC) != 0)       modifiers.add(Modifier.STATIC);
-		if ((access & Opcodes.ACC_FINAL) != 0)        modifiers.add(Modifier.FINAL);
-		if ((access & Opcodes.ACC_ABSTRACT) != 0)     modifiers.add(Modifier.ABSTRACT);
-		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) modifiers.add(Modifier.SYNCHRONIZED);
-		if ((access & Opcodes.ACC_NATIVE) != 0)       modifiers.add(Modifier.NATIVE);
-		if ((access & Opcodes.ACC_STRICT) != 0)       modifiers.add(Modifier.STRICTFP);
-		if (isDefault(access))                        modifiers.add(Modifier.DEFAULT);
+		if ((access & Opcodes.ACC_STATIC) != 0) {
+			modifiers.add(Modifier.STATIC);
+		}
+		if ((access & Opcodes.ACC_FINAL) != 0) {
+			modifiers.add(Modifier.FINAL);
+		}
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+			modifiers.add(Modifier.ABSTRACT);
+		}
+		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
+			modifiers.add(Modifier.SYNCHRONIZED);
+		}
+		if ((access & Opcodes.ACC_NATIVE) != 0) {
+			modifiers.add(Modifier.NATIVE);
+		}
+		if ((access & Opcodes.ACC_STRICT) != 0) {
+			modifiers.add(Modifier.STRICTFP);
+		}
+		if (isDefault(access)) {
+			modifiers.add(Modifier.DEFAULT);
+		}
 		return modifiers;
 	}
 
-	private String bytecodeToFqn(String bytecodeName) {
+	private static String bytecodeToFqn(String bytecodeName) {
 		return bytecodeName.replace('/', '.');
 	}
 
-	private String descriptorToFqn(String descriptor) {
+	private static String descriptorToFqn(String descriptor) {
 		return Type.getType(descriptor).getClassName();
 	}
 
-	private boolean isSynthetic(int access) {
+	private static boolean isSynthetic(int access) {
 		return (access & Opcodes.ACC_SYNTHETIC) != 0;
 	}
 
-	private boolean isBridge(int access) {
+	private static boolean isBridge(int access) {
 		return (access & Opcodes.ACC_BRIDGE) != 0;
 	}
 
-	private boolean isEnum(int access) {
+	private static boolean isEnum(int access) {
 		return (access & Opcodes.ACC_ENUM) != 0;
 	}
 
-	private boolean isRecord(int access) {
+	private static boolean isRecord(int access) {
 		return (access & Opcodes.ACC_RECORD) != 0;
 	}
 
-	private boolean isClass(int access) {
+	private static boolean isClass(int access) {
 		return !isEnum(access) && !isRecord(access) && !isInterface(access) && !isAnnotation(access);
 	}
 
-	private boolean isAnnotation(int access) {
+	private static boolean isAnnotation(int access) {
 		return (access & Opcodes.ACC_ANNOTATION) != 0;
 	}
 
-	private boolean isInterface(int access) {
+	private static boolean isInterface(int access) {
 		return (access & Opcodes.ACC_INTERFACE) != 0;
 	}
 
-	private boolean isVarargs(int access) {
+	private static boolean isVarargs(int access) {
 		return (access & Opcodes.ACC_VARARGS) != 0;
 	}
 
-	private boolean isStatic(int access) {
+	private static boolean isStatic(int access) {
 		return (access & Opcodes.ACC_STATIC) != 0;
 	}
 
-	private boolean isFinal(int access) {
+	private static boolean isFinal(int access) {
 		return (access & Opcodes.ACC_FINAL) != 0;
 	}
 

@@ -88,19 +88,19 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	}
 
 	public boolean isPublic() {
-		return AccessModifier.PUBLIC == visibility;
+		return visibility == AccessModifier.PUBLIC;
 	}
 
 	public boolean isProtected() {
-		return AccessModifier.PROTECTED == visibility;
+		return visibility == AccessModifier.PROTECTED;
 	}
 
 	public boolean isPrivate() {
-		return AccessModifier.PRIVATE == visibility;
+		return visibility == AccessModifier.PRIVATE;
 	}
 
 	public boolean isPackagePrivate() {
-		return AccessModifier.PACKAGE_PRIVATE == visibility;
+		return visibility == AccessModifier.PACKAGE_PRIVATE;
 	}
 
 	public boolean isStatic() {
@@ -113,8 +113,12 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		Symbol symbol = (Symbol) o;
 		return Objects.equals(qualifiedName, symbol.qualifiedName)
 			&& Objects.equals(visibility, symbol.visibility)

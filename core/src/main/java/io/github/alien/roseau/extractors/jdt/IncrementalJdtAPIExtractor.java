@@ -4,7 +4,7 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import io.github.alien.roseau.extractors.incremental.ChangedFilesProvider;
+import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalAPIExtractor;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
@@ -30,7 +30,7 @@ import java.util.Set;
  */
 public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements IncrementalAPIExtractor {
 	@Override
-	public API refreshAPI(Path sources, ChangedFilesProvider.ChangedFiles changedFiles, API previousApi) {
+	public API refreshAPI(Path sources, ChangedFiles changedFiles, API previousApi) {
 		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(sources)), "Invalid sources: " + sources);
 		Objects.requireNonNull(changedFiles);
 		Objects.requireNonNull(previousApi);

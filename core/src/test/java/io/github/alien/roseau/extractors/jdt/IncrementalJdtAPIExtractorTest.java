@@ -1,6 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
-import io.github.alien.roseau.extractors.incremental.ChangedFilesProvider;
+import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -31,7 +31,7 @@ class IncrementalJdtAPIExtractorTest {
 		var api1 = extractor.extractAPI(wd);
 
 		Files.writeString(i, "public interface I { void m(); }");
-		var changedFiles = new ChangedFilesProvider.ChangedFiles(Set.of(i), Set.of(), Set.of());
+		var changedFiles = new ChangedFiles(Set.of(i), Set.of(), Set.of());
 
 		var incrementalExtractor = new IncrementalJdtAPIExtractor();
 		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1);
@@ -66,7 +66,7 @@ class IncrementalJdtAPIExtractorTest {
 
 		var api1 = new JdtAPIExtractor().extractAPI(wd);
 
-		var changedFiles = ChangedFilesProvider.ChangedFiles.NO_CHANGES;
+		var changedFiles = ChangedFiles.NO_CHANGES;
 		var incrementalExtractor = new IncrementalJdtAPIExtractor();
 		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1);
 
@@ -82,7 +82,7 @@ class IncrementalJdtAPIExtractorTest {
 
 		var api1 = new JdtAPIExtractor().extractAPI(wd);
 
-		var changedFiles = new ChangedFilesProvider.ChangedFiles(Set.of(), Set.of(a), Set.of());
+		var changedFiles = new ChangedFiles(Set.of(), Set.of(a), Set.of());
 		var incrementalExtractor = new IncrementalJdtAPIExtractor();
 		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1);
 
@@ -107,7 +107,7 @@ class IncrementalJdtAPIExtractorTest {
 		var b = wd.resolve("B.java");
 		Files.writeString(b, "public class B {}");
 
-		var changedFiles = new ChangedFilesProvider.ChangedFiles(Set.of(), Set.of(), Set.of(b));
+		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(b));
 		var incrementalExtractor = new IncrementalJdtAPIExtractor();
 		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1);
 

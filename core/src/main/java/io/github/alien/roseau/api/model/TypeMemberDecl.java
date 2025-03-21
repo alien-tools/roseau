@@ -39,9 +39,15 @@ public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, Ex
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
 		TypeMemberDecl other = (TypeMemberDecl) o;
 		return Objects.equals(type, other.type) && Objects.equals(containingType, other.containingType);
 	}

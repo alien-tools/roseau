@@ -178,8 +178,12 @@ public final class API {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		API api = (API) o;
 		return Objects.equals(allTypes, api.allTypes);
 	}

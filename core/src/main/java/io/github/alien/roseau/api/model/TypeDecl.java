@@ -262,9 +262,15 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
-		if (!super.equals(o)) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
 		TypeDecl typeDecl = (TypeDecl) o;
 		return Objects.equals(implementedInterfaces, typeDecl.implementedInterfaces)
 			&& Objects.equals(formalTypeParameters, typeDecl.formalTypeParameters)

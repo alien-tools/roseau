@@ -38,6 +38,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Set;
@@ -59,7 +60,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	List<TypeDecl> getCollectedTypeDecls() {
-		return collectedTypeDecls;
+		return Collections.unmodifiableList(collectedTypeDecls);
 	}
 
 	@Override
@@ -114,7 +115,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 		// §8.9
 		if (type instanceof EnumDeclaration enm &&
-			enm.enumConstants().stream().anyMatch(cons ->
+			((List<?>) enm.enumConstants()).stream().anyMatch(cons ->
 				((EnumConstantDeclaration) cons).getAnonymousClassDeclaration() != null)) {
 				modifiers.add(Modifier.SEALED);
 		}
@@ -151,7 +152,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 				new ClassDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, superClassRef, constructors);
 			case TypeDeclaration i when i.isInterface() -> {
-				modifiers.add(Modifier.ABSTRACT); // FIXME: interfaces should be implicitly abstract
+				// FIXME: interfaces should be implicitly abstract
+				modifiers.add(Modifier.ABSTRACT);
 				yield new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType);
 			}
@@ -162,7 +164,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 				new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, constructors);
 			case AnnotationTypeDeclaration a -> {
-				modifiers.add(Modifier.ABSTRACT); // FIXME: annotations should be implicitly abstract
+				// FIXME: annotations should be implicitly abstract
+				modifiers.add(Modifier.ABSTRACT);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
 					fields, methods, enclosingType);
 			}
@@ -178,7 +181,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1); // FIXME
+		// FIXME
+		SourceLocation location = new SourceLocation(Paths.get(filePath), -1);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 
 		return new FieldDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods,
@@ -189,7 +193,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1); // FIXME
+		// FIXME
+		SourceLocation location = new SourceLocation(Paths.get(filePath), -1);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -347,28 +352,39 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private Set<Modifier> convertModifiers(int modifiers) {
 		Set<Modifier> result = EnumSet.noneOf(Modifier.class);
-		if (org.eclipse.jdt.core.dom.Modifier.isStatic(modifiers))
+		if (org.eclipse.jdt.core.dom.Modifier.isStatic(modifiers)) {
 			result.add(Modifier.STATIC);
-		if (org.eclipse.jdt.core.dom.Modifier.isFinal(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isFinal(modifiers)) {
 			result.add(Modifier.FINAL);
-		if (org.eclipse.jdt.core.dom.Modifier.isAbstract(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isAbstract(modifiers)) {
 			result.add(Modifier.ABSTRACT);
-		if (org.eclipse.jdt.core.dom.Modifier.isSynchronized(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isSynchronized(modifiers)) {
 			result.add(Modifier.SYNCHRONIZED);
-		if (org.eclipse.jdt.core.dom.Modifier.isVolatile(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isVolatile(modifiers)) {
 			result.add(Modifier.VOLATILE);
-		if (org.eclipse.jdt.core.dom.Modifier.isTransient(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isTransient(modifiers)) {
 			result.add(Modifier.TRANSIENT);
-		if (org.eclipse.jdt.core.dom.Modifier.isNative(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isNative(modifiers)) {
 			result.add(Modifier.NATIVE);
-		if (org.eclipse.jdt.core.dom.Modifier.isStrictfp(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isStrictfp(modifiers)) {
 			result.add(Modifier.STRICTFP);
-		if (org.eclipse.jdt.core.dom.Modifier.isSealed(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isSealed(modifiers)) {
 			result.add(Modifier.SEALED);
-		if (org.eclipse.jdt.core.dom.Modifier.isNonSealed(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isNonSealed(modifiers)) {
 			result.add(Modifier.NON_SEALED);
-		if (org.eclipse.jdt.core.dom.Modifier.isDefault(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isDefault(modifiers)) {
 			result.add(Modifier.DEFAULT);
+		}
 		return result;
 	}
 

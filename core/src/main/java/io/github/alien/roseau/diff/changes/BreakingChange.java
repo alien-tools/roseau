@@ -24,7 +24,7 @@ public record BreakingChange(
 		Objects.requireNonNull(impactedSymbol);
 	}
 
-	private String printSymbol(Symbol s) {
+	private static String printSymbol(Symbol s) {
 		if (s == null) {
 			return "";
 		} else if (s instanceof ExecutableDecl e) {

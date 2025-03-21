@@ -69,8 +69,9 @@ public final class SpoonUtils {
 	 * @throws IllegalArgumentException if the specified location does not exist
 	 */
 	public static Launcher launcherFor(Path location) {
-		if (!location.toFile().exists())
+		if (!location.toFile().exists()) {
 			throw new IllegalArgumentException(location + " does not exist");
+		}
 
 		// Custom "fast" launcher
 		Launcher launcher = new Launcher();

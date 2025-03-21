@@ -64,8 +64,6 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	TypeReference(String qualifiedName, List<ITypeReference> typeArguments) {
 		this.qualifiedName = Objects.requireNonNull(qualifiedName);
 		this.typeArguments = Objects.requireNonNull(typeArguments);
-		this.resolutionAttempted = false;
-		this.resolvedApiType = null;
 	}
 
 	TypeReference(String qualifiedName, List<ITypeReference> typeArguments, ReflectiveTypeFactory factory) {
@@ -214,8 +212,12 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 
 	@Override
 	public boolean equals(Object o) {
-		if (this == o) return true;
-		if (o == null || getClass() != o.getClass()) return false;
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
 		TypeReference<?> other = (TypeReference<?>) o;
 		return Objects.equals(qualifiedName, other.qualifiedName) && Objects.equals(typeArguments, other.typeArguments);
 	}

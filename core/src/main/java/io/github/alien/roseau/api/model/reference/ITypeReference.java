@@ -3,6 +3,7 @@ package io.github.alien.roseau.api.model.reference;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import io.github.alien.roseau.api.model.DeepCopyable;
 
+import java.util.Collection;
 import java.util.List;
 
 /**
@@ -35,7 +36,7 @@ public sealed interface ITypeReference extends DeepCopyable<ITypeReference>
 	 * @param refs the references to deep-copy
 	 * @return the deep-copied references
 	 */
-	static List<ITypeReference> deepCopy(List<ITypeReference> refs) {
+	static List<ITypeReference> deepCopy(Collection<ITypeReference> refs) {
 		return refs.stream()
 			.map(ITypeReference::deepCopy)
 			.toList();
