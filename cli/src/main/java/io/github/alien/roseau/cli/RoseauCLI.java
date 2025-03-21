@@ -1,7 +1,8 @@
-package io.github.alien.roseau;
+package io.github.alien.roseau.cli;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
 @CommandLine.Command(name = "roseau")
-public final class Roseau implements Callable<Integer> {
+public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--api",
 		description = "Serialize the API model of --v1; see --json")
 	private boolean apiMode;
@@ -76,7 +77,7 @@ public final class Roseau implements Callable<Integer> {
 		description = "A colon-separated list of elements to include in the classpath")
 	private String classpathString;
 
-	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
+	private static final Logger LOGGER = LogManager.getLogger(RoseauCLI.class);
 	private static final String RED_TEXT = "\u001B[31m";
 	private static final String BOLD = "\u001B[1m";
 	private static final String UNDERLINE = "\u001B[4m";
@@ -206,7 +207,7 @@ public final class Roseau implements Callable<Integer> {
 	}
 
 	public static void main(String[] args) {
-		int exitCode = new CommandLine(new Roseau()).execute(args);
+		int exitCode = new CommandLine(new RoseauCLI()).execute(args);
 		System.exit(exitCode);
 	}
 }
