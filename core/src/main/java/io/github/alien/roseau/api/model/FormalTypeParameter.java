@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -32,5 +33,10 @@ public record FormalTypeParameter(
 	@Override
 	public FormalTypeParameter deepCopy() {
 		return new FormalTypeParameter(name, ITypeReference.deepCopy(bounds));
+	}
+
+	@Override
+	public FormalTypeParameter deepCopy(ReflectiveTypeFactory factory) {
+		return new FormalTypeParameter(name, ITypeReference.deepCopy(bounds, factory));
 	}
 }

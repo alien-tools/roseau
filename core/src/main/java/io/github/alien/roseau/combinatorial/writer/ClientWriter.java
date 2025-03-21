@@ -27,7 +27,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class ClientWriter extends AbstractWriter {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
 	private static final String clientsPackageName = Constants.CLIENTS_FOLDER;
 

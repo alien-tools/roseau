@@ -53,4 +53,9 @@ public record ArrayTypeReference(ITypeReference componentType, int dimension) im
 	public ArrayTypeReference deepCopy() {
 		return new ArrayTypeReference(componentType.deepCopy(), dimension);
 	}
+
+	@Override
+	public ArrayTypeReference deepCopy(ReflectiveTypeFactory factory) {
+		return new ArrayTypeReference(componentType.deepCopy(factory), dimension);
+	}
 }

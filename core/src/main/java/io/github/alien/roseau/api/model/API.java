@@ -54,10 +54,10 @@ public final class API {
 	 */
 	public API(@JsonProperty("allTypes") List<TypeDecl> types, @JacksonInject TypeReferenceFactory factory) {
 		this.allTypes = Objects.requireNonNull(types).stream()
-			.collect(ImmutableMap.toImmutableMap(
-				Symbol::getQualifiedName,
-				Function.identity()
-			));
+				.collect(ImmutableMap.toImmutableMap(
+						Symbol::getQualifiedName,
+						Function.identity()
+				));
 		this.factory = Objects.requireNonNull(factory);
 
 		// Whenever we create an API instance, we need to make sure to resolve within-library types
@@ -71,7 +71,7 @@ public final class API {
 	 */
 	public Stream<TypeDecl> getExportedTypes() {
 		return getAllTypes()
-			.filter(Symbol::isExported);
+				.filter(Symbol::isExported);
 	}
 
 	/**
@@ -81,8 +81,8 @@ public final class API {
 	 */
 	public Stream<ClassDecl> getExportedClasses() {
 		return getExportedTypes()
-			.filter(ClassDecl.class::isInstance)
-			.map(ClassDecl.class::cast);
+				.filter(ClassDecl.class::isInstance)
+				.map(ClassDecl.class::cast);
 	}
 
 	/**
@@ -92,8 +92,8 @@ public final class API {
 	 */
 	public Stream<InterfaceDecl> getExportedInterfaces() {
 		return getExportedTypes()
-			.filter(InterfaceDecl.class::isInstance)
-			.map(InterfaceDecl.class::cast);
+				.filter(InterfaceDecl.class::isInstance)
+				.map(InterfaceDecl.class::cast);
 	}
 
 	/**
@@ -118,8 +118,8 @@ public final class API {
 		TypeDecl find = allTypes.get(qualifiedName);
 
 		return find != null && find.isExported()
-			? Optional.of(find)
-			: Optional.empty();
+				? Optional.of(find)
+				: Optional.empty();
 	}
 
 	/**
@@ -172,8 +172,8 @@ public final class API {
 	@Override
 	public String toString() {
 		return getExportedTypes()
-			.map(TypeDecl::toString)
-			.collect(Collectors.joining(System.lineSeparator()));
+				.map(TypeDecl::toString)
+				.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 	@Override
@@ -191,5 +191,15 @@ public final class API {
 	@Override
 	public int hashCode() {
 		return Objects.hash(allTypes);
+	}
+
+	public API deepCopy(TypeReferenceFactory factory) {
+		var reflectiveTypeFactory = new ReflectiveTypeFactory(factory);
+
+		var clonesTypes = getAllTypes()
+				.map(t -> (TypeDecl) t.deepCopy(reflectiveTypeFactory))
+				.toList();
+
+		return new API(clonesTypes, factory);
 	}
 }

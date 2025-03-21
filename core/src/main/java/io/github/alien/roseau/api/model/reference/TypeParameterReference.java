@@ -39,4 +39,9 @@ public record TypeParameterReference(String qualifiedName) implements ITypeRefer
 	public TypeParameterReference deepCopy() {
 		return this;
 	}
+
+	@Override
+	public TypeParameterReference deepCopy(ReflectiveTypeFactory factory) {
+		return this;
+	}
 }

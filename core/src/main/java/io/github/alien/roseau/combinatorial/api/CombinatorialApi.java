@@ -25,7 +25,6 @@ import io.github.alien.roseau.combinatorial.builder.MethodBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordComponentBuilder;
 import io.github.alien.roseau.combinatorial.builder.TypeDeclBuilder;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIFactory;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -51,7 +50,6 @@ import static io.github.alien.roseau.api.model.Modifier.SYNCHRONIZED;
 
 public final class CombinatorialApi {
 	static final TypeReferenceFactory typeReferenceFactory = new CachedTypeReferenceFactory();
-	static final SpoonAPIFactory apiFactory = new SpoonAPIFactory(typeReferenceFactory);
 
 	static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC);
 	static final List<AccessModifier> constructorsVisibilities = List.of(PROTECTED, PUBLIC);

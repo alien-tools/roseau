@@ -21,15 +21,6 @@ public abstract sealed class AbstractQueue<T> permits NewApiQueue, ResultsProces
 		}
 	}
 
-	public Pair<String, T> take() {
-		try {
-			return queue.take();
-		} catch (InterruptedException e) {
-			Thread.currentThread().interrupt();
-			return null;
-		}
-	}
-
 	public Pair<String, T> poll() {
 		try {
 			return queue.poll(5, SECONDS);

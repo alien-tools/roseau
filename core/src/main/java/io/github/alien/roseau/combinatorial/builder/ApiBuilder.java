@@ -6,7 +6,8 @@ import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIFactory;
+import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -14,21 +15,23 @@ import java.util.Map;
 public final class ApiBuilder implements Builder<API> {
 	public final Map<String, TypeDeclBuilder> allTypes = new HashMap<>();
 
-	private final SpoonAPIFactory factory;
+	private final TypeReferenceFactory typeReferenceFactory;
 
-	public ApiBuilder(SpoonAPIFactory factory) {
-		this.factory = factory;
+	public ApiBuilder(TypeReferenceFactory typeReferenceFactory) {
+		this.typeReferenceFactory = typeReferenceFactory;
 	}
 
 	@Override
 	public API make() {
-		return new API(allTypes.values().stream().map(TypeDeclBuilder::make).toList(), factory.getTypeReferenceFactory());
+		return new API(allTypes.values().stream().map(TypeDeclBuilder::make).toList(), typeReferenceFactory);
 	}
 
-	public static ApiBuilder from(API api, SpoonAPIFactory factory) {
+	public static ApiBuilder from(API api) {
+		var factory = new CachedTypeReferenceFactory();
 		var apiBuilder = new ApiBuilder(factory);
 
-		api.getAllTypes().forEach(typeDecl -> {
+		var apiCloned = api.deepCopy(factory);
+		apiCloned.getAllTypes().forEach(typeDecl -> {
 			switch (typeDecl) {
 				case EnumDecl enumDecl:
 					var enumBuilder = EnumBuilder.from(enumDecl);

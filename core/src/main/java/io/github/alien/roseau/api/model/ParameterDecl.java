@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 
 import java.util.Objects;
 
@@ -24,6 +25,11 @@ public record ParameterDecl(
 	@Override
 	public ParameterDecl deepCopy() {
 		return new ParameterDecl(name, type.deepCopy(), isVarargs);
+	}
+
+	@Override
+	public ParameterDecl deepCopy(ReflectiveTypeFactory factory) {
+		return new ParameterDecl(name, type.deepCopy(factory), isVarargs);
 	}
 
 	@Override

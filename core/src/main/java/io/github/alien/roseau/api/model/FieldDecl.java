@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -36,5 +37,11 @@ public final class FieldDecl extends TypeMemberDecl {
 	public FieldDecl deepCopy() {
 		return new FieldDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
 			location, containingType.deepCopy(), type.deepCopy());
+	}
+
+	@Override
+	public FieldDecl deepCopy(ReflectiveTypeFactory factory) {
+		return new FieldDecl(qualifiedName, visibility, modifiers, annotations.stream().map(a -> a.deepCopy(factory)).toList(),
+			location, containingType.deepCopy(factory), type.deepCopy(factory));
 	}
 }

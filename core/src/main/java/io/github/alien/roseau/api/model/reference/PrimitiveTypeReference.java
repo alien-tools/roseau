@@ -55,4 +55,9 @@ public record PrimitiveTypeReference(String qualifiedName) implements ITypeRefer
 	public PrimitiveTypeReference deepCopy() {
 		return this;
 	}
+
+	@Override
+	public PrimitiveTypeReference deepCopy(ReflectiveTypeFactory factory) {
+		return this;
+	}
 }

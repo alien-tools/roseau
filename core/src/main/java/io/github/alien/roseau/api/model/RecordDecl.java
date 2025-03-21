@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -56,5 +57,16 @@ public final class RecordDecl extends ClassDecl {
 			getEnclosingType().map(TypeReference::deepCopy).orElse(null),
 			constructors.stream().map(ConstructorDecl::deepCopy).toList(),
 			recordComponents.stream().map(RecordComponentDecl::deepCopy).toList());
+	}
+
+	@Override
+	public RecordDecl deepCopy(ReflectiveTypeFactory factory) {
+		return new RecordDecl(qualifiedName, visibility, modifiers, annotations.stream().map(a -> a.deepCopy(factory)).toList(),
+			location, TypeReference.deepCopy(implementedInterfaces, factory),
+			formalTypeParameters.stream().map(fT -> fT.deepCopy(factory)).toList(),
+			fields.stream().map(f -> f.deepCopy(factory)).toList(), methods.stream().map(m -> m.deepCopy(factory)).toList(),
+			getEnclosingType().map(t -> t.deepCopy(factory)).orElse(null),
+			constructors.stream().map(c -> c.deepCopy(factory)).toList(),
+			recordComponents.stream().map(rC -> rC.deepCopy(factory)).toList());
 	}
 }

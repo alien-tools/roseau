@@ -9,7 +9,7 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Path;
 
 public final class CombinatorialBenchmark {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(CombinatorialBenchmark.class);
 
 	public static void main(String[] args) {
 		var maxParallelAnalysis = 1;
@@ -22,6 +22,8 @@ public final class CombinatorialBenchmark {
 		var outputPath = Path.of(outputDir);
 
 		try {
+			var currentNow = System.currentTimeMillis();
+
 			var apiGeneration = new GenerateCombinatorialApi(outputPath);
 			apiGeneration.run();
 			var api = apiGeneration.getApi();
@@ -31,6 +33,8 @@ public final class CombinatorialBenchmark {
 
 			var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(api, maxParallelAnalysis, outputPath);
 			newVersionsAndBenchmarkStep.run();
+
+			LOGGER.info("\nCombinatorial benchmark took {} ms", System.currentTimeMillis() - currentNow);
 		} catch (Exception e) {
 			LOGGER.error("Failed to run combinatorial benchmark");
 			LOGGER.error(e.getMessage());

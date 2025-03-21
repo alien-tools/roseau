@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.stream.Collectors;
 
 public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(GenerateNewVersionsAndLaunchBenchmark.class);
 
 	private final API v1Api;
 	private final int maxParallelAnalysis;
@@ -67,7 +67,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 			initializeBenchmarkThreads();
 			initializeResultsThread();
 
-			var visitor = new BreakingChangesGeneratorVisitor(newApiQueue, outputPath);
+			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
 			visitor.$(v1Api).visit();
 
 			informAllBenchmarksGenerationIsOver();

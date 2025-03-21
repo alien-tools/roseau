@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Objects;
@@ -17,5 +18,10 @@ public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) impleme
 	@Override
 	public Annotation deepCopy() {
 		return new Annotation(actualAnnotation.deepCopy());
+	}
+
+	@Override
+	public Annotation deepCopy(ReflectiveTypeFactory factory) {
+		return new Annotation(actualAnnotation.deepCopy(factory));
 	}
 }

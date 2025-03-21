@@ -21,7 +21,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public final class Benchmark implements Runnable {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(Benchmark.class);
 
 	private final String id;
 
@@ -79,7 +79,7 @@ public final class Benchmark implements Runnable {
 	@Override
 	public void run() {
 		while (isNewApisGenerationOngoing || apiQueue.hasStillWork()) {
-			var strategyAndApi = apiQueue.take();
+			var strategyAndApi = apiQueue.poll();
 			if (strategyAndApi == null) break;
 
 			try {

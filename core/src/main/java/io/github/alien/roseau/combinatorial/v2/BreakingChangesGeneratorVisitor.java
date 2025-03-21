@@ -1,33 +1,19 @@
 package io.github.alien.roseau.combinatorial.v2;
 
-import io.github.alien.roseau.api.model.AnnotationDecl;
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.EnumDecl;
-import io.github.alien.roseau.api.model.EnumValueDecl;
-import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.InterfaceDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.RecordComponentDecl;
-import io.github.alien.roseau.api.model.RecordDecl;
-import io.github.alien.roseau.api.model.Symbol;
+import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
-import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-import java.nio.file.Path;
-
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
+	private final API api;
+
 	private final NewApiQueue queue;
 
-	private final Path apiExportPath;
-
-	public BreakingChangesGeneratorVisitor(NewApiQueue queue, Path outputPath) {
+	public BreakingChangesGeneratorVisitor(API api, NewApiQueue queue) {
+		this.api = api;
 		this.queue = queue;
-
-		this.apiExportPath = outputPath.resolve(Constants.API_JSON);
 	}
 
 	public Visit symbol(Symbol it) {
@@ -60,7 +46,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
-		new RemoveInterfaceStrategy(i, queue).breakApi(apiExportPath);
+		new RemoveInterfaceStrategy(i, queue).breakApi(api);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {

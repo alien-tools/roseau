@@ -207,6 +207,12 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 			.toList();
 	}
 
+	public static <T extends TypeDecl> List<TypeReference<T>> deepCopy(List<TypeReference<T>> refs, ReflectiveTypeFactory factory) {
+		return refs.stream()
+			.map(t -> t.deepCopy(factory))
+			.toList();
+	}
+
 	@Override
 	public String toString() {
 		if (typeArguments.isEmpty()) {
@@ -236,5 +242,9 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	@Override
 	public TypeReference<T> deepCopy() {
 		return new TypeReference<>(qualifiedName, ITypeReference.deepCopy(typeArguments));
+	}
+
+	public TypeReference<T> deepCopy(ReflectiveTypeFactory factory) {
+		return new TypeReference<>(qualifiedName, ITypeReference.deepCopy(typeArguments), factory);
 	}
 }

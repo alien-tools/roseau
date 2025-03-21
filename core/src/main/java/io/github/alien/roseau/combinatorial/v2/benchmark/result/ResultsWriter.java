@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public final class ResultsWriter implements Runnable {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(ResultsWriter.class);
 
 	private final Path resultsPath = Path.of(Constants.RESULTS_FOLDER);
 	private final ResultsProcessQueue resultsQueue;

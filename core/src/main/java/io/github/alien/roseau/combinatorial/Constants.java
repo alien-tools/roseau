@@ -8,6 +8,4 @@ public final class Constants {
 	public static final String OUTPUT_FOLDER = "output";
 	public static final String RESULTS_FOLDER = "results";
 	public static final String TMP_FOLDER = "tmp";
-
-	public static final String API_JSON = "api.json";
 }

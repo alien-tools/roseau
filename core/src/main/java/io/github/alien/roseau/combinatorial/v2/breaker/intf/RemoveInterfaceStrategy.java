@@ -1,6 +1,5 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.intf;
 
-import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.Modifier;
@@ -17,7 +16,7 @@ public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(API api, ApiBuilder mutableApi) {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		LOGGER.info("Removing interface " + intf.getPrettyQualifiedName());
 
 		mutableApi.allTypes.remove(intf.getQualifiedName());

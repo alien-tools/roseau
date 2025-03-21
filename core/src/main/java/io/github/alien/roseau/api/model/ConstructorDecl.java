@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -38,5 +39,14 @@ public final class ConstructorDecl extends ExecutableDecl {
 			parameters.stream().map(ParameterDecl::deepCopy).toList(),
 			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
 			ITypeReference.deepCopy(thrownExceptions));
+	}
+
+	@Override
+	public ConstructorDecl deepCopy(ReflectiveTypeFactory factory) {
+		return new ConstructorDecl(qualifiedName, visibility, modifiers,
+			annotations.stream().map(a -> a.deepCopy(factory)).toList(), location, containingType.deepCopy(factory), type.deepCopy(factory),
+			parameters.stream().map(p -> p.deepCopy(factory)).toList(),
+			formalTypeParameters.stream().map(fT -> fT.deepCopy(factory)).toList(),
+			ITypeReference.deepCopy(thrownExceptions, factory));
 	}
 }

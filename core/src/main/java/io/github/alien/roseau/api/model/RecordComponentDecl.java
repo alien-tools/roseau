@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.EnumSet;
@@ -29,5 +30,11 @@ public final class RecordComponentDecl extends TypeMemberDecl {
 	public RecordComponentDecl deepCopy() {
 		return new RecordComponentDecl(qualifiedName, annotations.stream().map(Annotation::deepCopy).toList(),
 			location, containingType.deepCopy(), type.deepCopy(), isVarargs);
+	}
+
+	@Override
+	public RecordComponentDecl deepCopy(ReflectiveTypeFactory factory) {
+		return new RecordComponentDecl(qualifiedName, annotations.stream().map(a -> a.deepCopy(factory)).toList(),
+			location, containingType.deepCopy(factory), type.deepCopy(factory), isVarargs);
 	}
 }

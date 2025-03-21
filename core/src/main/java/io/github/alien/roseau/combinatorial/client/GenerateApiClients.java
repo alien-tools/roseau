@@ -10,7 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Path;
 
 public final class GenerateApiClients extends AbstractStep {
-	private static final Logger LOGGER = LogManager.getLogger();
+	private static final Logger LOGGER = LogManager.getLogger(GenerateApiClients.class);
 
 	private final API api;
 

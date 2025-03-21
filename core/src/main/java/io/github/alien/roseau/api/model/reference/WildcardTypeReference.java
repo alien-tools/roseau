@@ -80,4 +80,9 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 	public WildcardTypeReference deepCopy() {
 		return new WildcardTypeReference(ITypeReference.deepCopy(bounds), upper);
 	}
+
+	@Override
+	public WildcardTypeReference deepCopy(ReflectiveTypeFactory factory) {
+		return new WildcardTypeReference(ITypeReference.deepCopy(bounds, factory), upper);
+	}
 }

@@ -43,4 +43,10 @@ public sealed interface ITypeReference extends DeepCopyable<ITypeReference>
 			.map(ITypeReference::deepCopy)
 			.toList();
 	}
+
+	static List<ITypeReference> deepCopy(Collection<ITypeReference> refs, ReflectiveTypeFactory factory) {
+		return refs.stream()
+			.map(t -> t.deepCopy(factory))
+			.toList();
+	}
 }
