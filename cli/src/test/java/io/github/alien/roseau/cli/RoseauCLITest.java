@@ -21,10 +21,12 @@ class RoseauCLITest {
 	@Test
 	void testIt() throws Exception {
 		var out = tapSystemOutNormalized(() -> {
-			cmd.execute("--v1=src/test/resources/test-project/src",
-				"--v2=src/test/resources/test-project/src", "--diff", "--verbose");
+			cmd.execute("--v1=src/test/resources/test-project-v1/src",
+				"--v2=src/test/resources/test-project-v2/src",
+				"--diff",
+				"--plain");
 		});
 
-		assertThat(out, containsString("No breaking changes found."));
+		assertThat(out, containsString("METHOD_REMOVED pkg.T.m"));
 	}
 }

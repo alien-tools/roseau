@@ -76,6 +76,9 @@ public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--classpath",
 		description = "A colon-separated list of elements to include in the classpath")
 	private String classpathString;
+	@CommandLine.Option(names = "--plain",
+		description = "Disable ANSI colors, output plain text")
+	private boolean plain;
 
 	private static final Logger LOGGER = LogManager.getLogger(RoseauCLI.class);
 	private static final String RED_TEXT = "\u001B[31m";
@@ -158,15 +161,20 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private String format(BreakingChange bc) {
-		return String.format("%s %s%n\t%s:%s",
-			RED_TEXT + BOLD + bc.kind() + RESET,
-			UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-			bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-				? "unknown"
-				: v1.toAbsolutePath().relativize(bc.impactedSymbol().getLocation().file()),
-			bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-				? "unknown"
-				: bc.impactedSymbol().getLocation().line());
+		if (plain) {
+			return String.format("%s %s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+		} else {
+			return String.format("%s %s%n\t%s:%s",
+				RED_TEXT + BOLD + bc.kind() + RESET,
+				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
+				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+					? "unknown"
+					: v1.toAbsolutePath().relativize(bc.impactedSymbol().getLocation().file()),
+				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+					? "unknown"
+					: bc.impactedSymbol().getLocation().line());
+		}
 	}
 
 	@Override
