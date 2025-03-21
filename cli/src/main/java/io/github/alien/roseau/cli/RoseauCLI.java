@@ -155,6 +155,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		try {
 			Files.writeString(reportPath, fmt.format(bcs));
+			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
 		}
@@ -187,6 +188,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			if (apiMode) {
 				API api = buildAPI(v1);
 				api.writeJson(apiPath);
+				LOGGER.info("Wrote API to {}", apiPath);
 			}
 
 			if (diffMode) {
