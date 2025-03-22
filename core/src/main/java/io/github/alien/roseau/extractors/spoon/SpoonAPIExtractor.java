@@ -1,10 +1,10 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.APIExtractor;
-import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.TypeDecl;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;

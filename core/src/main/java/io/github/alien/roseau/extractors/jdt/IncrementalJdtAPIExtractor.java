@@ -1,13 +1,13 @@
 package io.github.alien.roseau.extractors.jdt;
 
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalAPIExtractor;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

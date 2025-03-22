@@ -10,6 +10,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.collect.ImmutableMap;
+import io.github.alien.roseau.ExclusionOptions;
 import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -72,6 +73,17 @@ public final class API {
 	public Stream<TypeDecl> getExportedTypes() {
 		return getAllTypes()
 			.filter(Symbol::isExported);
+	}
+
+	/**
+	 * Type declaration that are exported by the API, taking exclusion criteria into account.
+	 *
+	 * @param exclusionOptions exclusion options
+	 * @return The list of exported {@link TypeDecl}
+	 */
+	public Stream<TypeDecl> getExportedTypes(ExclusionOptions exclusionOptions) {
+		return getAllTypes()
+			.filter(symbol -> symbol.isExported() && !exclusionOptions.isExcluded(symbol));
 	}
 
 	/**

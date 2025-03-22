@@ -57,11 +57,22 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	}
 
 	/**
-	 * Checks whether the symbol is exported/accessible from outside the API.
+	 * Checks whether this symbol is exported/accessible from outside the API.
 	 *
 	 * @return true if this symbol can be accessed from outside the API
 	 */
 	public abstract boolean isExported();
+
+	/**
+	 * Checks whether this symbol is annotated with the supplied annotation.
+	 *
+	 * @param annotation Fully qualified name of the annotation
+	 * @return true if this symbol is annotated with the supplied annotation
+	 */
+	public boolean isAnnotatedWith(String annotation) {
+		return annotations.stream()
+			.anyMatch(ann -> Objects.equals(ann.actualAnnotation().getQualifiedName(), annotation));
+	}
 
 	public String getQualifiedName() {
 		return qualifiedName;

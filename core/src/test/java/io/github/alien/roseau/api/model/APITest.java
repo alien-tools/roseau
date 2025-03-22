@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import io.github.alien.roseau.ExclusionOptions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
@@ -10,25 +11,26 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
 
+import static io.github.alien.roseau.utils.TestUtils.buildJdtAPI;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 
 class APITest {
 	@Test
 	void json_round_trip() throws IOException {
-		Path sources = Path.of("src/main/java");
-		MavenClasspathBuilder builder = new MavenClasspathBuilder();
-		List<Path> classpath = builder.buildClasspath(Path.of("."));
-		JdtAPIExtractor extractor = new JdtAPIExtractor();
-		API orig = extractor.extractAPI(sources, classpath);
+		var sources = Path.of("src/main/java");
+		var builder = new MavenClasspathBuilder();
+		var classpath = builder.buildClasspath(Path.of("."));
+		var extractor = new JdtAPIExtractor();
+		var orig = extractor.extractAPI(sources, classpath);
 
-		Path json = Path.of("roundtrip.json");
+		var json = Path.of("roundtrip.json");
 		orig.writeJson(json);
 
-		API res = API.fromJson(json, orig.getFactory());
+		var res = API.fromJson(json, orig.getFactory());
 		Files.delete(json);
 
 		assertThat(res, is(equalTo(orig)));
@@ -41,5 +43,26 @@ class APITest {
 				};
 			}
 		}.$(res).visit();
+	}
+
+	@Test
+	void name_based_exclusion() {
+		var api = buildJdtAPI("public class AClass {}");
+
+		var excludeClass = ExclusionOptions.builder().excludeSymbol("AClass").build();
+
+		assertThat(api.getExportedTypes().toList(), hasSize(1));
+		assertThat(api.getExportedTypes(excludeClass).toList(), hasSize(0));
+	}
+
+	@Test
+	void annotation_based_exclusion() {
+		var api = buildJdtAPI("@Deprecated public class AClass {}");
+
+		var excludeDeprecated = ExclusionOptions.builder()
+			.excludeAnnotation("java.lang.Deprecated").build();
+
+		assertThat(api.getExportedTypes().toList(), hasSize(1));
+		assertThat(api.getExportedTypes(excludeDeprecated).toList(), hasSize(0));
 	}
 }
