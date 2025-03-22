@@ -45,6 +45,11 @@ public class AsmAPIExtractor implements APIExtractor {
 			sources.toString().endsWith(".jar");
 	}
 
+	@Override
+	public String getName() {
+		return "ASM";
+	}
+
 	/**
 	 * Extracts the {@link API} stored in the provided JAR file.
 	 *

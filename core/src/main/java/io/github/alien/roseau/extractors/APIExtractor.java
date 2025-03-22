@@ -42,4 +42,11 @@ public interface APIExtractor {
 	 * @return true if this extractor handles the given {@code sources}
 	 */
 	boolean canExtract(Path sources);
+
+	/**
+	 * Returns a user-friendly name for this extractor
+	 *
+	 * @return this extractor's name
+	 */
+	String getName();
 }

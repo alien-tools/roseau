@@ -97,7 +97,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			if (pom != null && Files.isRegularFile(pom)) {
 				MavenClasspathBuilder classpathBuilder = new MavenClasspathBuilder();
 				classpath.addAll(classpathBuilder.buildClasspath(pom));
-				LOGGER.info("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
+				LOGGER.debug("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
 			}
 
 			if (!Strings.isNullOrEmpty(classpathString)) {
@@ -109,15 +109,15 @@ public final class RoseauCLI implements Callable<Integer> {
 			if (classpath.isEmpty()) {
 				LOGGER.warn("No classpath provided, results may be inaccurate");
 			} else {
-				LOGGER.info("Classpath: {}", classpath);
+				LOGGER.debug("Classpath: {}", classpath);
 			}
 
 			API api = extractor.extractAPI(sources, classpath);
-			LOGGER.info("Extracting API from sources {} using {} took {}ms ({} types)",
-				sources, extractorFactory, sw.elapsed().toMillis(), api.getExportedTypes().count());
+			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
+				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().count());
 			return api;
 		} else {
-			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractorFactory, sources));
+			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractor.getName(), sources));
 		}
 	}
 
@@ -135,7 +135,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			APIDiff diff = new APIDiff(apiV1, apiV2);
 			Stopwatch sw = Stopwatch.createStarted();
 			List<BreakingChange> bcs = diff.diff();
-			LOGGER.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
+			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
 			if (reportPath != null) {
 				writeReport(bcs);
@@ -178,13 +178,29 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
+	private void checkArguments() {
+		if (v1 == null || !Files.exists(v1)) {
+			throw new IllegalArgumentException("--v1 does not exist");
+		}
+
+		if (diffMode && (v2 == null || !Files.exists(v2))) {
+			throw new IllegalArgumentException("--v2 does not exist");
+		}
+
+		if (pom != null && !Files.exists(pom)) {
+			throw new IllegalArgumentException("--pom does not exist");
+		}
+	}
+
 	@Override
 	public Integer call() {
 		if (verbose) {
-			Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+			Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
 		}
 
 		try {
+			checkArguments();
+
 			if (apiMode) {
 				API api = buildAPI(v1);
 				api.writeJson(apiPath);
@@ -211,7 +227,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			return 0;
 		} catch (Exception e) {
-			LOGGER.error(e);
+			LOGGER.error(e.getMessage());
 			return 1;
 		}
 	}
