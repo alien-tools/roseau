@@ -86,32 +86,13 @@ public final class RoseauCLI implements Callable<Integer> {
 	private static final String UNDERLINE = "\u001B[4m";
 	private static final String RESET = "\u001B[0m";
 
-	private API buildAPI(Path sources) {
+	private API buildAPI(Path sources, List<Path> classpath) {
 		APIExtractor extractor = sources.toString().endsWith(".jar")
 			? new AsmAPIExtractor()
 			: APIExtractorFactory.newExtractor(extractorFactory);
 
 		if (extractor.canExtract(sources)) {
 			Stopwatch sw = Stopwatch.createStarted();
-			List<Path> classpath = new ArrayList<>();
-			if (pom != null && Files.isRegularFile(pom)) {
-				MavenClasspathBuilder classpathBuilder = new MavenClasspathBuilder();
-				classpath.addAll(classpathBuilder.buildClasspath(pom));
-				LOGGER.debug("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
-			}
-
-			if (!Strings.isNullOrEmpty(classpathString)) {
-				classpath.addAll(Arrays.stream(classpathString.split(":"))
-					.map(Path::of)
-					.toList());
-			}
-
-			if (classpath.isEmpty()) {
-				LOGGER.warn("No classpath provided, results may be inaccurate");
-			} else {
-				LOGGER.debug("Classpath: {}", classpath);
-			}
-
 			API api = extractor.extractAPI(sources, classpath);
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
 				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().count());
@@ -121,9 +102,9 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private List<BreakingChange> diff(Path v1path, Path v2path) {
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1path));
-		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2path));
+	private List<BreakingChange> diff(Path v1path, Path v2path, List<Path> classpath) {
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1path, classpath));
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2path, classpath));
 
 		CompletableFuture.allOf(futureV1, futureV2).join();
 
@@ -148,6 +129,30 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		return Collections.emptyList();
+	}
+
+	private List<Path> buildClasspath() {
+		List<Path> classpath = new ArrayList<>();
+		if (pom != null && Files.isRegularFile(pom)) {
+			Stopwatch sw = Stopwatch.createStarted();
+			MavenClasspathBuilder classpathBuilder = new MavenClasspathBuilder();
+			classpath.addAll(classpathBuilder.buildClasspath(pom));
+			LOGGER.debug("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
+		}
+
+		if (!Strings.isNullOrEmpty(classpathString)) {
+			classpath.addAll(Arrays.stream(classpathString.split(":"))
+				.map(Path::of)
+				.toList());
+		}
+
+		if (classpath.isEmpty()) {
+			LOGGER.warn("No classpath provided, results may be inaccurate");
+		} else {
+			LOGGER.debug("Classpath: {}", classpath);
+		}
+
+		return classpath;
 	}
 
 	private void writeReport(List<BreakingChange> bcs) {
@@ -200,15 +205,16 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		try {
 			checkArguments();
+			List<Path> classpath = buildClasspath();
 
 			if (apiMode) {
-				API api = buildAPI(v1);
+				API api = buildAPI(v1, classpath);
 				api.writeJson(apiPath);
 				LOGGER.info("Wrote API to {}", apiPath);
 			}
 
 			if (diffMode) {
-				List<BreakingChange> bcs = diff(v1, v2);
+				List<BreakingChange> bcs = diff(v1, v2, classpath);
 
 				if (bcs.isEmpty()) {
 					System.out.println("No breaking changes found.");
