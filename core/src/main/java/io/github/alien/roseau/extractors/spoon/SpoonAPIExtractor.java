@@ -42,6 +42,11 @@ public class SpoonAPIExtractor implements APIExtractor {
 		return new API(allTypes, typeRefFactory);
 	}
 
+	@Override
+	public String getName() {
+		return "Spoon";
+	}
+
 	// Returns all types within a package
 	private static Stream<CtType<?>> getAllTypes(CtPackage pkg) {
 		return pkg.getTypes().stream()

@@ -1,7 +1,8 @@
-package io.github.alien.roseau;
+package io.github.alien.roseau.cli;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
@@ -34,7 +35,7 @@ import java.util.stream.Collectors;
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
 @CommandLine.Command(name = "roseau")
-public final class Roseau implements Callable<Integer> {
+public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--api",
 		description = "Serialize the API model of --v1; see --json")
 	private boolean apiMode;
@@ -75,8 +76,11 @@ public final class Roseau implements Callable<Integer> {
 	@CommandLine.Option(names = "--classpath",
 		description = "A colon-separated list of elements to include in the classpath")
 	private String classpathString;
+	@CommandLine.Option(names = "--plain",
+		description = "Disable ANSI colors, output plain text")
+	private boolean plain;
 
-	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
+	private static final Logger LOGGER = LogManager.getLogger(RoseauCLI.class);
 	private static final String RED_TEXT = "\u001B[31m";
 	private static final String BOLD = "\u001B[1m";
 	private static final String UNDERLINE = "\u001B[4m";
@@ -93,7 +97,7 @@ public final class Roseau implements Callable<Integer> {
 			if (pom != null && Files.isRegularFile(pom)) {
 				MavenClasspathBuilder classpathBuilder = new MavenClasspathBuilder();
 				classpath.addAll(classpathBuilder.buildClasspath(pom));
-				LOGGER.info("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
+				LOGGER.debug("Extracting classpath from {} took {}ms", pom, sw.elapsed().toMillis());
 			}
 
 			if (!Strings.isNullOrEmpty(classpathString)) {
@@ -105,15 +109,15 @@ public final class Roseau implements Callable<Integer> {
 			if (classpath.isEmpty()) {
 				LOGGER.warn("No classpath provided, results may be inaccurate");
 			} else {
-				LOGGER.info("Classpath: {}", classpath);
+				LOGGER.debug("Classpath: {}", classpath);
 			}
 
 			API api = extractor.extractAPI(sources, classpath);
-			LOGGER.info("Extracting API from sources {} using {} took {}ms ({} types)",
-				sources, extractorFactory, sw.elapsed().toMillis(), api.getExportedTypes().count());
+			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
+				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().count());
 			return api;
 		} else {
-			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractorFactory, sources));
+			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractor.getName(), sources));
 		}
 	}
 
@@ -131,7 +135,7 @@ public final class Roseau implements Callable<Integer> {
 			APIDiff diff = new APIDiff(apiV1, apiV2);
 			Stopwatch sw = Stopwatch.createStarted();
 			List<BreakingChange> bcs = diff.diff();
-			LOGGER.info("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
+			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
 			if (reportPath != null) {
 				writeReport(bcs);
@@ -151,33 +155,56 @@ public final class Roseau implements Callable<Integer> {
 
 		try {
 			Files.writeString(reportPath, fmt.format(bcs));
+			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
 		}
 	}
 
 	private String format(BreakingChange bc) {
-		return String.format("%s %s%n\t%s:%s",
-			RED_TEXT + BOLD + bc.kind() + RESET,
-			UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-			bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-				? "unknown"
-				: v1.toAbsolutePath().relativize(bc.impactedSymbol().getLocation().file()),
-			bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-				? "unknown"
-				: bc.impactedSymbol().getLocation().line());
+		if (plain) {
+			return String.format("%s %s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+		} else {
+			return String.format("%s %s%n\t%s:%s",
+				RED_TEXT + BOLD + bc.kind() + RESET,
+				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
+				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+					? "unknown"
+					: v1.toAbsolutePath().relativize(bc.impactedSymbol().getLocation().file()),
+				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+					? "unknown"
+					: bc.impactedSymbol().getLocation().line());
+		}
+	}
+
+	private void checkArguments() {
+		if (v1 == null || !Files.exists(v1)) {
+			throw new IllegalArgumentException("--v1 does not exist");
+		}
+
+		if (diffMode && (v2 == null || !Files.exists(v2))) {
+			throw new IllegalArgumentException("--v2 does not exist");
+		}
+
+		if (pom != null && !Files.exists(pom)) {
+			throw new IllegalArgumentException("--pom does not exist");
+		}
 	}
 
 	@Override
 	public Integer call() {
 		if (verbose) {
-			Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+			Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
 		}
 
 		try {
+			checkArguments();
+
 			if (apiMode) {
 				API api = buildAPI(v1);
 				api.writeJson(apiPath);
+				LOGGER.info("Wrote API to {}", apiPath);
 			}
 
 			if (diffMode) {
@@ -200,13 +227,13 @@ public final class Roseau implements Callable<Integer> {
 
 			return 0;
 		} catch (Exception e) {
-			LOGGER.error(e);
+			LOGGER.error(e.getMessage());
 			return 1;
 		}
 	}
 
 	public static void main(String[] args) {
-		int exitCode = new CommandLine(new Roseau()).execute(args);
+		int exitCode = new CommandLine(new RoseauCLI()).execute(args);
 		System.exit(exitCode);
 	}
 }

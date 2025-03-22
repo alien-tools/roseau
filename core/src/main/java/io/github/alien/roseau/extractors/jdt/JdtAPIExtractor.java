@@ -109,6 +109,11 @@ public class JdtAPIExtractor implements APIExtractor {
 		}
 	}
 
+	@Override
+	public String getName() {
+		return "JDT";
+	}
+
 	private static boolean isRegularJavaFile(Path file) {
 		return Files.isRegularFile(file) && file.toString().endsWith(".java") &&
 			!file.endsWith("package-info.java") && !file.endsWith("module-info.java");
