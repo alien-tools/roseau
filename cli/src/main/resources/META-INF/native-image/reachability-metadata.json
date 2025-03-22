@@ -1,0 +1,5813 @@
+{
+  "reflection": [
+    {
+      "type": "[B"
+    },
+    {
+      "type": "[Lcom.fasterxml.jackson.databind.deser.Deserializers;"
+    },
+    {
+      "type": "[Lcom.fasterxml.jackson.databind.ser.Serializers;"
+    },
+    {
+      "type": "[Lio.github.alien.roseau.api.model.Annotation;"
+    },
+    {
+      "type": "[Lio.github.alien.roseau.api.model.ConstructorDecl;"
+    },
+    {
+      "type": "[Lio.github.alien.roseau.api.model.FieldDecl;"
+    },
+    {
+      "type": "[Lio.github.alien.roseau.api.model.FormalTypeParameter;"
+    },
+    {
+      "type": "[Lio.github.alien.roseau.api.model.MethodDecl;"
+    },
+    {
+      "type": "[Lio.github.alien.roseau.api.model.ParameterDecl;"
+    },
+    {
+      "type": "[Ljava.lang.Object;"
+    },
+    {
+      "type": "[Ljava.lang.reflect.RecordComponent;"
+    },
+    {
+      "type": "[Lorg.apache.logging.log4j.core.Appender;"
+    },
+    {
+      "type": "[Lorg.apache.logging.log4j.core.config.AppenderRef;"
+    },
+    {
+      "type": "[Lorg.apache.logging.log4j.core.config.LoggerConfig;"
+    },
+    {
+      "type": "[Lorg.apache.logging.log4j.core.config.Property;"
+    },
+    {
+      "type": "com.fasterxml.jackson.core.JsonParser"
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.JsonNode"
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.ObjectMapper"
+    },
+    {
+      "type": "com.fasterxml.jackson.databind.ext.Java7SupportImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "com.fasterxml.jackson.dataformat.yaml.YAMLFactory"
+    },
+    {
+      "type": "com.google.common.base.CharMatcher.NamedFastMatcher"
+    },
+    {
+      "type": "com.google.common.base.Joiner.MapJoiner"
+    },
+    {
+      "type": "com.google.common.base.MoreObjects.ToStringHelper"
+    },
+    {
+      "type": "com.google.common.cache.AbstractCache.SimpleStatsCounter"
+    },
+    {
+      "type": "com.google.common.cache.AbstractCache.StatsCounter"
+    },
+    {
+      "type": "com.google.common.cache.CacheBuilder.NullListener"
+    },
+    {
+      "type": "com.google.common.cache.CacheBuilder.OneWeigher"
+    },
+    {
+      "type": "com.google.common.cache.CacheLoader.InvalidCacheLoadException"
+    },
+    {
+      "type": "com.google.common.cache.CacheLoader.UnsupportedLoadingOperationException"
+    },
+    {
+      "type": "com.google.common.cache.LocalCache.Strength"
+    },
+    {
+      "type": "com.google.common.cache.LocalCache.ValueReference"
+    },
+    {
+      "type": "com.google.common.collect.Collections2.FilteredCollection"
+    },
+    {
+      "type": "com.google.common.collect.HashBiMap$1",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.common.collect.HashBiMap$1$MapEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.common.collect.HashBiMap$Inverse$1",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.common.collect.HashBiMap$Inverse$1$InverseEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.common.collect.ImmutableMap.IteratorBasedImmutableMap"
+    },
+    {
+      "type": "com.google.common.collect.ImmutableMapEntry.NonTerminalImmutableBiMapEntry"
+    },
+    {
+      "type": "com.google.common.collect.ImmutableMapEntry.NonTerminalImmutableMapEntry"
+    },
+    {
+      "type": "com.google.common.collect.MapDifference.ValueDifference"
+    },
+    {
+      "type": "com.google.common.collect.MapMaker.Dummy"
+    },
+    {
+      "type": "com.google.common.collect.MapMakerInternalMap.InternalEntry"
+    },
+    {
+      "type": "com.google.common.collect.MapMakerInternalMap.Strength"
+    },
+    {
+      "type": "com.google.common.collect.Maps.EntryTransformer"
+    },
+    {
+      "type": "com.google.common.collect.Maps.IteratorBasedAbstractMap"
+    },
+    {
+      "type": "com.google.common.collect.Maps.ViewCachingAbstractMap"
+    },
+    {
+      "type": "com.google.common.collect.Multiset.Entry"
+    },
+    {
+      "type": "com.google.common.collect.Multisets.ImmutableEntry"
+    },
+    {
+      "type": "com.google.common.collect.Multisets.UnmodifiableMultiset"
+    },
+    {
+      "type": "com.google.common.collect.ParametricNullness"
+    },
+    {
+      "type": "com.google.common.collect.RegularImmutableMap.BucketOverflowException"
+    },
+    {
+      "type": "com.google.common.collect.Serialization.FieldSetter"
+    },
+    {
+      "type": "com.google.common.collect.Sets.ImprovedAbstractSet"
+    },
+    {
+      "type": "com.google.common.collect.SortedLists.KeyAbsentBehavior"
+    },
+    {
+      "type": "com.google.common.collect.SortedLists.KeyPresentBehavior"
+    },
+    {
+      "type": "com.google.common.collect.Table.Cell"
+    },
+    {
+      "type": "com.google.common.collect.Tables.AbstractCell"
+    },
+    {
+      "type": "com.google.common.graph.GraphConstants.Presence"
+    },
+    {
+      "type": "com.google.common.hash.BloomFilterStrategies.LockFreeBitArray"
+    },
+    {
+      "type": "com.google.common.util.concurrent.AbstractFuture.TrustedFuture"
+    },
+    {
+      "type": "com.google.common.util.concurrent.AggregateFuture.ReleaseResourcesReason"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ClosingFuture.Combiner$AsyncCombiningCallable"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ClosingFuture.Combiner$CombiningCallable"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ClosingFuture.Combiner.AsyncCombiningCallable"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ClosingFuture.Combiner.CombiningCallable"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ClosingFuture.State"
+    },
+    {
+      "type": "com.google.common.util.concurrent.CollectionFuture.ListFuture"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ExecutionSequencer.RunningState"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ForwardingListenableFuture.SimpleForwardingListenableFuture"
+    },
+    {
+      "type": "com.google.common.util.concurrent.Futures.FutureCombiner"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ImmediateFuture.ImmediateCancelledFuture"
+    },
+    {
+      "type": "com.google.common.util.concurrent.ImmediateFuture.ImmediateFailedFuture"
+    },
+    {
+      "type": "com.google.common.util.concurrent.Monitor.Guard"
+    },
+    {
+      "type": "com.google.common.util.concurrent.SequentialExecutor.WorkerRunningState"
+    },
+    {
+      "type": "com.google.common.util.concurrent.Service.State"
+    },
+    {
+      "type": "com.google.common.util.concurrent.SmoothRateLimiter.SmoothBursty"
+    },
+    {
+      "type": "com.google.common.util.concurrent.SmoothRateLimiter.SmoothWarmingUp"
+    },
+    {
+      "type": "com.google.common.util.concurrent.internal.InternalFutureFailureAccess",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.common.util.concurrent.internal.InternalFutures",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.CanIgnoreReturnValue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.CheckReturnValue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.CompatibleWith",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.DoNotCall",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.DoNotMock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.ForOverride",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.Immutable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.InlineMe",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.InlineMeValidationDisabled",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.MustBeClosed",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.OverridingMethodsMustInvokeSuper",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.RestrictedApi",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.concurrent.GuardedBy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.errorprone.annotations.concurrent.LazyInit",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.J2ObjCIncompatible",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.ReflectionSupport",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.ReflectionSupport$Level",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.RetainedLocalRef",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.RetainedWith",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.Weak",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.google.j2objc.annotations.WeakOuter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "com.sun.org.apache.xerces.internal.jaxp.DocumentBuilderFactoryImpl",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "groovy.lang.Closure"
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.API",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getAllTypes",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.AccessModifier",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.Annotation",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.ClassDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.ConstructorDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.DeepCopyable"
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.ExecutableDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.FieldDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.FormalTypeParameter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.MethodDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.Modifier",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.ParameterDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.SourceLocation",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.Symbol",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.TypeDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.TypeMemberDecl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.reference.ITypeReference"
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.reference.PrimitiveTypeReference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.api.model.reference.TypeReference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.cli.RoseauCLI",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "io.github.alien.roseau.cli.RoseauCLITest",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        },
+        {
+          "name": "fail_mode_with_breaking_changes",
+          "parameterTypes": []
+        },
+        {
+          "name": "heterogeneous_diff_1",
+          "parameterTypes": []
+        },
+        {
+          "name": "heterogeneous_diff_2",
+          "parameterTypes": []
+        },
+        {
+          "name": "invalid_pom",
+          "parameterTypes": []
+        },
+        {
+          "name": "invalid_v1_path",
+          "parameterTypes": []
+        },
+        {
+          "name": "missing_classpath",
+          "parameterTypes": []
+        },
+        {
+          "name": "missing_v1",
+          "parameterTypes": []
+        },
+        {
+          "name": "missing_v2_in_diff",
+          "parameterTypes": []
+        },
+        {
+          "name": "native_image_test",
+          "parameterTypes": []
+        },
+        {
+          "name": "no_breaking_changes",
+          "parameterTypes": []
+        },
+        {
+          "name": "no_fail_mode_with_breaking_changes",
+          "parameterTypes": []
+        },
+        {
+          "name": "setUp",
+          "parameterTypes": []
+        },
+        {
+          "name": "simple_diff",
+          "parameterTypes": []
+        },
+        {
+          "name": "unsupported_extractor",
+          "parameterTypes": []
+        },
+        {
+          "name": "unsupported_formatter",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_api_asm",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_api_custom_file",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_api_default_jar",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_api_default_sources",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_api_incorrect_extractor_asm",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_api_spoon",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_report",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_report_html",
+          "parameterTypes": []
+        },
+        {
+          "name": "write_report_json",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "jakarta.servlet.Servlet"
+    },
+    {
+      "type": "java.io.BufferedInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.BufferedOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.BufferedReader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.BufferedWriter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ByteArrayInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ByteArrayOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.Closeable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.Console",
+      "methods": [
+        {
+          "name": "isTerminal",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.io.DataInput",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.DataInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.DataOutput",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.DataOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.EOFException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.File",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.File$PathStatus",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.File$TempDirectory",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.FileInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.FileNotFoundException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.FileOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.FilenameFilter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.FilterInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.FilterOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.Flushable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.IOException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.InputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.InputStreamReader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.InvalidObjectException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$BlockDataInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$Caches",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$FieldValues",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$FilterValues",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$GetField",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$HandleTable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$HandleTable$HandleList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$Logging",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$PeekInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$ValidationList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectInputStream$ValidationList$Callback",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$BlockDataOutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$Caches",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$DebugTraceInfoStack",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$HandleTable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$PutField",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$PutFieldImpl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectOutputStream$ReplaceTable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.ObjectStreamException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.OutputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.OutputStreamWriter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.PrintWriter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.RandomAccessFile",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.Reader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.Serializable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.StringReader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.StringWriter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.UncheckedIOException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.io.Writer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.AutoCloseable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Boolean"
+    },
+    {
+      "type": "java.lang.Byte"
+    },
+    {
+      "type": "java.lang.Character",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Character$CharacterCache",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Character$Subset",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Character$UnicodeBlock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Character$UnicodeScript",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Class",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "getPermittedSubclasses",
+          "parameterTypes": []
+        },
+        {
+          "name": "getRecordComponents",
+          "parameterTypes": []
+        },
+        {
+          "name": "isRecord",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Class$AnnotationData",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Class$Atomic",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Class$EnclosingMethodInfo",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Class$Holder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Class$ReflectionData",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.CloneNotSupportedException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Comparable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Deprecated",
+      "methods": [
+        {
+          "name": "forRemoval",
+          "parameterTypes": []
+        },
+        {
+          "name": "since",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.Double",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Enum",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Enum$EnumDesc",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Error",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Exception",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Float",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.FunctionalInterface"
+    },
+    {
+      "type": "java.lang.IllegalAccessException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.IllegalStateException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Integer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Integer$IntegerCache",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.InterruptedException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Iterable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Long",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Long$LongCache",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Math",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Math$RandomNumberGeneratorHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Number",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Object",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Readable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Record",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ReflectiveOperationException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Runnable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.RuntimeException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.SafeVarargs"
+    },
+    {
+      "type": "java.lang.String",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.String$CaseInsensitiveComparator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.System",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "console",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.System$In",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.System$Logger",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.System$Logger$Level",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.System$LoggerFinder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.System$Out",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$Builder$OfPlatform",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$Builder$OfVirtual",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$Constants",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$FieldHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$State",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$ThreadIdentifiers",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$ThreadNumbering",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread$UncaughtExceptionHandler",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Thread.UncaughtExceptionHandler"
+    },
+    {
+      "type": "java.lang.Throwable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Throwable$PrintStreamOrWriter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Throwable$SentinelHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Throwable$WrappedPrintStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.Throwable$WrappedPrintWriter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.UnsupportedOperationException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.annotation.Annotation",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.annotation.Documented",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.annotation.ElementType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.annotation.Inherited"
+    },
+    {
+      "type": "java.lang.annotation.Retention",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "value",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.annotation.RetentionPolicy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.annotation.Target",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "value",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.constant.Constable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodHandle",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodHandle$PolymorphicSignature",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodHandles",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodHandles$Lookup",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodHandles$Lookup$ClassDefiner",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodHandles$Lookup$ClassOption",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.MethodType$OffsetHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.VarHandle",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.VarHandle$AccessDescriptor",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.VarHandle$AccessMode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.VarHandle$AccessType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.VarHandle$VarHandleDesc",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.invoke.VarHandle$VarHandleDesc$Kind",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.PhantomReference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.Reference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.Reference$ReferenceHandler",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.ReferenceQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.ReferenceQueue$Lock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.ReferenceQueue$Null",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.SoftReference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.ref.WeakReference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.AccessibleObject",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.AccessibleObject$Cache",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.AnnotatedElement",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.AnnotatedType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Array",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Constructor",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Field",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.GenericArrayType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.GenericDeclaration",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.InvocationHandler",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.InvocationTargetException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Member",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Method",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Modifier",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.ParameterizedType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Proxy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Proxy$InvocationException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Proxy$ProxyBuilder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.Proxy$ProxyBuilder$ProxyClassContext",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.RecordComponent",
+      "methods": [
+        {
+          "name": "getGenericType",
+          "parameterTypes": []
+        },
+        {
+          "name": "getName",
+          "parameterTypes": []
+        },
+        {
+          "name": "getType",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "java.lang.reflect.Type",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.TypeVariable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.lang.reflect.WildcardType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigDecimal",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigDecimal$LongOverflow",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigDecimal$StringBuilderHelper",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigDecimal$UnsafeHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigInteger",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigInteger$RecursiveOp",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigInteger$RecursiveOp$RecursiveMultiply",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigInteger$RecursiveOp$RecursiveSquare",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.BigInteger$UnsafeHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.math.RoundingMode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.Inet4Address",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.Inet6Address",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.Inet6Address$Inet6AddressHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$Addresses",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$CachedLocalHost",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$CachedLookup",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$HostsFileResolver",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$InetAddressHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$NameServiceAddresses",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$PlatformResolver",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.InetAddress$ValidCachedLookup",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.MalformedURLException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.NetworkInterface",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.SocketException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.URISyntaxException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.URL",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.URL$DefaultFactory",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.URL$ThreadTrackHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.URLClassLoader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.net.UnknownHostException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.Buffer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.ByteBuffer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.ByteOrder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.CharBuffer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.MappedByteBuffer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.Channels",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.Channels$ReadableByteChannelImpl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.Channels$WritableByteChannelImpl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.FileChannel",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.FileChannel$MapMode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.FileChannel.MapMode"
+    },
+    {
+      "type": "java.nio.channels.ReadableByteChannel",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.SeekableByteChannel",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.channels.WritableByteChannel",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.Charset",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.Charset$ExtendedProviderHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.Charset$ThreadTrackHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.CharsetEncoder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.CoderResult",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.CoderResult$Cache",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.CodingErrorAction",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.IllegalCharsetNameException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.StandardCharsets",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.charset.UnsupportedCharsetException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.DirectoryIteratorException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.DirectoryStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.DirectoryStream$Filter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.FileAlreadyExistsException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.FileSystemException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.FileSystems",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.FileSystems$DefaultFileSystemHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.Files",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.Files$AcceptAllFilter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.Files$FileTypeDetectors",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.LinkOption",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.NoSuchFileException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.NotDirectoryException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.OpenOption",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.Path",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.Paths",
+      "allDeclaredFields": true,
+      "methods": [
+        {
+          "name": "get",
+          "parameterTypes": [
+            "java.lang.String",
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "java.nio.file.SecureDirectoryStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.StandardOpenOption",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.Watchable"
+    },
+    {
+      "type": "java.nio.file.attribute.AclEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.AclEntry$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.AclEntryFlag",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.AclEntryPermission",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.AclEntryType",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.BasicFileAttributeView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.BasicFileAttributes",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.FileAttribute",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.FileTime",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.PosixFilePermissions",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.nio.file.attribute.UserPrincipal",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.AccessControlException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.AccessController",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.InvalidKeyException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.Key",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.MessageDigest",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.MessageDigest$Delegate",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.MessageDigest$Delegate$CloneableDelegate",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.MessageDigestSpi"
+    },
+    {
+      "type": "java.security.NoSuchAlgorithmException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.PrivilegedActionException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.PrivilegedExceptionAction",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.security.interfaces.RSAPrivateKey"
+    },
+    {
+      "type": "java.security.interfaces.RSAPublicKey"
+    },
+    {
+      "type": "java.sql.Connection"
+    },
+    {
+      "type": "java.sql.Date"
+    },
+    {
+      "type": "java.sql.Driver"
+    },
+    {
+      "type": "java.sql.DriverManager"
+    },
+    {
+      "type": "java.sql.Time"
+    },
+    {
+      "type": "java.sql.Timestamp"
+    },
+    {
+      "type": "java.text.ParseException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.time.Duration",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.time.Duration$DurationUnits",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.time.Duration$Lazy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.time.Instant"
+    },
+    {
+      "type": "java.time.LocalDate"
+    },
+    {
+      "type": "java.time.LocalDateTime"
+    },
+    {
+      "type": "java.time.LocalTime"
+    },
+    {
+      "type": "java.time.MonthDay"
+    },
+    {
+      "type": "java.time.OffsetDateTime"
+    },
+    {
+      "type": "java.time.OffsetTime"
+    },
+    {
+      "type": "java.time.Period"
+    },
+    {
+      "type": "java.time.Year"
+    },
+    {
+      "type": "java.time.YearMonth"
+    },
+    {
+      "type": "java.time.ZoneId"
+    },
+    {
+      "type": "java.time.ZoneOffset"
+    },
+    {
+      "type": "java.time.ZonedDateTime"
+    },
+    {
+      "type": "java.util.AbstractCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractList$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractList$ListItr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractList$RandomAccessSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractList$RandomAccessSubList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractList$SubList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap$SimpleEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap$SimpleImmutableEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap$ViewCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractMap.SimpleImmutableEntry"
+    },
+    {
+      "type": "java.util.AbstractQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractSequentialList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.AbstractSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayDeque",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayDeque$DeqIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayDeque$DeqSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayDeque$DescendingIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayList$ArrayListSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayList$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayList$ListItr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ArrayList$SubList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Arrays",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Arrays$ArrayItr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Arrays$ArrayList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Arrays$LegacyMergeSort",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Arrays$NaturalOrder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.BitSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$AsLIFOQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedMap$CheckedEntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedMap$CheckedEntrySet$CheckedEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedNavigableMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedNavigableSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedRandomAccessList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedSortedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CheckedSortedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$CopiesList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$EmptyEnumeration",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$EmptyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$EmptyList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$EmptyListIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$EmptyMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$EmptySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$ReverseComparator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$ReverseComparator2",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SequencedSetFromMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SetFromMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SingletonList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SingletonMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SingletonSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedNavigableMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedNavigableSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedRandomAccessList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedSortedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$SynchronizedSortedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableMap$UnmodifiableEntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableMap$UnmodifiableEntrySet$UnmodifiableEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableMap$UnmodifiableEntrySet$UnmodifiableEntrySetSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableNavigableMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableNavigableMap$EmptyNavigableMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableNavigableSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableNavigableSet$EmptyNavigableSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableRandomAccessList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableSequencedCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableSequencedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableSequencedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableSortedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Collections$UnmodifiableSortedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Comparator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ConcurrentModificationException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Date",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Deque",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$EntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$EntryIterator$Entry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$EntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$EnumMapIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$KeySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumMap$Values",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.EnumSet$SerializationProxy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Enumeration",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$EntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$EntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$EntrySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$HashIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$HashMapSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$KeySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$KeySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$TreeNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$UnsafeHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$ValueSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashMap$Values",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.HashSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$EntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$EntryIterator$Entry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$EntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$EntrySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$IdentityHashMapIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$IdentityHashMapSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$KeySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$KeySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$ValueSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.IdentityHashMap$Values",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ImmutableCollections$AbstractImmutableCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ImmutableCollections$AbstractImmutableList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ImmutableCollections$ListN",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Iterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$Entry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedEntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedEntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedHashIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedKeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedKeySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$LinkedValues",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashMap$ReversedLinkedHashMapView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedHashSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedList$DescendingIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedList$LLSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedList$ListItr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedList$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.LinkedList$ReverseOrderLinkedListView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.List",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ListIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$Category",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$FilteringMode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$IsoCountryCode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$LanguageRange",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$LocaleCache",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$LocaleKey",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Locale$LocaleNameGetter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Map",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Map$Entry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Map.Entry"
+    },
+    {
+      "type": "java.util.NavigableMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.NavigableSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.NoSuchElementException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Objects",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Optional",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.OptionalDouble",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.OptionalInt",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.OptionalLong",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PrimitiveIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PrimitiveIterator$OfDouble",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PrimitiveIterator$OfInt",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PrimitiveIterator$OfLong",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PriorityQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PriorityQueue$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.PriorityQueue$PriorityQueueSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Properties",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Properties$EntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Properties$LineReader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Queue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.RandomAccess",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.SequencedCollection",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.SequencedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.SequencedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.ServiceConfigurationError",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Set",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.SortedMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.SortedSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterator$OfDouble",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterator$OfInt",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterator$OfLong",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterator$OfPrimitive",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractDoubleSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractDoubleSpliterator$HoldingDoubleConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractIntSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractIntSpliterator$HoldingIntConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractLongSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractLongSpliterator$HoldingLongConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$AbstractSpliterator$HoldingConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$ArraySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$DoubleArraySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$DoubleIteratorSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$EmptySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$EmptySpliterator$OfDouble",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$EmptySpliterator$OfInt",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$EmptySpliterator$OfLong",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$EmptySpliterator$OfRef",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$IntArraySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$IntIteratorSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$IteratorSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$LongArraySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators$LongIteratorSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.Spliterators.AbstractSpliterator"
+    },
+    {
+      "type": "java.util.TreeMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$AscendingSubMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$AscendingSubMap$AscendingEntrySetView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$DescendingKeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$DescendingKeySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$DescendingSubMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$DescendingSubMap$DescendingEntrySetView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$Entry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$EntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$EntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$EntrySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$KeySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$KeySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap$DescendingSubMapEntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap$DescendingSubMapKeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap$EntrySetView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap$SubMapEntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap$SubMapIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$NavigableSubMap$SubMapKeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$PrivateEntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$SubMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$TreeMapSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$ValueSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeMap$Values",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.TreeSet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$Entry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$EntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$EntrySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$EntrySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$HashIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$KeySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$KeySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$ValueSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$Values",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.WeakHashMap$WeakHashMapSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.AbstractExecutorService",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ArrayBlockingQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ArrayBlockingQueue$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ArrayBlockingQueue$Itrs",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ArrayBlockingQueue$Itrs$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.BlockingDeque",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.BlockingQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Callable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CancellationException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$BaseIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$BulkTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$CollectionView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$CounterCell",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$EntryIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$EntrySetView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$EntrySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachEntryTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachKeyTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachMappingTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachTransformedEntryTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachTransformedKeyTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachTransformedMappingTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachTransformedValueTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForEachValueTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ForwardingNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$KeyIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$KeySetView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$KeySpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceEntriesTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceEntriesToDoubleTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceEntriesToIntTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceEntriesToLongTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceKeysTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceKeysToDoubleTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceKeysToIntTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceKeysToLongTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceMappingsTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceMappingsToDoubleTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceMappingsToIntTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceMappingsToLongTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceValuesTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceValuesToDoubleTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceValuesToIntTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$MapReduceValuesToLongTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ReduceEntriesTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ReduceKeysTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ReduceValuesTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ReservationNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$SearchEntriesTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$SearchKeysTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$SearchMappingsTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$SearchValuesTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$Segment",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$TableStack",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$Traverser",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$TreeBin",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$TreeNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ValueIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ValueSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentHashMap$ValuesView",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentLinkedQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentLinkedQueue$CLQSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentLinkedQueue$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentLinkedQueue$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ConcurrentMap",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList$COWIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList$COWSubList",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList$COWSubListIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList$Reversed",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList$Reversed$DescendingIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArrayList$Reversed$DescendingListIterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CopyOnWriteArraySet",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CountDownLatch",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.CountDownLatch$Sync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Delayed",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ExecutionException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executor",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ExecutorService",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$AutoShutdownDelegatedExecutorService",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$DefaultThreadFactory",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$DelegatedExecutorService",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$DelegatedScheduledExecutorService",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$PrivilegedCallable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$PrivilegedCallableUsingCurrentClassLoader",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$PrivilegedThreadFactory",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Executors$RunnableAdapter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Future",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Future$State",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.FutureTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.FutureTask$WaitNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingDeque",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingDeque$AbstractItr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingDeque$DescendingItr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingDeque$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingDeque$LBDSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingDeque$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingQueue$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingQueue$LBQSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.LinkedBlockingQueue$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.PriorityBlockingQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.PriorityBlockingQueue$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.PriorityBlockingQueue$PBQSpliterator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.RejectedExecutionException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.RunnableFuture",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ScheduledExecutorService",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ScheduledFuture",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ScheduledThreadPoolExecutor",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ScheduledThreadPoolExecutor$DelayedWorkQueue$Itr",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ScheduledThreadPoolExecutor$ScheduledFutureTask",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Semaphore",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Semaphore$FairSync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Semaphore$NonfairSync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.Semaphore$Sync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.SynchronousQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.SynchronousQueue$FifoWaitQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.SynchronousQueue$LifoWaitQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.SynchronousQueue$Transferer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.SynchronousQueue$WaitQueue",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadFactory",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadPoolExecutor",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadPoolExecutor$AbortPolicy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadPoolExecutor$CallerRunsPolicy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadPoolExecutor$DiscardOldestPolicy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadPoolExecutor$DiscardPolicy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.ThreadPoolExecutor$Worker",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.TimeUnit",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.TimeoutException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicBoolean",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicInteger",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicIntegerFieldUpdater",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicIntegerFieldUpdater$AtomicIntegerFieldUpdaterImpl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicLong",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicLongArray",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicLongFieldUpdater",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicLongFieldUpdater$CASUpdater",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicReference",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicReferenceArray",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicReferenceFieldUpdater",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.AtomicReferenceFieldUpdater$AtomicReferenceFieldUpdaterImpl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.LongAdder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.atomic.LongAdder$SerializationProxy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.AbstractOwnableSynchronizer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.Condition",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.Lock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.LockSupport",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReadWriteLock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantLock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantLock$FairSync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantLock$NonfairSync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantLock$Sync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$FairSync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$NonfairSync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$ReadLock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$Sync",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$Sync$HoldCounter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$Sync$ThreadLocalHoldCounter",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.concurrent.locks.ReentrantReadWriteLock$WriteLock",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.BiConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.BiFunction",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.BiPredicate",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.BinaryOperator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.BooleanSupplier",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.Consumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.DoubleBinaryOperator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.DoubleConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.DoubleUnaryOperator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.Function",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.IntConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.IntFunction",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.LongBinaryOperator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.LongConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.LongUnaryOperator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.ObjIntConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.Predicate",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.Supplier",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.ToIntFunction",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.function.UnaryOperator",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.Attributes",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.Attributes$Name",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.JarEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.JarFile",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.JarFile$JarFileEntry",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.JarFile$ThreadTrackHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.Manifest",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.jar.Manifest$FastInputStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Level",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Level$KnownLevel",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Level$RbAccess",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Logger",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Logger$ConfigurationData",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Logger$LoggerBundle",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Logger$RbAccess",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.logging.Logger$SystemLoggerHelper",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Matcher",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Matcher$ImmutableMatchResult",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BackRef",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Begin",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Behind",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BehindS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BitClass",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BmpCharPredicate",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BmpCharProperty",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BmpCharPropertyGreedy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BnM",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BnMS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Bound",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Branch",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$BranchConn",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$CIBackRef",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Caret",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$CharPredicate",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$CharProperty",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$CharPropertyGreedy",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Curly",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Dollar",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$End",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$First",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$GraphemeBound",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$GroupCurly",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$GroupHead",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$GroupTail",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$LastMatch",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$LastNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$LazyLoop",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$LineEnding",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$LookBehindEndNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Loop",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$NFCCharProperty",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Neg",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Node",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$NotBehind",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$NotBehindS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Pos",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Prolog",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Qtype",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Ques",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Slice",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$SliceI",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$SliceIS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$SliceNode",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$SliceS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$SliceU",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$SliceUS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$Start",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$StartS",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$TreeInfo",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$UnixCaret",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$UnixDollar",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.Pattern$XGrapheme",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.regex.PatternSyntaxException",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.BaseStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Collector",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Collector$Characteristics",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Collectors",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Collectors$CollectorImpl",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Collectors$Partition",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.DoubleStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.DoubleStream$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.DoubleStream$DoubleMapMultiConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.IntStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.IntStream$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.IntStream$IntMapMultiConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.LongStream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.LongStream$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.LongStream$LongMapMultiConsumer",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Stream",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.Stream$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.stream.StreamSupport",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.zip.Adler32",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.zip.CRC32",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "java.util.zip.Checksum",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "javax.annotation.ParametersAreNonnullByDefault"
+    },
+    {
+      "type": "javax.crypto.Mac",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "javax.crypto.spec.SecretKeySpec",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "javax.servlet.Servlet"
+    },
+    {
+      "type": "jdk.internal.ValueBased"
+    },
+    {
+      "type": "jdk.internal.javac.Restricted"
+    },
+    {
+      "type": "jdk.internal.jrtfs.JrtFileSystemProvider"
+    },
+    {
+      "type": "jdk.internal.reflect.CallerSensitive"
+    },
+    {
+      "type": "jdk.internal.vm.annotation.Contended",
+      "methods": [
+        {
+          "name": "value",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "jdk.internal.vm.annotation.DontInline"
+    },
+    {
+      "type": "jdk.internal.vm.annotation.ForceInline"
+    },
+    {
+      "type": "jdk.internal.vm.annotation.Hidden"
+    },
+    {
+      "type": "jdk.internal.vm.annotation.IntrinsicCandidate"
+    },
+    {
+      "type": "jdk.internal.vm.annotation.ReservedStackAccess"
+    },
+    {
+      "type": "jdk.internal.vm.annotation.Stable"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.AbstractAppender$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.AbstractOutputStreamAppender$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.AppenderSet"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.AsyncAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.ConsoleAppender",
+      "methods": [
+        {
+          "name": "newBuilder",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.ConsoleAppender$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.CountingNoOpAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.FailoverAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.FailoversPlugin"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.FileAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.HttpAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.MemoryMappedFileAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.NullAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.OutputStreamAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.RandomAccessFileAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.RollingFileAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.RollingRandomAccessFileAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.ScriptAppenderSelector"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.SmtpAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.SocketAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.SyslogAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.WriterAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.db.ColumnMapping"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.db.jdbc.ColumnConfig"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.db.jdbc.DataSourceConnectionSource"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.db.jdbc.DriverManagerConnectionSource"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.db.jdbc.FactoryMethodConnectionSource"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.db.jdbc.JdbcAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.mom.JmsAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.mom.jeromq.JeroMqAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.mom.kafka.KafkaAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.nosql.NoSqlAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rewrite.LoggerNameLevelRewritePolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rewrite.MapRewritePolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rewrite.PropertiesRewritePolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rewrite.RewriteAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.CompositeTriggeringPolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.CronTriggeringPolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.DefaultRolloverStrategy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.DirectWriteRolloverStrategy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.NoOpTriggeringPolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.OnStartupTriggeringPolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.SizeBasedTriggeringPolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.TimeBasedTriggeringPolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.DeleteAction"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfAccumulatedFileCount"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfAccumulatedFileSize"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfAll"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfAny"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfFileName"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfLastModified"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.IfNot"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.PathSortByModificationTime"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.PosixViewAttributeAction"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.rolling.action.ScriptCondition"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.routing.IdlePurgePolicy"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.routing.Route"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.routing.Routes"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.appender.routing.RoutingAppender"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.ArrayBlockingQueueFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.AsyncLoggerConfig"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.AsyncLoggerConfig$RootLogger"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.AsyncWaitStrategyFactoryConfig"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.DisruptorBlockingQueueFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.JCToolsBlockingQueueFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.async.LinkedTransferQueueFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.AppenderControlArraySet",
+      "fields": [
+        {
+          "name": "appenderArray"
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.AppenderRef",
+      "methods": [
+        {
+          "name": "createAppenderRef",
+          "parameterTypes": [
+            "java.lang.String",
+            "org.apache.logging.log4j.Level",
+            "org.apache.logging.log4j.core.Filter"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.AppendersPlugin",
+      "methods": [
+        {
+          "name": "createAppenders",
+          "parameterTypes": [
+            "org.apache.logging.log4j.core.Appender[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.CustomLevelConfig"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.CustomLevels"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.DefaultAdvertiser"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.HttpWatcher"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.LoggerConfig",
+      "methods": [
+        {
+          "name": "newBuilder",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.LoggerConfig$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.LoggerConfig$RootLogger",
+      "methods": [
+        {
+          "name": "newRootBuilder",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.LoggerConfig$RootLogger$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.LoggersPlugin",
+      "methods": [
+        {
+          "name": "createLoggers",
+          "parameterTypes": [
+            "org.apache.logging.log4j.core.config.LoggerConfig[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.PropertiesPlugin"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.Property"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.ScriptsPlugin"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.arbiters.ClassArbiter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.arbiters.DefaultArbiter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.arbiters.EnvironmentArbiter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.arbiters.ScriptArbiter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.arbiters.SelectArbiter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.arbiters.SystemPropertyArbiter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.json.JsonConfigurationFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BigDecimalConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BigIntegerConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$BooleanConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ByteArrayConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ByteConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CharArrayConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CharacterConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CharsetConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ClassConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$CronExpressionConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$DoubleConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$DurationConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$FileConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$FloatConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$InetAddressConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$IntegerConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LevelConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$LongConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$PathConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$PatternConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$SecurityProviderConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$ShortConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$StringConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$UriConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$UrlConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.convert.TypeConverters$UuidConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.validation.validators.RequiredValidator",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.visitors.PluginAttributeVisitor",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.visitors.PluginBuilderAttributeVisitor",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.visitors.PluginConfigurationVisitor",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.plugins.visitors.PluginElementVisitor",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.properties.PropertiesConfigurationFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.xml.XmlConfigurationFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.config.yaml.YamlConfigurationFactory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.AbstractFilterable$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.BurstFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.CompositeFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.DenyAllFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.DynamicThresholdFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.LevelMatchFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.LevelRangeFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.MapFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.MarkerFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.MutableThreadContextMapFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.NoMarkerFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.RegexFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.ScriptFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.StringMatchFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.StructuredDataFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.ThreadContextMapFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.ThresholdFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.filter.TimeFilter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.impl.Log4jProvider"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.impl.ThreadContextDataProvider"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.CsvLogEventLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.CsvParameterLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.GelfLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.HtmlLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.JsonLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.LevelPatternSelector"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.LoggerFields"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.MarkerPatternSelector"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.MessageLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.PatternLayout",
+      "methods": [
+        {
+          "name": "newBuilder",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.PatternLayout$Builder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.PatternMatch"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.Rfc5424Layout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.ScriptPatternSelector"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.SerializedLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.SyslogLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.XmlLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.layout.YamlLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.ContextMapLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.DateLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.EnvironmentLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.EventLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.JavaLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.JmxRuntimeInputArgumentsLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.JndiLookup"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.Log4jLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.LowerLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.MainMapLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.MapLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.MarkerLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.ResourceBundleLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.StructuredDataLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.SystemPropertiesLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.lookup.UpperLookup",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.MulticastDnsAdvertiser"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.SocketAddress"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.SocketOptions"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.SocketPerformancePreferences"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.ssl.KeyStoreConfiguration"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.ssl.SslConfiguration"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.net.ssl.TrustStoreConfiguration"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Black"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Blue"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Cyan"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Green"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Magenta"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Red"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$White"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.AbstractStyleNameConverter$Yellow"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ClassNamePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.DatePatternConverter",
+      "methods": [
+        {
+          "name": "newInstance",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.EncodingPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.EndOfBatchPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.EqualsIgnoreCaseReplacementConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.EqualsReplacementConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ExtendedThrowablePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.FileDatePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.FileLocationPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.FullLocationPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.HighlightConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.IntegerPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.LevelPatternConverter",
+      "methods": [
+        {
+          "name": "newInstance",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.LineLocationPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.LineSeparatorPatternConverter",
+      "methods": [
+        {
+          "name": "newInstance",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.LoggerFqcnPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.LoggerPatternConverter",
+      "methods": [
+        {
+          "name": "newInstance",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MapPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MarkerPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MarkerSimpleNamePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MaxLengthConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MdcPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MessagePatternConverter",
+      "methods": [
+        {
+          "name": "newInstance",
+          "parameterTypes": [
+            "org.apache.logging.log4j.core.config.Configuration",
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.MethodLocationPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.NanoTimePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.NdcPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ProcessIdPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.RegexReplacement"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.RegexReplacementConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.RelativeTimePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.RepeatPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.RootThrowablePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.SequenceNumberPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.StyleConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ThreadIdPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ThreadNamePatternConverter",
+      "methods": [
+        {
+          "name": "newInstance",
+          "parameterTypes": [
+            "java.lang.String[]"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ThreadPriorityPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.ThrowablePatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.UuidPatternConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.pattern.VariablesNotEmptyReplacementConverter"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.script.Script"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.script.ScriptFile"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.script.ScriptRef"
+    },
+    {
+      "type": "org.apache.logging.log4j.core.util.KeyValuePair"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.JsonTemplateLayout"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.JsonTemplateLayout$EventTemplateAdditionalField"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.CaseConverterResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.CounterResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.EndOfBatchResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.EventAdditionalFieldInterceptor"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.EventRootObjectKeyInterceptor"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.ExceptionResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.ExceptionRootCauseResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.LevelResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.LoggerResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.MainMapResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.MapResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.MarkerResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.MessageParameterResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.MessageResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.PatternResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.SourceResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.ThreadContextDataResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.ThreadContextStackResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.ThreadResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.resolver.TimestampResolverFactory"
+    },
+    {
+      "type": "org.apache.logging.log4j.layout.template.json.util.RecyclerFactoryConverter",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "org.apache.logging.log4j.util.EnvironmentPropertySource"
+    },
+    {
+      "type": "org.apache.logging.log4j.util.SystemPropertiesPropertySource"
+    },
+    {
+      "type": "org.apache.logging.slf4j.SLF4JServiceProvider"
+    },
+    {
+      "type": "org.apache.maven.surefire.booter.spi.LegacyMasterProcessChannelProcessorFactory"
+    },
+    {
+      "type": "org.apache.maven.surefire.booter.spi.SurefireMasterProcessChannelProcessorFactory"
+    },
+    {
+      "type": "org.apache.maven.surefire.junitplatform.JUnitPlatformProvider",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "org.apache.maven.surefire.api.provider.ProviderParameters"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "org.apiguardian.api.API"
+    },
+    {
+      "type": "org.eclipse.core.internal.runtime.Messages",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.eclipse.jdt.core.compiler.IProblem",
+      "allPublicFields": true
+    },
+    {
+      "type": "org.eclipse.jdt.internal.compiler.util.Messages",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.hamcrest.comparator.ComparatorMatcherBuilder$ComparatorMatcher"
+    },
+    {
+      "type": "org.hamcrest.core.StringContains"
+    },
+    {
+      "type": "org.hamcrest.core.SubstringMatcher"
+    },
+    {
+      "type": "org.hamcrest.io.FileMatchers$1"
+    },
+    {
+      "type": "org.hamcrest.io.FileMatchers$10"
+    },
+    {
+      "type": "org.jspecify.annotations.NonNull",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jspecify.annotations.NullMarked",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jspecify.annotations.NullUnmarked",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.jspecify.annotations.Nullable",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "org.osgi.framework.FrameworkUtil",
+      "methods": [
+        {
+          "name": "getBundle",
+          "parameterTypes": [
+            "java.lang.Class"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "spoon.reflect.declaration.CtType"
+    },
+    {
+      "type": "spoon.reflect.visitor.ForceFullyQualifiedProcessor"
+    },
+    {
+      "type": "spoon.reflect.visitor.ImportCleaner"
+    },
+    {
+      "type": "spoon.reflect.visitor.ImportConflictDetector"
+    },
+    {
+      "type": "spoon.reflect.visitor.chain.CtQueryImpl$1"
+    },
+    {
+      "type": "spoon.reflect.visitor.filter.CtScannerFunction"
+    },
+    {
+      "type": "spoon.reflect.visitor.filter.TypeFilter"
+    },
+    {
+      "type": "spoon.support.JavaOutputProcessor"
+    },
+    {
+      "type": "sun.misc.Unsafe",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "sun.misc.Unsafe$MemoryAccessOption",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "sun.misc.Unsafe$StackWalkerHolder",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "sun.nio.fs.UnixPath",
+      "allDeclaredFields": true
+    },
+    {
+      "type": "sun.security.provider.NativePRNG",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.security.SecureRandomParameters"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA2$SHA256",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.SHA5$SHA384",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.provider.X509Factory",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSAKeyFactory$Legacy",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSASignature$SHA256withRSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.rsa.RSASignature$SHA384withRSA",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": []
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.AuthorityInfoAccessExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.AuthorityKeyIdentifierExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.BasicConstraintsExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.CRLDistributionPointsExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.CertificatePoliciesExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.ExtendedKeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.KeyUsageExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.SubjectAlternativeNameExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.security.x509.SubjectKeyIdentifierExtension",
+      "methods": [
+        {
+          "name": "<init>",
+          "parameterTypes": [
+            "java.lang.Boolean",
+            "java.lang.Object"
+          ]
+        }
+      ]
+    }
+  ],
+  "resources": [
+    {
+      "glob": "META-INF/log4j-provider.properties"
+    },
+    {
+      "glob": "META-INF/org/apache/logging/log4j/core/config/plugins/Log4j2Plugins.dat"
+    },
+    {
+      "glob": "META-INF/services/java.lang.System$LoggerFinder"
+    },
+    {
+      "glob": "META-INF/services/java.net.spi.InetAddressResolverProvider"
+    },
+    {
+      "glob": "META-INF/services/java.nio.file.spi.FileSystemProvider"
+    },
+    {
+      "glob": "META-INF/services/java.time.zone.ZoneRulesProvider"
+    },
+    {
+      "glob": "META-INF/services/java.util.spi.ResourceBundleControlProvider"
+    },
+    {
+      "glob": "META-INF/services/javax.xml.parsers.DocumentBuilderFactory"
+    },
+    {
+      "glob": "META-INF/services/org.apache.logging.log4j.core.util.ContextDataProvider"
+    },
+    {
+      "glob": "META-INF/services/org.apache.logging.log4j.core.util.WatchEventService"
+    },
+    {
+      "glob": "META-INF/services/org.apache.logging.log4j.spi.Provider"
+    },
+    {
+      "glob": "META-INF/services/org.apache.logging.log4j.util.PropertySource"
+    },
+    {
+      "glob": "META-INF/services/org.apache.maven.surefire.spi.MasterProcessChannelProcessorFactory"
+    },
+    {
+      "glob": "META-INF/services/org.junit.platform.engine.TestEngine"
+    },
+    {
+      "glob": "META-INF/services/org.junit.platform.launcher.LauncherDiscoveryListener"
+    },
+    {
+      "glob": "META-INF/services/org.junit.platform.launcher.LauncherSessionListener"
+    },
+    {
+      "glob": "META-INF/services/org.junit.platform.launcher.PostDiscoveryFilter"
+    },
+    {
+      "glob": "META-INF/services/org.junit.platform.launcher.TestExecutionListener"
+    },
+    {
+      "glob": "META-INF/services/org.osgi.framework.connect.FrameworkUtilHelper"
+    },
+    {
+      "glob": "META-INF/services/org.slf4j.spi.SLF4JServiceProvider"
+    },
+    {
+      "glob": "junit-platform.properties"
+    },
+    {
+      "glob": "log4j2-test.jsn"
+    },
+    {
+      "glob": "log4j2-test.json"
+    },
+    {
+      "glob": "log4j2-test.properties"
+    },
+    {
+      "glob": "log4j2-test.xml"
+    },
+    {
+      "glob": "log4j2-test.yaml"
+    },
+    {
+      "glob": "log4j2-test.yml"
+    },
+    {
+      "glob": "log4j2-test18b4aac2.jsn"
+    },
+    {
+      "glob": "log4j2-test18b4aac2.json"
+    },
+    {
+      "glob": "log4j2-test18b4aac2.properties"
+    },
+    {
+      "glob": "log4j2-test18b4aac2.xml"
+    },
+    {
+      "glob": "log4j2-test18b4aac2.yaml"
+    },
+    {
+      "glob": "log4j2-test18b4aac2.yml"
+    },
+    {
+      "glob": "log4j2.StatusLogger.properties"
+    },
+    {
+      "glob": "log4j2.component.properties"
+    },
+    {
+      "glob": "log4j2.system.properties"
+    },
+    {
+      "glob": "org/eclipse/core/internal/runtime/messages.properties"
+    },
+    {
+      "glob": "org/eclipse/core/internal/runtime/messages_en.properties"
+    },
+    {
+      "glob": "org/eclipse/core/internal/runtime/messages_en_US.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/batch/messages.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/batch/messages_en.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/batch/messages_en_US.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/messages.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/messages_en.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/messages_en_US.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser1.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser10.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser11.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser12.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser13.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser14.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser15.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser16.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser17.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser18.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser19.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser2.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser20.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser21.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser22.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser23.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser24.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser3.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser4.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser5.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser6.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser7.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser8.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/parser9.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/readableNames.props"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/part0.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/part1.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/part14.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/part2.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/part3.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/start0.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/start1.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/start2.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/parser/unicode13/start3.rsc"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/problem/messages.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/problem/messages_en.properties"
+    },
+    {
+      "glob": "org/eclipse/jdt/internal/compiler/problem/messages_en_US.properties"
+    },
+    {
+      "glob": "templates/HtmlView-Header.txt"
+    },
+    {
+      "module": "java.base",
+      "glob": "jdk/internal/icu/impl/data/icudt76b/nfkc.nrm"
+    },
+    {
+      "module": "java.base",
+      "glob": "sun/text/resources/LineBreakIteratorData"
+    },
+    {
+      "module": "java.xml",
+      "glob": "jdk/xml/internal/jdkcatalog/JDKCatalog.xml"
+    }
+  ],
+  "bundles": [
+    {
+      "name": "org.eclipse.jdt.internal.compiler.batch.messages",
+      "locales": [
+        "en-US"
+      ]
+    },
+    {
+      "name": "org.eclipse.jdt.internal.compiler.problem.messages",
+      "locales": [
+        "en-US"
+      ]
+    }
+  ],
+  "jni": [
+    {
+      "type": "java.lang.Boolean",
+      "methods": [
+        {
+          "name": "getBoolean",
+          "parameterTypes": [
+            "java.lang.String"
+          ]
+        }
+      ]
+    },
+    {
+      "type": "sun.management.VMManagementImpl",
+      "fields": [
+        {
+          "name": "compTimeMonitoringSupport"
+        },
+        {
+          "name": "currentThreadCpuTimeSupport"
+        },
+        {
+          "name": "objectMonitorUsageSupport"
+        },
+        {
+          "name": "otherThreadCpuTimeSupport"
+        },
+        {
+          "name": "remoteDiagnosticCommandsSupport"
+        },
+        {
+          "name": "synchronizerUsageSupport"
+        },
+        {
+          "name": "threadAllocatedMemorySupport"
+        },
+        {
+          "name": "threadContentionMonitoringSupport"
+        }
+      ]
+    }
+  ]
+}

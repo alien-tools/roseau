@@ -26,6 +26,26 @@ class RoseauCLITest {
 		cmd = new CommandLine(app);
 	}
 
+	// --- For native --- //
+	@Test
+	void native_image_test() {
+		cmd.execute("--v1=/home/dig/repositories/guava/guava/src",
+			"--v2=/home/dig/repositories/guava/guava/src",
+			"--extractor=JDT",
+			"--pom=/home/dig/repositories/guava/guava/pom.xml",
+			"--diff");
+		cmd.execute("--v1=/home/dig/repositories/guava/guava/src",
+			"--v2=/home/dig/repositories/guava/guava/src",
+			"--extractor=SPOON",
+			"--pom=/home/dig/repositories/guava/guava/pom.xml",
+			"--diff");
+		cmd.execute("--v1=/home/dig/repositories/guava/guava/target/guava-32.1.3-jre.jar",
+			"--v2=/home/dig/repositories/guava/guava/target/guava-32.1.3-jre.jar",
+			"--pom=/home/dig/repositories/guava/guava/pom.xml",
+			"--extractor=ASM",
+			"--diff");
+	}
+
 	// --- Diffs --- //
 	@Test
 	void simple_diff() throws Exception {
