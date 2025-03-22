@@ -15,6 +15,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
@@ -55,7 +56,7 @@ class JdkTestIT {
 		System.out.printf("JDT API took %dms (%d types)%n", jdtApiTime, jdtApi.getAllTypes().count());
 
 		sw.reset().start();
-		var model = SpoonUtils.buildModel(src, Duration.ofMinutes(1));
+		var model = SpoonUtils.buildModel(src, List.of(), Duration.ofMinutes(1));
 		var parsingTime = sw.elapsed().toMillis();
 		System.out.printf("Parsing took %dms%n", parsingTime);
 

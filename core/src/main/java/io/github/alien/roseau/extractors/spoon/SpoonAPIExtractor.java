@@ -21,8 +21,7 @@ import java.util.stream.Stream;
 public class SpoonAPIExtractor implements APIExtractor {
 	@Override
 	public API extractAPI(Path sources, List<Path> classpath) {
-		// FIXME: classpath is currently ignored
-		CtModel model = SpoonUtils.buildModel(sources, Duration.ofSeconds(Long.MAX_VALUE));
+		CtModel model = SpoonUtils.buildModel(sources, classpath, Duration.ofSeconds(Long.MAX_VALUE));
 		return extractAPI(model);
 	}
 

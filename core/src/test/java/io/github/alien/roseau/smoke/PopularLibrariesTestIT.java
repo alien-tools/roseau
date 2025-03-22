@@ -122,7 +122,7 @@ class PopularLibrariesTestIT {
 
 		// Spoon parsing
 		sw.reset().start();
-		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
+		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, classpath, Duration.ofMinutes(1));
 		long spoonParsingTime = sw.elapsed().toMillis();
 
 		// Spoon API
