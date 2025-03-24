@@ -3,6 +3,7 @@ package io.github.alien.roseau.combinatorial.v2.breaker.tpDcl;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class ReduceVisibilityTypeDeclStrategy extends AbstractTpDclStrategy {
@@ -15,14 +16,14 @@ public final class ReduceVisibilityTypeDeclStrategy extends AbstractTpDclStrateg
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		LOGGER.info("Reducing {} visibility to {}", tpDcl.getQualifiedName(), accessModifier);
 
-		mutableApi.allTypes.values().forEach(t -> {
-			if (t.qualifiedName.equals(tpDcl.getQualifiedName())) {
-				t.visibility = accessModifier;
-			}
-		});
+		var mutableType = mutableApi.allTypes.get(tpDcl.getQualifiedName());
+		if (mutableType == null) throw new ImpossibleChangeException();
+
+		mutableType.visibility = accessModifier;
+
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

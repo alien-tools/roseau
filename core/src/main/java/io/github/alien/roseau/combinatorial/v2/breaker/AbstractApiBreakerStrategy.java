@@ -24,11 +24,12 @@ public abstract class AbstractApiBreakerStrategy {
 			applyBreakToMutableApi(mutableApi);
 
 			queue.put(strategyName, mutableApi.make());
+		} catch (ImpossibleChangeException ignored) {
 		} catch (Exception e) {
 			LOGGER.error("Failed to apply breaking changes for strategy {}", strategyName);
 			LOGGER.error(e.getMessage());
 		}
 	}
 
-	protected abstract void applyBreakToMutableApi(ApiBuilder mutableApi);
+	protected abstract void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException;
 }
