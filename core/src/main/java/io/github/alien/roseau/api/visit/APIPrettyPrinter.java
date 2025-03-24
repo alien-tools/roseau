@@ -50,7 +50,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				prettyPrint(it.getVisibility()),
 				prettyPrint(it.getModifiers()),
 				it.getSimpleName(),
-				"extends " + it.getSuperClass().getQualifiedName(),
+				it.getSuperClass().equals(TypeReference.OBJECT) ? "" : "extends %s".formatted(it.getSuperClass().getQualifiedName()),
 				it.getImplementedInterfaces().isEmpty()
 					? ""
 					: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
