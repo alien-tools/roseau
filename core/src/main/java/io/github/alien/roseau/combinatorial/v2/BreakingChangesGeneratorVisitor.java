@@ -3,7 +3,10 @@ package io.github.alien.roseau.combinatorial.v2;
 import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
+import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveClassStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.enm.RemoveEnumStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.rcd.RemoveRecordStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
@@ -34,15 +37,15 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakEnumDecl(EnumDecl e) {
-		// Do something with the enum
+		new RemoveEnumStrategy(e, queue).breakApi(api);
 	}
 
 	private void breakRecordDecl(RecordDecl r) {
-		// Do something with the record
+		new RemoveRecordStrategy(r, queue).breakApi(api);
 	}
 
 	private void breakClassDecl(ClassDecl c) {
-		// Do something with the class
+		new RemoveClassStrategy(c, queue).breakApi(api);
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
