@@ -24,7 +24,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>io.github.alien.roseau.Roseau</mainClass>
+                            <mainClass>io.github.alien.roseau.cli.RoseauCLI</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Multi-Release>true</Multi-Release>
@@ -51,7 +51,7 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>io.github.alien.roseau.Roseau</mainClass>
+                            <mainClass>io.github.alien.roseau.cli.RoseauCLI</mainClass>
                             <id>roseau</id>
                         </program>
                     </programs>
@@ -83,6 +83,23 @@
             <groupId>info.picocli</groupId>
             <artifactId>picocli</artifactId>
             <version>4.7.6</version>
+        </dependency>
+        <dependency>
+            <groupId>org.junit.jupiter</groupId>
+            <artifactId>junit-jupiter</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>org.hamcrest</groupId>
+            <artifactId>hamcrest</artifactId>
+            <version>3.0</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.github.stefanbirkner</groupId>
+            <artifactId>system-lambda</artifactId>
+            <version>1.2.1</version>
+            <scope>test</scope>
         </dependency>
     </dependencies>
 

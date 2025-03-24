@@ -9,6 +9,7 @@ import spoon.support.compiler.SpoonProgress;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -27,19 +28,21 @@ public final class SpoonUtils {
 	/**
 	 * Builds a Spoon model from the source code located at the given path, with a specified timeout.
 	 *
-	 * @param location The path to the source code
-	 * @param timeout  The maximum duration to wait for the model to be built
+	 * @param location  The path to the source code
+	 * @param classpath The classpath used to resolve references
+	 * @param timeout   The maximum duration to wait for the model to be built
 	 * @return The built Spoon model
 	 * @throws RoseauException If there is an error in building the Spoon model
 	 */
-	public static CtModel buildModel(Path location, Duration timeout) {
-		return buildModel(launcherFor(location), location, timeout);
+	public static CtModel buildModel(Path location, Collection<Path> classpath, Duration timeout) {
+		return buildModel(launcherFor(location, classpath), location, timeout);
 	}
 
 	/**
 	 * Builds a Spoon model from the source code located at the given path using the supplied launcher, with a specified
 	 * timeout.
 	 *
+	 * @param launcher The launcher used to build a {@link CtModel}
 	 * @param location The path to the source code
 	 * @param timeout  The maximum duration to wait for the model to be built
 	 * @return The built Spoon model
@@ -64,18 +67,23 @@ public final class SpoonUtils {
 	/**
 	 * Creates a Spoon Launcher for the given location. The resulting launcher is interruptible.
 	 *
-	 * @param location The path to the source code
+	 * @param location  The path to the source code
+	 * @param classpath The classpath used to resolve references
 	 * @return The created Spoon Launcher, either regular or Maven-specific
 	 * @throws IllegalArgumentException if the specified location does not exist
 	 */
-	public static Launcher launcherFor(Path location) {
+	public static Launcher launcherFor(Path location, Collection<Path> classpath) {
 		if (!location.toFile().exists()) {
 			throw new IllegalArgumentException(location + " does not exist");
 		}
 
-		// Custom "fast" launcher
 		Launcher launcher = new Launcher();
 		launcher.addInputResource(location.toString());
+		launcher.getEnvironment().setSourceClasspath(
+			classpath.stream()
+				.map(Path::toAbsolutePath)
+				.map(Path::toString)
+				.toArray(String[]::new));
 
 		// If we manage to successfully parse it as a Maven project, use that instead
 		if (Files.exists(location.resolve("pom.xml"))) {
@@ -92,7 +100,7 @@ public final class SpoonUtils {
 		// Set log level; messages are redirected to log4j with our own independent level
 		launcher.getEnvironment().setLevel("ERROR");
 		// Ignore missing types/classpath related errors
-		launcher.getEnvironment().setNoClasspath(true);
+		//launcher.getEnvironment().setNoClasspath(true);
 		// Proceed even if we find the same type twice; affects the precision of the result.
 		// Caution: this will make the not-so-safe generics typecasts break if two types
 		// of different kinds (e.g. class vs interface) exist in our sources

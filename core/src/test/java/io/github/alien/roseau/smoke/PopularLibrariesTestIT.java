@@ -64,7 +64,7 @@ class PopularLibrariesTestIT {
 			"org.apache.commons:commons-lang3:3.17.0",
 			"commons-io:commons-io:2.18.0",
 			"org.eclipse.collections:eclipse-collections-api:11.1.0",
-			//"org.springframework:spring-core:6.1.5",
+			"org.springframework:spring-core:6.1.5",
 			"io.dropwizard:dropwizard-core:4.0.1",
 			"io.projectreactor:reactor-core:3.6.3",
 			"org.reactivestreams:reactive-streams:1.0.4",
@@ -77,25 +77,25 @@ class PopularLibrariesTestIT {
 			"com.google.auto.service:auto-service:1.1.1",
 			"com.google.dagger:dagger:2.55",
 			"ch.qos.logback:logback-core:1.5.16",
-			//"ch.qos.logback:logback-classic:1.5.16",
-			//"org.apache.logging.log4j:log4j-core:2.24.3", // external libs
+			"ch.qos.logback:logback-classic:1.5.16",
+			"org.apache.logging.log4j:log4j-core:2.24.3", // external libs
 			"org.apache.logging.log4j:log4j-api:2.24.3",
 			"org.slf4j:slf4j-simple:2.0.16",
 			"org.slf4j:slf4j-api:2.0.16",
-			//"com.fasterxml.jackson.core:jackson-core:2.18.2", // shaded
+			"com.fasterxml.jackson.core:jackson-core:2.18.2", // shaded
 			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
-			//"fr.inria.gforge.spoon:spoon-core:11.2.0",
+			"fr.inria.gforge.spoon:spoon-core:11.2.0",
 			"commons-logging:commons-logging:1.3.5",
-			//"org.springframework:spring-web:6.2.2",
+			"org.springframework:spring-web:6.2.2",
 			"com.h2database:h2:2.3.232",
 			"org.hamcrest:hamcrest:3.0",
-			//"org.springframework:spring-beans:6.2.2",
+			"org.springframework:spring-beans:6.2.2",
 			"org.osgi:org.osgi.core:6.0.0",
 			"com.alibaba:fastjson:2.0.54",
 			"commons-collections:commons-collections:3.2.2",
 			"org.json:json:20250107",
-			"commons-beanutils:commons-beanutils:1.10.0"
-			//"com.squareup.retrofit2:retrofit:2.11.0"
+			"commons-beanutils:commons-beanutils:1.10.0",
+			"com.squareup.retrofit2:retrofit:2.11.0"
 		);
 	}
 
@@ -122,7 +122,7 @@ class PopularLibrariesTestIT {
 
 		// Spoon parsing
 		sw.reset().start();
-		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
+		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, classpath, Duration.ofMinutes(1));
 		long spoonParsingTime = sw.elapsed().toMillis();
 
 		// Spoon API
