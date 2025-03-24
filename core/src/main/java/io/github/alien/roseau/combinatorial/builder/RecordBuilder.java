@@ -19,6 +19,8 @@ public final class RecordBuilder extends ClassBuilder {
 
 		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
+		builder.recordComponents = decl.getRecordComponents();
+
 		return builder;
 	}
 }
