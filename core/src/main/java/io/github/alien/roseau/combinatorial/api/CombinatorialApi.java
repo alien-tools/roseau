@@ -95,8 +95,8 @@ public final class CombinatorialApi {
 
 	static final String apiPackageName = Constants.API_FOLDER;
 
-	static final int typeHierarchyDepth = 1;
-	static final int typeHierarchyWidth = 2;
+	static final int typeHierarchyDepth = 0;
+	static final int typeHierarchyWidth = 0;
 	static final int enumValuesCount = 5;
 	static final int paramsCount = 2;
 
@@ -252,6 +252,8 @@ public final class CombinatorialApi {
 				interfaceModifiers.forEach(modifiers -> {
 					// First level of hierarchy can't have non-sealed interfaces
 					if (modifiers.contains(NON_SEALED)) return;
+					// Interface can't be sealed if no hierarchy
+					if (modifiers.contains(SEALED) && typeHierarchyDepth == 0) return;
 
 					var interfaceBuilder = new InterfaceBuilder();
 					interfaceBuilder.qualifiedName = "%s.I%s".formatted(apiPackageName, ++symbolCounter);
@@ -271,6 +273,8 @@ public final class CombinatorialApi {
 				classModifiers.forEach(modifiers -> {
 					// First level of hierarchy can't have non-sealed classes
 					if (modifiers.contains(NON_SEALED)) return;
+					// Class can't be sealed if no hierarchy
+					if (modifiers.contains(SEALED) && typeHierarchyDepth == 0) return;
 
 					var classBuilder = new ClassBuilder();
 					classBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
@@ -382,7 +386,7 @@ public final class CombinatorialApi {
 
 	private void createNewClassesExtendingClassAndImplementingInterfaces(ClassBuilder superClsBuilder, List<InterfaceBuilder> implementingIntfBuilders, int depth) {
 		var superCls = superClsBuilder.make();
-		if (superCls.isFinal()) return;
+		if (superCls.isFinal() || depth < 0) return;
 
 		classModifiers.forEach(modifiers -> {
 			// Last level of hierarchy can't have sealed classes
