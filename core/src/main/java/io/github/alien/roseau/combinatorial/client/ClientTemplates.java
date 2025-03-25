@@ -31,6 +31,8 @@ public interface ClientTemplates {
 			
 			class %s extends %s {
 			%s
+
+			    public static void main(String[] args) {}
 			}
 			""";
 
@@ -39,13 +41,17 @@ public interface ClientTemplates {
 			
 			abstract class %s extends %s {
 			%s
+
+			    public static void main(String[] args) {}
 			}
 			""";
 
 	String INTERFACE_EXTENSION_TEMPLATE = """
 			%s
 			
-			interface %s extends %s {}
+			interface %s extends %s {
+			    public static void main(String[] args) {}
+			}
 			""";
 
 	String INTERFACE_IMPLEMENTATION_TEMPLATE = """
@@ -53,6 +59,8 @@ public interface ClientTemplates {
 			
 			class %s implements %s {
 			%s
+
+			    public static void main(String[] args) {}
 			}
 			""";
 }
