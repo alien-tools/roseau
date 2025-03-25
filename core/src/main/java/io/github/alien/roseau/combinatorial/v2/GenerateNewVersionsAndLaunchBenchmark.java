@@ -33,9 +33,9 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
+	private final Path tmpPath = Path.of(Constants.TMP_FOLDER);
 	private final Path v1SourcesPath;
 	private final Path clientsSourcesPath;
-	private final Path tmpPath;
 	private final Path v1JarPath;
 	private final Path clientsBinPath;
 
@@ -50,9 +50,8 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		v1SourcesPath = outputPath.resolve(Constants.API_FOLDER);
 		clientsSourcesPath = outputPath.resolve(Constants.CLIENTS_FOLDER);
-		tmpPath = Path.of(Constants.TMP_FOLDER);
 		v1JarPath = tmpPath.resolve(Path.of(Constants.JAR_FOLDER, "v1.jar"));
-		clientsBinPath = tmpPath.resolve(Path.of(Constants.BINARIES_FOLDER));
+		clientsBinPath = tmpPath.resolve(Constants.BINARIES_FOLDER);
 
 		ExplorerUtils.cleanOrCreateDirectory(tmpPath);
 	}
@@ -98,7 +97,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private void compileClients() throws StepExecutionException {
 		LOGGER.info("------- Compiling clients ------");
 
-		var errors = compiler.compileClientWithApi(clientsSourcesPath, v1JarPath, clientsBinPath);
+		var errors = compiler.compileClientsWithApi(clientsSourcesPath, v1JarPath, clientsBinPath);
 
 		if (!errors.isEmpty())
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile clients: " + formatCompilerErrors(errors));
@@ -117,7 +116,9 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 			var benchmark = new Benchmark(
 					String.valueOf(i),
 					newApiQueue, resultsQueue,
-					clientsSourcesPath, v1SourcesPath, v1JarPath, tmpPath,
+					clientsBinPath, clientsSourcesPath,
+					v1SourcesPath, v1JarPath,
+					tmpPath,
 					v1Api
 			);
 			var thread = new Thread(benchmark);
@@ -140,7 +141,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private void informAllBenchmarksGenerationIsOver() {
 		for (var benchmark : benchmarkThreads.keySet())
-			benchmark.informsApisGenerationIsOver();
+			benchmark.informApisGenerationIsOver();
 
 		for (var thread : benchmarkThreads.values())
 			try { thread.join(); } catch (InterruptedException ignored) {}
@@ -156,8 +157,6 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	}
 
 	private void informResultsThreadNoMoreResults() {
-		LOGGER.info("----- Closing results file -----");
-
 		if (resultsWriter != null) {
 			resultsWriter.informNoMoreResults();
 		}

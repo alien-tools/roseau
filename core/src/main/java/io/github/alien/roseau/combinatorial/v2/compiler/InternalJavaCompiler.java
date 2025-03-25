@@ -15,6 +15,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Locale;
@@ -43,7 +44,7 @@ public final class InternalJavaCompiler {
 		return List.of();
 	}
 
-	public List<Diagnostic<? extends JavaFileObject>> compileClientWithApi(Path clientsPath, Path apiPath, Path binPath) {
+	public List<Diagnostic<? extends JavaFileObject>> compileClientsWithApi(Path clientsPath, Path apiJarPath, Path binPath) {
 		var clientsFiles = ExplorerUtils.getFilesInPath(clientsPath, "java");
 		if (!ExplorerUtils.cleanOrCreateDirectory(binPath))
 			return List.of(new InternalDiagnostic("Couldn't clean or create clients binaries directory"));
@@ -54,7 +55,7 @@ public final class InternalJavaCompiler {
 			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(binPath.toFile()));
 
 			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(clientsFiles);
-			List<String> options = List.of("-source", "21", "-cp", apiPath.toString());
+			List<String> options = List.of("-source", "21", "-cp", apiJarPath.toString());
 			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
 			task.call();
 		} catch (Exception e) {
@@ -64,6 +65,37 @@ public final class InternalJavaCompiler {
 		return diagnostics.getDiagnostics().stream()
 				.filter(diagnostic -> diagnostic.getKind() == Diagnostic.Kind.ERROR)
 				.toList();
+	}
+
+	public List<Diagnostic<? extends JavaFileObject>> linkClientsWithApi(Path clientsBinPath, Path apiJarPath, String packageName, String filter) {
+		var classPaths = "%s:%s".formatted(clientsBinPath, apiJarPath);
+
+		var clientFileNames = clientsBinPath.resolve(packageName).toFile().list();
+		if (clientFileNames == null) return List.of(new InternalDiagnostic("No client binaries found"));
+
+		for (String clientFileName : clientFileNames) {
+			if (!clientFileName.endsWith(".class") || !clientFileName.contains(filter)) continue;
+
+			ProcessBuilder pb = new ProcessBuilder("java", "-cp", classPaths, "%s.%s".formatted(packageName, clientFileName.replace(".class", "")));
+			pb.redirectErrorStream(true);
+
+			try {
+				Process process = pb.start();
+				int exitCode = process.waitFor();
+
+				if (exitCode != 0) {
+					var processOutput = new InternalDiagnostic(new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
+
+					if (!processOutput.message.contains("UnsatisfiedLinkError") && !processOutput.message.contains("(Native Method)")) {
+						return List.of(processOutput);
+					}
+				}
+			} catch (InterruptedException | IOException e) {
+				return List.of(new InternalDiagnostic("Unknown error while linking client"));
+			}
+		}
+
+		return List.of();
 	}
 
 	private List<Diagnostic<? extends JavaFileObject>> compileApi(Path apiPath, Path binPath) {

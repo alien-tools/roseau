@@ -27,9 +27,12 @@ public final class RoseauTool extends AbstractTool {
 
 		APIDiff diff = new APIDiff(v1Api, v2Api);
 		diff.diff();
-		var isBreaking = !diff.getBreakingChanges().isEmpty();
+
+		var breakingChanges = diff.getBreakingChanges();
+		var isBinaryBreaking = breakingChanges.stream().anyMatch(bC -> bC.kind().isBinaryBreaking());
+		var isSourceBreaking = breakingChanges.stream().anyMatch(bC -> bC.kind().isSourceBreaking());
 
 		long executionTime = System.currentTimeMillis() - startTime;
-		return new ToolResult("Roseau", executionTime, isBreaking);
+		return new ToolResult("Roseau", executionTime, isBinaryBreaking, isSourceBreaking);
 	}
 }

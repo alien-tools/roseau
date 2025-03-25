@@ -14,10 +14,10 @@ import io.github.alien.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import io.github.alien.roseau.combinatorial.writer.ApiWriter;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.javatuples.Pair;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.List;
 
 public final class Benchmark implements Runnable {
@@ -26,6 +26,7 @@ public final class Benchmark implements Runnable {
 	private final String id;
 
 	private final Path benchmarkWorkingPath;
+	private final Path clientsBinPath;
 	private final Path clientsSourcesPath;
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
@@ -48,16 +49,18 @@ public final class Benchmark implements Runnable {
 			String id,
 			NewApiQueue apiQueue,
 			ResultsProcessQueue resultsQueue,
+			Path clientsBinPath,
 			Path clientsSourcesPath,
 			Path v1SourcesPath,
 			Path v1JarPath,
 			Path tmpPath,
 			API v1Api
 	) {
-		LOGGER.info("Creating Benchmark " + id);
+		LOGGER.info("Creating Benchmark {}", id);
 		this.id = id;
 
 		this.benchmarkWorkingPath = tmpPath.resolve(id);
+		this.clientsBinPath = clientsBinPath;
 		this.clientsSourcesPath = clientsSourcesPath;
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
@@ -88,18 +91,18 @@ public final class Benchmark implements Runnable {
 				var v2Api = strategyAndApi.getValue1().getValue1();
 
 				LOGGER.info("--------------------------------");
-				LOGGER.info("Running Benchmark Thread n°" + id);
-				LOGGER.info("Breaking Change: " + strategy);
+				LOGGER.info("Running Benchmark Thread n°{}", id);
+				LOGGER.info("Breaking Change: {}", strategy);
 
 				generateNewApiSourcesAndJar(v2Api);
-				var newApiIsBreaking = generateGroundTruth();
-				runToolsAnalysis(strategy, v2Api, newApiIsBreaking);
+				var groundTruth = generateGroundTruthForSymbol(symbol);
+				runToolsAnalysis(strategy, v2Api, groundTruth);
 
-				LOGGER.info("Benchmark Thread n°" + id + " finished");
+				LOGGER.info("Benchmark Thread n°{} finished", id);
 				LOGGER.info("--------------------------------\n");
 			} catch (Exception e) {
 				errorsCount++;
-				LOGGER.info("Benchmark Thread n°" + id + " failed: " + e.getMessage());
+				LOGGER.info("Benchmark Thread n°{} failed: {}", id, e.getMessage());
 			}
 		}
 
@@ -107,7 +110,7 @@ public final class Benchmark implements Runnable {
 			ExplorerUtils.removeDirectory(benchmarkWorkingPath);
 	}
 
-	public void informsApisGenerationIsOver() {
+	public void informApisGenerationIsOver() {
 		isNewApisGenerationOngoing = false;
 	}
 
@@ -122,31 +125,39 @@ public final class Benchmark implements Runnable {
 		if (!apiWriter.createOutputHierarchy())
 			throw new RuntimeException("Failed to create new api sources hierarchy");
 		apiWriter.write(api);
-		LOGGER.info("Generated to " + v2SourcesPath);
+		LOGGER.info("Generated to {}", v2SourcesPath);
 
 		LOGGER.info("Generating new API Jar");
 		var errors = compiler.packageApiToJar(v2SourcesPath, v2JarPath);
 		if (!errors.isEmpty())
 			throw new RuntimeException("Failed to package new api to jar");
-		LOGGER.info("Generated to " + v2JarPath);
+		LOGGER.info("Generated to {}", v2JarPath);
 	}
 
-	private boolean generateGroundTruth() {
+	private ToolResult generateGroundTruthForSymbol(String symbol) {
 		LOGGER.info("Generating Ground Truth");
 
+		long startTime = System.currentTimeMillis();
+
 		var tmpClientsBinPath = benchmarkWorkingPath.resolve(Constants.BINARIES_FOLDER);
-		var errors = compiler.compileClientWithApi(clientsSourcesPath, v2JarPath, tmpClientsBinPath);
-		return !errors.isEmpty();
+		var sourceErrors = compiler.compileClientsWithApi(clientsSourcesPath, v2JarPath, tmpClientsBinPath);
+		var isSourceBreaking = !sourceErrors.isEmpty();
+
+		var binaryErrors = compiler.linkClientsWithApi(clientsBinPath, v2JarPath, "clients", symbol);
+		var isBinaryBreaking = !binaryErrors.isEmpty();
+
+		long executionTime = System.currentTimeMillis() - startTime;
+		return new ToolResult("Ground Truth", executionTime, isBinaryBreaking, isSourceBreaking);
 	}
 
-	private void runToolsAnalysis(String strategy, API v2Api, boolean isBreaking) {
+	private void runToolsAnalysis(String strategy, API v2Api, ToolResult groundTruth) {
 		LOGGER.info("--------------------------------");
 		LOGGER.info("     Running Tools Analysis");
 
-		var results = new ArrayList<ToolResult>();
+		var results = new ArrayList<>(Collections.singletonList(groundTruth));
 		for (var tool : tools) {
 			LOGGER.info("--------------------------------");
-			LOGGER.info(" Running " + tool.getClass().getSimpleName());
+			LOGGER.info(" Running {}", tool.getClass().getSimpleName());
 
 			if (tool instanceof RoseauTool roseauTool) {
 				roseauTool.setApis(v1Api, v2Api);
@@ -160,14 +171,17 @@ public final class Benchmark implements Runnable {
 
 			results.add(result);
 
-			LOGGER.info(" Execution Time: " + result.executionTime() + "ms");
-			LOGGER.info(" Tool Result   : " + (result.isBreaking() ? "Breaking" : "Not Breaking"));
-			LOGGER.info(" Expected      : " + (isBreaking ? "Breaking" : "Not Breaking"));
-			LOGGER.info(" Result        : " + (result.isBreaking() == isBreaking ? "OK" : "KO"));
+			LOGGER.info(" Execution Time    : {}ms", result.executionTime());
+			LOGGER.info(" Source Tool Result: {}", result.isSourceBreaking() ? "Breaking" : "Not Breaking");
+			LOGGER.info(" Source Expected   : {}", groundTruth.isSourceBreaking() ? "Breaking" : "Not Breaking");
+			LOGGER.info(" Source Result     : {}", result.isSourceBreaking() == groundTruth.isSourceBreaking() ? "OK" : "KO");
+			LOGGER.info(" Binary Tool Result: {}", result.isBinaryBreaking() ? "Breaking" : "Not Breaking");
+			LOGGER.info(" Binary Expected   : {}", groundTruth.isBinaryBreaking() ? "Breaking" : "Not Breaking");
+			LOGGER.info(" Binary Result     : {}", result.isBinaryBreaking() == groundTruth.isBinaryBreaking() ? "OK" : "KO");
 		}
 
 		LOGGER.info("--------------------------------");
 
-		resultsQueue.put(strategy, new Pair<>(isBreaking, results));
+		resultsQueue.put(strategy, results);
 	}
 }

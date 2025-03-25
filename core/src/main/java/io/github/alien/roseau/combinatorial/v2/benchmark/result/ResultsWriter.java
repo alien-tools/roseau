@@ -33,10 +33,9 @@ public final class ResultsWriter implements Runnable {
 			if (strategyAndResults == null) continue;
 
 			var strategy = strategyAndResults.getValue0();
-			var groundTruth = strategyAndResults.getValue1().getValue0();
-			var results = strategyAndResults.getValue1().getValue1();
+			var results = strategyAndResults.getValue1();
 
-			addResultsToFile(strategy, groundTruth, results);
+			addResultsToFile(strategy, results);
 		}
 
 		closeResultsFile();
@@ -46,24 +45,22 @@ public final class ResultsWriter implements Runnable {
 		isStillProducingResults = false;
 	}
 
-	private void addResultsToFile(String strategy, boolean groundTruth, List<ToolResult> results) {
+	private void addResultsToFile(String strategy, List<ToolResult> results) {
+		var sortedResults = results.stream().sorted(Comparator.comparing(ToolResult::toolName)).toList();
 		if (resultsFileWriter == null)
-			if (!createResultsFile(results))
+			if (!createResultsFile(sortedResults))
 				return;
 
 		try {
-			var resultsSortedByToolNames = results.stream()
-					.sorted(Comparator.comparing(ToolResult::toolName))
-					.map(ToolResult::isBreaking)
-					.map(ResultsWriter::formatResult);
+			var formatedResults = sortedResults.stream().map(ResultsWriter::formatResult);
 
-			resultsFileWriter.write("%s,%s,%s\n".formatted(
+			resultsFileWriter.write("%s,%s\n".formatted(
 					strategy,
-					formatResult(groundTruth),
-					resultsSortedByToolNames.collect(Collectors.joining(","))
+					formatedResults.collect(Collectors.joining(","))
 			));
 		} catch (Exception e) {
 			LOGGER.error("Error while adding results to file");
+			LOGGER.error(e);
 		}
 	}
 
@@ -75,8 +72,8 @@ public final class ResultsWriter implements Runnable {
 			var now = System.currentTimeMillis();
 			resultsFileWriter = new FileWriter(resultsPath.resolve("results-%d.csv".formatted(now)).toFile());
 
-			var tools = results.stream().map(ToolResult::toolName).sorted().toList();
-			resultsFileWriter.write("Strategy,Ground Truth," + String.join(",", tools) + "\n");
+			var toolNames = results.stream().map(t -> "%s Binary,%s Source".formatted(t.toolName(), t.toolName())).toList();
+			resultsFileWriter.write("Strategy," + String.join(",", toolNames) + "\n");
 
 			return true;
 		} catch (Exception e) {
@@ -86,6 +83,8 @@ public final class ResultsWriter implements Runnable {
 	}
 
 	private void closeResultsFile() {
+		LOGGER.info("----- Closing results file -----");
+
 		if (resultsFileWriter != null) {
 			try {
 				resultsFileWriter.close();
@@ -95,7 +94,10 @@ public final class ResultsWriter implements Runnable {
 		}
 	}
 
-	private static String formatResult(boolean isBreaking) {
-		return isBreaking ? "1" : "0";
+	private static String formatResult(ToolResult result) {
+		return "%s,%s".formatted(
+				result.isBinaryBreaking() ? "1" : "0",
+				result.isSourceBreaking() ? "1" : "0"
+		);
 	}
 }
