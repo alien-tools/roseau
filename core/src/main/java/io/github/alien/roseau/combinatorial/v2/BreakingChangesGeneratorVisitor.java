@@ -7,7 +7,9 @@ import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddModifierClassStrat
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveModifierClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.enm.RemoveEnumStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.intf.AddModifierInterfaceStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveModifierInterfaceStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcd.RemoveRecordStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.ReduceVisibilityTypeDeclStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
@@ -66,6 +68,9 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveInterfaceStrategy(i, queue).breakApi(api);
 
 		new ReduceVisibilityTypeDeclStrategy(AccessModifier.PACKAGE_PRIVATE, i, queue).breakApi(api);
+
+		new AddModifierInterfaceStrategy(Modifier.ABSTRACT, i, queue).breakApi(api);
+		new RemoveModifierInterfaceStrategy(Modifier.ABSTRACT, i, queue).breakApi(api);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {
