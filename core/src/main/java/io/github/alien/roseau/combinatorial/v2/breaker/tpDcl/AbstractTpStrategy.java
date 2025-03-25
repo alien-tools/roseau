@@ -4,12 +4,12 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.v2.breaker.AbstractApiBreakerStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-abstract class AbstractTpDclStrategy extends AbstractApiBreakerStrategy {
-	protected final TypeDecl tpDcl;
+abstract class AbstractTpStrategy extends AbstractApiBreakerStrategy {
+	protected final TypeDecl tp;
 
-	AbstractTpDclStrategy(TypeDecl tpDcl, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName, tpDcl);
+	AbstractTpStrategy(TypeDecl tp, NewApiQueue queue, String strategyName) {
+		super(queue, strategyName, tp);
 
-		this.tpDcl = tpDcl;
+		this.tp = tp;
 	}
 }

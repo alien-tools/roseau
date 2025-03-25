@@ -5,31 +5,22 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
+import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.RemoveModifierTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 import java.util.stream.Collectors;
 
-public class RemoveModifierClassStrategy extends AbstractClsStrategy {
-	private final Modifier modifier;
-
+public final class RemoveModifierClassStrategy extends RemoveModifierTypeStrategy {
 	public RemoveModifierClassStrategy(Modifier modifier, ClassDecl cls, NewApiQueue queue) {
-		super(cls, queue, "Remove%sModifierFrom%s".formatted(modifier.toCapitalize(), cls.getSimpleName()));
-
-		this.modifier = modifier;
+		super(modifier, cls, queue);
 	}
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!cls.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
-
-		LOGGER.info("Removing {} modifier from {}", modifier.toCapitalize(), cls.getSimpleName());
-
-		var mutableClass = mutableApi.allTypes.get(cls.getQualifiedName());
-		if (mutableClass == null) throw new ImpossibleChangeException();
-
-		mutableClass.modifiers.remove(modifier);
+		super.applyBreakToMutableApi(mutableApi);
 
 		if (modifier.equals(Modifier.ABSTRACT)) {
+			var mutableClass = mutableApi.allTypes.get(tp.getQualifiedName());
 			mutableClass.methods = mutableClass.methods.stream().map(m -> {
 				if (!m.isAbstract()) return m;
 

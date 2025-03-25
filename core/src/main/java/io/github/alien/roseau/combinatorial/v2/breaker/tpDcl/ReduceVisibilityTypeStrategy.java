@@ -6,20 +6,20 @@ import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class ReduceVisibilityTypeDeclStrategy extends AbstractTpDclStrategy {
+public final class ReduceVisibilityTypeStrategy extends AbstractTpStrategy {
 	private final AccessModifier accessModifier;
 
-	public ReduceVisibilityTypeDeclStrategy(AccessModifier modifier, TypeDecl tpDcl, NewApiQueue queue) {
-		super(tpDcl, queue, "Reduce%sVisibilityTo%s".formatted(tpDcl.getSimpleName(), modifier.toCapitalize()));
+	public ReduceVisibilityTypeStrategy(AccessModifier modifier, TypeDecl tp, NewApiQueue queue) {
+		super(tp, queue, "Reduce%sVisibilityTo%s".formatted(tp.getSimpleName(), modifier.toCapitalize()));
 
 		this.accessModifier = modifier;
 	}
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		LOGGER.info("Reducing {} visibility to {}", tpDcl.getQualifiedName(), accessModifier.toCapitalize());
+		LOGGER.info("Reducing {} visibility to {}", tp.getQualifiedName(), accessModifier.toCapitalize());
 
-		var mutableType = mutableApi.allTypes.get(tpDcl.getQualifiedName());
+		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
 		if (mutableType == null) throw new ImpossibleChangeException();
 
 		mutableType.visibility = accessModifier;

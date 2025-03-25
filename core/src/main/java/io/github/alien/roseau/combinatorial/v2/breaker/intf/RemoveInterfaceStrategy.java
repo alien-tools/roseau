@@ -8,18 +8,18 @@ import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
 import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
 import io.github.alien.roseau.combinatorial.builder.TypeDeclBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.RemoveTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
+public final class RemoveInterfaceStrategy extends RemoveTypeStrategy {
 	public RemoveInterfaceStrategy(InterfaceDecl intf, NewApiQueue queue) {
-		super(intf, queue, "RemoveInterface" + intf.getSimpleName());
+		super(intf, queue);
 	}
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		LOGGER.info("Removing interface " + intf.getPrettyQualifiedName());
+		super.applyBreakToMutableApi(mutableApi);
 
-		mutableApi.allTypes.remove(intf.getQualifiedName());
 		mutableApi.allTypes.values().forEach(typeBuilder -> {
 			removeInterfaceFromTypeDeclBuilder(typeBuilder);
 
@@ -32,7 +32,7 @@ public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
 	private void removeInterfaceFromTypeDeclBuilder(TypeDeclBuilder typeBuilder) {
 		var implementedInterfacesCount = typeBuilder.implementedInterfaces.size();
 		typeBuilder.implementedInterfaces = typeBuilder.implementedInterfaces.stream()
-				.filter(i -> !i.getQualifiedName().equals(intf.getQualifiedName()))
+				.filter(i -> !i.getQualifiedName().equals(tp.getQualifiedName()))
 				.toList();
 
 		if (implementedInterfacesCount != typeBuilder.implementedInterfaces.size()) {
@@ -54,7 +54,7 @@ public final class RemoveInterfaceStrategy extends AbstractIntfStrategy {
 
 	private void removeInterfaceFromInterfaceBuilder(InterfaceBuilder interfaceBuilder) {
 		interfaceBuilder.permittedTypes = interfaceBuilder.permittedTypes.stream()
-				.filter(type -> !type.equals(intf.getQualifiedName()))
+				.filter(type -> !type.equals(tp.getQualifiedName()))
 				.toList();
 
 		if (interfaceBuilder.modifiers.contains(Modifier.SEALED) && interfaceBuilder.permittedTypes.isEmpty()) {
