@@ -10,14 +10,14 @@ public final class ReduceVisibilityTypeDeclStrategy extends AbstractTpDclStrateg
 	private final AccessModifier accessModifier;
 
 	public ReduceVisibilityTypeDeclStrategy(AccessModifier modifier, TypeDecl tpDcl, NewApiQueue queue) {
-		super(tpDcl, queue, "Reduce%sVisibilityTo%s".formatted(tpDcl.getSimpleName(), modifier));
+		super(tpDcl, queue, "Reduce%sVisibilityTo%s".formatted(tpDcl.getSimpleName(), modifier.toCapitalize()));
 
 		this.accessModifier = modifier;
 	}
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		LOGGER.info("Reducing {} visibility to {}", tpDcl.getQualifiedName(), accessModifier);
+		LOGGER.info("Reducing {} visibility to {}", tpDcl.getQualifiedName(), accessModifier.toCapitalize());
 
 		var mutableType = mutableApi.allTypes.get(tpDcl.getQualifiedName());
 		if (mutableType == null) throw new ImpossibleChangeException();

@@ -10,7 +10,7 @@ public class AddModifierClassStrategy extends AbstractClsStrategy {
 	private final Modifier modifier;
 
 	public AddModifierClassStrategy(Modifier modifier, ClassDecl cls, NewApiQueue queue) {
-		super(cls, queue, "Add%sModifierTo%s".formatted(modifier, cls.getSimpleName()));
+		super(cls, queue, "Add%sModifierTo%s".formatted(modifier.toCapitalize(), cls.getSimpleName()));
 
 		this.modifier = modifier;
 	}

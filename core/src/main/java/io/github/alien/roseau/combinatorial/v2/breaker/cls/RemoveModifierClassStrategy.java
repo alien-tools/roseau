@@ -13,7 +13,7 @@ public class RemoveModifierClassStrategy extends AbstractClsStrategy {
 	private final Modifier modifier;
 
 	public RemoveModifierClassStrategy(Modifier modifier, ClassDecl cls, NewApiQueue queue) {
-		super(cls, queue, "Remove%sModifierFrom%s".formatted(modifier, cls.getSimpleName()));
+		super(cls, queue, "Remove%sModifierFrom%s".formatted(modifier.toCapitalize(), cls.getSimpleName()));
 
 		this.modifier = modifier;
 	}
@@ -22,7 +22,7 @@ public class RemoveModifierClassStrategy extends AbstractClsStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		if (!cls.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
 
-		LOGGER.info("Removing {} modifier from {}", modifier, cls.getSimpleName());
+		LOGGER.info("Removing {} modifier from {}", modifier.toCapitalize(), cls.getSimpleName());
 
 		var mutableClass = mutableApi.allTypes.get(cls.getQualifiedName());
 		if (mutableClass == null) throw new ImpossibleChangeException();
