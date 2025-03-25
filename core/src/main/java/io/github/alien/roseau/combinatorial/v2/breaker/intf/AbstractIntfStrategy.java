@@ -8,7 +8,7 @@ abstract class AbstractIntfStrategy extends AbstractApiBreakerStrategy {
 	protected final InterfaceDecl intf;
 
 	AbstractIntfStrategy(InterfaceDecl intf, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName);
+		super(queue, strategyName, intf);
 
 		this.intf = intf;
 	}

@@ -84,7 +84,8 @@ public final class Benchmark implements Runnable {
 
 			try {
 				var strategy = strategyAndApi.getValue0();
-				var v2Api = strategyAndApi.getValue1();
+				var symbol = strategyAndApi.getValue1().getValue0();
+				var v2Api = strategyAndApi.getValue1().getValue1();
 
 				LOGGER.info("--------------------------------");
 				LOGGER.info("Running Benchmark Thread n°" + id);

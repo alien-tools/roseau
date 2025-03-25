@@ -8,7 +8,7 @@ abstract class AbstractClsStrategy extends AbstractApiBreakerStrategy {
 	protected final ClassDecl cls;
 
 	AbstractClsStrategy(ClassDecl cls, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName);
+		super(queue, strategyName, cls);
 
 		this.cls = cls;
 	}
