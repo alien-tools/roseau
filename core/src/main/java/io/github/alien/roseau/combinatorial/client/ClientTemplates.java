@@ -1,66 +1,36 @@
 package io.github.alien.roseau.combinatorial.client;
 
 public interface ClientTemplates {
-	String FILE_TEMPLATE = """
+	String FULL_CLIENT_FILE_TEMPLATE = """
 			package %s;
-			
-			%s""";
 
-	String MAIN_CLASS_TEMPLATE = """
 			%s
-			
+
 			public class %s {
-			    public static void main(String[] args) {
-			        %s
+			%s
+				public static void main(String[] args)%s {
+			%s
 			    }
 			}
 			""";
 
-	String MAIN_THROWING_CLASS_TEMPLATE = """
-			%s
-			
-			public class %s {
-			    public static void main(String[] args) throws %s {
-			        %s
-			    }
-			}
-			""";
-
-	String CLASS_INHERITANCE_TEMPLATE = """
-			%s
-			
+	String CLASS_EXTENSION_TEMPLATE = """
 			class %s extends %s {
 			%s
-
-			    public static void main(String[] args) {}
 			}
 			""";
 
-	String ABSTRACT_CLASS_INHERITANCE_TEMPLATE = """
-			%s
-			
+	String ABSTRACT_CLASS_EXTENSION_TEMPLATE = """
 			abstract class %s extends %s {
 			%s
-
-			    public static void main(String[] args) {}
 			}
 			""";
 
-	String INTERFACE_EXTENSION_TEMPLATE = """
-			%s
-			
-			interface %s extends %s {
-			    public static void main(String[] args) {}
-			}
-			""";
+	String INTERFACE_EXTENSION_TEMPLATE = "interface %s extends %s {}\n";
 
 	String INTERFACE_IMPLEMENTATION_TEMPLATE = """
-			%s
-			
 			class %s implements %s {
 			%s
-
-			    public static void main(String[] args) {}
 			}
 			""";
 }

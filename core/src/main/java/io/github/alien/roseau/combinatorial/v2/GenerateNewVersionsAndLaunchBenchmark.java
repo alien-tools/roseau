@@ -35,9 +35,9 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private final Path tmpPath = Path.of(Constants.TMP_FOLDER);
 	private final Path v1SourcesPath;
-	private final Path clientsSourcesPath;
 	private final Path v1JarPath;
-	private final Path clientsBinPath;
+	private final Path clientSourcePath;
+	private final Path clientBinPath;
 
 	public GenerateNewVersionsAndLaunchBenchmark(API v1Api, int maxParallelAnalysis, Path outputPath) {
 		super(outputPath);
@@ -49,9 +49,9 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		resultsQueue = new ResultsProcessQueue();
 
 		v1SourcesPath = outputPath.resolve(Constants.API_FOLDER);
-		clientsSourcesPath = outputPath.resolve(Constants.CLIENTS_FOLDER);
 		v1JarPath = tmpPath.resolve(Path.of(Constants.JAR_FOLDER, "v1.jar"));
-		clientsBinPath = tmpPath.resolve(Constants.BINARIES_FOLDER);
+		clientSourcePath = outputPath.resolve(Constants.CLIENT_FOLDER);
+		clientBinPath = tmpPath.resolve(Constants.BINARIES_FOLDER);
 
 		ExplorerUtils.cleanOrCreateDirectory(tmpPath);
 	}
@@ -79,7 +79,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		if (!ExplorerUtils.checkPathExists(v1SourcesPath))
 			throw new StepExecutionException(this.getClass().getSimpleName(), "V1 API sources are missing");
 
-		if (!ExplorerUtils.checkPathExists(clientsSourcesPath))
+		if (!ExplorerUtils.checkPathExists(clientSourcePath))
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Clients sources are missing");
 	}
 
@@ -97,7 +97,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private void compileClients() throws StepExecutionException {
 		LOGGER.info("------- Compiling clients ------");
 
-		var errors = compiler.compileClientsWithApi(clientsSourcesPath, v1JarPath, clientsBinPath);
+		var errors = compiler.compileClientWithApi(clientSourcePath, v1JarPath, clientBinPath);
 
 		if (!errors.isEmpty())
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile clients: " + formatCompilerErrors(errors));
@@ -116,7 +116,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 			var benchmark = new Benchmark(
 					String.valueOf(i),
 					newApiQueue, resultsQueue,
-					clientsBinPath, clientsSourcesPath,
+					clientBinPath, clientSourcePath,
 					v1JarPath,
 					tmpPath
 			);

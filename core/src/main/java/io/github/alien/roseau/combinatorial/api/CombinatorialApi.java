@@ -42,7 +42,6 @@ import static io.github.alien.roseau.api.model.AccessModifier.PUBLIC;
 import static io.github.alien.roseau.api.model.Modifier.ABSTRACT;
 import static io.github.alien.roseau.api.model.Modifier.DEFAULT;
 import static io.github.alien.roseau.api.model.Modifier.FINAL;
-import static io.github.alien.roseau.api.model.Modifier.NATIVE;
 import static io.github.alien.roseau.api.model.Modifier.NON_SEALED;
 import static io.github.alien.roseau.api.model.Modifier.SEALED;
 import static io.github.alien.roseau.api.model.Modifier.STATIC;
@@ -97,8 +96,8 @@ public final class CombinatorialApi {
 
 	static final int typeHierarchyDepth = 0;
 	static final int typeHierarchyWidth = 0;
-	static final int enumValuesCount = 5;
-	static final int paramsCount = 2;
+	static final int enumValuesCount = 2;
+	static final int paramsCount = 1;
 
 	static int symbolCounter = 0;
 	static int constructorCounter = 0;
@@ -670,19 +669,19 @@ public final class CombinatorialApi {
 	}
 
 	private static Set<Set<Modifier>> methodModifiers(Builder<TypeDecl> container) {
-		var modifiers = powerSet(STATIC, FINAL, ABSTRACT, NATIVE, DEFAULT, SYNCHRONIZED)
+		var modifiers = powerSet(STATIC, FINAL, ABSTRACT, DEFAULT, SYNCHRONIZED)
 				.stream()
 				.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
-				.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(NATIVE, STATIC, SYNCHRONIZED)).isEmpty())
+				.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(STATIC, SYNCHRONIZED)).isEmpty())
 				.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
 				.collect(Collectors.toSet());
 
 		return switch (container) {
 			case InterfaceBuilder ignored -> modifiers.stream()
-					.filter(mods -> Sets.intersection(mods, Set.of(NATIVE, SYNCHRONIZED, FINAL)).isEmpty())
+					.filter(mods -> Sets.intersection(mods, Set.of(SYNCHRONIZED, FINAL)).isEmpty())
 					.collect(Collectors.toSet());
 			case RecordBuilder ignored -> modifiers.stream()
-					.filter(mods -> !mods.contains(ABSTRACT) && !mods.contains(NATIVE) && !mods.contains(DEFAULT))
+					.filter(mods -> !mods.contains(ABSTRACT) && !mods.contains(DEFAULT))
 					.collect(Collectors.toSet());
 			case ClassBuilder b -> modifiers.stream()
 					.filter(mods -> !mods.contains(DEFAULT))

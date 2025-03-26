@@ -8,7 +8,7 @@ abstract class AbstractTpStrategy extends AbstractApiBreakerStrategy {
 	protected final TypeDecl tp;
 
 	AbstractTpStrategy(TypeDecl tp, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName, tp);
+		super(queue, strategyName);
 
 		this.tp = tp;
 	}

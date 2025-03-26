@@ -8,7 +8,7 @@ abstract class AbstractEnmStrategy extends AbstractApiBreakerStrategy {
 	protected final EnumDecl enm;
 
 	AbstractEnmStrategy(EnumDecl enm, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName, enm);
+		super(queue, strategyName);
 
 		this.enm = enm;
 	}

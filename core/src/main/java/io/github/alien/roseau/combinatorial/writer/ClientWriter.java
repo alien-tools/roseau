@@ -1,19 +1,7 @@
 package io.github.alien.roseau.combinatorial.writer;
 
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.EnumDecl;
-import io.github.alien.roseau.api.model.EnumValueDecl;
-import io.github.alien.roseau.api.model.ExecutableDecl;
-import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.InterfaceDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.RecordComponentDecl;
-import io.github.alien.roseau.api.model.RecordDecl;
-import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
+import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
-import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.client.ClientTemplates;
 import org.apache.logging.log4j.LogManager;
@@ -22,14 +10,18 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
-import java.util.List;
+import java.util.*;
 import java.util.stream.Collectors;
 
 public class ClientWriter extends AbstractWriter {
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
-	private static final String clientsPackageName = Constants.CLIENTS_FOLDER;
+	private static final String clientsPackageName = Constants.CLIENT_FOLDER;
+
+	private final Set<String> imports = new HashSet<>();
+	private final List<String> innerTypes = new ArrayList<>();
+	private final Set<String> mainExceptions = new HashSet<>();
+	private final List<String> mainInstructions = new ArrayList<>();
 
 	public ClientWriter(Path outputDir) {
 		super(outputDir);
@@ -40,74 +32,77 @@ public class ClientWriter extends AbstractWriter {
 		var name = "%sClassInheritance".formatted(classDecl.getPrettyQualifiedName());
 		var constructorRequired = implementRequiredConstructor(classDecl, name);
 		var methodsImplemented = implementNecessaryMethods(classDecl);
-		var classBody = constructorRequired + "\n" + methodsImplemented;
+		var classBody = constructorRequired.isBlank()
+				? methodsImplemented
+				: "%s\n%s".formatted(constructorRequired, methodsImplemented);
 
-		var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, classDecl.getSimpleName(), classBody);
+		var code = ClientTemplates.CLASS_EXTENSION_TEMPLATE.formatted(name, classDecl.getSimpleName(), classBody);
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
 		var imports = getImportsForType(containingClass);
-		var name = "%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName());
+		var paramTypes = formatParamTypeNames(constructorDecl.getParameters());
+		var name = "%s%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName(), paramTypes);
 		var params = getParamsForExecutableInvocation(constructorDecl);
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 
 		if (constructorDecl.isPublic()) {
 			var code = "new %s(%s);".formatted(containingClass.getSimpleName(), params);
 
-			writeCodeInMain(imports, name, code, exceptions);
+			addInstructionToClientMain(imports, exceptions, code);
 		} else if (constructorDecl.isProtected()) {
+			var formattedExceptions = formatExceptionNames(exceptions);
+
 			var constructorSuper = "\t%s()%s {\n\t\tsuper(%s);\n\t}".formatted(
 					name,
-					exceptions.isBlank() ? "" : " throws %s".formatted(exceptions),
+					formattedExceptions.isBlank() ? "" : " throws %s".formatted(formattedExceptions),
 					params
 			);
-			var code = ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), constructorSuper);
+			var code = ClientTemplates.CLASS_EXTENSION_TEMPLATE.formatted(name, containingClass.getSimpleName(), constructorSuper);
 
-			writeCodeInFile(name, code);
+			addInnerTypeToClientMain(imports, code);
 		}
 	}
 
 	public void writeExceptionCatch(ClassDecl classDecl) {
 		var imports = getImportsForType(classDecl);
-		var name = "%sExceptionCatch".formatted(classDecl.getPrettyQualifiedName());
 
 		var constructor = generateEasiestConstructorInvocationForClass(classDecl);
 		var code = "try {\n\t\t\tthrow %s;\n\t\t} catch (%s e) {}".formatted(constructor, classDecl.getSimpleName());
 
-		writeCodeInMain(imports, name, code);
+		addInstructionToClientMain(imports, code);
 	}
 
 	public void writeExceptionThrow(ClassDecl classDecl) {
 		var imports = getImportsForType(classDecl);
-		var name = "%sExceptionThrow".formatted(classDecl.getPrettyQualifiedName());
 
 		var constructor = generateEasiestConstructorInvocationForClass(classDecl);
 		var code = "throw %s;".formatted(constructor);
 
+		var exceptions = new ArrayList<String>();
 		if (classDecl.isCheckedException()) {
-			writeCodeInMain(imports, name, code, classDecl.getSimpleName());
-		} else if (classDecl.isUncheckedException()) {
-			writeCodeInMain(imports, name, code);
+			exceptions.add(classDecl.getSimpleName());
 		}
+
+		addInstructionToClientMain(imports, exceptions, code);
 	}
 
 	public void writeExceptionThrows(ClassDecl classDecl) {
 		var imports = getImportsForType(classDecl);
-		var name = "%sExceptionThrows".formatted(classDecl.getPrettyQualifiedName());
 
-		writeCodeInMain(imports, name, "", classDecl.getSimpleName());
+		this.imports.addAll(imports);
+		this.mainExceptions.add(classDecl.getSimpleName());
 	}
 
 	public void writeEnumValueRead(EnumValueDecl enumValueDecl, EnumDecl containingEnum) {
 		var imports = getImportsForType(containingEnum);
-		var name = "%sEnumValueRead".formatted(enumValueDecl.getPrettyQualifiedName());
 
 		var caller = getContainingTypeAccessForTypeMember(containingEnum, enumValueDecl);
-		var enumValueReadCode = "var val = %s.%s;".formatted(caller, enumValueDecl.getSimpleName());
+		var enumValueReadCode = "var %sVal = %s.%s;".formatted(enumValueDecl.getPrettyQualifiedName(), caller, enumValueDecl.getSimpleName());
 
-		writeCodeInMain(imports, name, enumValueReadCode);
+		addInstructionToClientMain(imports, enumValueReadCode);
 	}
 
 	public void writeFieldRead(FieldDecl fieldDecl, TypeDecl containingType) {
@@ -117,24 +112,25 @@ public class ClientWriter extends AbstractWriter {
 		String methodName = null, template = null;
 		if (containingType.isClass() && containingType.isAbstract()) {
 			methodName = "aNewMethodToReadFieldInAbstractClass";
-			template = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE;
+			template = ClientTemplates.ABSTRACT_CLASS_EXTENSION_TEMPLATE;
 		} else if (fieldDecl.isPublic()) {
 			var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
-			var fieldReadCode = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
+			var fieldReadCode = "var %sVal = %s.%s;".formatted(fieldDecl.getPrettyQualifiedName(), caller, fieldDecl.getSimpleName());
 
-			writeCodeInMain(imports, name, fieldReadCode);
+			addInstructionToClientMain(imports, fieldReadCode);
 		} else if (fieldDecl.isProtected()) {
 			methodName = "aNewMethodToReadProtectedField";
-			template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
+			template = ClientTemplates.CLASS_EXTENSION_TEMPLATE;
 		}
 
 		if (methodName == null || containingType.isSealed()) return;
 
-		var methodCode = "var val = this.%s;".formatted(fieldDecl.getSimpleName());
+		var caller = fieldDecl.isStatic() ? containingType.getSimpleName() : "this";
+		var methodCode = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
 		var method = generateMethodDeclaration(methodName, methodCode);
-		var code = template.formatted(imports, name, containingType.getSimpleName(), method);
+		var code = template.formatted(name, containingType.getSimpleName(), method);
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeFieldWrite(FieldDecl fieldDecl, TypeDecl containingType) {
@@ -145,43 +141,43 @@ public class ClientWriter extends AbstractWriter {
 		String methodName = null, template = null;
 		if (containingType.isClass() && containingType.isAbstract()) {
 			methodName = "aNewMethodToWriteFieldInAbstractClass";
-			template = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE;
+			template = ClientTemplates.ABSTRACT_CLASS_EXTENSION_TEMPLATE;
 		} else if (fieldDecl.isPublic()) {
 			var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
 			var fieldWriteCode = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
-			writeCodeInMain(imports, name, fieldWriteCode);
+			addInstructionToClientMain(imports, fieldWriteCode);
 		} else if (fieldDecl.isProtected()) {
 			methodName = "aNewMethodToWriteProtectedField";
-			template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
+			template = ClientTemplates.CLASS_EXTENSION_TEMPLATE;
 		}
 
 		if (methodName == null || containingType.isSealed()) return;
 
-		var methodCode = "this.%s = %s;".formatted(fieldDecl.getSimpleName(), value);
+		var caller = fieldDecl.isStatic() ? containingType.getSimpleName() : "this";
+		var methodCode = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 		var method = generateMethodDeclaration(methodName, methodCode);
-		var code = template.formatted(imports, name, containingType.getSimpleName(), method);
+		var code = template.formatted(name, containingType.getSimpleName(), method);
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeRecordComponentRead(RecordComponentDecl recordComponentDecl, RecordDecl containingRecord) {
 		var imports = getImportsForType(containingRecord);
-		var name = "%sRecordComponentRead".formatted(recordComponentDecl.getPrettyQualifiedName());
 
 		var caller = getContainingTypeAccessForTypeMember(containingRecord, recordComponentDecl);
-		var recordComponentReadCode = "var val = %s.%s();".formatted(caller, recordComponentDecl.getSimpleName());
+		var recordComponentReadCode = "var %sVal = %s.%s();".formatted(recordComponentDecl.getPrettyQualifiedName(), caller, recordComponentDecl.getSimpleName());
 
-		writeCodeInMain(imports, name, recordComponentReadCode);
+		addInstructionToClientMain(imports, recordComponentReadCode);
 	}
 
 	public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
 		var imports = getImportsForType(interfaceDecl);
 		var name = "%sInterfaceExtension".formatted(interfaceDecl.getPrettyQualifiedName());
 
-		var code = ClientTemplates.INTERFACE_EXTENSION_TEMPLATE.formatted(imports, name, interfaceDecl.getSimpleName());
+		var code = ClientTemplates.INTERFACE_EXTENSION_TEMPLATE.formatted(name, interfaceDecl.getSimpleName());
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeInterfaceImplementation(InterfaceDecl interfaceDecl) {
@@ -189,100 +185,113 @@ public class ClientWriter extends AbstractWriter {
 		var name = "%sInterfaceImplementation".formatted(interfaceDecl.getPrettyQualifiedName());
 		var methodsImplemented = implementNecessaryMethods(interfaceDecl);
 
-		var code = ClientTemplates.INTERFACE_IMPLEMENTATION_TEMPLATE.formatted(imports, name, interfaceDecl.getSimpleName(), methodsImplemented);
+		var code = ClientTemplates.INTERFACE_IMPLEMENTATION_TEMPLATE.formatted(name, interfaceDecl.getSimpleName(), methodsImplemented);
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeMethodInvocation(MethodDecl methodDecl, ClassDecl containingClass) {
 		var imports = getImportsForType(containingClass);
-		var name = "%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName());
-		var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
+		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
+		var name = "%s%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 		var params = getParamsForExecutableInvocation(methodDecl);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 
 		String methodName = null, template = null;
 		if (methodDecl.isAbstract() || containingClass.isAbstract()) {
 			methodName = "aNewMethodToInvokeMethodInAbstractClass";
-			template = ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE;
+			template = ClientTemplates.ABSTRACT_CLASS_EXTENSION_TEMPLATE;
 		} else if (methodDecl.isPublic()) {
+			var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
 			var methodInvocationCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
 
-			writeCodeInMain(imports, name, methodInvocationCode, exceptions);
+			addInstructionToClientMain(imports, exceptions, methodInvocationCode);
 		} else if (methodDecl.isProtected()) {
 			methodName = "aNewMethodToInvokeProtectedMethod";
-			template = ClientTemplates.CLASS_INHERITANCE_TEMPLATE;
+			template = ClientTemplates.CLASS_EXTENSION_TEMPLATE;
 		}
 
 		if (methodName == null || containingClass.isSealed()) return;
 
-		var methodCode = "this.%s(%s);".formatted(methodDecl.getSimpleName(), params);
+		var caller = methodDecl.isStatic() ? containingClass.getSimpleName() : "this";
+		var methodCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
 		var method = generateMethodDeclaration(methodName, methodCode, exceptions);
-		var code = template.formatted(imports, name, containingClass.getSimpleName(), method);
+		var code = template.formatted(name, containingClass.getSimpleName(), method);
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeMethodOverride(MethodDecl methodDecl, ClassDecl containingClass) {
 		var imports = getImportsForType(containingClass);
-		var name = "%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName());
+		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
+		var name = "%s%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 
 		var constructorRequired = implementRequiredConstructor(containingClass, name);
 		var methodImplemented = methodDecl.isStatic()
 				? implementMethod(methodDecl)
 				: overrideMethod(methodDecl);
-		var classBody = constructorRequired + "\n" + methodImplemented;
+		var classBody = constructorRequired.isBlank()
+				? methodImplemented
+				: "%s\n%s".formatted(constructorRequired, methodImplemented);
 
 		var code = methodDecl.isAbstract() || containingClass.isAbstract()
-				? ClientTemplates.ABSTRACT_CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody)
-				: ClientTemplates.CLASS_INHERITANCE_TEMPLATE.formatted(imports, name, containingClass.getSimpleName(), classBody);
+				? ClientTemplates.ABSTRACT_CLASS_EXTENSION_TEMPLATE.formatted(name, containingClass.getSimpleName(), classBody)
+				: ClientTemplates.CLASS_EXTENSION_TEMPLATE.formatted(name, containingClass.getSimpleName(), classBody);
 
-		writeCodeInFile(name, code);
+		addInnerTypeToClientMain(imports, code);
 	}
 
 	public void writeTypeReference(TypeDecl typeDecl) {
 		var imports = getImportsForType(typeDecl);
-		var name = "%sTypeReference".formatted(typeDecl.getPrettyQualifiedName());
 
-		var code = "%s ref;".formatted(typeDecl.getSimpleName());
+		var code = "%s %sRef;".formatted(typeDecl.getSimpleName(), typeDecl.getPrettyQualifiedName());
 
-		writeCodeInMain(imports, name, code);
+		addInstructionToClientMain(imports, code);
 	}
 
-	private void writeCodeInMain(String imports, String clientName, String code) {
-		var mainClassCode = ClientTemplates.MAIN_CLASS_TEMPLATE.formatted(imports, clientName, code);
-
-		writeCodeInFile(clientName, mainClassCode);
-	}
-
-	private void writeCodeInMain(String imports, String clientName, String code, String exceptions) {
-		if (exceptions.isBlank()) {
-			writeCodeInMain(imports, clientName, code);
-			return;
-		}
-
-		var mainClassCode = ClientTemplates.MAIN_THROWING_CLASS_TEMPLATE.formatted(imports, clientName, exceptions, code);
-
-		writeCodeInFile(clientName, mainClassCode);
-	}
-
-	private void writeCodeInFile(String fileName, String code) {
+	public void writeClientFile() {
 		try {
-			var fullCode = ClientTemplates.FILE_TEMPLATE.formatted(clientsPackageName, code).getBytes();
+			var sortedImports = imports.stream().sorted().map("import %s;"::formatted).collect(Collectors.joining("\n"));
+			var innerTypesCode = String.join("\n", innerTypes);
+			var sortedMainExceptions = formatExceptionNames(mainExceptions.stream().toList());
+			var mainCode = String.join("\n", mainInstructions);
+
+			var fullCode = ClientTemplates.FULL_CLIENT_FILE_TEMPLATE.formatted(
+					clientsPackageName,
+					sortedImports,
+					Constants.CLIENT_FILENAME,
+					innerTypesCode,
+					sortedMainExceptions.isBlank() ? "" : " throws %s".formatted(sortedMainExceptions),
+					mainCode
+			).getBytes();
 
 			var packagePath = clientsPackageName.replace(".", "/");
-			var filePath = outputDir.resolve("%s/%s.java".formatted(packagePath, fileName));
-			var file = filePath.toFile();
-			file.getParentFile().mkdirs();
+			var filePath = outputDir.resolve("%s/FullClient.java".formatted(packagePath));
+			filePath.toFile().getParentFile().mkdirs();
 
 			Files.write(filePath, fullCode);
 		} catch (IOException e) {
-			LOGGER.error("Error writing client code to file: " + e.getMessage());
+			LOGGER.error("Error writing client code to file: {}", e.getMessage());
 		}
 	}
 
-	private static String getImportsForType(TypeDecl typeDecl) {
-		return "import %s;".formatted(typeDecl.getQualifiedName());
+	private void addInnerTypeToClientMain(List<String> imports, String code) {
+		this.imports.addAll(imports);
+		this.innerTypes.add(Arrays.stream(code.split("\n")).map("\t%s"::formatted).collect(Collectors.joining("\n")) + "\n");
+	}
+
+	private void addInstructionToClientMain(List<String> imports, String code) {
+		addInstructionToClientMain(imports, List.of(), code);
+	}
+
+	private void addInstructionToClientMain(List<String> imports, List<String> mainExceptions, String code) {
+		this.imports.addAll(imports);
+		this.mainExceptions.addAll(mainExceptions);
+		this.mainInstructions.add("\t\t%s".formatted(code));
+	}
+
+	private static List<String> getImportsForType(TypeDecl typeDecl) {
+		return List.of(typeDecl.getQualifiedName());
 	}
 
 	private static String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
@@ -303,12 +312,13 @@ public class ClientWriter extends AbstractWriter {
 		var firstConstructor = constructors.getFirst();
 		var params = getParamsForExecutableInvocation(firstConstructor);
 		var exceptions = getExceptionsForExecutableInvocation(firstConstructor);
+		var exceptionsFormatted = formatExceptionNames(exceptions);
 
-		return params.isBlank() && exceptions.isBlank()
+		return params.isBlank() && exceptionsFormatted.isBlank()
 				? ""
 				: "\t%s()%s {\n\t\tsuper(%s);\n\t}\n".formatted(
 				className,
-				exceptions.isBlank() ? "" : " throws %s".formatted(exceptions),
+				exceptionsFormatted.isBlank() ? "" : " throws %s".formatted(exceptionsFormatted),
 				params
 		);
 	}
@@ -360,10 +370,10 @@ public class ClientWriter extends AbstractWriter {
 				.collect(Collectors.joining(", "));
 	}
 
-	private static String getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
+	private static List<String> getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
 		return executableDecl.getThrownCheckedExceptions().stream()
 				.map(ITypeReference::getQualifiedName)
-				.collect(Collectors.joining(", "));
+				.toList();
 	}
 
 	private static String overrideMethod(MethodDecl methodDecl) {
@@ -387,10 +397,12 @@ public class ClientWriter extends AbstractWriter {
 		return "\tpublic void %s() {\n\t\t%s\n\t}".formatted(functionName, functionCode);
 	}
 
-	private static String generateMethodDeclaration(String functionName, String functionCode, String exceptions) {
-		return exceptions.isBlank()
+	private static String generateMethodDeclaration(String functionName, String functionCode, List<String> exceptions) {
+		var exceptionsFormatted = formatExceptionNames(exceptions);
+
+		return exceptionsFormatted.isBlank()
 				? generateMethodDeclaration(functionName, functionCode)
-				: "\tpublic void %s() throws %s {\n\t\t%s\n\t}".formatted(functionName, exceptions, functionCode);
+				: "\tpublic void %s() throws %s {\n\t\t%s\n\t}".formatted(functionName, exceptionsFormatted, functionCode);
 	}
 
 	private static String getDefaultValueForType(String typeName) {
@@ -408,5 +420,18 @@ public class ClientWriter extends AbstractWriter {
 		return classDecl.getDeclaredConstructors().stream()
 				.sorted(Comparator.comparingInt(c -> c.getParameters().size()))
 				.toList();
+	}
+
+	private static String formatParamTypeNames(List<ParameterDecl> params) {
+		return params.stream()
+				.map(p -> {
+					var typeName = p.type().getPrettyQualifiedName();
+					return p.isVarargs() ? "%sVarArgs".formatted(typeName) : typeName;
+				})
+				.collect(Collectors.joining());
+	}
+
+	private static String formatExceptionNames(List<String> exceptions) {
+		return exceptions.stream().sorted().collect(Collectors.joining(", "));
 	}
 }

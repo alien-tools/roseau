@@ -8,7 +8,7 @@ abstract class AbstractRcdStrategy extends AbstractApiBreakerStrategy {
 	protected final RecordDecl rcd;
 
 	AbstractRcdStrategy(RecordDecl rcd, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName, rcd);
+		super(queue, strategyName);
 
 		this.rcd = rcd;
 	}

@@ -26,8 +26,8 @@ public final class Benchmark implements Runnable {
 	private final String id;
 
 	private final Path benchmarkWorkingPath;
-	private final Path clientsBinPath;
-	private final Path clientsSourcesPath;
+	private final Path clientBinPath;
+	private final Path clientSourcePath;
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
@@ -47,8 +47,8 @@ public final class Benchmark implements Runnable {
 			String id,
 			NewApiQueue apiQueue,
 			ResultsProcessQueue resultsQueue,
-			Path clientsBinPath,
-			Path clientsSourcesPath,
+			Path clientBinPath,
+			Path clientSourcePath,
 			Path v1JarPath,
 			Path tmpPath
 	) {
@@ -56,8 +56,8 @@ public final class Benchmark implements Runnable {
 		this.id = id;
 
 		this.benchmarkWorkingPath = tmpPath.resolve(id);
-		this.clientsBinPath = clientsBinPath;
-		this.clientsSourcesPath = clientsSourcesPath;
+		this.clientBinPath = clientBinPath;
+		this.clientSourcePath = clientSourcePath;
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
 
@@ -81,15 +81,14 @@ public final class Benchmark implements Runnable {
 
 			try {
 				var strategy = strategyAndApi.getValue0();
-				var symbol = strategyAndApi.getValue1().getValue0();
-				var v2Api = strategyAndApi.getValue1().getValue1();
+				var v2Api = strategyAndApi.getValue1();
 
 				LOGGER.info("--------------------------------");
 				LOGGER.info("Running Benchmark Thread n°{}", id);
 				LOGGER.info("Breaking Change: {}", strategy);
 
 				generateNewApiSourcesAndJar(v2Api);
-				var groundTruth = generateGroundTruthForSymbol(symbol);
+				var groundTruth = generateGroundTruth();
 				runToolsAnalysis(strategy, groundTruth);
 
 				LOGGER.info("Benchmark Thread n°{} finished", id);
@@ -128,16 +127,16 @@ public final class Benchmark implements Runnable {
 		LOGGER.info("Generated to {}", v2JarPath);
 	}
 
-	private ToolResult generateGroundTruthForSymbol(String symbol) {
+	private ToolResult generateGroundTruth() {
 		LOGGER.info("Generating Ground Truth");
 
 		long startTime = System.currentTimeMillis();
 
 		var tmpClientsBinPath = benchmarkWorkingPath.resolve(Constants.BINARIES_FOLDER);
-		var sourceErrors = compiler.compileClientsWithApi(clientsSourcesPath, v2JarPath, tmpClientsBinPath);
+		var sourceErrors = compiler.compileClientWithApi(clientSourcePath, v2JarPath, tmpClientsBinPath);
 		var isSourceBreaking = !sourceErrors.isEmpty();
 
-		var binaryErrors = compiler.linkClientsWithApi(clientsBinPath, v2JarPath, "clients", symbol);
+		var binaryErrors = compiler.linkClientWithApi(clientBinPath, v2JarPath, Constants.CLIENT_FILENAME, Constants.CLIENT_FOLDER);
 		var isBinaryBreaking = !binaryErrors.isEmpty();
 
 		long executionTime = System.currentTimeMillis() - startTime;

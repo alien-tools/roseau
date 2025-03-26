@@ -44,10 +44,10 @@ public final class InternalJavaCompiler {
 		return List.of();
 	}
 
-	public List<Diagnostic<? extends JavaFileObject>> compileClientsWithApi(Path clientsPath, Path apiJarPath, Path binPath) {
-		var clientsFiles = ExplorerUtils.getFilesInPath(clientsPath, "java");
+	public List<Diagnostic<? extends JavaFileObject>> compileClientWithApi(Path clientPath, Path apiJarPath, Path binPath) {
+		var clientsFiles = ExplorerUtils.getFilesInPath(clientPath, "java");
 		if (!ExplorerUtils.cleanOrCreateDirectory(binPath))
-			return List.of(new InternalDiagnostic("Couldn't clean or create clients binaries directory"));
+			return List.of(new InternalDiagnostic("Couldn't clean or create client binary directory"));
 
 		DiagnosticCollector<JavaFileObject> diagnostics = new DiagnosticCollector<>();
 
@@ -59,7 +59,7 @@ public final class InternalJavaCompiler {
 			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
 			task.call();
 		} catch (Exception e) {
-			return List.of(new InternalDiagnostic("Unknown error while compiling clients"));
+			return List.of(new InternalDiagnostic("Unknown error while compiling client"));
 		}
 
 		return diagnostics.getDiagnostics().stream()
@@ -67,32 +67,21 @@ public final class InternalJavaCompiler {
 				.toList();
 	}
 
-	public List<Diagnostic<? extends JavaFileObject>> linkClientsWithApi(Path clientsBinPath, Path apiJarPath, String packageName, String filter) {
-		var classPaths = "%s:%s".formatted(clientsBinPath, apiJarPath);
+	public List<Diagnostic<? extends JavaFileObject>> linkClientWithApi(Path clientBinPath, Path apiJarPath, String clientFilename, String packageName) {
+		var classPaths = "%s:%s".formatted(clientBinPath, apiJarPath);
 
-		var clientFileNames = clientsBinPath.resolve(packageName).toFile().list();
-		if (clientFileNames == null) return List.of(new InternalDiagnostic("No client binaries found"));
+		ProcessBuilder pb = new ProcessBuilder("java", "-cp", classPaths, "%s.%s".formatted(packageName, clientFilename));
+		pb.redirectErrorStream(true);
 
-		for (String clientFileName : clientFileNames) {
-			if (!clientFileName.endsWith(".class") || !clientFileName.contains(filter)) continue;
+		try {
+			Process process = pb.start();
+			int exitCode = process.waitFor();
 
-			ProcessBuilder pb = new ProcessBuilder("java", "-cp", classPaths, "%s.%s".formatted(packageName, clientFileName.replace(".class", "")));
-			pb.redirectErrorStream(true);
-
-			try {
-				Process process = pb.start();
-				int exitCode = process.waitFor();
-
-				if (exitCode != 0) {
-					var processOutput = new InternalDiagnostic(new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8));
-
-					if (!processOutput.message.contains("UnsatisfiedLinkError") && !processOutput.message.contains("(Native Method)")) {
-						return List.of(processOutput);
-					}
-				}
-			} catch (InterruptedException | IOException e) {
-				return List.of(new InternalDiagnostic("Unknown error while linking client"));
+			if (exitCode != 0) {
+				return List.of(new InternalDiagnostic(new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8)));
 			}
+		} catch (InterruptedException | IOException e) {
+			return List.of(new InternalDiagnostic("Unknown error while linking client"));
 		}
 
 		return List.of();
