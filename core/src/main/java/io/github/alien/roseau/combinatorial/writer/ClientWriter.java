@@ -39,6 +39,7 @@ public class ClientWriter extends AbstractWriter {
 		var code = ClientTemplates.CLASS_EXTENSION_TEMPLATE.formatted(name, classDecl.getSimpleName(), classBody);
 
 		addInnerTypeToClientMain(imports, code);
+		addInstructionToClientMain(imports, "new %s().new %s();".formatted(Constants.CLIENT_FILENAME, name));
 	}
 
 	public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
