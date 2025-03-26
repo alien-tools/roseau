@@ -44,8 +44,7 @@ public final class InternalJavaCompiler {
 		return List.of();
 	}
 
-	public List<Diagnostic<? extends JavaFileObject>> compileClientWithApi(Path clientPath, Path apiJarPath, Path binPath) {
-		var clientsFiles = ExplorerUtils.getFilesInPath(clientPath, "java");
+	public List<Diagnostic<? extends JavaFileObject>> compileClientWithApi(Path clientPath, String clientFilename, Path apiJarPath, Path binPath) {
 		if (!ExplorerUtils.cleanOrCreateDirectory(binPath))
 			return List.of(new InternalDiagnostic("Couldn't clean or create client binary directory"));
 
@@ -54,7 +53,8 @@ public final class InternalJavaCompiler {
 		try (StandardJavaFileManager fileManager = compiler.getStandardFileManager(diagnostics, null, null)) {
 			fileManager.setLocation(StandardLocation.CLASS_OUTPUT, List.of(binPath.toFile()));
 
-			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(clientsFiles);
+			File clientFile = clientPath.resolve("%s.java".formatted(clientFilename)).toFile();
+			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(List.of(clientFile));
 			List<String> options = List.of("-source", "21", "-cp", apiJarPath.toString());
 			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
 			task.call();

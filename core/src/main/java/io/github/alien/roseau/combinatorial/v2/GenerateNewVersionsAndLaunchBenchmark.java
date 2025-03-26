@@ -60,7 +60,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		checkSourcesArePresent();
 
 		packageV1Api();
-		compileClients();
+		compileClient();
 
 		try {
 			initializeBenchmarkThreads();
@@ -94,15 +94,15 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		LOGGER.info("-------- V1 API packaged -------\n");
 	}
 
-	private void compileClients() throws StepExecutionException {
-		LOGGER.info("------- Compiling clients ------");
+	private void compileClient() throws StepExecutionException {
+		LOGGER.info("------- Compiling client ------");
 
-		var errors = compiler.compileClientWithApi(clientSourcePath, v1JarPath, clientBinPath);
+		var errors = compiler.compileClientWithApi(clientSourcePath, Constants.CLIENT_FILENAME, v1JarPath, clientBinPath);
 
 		if (!errors.isEmpty())
-			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile clients: " + formatCompilerErrors(errors));
+			throw new StepExecutionException(this.getClass().getSimpleName(), "Couldn't compile client: " + formatCompilerErrors(errors));
 
-		LOGGER.info("------- Clients compiled -------\n");
+		LOGGER.info("------- Client compiled -------\n");
 	}
 
 	private static String formatCompilerErrors(List<?> errors) {

@@ -133,7 +133,7 @@ public final class Benchmark implements Runnable {
 		long startTime = System.currentTimeMillis();
 
 		var tmpClientsBinPath = benchmarkWorkingPath.resolve(Constants.BINARIES_FOLDER);
-		var sourceErrors = compiler.compileClientWithApi(clientSourcePath, v2JarPath, tmpClientsBinPath);
+		var sourceErrors = compiler.compileClientWithApi(clientSourcePath, Constants.CLIENT_FILENAME, v2JarPath, tmpClientsBinPath);
 		var isSourceBreaking = !sourceErrors.isEmpty();
 
 		var binaryErrors = compiler.linkClientWithApi(clientBinPath, v2JarPath, Constants.CLIENT_FILENAME, Constants.CLIENT_FOLDER);
