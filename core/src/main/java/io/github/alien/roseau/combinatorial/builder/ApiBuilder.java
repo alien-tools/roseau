@@ -15,7 +15,7 @@ import java.util.Map;
 public final class ApiBuilder implements Builder<API> {
 	public final Map<String, TypeDeclBuilder> allTypes = new HashMap<>();
 
-	private final TypeReferenceFactory typeReferenceFactory;
+	public final TypeReferenceFactory typeReferenceFactory;
 
 	public ApiBuilder(TypeReferenceFactory typeReferenceFactory) {
 		this.typeReferenceFactory = typeReferenceFactory;

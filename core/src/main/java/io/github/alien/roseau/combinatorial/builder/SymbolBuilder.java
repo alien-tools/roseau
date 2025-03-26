@@ -23,7 +23,7 @@ abstract class SymbolBuilder {
 		builder.modifiers = typeDecl.getModifiers().isEmpty()
 				? EnumSet.noneOf(Modifier.class)
 				: EnumSet.copyOf(typeDecl.getModifiers());
-		builder.annotations = typeDecl.getAnnotations();
+		builder.annotations = new ArrayList<>(typeDecl.getAnnotations());
 		builder.location = typeDecl.getLocation();
 	}
 }

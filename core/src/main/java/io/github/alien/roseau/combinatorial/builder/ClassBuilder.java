@@ -24,8 +24,8 @@ public sealed class ClassBuilder extends TypeDeclBuilder permits EnumBuilder, Re
 		TypeDeclBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
 		builder.superClass = decl.getSuperClass();
-		builder.constructors = decl.getDeclaredConstructors();
-		builder.permittedTypes = decl.getPermittedTypes();
+		builder.constructors = new ArrayList<>(decl.getDeclaredConstructors());
+		builder.permittedTypes = new ArrayList<>(decl.getPermittedTypes());
 
 		return builder;
 	}

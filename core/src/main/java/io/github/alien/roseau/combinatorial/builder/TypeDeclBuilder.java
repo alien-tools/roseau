@@ -20,10 +20,10 @@ public abstract sealed class TypeDeclBuilder extends SymbolBuilder implements Bu
 	public static void mutateTypeDeclBuilderWithTypeDecl(TypeDeclBuilder builder, TypeDecl typeDecl) {
 		SymbolBuilder.mutateSymbolBuilderWithSymbol(builder, typeDecl);
 
-		builder.implementedInterfaces = typeDecl.getImplementedInterfaces();
-		builder.formalTypeParameters = typeDecl.getFormalTypeParameters();
-		builder.fields = typeDecl.getDeclaredFields();
-		builder.methods = typeDecl.getDeclaredMethods();
+		builder.implementedInterfaces = new ArrayList<>(typeDecl.getImplementedInterfaces());
+		builder.formalTypeParameters = new ArrayList<>(typeDecl.getFormalTypeParameters());
+		builder.fields = new ArrayList<>(typeDecl.getDeclaredFields());
+		builder.methods = new ArrayList<>(typeDecl.getDeclaredMethods());
 		builder.enclosingType = typeDecl.getEnclosingType().orElse(null);
 	}
 }

@@ -18,7 +18,7 @@ public final class InterfaceBuilder extends TypeDeclBuilder {
 
 		TypeDeclBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
-		builder.permittedTypes = decl.getPermittedTypes();
+		builder.permittedTypes = new ArrayList<>(decl.getPermittedTypes());
 
 		return builder;
 	}

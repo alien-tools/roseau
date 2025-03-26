@@ -21,9 +21,11 @@ public class RemoveModifierTypeStrategy extends AbstractTpStrategy {
 
 		LOGGER.info("Removing {} modifier from {}", modifier.toCapitalize(), tp.getSimpleName());
 
-		var mutableClass = mutableApi.allTypes.get(tp.getQualifiedName());
-		if (mutableClass == null) throw new ImpossibleChangeException();
+		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
+		if (mutableType == null) throw new ImpossibleChangeException();
 
-		mutableClass.modifiers.remove(modifier);
+		mutableType.modifiers.remove(modifier);
+
+		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

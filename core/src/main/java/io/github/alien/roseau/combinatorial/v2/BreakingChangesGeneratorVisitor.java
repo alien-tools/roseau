@@ -3,6 +3,7 @@ package io.github.alien.roseau.combinatorial.v2;
 import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
+import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddMethodAbstractClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddModifierClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveModifierClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
@@ -33,7 +34,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 			case RecordComponentDecl rC: breakRecordComponentDecl(rC); break;
 			case FieldDecl f: breakFieldDecl(f); break;
 			case MethodDecl m: breakMethodDecl(m); break;
-			case AnnotationDecl ignored: break;
+			default: break;
 		}
 
 		return () -> it.getAnnotations().forEach(ann -> $(ann).visit());
@@ -63,6 +64,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierClassStrategy(Modifier.FINAL, c, queue).breakApi(api);
 		new RemoveModifierClassStrategy(Modifier.ABSTRACT, c, queue).breakApi(api);
 		new RemoveModifierClassStrategy(Modifier.FINAL, c, queue).breakApi(api);
+
+		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {

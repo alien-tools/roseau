@@ -19,7 +19,7 @@ public final class EnumBuilder extends ClassBuilder {
 
 		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
-		builder.values = decl.getValues();
+		builder.values = new ArrayList<>(decl.getValues());
 
 		return builder;
 	}
