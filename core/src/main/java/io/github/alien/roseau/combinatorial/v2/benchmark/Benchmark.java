@@ -31,8 +31,6 @@ public final class Benchmark implements Runnable {
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
-	private final API v1Api;
-
 	private final NewApiQueue apiQueue;
 	private final ResultsProcessQueue resultsQueue;
 
@@ -51,10 +49,8 @@ public final class Benchmark implements Runnable {
 			ResultsProcessQueue resultsQueue,
 			Path clientsBinPath,
 			Path clientsSourcesPath,
-			Path v1SourcesPath,
 			Path v1JarPath,
-			Path tmpPath,
-			API v1Api
+			Path tmpPath
 	) {
 		LOGGER.info("Creating Benchmark {}", id);
 		this.id = id;
@@ -65,15 +61,13 @@ public final class Benchmark implements Runnable {
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
 
-		this.v1Api = v1Api;
-
 		this.apiQueue = apiQueue;
 		this.resultsQueue = resultsQueue;
 
 		this.tools = List.of(
 				new JapicmpTool(v1JarPath, v2JarPath),
 				new RevapiTool(v1JarPath, v2JarPath),
-				new RoseauTool(v1SourcesPath, v2SourcesPath)
+				new RoseauTool(v1JarPath, v2JarPath)
 		);
 
 		this.apiWriter = new ApiWriter(benchmarkWorkingPath);
@@ -96,7 +90,7 @@ public final class Benchmark implements Runnable {
 
 				generateNewApiSourcesAndJar(v2Api);
 				var groundTruth = generateGroundTruthForSymbol(symbol);
-				runToolsAnalysis(strategy, v2Api, groundTruth);
+				runToolsAnalysis(strategy, groundTruth);
 
 				LOGGER.info("Benchmark Thread n°{} finished", id);
 				LOGGER.info("--------------------------------\n");
@@ -150,7 +144,7 @@ public final class Benchmark implements Runnable {
 		return new ToolResult("Ground Truth", executionTime, isBinaryBreaking, isSourceBreaking);
 	}
 
-	private void runToolsAnalysis(String strategy, API v2Api, ToolResult groundTruth) {
+	private void runToolsAnalysis(String strategy, ToolResult groundTruth) {
 		LOGGER.info("--------------------------------");
 		LOGGER.info("     Running Tools Analysis");
 
@@ -158,10 +152,6 @@ public final class Benchmark implements Runnable {
 		for (var tool : tools) {
 			LOGGER.info("--------------------------------");
 			LOGGER.info(" Running {}", tool.getClass().getSimpleName());
-
-			if (tool instanceof RoseauTool roseauTool) {
-				roseauTool.setApis(v1Api, v2Api);
-			}
 
 			var result = tool.detectBreakingChanges();
 			if (result == null) {

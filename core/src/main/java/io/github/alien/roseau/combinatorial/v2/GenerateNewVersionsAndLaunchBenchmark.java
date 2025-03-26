@@ -117,9 +117,8 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 					String.valueOf(i),
 					newApiQueue, resultsQueue,
 					clientsBinPath, clientsSourcesPath,
-					v1SourcesPath, v1JarPath,
-					tmpPath,
-					v1Api
+					v1JarPath,
+					tmpPath
 			);
 			var thread = new Thread(benchmark);
 			thread.start();
@@ -148,7 +147,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		LOGGER.info("-- All bench threads finished --");
 		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();
-		LOGGER.info("Total benchmark errors: " + totalErrors);
+		LOGGER.info("Total benchmark errors: {}", totalErrors);
 
 		if (totalErrors == 0)
 			ExplorerUtils.removeDirectory(tmpPath);
