@@ -4,7 +4,6 @@ import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -33,10 +32,10 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(fields);
 		Preconditions.checkNotNull(methods);
-		this.implementedInterfaces = implementedInterfaces;
-		this.formalTypeParameters = formalTypeParameters;
-		this.fields = fields;
-		this.methods = methods;
+		this.implementedInterfaces = List.copyOf(implementedInterfaces);
+		this.formalTypeParameters = List.copyOf(formalTypeParameters);
+		this.fields = List.copyOf(fields);
+		this.methods = List.copyOf(methods);
 		this.enclosingType = enclosingType;
 	}
 
@@ -77,19 +76,19 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
-		return Collections.unmodifiableList(implementedInterfaces);
+		return implementedInterfaces;
 	}
 
 	public List<FormalTypeParameter> getFormalTypeParameters() {
-		return Collections.unmodifiableList(formalTypeParameters);
+		return formalTypeParameters;
 	}
 
 	public List<FieldDecl> getDeclaredFields() {
-		return Collections.unmodifiableList(fields);
+		return fields;
 	}
 
 	public List<MethodDecl> getDeclaredMethods() {
-		return Collections.unmodifiableList(methods);
+		return methods;
 	}
 
 	public Optional<TypeReference<TypeDecl>> getEnclosingType() {
@@ -119,7 +118,4 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	public int hashCode() {
 		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 	}
-
-	@Override
-	public abstract TypeDecl deepCopy();
 }

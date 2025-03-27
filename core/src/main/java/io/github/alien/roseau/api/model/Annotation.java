@@ -8,13 +8,8 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
  *
  * @param actualAnnotation This annotation's annotation declaration
  */
-public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) implements DeepCopyable<Annotation> {
+public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) {
 	public Annotation {
 		Preconditions.checkNotNull(actualAnnotation);
-	}
-
-	@Override
-	public Annotation deepCopy() {
-		return new Annotation(actualAnnotation.deepCopy());
 	}
 }

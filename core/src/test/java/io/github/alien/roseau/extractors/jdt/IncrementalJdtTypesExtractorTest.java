@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class IncrementalJdtTypesExtractorTest {
 	@Test
-	void old_references_are_kept(@TempDir Path wd) throws Exception {
+	void unchanged_symbols_are_kept(@TempDir Path wd) throws Exception {
 		var i = wd.resolve("I.java");
 		Files.writeString(i, "public interface I {}");
 		Files.writeString(wd.resolve("C.java"), "public class C implements I {}");
@@ -47,12 +47,9 @@ class IncrementalJdtTypesExtractorTest {
 		var r2 = assertRecord(api2, "R");
 
 		assertThat(i1, is(not(equalTo(i2))));
-		assertThat(c1, is(equalTo(c2)));
-		assertThat(c1, is(not(sameInstance(c2))));
-		assertThat(r1, is(equalTo(r2)));
-		assertThat(r1, is(not(sameInstance(r2))));
+		assertThat(c1, is(sameInstance(c2)));
+		assertThat(r1, is(sameInstance(r2)));
 
-		assertThat(c1.getImplementedInterfaces().getFirst(), is(equalTo(c2.getImplementedInterfaces().getFirst())));
 		assertThat(c1.getImplementedInterfaces().getFirst(), is(sameInstance(c2.getImplementedInterfaces().getFirst())));
 
 		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().getFirst()).get(), is(sameInstance(i1)));
@@ -96,8 +93,7 @@ class IncrementalJdtTypesExtractorTest {
 		assertThat(api1.getExportedTypes(), hasSize(2));
 		assertThat(api2.getExportedTypes(), hasSize(1));
 
-		assertThat(b1, is(equalTo(b2)));
-		assertThat(b1, is(not(sameInstance(b2))));
+		assertThat(b1, is(sameInstance(b2)));
 	}
 
 	@Test
@@ -121,7 +117,6 @@ class IncrementalJdtTypesExtractorTest {
 		assertThat(api1.getExportedTypes(), hasSize(1));
 		assertThat(api2.getExportedTypes(), hasSize(2));
 
-		assertThat(a1, is(equalTo(a2)));
-		assertThat(a1, is(not(sameInstance(a2))));
+		assertThat(a1, is(sameInstance(a2)));
 	}
 }

@@ -2,8 +2,6 @@ package io.github.alien.roseau.api.model.reference;
 
 import com.google.common.base.Preconditions;
 
-import java.util.Objects;
-
 /**
  * A reference to an array type (e.g., {@code String[]}).
  *
@@ -34,10 +32,5 @@ public record ArrayTypeReference(
 	@Override
 	public String toString() {
 		return getQualifiedName();
-	}
-
-	@Override
-	public ArrayTypeReference deepCopy() {
-		return new ArrayTypeReference(componentType.deepCopy(), dimension);
 	}
 }

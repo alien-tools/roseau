@@ -23,9 +23,4 @@ public record TypeParameterReference(
 	public String toString() {
 		return name;
 	}
-
-	@Override
-	public TypeParameterReference deepCopy() {
-		return this;
-	}
 }

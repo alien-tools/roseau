@@ -1,24 +1,24 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
 /**
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}. Symbols
- * are part of an {@link LibraryTypes}, can be referenced in client code, and are subject to breaking changes. Symbols have a
- * fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
+ * are part of an {@link LibraryTypes}, can be referenced in client code, and are subject to breaking changes. Symbols
+ * have a fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
  * immutable.
  */
-public abstract sealed class Symbol implements DeepCopyable<Symbol> permits TypeDecl, TypeMemberDecl {
+public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
-	 * Fully qualified name of the symbol, unique within an {@link LibraryTypes}'s scope. Types and fields are uniquely identified
-	 * by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure of their
-	 * fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
+	 * Fully qualified name of the symbol, unique within an {@link LibraryTypes}'s scope. Types and fields are uniquely
+	 * identified by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure
+	 * of their fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
 	 */
 	protected final String qualifiedName;
 
@@ -56,8 +56,12 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 		Preconditions.checkNotNull(location);
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
-		this.modifiers = modifiers;
-		this.annotations = annotations;
+		// Yup, there's no simpler way to get an EnumSet implementation that's immutable
+		this.modifiers = Collections.unmodifiableSet(
+			modifiers.isEmpty()
+				? EnumSet.noneOf(Modifier.class)
+				: EnumSet.copyOf(modifiers));
+		this.annotations = List.copyOf(annotations);
 		this.location = location;
 		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
@@ -71,11 +75,11 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	}
 
 	public Set<Modifier> getModifiers() {
-		return Sets.immutableEnumSet(modifiers);
+		return modifiers;
 	}
 
 	public List<Annotation> getAnnotations() {
-		return Collections.unmodifiableList(annotations);
+		return annotations;
 	}
 
 	public SourceLocation getLocation() {

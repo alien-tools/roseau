@@ -69,12 +69,4 @@ public final class MethodDecl extends ExecutableDecl {
 			getSimpleName(),
 			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", ")));
 	}
-
-	@Override
-	public MethodDecl deepCopy() {
-		return new MethodDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
-			location, containingType.deepCopy(), type.deepCopy(), parameters.stream().map(ParameterDecl::deepCopy).toList(),
-			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
-			ITypeReference.deepCopy(thrownExceptions));
-	}
 }

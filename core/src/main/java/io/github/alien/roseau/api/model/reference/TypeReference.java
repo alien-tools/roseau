@@ -18,16 +18,17 @@ import java.util.stream.Collectors;
 public record TypeReference<T extends TypeDecl>(
 	String qualifiedName,
 	List<ITypeReference> typeArguments
-)	implements ITypeReference {
+) implements ITypeReference {
 	public TypeReference {
 		Preconditions.checkNotNull(qualifiedName);
 		Preconditions.checkNotNull(typeArguments);
+		typeArguments = List.copyOf(typeArguments);
 	}
 
 	/**
 	 * A reference to {@link Object}.
 	 */
-	public static TypeReference<ClassDecl> OBJECT =
+	public static final TypeReference<ClassDecl> OBJECT =
 		new TypeReference<>(Object.class.getCanonicalName(), List.of());
 	/**
 	 * A reference to {@link Record}.
@@ -55,19 +56,6 @@ public record TypeReference<T extends TypeDecl>(
 		return qualifiedName;
 	}
 
-	/**
-	 * Creates a list of deep copies of the provided reference list.
-	 *
-	 * @param refs the references to deep copy
-	 * @param <T>  the type of {@link TypeDecl} pointed by the references
-	 * @return a list containing deep copies of the supplied references
-	 */
-	public static <T extends TypeDecl> List<TypeReference<T>> deepCopy(List<TypeReference<T>> refs) {
-		return refs.stream()
-			.map(TypeReference::deepCopy)
-			.toList();
-	}
-
 	@Override
 	public String toString() {
 		if (typeArguments.isEmpty()) {
@@ -75,10 +63,5 @@ public record TypeReference<T extends TypeDecl>(
 		}
 		return "%s<%s>".formatted(qualifiedName,
 			typeArguments.stream().map(ITypeReference::toString).collect(Collectors.joining(",")));
-	}
-
-	@Override
-	public TypeReference<T> deepCopy() {
-		return this;
 	}
 }

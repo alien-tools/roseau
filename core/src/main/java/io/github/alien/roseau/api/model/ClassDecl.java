@@ -3,7 +3,6 @@ package io.github.alien.roseau.api.model;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -26,7 +25,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		Preconditions.checkNotNull(constructors);
 		this.superClass = superClass != null ? superClass : TypeReference.OBJECT;
-		this.constructors = constructors;
+		this.constructors = List.copyOf(constructors);
 	}
 
 	@Override
@@ -49,7 +48,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	}
 
 	public List<ConstructorDecl> getDeclaredConstructors() {
-		return Collections.unmodifiableList(constructors);
+		return constructors;
 	}
 
 	@Override
@@ -80,15 +79,5 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	@Override
 	public int hashCode() {
 		return Objects.hash(super.hashCode(), superClass, constructors);
-	}
-
-	@Override
-	public ClassDecl deepCopy() {
-		return new ClassDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
-			location, TypeReference.deepCopy(implementedInterfaces),
-			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
-			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
-			getEnclosingType().map(TypeReference::deepCopy).orElse(null), superClass.deepCopy(),
-			constructors.stream().map(ConstructorDecl::deepCopy).toList());
 	}
 }

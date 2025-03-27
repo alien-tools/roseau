@@ -23,9 +23,4 @@ public record PrimitiveTypeReference(
 	public String toString() {
 		return name;
 	}
-
-	@Override
-	public PrimitiveTypeReference deepCopy() {
-		return this;
-	}
 }

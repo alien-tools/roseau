@@ -14,15 +14,10 @@ public record ParameterDecl(
 	String name,
 	ITypeReference type,
 	boolean isVarargs
-) implements DeepCopyable<ParameterDecl> {
+) {
 	public ParameterDecl {
 		Preconditions.checkNotNull(name);
 		Preconditions.checkNotNull(type);
-	}
-
-	@Override
-	public ParameterDecl deepCopy() {
-		return new ParameterDecl(name, type.deepCopy(), isVarargs);
 	}
 
 	@Override

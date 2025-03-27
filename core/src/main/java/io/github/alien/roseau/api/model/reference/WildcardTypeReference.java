@@ -27,6 +27,7 @@ public record WildcardTypeReference(
 			"Wildcards must have at least one bound (java.lang.Object included)");
 		Preconditions.checkArgument(upper || bounds.size() == 1,
 			"Wildcards cannot have multiple lower bounds");
+		bounds = List.copyOf(bounds);
 	}
 
 	@Override
@@ -42,10 +43,5 @@ public record WildcardTypeReference(
 	public String toString() {
 		return "? %s %s".formatted(upper ? "extends" : "super",
 			bounds.stream().map(ITypeReference::toString).collect(Collectors.joining("&")));
-	}
-
-	@Override
-	public WildcardTypeReference deepCopy() {
-		return this;
 	}
 }

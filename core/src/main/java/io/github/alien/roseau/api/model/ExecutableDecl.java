@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -29,9 +28,9 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		Preconditions.checkNotNull(parameters);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(thrownExceptions);
-		this.parameters = parameters;
-		this.formalTypeParameters = formalTypeParameters;
-		this.thrownExceptions = thrownExceptions;
+		this.parameters = List.copyOf(parameters);
+		this.formalTypeParameters = List.copyOf(formalTypeParameters);
+		this.thrownExceptions = List.copyOf(thrownExceptions);
 	}
 
 	/**
@@ -85,15 +84,15 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	}
 
 	public List<ParameterDecl> getParameters() {
-		return Collections.unmodifiableList(parameters);
+		return parameters;
 	}
 
 	public List<FormalTypeParameter> getFormalTypeParameters() {
-		return Collections.unmodifiableList(formalTypeParameters);
+		return formalTypeParameters;
 	}
 
 	public List<ITypeReference> getThrownExceptions() {
-		return Collections.unmodifiableList(thrownExceptions);
+		return thrownExceptions;
 	}
 
 	@Override

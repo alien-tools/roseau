@@ -20,12 +20,12 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
-import java.util.stream.Stream;
 
 /**
  * An API holds a set of {@link Symbol} and provides convenience methods to access {@link TypeDecl} declarations. APIs
  * are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, an API holds
- * <strong>all</strong> the types it declares, including non-exported ones. {@link LibraryTypes} instances have limited analysis
+ * <strong>all</strong> the types it declares, including non-exported ones. {@link LibraryTypes} instances have limited
+ * analysis
  * capabilities and must be transformed into {@link API} to enable type resolution and most analyses
  * ({@link #toAPI(TypeResolver)}).
  */
