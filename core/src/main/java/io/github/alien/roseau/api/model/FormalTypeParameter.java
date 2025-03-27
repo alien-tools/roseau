@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
@@ -17,8 +18,8 @@ public record FormalTypeParameter(
 	List<ITypeReference> bounds
 ) implements DeepCopyable<FormalTypeParameter> {
 	public FormalTypeParameter {
-		Objects.requireNonNull(name);
-		Objects.requireNonNull(bounds);
+		Preconditions.checkNotNull(name);
+		Preconditions.checkNotNull(bounds);
 		if (bounds.isEmpty()) {
 			bounds = List.of(TypeReference.OBJECT);
 		}

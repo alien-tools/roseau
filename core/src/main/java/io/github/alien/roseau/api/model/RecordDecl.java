@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * A record declaration is a special {@link ClassDecl} within an {@link API}.
+ * A record declaration is a special {@link ClassDecl} within an {@link LibraryTypes}.
  */
 public final class RecordDecl extends ClassDecl {
 	public RecordDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,

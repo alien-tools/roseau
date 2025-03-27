@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
@@ -19,8 +20,10 @@ public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, Ex
 	                         List<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
-		this.containingType = Objects.requireNonNull(containingType);
-		this.type = Objects.requireNonNull(type);
+		Preconditions.checkNotNull(containingType);
+		Preconditions.checkNotNull(type);
+		this.containingType = containingType;
+		this.type = type;
 	}
 
 	public TypeReference<TypeDecl> getContainingType() {
@@ -29,12 +32,6 @@ public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, Ex
 
 	public ITypeReference getType() {
 		return type;
-	}
-
-	@Override
-	public boolean isExported() {
-		return containingType.isExported() &&
-			(isPublic() || (isProtected() && !containingType.isEffectivelyFinal()));
 	}
 
 	@Override

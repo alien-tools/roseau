@@ -1,5 +1,7 @@
 package io.github.alien.roseau.api.model.reference;
 
+import com.google.common.base.Preconditions;
+
 import java.util.Objects;
 
 /**
@@ -8,33 +10,25 @@ import java.util.Objects;
  * @param componentType the type of this array's component
  * @param dimension     the array's dimension (e.g., 2 for {@code String[][]})
  */
-public record ArrayTypeReference(ITypeReference componentType, int dimension) implements ITypeReference {
+public record ArrayTypeReference(
+	ITypeReference componentType,
+	int dimension
+) implements ITypeReference {
 	/**
 	 * Creates a new reference to an array type
 	 *
 	 * @param componentType the type of this array's component
 	 * @param dimension     the array's dimension
-	 * @throws IllegalArgumentException if dimension &lt; 1
+	 * @throws IllegalArgumentException if dimension &lt; 1 or componentType is null
 	 */
 	public ArrayTypeReference {
-		Objects.requireNonNull(componentType);
-		if (dimension < 1) {
-			throw new IllegalArgumentException("array dimension < 1");
-		}
+		Preconditions.checkNotNull(componentType);
+		Preconditions.checkArgument(dimension >= 1, "array dimension < 1");
 	}
 
 	@Override
 	public String getQualifiedName() {
 		return componentType().getQualifiedName() + "[]".repeat(dimension);
-	}
-
-	@Override
-	public boolean isSubtypeOf(ITypeReference other) {
-		if (other instanceof ArrayTypeReference(ITypeReference otherType, int otherDimension)) {
-			return dimension == otherDimension && componentType.isSubtypeOf(otherType);
-		}
-
-		return false;
 	}
 
 	@Override

@@ -4,7 +4,6 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -59,43 +58,6 @@ public final class MethodDecl extends ExecutableDecl {
 	 */
 	public boolean isStrictFp() {
 		return modifiers.contains(Modifier.STRICTFP);
-	}
-
-	/**
-	 * Checks whether this method is effectively final. A method is effectively final if it has the modifier
-	 * {@link Modifier#FINAL} or if it is declared in a {@link TypeDecl} that is itself effectively final.
-	 *
-	 * @return true if this method is effectively final
-	 * @see TypeDecl#isEffectivelyFinal()
-	 */
-	public boolean isEffectivelyFinal() {
-		return isFinal() || containingType.isEffectivelyFinal();
-	}
-
-	/**
-	 * Checks whether this method overrides the supplied method {@code other}. A method overrides itself.
-	 *
-	 * @param other The other method
-	 * @return whether this overrides {@code other}
-	 * @throws NullPointerException if {@code other} is null
-	 */
-	public boolean isOverriding(MethodDecl other) {
-		Objects.requireNonNull(other);
-		if (equals(other)) {
-			return true;
-		}
-		if (hasSameErasure(other)) {
-			if (getContainingType().isSubtypeOf(other.getContainingType())) {
-				return true;
-			}
-			if (!isAbstract() && other.isAbstract()) {
-				return true;
-			}
-			if (!isDefault() && !isAbstract() && other.isDefault()) {
-				return true;
-			}
-		}
-		return false;
 	}
 
 	@Override

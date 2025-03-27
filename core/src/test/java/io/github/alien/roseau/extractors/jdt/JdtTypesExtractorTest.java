@@ -11,34 +11,35 @@ import java.nio.file.Path;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
-class JdtAPIExtractorTest {
+class JdtTypesExtractorTest {
 	@TempDir
 	Path wd;
 
 	@Test
 	void parse_null_throws() {
-		var extractor = new JdtAPIExtractor();
-		assertThrows(NullPointerException.class, () -> extractor.extractAPI(null));
+		var extractor = new JdtTypesExtractor();
+		assertThrows(NullPointerException.class, () -> extractor.extractTypes(null));
 	}
 
 	@Test
 	void parse_invalid_location_throws() {
-		var extractor = new JdtAPIExtractor();
-		assertThrows(RoseauException.class, () -> extractor.extractAPI(Path.of("invalid")));
+		var extractor = new JdtTypesExtractor();
+		assertThrows(RoseauException.class, () -> extractor.extractTypes(Path.of("invalid")));
 	}
 
 	@Test
 	void parse_empty_sources_empty_api() {
-		var extractor = new JdtAPIExtractor();
-		var api = extractor.extractAPI(wd);
+		var extractor = new JdtTypesExtractor();
+		var api = extractor.extractTypes(wd);
 
 		assertThat(api, is(notNullValue()));
-		assertThat(api.getAllTypes().count(), is(0L));
+		assertThat(api.getAllTypes(), is(empty()));
 	}
 
 	@Test
@@ -47,11 +48,11 @@ class JdtAPIExtractorTest {
 			package pkg;
 			public class A {}""");
 
-		var extractor = new JdtAPIExtractor();
-		var api = extractor.extractAPI(wd);
+		var extractor = new JdtTypesExtractor();
+		var api = extractor.extractTypes(wd);
 
-		assertThat(api.getAllTypes().count(), is(1L));
-		assertThat(api.getAllTypes().toList().getFirst().getQualifiedName(), is("pkg.A"));
+		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api.getAllTypes().getFirst().getQualifiedName(), is("pkg.A"));
 	}
 
 	@Test
@@ -65,11 +66,11 @@ class JdtAPIExtractorTest {
 				public int float double f;
 			}""");
 
-		var extractor = new JdtAPIExtractor();
-		var api = extractor.extractAPI(wd);
+		var extractor = new JdtTypesExtractor();
+		var api = extractor.extractTypes(wd);
 
 		assertThat(api, is(notNullValue()));
-		assertThat(api.getAllTypes().count(), is(1L));
+		assertThat(api.getAllTypes(), hasSize(1));
 
 		var b = api.findType("pkg.B").orElseThrow();
 		assertThat(b.getDeclaredFields(), is(empty()));
@@ -88,19 +89,19 @@ class JdtAPIExtractorTest {
 				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
 			}""");
 
-		var extractor = new JdtAPIExtractor();
-		var api = extractor.extractAPI(wd);
+		var extractor = new JdtTypesExtractor();
+		var types = extractor.extractTypes(wd);
 
-		assertThat(api, is(notNullValue()));
-		assertThat(api.getAllTypes().count(), is(1L));
+		assertThat(types, is(notNullValue()));
+		assertThat(types.getAllTypes(), hasSize(1));
 
-		var a = api.findType("pkg.A");
+		var a = types.findType("pkg.A");
 		if (a.isPresent() && a.get() instanceof ClassDecl cls) {
 			assertThat(cls.getSuperClass().getQualifiedName(), is(equalTo("unknown.A")));
 			assertThat(cls.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("unknown.B")));
 			assertThat(cls.getDeclaredFields().getFirst().getType().getQualifiedName(), is(equalTo("java.util.List")));
 			assertThat(cls.getDeclaredMethods().getFirst().getType().getQualifiedName(), is(equalTo("unknown.D")));
-			assertThat(cls.getDeclaredMethods().getFirst().getErasure(), is(equalTo("m(unknown.E[],pkg.F)")));
+			assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().getFirst()), is(equalTo("m(unknown.E[],pkg.F)")));
 		} else fail();
 	}
 }

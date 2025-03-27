@@ -1,8 +1,7 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
-
-import java.util.Objects;
 
 /**
  * An annotation on a {@link Symbol}.
@@ -11,7 +10,7 @@ import java.util.Objects;
  */
 public record Annotation(TypeReference<AnnotationDecl> actualAnnotation) implements DeepCopyable<Annotation> {
 	public Annotation {
-		Objects.requireNonNull(actualAnnotation);
+		Preconditions.checkNotNull(actualAnnotation);
 	}
 
 	@Override

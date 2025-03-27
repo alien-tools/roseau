@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * An interface declaration in an {@link API}.
+ * An interface declaration in an {@link LibraryTypes}.
  */
 public final class InterfaceDecl extends TypeDecl {
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,

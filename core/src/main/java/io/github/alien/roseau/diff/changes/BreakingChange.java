@@ -1,13 +1,13 @@
 package io.github.alien.roseau.diff.changes;
 
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.Symbol;
 
 import java.util.Objects;
 
 /**
- * A breaking change identified when comparing two {@link API} instances.
+ * A breaking change identified when comparing two {@link LibraryTypes} instances.
  *
  * @param kind           The kind of breaking change
  * @param impactedSymbol The API symbol impacted by the breaking change

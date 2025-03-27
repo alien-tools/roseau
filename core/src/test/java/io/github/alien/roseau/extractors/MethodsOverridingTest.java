@@ -37,26 +37,26 @@ class MethodsOverridingTest {
 		var c = assertClass(api, "C");
 		var d = assertClass(api, "D");
 
-		assertThat(i.getAllMethods().toList(), hasSize(1));
-		assertEquals("I.m", i.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(api.getAllMethods(i), hasSize(1));
+		assertEquals("I.m", api.getAllMethods(i).getFirst().getQualifiedName());
 
-		assertThat(j.getAllMethods().toList(), hasSize(1));
-		assertEquals("J.m", j.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(api.getAllMethods(j), hasSize(1));
+		assertEquals("J.m", api.getAllMethods(j).getFirst().getQualifiedName());
 
-		assertThat(k.getAllMethods().toList(), hasSize(1));
-		assertEquals("K.m", k.getAllMethods().toList().getFirst().getQualifiedName());
+		assertThat(api.getAllMethods(k), hasSize(1));
+		assertEquals("K.m", api.getAllMethods(k).getFirst().getQualifiedName());
 
-		assertThat(a.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(a.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
+		assertThat(api.getAllMethods(a), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(api.getAllMethods(a).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
 
-		assertThat(b.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(b.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
+		assertThat(api.getAllMethods(b), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(api.getAllMethods(b).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
 
-		assertThat(c.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(c.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("C.m"));
+		assertThat(api.getAllMethods(c), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(api.getAllMethods(c).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("C.m"));
 
-		assertThat(d.getAllMethods().toList(), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(d.getAllMethods().map(MethodDecl::getQualifiedName).toList(), hasItem("K.m"));
+		assertThat(api.getAllMethods(d), hasSize(1 + 11)); // java.lang.Object's defaults
+		assertThat(api.getAllMethods(d).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("K.m"));
 	}
 
 	@ParameterizedTest
@@ -78,16 +78,16 @@ class MethodsOverridingTest {
 		assertThat(a.getDeclaredMethods(), hasSize(2));
 		assertThat(b.getDeclaredMethods(), hasSize(2));
 
-		var ma = assertMethod(a, "m(java.lang.Object[])");
-		var mb = assertMethod(b, "m(java.lang.Object[])");
-		var na = assertMethod(a, "n(java.lang.Object[])");
-		var nb = assertMethod(b, "n(java.lang.Object[])");
+		var ma = assertMethod(api, a, "m(java.lang.Object[])");
+		var mb = assertMethod(api, b, "m(java.lang.Object[])");
+		var na = assertMethod(api, a, "n(java.lang.Object[])");
+		var nb = assertMethod(api, b, "n(java.lang.Object[])");
 
-		assertFalse(ma.isOverriding(mb));
-		assertFalse(na.isOverriding(nb));
+		assertFalse(api.isOverriding(ma, mb));
+		assertFalse(api.isOverriding(na, nb));
 
-		assertTrue(mb.isOverriding(ma));
-		assertTrue(nb.isOverriding(na));
+		assertTrue(api.isOverriding(mb, ma));
+		assertTrue(api.isOverriding(nb, na));
 	}
 
 	// Example §8.4.2-1
@@ -104,11 +104,11 @@ class MethodsOverridingTest {
 
 		var a = assertClass(api, "A");
 		var b = assertClass(api, "B");
-		var ma = assertMethod(a, "m(java.util.Collection)");
-		var mb = assertMethod(b, "m(java.util.Collection)");
+		var ma = assertMethod(api, a, "m(java.util.Collection)");
+		var mb = assertMethod(api, b, "m(java.util.Collection)");
 
-		assertTrue(mb.isOverriding(ma));
-		assertFalse(ma.isOverriding(mb));
+		assertTrue(api.isOverriding(mb, ma));
+		assertFalse(api.isOverriding(ma, mb));
 	}
 
 	@ParameterizedTest
@@ -135,22 +135,22 @@ class MethodsOverridingTest {
 		assertThat(a.getDeclaredMethods(), hasSize(5));
 		assertThat(b.getDeclaredMethods(), hasSize(5));
 
-		var m1a = assertMethod(a, "m1()");
-		var m2a = assertMethod(a, "m2()");
-		var m3a = assertMethod(a, "m3()");
-		var m4a = assertMethod(a, "m4()");
-		var m5a = assertMethod(a, "m5()");
+		var m1a = assertMethod(api, a, "m1()");
+		var m2a = assertMethod(api, a, "m2()");
+		var m3a = assertMethod(api, a, "m3()");
+		var m4a = assertMethod(api, a, "m4()");
+		var m5a = assertMethod(api, a, "m5()");
 
-		var m1b = assertMethod(b, "m1()");
-		var m2b = assertMethod(b, "m2()");
-		var m3b = assertMethod(b, "m3()");
-		var m4b = assertMethod(b, "m4()");
-		var m5b = assertMethod(b, "m5()");
+		var m1b = assertMethod(api, b, "m1()");
+		var m2b = assertMethod(api, b, "m2()");
+		var m3b = assertMethod(api, b, "m3()");
+		var m4b = assertMethod(api, b, "m4()");
+		var m5b = assertMethod(api, b, "m5()");
 
-		assertTrue(m1b.isOverriding(m1a));
-		assertTrue(m2b.isOverriding(m2a));
-		assertTrue(m3b.isOverriding(m3a));
-		assertTrue(m4b.isOverriding(m4a));
-		assertTrue(m5b.isOverriding(m5a));
+		assertTrue(api.isOverriding(m1b, m1a));
+		assertTrue(api.isOverriding(m2b, m2a));
+		assertTrue(api.isOverriding(m3b, m3a));
+		assertTrue(api.isOverriding(m4b, m4a));
+		assertTrue(api.isOverriding(m5b, m5a));
 	}
 }

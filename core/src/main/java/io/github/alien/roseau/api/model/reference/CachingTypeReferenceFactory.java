@@ -11,28 +11,20 @@ import java.util.function.Supplier;
  * A flyweight {@link ITypeReference} factory.
  * <br>
  * This implementation caches the created references to ensure that there is only a single shared reference towards a
- * given name within the factory. It passes a {@link ReflectiveTypeFactory} to new type references to allow them to
- * create new {@link TypeDecl} reflectively.
- *
- * @see TypeReferenceFactory
+ * given name within the factory.
  */
-public class CachedTypeReferenceFactory implements TypeReferenceFactory {
+public class CachingTypeReferenceFactory implements TypeReferenceFactory {
 	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>(100);
-	private final ReflectiveTypeFactory reflectiveTypeFactory;
 
-	public CachedTypeReferenceFactory() {
-		this.reflectiveTypeFactory = new ReflectiveTypeFactory(this);
-	}
-
-	private <U extends ITypeReference> U cache(String key, Supplier<U> f) {
-		return (U) referencesCache.computeIfAbsent(key, k -> f.get());
+	private <U extends ITypeReference> U cache(String key, Supplier<U> supplier) {
+		return (U) referencesCache.computeIfAbsent(key, k -> supplier.get());
 	}
 
 	@Override
 	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName,
 	                                                                 List<ITypeReference> typeArguments) {
-		return cache("TR" + qualifiedName + typeArguments.toString(),
-			() -> new TypeReference<>(qualifiedName, typeArguments, reflectiveTypeFactory));
+		return cache("TR" + qualifiedName + typeArguments.stream().map(ITypeReference::getQualifiedName).toList(),
+			() -> new TypeReference<>(qualifiedName, typeArguments));
 	}
 
 	@Override

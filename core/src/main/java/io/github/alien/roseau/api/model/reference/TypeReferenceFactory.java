@@ -1,17 +1,16 @@
 package io.github.alien.roseau.api.model.reference;
 
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 
 import java.util.Collections;
 import java.util.List;
-import java.util.Objects;
 
 /**
- * An abstract factory of {@link TypeReference} instances. All references within an {@link API} should be created using
- * the same factory. Implementations can return the same instance when the same type is created multiple times.
+ * An abstract factory of {@link ITypeReference} instances. All references within an {@link LibraryTypes} should be created using
+ * the same factory. Implementations can return the same instance when the same reference is created multiple times.
  *
- * @see CachedTypeReferenceFactory
+ * @see CachingTypeReferenceFactory
  */
 public interface TypeReferenceFactory {
 	/**
@@ -19,8 +18,8 @@ public interface TypeReferenceFactory {
 	 *
 	 * @param qualifiedName the fully qualified name of the {@link TypeDecl} the reference points to
 	 * @param typeArguments the type arguments of the new reference (e.g., {@code List<String>}
+	 * @param <T>           the kind of type declaration the new reference points to
 	 * @return the new type reference
-	 * @param <T> the kind of type declaration the new reference points to
 	 * @see TypeReference<T>
 	 */
 	<T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName, List<ITypeReference> typeArguments);
@@ -38,7 +37,7 @@ public interface TypeReferenceFactory {
 	 * Creates a new reference towards an array type.
 	 *
 	 * @param componentType the type of the array's components
-	 * @param dimension the dimension of the array (e.g., 2 for {@code String[][]})
+	 * @param dimension     the dimension of the array (e.g., 2 for {@code String[][]})
 	 * @return the new type reference
 	 * @see ArrayTypeReference
 	 */
@@ -57,7 +56,7 @@ public interface TypeReferenceFactory {
 	 * Creates a new wildcard type reference (e.g., {@code <? extends A>} or {@code <? super B}).
 	 *
 	 * @param bounds the wildcard's bounds
-	 * @param upper true if these are upper bounds ({@code ? extends}), false otherwise
+	 * @param upper  true if these are upper bounds ({@code ? extends}), false otherwise
 	 * @return the new type reference
 	 * @see WildcardTypeReference
 	 */
@@ -67,12 +66,12 @@ public interface TypeReferenceFactory {
 	 * Creates a new unparameterized type reference towards a {@link TypeDecl} of kind {@code <T>}.
 	 *
 	 * @param qualifiedName the fully qualified name of the {@link TypeDecl} the reference points to
+	 * @param <T>           the kind of type declaration the new reference points to
 	 * @return the new type reference
-	 * @param <T> the kind of type declaration the new reference points to
-	 * @throws NullPointerException if {@code qualifiedName} is null
+	 * @throws NullPointerException if {@code name} is null
 	 * @see TypeReference<T>
 	 */
 	default <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName) {
-		return createTypeReference(Objects.requireNonNull(qualifiedName), Collections.emptyList());
+		return createTypeReference(qualifiedName, Collections.emptyList());
 	}
 }

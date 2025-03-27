@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
@@ -23,7 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 
 /**
- * Computes the list of breaking changes between two {@link API} instances.
+ * Computes the list of breaking changes between two {@link LibraryTypes} instances.
  * <br>
  * The compared APIs are visited deeply to match their symbols pairwise based on their unique name, and compare their
  * properties when their names match. This implementation visits all {@link TypeDecl} instances in parallel.
@@ -45,7 +46,7 @@ public class APIDiff {
 	private final Set<BreakingChange> breakingChanges;
 
 	/**
-	 * Constructs an APIDiff instance to compare two {@link API} versions for breaking changes detection.
+	 * Constructs an APIDiff instance to compare two {@link LibraryTypes} versions for breaking changes detection.
 	 *
 	 * @param v1 The first version of the API to compare.
 	 * @param v2 The second version of the API to compare.
@@ -62,7 +63,7 @@ public class APIDiff {
 	 * @return the list of all identified {@link BreakingChange}
 	 */
 	public List<BreakingChange> diff() {
-		v1.getExportedTypes().parallel().forEach(t1 ->
+		v1.getExportedTypes().stream().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
 				t2 -> diffType(t1, t2),
@@ -75,8 +76,8 @@ public class APIDiff {
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
-		t1.getAllFields().forEach(f1 ->
-			t2.findField(f1.getSimpleName()).ifPresentOrElse(
+		v1.getAllFields(t1).forEach(f1 ->
+			v2.findField(t2, f1.getSimpleName()).ifPresentOrElse(
 				// There is a matching field
 				f2 -> diffField(f1, f2),
 				// The field has been removed
@@ -86,8 +87,8 @@ public class APIDiff {
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
-		t1.getAllMethods().forEach(m1 ->
-			t2.findMethod(m1.getErasure()).ifPresentOrElse(
+		v1.getAllMethods(t1).forEach(m1 ->
+			v2.findMethod(t2, v2.getErasure(m1)).ifPresentOrElse(
 				// There is a matching method
 				m2 -> diffMethod(m1, m2),
 				// The method has been removed
@@ -98,7 +99,7 @@ public class APIDiff {
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
 		c1.getDeclaredConstructors().forEach(cons1 ->
-			c2.findConstructor(cons1.getErasure()).ifPresentOrElse(
+			v2.findConstructor(c2, v2.getErasure(cons1)).ifPresentOrElse(
 				// There is a matching constructor
 				cons2 -> diffConstructor(cons1, cons2),
 				// The constructor has been removed
@@ -108,9 +109,9 @@ public class APIDiff {
 	}
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
-		t2.getAllMethods()
+		v2.getAllMethods(t2).stream()
 			.filter(MethodDecl::isAbstract)
-			.filter(m2 -> t1.getAllMethods().noneMatch(m1 -> m1.hasSameErasure(m2)))
+			.filter(m2 -> v1.getAllMethods(t1).stream().noneMatch(m1 -> v1.getErasure(m1).equals(v2.getErasure(m2))))
 			.forEach(m2 -> {
 				if (t1.isInterface()) {
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
@@ -133,7 +134,7 @@ public class APIDiff {
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		if (t1.getAllSuperTypes().anyMatch(sup -> sup.isExported() && !t2.isSubtypeOf(sup))) {
+		if (v1.getAllSuperTypes(t1).stream().anyMatch(sup -> v1.isExported(sup) && !v2.isSubtypeOf(t2, sup))) {
 			bc(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2);
 		}
 
@@ -148,7 +149,7 @@ public class APIDiff {
 	}
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
-		if (!c1.isEffectivelyFinal() && c2.isEffectivelyFinal()) {
+		if (!v1.isEffectivelyFinal(c1) && v2.isEffectivelyFinal(c2)) {
 			bc(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
 		}
 
@@ -164,7 +165,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, c1, c2);
 		}
 
-		if (c1.isUncheckedException() && c2.isCheckedException()) {
+		if (v1.isUncheckedException(c1) && v2.isCheckedException(c2)) {
 			bc(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, c1, c2);
 		}
 
@@ -194,7 +195,7 @@ public class APIDiff {
 	}
 
 	private void diffMethod(MethodDecl m1, MethodDecl m2) {
-		if (!m1.isEffectivelyFinal() && m2.isEffectivelyFinal()) {
+		if (!v1.isEffectivelyFinal(m1) && v2.isEffectivelyFinal(m2)) {
 			bc(BreakingChangeKind.METHOD_NOW_FINAL, m1, m2);
 		}
 
@@ -238,19 +239,19 @@ public class APIDiff {
 	}
 
 	private void diffThrownExceptions(ExecutableDecl e1, ExecutableDecl e2) {
-		if (e1.getThrownCheckedExceptions()
+		if (v1.getThrownCheckedExceptions(e1)
 			.stream()
-			.anyMatch(exc1 -> e2.getThrownCheckedExceptions()
+			.anyMatch(exc1 -> v2.getThrownCheckedExceptions(e2)
 				.stream()
-				.noneMatch(exc2 -> exc2.isSubtypeOf(exc1)))) {
+				.noneMatch(exc2 -> v2.isSubtypeOf(exc2, exc1)))) {
 			bc(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, e1, e2);
 		}
 
-		if (e2.getThrownCheckedExceptions()
+		if (v2.getThrownCheckedExceptions(e2)
 			.stream()
-			.anyMatch(exc2 -> e1.getThrownCheckedExceptions().
-				stream()
-				.noneMatch(exc2::isSubtypeOf))) {
+			.anyMatch(exc2 -> v1.getThrownCheckedExceptions(e1)
+				.stream()
+				.noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))) {
 			bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, e1, e2);
 		}
 	}
@@ -277,7 +278,7 @@ public class APIDiff {
 	 * sub/super-classes match) and the latter cannot (thus parameters can follow variance rules).
 	 */
 	private void diffParameterGenerics(ExecutableDecl e1, ExecutableDecl e2, TypeReference<?> t1, TypeReference<?> t2) {
-		if (t1.getTypeArguments().size() != t2.getTypeArguments().size()) {
+		if (t1.typeArguments().size() != t2.typeArguments().size()) {
 			bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1, e2);
 			return;
 		}
@@ -287,7 +288,7 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1, e2);
 		}
 
-		if (e1.isConstructor() && !t1.isSubtypeOf(t2)) {
+		if (e1.isConstructor() && !v1.isSubtypeOf(t1, t2)) {
 			bc(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, e1, e2);
 		}
 	}
@@ -316,7 +317,7 @@ public class APIDiff {
 			// so that the type constraints imposed by p1 are stricter than those imposed by p2
 			if (p2.bounds().stream()
 				.anyMatch(b2 -> !b2.equals(TypeReference.OBJECT) &&
-					p1.bounds().stream().noneMatch(b1 -> b1.isSubtypeOf(b2)))) {
+					p1.bounds().stream().noneMatch(b1 -> v2.isSubtypeOf(b1, b2)))) {
 				bc(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1, t2);
 			}
 		}
@@ -353,7 +354,7 @@ public class APIDiff {
 					if (bounds2.stream()
 						// We can safely ignore this bound
 						.filter(b2 -> !b2.equals(TypeReference.OBJECT))
-						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> b1.isSubtypeOf(b2)))) {
+						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> v1.isSubtypeOf(b1, b2)))) {
 						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1, e2);
 					}
 				}

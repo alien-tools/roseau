@@ -1,6 +1,6 @@
 package io.github.alien.roseau.api.visit;
 
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
@@ -28,12 +28,12 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
  */
 public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	/**
-	 * Visits the given {@link API}.
+	 * Visits the given {@link LibraryTypes}.
 	 *
-	 * @param it the {@link API} to visit
+	 * @param it the {@link LibraryTypes} to visit
 	 * @return a lambda {@link Visit} that must be invoked to run the actual visit
 	 */
-	public Visit api(API it) {
+	public Visit api(LibraryTypes it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}
 
@@ -88,7 +88,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-		return () -> it.getTypeArguments().forEach(ta -> $(ta).visit());
+		return () -> it.typeArguments().forEach(ta -> $(ta).visit());
 	}
 
 	@Override

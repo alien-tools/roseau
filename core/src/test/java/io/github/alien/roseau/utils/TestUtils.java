@@ -1,6 +1,7 @@
 package io.github.alien.roseau.utils;
 
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
@@ -13,9 +14,9 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.asm.AsmAPIExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtAPIExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIExtractor;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import japicmp.cmp.JApiCmpArchive;
@@ -144,8 +145,8 @@ public class TestUtils {
 			throw new AssertionFailedError("Unexpected type", "No such type", findType.get().getQualifiedName());
 	}
 
-	public static FieldDecl assertField(TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = decl.findField(name);
+	public static FieldDecl assertField(API api, TypeDecl decl, String name) {
+		Optional<FieldDecl> findField = api.findField(decl, name);
 
 		if (findField.isEmpty())
 			throw new AssertionFailedError("No such field", name, "No such field");
@@ -153,30 +154,30 @@ public class TestUtils {
 			return findField.get();
 	}
 
-	public static void assertNoField(TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = decl.findField(name);
+	public static void assertNoField(API api, TypeDecl decl, String name) {
+		Optional<FieldDecl> findField = api.findField(decl, name);
 
 		if (findField.isPresent())
 			throw new AssertionFailedError("Unexpected field", "No such field", findField.get().getQualifiedName());
 	}
 
-	public static void assertNoMethod(TypeDecl decl, String erasure) {
-		Optional<MethodDecl> findMethod = decl.findMethod(erasure);
+	public static void assertNoMethod(API api, TypeDecl decl, String erasure) {
+		Optional<MethodDecl> findMethod = api.findMethod(decl, erasure);
 
 		if (findMethod.isPresent())
-			throw new AssertionFailedError("Unexpected method", "No such method", findMethod.get().getErasure());
+			throw new AssertionFailedError("Unexpected method", "No such method", api.getErasure(findMethod.get()));
 	}
 
-	public static void assertNoConstructor(ClassDecl decl, String erasure) {
-		Optional<ConstructorDecl> findCons = decl.findConstructor(erasure);
+	public static void assertNoConstructor(API api, ClassDecl decl, String erasure) {
+		Optional<ConstructorDecl> findCons = api.findConstructor(decl, erasure);
 
 		if (findCons.isPresent())
-			throw new AssertionFailedError("Unexpected constructor", "No such constructor", findCons.get().getErasure());
+			throw new AssertionFailedError("Unexpected constructor", "No such constructor", api.getErasure(findCons.get()));
 	}
 
-	public static MethodDecl assertMethod(TypeDecl decl, String erasure) {
+	public static MethodDecl assertMethod(API api, TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
-			.filter(m -> m.getErasure().equals(erasure))
+			.filter(m -> api.getErasure(m).equals(erasure))
 			.toList();
 
 		if (findMethod.isEmpty())
@@ -184,9 +185,9 @@ public class TestUtils {
 		return findMethod.getFirst();
 	}
 
-	public static ConstructorDecl assertConstructor(ClassDecl decl, String erasure) {
+	public static ConstructorDecl assertConstructor(API api, ClassDecl decl, String erasure) {
 		List<ConstructorDecl> findCons = decl.getDeclaredConstructors().stream()
-			.filter(m -> m.getErasure().equals(erasure))
+			.filter(m -> api.getErasure(m).equals(erasure))
 			.toList();
 
 		if (findCons.isEmpty())
@@ -253,22 +254,22 @@ public class TestUtils {
 	public static API buildSpoonAPI(String sources) {
 		Map<String, String> sourcesMap = buildSourcesMap(sources);
 		CtModel m = buildModel(sourcesMap);
-		return new SpoonAPIExtractor().extractAPI(m);
+		return new SpoonTypesExtractor().extractTypes(m).toAPI();
 	}
 
 	public static API buildAsmAPI(String sources) {
 		Map<String, String> sourcesMap = buildSourcesMap(sources);
 		JarFile jar = buildJar(sourcesMap);
-		return new AsmAPIExtractor().extractAPI(jar);
+		return new AsmTypesExtractor().extractTypes(jar).toAPI();
 	}
 
 	public static API buildJdtAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			API api = new JdtAPIExtractor().extractAPI(sourcesPath);
+			LibraryTypes api = new JdtTypesExtractor().extractTypes(sourcesPath);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api;
+			return api.toAPI();
 		} catch (IOException e) {
 			e.printStackTrace();
 			return null;

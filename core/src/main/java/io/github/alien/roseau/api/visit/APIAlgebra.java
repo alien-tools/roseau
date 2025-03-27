@@ -1,6 +1,6 @@
 package io.github.alien.roseau.api.visit;
 
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
@@ -22,14 +22,14 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
 /**
- * An {@link API} visitor.
+ * An {@link LibraryTypes} visitor.
  * <br>
  * Eating our own dog food with <a href="https://dx.doi.org/10.1109/MODELS.2017.23">Revisitors</a> ;)
  *
  * @param <T> the lambda type returned by each visit method
  */
 public interface APIAlgebra<T> {
-	T api(API it);
+	T api(LibraryTypes it);
 	T classDecl(ClassDecl it);
 	T interfaceDecl(InterfaceDecl it);
 	T enumDecl(EnumDecl it);
@@ -47,7 +47,7 @@ public interface APIAlgebra<T> {
 	T annotation(Annotation it);
 	T formalTypeParameter(FormalTypeParameter it);
 
-	default T $(API it) {
+	default T $(LibraryTypes it) {
 		return api(it);
 	}
 

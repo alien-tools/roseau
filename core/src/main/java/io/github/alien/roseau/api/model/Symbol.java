@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import java.util.Collections;
@@ -9,13 +10,13 @@ import java.util.Set;
 
 /**
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}. Symbols
- * are part of an {@link API}, can be referenced in client code, and are subject to breaking changes. Symbols have a
+ * are part of an {@link LibraryTypes}, can be referenced in client code, and are subject to breaking changes. Symbols have a
  * fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
- * immutable, except for lazily-resolved type references.
+ * immutable.
  */
 public abstract sealed class Symbol implements DeepCopyable<Symbol> permits TypeDecl, TypeMemberDecl {
 	/**
-	 * Fully qualified name of the symbol, unique within an {@link API}'s scope. Types and fields are uniquely identified
+	 * Fully qualified name of the symbol, unique within an {@link LibraryTypes}'s scope. Types and fields are uniquely identified
 	 * by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure of their
 	 * fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
 	 */
@@ -48,20 +49,18 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 
 	protected Symbol(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location) {
-		this.qualifiedName = Objects.requireNonNull(qualifiedName);
-		this.visibility = Objects.requireNonNull(visibility);
-		this.modifiers = Objects.requireNonNull(modifiers);
-		this.annotations = Objects.requireNonNull(annotations);
-		this.location = Objects.requireNonNull(location);
+		Preconditions.checkNotNull(qualifiedName);
+		Preconditions.checkNotNull(visibility);
+		Preconditions.checkNotNull(modifiers);
+		Preconditions.checkNotNull(annotations);
+		Preconditions.checkNotNull(location);
+		this.qualifiedName = qualifiedName;
+		this.visibility = visibility;
+		this.modifiers = modifiers;
+		this.annotations = annotations;
+		this.location = location;
 		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
-
-	/**
-	 * Checks whether the symbol is exported/accessible from outside the API.
-	 *
-	 * @return true if this symbol can be accessed from outside the API
-	 */
-	public abstract boolean isExported();
 
 	public String getQualifiedName() {
 		return qualifiedName;

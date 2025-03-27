@@ -1,10 +1,7 @@
 package io.github.alien.roseau.api.model;
 
-import io.github.alien.roseau.api.model.reference.TypeReference;
-import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
-import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
-import io.github.alien.roseau.extractors.jdt.JdtAPIExtractor;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -22,24 +19,15 @@ class APITest {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
 		List<Path> classpath = builder.buildClasspath(Path.of("."));
-		JdtAPIExtractor extractor = new JdtAPIExtractor();
-		API orig = extractor.extractAPI(sources, classpath);
+		JdtTypesExtractor extractor = new JdtTypesExtractor();
+		LibraryTypes orig = extractor.extractTypes(sources, classpath);
 
 		Path json = Path.of("roundtrip.json");
 		orig.writeJson(json);
 
-		API res = API.fromJson(json, orig.getFactory());
+		LibraryTypes res = LibraryTypes.fromJson(json);
 		Files.delete(json);
 
 		assertThat(res, is(equalTo(orig)));
-
-		new AbstractAPIVisitor() {
-			@Override
-			public <T extends TypeDecl> Visit typeReference(TypeReference<T> ref) {
-				return () -> {
-					assertThat(ref + " cannot be resolved", ref.getResolvedApiType().isPresent(), is(true));
-				};
-			}
-		}.$(res).visit();
 	}
 }

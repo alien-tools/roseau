@@ -1,8 +1,8 @@
 package io.github.alien.roseau.extractors.jdt;
 
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalAPIExtractor;
@@ -17,7 +17,7 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * A JDT-based incremental {@link API} extractor.
+ * A JDT-based incremental {@link LibraryTypes} extractor.
  * <br>
  * This implementation:
  * <ul>
@@ -28,9 +28,9 @@ import java.util.Set;
  *   <li>Deep-copies unchanged symbols</li>
  * </ul>
  */
-public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements IncrementalAPIExtractor {
+public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements IncrementalAPIExtractor {
 	@Override
-	public API refreshAPI(Path sources, ChangedFiles changedFiles, API previousApi) {
+	public LibraryTypes refreshAPI(Path sources, ChangedFiles changedFiles, LibraryTypes previousApi) {
 		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(sources)), "Invalid sources: " + sources);
 		Objects.requireNonNull(changedFiles);
 		Objects.requireNonNull(previousApi);
@@ -44,7 +44,7 @@ public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements Incre
 		Set<Path> discarded = Sets.union(changedFiles.deletedFiles(), changedFiles.updatedFiles());
 
 		// Copying unchanged types to the new API
-		List<TypeDecl> typeDecls = new ArrayList<>(previousApi.getAllTypes()
+		List<TypeDecl> typeDecls = new ArrayList<>(previousApi.getAllTypes().stream()
 			.filter(t -> !discarded.contains(t.getLocation().file()))
 			.map(TypeDecl::deepCopy)
 			.toList());
@@ -54,8 +54,8 @@ public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements Incre
 			Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()));
 
 		// Parse, collect, and merge the updated files
-		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
+		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 		typeDecls.addAll(parseTypes(filesToParse, sources, List.of(), typeRefFactory));
-		return new API(typeDecls, typeRefFactory);
+		return new LibraryTypes(typeDecls);
 	}
 }

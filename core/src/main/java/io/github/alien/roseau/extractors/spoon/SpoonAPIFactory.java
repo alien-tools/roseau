@@ -39,6 +39,7 @@ import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeMember;
 import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.factory.Factory;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtIntersectionTypeReference;
@@ -46,6 +47,7 @@ import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtWildcardReference;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,8 +67,13 @@ public class SpoonAPIFactory {
 
 	private static final Logger LOGGER = LogManager.getLogger(SpoonAPIFactory.class);
 
-	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory) {
-		this.typeFactory = new Launcher().createFactory().Type();
+	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
+		Factory spoonFactory = new Launcher().createFactory();
+		spoonFactory.getEnvironment().setSourceClasspath(
+			classpath.stream()
+				.map(Path::toString)
+				.toArray(String[]::new));
+		this.typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
 	}
 
@@ -89,7 +96,7 @@ public class SpoonAPIFactory {
 	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtTypeReference<?> typeRef) {
 		return typeRef != null
 			? typeReferenceFactory.createTypeReference(typeRef.getQualifiedName(),
-					createITypeReferences(typeRef.getActualTypeArguments()))
+			createITypeReferences(typeRef.getActualTypeArguments()))
 			: null;
 	}
 
@@ -366,8 +373,8 @@ public class SpoonAPIFactory {
 	private static SourceLocation convertSpoonPosition(SourcePosition position) {
 		return position.isValidPosition()
 			? new SourceLocation(
-				position.getFile() != null ? position.getFile().toPath() : null,
-				position.getLine())
+			position.getFile() != null ? position.getFile().toPath() : null,
+			position.getLine())
 			: SourceLocation.NO_LOCATION;
 	}
 

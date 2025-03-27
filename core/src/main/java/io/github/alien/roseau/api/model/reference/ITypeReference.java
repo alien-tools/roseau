@@ -8,7 +8,6 @@ import java.util.List;
 
 /**
  * A named reference to another type (primitive, type parameter, wildcard, array, or type declaration).
- * Type references are strongly-typed, unique, and lazily-resolved.
  *
  * @see TypeReferenceFactory
  */
@@ -21,14 +20,6 @@ public sealed interface ITypeReference extends DeepCopyable<ITypeReference>
 	 * @return the qualified name
 	 */
 	String getQualifiedName();
-
-	/**
-	 * Checks whether this reference point to a subtype of the type pointed by {@code other}.
-	 *
-	 * @param other the other {@link TypeReference}
-	 * @return true if this points to a subtype of {@code other} or if this equals {@code other}
-	 */
-	boolean isSubtypeOf(ITypeReference other);
 
 	/**
 	 * Returns a deep-copy of each {@link TypeReference} in {@code refs}

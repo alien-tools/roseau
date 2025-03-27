@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * An annotation declaration in the {@link API} (e.g., {@code public @interface Ann {}}).
+ * An annotation declaration in the {@link LibraryTypes} (e.g., {@code public @interface Ann {}}).
  */
 public final class AnnotationDecl extends TypeDecl {
 	public AnnotationDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
