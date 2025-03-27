@@ -4,7 +4,7 @@ import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.AddModifierTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddModifierTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddModifierClassStrategy extends AddModifierTypeStrategy {

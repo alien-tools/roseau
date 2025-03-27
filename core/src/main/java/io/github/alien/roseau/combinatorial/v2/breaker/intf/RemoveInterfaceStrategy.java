@@ -8,7 +8,7 @@ import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
 import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
 import io.github.alien.roseau.combinatorial.builder.TypeDeclBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.RemoveTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveInterfaceStrategy extends RemoveTypeStrategy {

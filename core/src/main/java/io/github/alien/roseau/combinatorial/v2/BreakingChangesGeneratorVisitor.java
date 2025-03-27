@@ -6,12 +6,17 @@ import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddMethodAbstractClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddModifierClassStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveModifierClassStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.ctr.RemoveConstructorStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.RemoveEnumValueStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.fld.RemoveFieldStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.AddMethodTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.AddModifierTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.ReduceVisibilityTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.RemoveModifierTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.RemoveTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.mtd.RemoveMethodStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.rcdCpt.RemoveRecordComponentStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddMethodTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddModifierTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.ReduceVisibilityTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveModifierTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
@@ -81,22 +86,22 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {
-		// Do something with the constructor
+		new RemoveConstructorStrategy(c, queue).breakApi(api);
 	}
 
 	private void breakEnumValueDecl(EnumValueDecl eV) {
-		// Do something with the enum value
+		new RemoveEnumValueStrategy(eV, queue).breakApi(api);
 	}
 
 	private void breakRecordComponentDecl(RecordComponentDecl rC) {
-		// Do something with the record component
+		new RemoveRecordComponentStrategy(rC, queue).breakApi(api);
 	}
 
 	private void breakFieldDecl(FieldDecl f) {
-		// Do something with the field
+		new RemoveFieldStrategy(f, queue).breakApi(api);
 	}
 
 	private void breakMethodDecl(MethodDecl m) {
-		// Do something with the method
+		new RemoveMethodStrategy(m, queue).breakApi(api);
 	}
 }

@@ -5,7 +5,7 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
-import io.github.alien.roseau.combinatorial.v2.breaker.tpDcl.RemoveModifierTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveModifierTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 import java.util.stream.Collectors;

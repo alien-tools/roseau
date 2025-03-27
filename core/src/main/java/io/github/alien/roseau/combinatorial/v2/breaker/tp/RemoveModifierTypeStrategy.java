@@ -1,4 +1,4 @@
-package io.github.alien.roseau.combinatorial.v2.breaker.tpDcl;
+package io.github.alien.roseau.combinatorial.v2.breaker.tp;
 
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.TypeDecl;
