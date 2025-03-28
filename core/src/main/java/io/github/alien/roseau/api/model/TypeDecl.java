@@ -32,6 +32,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(fields);
 		Preconditions.checkNotNull(methods);
+		Preconditions.checkArgument(enclosingType != null ||
+				Set.of(AccessModifier.PUBLIC, AccessModifier.PACKAGE_PRIVATE).contains(visibility),
+			"Top-level type declarations are either PUBLIC or PACKAGE_PRIVATE");
 		this.implementedInterfaces = List.copyOf(implementedInterfaces);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
 		this.fields = List.copyOf(fields);
