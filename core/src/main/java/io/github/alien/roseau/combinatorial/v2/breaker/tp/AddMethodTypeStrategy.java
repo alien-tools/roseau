@@ -28,6 +28,6 @@ public class AddMethodTypeStrategy extends AbstractTpStrategy {
 		methodBuilder.containingType = mutableApi.typeReferenceFactory.createTypeReference(tp.getQualifiedName());
 		methodBuilder.type = new PrimitiveTypeReference("void");
 
-		mutableType.methods.add(methodBuilder.make());
+		mutableType.methods.add(methodBuilder);
 	}
 }

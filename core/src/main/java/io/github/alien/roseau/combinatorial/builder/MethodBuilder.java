@@ -7,4 +7,12 @@ public final class MethodBuilder extends ExecutableBuilder {
 		return new MethodDecl(qualifiedName, visibility, modifiers, annotations, location,
 				containingType, type, parameters, formalTypeParameters, thrownExceptions);
 	}
+
+	public static MethodBuilder from(MethodDecl methodDecl) {
+		var builder = new MethodBuilder();
+
+		ExecutableBuilder.mutateExecutableBuilderWithExecutable(builder, methodDecl);
+
+		return builder;
+	}
 }

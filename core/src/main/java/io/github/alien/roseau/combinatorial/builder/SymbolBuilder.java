@@ -17,13 +17,13 @@ abstract class SymbolBuilder {
 	public List<Annotation> annotations = new ArrayList<>();
 	public SourceLocation location = SourceLocation.NO_LOCATION;
 
-	public static void mutateSymbolBuilderWithSymbol(SymbolBuilder builder, Symbol typeDecl) {
-		builder.qualifiedName = typeDecl.getQualifiedName();
-		builder.visibility = typeDecl.getVisibility();
-		builder.modifiers = typeDecl.getModifiers().isEmpty()
+	public static void mutateSymbolBuilderWithSymbol(SymbolBuilder builder, Symbol symbol) {
+		builder.qualifiedName = symbol.getQualifiedName();
+		builder.visibility = symbol.getVisibility();
+		builder.modifiers = symbol.getModifiers().isEmpty()
 				? EnumSet.noneOf(Modifier.class)
-				: EnumSet.copyOf(typeDecl.getModifiers());
-		builder.annotations = new ArrayList<>(typeDecl.getAnnotations());
-		builder.location = typeDecl.getLocation();
+				: EnumSet.copyOf(symbol.getModifiers());
+		builder.annotations = new ArrayList<>(symbol.getAnnotations());
+		builder.location = symbol.getLocation();
 	}
 }

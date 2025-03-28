@@ -1,7 +1,7 @@
 package io.github.alien.roseau.combinatorial;
 
 import io.github.alien.roseau.combinatorial.api.GenerateCombinatorialApi;
-import io.github.alien.roseau.combinatorial.client.GenerateApiClients;
+import io.github.alien.roseau.combinatorial.client.GenerateApiClient;
 import io.github.alien.roseau.combinatorial.v2.GenerateNewVersionsAndLaunchBenchmark;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -28,8 +28,8 @@ public final class CombinatorialBenchmark {
 			apiGeneration.run();
 			var api = apiGeneration.getApi();
 
-			var clientsGeneration = new GenerateApiClients(api, outputPath);
-			clientsGeneration.run();
+			var clientGeneration = new GenerateApiClient(api, outputPath);
+			clientGeneration.run();
 
 			var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(api, maxParallelAnalysis, outputPath);
 			newVersionsAndBenchmarkStep.run();

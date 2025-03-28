@@ -21,7 +21,7 @@ public class RemoveMethodStrategy extends AbstractMtdStrategy {
 
 		LOGGER.info("Removing method {} from {}", mtd.getPrettyQualifiedName(), containingType.qualifiedName);
 
-		containingType.methods.remove(mtd);
+		containingType.methods = containingType.methods.stream().filter(m -> !m.make().equals(mtd)).toList();
 
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}

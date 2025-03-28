@@ -9,12 +9,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 
-public final class GenerateApiClients extends AbstractStep {
-	private static final Logger LOGGER = LogManager.getLogger(GenerateApiClients.class);
+public final class GenerateApiClient extends AbstractStep {
+	private static final Logger LOGGER = LogManager.getLogger(GenerateApiClient.class);
 
 	private final API api;
 
-	public GenerateApiClients(API api, Path outputPath) {
+	public GenerateApiClient(API api, Path outputPath) {
 		super(outputPath);
 
 		this.api = api;
@@ -24,11 +24,11 @@ public final class GenerateApiClients extends AbstractStep {
 		var clientWriter = new ClientWriter(outputPath);
 
 		try {
-			LOGGER.info("-- Generating clients for API --");
+			LOGGER.info("-- Generating client for API --");
 			new ClientGeneratorVisitor(clientWriter).$(api).visit();
 
 			clientWriter.writeClientFile();
-			LOGGER.info("-- Clients generated for API ---\n");
+			LOGGER.info("-- Client generated for API ---\n");
 		} catch (Exception e) {
 			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
 		}

@@ -23,7 +23,7 @@ public class RemoveEnumValueStrategy extends AbstractEnmValStrategy {
 		if (containingType instanceof EnumBuilder enumBuilder) {
 			LOGGER.info("Removing enum value {} from {}", enmVal.getPrettyQualifiedName(), containingType.qualifiedName);
 
-			enumBuilder.values.remove(enmVal);
+			enumBuilder.values = enumBuilder.values.stream().filter(e -> !e.make().equals(enmVal)).toList();
 
 			// TODO: For now we don't have hierarchy, so we don't need to update possible references
 		} else {

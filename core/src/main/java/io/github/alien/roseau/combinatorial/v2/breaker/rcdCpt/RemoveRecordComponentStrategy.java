@@ -23,7 +23,7 @@ public class RemoveRecordComponentStrategy extends AbstractRcdCptValStrategy {
 		if (containingType instanceof RecordBuilder recordBuilder) {
 			LOGGER.info("Removing record component {} from {}", rcdCpt.getPrettyQualifiedName(), containingType.qualifiedName);
 
-			recordBuilder.recordComponents.remove(rcdCpt);
+			recordBuilder.recordComponents = recordBuilder.recordComponents.stream().filter(r -> !r.make().equals(rcdCpt)).toList();
 
 			// TODO: For now we don't have hierarchy, so we don't need to update possible references
 		} else {

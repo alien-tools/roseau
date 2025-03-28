@@ -23,7 +23,7 @@ public class RemoveConstructorStrategy extends AbstractCtrStrategy {
 		if (containingType instanceof ClassBuilder classBuilder) {
 			LOGGER.info("Removing constructor {} from {}", ctr.getPrettyQualifiedName(), containingType.qualifiedName);
 
-			classBuilder.constructors.remove(ctr);
+			classBuilder.constructors = classBuilder.constructors.stream().filter(c -> !c.make().equals(ctr)).toList();
 
 			// TODO: For now we don't have hierarchy, so we don't need to update possible references
 		} else {

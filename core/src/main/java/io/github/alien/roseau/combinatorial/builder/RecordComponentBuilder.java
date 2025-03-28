@@ -8,4 +8,14 @@ public final class RecordComponentBuilder extends TypeMemberBuilder {
 	public RecordComponentDecl make() {
 		return new RecordComponentDecl(qualifiedName, annotations, location, containingType, type, isVarargs);
 	}
+
+	public static RecordComponentBuilder from(RecordComponentDecl decl) {
+		var builder = new RecordComponentBuilder();
+
+		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, decl);
+
+		builder.isVarargs = decl.isVarargs();
+
+		return builder;
+	}
 }

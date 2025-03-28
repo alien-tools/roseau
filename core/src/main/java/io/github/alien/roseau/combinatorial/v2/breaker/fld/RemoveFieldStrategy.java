@@ -21,7 +21,7 @@ public class RemoveFieldStrategy extends AbstractFldStrategy {
 
 		LOGGER.info("Removing field {} from {}", fld.getPrettyQualifiedName(), containingType.qualifiedName);
 
-		containingType.fields.remove(fld);
+		containingType.fields = containingType.fields.stream().filter(f -> !f.make().equals(fld)).toList();
 
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}

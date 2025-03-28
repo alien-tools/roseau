@@ -1,15 +1,19 @@
 package io.github.alien.roseau.combinatorial.builder;
 
-import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class RecordBuilder extends ClassBuilder {
-	public List<RecordComponentDecl> recordComponents = new ArrayList<>();
+	public List<RecordComponentBuilder> recordComponents = new ArrayList<>();
 
 	public RecordDecl make() {
+		var fields = this.fields.stream().map(FieldBuilder::make).toList();
+		var methods = this.methods.stream().map(MethodBuilder::make).toList();
+		var constructors = this.constructors.stream().map(ConstructorBuilder::make).toList();
+		var recordComponents = this.recordComponents.stream().map(RecordComponentBuilder::make).toList();
+
 		return new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 				formalTypeParameters, fields, methods, enclosingType, constructors, recordComponents);
 	}
@@ -19,7 +23,7 @@ public final class RecordBuilder extends ClassBuilder {
 
 		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
-		builder.recordComponents = new ArrayList<>(decl.getRecordComponents());
+		builder.recordComponents = decl.getRecordComponents().stream().map(RecordComponentBuilder::from).toList();
 
 		return builder;
 	}

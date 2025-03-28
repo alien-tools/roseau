@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.builder;
 
+import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
@@ -12,7 +13,11 @@ abstract sealed class ExecutableBuilder extends TypeMemberBuilder permits Constr
 	public List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	public List<ITypeReference> thrownExceptions = new ArrayList<>();
 
-	public void resetParameters() {
-		parameters = new ArrayList<>();
+	public static void mutateExecutableBuilderWithExecutable(ExecutableBuilder builder, ExecutableDecl executableDecl) {
+		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, executableDecl);
+
+		builder.parameters = new ArrayList<>(executableDecl.getParameters());
+		builder.formalTypeParameters = new ArrayList<>(executableDecl.getFormalTypeParameters());
+		builder.thrownExceptions = new ArrayList<>(executableDecl.getThrownExceptions());
 	}
 }

@@ -7,4 +7,12 @@ public final class ConstructorBuilder extends ExecutableBuilder {
 		return new ConstructorDecl(qualifiedName, visibility, modifiers, annotations, location,
 				containingType, type, parameters, formalTypeParameters, thrownExceptions);
 	}
+
+	public static ConstructorBuilder from(ConstructorDecl constructorDecl) {
+		var builder = new ConstructorBuilder();
+
+		ExecutableBuilder.mutateExecutableBuilderWithExecutable(builder, constructorDecl);
+
+		return builder;
+	}
 }

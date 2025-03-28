@@ -9,6 +9,9 @@ public final class InterfaceBuilder extends TypeDeclBuilder {
 	public List<String> permittedTypes = new ArrayList<>();
 
 	public InterfaceDecl make() {
+		var fields = this.fields.stream().map(FieldBuilder::make).toList();
+		var methods = this.methods.stream().map(MethodBuilder::make).toList();
+
 		return new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
 	}

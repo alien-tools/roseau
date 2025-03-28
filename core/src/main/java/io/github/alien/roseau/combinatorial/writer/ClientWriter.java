@@ -16,7 +16,7 @@ import java.util.stream.Collectors;
 public class ClientWriter extends AbstractWriter {
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
-	private static final String clientsPackageName = Constants.CLIENT_FOLDER;
+	private static final String clientPackageName = Constants.CLIENT_FOLDER;
 
 	private final Set<String> imports = new HashSet<>();
 	private final List<String> innerTypes = new ArrayList<>();
@@ -258,7 +258,7 @@ public class ClientWriter extends AbstractWriter {
 			var mainCode = String.join("\n", mainInstructions);
 
 			var fullCode = ClientTemplates.FULL_CLIENT_FILE_TEMPLATE.formatted(
-					clientsPackageName,
+					clientPackageName,
 					sortedImports,
 					Constants.CLIENT_FILENAME,
 					innerTypesCode,
@@ -266,7 +266,7 @@ public class ClientWriter extends AbstractWriter {
 					mainCode
 			).getBytes();
 
-			var packagePath = clientsPackageName.replace(".", "/");
+			var packagePath = clientPackageName.replace(".", "/");
 			var filePath = outputDir.resolve("%s/FullClient.java".formatted(packagePath));
 			filePath.toFile().getParentFile().mkdirs();
 
