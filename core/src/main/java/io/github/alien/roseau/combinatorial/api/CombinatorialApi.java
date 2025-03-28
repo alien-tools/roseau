@@ -679,7 +679,7 @@ public final class CombinatorialApi {
 					.filter(mods -> Sets.intersection(mods, Set.of(SYNCHRONIZED, FINAL)).isEmpty())
 					.collect(Collectors.toSet());
 			case RecordBuilder ignored -> modifiers.stream()
-					.filter(mods -> !mods.contains(ABSTRACT) && !mods.contains(DEFAULT))
+					.filter(mods -> Sets.intersection(mods, Set.of(ABSTRACT, DEFAULT)).isEmpty())
 					.collect(Collectors.toSet());
 			case ClassBuilder b -> modifiers.stream()
 					.filter(mods -> !mods.contains(DEFAULT))

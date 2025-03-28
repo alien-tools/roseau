@@ -9,11 +9,15 @@ import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveModifierClassSt
 import io.github.alien.roseau.combinatorial.v2.breaker.ctr.ChangeVisibilityConstructorStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.ctr.RemoveConstructorStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.RemoveEnumValueStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.fld.AddModifierFieldStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.fld.ChangeVisibilityFieldStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.fld.RemoveFieldStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.fld.RemoveModifierFieldStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.mtd.AddModifierMethodStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.mtd.ChangeVisibilityMethodStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.mtd.RemoveMethodStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.mtd.RemoveModifierMethodStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcdCpt.RemoveRecordComponentStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddMethodTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddModifierTypeStrategy;
@@ -70,8 +74,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new ReduceVisibilityTypeStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
 
 		new AddModifierClassStrategy(Modifier.ABSTRACT, c, queue).breakApi(api);
-		new AddModifierClassStrategy(Modifier.FINAL, c, queue).breakApi(api);
 		new RemoveModifierClassStrategy(Modifier.ABSTRACT, c, queue).breakApi(api);
+		new AddModifierClassStrategy(Modifier.FINAL, c, queue).breakApi(api);
 		new RemoveModifierClassStrategy(Modifier.FINAL, c, queue).breakApi(api);
 
 		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
@@ -112,6 +116,11 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new ChangeVisibilityFieldStrategy(AccessModifier.PROTECTED, f, queue).breakApi(api);
 		new ChangeVisibilityFieldStrategy(AccessModifier.PACKAGE_PRIVATE, f, queue).breakApi(api);
 		new ChangeVisibilityFieldStrategy(AccessModifier.PRIVATE, f, queue).breakApi(api);
+
+		new AddModifierFieldStrategy(Modifier.FINAL, f, queue).breakApi(api);
+		new RemoveModifierFieldStrategy(Modifier.FINAL, f, queue).breakApi(api);
+		new AddModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
+		new RemoveModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
 	}
 
 	private void breakMethodDecl(MethodDecl m) {
@@ -121,5 +130,16 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new ChangeVisibilityMethodStrategy(AccessModifier.PROTECTED, m, queue).breakApi(api);
 		new ChangeVisibilityMethodStrategy(AccessModifier.PACKAGE_PRIVATE, m, queue).breakApi(api);
 		new ChangeVisibilityMethodStrategy(AccessModifier.PRIVATE, m, queue).breakApi(api);
+
+		new AddModifierMethodStrategy(Modifier.ABSTRACT, m, queue).breakApi(api);
+		new RemoveModifierMethodStrategy(Modifier.ABSTRACT, m, queue).breakApi(api);
+		new AddModifierMethodStrategy(Modifier.DEFAULT, m, queue).breakApi(api);
+		new RemoveModifierMethodStrategy(Modifier.DEFAULT, m, queue).breakApi(api);
+		new AddModifierMethodStrategy(Modifier.FINAL, m, queue).breakApi(api);
+		new RemoveModifierMethodStrategy(Modifier.FINAL, m, queue).breakApi(api);
+		new AddModifierMethodStrategy(Modifier.STATIC, m, queue).breakApi(api);
+		new RemoveModifierMethodStrategy(Modifier.STATIC, m, queue).breakApi(api);
+		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
+		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 	}
 }
