@@ -5,7 +5,7 @@ import io.github.alien.roseau.api.model.InterfaceDecl;
 import java.util.ArrayList;
 import java.util.List;
 
-public final class InterfaceBuilder extends TypeDeclBuilder {
+public final class InterfaceBuilder extends TypeBuilder {
 	public List<String> permittedTypes = new ArrayList<>();
 
 	public InterfaceDecl make() {
@@ -19,7 +19,7 @@ public final class InterfaceBuilder extends TypeDeclBuilder {
 	public static InterfaceBuilder from(InterfaceDecl decl) {
 		var builder = new InterfaceBuilder();
 
-		TypeDeclBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+		TypeBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
 		builder.permittedTypes = new ArrayList<>(decl.getPermittedTypes());
 

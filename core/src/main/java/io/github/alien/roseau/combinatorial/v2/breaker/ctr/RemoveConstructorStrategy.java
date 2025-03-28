@@ -3,8 +3,6 @@ package io.github.alien.roseau.combinatorial.v2.breaker.ctr;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveConstructorStrategy extends AbstractCtrStrategy {
@@ -17,17 +15,10 @@ public class RemoveConstructorStrategy extends AbstractCtrStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		var containingType = mutableApi.allTypes.get(ctr.getContainingType().getQualifiedName());
-		if (containingType == null) throw new ImpossibleChangeException();
+		var containingClass = getContainingClassFromMutableApi(mutableApi);
 
-		if (containingType instanceof ClassBuilder classBuilder) {
-			LOGGER.info("Removing constructor {} from {}", ctr.getPrettyQualifiedName(), containingType.qualifiedName);
+		containingClass.constructors = containingClass.constructors.stream().filter(c -> !c.make().equals(ctr)).toList();
 
-			classBuilder.constructors = classBuilder.constructors.stream().filter(c -> !c.make().equals(ctr)).toList();
-
-			// TODO: For now we don't have hierarchy, so we don't need to update possible references
-		} else {
-			throw new ImpossibleChangeException();
-		}
+		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

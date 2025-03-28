@@ -24,7 +24,7 @@ import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
 import io.github.alien.roseau.combinatorial.builder.MethodBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordComponentBuilder;
-import io.github.alien.roseau.combinatorial.builder.TypeDeclBuilder;
+import io.github.alien.roseau.combinatorial.builder.TypeBuilder;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -103,7 +103,7 @@ public final class CombinatorialApi {
 	static int constructorCounter = 0;
 	static int methodCounter = 0;
 
-	final Map<String, TypeDeclBuilder> typeStore = new HashMap<>();
+	final Map<String, TypeBuilder> typeStore = new HashMap<>();
 
 	public void build() {
 		createTypes();
@@ -115,7 +115,7 @@ public final class CombinatorialApi {
 	}
 
 	public API getAPI() {
-		return new API(typeStore.values().stream().map(TypeDeclBuilder::make).toList(), typeReferenceFactory);
+		return new API(typeStore.values().stream().map(TypeBuilder::make).toList(), typeReferenceFactory);
 	}
 
 	private void createTypes() {
@@ -527,15 +527,15 @@ public final class CombinatorialApi {
 		);
 	}
 
-	private void store(TypeDeclBuilder type) {
+	private void store(TypeBuilder type) {
 		typeStore.put(type.qualifiedName, type);
 	}
 
-	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterDecl> parameters, TypeDeclBuilder type) {
+	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterDecl> parameters, TypeBuilder type) {
 		createMethodAndAddToType(type.qualifiedName + ".m" + ++symbolCounter, visibility, modifiers, parameters, type);
 	}
 
-	private static void createMethodAndAddToType(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers, List<ParameterDecl> parameters, TypeDeclBuilder type) {
+	private static void createMethodAndAddToType(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers, List<ParameterDecl> parameters, TypeBuilder type) {
 		var methodBuilder = new MethodBuilder();
 
 		methodBuilder.visibility = visibility;
@@ -569,7 +569,7 @@ public final class CombinatorialApi {
 		constructorCounter++;
 	}
 
-	private static void addImplementedInterfacesToTypeDeclBuilder(TypeDeclBuilder builder, List<InterfaceBuilder> implementingIntfBuilders) {
+	private static void addImplementedInterfacesToTypeDeclBuilder(TypeBuilder builder, List<InterfaceBuilder> implementingIntfBuilders) {
 		implementingIntfBuilders.forEach(implementingIntfBuilder -> {
 			var implementingIntf = implementingIntfBuilder.make();
 
@@ -609,7 +609,7 @@ public final class CombinatorialApi {
 		}
 	}
 
-	private static FieldBuilder generateFieldForTypeDeclBuilder(FieldDecl field, TypeDeclBuilder builder) {
+	private static FieldBuilder generateFieldForTypeDeclBuilder(FieldDecl field, TypeBuilder builder) {
 		var typeDecl = builder.make();
 		var fieldBuilder = new FieldBuilder();
 
@@ -622,7 +622,7 @@ public final class CombinatorialApi {
 		return fieldBuilder;
 	}
 
-	private static MethodBuilder generateMethodForTypeDeclBuilder(MethodDecl method, TypeDeclBuilder builder) {
+	private static MethodBuilder generateMethodForTypeDeclBuilder(MethodDecl method, TypeBuilder builder) {
 		// @Override ann?
 		var typeDecl = builder.make();
 		var methodBuilder = new MethodBuilder();

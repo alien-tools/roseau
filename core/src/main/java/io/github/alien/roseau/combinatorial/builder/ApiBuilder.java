@@ -13,7 +13,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 public final class ApiBuilder implements Builder<API> {
-	public final Map<String, TypeDeclBuilder> allTypes = new HashMap<>();
+	public final Map<String, TypeBuilder> allTypes = new HashMap<>();
 
 	public final TypeReferenceFactory typeReferenceFactory;
 
@@ -23,7 +23,7 @@ public final class ApiBuilder implements Builder<API> {
 
 	@Override
 	public API make() {
-		return new API(allTypes.values().stream().map(TypeDeclBuilder::make).toList(), typeReferenceFactory);
+		return new API(allTypes.values().stream().map(TypeBuilder::make).toList(), typeReferenceFactory);
 	}
 
 	public static ApiBuilder from(API api) {

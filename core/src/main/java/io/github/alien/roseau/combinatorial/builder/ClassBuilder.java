@@ -6,7 +6,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.ArrayList;
 import java.util.List;
 
-public sealed class ClassBuilder extends TypeDeclBuilder permits EnumBuilder, RecordBuilder {
+public sealed class ClassBuilder extends TypeBuilder permits EnumBuilder, RecordBuilder {
 	public TypeReference<ClassDecl> superClass;
 	public List<ConstructorBuilder> constructors = new ArrayList<>();
 	public List<String> permittedTypes = new ArrayList<>();
@@ -24,7 +24,7 @@ public sealed class ClassBuilder extends TypeDeclBuilder permits EnumBuilder, Re
 	public static ClassBuilder from(ClassDecl decl) {
 		var builder = new ClassBuilder();
 
-		TypeDeclBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+		TypeBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
 		builder.superClass = decl.getSuperClass();
 		builder.constructors = decl.getDeclaredConstructors().stream().map(ConstructorBuilder::from).toList();

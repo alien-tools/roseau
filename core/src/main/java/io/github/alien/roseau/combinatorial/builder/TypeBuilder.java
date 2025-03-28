@@ -8,14 +8,14 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.ArrayList;
 import java.util.List;
 
-public abstract sealed class TypeDeclBuilder extends SymbolBuilder implements Builder<TypeDecl> permits ClassBuilder, InterfaceBuilder {
+public abstract sealed class TypeBuilder extends SymbolBuilder implements Builder<TypeDecl> permits ClassBuilder, InterfaceBuilder {
 	public List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
 	public List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	public List<FieldBuilder> fields = new ArrayList<>();
 	public List<MethodBuilder> methods = new ArrayList<>();
 	public TypeReference<TypeDecl> enclosingType;
 
-	public static void mutateTypeDeclBuilderWithTypeDecl(TypeDeclBuilder builder, TypeDecl typeDecl) {
+	public static void mutateTypeDeclBuilderWithTypeDecl(TypeBuilder builder, TypeDecl typeDecl) {
 		SymbolBuilder.mutateSymbolBuilderWithSymbol(builder, typeDecl);
 
 		builder.implementedInterfaces = new ArrayList<>(typeDecl.getImplementedInterfaces());

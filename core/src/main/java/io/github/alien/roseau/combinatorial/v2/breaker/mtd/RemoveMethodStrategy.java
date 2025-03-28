@@ -3,7 +3,6 @@ package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveMethodStrategy extends AbstractMtdStrategy {
@@ -16,8 +15,7 @@ public class RemoveMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		var containingType = mutableApi.allTypes.get(mtd.getContainingType().getQualifiedName());
-		if (containingType == null) throw new ImpossibleChangeException();
+		var containingType = getContainingTypeFromMutableApi(mutableApi);
 
 		LOGGER.info("Removing method {} from {}", mtd.getPrettyQualifiedName(), containingType.qualifiedName);
 

@@ -7,7 +7,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
 import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
-import io.github.alien.roseau.combinatorial.builder.TypeDeclBuilder;
+import io.github.alien.roseau.combinatorial.builder.TypeBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
@@ -29,7 +29,7 @@ public final class RemoveInterfaceStrategy extends RemoveTypeStrategy {
 		});
 	}
 
-	private void removeInterfaceFromTypeDeclBuilder(TypeDeclBuilder typeBuilder) {
+	private void removeInterfaceFromTypeDeclBuilder(TypeBuilder typeBuilder) {
 		var implementedInterfacesCount = typeBuilder.implementedInterfaces.size();
 		typeBuilder.implementedInterfaces = typeBuilder.implementedInterfaces.stream()
 				.filter(i -> !i.getQualifiedName().equals(tp.getQualifiedName()))
