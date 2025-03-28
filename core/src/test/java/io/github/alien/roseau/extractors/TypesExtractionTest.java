@@ -32,7 +32,7 @@ class TypesExtractionTest {
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getTypes().getAllTypes(), hasSize(1));
+		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
 		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
 	}
 
@@ -59,7 +59,7 @@ class TypesExtractionTest {
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getTypes().getAllTypes(), hasSize(1));
+		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
 	}
 
 	@ParameterizedTest
@@ -84,7 +84,7 @@ class TypesExtractionTest {
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getTypes().getAllTypes(), hasSize(1));
+		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
 		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
 	}
 
@@ -111,7 +111,7 @@ class TypesExtractionTest {
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getTypes().getAllTypes(), hasSize(1));
+		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
 		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
 	}
 
@@ -137,7 +137,7 @@ class TypesExtractionTest {
 
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getTypes().getAllTypes(), hasSize(1));
+		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
 		assertThat(api.getExportedTypes(), hasSize(0));
 	}
 

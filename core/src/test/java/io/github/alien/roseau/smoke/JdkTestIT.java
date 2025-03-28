@@ -63,7 +63,7 @@ class JdkTestIT {
 		sw.reset().start();
 		var srcApi = spoonExtractor.extractTypes(model).toAPI();
 		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("Spoon API took %dms (%d types)%n", apiTime, srcApi.getTypes().getAllTypes().size());
+		System.out.printf("Spoon API took %dms (%d types)%n", apiTime, srcApi.getLibraryTypes().getAllTypes().size());
 
 		sw.reset().start();
 		var bcs = new APIDiff(srcApi, srcApi).diff();

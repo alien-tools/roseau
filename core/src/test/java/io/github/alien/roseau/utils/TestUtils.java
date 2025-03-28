@@ -116,7 +116,7 @@ public class TestUtils {
 	}
 
 	public static TypeDecl assertType(API api, String name, String kind) {
-		Optional<TypeDecl> findType = api.findType(name);
+		Optional<TypeDecl> findType = api.getLibraryTypes().findType(name);
 
 		if (findType.isEmpty())
 			throw new AssertionFailedError("No such type", kind + " " + name, "No such type");
@@ -139,7 +139,7 @@ public class TestUtils {
 	}
 
 	public static void assertNoType(API api, String name) {
-		Optional<TypeDecl> findType = api.findType(name);
+		Optional<TypeDecl> findType = api.getLibraryTypes().findType(name);
 
 		if (findType.isPresent())
 			throw new AssertionFailedError("Unexpected type", "No such type", findType.get().getQualifiedName());

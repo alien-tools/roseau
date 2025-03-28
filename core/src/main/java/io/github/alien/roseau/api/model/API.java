@@ -7,16 +7,24 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * An API holds a set of {@link Symbol} and provides convenience methods to access {@link TypeDecl} declarations. APIs
+ * are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, an API holds
+ * <strong>all</strong> the types it declares, including non-exported ones. {@link LibraryTypes} instances have limited
+ * analysis
+ * capabilities and must be transformed into {@link API} to enable type resolution and most analyses
+ * ({@link #toAPI(TypeResolver)}).
+ */
 public class API extends CachingAPIAnalyzer {
-	private final LibraryTypes types;
+	private final LibraryTypes libraryTypes;
 
-	public API(LibraryTypes types, TypeResolver resolver) {
+	public API(LibraryTypes libraryTypes, TypeResolver resolver) {
 		super(resolver);
-		this.types = types;
+		this.libraryTypes = libraryTypes;
 	}
 
-	public LibraryTypes getTypes() {
-		return types;
+	public LibraryTypes getLibraryTypes() {
+		return libraryTypes;
 	}
 
 	/**
@@ -25,37 +33,9 @@ public class API extends CachingAPIAnalyzer {
 	 * @return The list of exported {@link TypeDecl}
 	 */
 	public List<TypeDecl> getExportedTypes() {
-		return types.getAllTypes().stream()
+		return libraryTypes.getAllTypes().stream()
 			.filter(this::isExported)
 			.toList();
-	}
-
-	/**
-	 * Returns the class declarations exported by the API.
-	 *
-	 * @return The list of exported {@link ClassDecl}
-	 */
-	public List<ClassDecl> getExportedClasses() {
-		return getExportedTypes().stream()
-			.filter(ClassDecl.class::isInstance)
-			.map(ClassDecl.class::cast)
-			.toList();
-	}
-
-	/**
-	 * Returns the interface declarations exported by the API.
-	 *
-	 * @return The list of exported {@link InterfaceDecl}
-	 */
-	public List<InterfaceDecl> getExportedInterfaces() {
-		return getExportedTypes().stream()
-			.filter(InterfaceDecl.class::isInstance)
-			.map(InterfaceDecl.class::cast)
-			.toList();
-	}
-
-	public Optional<TypeDecl> findType(String qualifiedName) {
-		return types.findType(qualifiedName);
 	}
 
 	/**
@@ -65,7 +45,9 @@ public class API extends CachingAPIAnalyzer {
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
-		return findType(qualifiedName).filter(this::isExported);
+		return getExportedTypes().stream()
+			.filter(type -> type.getQualifiedName().equals(qualifiedName))
+			.findFirst();
 	}
 
 	@Override

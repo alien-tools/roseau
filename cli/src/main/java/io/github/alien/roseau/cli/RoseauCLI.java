@@ -209,7 +209,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			if (apiMode) {
 				API api = buildAPI(v1, classpath);
-				api.getTypes().writeJson(apiPath);
+				api.getLibraryTypes().writeJson(apiPath);
 				LOGGER.info("Wrote API to {}", apiPath);
 			}
 
