@@ -20,11 +20,14 @@ class MavenClasspathBuilderTest {
 	Path wd;
 	Path validPom;
 	Path invalidPom;
+	Path validDirectory;
 
 	@BeforeEach
 	void setUp() throws IOException {
 		validPom = wd.resolve("valid-pom.xml");
 		invalidPom = wd.resolve("invalid-pom.xml");
+		validDirectory = wd.resolve("valid-directory");
+		validDirectory.toFile().mkdirs();
 		Files.writeString(validPom, """
 			<?xml version="1.0" encoding="UTF-8"?>
 			<project xmlns="http://maven.apache.org/POM/4.0.0"
@@ -49,6 +52,23 @@ class MavenClasspathBuilderTest {
 			    </dependencies>
 			</project>""");
 		Files.writeString(invalidPom, "<nope>");
+		Files.writeString(validDirectory.resolve("pom.xml"), """
+			<?xml version="1.0" encoding="UTF-8"?>
+			<project xmlns="http://maven.apache.org/POM/4.0.0"
+			         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+			         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+			    <modelVersion>4.0.0</modelVersion>
+			    <groupId>org.example</groupId>
+			    <artifactId>example</artifactId>
+			    <version>1.0</version>
+			    <dependencies>
+			        <dependency>
+			            <groupId>io.github.alien-tools</groupId>
+			            <artifactId>roseau-core</artifactId>
+			            <version>0.1.0</version>
+			        </dependency>
+			    </dependencies>
+			</project>""");
 	}
 
 	@Test
@@ -72,5 +92,13 @@ class MavenClasspathBuilderTest {
 		var builder = new MavenClasspathBuilder();
 		var cp = builder.buildClasspath(invalidPom);
 		assertThat(cp, is(empty()));
+	}
+
+	@Test
+	void valid_directory() {
+		var builder = new MavenClasspathBuilder();
+		var cp = builder.buildClasspath(validDirectory);
+		assertThat(cp.stream().map(Path::toString).toList(), hasItems(
+			endsWith("io/github/alien-tools/roseau-core/0.1.0/roseau-core-0.1.0.jar")));
 	}
 }
