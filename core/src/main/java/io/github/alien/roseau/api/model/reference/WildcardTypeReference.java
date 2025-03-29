@@ -10,6 +10,9 @@ import java.util.stream.Collectors;
  * <br>
  * {@code <? extends A>} and {@code <?>} are upper bounds while {@code <? super A>} is a lower bound. Wildcards have at
  * least one upper bounds ({@link java.lang.Object} always included) or exactly one lower bound.
+ *
+ * @param bounds the wildcard's bounds
+ * @param upper  is true if {@code <?> or <? extends>} and false if {@code <? super>}
  */
 public record WildcardTypeReference(
 	List<ITypeReference> bounds,

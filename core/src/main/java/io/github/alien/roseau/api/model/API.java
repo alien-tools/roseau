@@ -8,12 +8,7 @@ import java.util.Optional;
 import java.util.stream.Collectors;
 
 /**
- * An API holds a set of {@link Symbol} and provides convenience methods to access {@link TypeDecl} declarations. APIs
- * are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, an API holds
- * <strong>all</strong> the types it declares, including non-exported ones. {@link LibraryTypes} instances have limited
- * analysis
- * capabilities and must be transformed into {@link API} to enable type resolution and most analyses
- * ({@link #toAPI(TypeResolver)}).
+ * An API augments {@link LibraryTypes} with analysis capabilities and symbol export information.
  */
 public class API extends CachingAPIAnalyzer {
 	private final LibraryTypes libraryTypes;

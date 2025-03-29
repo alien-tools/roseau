@@ -26,10 +26,9 @@ import java.util.function.Function;
 /**
  * Holds a set of {@link Symbol} extracted from a library and provides convenience methods to access type declarations.
  * All types are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, library types
- * contain
- * <strong>all</strong> the types declared in a library, including non-exported ones. {@link LibraryTypes} instances
- * have limited analysis capabilities and must be transformed into {@link API} to enable type resolution and most
- * analyses ({@link #toAPI(TypeResolver)}).
+ * contain <strong>all</strong> the types declared in a library, including non-exported ones. {@link LibraryTypes}
+ * instances have limited analysis capabilities and must be transformed into {@link API} to enable type resolution and
+ * most analyses ({@link #toAPI(TypeResolver)}).
  */
 public final class LibraryTypes implements TypeProvider {
 	/**
@@ -51,7 +50,9 @@ public final class LibraryTypes implements TypeProvider {
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
 				Function.identity(),
-				(fqn, duplicate) -> { throw new IllegalArgumentException("Duplicated types " + fqn); }
+				(fqn, duplicate) -> {
+					throw new IllegalArgumentException("Duplicated types " + fqn);
+				}
 			));
 	}
 
@@ -90,8 +91,8 @@ public final class LibraryTypes implements TypeProvider {
 	 * Returns the type, <strong>exported or not</strong>, with the given qualified name.
 	 *
 	 * @param qualifiedName The qualified name of the type to find
-	 * @param type the expected type kind
-	 * @param <T> the expected type kind
+	 * @param type          the expected type kind
+	 * @param <T>           the expected type kind
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	@Override
@@ -99,8 +100,8 @@ public final class LibraryTypes implements TypeProvider {
 		Optional<TypeDecl> resolved = Optional.ofNullable(allTypes.get(qualifiedName));
 
 		if (resolved.isPresent() && !type.isInstance(resolved.get())) {
-				LOGGER.warn("Type {} is not of expected type {}", qualifiedName, type);
-				return Optional.empty();
+			LOGGER.warn("Type {} is not of expected type {}", qualifiedName, type);
+			return Optional.empty();
 		}
 
 		return resolved.map(type::cast);
