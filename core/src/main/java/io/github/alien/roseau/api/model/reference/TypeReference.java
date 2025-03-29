@@ -25,6 +25,10 @@ public record TypeReference<T extends TypeDecl>(
 		typeArguments = List.copyOf(typeArguments);
 	}
 
+	public TypeReference(String qualifiedName) {
+		this(qualifiedName, List.of());
+	}
+
 	/**
 	 * A reference to {@link Object}.
 	 */

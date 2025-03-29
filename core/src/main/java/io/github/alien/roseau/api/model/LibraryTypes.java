@@ -22,12 +22,12 @@ import java.util.Optional;
 import java.util.function.Function;
 
 /**
- * An API holds a set of {@link Symbol} and provides convenience methods to access {@link TypeDecl} declarations. APIs
- * are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, an API holds
- * <strong>all</strong> the types it declares, including non-exported ones. {@link LibraryTypes} instances have limited
- * analysis
- * capabilities and must be transformed into {@link API} to enable type resolution and most analyses
- * ({@link #toAPI(TypeResolver)}).
+ * Holds a set of {@link Symbol} extracted from a library and provides convenience methods to access type declarations.
+ * All types are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, library types
+ * contain
+ * <strong>all</strong> the types declared in a library, including non-exported ones. {@link LibraryTypes} instances
+ * have limited analysis capabilities and must be transformed into {@link API} to enable type resolution and most
+ * analyses ({@link #toAPI(TypeResolver)}).
  */
 public final class LibraryTypes implements TypeProvider {
 	/**
@@ -37,7 +37,7 @@ public final class LibraryTypes implements TypeProvider {
 	private final ImmutableMap<String, TypeDecl> allTypes;
 
 	/**
-	 * Initializes an API from the given list of {@link TypeDecl}.
+	 * Initializes from the given list of {@link TypeDecl}.
 	 *
 	 * @param types Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */

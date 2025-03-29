@@ -84,7 +84,7 @@ class IncrementalJdtTypesExtractorTest {
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(a), Set.of());
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
-		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1.getTypes()).toAPI();
+		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1.getLibraryTypes()).toAPI();
 
 		assertClass(api1, "A");
 		var b1 = assertClass(api1, "B");
@@ -108,7 +108,7 @@ class IncrementalJdtTypesExtractorTest {
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(b));
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
-		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1.getTypes()).toAPI();
+		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1.getLibraryTypes()).toAPI();
 
 		var a1 = assertClass(api1, "A");
 		var a2 = assertClass(api2, "A");

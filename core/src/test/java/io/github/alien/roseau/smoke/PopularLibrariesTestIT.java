@@ -143,11 +143,11 @@ class PopularLibrariesTestIT {
 
 		// Stats
 		long loc = countLinesOfCode(sourcesDir);
-		int numTypes = spoonApi.getTypes().getAllTypes().size();
-		int numMethods = spoonApi.getTypes().getAllTypes().stream()
+		int numTypes = spoonApi.getLibraryTypes().getAllTypes().size();
+		int numMethods = spoonApi.getLibraryTypes().getAllTypes().stream()
 			.mapToInt(type -> type.getDeclaredMethods().size())
 			.sum();
-		int numFields = spoonApi.getTypes().getAllTypes().stream()
+		int numFields = spoonApi.getLibraryTypes().getAllTypes().stream()
 			.mapToInt(type -> type.getDeclaredFields().size())
 			.sum();
 
@@ -177,9 +177,9 @@ class PopularLibrariesTestIT {
 		}
 
 		// Check everything went well
-		assertFalse(spoonApi.getTypes().getAllTypes().stream().findAny().isEmpty());
-		assertFalse(asmApi.getTypes().getAllTypes().stream().findAny().isEmpty());
-		assertFalse(jdtApi.getTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		// assertEquals(0, asmToSpoonBCs.size() + asmToJdtBCs.size() + jdtToSpoonBCs.size() +
 		// 	jdtToAsmBCs.size() + spoonToAsmBCs.size() + spoonToJdtBCs.size());
 	}
@@ -199,7 +199,7 @@ class PopularLibrariesTestIT {
 		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff();
 
 		// Check everything went well
-		assertFalse(spoonApi.getTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertEquals(0, bcs.size());
 	}
 
@@ -219,7 +219,7 @@ class PopularLibrariesTestIT {
 		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff();
 
 		// Check everything went well
-		assertFalse(jdtApi.getTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertEquals(0, bcs.size());
 	}
 
@@ -238,7 +238,7 @@ class PopularLibrariesTestIT {
 		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff();
 
 		// Check everything went well
-		assertFalse(asmApi.getTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertEquals(0, bcs.size());
 	}
 
@@ -392,8 +392,8 @@ class PopularLibrariesTestIT {
 	private static boolean diffAPIs(API api1, API api2) {
 		boolean equal = true;
 
-		for (TypeDecl type1 : api1.getTypes().getAllTypes()) {
-			Optional<TypeDecl> type2 = api2.findType(type1.getQualifiedName());
+		for (TypeDecl type1 : api1.getLibraryTypes().getAllTypes()) {
+			Optional<TypeDecl> type2 = api2.getLibraryTypes().findType(type1.getQualifiedName());
 
 			if (type2.isEmpty()) {
 				System.out.printf("%s %s is missing in the second API%n",

@@ -111,7 +111,7 @@ public class APIDiff {
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
 		v2.getAllMethods(t2).stream()
 			.filter(MethodDecl::isAbstract)
-			.filter(m2 -> v1.getAllMethods(t1).stream().noneMatch(m1 -> v1.getErasure(m1).equals(v2.getErasure(m2))))
+			.filter(m2 -> v1.getAllMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface()) {
 					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
@@ -241,16 +241,14 @@ public class APIDiff {
 	private void diffThrownExceptions(ExecutableDecl e1, ExecutableDecl e2) {
 		if (v1.getThrownCheckedExceptions(e1)
 			.stream()
-			.anyMatch(exc1 -> v2.getThrownCheckedExceptions(e2)
-				.stream()
+			.anyMatch(exc1 -> v2.getThrownCheckedExceptions(e2).stream()
 				.noneMatch(exc2 -> v2.isSubtypeOf(exc2, exc1)))) {
 			bc(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, e1, e2);
 		}
 
 		if (v2.getThrownCheckedExceptions(e2)
 			.stream()
-			.anyMatch(exc2 -> v1.getThrownCheckedExceptions(e1)
-				.stream()
+			.anyMatch(exc2 -> v1.getThrownCheckedExceptions(e1).stream()
 				.noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))) {
 			bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, e1, e2);
 		}
@@ -261,7 +259,7 @@ public class APIDiff {
 		//if (e1.isVarargs() && !e2.isVarargs())
 		//	bc(BreakingChangeKind.METHOD_NO_LONGER_VARARGS, e1, e2);
 
-		// We checked executable signatures, so we know params are equals modulo type arguments
+		// We checked executable erasures, so we know params are equals modulo type arguments
 		for (int i = 0; i < e1.getParameters().size(); i++) {
 			ParameterDecl p1 = e1.getParameters().get(i);
 			ParameterDecl p2 = e2.getParameters().get(i);

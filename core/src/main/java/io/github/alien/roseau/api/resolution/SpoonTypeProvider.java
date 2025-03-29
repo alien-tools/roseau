@@ -31,6 +31,7 @@ public class SpoonTypeProvider implements TypeProvider {
 
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName) {
+		Preconditions.checkNotNull(qualifiedName);
 		return Optional.ofNullable((T) spoonFactory.convertCtType(qualifiedName));
 	}
 }
