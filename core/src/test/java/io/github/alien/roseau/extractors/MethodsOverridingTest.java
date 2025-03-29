@@ -1,10 +1,15 @@
 package io.github.alien.roseau.extractors;
 
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
+import io.github.alien.roseau.api.model.reference.TypeParameterReference;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+
+import java.util.List;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
@@ -157,6 +162,20 @@ class MethodsOverridingTest {
 		var m3b = assertMethod(api, b, "m3()");
 		var m4b = assertMethod(api, b, "m4()");
 		var m5b = assertMethod(api, b, "m5()");
+
+		assertThat(m1a.getType()).isEqualTo(PrimitiveTypeReference.INT);
+		assertThat(m2a.getType()).isEqualTo(new TypeReference<>("java.lang.CharSequence"));
+		assertThat(m3a.getType()).isEqualTo(new TypeParameterReference("T"));
+		assertThat(m4a.getType()).isEqualTo(new TypeReference<>("java.lang.Number"));
+		assertThat(m5a.getType()).isEqualTo(new TypeReference<>("java.util.List",
+			List.of(new TypeReference<>("java.lang.Number"))));
+
+		assertThat(m1b.getType()).isEqualTo(PrimitiveTypeReference.INT);
+		assertThat(m2b.getType()).isEqualTo(TypeReference.STRING);
+		assertThat(m3b.getType()).isEqualTo(new TypeParameterReference("U"));
+		assertThat(m4b.getType()).isEqualTo(new TypeReference<>("java.lang.Integer"));
+		assertThat(m5b.getType()).isEqualTo(new TypeReference<>("java.util.ArrayList",
+			List.of(new TypeReference<>("java.lang.Number"))));
 
 		assertTrue(api.isOverriding(m1b, m1a));
 		assertTrue(api.isOverriding(m2b, m2a));

@@ -207,6 +207,34 @@ class GenericsExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
+	void overridden_generic_method(ApiBuilder builder) {
+		var api = builder.build("""
+			public abstract class MyMap1<K, V> implements java.util.Map<K, V> {
+			 		@Override
+			 		public java.util.Set<java.util.Map.Entry<K, V>> entrySet() { return null; }
+			}
+			public abstract class MyMap2<A> implements java.util.Map<java.util.Optional<A>, java.util.List<A>> {
+			 		@Override
+			 		public java.util.Set<java.util.Map.Entry<java.util.Optional<A>, java.util.List<A>>> entrySet() { return null; }
+			}""");
+
+		var map1 = assertClass(api, "MyMap1");
+		var map2 = assertClass(api, "MyMap2");
+		var es1 = assertMethod(api, map1, "entrySet()");
+		var es2 = assertMethod(api, map2, "entrySet()");
+
+		assertThat(es1.getType()).isEqualTo(new TypeReference<>("java.util.Set", List.of(
+			new TypeReference<>("java.util.Map$Entry", List.of(
+				new TypeParameterReference("K"), new TypeParameterReference("V"))))));
+
+		assertThat(es2.getType()).isEqualTo(new TypeReference<>("java.util.Set", List.of(
+			new TypeReference<>("java.util.Map$Entry", List.of(
+				new TypeReference<>("java.util.Optional", List.of(new TypeParameterReference("A"))),
+				new TypeReference<>("java.util.List", List.of(new TypeParameterReference("A"))))))));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
 	void method_type_parameter_resolution(ApiBuilder builder) {
 		var api = builder.build("""
 			public class A<T, U extends CharSequence, V extends Number> extends java.util.ArrayList<U>

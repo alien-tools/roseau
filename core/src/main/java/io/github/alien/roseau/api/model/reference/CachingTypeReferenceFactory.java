@@ -6,6 +6,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
 /**
  * A flyweight {@link ITypeReference} factory.
@@ -23,7 +24,7 @@ public class CachingTypeReferenceFactory implements TypeReferenceFactory {
 	@Override
 	public <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName,
 	                                                                 List<ITypeReference> typeArguments) {
-		return cache("TR" + qualifiedName + typeArguments.stream().map(ITypeReference::getQualifiedName).toList(),
+		return cache("TR" + qualifiedName + key(typeArguments),
 			() -> new TypeReference<>(qualifiedName, typeArguments));
 	}
 
@@ -35,7 +36,7 @@ public class CachingTypeReferenceFactory implements TypeReferenceFactory {
 
 	@Override
 	public ArrayTypeReference createArrayTypeReference(ITypeReference componentType, int dimension) {
-		return cache("ATR" + componentType + dimension,
+		return cache("ATR" + key(componentType) + dimension,
 			() -> new ArrayTypeReference(componentType, dimension));
 	}
 
@@ -47,7 +48,21 @@ public class CachingTypeReferenceFactory implements TypeReferenceFactory {
 
 	@Override
 	public WildcardTypeReference createWildcardTypeReference(List<ITypeReference> bounds, boolean upper) {
-		return cache("WTR" + bounds + upper,
+		return cache("WTR" + key(bounds) + upper,
 			() -> new WildcardTypeReference(bounds, upper));
+	}
+
+	private String key(List<ITypeReference> references) {
+		return references.stream().map(this::key).collect(Collectors.joining());
+	}
+
+	private String key(ITypeReference reference) {
+		return switch (reference) {
+			case ArrayTypeReference(var type, var dimension) -> key(type) + "[]".repeat(dimension);
+			case PrimitiveTypeReference(var name) -> name;
+			case TypeParameterReference(var name) -> name;
+			case TypeReference(var fqn, var args) -> fqn + key(args);
+			case WildcardTypeReference(var bounds, var upper) -> key(bounds) + upper;
+		};
 	}
 }
