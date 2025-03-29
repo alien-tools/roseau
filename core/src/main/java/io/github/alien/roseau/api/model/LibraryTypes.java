@@ -13,6 +13,8 @@ import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -36,6 +38,8 @@ public final class LibraryTypes implements TypeProvider {
 	 */
 	private final ImmutableMap<String, TypeDecl> allTypes;
 
+	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
+
 	/**
 	 * Initializes from the given list of {@link TypeDecl}.
 	 *
@@ -47,7 +51,7 @@ public final class LibraryTypes implements TypeProvider {
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
 				Function.identity(),
-				(fqn, duplicate) -> { throw new IllegalArgumentException("Duplicated types"); }
+				(fqn, duplicate) -> { throw new IllegalArgumentException("Duplicated types " + fqn); }
 			));
 	}
 
@@ -92,9 +96,14 @@ public final class LibraryTypes implements TypeProvider {
 	 */
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
-		return Optional.ofNullable(allTypes.get(qualifiedName))
-			.filter(type::isInstance)
-			.map(type::cast);
+		Optional<TypeDecl> resolved = Optional.ofNullable(allTypes.get(qualifiedName));
+
+		if (resolved.isPresent() && !type.isInstance(resolved.get())) {
+				LOGGER.warn("Type {} is not of expected type {}", qualifiedName, type);
+				return Optional.empty();
+		}
+
+		return resolved.map(type::cast);
 	}
 
 	/**

@@ -4,6 +4,8 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.spoon.SpoonAPIFactory;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
 import java.util.List;
@@ -15,6 +17,8 @@ import java.util.Optional;
  */
 public class SpoonTypeProvider implements TypeProvider {
 	private final SpoonAPIFactory spoonFactory;
+
+	private static final Logger LOGGER = LogManager.getLogger(SpoonTypeProvider.class);
 
 	/**
 	 * Creates a new reflective type provider using {@code typeReferenceFactory} to create new references if needed, and
@@ -32,8 +36,13 @@ public class SpoonTypeProvider implements TypeProvider {
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
 		Preconditions.checkNotNull(qualifiedName);
-		return Optional.ofNullable(spoonFactory.convertCtType(qualifiedName))
-			.filter(type::isInstance)
-			.map(type::cast);
+		Optional<TypeDecl> resolved = Optional.ofNullable(spoonFactory.convertCtType(qualifiedName));
+
+		if (resolved.isPresent() && !type.isInstance(resolved.get())) {
+			LOGGER.warn("Type {} is not of expected type {}", qualifiedName, type);
+			return Optional.empty();
+		}
+
+		return resolved.map(type::cast);
 	}
 }

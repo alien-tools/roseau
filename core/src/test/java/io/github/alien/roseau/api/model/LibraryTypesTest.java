@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException
 
 class LibraryTypesTest {
 	@Test
-	void test_get_all_types() {
+	void get_all_types() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I2", AccessModifier.PACKAGE_PRIVATE);
 		var lt = new LibraryTypes(List.of(t1, t2));
@@ -25,7 +25,7 @@ class LibraryTypesTest {
 	}
 
 	@Test
-	void test_find_type_exists() {
+	void find_type_exists() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I2", AccessModifier.PACKAGE_PRIVATE);
 		var lt = new LibraryTypes(List.of(t1, t2));
@@ -35,14 +35,14 @@ class LibraryTypesTest {
 	}
 
 	@Test
-	void test_find_type_absent() {
+	void find_type_absent() {
 		var lt = new LibraryTypes(List.of());
 
 		assertThat(lt.findType("test.pkg.Unknown")).isEmpty();
 	}
 
 	@Test
-	void test_find_type_unexpected_kind() {
+	void find_type_unexpected_kind() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var lt = new LibraryTypes(List.of(t1));
 		var opt = lt.findType("test.pkg.I1", ClassDecl.class);
@@ -51,7 +51,16 @@ class LibraryTypesTest {
 	}
 
 	@Test
-	void test_duplicate_types() {
+	void find_type_unexpected_kind_sub() {
+		var t1 = ApiTestFactory.newRecord("test.pkg.R1", AccessModifier.PACKAGE_PRIVATE);
+		var lt = new LibraryTypes(List.of(t1));
+		var opt = lt.findType("test.pkg.R1", ClassDecl.class);
+
+		assertThat(opt).isPresent();
+	}
+
+	@Test
+	void duplicate_types() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PACKAGE_PRIVATE);
 		assertThatIllegalArgumentException().isThrownBy(() -> new LibraryTypes(List.of(t1, t2)));

@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.resolution;
 
 import io.github.alien.roseau.api.model.ClassDecl;
+import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
@@ -39,7 +40,7 @@ class SpoonTypeProviderTest {
 	void resolve_unknown() {
 		var cp = List.<Path>of();
 		var provider = newProvider(cp);
-		var opt = provider.<ClassDecl>findType("java.lang.Unknown");
+		var opt = provider.findType("java.lang.Unknown");
 
 		assertThat(opt).isEmpty();
 	}
@@ -50,8 +51,6 @@ class SpoonTypeProviderTest {
 		var cp = List.of(showcase);
 		var provider = newProvider(cp);
 		var opt = provider.findType("io.github.alien.roseau.APIShowcase$Square", ClassDecl.class);
-		System.out.println("exists ? " + showcase.toFile().exists());
-		System.out.println("anyType ? " + provider.findType("io.github.alien.roseau.APIShowcase$Square"));
 
 		assertThat(opt).isPresent();
 
@@ -64,5 +63,21 @@ class SpoonTypeProviderTest {
 		assertThat(square.getImplementedInterfaces())
 			.singleElement()
 			.isEqualTo(new TypeReference<>("io.github.alien.roseau.APIShowcase$Shape"));
+	}
+
+	@Test
+	void resolve_unexpected_kind() {
+		var provider = newProvider(List.of());
+		var opt = provider.findType("java.lang.Number", InterfaceDecl.class);
+
+		assertThat(opt).isEmpty();
+	}
+
+	@Test
+	void resolve_unexpected_kind_sub() {
+		var provider = newProvider(List.of());
+		var opt = provider.findType("java.time.DayOfWeek", ClassDecl.class);
+
+		assertThat(opt).isPresent();
 	}
 }
