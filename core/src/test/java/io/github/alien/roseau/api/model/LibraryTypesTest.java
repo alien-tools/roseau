@@ -42,6 +42,15 @@ class LibraryTypesTest {
 	}
 
 	@Test
+	void test_find_type_unexpected_kind() {
+		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
+		var lt = new LibraryTypes(List.of(t1));
+		var opt = lt.findType("test.pkg.I1", ClassDecl.class);
+
+		assertThat(opt).isEmpty();
+	}
+
+	@Test
 	void test_duplicate_types() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PACKAGE_PRIVATE);

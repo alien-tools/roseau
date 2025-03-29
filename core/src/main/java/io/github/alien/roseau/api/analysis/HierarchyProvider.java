@@ -107,7 +107,7 @@ public interface HierarchyProvider {
 		}
 		return Stream.concat(
 			Stream.of(cls.getSuperClass()),
-			resolver().resolve(cls.getSuperClass())
+			resolver().resolve(cls.getSuperClass(), ClassDecl.class)
 				.map(this::getAllSuperClasses)
 				.orElseGet(Collections::emptyList)
 				.stream()

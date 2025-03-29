@@ -98,10 +98,10 @@ class CachingTypeResolverTest {
 		when(provider1.findType("pkg.Class")).thenReturn(Optional.of(type));
 		when(provider2.findType("pkg.Class")).thenReturn(Optional.of(type));
 
-		var result = resolver.resolve(reference);
+		var result = resolver.resolve(reference, InterfaceDecl.class);
 
 		assertThat(result).isEmpty();
 		verify(provider1, times(1)).findType("pkg.Class");
-		verify(provider2, times(1)).findType("pkg.Class");
+		verify(provider2, never()).findType("pkg.Class");
 	}
 }

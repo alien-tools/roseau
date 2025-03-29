@@ -20,13 +20,13 @@ class SpoonTypeProviderTest {
 	void resolve_jdk() {
 		var cp = List.<Path>of();
 		var provider = newProvider(cp);
-		var opt = provider.<ClassDecl>findType("java.lang.Number");
+		var opt = provider.findType("java.lang.Number", ClassDecl.class);
 
 		assertThat(opt).isPresent();
 
 		var number = opt.orElseThrow();
 		assertThat(number.isAbstract()).isTrue();
-		assertThat(number.getDeclaredConstructors()).singleElement();
+		assertThat(number.getDeclaredConstructors()).hasSize(1);
 		assertThat(number.getDeclaredMethods()).hasSize(6);
 		assertThat(number.getDeclaredFields()).isEmpty();
 		assertThat(number.getSuperClass()).isEqualTo(TypeReference.OBJECT);
@@ -48,14 +48,14 @@ class SpoonTypeProviderTest {
 	void resolve_with_classpath() {
 		var cp = List.of(Path.of("src/test/resources/api-showcase.jar"));
 		var provider = newProvider(cp);
-		var opt = provider.<ClassDecl>findType("io.github.alien.roseau.APIShowcase$Square");
+		var opt = provider.findType("io.github.alien.roseau.APIShowcase$Square", ClassDecl.class);
 
 		assertThat(opt).isPresent();
 
 		var square = opt.orElseThrow();
 		assertThat(square.isFinal()).isTrue();
 		assertThat(square.getDeclaredConstructors()).isEmpty();
-		assertThat(square.getDeclaredMethods()).singleElement();
+		assertThat(square.getDeclaredMethods()).hasSize(1);
 		assertThat(square.getDeclaredFields()).isEmpty();
 		assertThat(square.getSuperClass()).isEqualTo(TypeReference.OBJECT);
 		assertThat(square.getImplementedInterfaces())

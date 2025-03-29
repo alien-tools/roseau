@@ -86,11 +86,15 @@ public final class LibraryTypes implements TypeProvider {
 	 * Returns the type, <strong>exported or not</strong>, with the given qualified name.
 	 *
 	 * @param qualifiedName The qualified name of the type to find
+	 * @param type the expected type kind
+	 * @param <T> the expected type kind
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	@Override
-	public <T extends TypeDecl> Optional<T> findType(String qualifiedName) {
-		return Optional.ofNullable((T) allTypes.get(qualifiedName));
+	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
+		return Optional.ofNullable(allTypes.get(qualifiedName))
+			.filter(type::isInstance)
+			.map(type::cast);
 	}
 
 	/**

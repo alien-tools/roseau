@@ -45,9 +45,11 @@ public class CachingTypeResolver implements TypeResolver {
 	}
 
 	@Override
-	public <T extends TypeDecl> Optional<T> resolve(TypeReference<T> reference) {
+	public <T extends TypeDecl> Optional<T> resolve(TypeReference<T> reference, Class<T> type) {
 		ResolvedType cached = typeCache.computeIfAbsent(reference.getQualifiedName(), this::resolveType);
-		return Optional.ofNullable((T) cached.typeDecl());
+		return Optional.ofNullable(cached.typeDecl())
+			.filter(type::isInstance)
+			.map(type::cast);
 	}
 
 	private ResolvedType resolveType(String qualifiedName) {
