@@ -46,9 +46,12 @@ class SpoonTypeProviderTest {
 
 	@Test
 	void resolve_with_classpath() {
-		var cp = List.of(Path.of("src/test/resources/api-showcase.jar"));
+		var showcase = Path.of("src/test/resources/api-showcase.jar");
+		var cp = List.of(showcase);
 		var provider = newProvider(cp);
 		var opt = provider.findType("io.github.alien.roseau.APIShowcase$Square", ClassDecl.class);
+		System.out.println("exists ? " + showcase.toFile().exists());
+		System.out.println("anyType ? " + provider.findType("io.github.alien.roseau.APIShowcase$Square"));
 
 		assertThat(opt).isPresent();
 
