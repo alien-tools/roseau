@@ -8,8 +8,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasSize;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -25,8 +24,9 @@ class MethodsOverloadingTest {
 				public void m(int a, String s) {}
 				public void m(String s, int a) {}
 			}""");
+
 		var a = assertClass(api, "A");
-		assertThat(a.getDeclaredMethods(), hasSize(5));
+		assertThat(a.getDeclaredMethods()).hasSize(5);
 
 		for (var m : a.getDeclaredMethods()) {
 			for (var n : a.getDeclaredMethods()) {
@@ -62,13 +62,13 @@ class MethodsOverloadingTest {
 		var a = assertClass(api, "A");
 		var c = assertClass(api, "C");
 
-		assertThat(i.getDeclaredMethods(), hasSize(1));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
-		assertThat(c.getDeclaredMethods(), hasSize(3));
+		assertThat(i.getDeclaredMethods()).hasSize(1);
+		assertThat(a.getDeclaredMethods()).hasSize(2);
+		assertThat(c.getDeclaredMethods()).hasSize(3);
 
-		assertThat(api.getAllMethods(i), hasSize(1));
-		assertThat(api.getAllMethods(a), hasSize(3 + 11)); // java.lang.Object's methods
-		assertThat(api.getAllMethods(c), hasSize(4 + 11)); // java.lang.Object's methods
+		assertThat(api.getAllMethods(i)).hasSize(1);
+		assertThat(api.getAllMethods(a)).hasSize(3 + 11); // java.lang.Object's methods
+		assertThat(api.getAllMethods(c)).hasSize(4 + 11); // java.lang.Object's methods
 
 		var im = assertMethod(api, i, "m()");
 		var amInt = assertMethod(api, a, "m(int)");
@@ -130,7 +130,7 @@ class MethodsOverloadingTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredMethods()).hasSize(2);
 
 		var m1 = assertMethod(api, a, "m(int)");
 		var m2 = assertMethod(api, a, "m(int[])");
@@ -152,7 +152,7 @@ class MethodsOverloadingTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertThat(a.getDeclaredMethods(), hasSize(3));
+		assertThat(a.getDeclaredMethods()).hasSize(3);
 
 		var m1 = assertMethod(api, a, "m(java.lang.CharSequence)");
 		var m2 = assertMethod(api, a, "m(java.lang.Number)");

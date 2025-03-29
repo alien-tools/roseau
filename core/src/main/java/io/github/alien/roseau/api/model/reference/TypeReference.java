@@ -54,6 +54,11 @@ public record TypeReference<T extends TypeDecl>(
 	 */
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION =
 		new TypeReference<>(RuntimeException.class.getCanonicalName(), List.of());
+	/**
+	 * A reference to {@link String}.
+	 */
+	public static final TypeReference<ClassDecl> STRING =
+		new TypeReference<>(String.class.getCanonicalName(), List.of());
 
 	@Override
 	public String getQualifiedName() {

@@ -8,11 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.endsWith;
-import static org.hamcrest.Matchers.hasItems;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MavenClasspathBuilderTest {
@@ -82,23 +78,28 @@ class MavenClasspathBuilderTest {
 	void valid_pom() {
 		var builder = new MavenClasspathBuilder();
 		var cp = builder.buildClasspath(validPom);
-		assertThat(cp.stream().map(Path::toString).toList(), hasItems(
-			endsWith("org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar"),
-			endsWith("com/google/guava/guava/31.1-jre/guava-31.1-jre.jar")));
+		assertThat(cp)
+			.hasSizeGreaterThanOrEqualTo(2)
+			.anySatisfy(p -> assertThat(p).asString()
+				.endsWith("org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar"))
+			.anySatisfy(p -> assertThat(p).asString()
+				.endsWith("com/google/guava/guava/31.1-jre/guava-31.1-jre.jar"));
 	}
 
 	@Test
 	void invalid_pom() {
 		var builder = new MavenClasspathBuilder();
 		var cp = builder.buildClasspath(invalidPom);
-		assertThat(cp, is(empty()));
+		assertThat(cp).isEmpty();
 	}
 
 	@Test
 	void valid_directory() {
 		var builder = new MavenClasspathBuilder();
 		var cp = builder.buildClasspath(validDirectory);
-		assertThat(cp.stream().map(Path::toString).toList(), hasItems(
-			endsWith("io/github/alien-tools/roseau-core/0.1.0/roseau-core-0.1.0.jar")));
+		assertThat(cp)
+			.hasSizeGreaterThanOrEqualTo(1)
+			.anySatisfy(p -> assertThat(p).asString()
+				.endsWith("io/github/alien-tools/roseau-core/0.1.0/roseau-core-0.1.0.jar"));
 	}
 }

@@ -9,9 +9,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Optional;
 
-import static com.github.npathai.hamcrestopt.OptionalMatchers.isEmpty;
-import static com.github.npathai.hamcrestopt.OptionalMatchers.isPresentAndIs;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -41,7 +39,7 @@ class CachingTypeResolverTest {
 
 		var result = resolver.resolve(reference);
 
-		assertThat(result, isPresentAndIs(type1));
+		assertThat(result).hasValue(type1);
 		verify(provider1, times(1)).findType("pkg.Type");
 		verify(provider2, never()).findType("pkg.Type");
 	}
@@ -56,7 +54,7 @@ class CachingTypeResolverTest {
 
 		var result = resolver.resolve(reference);
 
-		assertThat(result, isPresentAndIs(type));
+		assertThat(result).hasValue(type);
 		verify(provider1, times(1)).findType("pkg.Type");
 		verify(provider2, times(1)).findType("pkg.Type");
 	}
@@ -72,8 +70,8 @@ class CachingTypeResolverTest {
 		var first = resolver.resolve(reference);
 		var second = resolver.resolve(reference);
 
-		assertThat(first, isPresentAndIs(type));
-		assertThat(second, isPresentAndIs(type));
+		assertThat(first).hasValue(type);
+		assertThat(second).hasValue(type);
 		verify(provider1, times(1)).findType("pkg.Type");
 		verify(provider2, never()).findType("pkg.Type");
 	}
@@ -87,7 +85,7 @@ class CachingTypeResolverTest {
 
 		var result = resolver.resolve(reference);
 
-		assertThat(result, isEmpty());
+		assertThat(result).isEmpty();
 		verify(provider1, times(1)).findType("pkg.UnknownType");
 		verify(provider2, times(1)).findType("pkg.UnknownType");
 	}
@@ -102,7 +100,7 @@ class CachingTypeResolverTest {
 
 		var result = resolver.resolve(reference);
 
-		assertThat(result, isEmpty());
+		assertThat(result).isEmpty();
 		verify(provider1, times(1)).findType("pkg.Class");
 		verify(provider2, times(1)).findType("pkg.Class");
 	}

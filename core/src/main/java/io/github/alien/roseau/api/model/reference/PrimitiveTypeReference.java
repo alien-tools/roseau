@@ -14,6 +14,16 @@ public record PrimitiveTypeReference(
 		Preconditions.checkNotNull(name);
 	}
 
+	public static final PrimitiveTypeReference BOOLEAN = new PrimitiveTypeReference("boolean");
+	public static final PrimitiveTypeReference CHAR = new PrimitiveTypeReference("char");
+	public static final PrimitiveTypeReference BYTE = new PrimitiveTypeReference("byte");
+	public static final PrimitiveTypeReference SHORT = new PrimitiveTypeReference("short");
+	public static final PrimitiveTypeReference INT = new PrimitiveTypeReference("int");
+	public static final PrimitiveTypeReference LONG = new PrimitiveTypeReference("long");
+	public static final PrimitiveTypeReference FLOAT = new PrimitiveTypeReference("float");
+	public static final PrimitiveTypeReference DOUBLE = new PrimitiveTypeReference("double");
+	public static final PrimitiveTypeReference VOID = new PrimitiveTypeReference("void");
+
 	@Override
 	public String getQualifiedName() {
 		return name;

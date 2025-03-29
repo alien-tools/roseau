@@ -11,12 +11,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 
-import static com.github.npathai.hamcrestopt.OptionalMatchers.isEmpty;
-import static com.github.npathai.hamcrestopt.OptionalMatchers.isPresentAnd;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class LibraryTypesTest {
 	@Test
@@ -25,7 +20,7 @@ class LibraryTypesTest {
 		var t2 = ApiTestFactory.newInterface("test.pkg.I2", AccessModifier.PACKAGE_PRIVATE);
 		var lt = new LibraryTypes(List.of(t1, t2));
 
-		assertThat(lt.getAllTypes(), containsInAnyOrder(t1, t2));
+		assertThat(lt.getAllTypes()).containsOnly(t1, t2);
 	}
 
 	@Test
@@ -34,15 +29,15 @@ class LibraryTypesTest {
 		var t2 = ApiTestFactory.newInterface("test.pkg.I2", AccessModifier.PACKAGE_PRIVATE);
 		var lt = new LibraryTypes(List.of(t1, t2));
 
-		assertThat(lt.findType("test.pkg.I1"), isPresentAnd(is(t1)));
-		assertThat(lt.findType("test.pkg.I2"), isPresentAnd(is(t2)));
+		assertThat(lt.findType("test.pkg.I1")).hasValue(t1);
+		assertThat(lt.findType("test.pkg.I2")).hasValue(t2);
 	}
 
 	@Test
 	void test_find_type_absent() {
 		var lt = new LibraryTypes(List.of());
 
-		assertThat(lt.findType("unknown"), isEmpty());
+		assertThat(lt.findType("test.pkg.Unknown")).isEmpty();
 	}
 
 	@Test
@@ -59,6 +54,6 @@ class LibraryTypesTest {
 		LibraryTypes res = LibraryTypes.fromJson(json);
 		Files.delete(json);
 
-		assertThat(res, is(equalTo(orig)));
+		assertThat(res).isEqualTo(orig);
 	}
 }

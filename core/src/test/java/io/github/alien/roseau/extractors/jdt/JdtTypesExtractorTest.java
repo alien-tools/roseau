@@ -2,18 +2,16 @@ package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.ClassDecl;
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
@@ -38,8 +36,8 @@ class JdtTypesExtractorTest {
 		var extractor = new JdtTypesExtractor();
 		var api = extractor.extractTypes(wd);
 
-		assertThat(api, is(notNullValue()));
-		assertThat(api.getAllTypes(), is(empty()));
+		assertThat(api).isNotNull();
+		assertThat(api.getAllTypes()).isEmpty();
 	}
 
 	@Test
@@ -51,8 +49,10 @@ class JdtTypesExtractorTest {
 		var extractor = new JdtTypesExtractor();
 		var api = extractor.extractTypes(wd);
 
-		assertThat(api.getAllTypes(), hasSize(1));
-		assertThat(api.getAllTypes().getFirst().getQualifiedName(), is("pkg.A"));
+		assertThat(api.getAllTypes())
+			.singleElement()
+			.extracting(TypeDecl::getQualifiedName)
+			.isEqualTo("pkg.A");
 	}
 
 	@Test
@@ -69,11 +69,11 @@ class JdtTypesExtractorTest {
 		var extractor = new JdtTypesExtractor();
 		var api = extractor.extractTypes(wd);
 
-		assertThat(api, is(notNullValue()));
-		assertThat(api.getAllTypes(), hasSize(1));
+		assertThat(api).isNotNull();
+		assertThat(api.getAllTypes()).hasSize(1);
 
 		var b = api.findType("pkg.B").orElseThrow();
-		assertThat(b.getDeclaredFields(), is(empty()));
+		assertThat(b.getDeclaredFields()).isEmpty();
 	}
 
 	@Test
@@ -92,16 +92,17 @@ class JdtTypesExtractorTest {
 		var extractor = new JdtTypesExtractor();
 		var types = extractor.extractTypes(wd);
 
-		assertThat(types, is(notNullValue()));
-		assertThat(types.getAllTypes(), hasSize(1));
+		assertThat(types).isNotNull();
+		assertThat(types.getAllTypes()).hasSize(1);
 
 		var a = types.findType("pkg.A");
 		if (a.isPresent() && a.get() instanceof ClassDecl cls) {
-			assertThat(cls.getSuperClass().getQualifiedName(), is(equalTo("unknown.A")));
-			assertThat(cls.getImplementedInterfaces().getFirst().getQualifiedName(), is(equalTo("unknown.B")));
-			assertThat(cls.getDeclaredFields().getFirst().getType().getQualifiedName(), is(equalTo("java.util.List")));
-			assertThat(cls.getDeclaredMethods().getFirst().getType().getQualifiedName(), is(equalTo("unknown.D")));
-			assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().getFirst()), is(equalTo("m(unknown.E[],pkg.F)")));
+			assertThat(cls.getSuperClass()).isEqualTo(new TypeReference<>("unknown.A"));
+			assertThat(cls.getImplementedInterfaces().getFirst()).isEqualTo(new TypeReference<>("unknown.B"));
+			assertThat(cls.getDeclaredFields().getFirst().getType()).isEqualTo(
+				new TypeReference<>("java.util.List", List.of(new TypeReference<>("unknown.C"))));
+			assertThat(cls.getDeclaredMethods().getFirst().getType()).isEqualTo(new TypeReference<>("unknown.D"));
+			assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().getFirst())).isEqualTo("m(unknown.E[],pkg.F)");
 		} else fail();
 	}
 }

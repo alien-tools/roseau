@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
@@ -14,10 +15,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
 import static io.github.alien.roseau.utils.TestUtils.assertNoConstructor;
 import static io.github.alien.roseau.utils.TestUtils.assertRecord;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -31,9 +29,9 @@ class TypesExtractionTest {
 
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
+		assertThat(api.getExportedTypes()).isEmpty();
+		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.OBJECT);
 	}
 
 	@ParameterizedTest
@@ -45,8 +43,8 @@ class TypesExtractionTest {
 
 		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
-		assertThat(api.getExportedTypes(), hasSize(1));
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.OBJECT)));
+		assertThat(api.getExportedTypes()).hasSize(1);
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.OBJECT);
 	}
 
 	@ParameterizedTest
@@ -58,8 +56,8 @@ class TypesExtractionTest {
 
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
+		assertThat(api.getExportedTypes()).isEmpty();
+		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
 	}
 
 	@ParameterizedTest
@@ -71,7 +69,7 @@ class TypesExtractionTest {
 
 		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
-		assertThat(api.getExportedTypes(), hasSize(1));
+		assertThat(api.getExportedTypes()).hasSize(1);
 	}
 
 	@ParameterizedTest
@@ -83,9 +81,9 @@ class TypesExtractionTest {
 
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
+		assertThat(api.getExportedTypes()).isEmpty();
+		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.RECORD);
 	}
 
 	@ParameterizedTest
@@ -97,8 +95,8 @@ class TypesExtractionTest {
 
 		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
-		assertThat(api.getExportedTypes(), hasSize(1));
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
+		assertThat(api.getExportedTypes()).hasSize(1);
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.RECORD);
 	}
 
 	@ParameterizedTest
@@ -110,9 +108,9 @@ class TypesExtractionTest {
 
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getExportedTypes(), hasSize(0));
-		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
+		assertThat(api.getExportedTypes()).isEmpty();
+		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.ENUM);
 	}
 
 	@ParameterizedTest
@@ -124,8 +122,8 @@ class TypesExtractionTest {
 
 		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
-		assertThat(api.getExportedTypes(), hasSize(1));
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
+		assertThat(api.getExportedTypes()).hasSize(1);
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.ENUM);
 	}
 
 	@ParameterizedTest
@@ -137,8 +135,8 @@ class TypesExtractionTest {
 
 		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
-		assertThat(api.getLibraryTypes().getAllTypes(), hasSize(1));
-		assertThat(api.getExportedTypes(), hasSize(0));
+		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
+		assertThat(api.getExportedTypes()).isEmpty();
 	}
 
 	@ParameterizedTest
@@ -150,18 +148,18 @@ class TypesExtractionTest {
 
 		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
-		assertThat(api.getExportedTypes(), hasSize(1));
+		assertThat(api.getExportedTypes()).hasSize(1);
 	}
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void default_object_methods(ApiBuilder builder) {
 		var api = builder.build("""
-				public interface I {}
-				public class C {}
-				public record R() {}
-				public @interface A {}
-				public enum E {}""");
+			public interface I {}
+			public class C {}
+			public record R() {}
+			public @interface A {}
+			public enum E {}""");
 
 		var i = assertInterface(api, "I");
 		var c = assertClass(api, "C");
@@ -169,25 +167,25 @@ class TypesExtractionTest {
 		var a = assertAnnotation(api, "A");
 		var e = assertEnum(api, "E");
 
-		assertThat(i.getDeclaredMethods(), hasSize(0));
-		assertThat(api.getAllMethods(i), hasSize(0));
-		assertThat(c.getDeclaredMethods(), hasSize(0));
-		assertThat(api.getAllMethods(c), hasSize(11));
-		assertThat(r.getDeclaredMethods(), hasSize(0));
-		assertThat(api.getAllMethods(r), hasSize(11));
-		assertThat(a.getDeclaredMethods(), hasSize(0));
-		assertThat(api.getAllMethods(a), hasSize(0));
-		assertThat(e.getDeclaredMethods(), hasSize(0));
-		assertThat(api.getAllMethods(e), hasSize(18));
+		assertThat(i.getDeclaredMethods()).isEmpty();
+		assertThat(api.getAllMethods(i)).isEmpty();
+		assertThat(c.getDeclaredMethods()).isEmpty();
+		assertThat(api.getAllMethods(c)).hasSize(11);
+		assertThat(r.getDeclaredMethods()).isEmpty();
+		assertThat(api.getAllMethods(r)).hasSize(11);
+		assertThat(a.getDeclaredMethods()).isEmpty();
+		assertThat(api.getAllMethods(a)).isEmpty();
+		assertThat(e.getDeclaredMethods()).isEmpty();
+		assertThat(api.getAllMethods(e)).hasSize(18);
 	}
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void default_constructors(ApiBuilder builder) {
 		var api = builder.build("""
-				public class C {}
-				public record R() {}
-				public enum E {}""");
+			public class C {}
+			public record R() {}
+			public enum E {}""");
 
 		var c = assertClass(api, "C");
 		var r = assertRecord(api, "R");
@@ -209,7 +207,7 @@ class TypesExtractionTest {
 			}""");
 
 		assertClass(api, "A");
-		assertThat(api.getExportedTypes(), hasSize(1));
+		assertThat(api.getExportedTypes()).hasSize(1);
 	}
 
 	@ParameterizedTest
@@ -224,15 +222,15 @@ class TypesExtractionTest {
 			}""");
 
 		assertClass(api, "A");
-		assertThat(api.getExportedTypes(), hasSize(1));
+		assertThat(api.getExportedTypes()).hasSize(1);
 	}
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void abstract_classes(ApiBuilder builder) {
 		var api = builder.build("""
-        public class A {}
-        public abstract class B {}""");
+			public class A {}
+			public abstract class B {}""");
 
 		var a = assertClass(api, "A");
 		assertFalse(a.isAbstract());
@@ -245,8 +243,8 @@ class TypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void final_classes(ApiBuilder builder) {
 		var api = builder.build("""
-        public class A {}
-        public final class B {}""");
+			public class A {}
+			public final class B {}""");
 
 		var a = assertClass(api, "A");
 		assertFalse(a.isFinal());
@@ -380,7 +378,7 @@ class TypesExtractionTest {
 	void record_inherits_record(ApiBuilder builder) {
 		var api = builder.build("public record A() {}");
 		var a = assertRecord(api, "A");
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.RECORD)));
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.RECORD);
 	}
 
 	@ParameterizedTest
@@ -388,7 +386,7 @@ class TypesExtractionTest {
 	void record_no_synthetic_methods(ApiBuilder builder) {
 		var api = builder.build("public record A() {}");
 		var a = assertRecord(api, "A");
-		assertThat(a.getDeclaredMethods(), hasSize(0));
+		assertThat(a.getDeclaredMethods()).isEmpty();
 	}
 
 	@ParameterizedTest
@@ -397,22 +395,22 @@ class TypesExtractionTest {
 		var api = builder.build("public record A(int a, String b) {}");
 
 		var a = assertRecord(api, "A");
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredMethods()).hasSize(2);
 		assertConstructor(api, a, "<init>(int,java.lang.String)");
 
 		var ma = assertMethod(api, a, "a()");
 		var mb = assertMethod(api, a, "b()");
-		assertThat(ma.getType().getQualifiedName(), is(equalTo("int")));
-		assertThat(mb.getType().getQualifiedName(), is(equalTo("java.lang.String")));
+		assertThat(ma.getType()).isEqualTo(PrimitiveTypeReference.INT);
+		assertThat(mb.getType()).isEqualTo(TypeReference.STRING);
 	}
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void abstract_sealed_class(ApiBuilder builder) {
 		var api = builder.build("""
-        public abstract sealed class A permits B {}
-        final class B extends A {}
-        """);
+			public abstract sealed class A permits B {}
+			final class B extends A {}
+			""");
 		var a = assertClass(api, "A");
 		assertTrue(a.isAbstract());
 		assertTrue(a.isSealed());
@@ -442,19 +440,19 @@ class TypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void enum_with_constant_specific_class_body(ApiBuilder builder) {
 		var api = builder.build("""
-        public enum A {
-          ONE {
-            @Override public String toString() { return "one"; }
-          },
-          TWO;
-        }
-        """);
+			public enum A {
+			  ONE {
+			    @Override public String toString() { return "one"; }
+			  },
+			  TWO;
+			}
+			""");
 		var a = assertEnum(api, "A");
 		// Even though ONE has its own class body, only the enum A should be extracted.
-		assertThat(api.getExportedTypes(), hasSize(1));
+		assertThat(api.getExportedTypes()).hasSize(1);
 		// §8.9: An enum class E is implicitly sealed if its declaration contains
 		// at least one enum constant that has a class bod
-		assertThat(a.isSealed(), is(true));
+		assertThat(a.isSealed()).isTrue();
 	}
 
 	@ParameterizedTest
@@ -462,7 +460,7 @@ class TypesExtractionTest {
 	void enum_inherits_enum(ApiBuilder builder) {
 		var api = builder.build("public enum A { X; }");
 		var a = assertEnum(api, "A");
-		assertThat(a.getSuperClass(), is(equalTo(TypeReference.ENUM)));
+		assertThat(a.getSuperClass()).isEqualTo(TypeReference.ENUM);
 	}
 
 	@ParameterizedTest
@@ -470,7 +468,7 @@ class TypesExtractionTest {
 	void enum_no_synthetic_methods(ApiBuilder builder) {
 		var api = builder.build("public enum A { X; }");
 		var a = assertEnum(api, "A");
-		assertThat(a.getDeclaredMethods(), hasSize(0));
+		assertThat(a.getDeclaredMethods()).isEmpty();
 	}
 
 	@ParameterizedTest

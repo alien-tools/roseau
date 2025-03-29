@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
@@ -13,11 +15,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertField;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -38,10 +36,14 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertFalse(api.isExported(a));
-		System.out.println(a.getDeclaredFields());
-		assertThat(a.getDeclaredFields(), hasSize(2));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(api.isExported(a)).isFalse();
+		assertThat(a.getDeclaredConstructors()).isEmpty();
+		assertThat(a.getDeclaredMethods())
+			.extracting(MethodDecl::getSimpleName)
+			.containsOnly("m2", "m3");
+		assertThat(a.getDeclaredFields())
+			.extracting(FieldDecl::getSimpleName)
+			.containsOnly("f2", "f3");
 	}
 
 	@ParameterizedTest
@@ -60,19 +62,14 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(2));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
-
-		var f2 = assertField(api, a, "f2");
-		var f3 = assertField(api, a, "f3");
-		var m2 = assertMethod(api, a, "m2()");
-		var m3 = assertMethod(api, a, "m3()");
-
-		assertTrue(f2.isProtected());
-		assertTrue(f3.isPublic());
-		assertTrue(m2.isProtected());
-		assertTrue(m3.isPublic());
+		assertThat(api.isExported(a)).isTrue();
+		assertThat(a.getDeclaredConstructors()).hasSize(1);
+		assertThat(a.getDeclaredMethods())
+			.extracting(MethodDecl::getSimpleName)
+			.containsOnly("m2", "m3");
+		assertThat(a.getDeclaredFields())
+			.extracting(FieldDecl::getSimpleName)
+			.containsOnly("f2", "f3");
 	}
 
 	@ParameterizedTest
@@ -88,8 +85,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertInterface(api, "A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(2));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(2);
 
 		var f1 = assertField(api, a, "f1");
 		var f2 = assertField(api, a, "f2");
@@ -121,8 +118,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "B$A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(2));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(2);
 
 		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
@@ -152,8 +149,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(1));
-		assertThat(a.getDeclaredMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields()).hasSize(1);
+		assertThat(a.getDeclaredMethods()).hasSize(1);
 
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
@@ -180,8 +177,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(1));
-		assertThat(a.getDeclaredMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields()).hasSize(1);
+		assertThat(a.getDeclaredMethods()).hasSize(1);
 
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
@@ -208,8 +205,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(1));
-		assertThat(a.getDeclaredMethods(), hasSize(1));
+		assertThat(a.getDeclaredFields()).hasSize(1);
+		assertThat(a.getDeclaredMethods()).hasSize(1);
 
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
@@ -231,8 +228,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(2));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(2);
 
 		var f1 = assertField(api, a, "f1");
 		var f2 = assertField(api, a, "f2");
@@ -258,8 +255,8 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields(), hasSize(2));
-		assertThat(a.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(2);
 
 		var f1 = assertField(api, a, "f1");
 		var f2 = assertField(api, a, "f2");
@@ -283,8 +280,7 @@ class TypeMemberExtractionTest {
 		var a = assertInterface(api, "A");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(m.getType(), is(instanceOf(PrimitiveTypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("void")));
+		assertThat(m.getType()).isEqualTo(PrimitiveTypeReference.VOID);
 	}
 
 	@ParameterizedTest
@@ -300,11 +296,8 @@ class TypeMemberExtractionTest {
 		var f = assertField(api, a, "f");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f.getType(), is(instanceOf(PrimitiveTypeReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("int")));
-
-		assertThat(m.getType(), is(instanceOf(PrimitiveTypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("int")));
+		assertThat(f.getType()).isEqualTo(PrimitiveTypeReference.INT);
+		assertThat(m.getType()).isEqualTo(PrimitiveTypeReference.INT);
 	}
 
 	@ParameterizedTest
@@ -320,11 +313,8 @@ class TypeMemberExtractionTest {
 		var f = assertField(api, a, "f");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("java.lang.String")));
-
-		assertThat(m.getType(), is(instanceOf(TypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("java.lang.String")));
+		assertThat(f.getType()).isEqualTo(TypeReference.STRING);
+		assertThat(m.getType()).isEqualTo(TypeReference.STRING);
 	}
 
 	@ParameterizedTest
@@ -341,11 +331,8 @@ class TypeMemberExtractionTest {
 		var f = assertField(api, a, "f");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("I")));
-
-		assertThat(m.getType(), is(instanceOf(TypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("I")));
+		assertThat(f.getType()).isEqualTo(new TypeReference<>("I"));
+		assertThat(m.getType()).isEqualTo(new TypeReference<>("I"));
 	}
 
 	@ParameterizedTest
@@ -361,11 +348,8 @@ class TypeMemberExtractionTest {
 		var f = assertField(api, a, "f");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f.getType(), is(instanceOf(TypeReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("U")));
-
-		assertThat(m.getType(), is(instanceOf(TypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("U")));
+		assertThat(f.getType()).isEqualTo(new TypeReference<>("U"));
+		assertThat(m.getType()).isEqualTo(new TypeReference<>("U"));
 	}
 
 	@ParameterizedTest
@@ -381,21 +365,8 @@ class TypeMemberExtractionTest {
 		var f = assertField(api, a, "f");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f.getType(), is(instanceOf(ArrayTypeReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("int[]")));
-
-		if (f.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
-			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
-			assertThat(dimension, is(equalTo(1)));
-		}
-
-		assertThat(m.getType(), is(instanceOf(ArrayTypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("int[]")));
-
-		if (m.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
-			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
-			assertThat(dimension, is(equalTo(1)));
-		}
+		assertThat(f.getType()).isEqualTo(new ArrayTypeReference(PrimitiveTypeReference.INT, 1));
+		assertThat(m.getType()).isEqualTo(new ArrayTypeReference(PrimitiveTypeReference.INT, 1));
 	}
 
 	@ParameterizedTest
@@ -413,31 +384,9 @@ class TypeMemberExtractionTest {
 		var f2 = assertField(api, a, "f2");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f1.getType(), is(instanceOf(ArrayTypeReference.class)));
-		assertThat(f1.getType().getQualifiedName(), is(equalTo("java.lang.String[][]")));
-		assertThat(f2.getType(), is(instanceOf(ArrayTypeReference.class)));
-		assertThat(f2.getType().getQualifiedName(), is(equalTo("int[][]")));
-
-		if (f1.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
-			assertThat(componentType, is(instanceOf(TypeReference.class)));
-			assertThat(dimension, is(equalTo(2)));
-			assertThat(componentType.getQualifiedName(), is(equalTo("java.lang.String")));
-		}
-
-		if (f2.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
-			assertThat(componentType, is(instanceOf(PrimitiveTypeReference.class)));
-			assertThat(dimension, is(equalTo(2)));
-			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
-		}
-
-		assertThat(m.getType(), is(instanceOf(ArrayTypeReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("int[][]")));
-
-		if (m.getType() instanceof ArrayTypeReference(var componentType, var dimension)) {
-			assertThat(componentType, is(instanceOf(PrimitiveTypeReference.class)));
-			assertThat(dimension, is(equalTo(2)));
-			assertThat(componentType.getQualifiedName(), is(equalTo("int")));
-		}
+		assertThat(f1.getType()).isEqualTo(new ArrayTypeReference(TypeReference.STRING, 2));
+		assertThat(f2.getType()).isEqualTo(new ArrayTypeReference(PrimitiveTypeReference.INT, 2));
+		assertThat(m.getType()).isEqualTo(new ArrayTypeReference(PrimitiveTypeReference.INT, 2));
 	}
 
 	@ParameterizedTest
@@ -455,33 +404,25 @@ class TypeMemberExtractionTest {
 		var m1 = assertMethod(api, a, "m1()");
 		var m2 = assertMethod(api, a, "m2()");
 
-		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("T")));
-
-		assertThat(m1.getType(), is(instanceOf(TypeParameterReference.class)));
-		assertThat(m1.getType().getQualifiedName(), is(equalTo("T")));
-
-		assertThat(m2.getType(), is(instanceOf(TypeParameterReference.class)));
-		assertThat(m2.getType().getQualifiedName(), is(equalTo("U")));
+		assertThat(f.getType()).isEqualTo(new TypeParameterReference("T"));
+		assertThat(m1.getType()).isEqualTo(new TypeParameterReference("T"));
+		assertThat(m2.getType()).isEqualTo(new TypeParameterReference("U"));
 	}
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void generic_members_with_bounds(ApiBuilder builder) {
 		var api = builder.build("""
-				public class A<T extends String> {
-					public T f = null;
-					public <U extends T> U m() { return null; }
-				}""");
+			public class A<T extends String> {
+				public T f = null;
+				public <U extends T> U m() { return null; }
+			}""");
 
 		var a = assertClass(api, "A");
 		var f = assertField(api, a, "f");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(f.getType(), is(instanceOf(TypeParameterReference.class)));
-		assertThat(f.getType().getQualifiedName(), is(equalTo("T")));
-
-		assertThat(m.getType(), is(instanceOf(TypeParameterReference.class)));
-		assertThat(m.getType().getQualifiedName(), is(equalTo("U")));
+		assertThat(f.getType()).isEqualTo(new TypeParameterReference("T"));
+		assertThat(m.getType()).isEqualTo(new TypeParameterReference("U"));
 	}
 }

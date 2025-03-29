@@ -9,10 +9,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.hasSize;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -37,26 +34,40 @@ class MethodsOverridingTest {
 		var c = assertClass(api, "C");
 		var d = assertClass(api, "D");
 
-		assertThat(api.getAllMethods(i), hasSize(1));
-		assertEquals("I.m", api.getAllMethods(i).getFirst().getQualifiedName());
+		assertThat(api.getAllMethods(i))
+			.singleElement()
+			.extracting(MethodDecl::getQualifiedName)
+			.isEqualTo("I.m");
 
-		assertThat(api.getAllMethods(j), hasSize(1));
-		assertEquals("J.m", api.getAllMethods(j).getFirst().getQualifiedName());
+		assertThat(api.getAllMethods(j))
+			.singleElement()
+			.extracting(MethodDecl::getQualifiedName)
+			.isEqualTo("J.m");
 
-		assertThat(api.getAllMethods(k), hasSize(1));
-		assertEquals("K.m", api.getAllMethods(k).getFirst().getQualifiedName());
+		assertThat(api.getAllMethods(k))
+			.singleElement()
+			.extracting(MethodDecl::getQualifiedName)
+			.isEqualTo("K.m");
 
-		assertThat(api.getAllMethods(a), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(api.getAllMethods(a).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
+		assertThat(api.getAllMethods(a))
+			.hasSize(1 + 11) // java.lang.Object's defaults
+			.extracting(MethodDecl::getQualifiedName)
+			.contains("A.m");
 
-		assertThat(api.getAllMethods(b), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(api.getAllMethods(b).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("A.m"));
+		assertThat(api.getAllMethods(b))
+			.hasSize(1 + 11) // java.lang.Object's defaults
+			.extracting(MethodDecl::getQualifiedName)
+			.contains("A.m");
 
-		assertThat(api.getAllMethods(c), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(api.getAllMethods(c).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("C.m"));
+		assertThat(api.getAllMethods(c))
+			.hasSize(1 + 11) // java.lang.Object's defaults
+			.extracting(MethodDecl::getQualifiedName)
+			.contains("C.m");
 
-		assertThat(api.getAllMethods(d), hasSize(1 + 11)); // java.lang.Object's defaults
-		assertThat(api.getAllMethods(d).stream().map(MethodDecl::getQualifiedName).toList(), hasItem("K.m"));
+		assertThat(api.getAllMethods(d))
+			.hasSize(1 + 11) // java.lang.Object's defaults
+			.extracting(MethodDecl::getQualifiedName)
+			.contains("K.m");
 	}
 
 	@ParameterizedTest
@@ -75,8 +86,8 @@ class MethodsOverridingTest {
 		var a = assertClass(api, "A");
 		var b = assertClass(api, "B");
 
-		assertThat(a.getDeclaredMethods(), hasSize(2));
-		assertThat(b.getDeclaredMethods(), hasSize(2));
+		assertThat(a.getDeclaredMethods()).hasSize(2);
+		assertThat(b.getDeclaredMethods()).hasSize(2);
 
 		var ma = assertMethod(api, a, "m(java.lang.Object[])");
 		var mb = assertMethod(api, b, "m(java.lang.Object[])");
@@ -132,8 +143,8 @@ class MethodsOverridingTest {
 
 		var a = assertClass(api, "A");
 		var b = assertClass(api, "B");
-		assertThat(a.getDeclaredMethods(), hasSize(5));
-		assertThat(b.getDeclaredMethods(), hasSize(5));
+		assertThat(a.getDeclaredMethods()).hasSize(5);
+		assertThat(b.getDeclaredMethods()).hasSize(5);
 
 		var m1a = assertMethod(api, a, "m1()");
 		var m2a = assertMethod(api, a, "m2()");

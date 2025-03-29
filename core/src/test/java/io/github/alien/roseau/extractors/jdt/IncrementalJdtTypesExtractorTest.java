@@ -11,14 +11,7 @@ import java.util.Set;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertRecord;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.sameInstance;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class IncrementalJdtTypesExtractorTest {
 	@Test
@@ -46,17 +39,19 @@ class IncrementalJdtTypesExtractorTest {
 		var r1 = assertRecord(api1, "R");
 		var r2 = assertRecord(api2, "R");
 
-		assertThat(i1, is(not(equalTo(i2))));
-		assertThat(c1, is(sameInstance(c2)));
-		assertThat(r1, is(sameInstance(r2)));
+		assertThat(i1).isNotEqualTo(i2);
+		assertThat(c1).isSameAs(c2);
+		assertThat(r1).isSameAs(r2);
 
-		assertThat(c1.getImplementedInterfaces().getFirst(), is(sameInstance(c2.getImplementedInterfaces().getFirst())));
+		assertThat(c1.getImplementedInterfaces())
+			.singleElement()
+			.isSameAs(c2.getImplementedInterfaces().getFirst());
 
-		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().getFirst()).get(), is(sameInstance(i1)));
-		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().getFirst()).get(), is(sameInstance(i2)));
+		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().getFirst())).containsSame(i1);
+		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().getFirst())).containsSame(i2);
 
-		assertFalse(api1.findMethod(c1, "m()").isPresent());
-		assertTrue(api2.findMethod(c2, "m()").isPresent());
+		assertThat(api1.findMethod(c1, "m()")).isEmpty();
+		assertThat(api2.findMethod(c2, "m()")).isPresent();
 	}
 
 	@Test
@@ -70,7 +65,7 @@ class IncrementalJdtTypesExtractorTest {
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1);
 
-		assertThat(api1, is(sameInstance(api2)));
+		assertThat(api1).isSameAs(api2);
 	}
 
 	@Test
@@ -90,10 +85,10 @@ class IncrementalJdtTypesExtractorTest {
 		var b1 = assertClass(api1, "B");
 		var b2 = assertClass(api2, "B");
 
-		assertThat(api1.getExportedTypes(), hasSize(2));
-		assertThat(api2.getExportedTypes(), hasSize(1));
+		assertThat(api1.getExportedTypes()).hasSize(2);
+		assertThat(api2.getExportedTypes()).hasSize(1);
 
-		assertThat(b1, is(sameInstance(b2)));
+		assertThat(b1).isSameAs(b2);
 	}
 
 	@Test
@@ -114,9 +109,9 @@ class IncrementalJdtTypesExtractorTest {
 		var a2 = assertClass(api2, "A");
 		assertClass(api2, "B");
 
-		assertThat(api1.getExportedTypes(), hasSize(1));
-		assertThat(api2.getExportedTypes(), hasSize(2));
+		assertThat(api1.getExportedTypes()).hasSize(1);
+		assertThat(api2.getExportedTypes()).hasSize(2);
 
-		assertThat(a1, is(sameInstance(a2)));
+		assertThat(a1).isSameAs(a2);
 	}
 }

@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.api.model.Annotation;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -9,10 +11,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertAnnotation;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertField;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class AnnotationsExtractionTest {
 	@ParameterizedTest
@@ -23,8 +22,9 @@ class AnnotationsExtractionTest {
 
 		var c = assertClass(api, "C");
 
-		assertThat(c.getAnnotations(), hasSize(1));
-		assertThat(c.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
+		assertThat(c.getAnnotations())
+			.singleElement()
+			.isEqualTo(new Annotation(new TypeReference<>("java.lang.Deprecated")));
 	}
 
 	@ParameterizedTest
@@ -38,8 +38,9 @@ class AnnotationsExtractionTest {
 		var a = assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
 
-		assertThat(c.getAnnotations(), hasSize(1));
-		assertThat(c.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
+		assertThat(c.getAnnotations())
+			.singleElement()
+			.isEqualTo(new Annotation(new TypeReference<>("A")));
 	}
 
 	@ParameterizedTest
@@ -53,8 +54,9 @@ class AnnotationsExtractionTest {
 		var c = assertClass(api, "C");
 		var m = assertMethod(api, c, "m()");
 
-		assertThat(m.getAnnotations(), hasSize(1));
-		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
+		assertThat(m.getAnnotations())
+			.singleElement()
+			.isEqualTo(new Annotation(new TypeReference<>("java.lang.Deprecated")));
 	}
 
 	@ParameterizedTest
@@ -70,8 +72,9 @@ class AnnotationsExtractionTest {
 		var c = assertClass(api, "C");
 		var m = assertMethod(api, c, "m()");
 
-		assertThat(m.getAnnotations(), hasSize(1));
-		assertThat(m.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
+		assertThat(m.getAnnotations())
+			.singleElement()
+			.isEqualTo(new Annotation(new TypeReference<>("A")));
 	}
 
 	@ParameterizedTest
@@ -85,8 +88,9 @@ class AnnotationsExtractionTest {
 		var c = assertClass(api, "C");
 		var f = assertField(api, c, "f");
 
-		assertThat(f.getAnnotations(), hasSize(1));
-		assertThat(f.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("java.lang.Deprecated")));
+		assertThat(f.getAnnotations())
+			.singleElement()
+			.isEqualTo(new Annotation(new TypeReference<>("java.lang.Deprecated")));
 	}
 
 	@ParameterizedTest
@@ -102,7 +106,8 @@ class AnnotationsExtractionTest {
 		var c = assertClass(api, "C");
 		var f = assertField(api, c, "f");
 
-		assertThat(f.getAnnotations(), hasSize(1));
-		assertThat(f.getAnnotations().getFirst().actualAnnotation().getQualifiedName(), is(equalTo("A")));
+		assertThat(f.getAnnotations())
+			.singleElement()
+			.isEqualTo(new Annotation(new TypeReference<>("A")));
 	}
 }
