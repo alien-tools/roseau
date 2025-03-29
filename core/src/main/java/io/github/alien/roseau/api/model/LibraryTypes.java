@@ -46,7 +46,8 @@ public final class LibraryTypes implements TypeProvider {
 		this.allTypes = types.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
-				Function.identity()
+				Function.identity(),
+				(fqn, duplicate) -> { throw new IllegalArgumentException("Duplicated types"); }
 			));
 	}
 

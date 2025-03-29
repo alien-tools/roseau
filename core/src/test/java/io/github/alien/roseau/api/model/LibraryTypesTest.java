@@ -12,6 +12,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 
 class LibraryTypesTest {
 	@Test
@@ -38,6 +39,13 @@ class LibraryTypesTest {
 		var lt = new LibraryTypes(List.of());
 
 		assertThat(lt.findType("test.pkg.Unknown")).isEmpty();
+	}
+
+	@Test
+	void test_duplicate_types() {
+		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
+		var t2 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PACKAGE_PRIVATE);
+		assertThatIllegalArgumentException().isThrownBy(() -> new LibraryTypes(List.of(t1, t2)));
 	}
 
 	@Test
