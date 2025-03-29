@@ -71,7 +71,7 @@ public class SpoonAPIFactory {
 		Factory spoonFactory = new Launcher().createFactory();
 		spoonFactory.getEnvironment().setSourceClasspath(
 			classpath.stream()
-				.map(Path::toString)
+				.map(p -> p.toAbsolutePath().toString())
 				.toArray(String[]::new));
 		this.typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
