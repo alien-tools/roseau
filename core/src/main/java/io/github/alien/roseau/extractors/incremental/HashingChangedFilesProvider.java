@@ -31,7 +31,7 @@ public class HashingChangedFilesProvider {
 
 	/**
 	 * Compares two directories and identifies .java files that have been updated, deleted, or created, using the first
-	 * directory as reference. Updated and deleted files point to the left directory, created files point to the right
+	 * directory as reference. Deleted files point to the left directory, created and updated files point to the right
 	 * directory.
 	 *
 	 * @param leftDirectory  the first (reference) directory
@@ -54,7 +54,7 @@ public class HashingChangedFilesProvider {
 				if (rightHash == null) {
 					deleted.add(leftDirectory.resolve(file));
 				} else if (!leftHash.equals(rightHash)) {
-					updated.add(leftDirectory.resolve(file));
+					updated.add(rightDirectory.resolve(file));
 				}
 			});
 

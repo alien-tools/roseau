@@ -45,7 +45,7 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var changed = Set.of(left.resolve("A.java"), left.resolve("C.java"));
+		var changed = Set.of(right.resolve("A.java"), right.resolve("C.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(changed, Set.of(), Set.of()));
 	}
 
@@ -80,7 +80,7 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var changed = Set.of(left.resolve("A.java"));
+		var changed = Set.of(right.resolve("A.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(changed, Set.of(), Set.of()));
 	}
 
