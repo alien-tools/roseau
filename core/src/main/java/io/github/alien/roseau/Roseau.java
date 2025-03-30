@@ -95,7 +95,6 @@ public final class Roseau {
 
 		// Once both the API v1 and the changed files are ready, build API v2
 		CompletableFuture<LibraryTypes> futureV2 = futureV1.thenCombineAsync(futureChanges, (types, changes) -> {
-			System.out.println("changes="+changes);
 			IncrementalTypesExtractor extractor = new IncrementalJdtTypesExtractor();
 			return extractor.incrementalUpdate(types, v2, changes);
 		});

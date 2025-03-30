@@ -13,6 +13,7 @@ import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -38,11 +39,16 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			return previousTypes;
 		}
 
+		Path oldRoot = previousTypes.getLibrary().getPath();
+		Path newRoot = newVersion.getPath();
+
 		// Collect types that should be discarded from the previous API
-		Set<Path> discarded = Sets.union(changedFiles.deletedFiles(), changedFiles.updatedFiles());
+		Set<Path> discarded = Sets.union(resolve(oldRoot, changedFiles.deletedFiles()),
+			resolve(oldRoot, changedFiles.updatedFiles()));
 
 		// Collect files to be parsed
-		List<Path> filesToParse = Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()).stream().toList();
+		List<Path> filesToParse = Sets.union(resolve(newRoot, changedFiles.updatedFiles()),
+			resolve(newRoot, changedFiles.createdFiles())).stream().toList();
 
 		// Parse, collect, and merge the updated files
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
@@ -55,5 +61,11 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 		).toList();
 
 		return new LibraryTypes(newVersion, newTypeDecls);
+	}
+
+	private Set<Path> resolve(Path root, Set<Path> files) {
+		return files.stream()
+			.map(root::resolve)
+			.collect(Collectors.toSet());
 	}
 }
