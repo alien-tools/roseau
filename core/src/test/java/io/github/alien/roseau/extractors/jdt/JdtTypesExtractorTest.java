@@ -1,6 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
-import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -12,7 +12,6 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 
 class JdtTypesExtractorTest {
@@ -20,21 +19,9 @@ class JdtTypesExtractorTest {
 	Path wd;
 
 	@Test
-	void parse_null_throws() {
-		var extractor = new JdtTypesExtractor();
-		assertThrows(NullPointerException.class, () -> extractor.extractTypes(null));
-	}
-
-	@Test
-	void parse_invalid_location_throws() {
-		var extractor = new JdtTypesExtractor();
-		assertThrows(RoseauException.class, () -> extractor.extractTypes(Path.of("invalid")));
-	}
-
-	@Test
 	void parse_empty_sources_empty_api() {
 		var extractor = new JdtTypesExtractor();
-		var api = extractor.extractTypes(wd);
+		var api = extractor.extractTypes(Library.of(wd));
 
 		assertThat(api).isNotNull();
 		assertThat(api.getAllTypes()).isEmpty();
@@ -47,7 +34,7 @@ class JdtTypesExtractorTest {
 			public class A {}""");
 
 		var extractor = new JdtTypesExtractor();
-		var api = extractor.extractTypes(wd);
+		var api = extractor.extractTypes(Library.of(wd));
 
 		assertThat(api.getAllTypes())
 			.singleElement()
@@ -67,7 +54,7 @@ class JdtTypesExtractorTest {
 			}""");
 
 		var extractor = new JdtTypesExtractor();
-		var api = extractor.extractTypes(wd);
+		var api = extractor.extractTypes(Library.of(wd));
 
 		assertThat(api).isNotNull();
 		assertThat(api.getAllTypes()).hasSize(1);
@@ -90,7 +77,7 @@ class JdtTypesExtractorTest {
 			}""");
 
 		var extractor = new JdtTypesExtractor();
-		var types = extractor.extractTypes(wd);
+		var types = extractor.extractTypes(Library.of(wd));
 
 		assertThat(types).isNotNull();
 		assertThat(types.getAllTypes()).hasSize(1);

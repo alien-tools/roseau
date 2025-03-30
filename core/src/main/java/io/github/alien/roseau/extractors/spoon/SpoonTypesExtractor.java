@@ -1,10 +1,12 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.TypesExtractor;
-import io.github.alien.roseau.api.model.TypeDecl;
 import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
@@ -20,9 +22,10 @@ import java.util.stream.Stream;
  */
 public class SpoonTypesExtractor implements TypesExtractor {
 	@Override
-	public LibraryTypes extractTypes(Path sources, List<Path> classpath) {
-		CtModel model = SpoonUtils.buildModel(sources, classpath, Duration.ofSeconds(Long.MAX_VALUE));
-		return extractTypes(model, classpath);
+	public LibraryTypes extractTypes(Library library) {
+		Preconditions.checkArgument(library != null && library.isSources());
+		CtModel model = SpoonUtils.buildModel(library.getPath(), library.getClasspath(), Duration.ofSeconds(Long.MAX_VALUE));
+		return extractTypes(library, model);
 	}
 
 	@Override
@@ -30,19 +33,17 @@ public class SpoonTypesExtractor implements TypesExtractor {
 		return Files.isDirectory(sources);
 	}
 
-	public LibraryTypes extractTypes(CtModel model, List<Path> classpath) {
+	public LibraryTypes extractTypes(Library library, CtModel model) {
+		Preconditions.checkArgument(library != null && library.isSources());
+		Preconditions.checkNotNull(model);
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-		SpoonAPIFactory factory = new SpoonAPIFactory(typeRefFactory, classpath);
+		SpoonAPIFactory factory = new SpoonAPIFactory(typeRefFactory, library.getClasspath());
 
 		List<TypeDecl> allTypes = model.getAllPackages().stream().parallel()
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
 			.toList();
 
-		return new LibraryTypes(allTypes);
-	}
-
-	public LibraryTypes extractTypes(CtModel model) {
-		return extractTypes(model, List.of());
+		return new LibraryTypes(library, allTypes);
 	}
 
 	@Override

@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors.asm;
 
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -30,9 +32,10 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
 
 	@Override
-	public LibraryTypes extractTypes(Path sources, List<Path> classpath) {
-		try (JarFile jar = new JarFile(Objects.requireNonNull(sources).toFile())) {
-			return extractTypes(jar);
+	public LibraryTypes extractTypes(Library library) {
+		Preconditions.checkArgument(library != null && library.isJar());
+		try (JarFile jar = new JarFile(library.getPath().toFile())) {
+			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Error processing JAR file", e);
 		}
@@ -56,7 +59,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	 * @param jar the JAR file to analyze
 	 * @return the extracted {@link LibraryTypes}
 	 */
-	public LibraryTypes extractTypes(JarFile jar) {
+	public LibraryTypes extractTypes(Library library, JarFile jar) {
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 
 		List<TypeDecl> typeDecls =
@@ -68,7 +71,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 				.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
 				.toList();
 
-		return new LibraryTypes(typeDecls);
+		return new LibraryTypes(library, typeDecls);
 	}
 
 	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {

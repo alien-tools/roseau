@@ -1,5 +1,9 @@
 package io.github.alien.roseau.smoke;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
@@ -13,10 +17,6 @@ import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonUtils;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import spoon.reflect.CtModel;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,7 +36,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -106,29 +104,26 @@ class PopularLibrariesTestIT {
 		Stopwatch sw = Stopwatch.createUnstarted();
 		Path binaryJar = binaryJars.get(libraryGAV);
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
+		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
+		Library binaryLibrary = Library.builder().path(binaryJar).classpath(classpath).build();
+		Library sourcesLibrary = Library.builder().path(sourcesDir).classpath(classpath).build();
 
 		// ASM API
 		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
 		sw.reset().start();
-		API asmApi = asmExtractor.extractTypes(binaryJar).toAPI();
+		API asmApi = asmExtractor.extractTypes(binaryLibrary).toAPI();
 		long asmApiTime = sw.elapsed().toMillis();
 
 		// JDT API
-		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
 		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
 		sw.reset().start();
-		API jdtApi = jdtExtractor.extractTypes(sourcesDir, classpath).toAPI();
+		API jdtApi = jdtExtractor.extractTypes(sourcesLibrary).toAPI();
 		long jdtApiTime = sw.elapsed().toMillis();
-
-		// Spoon parsing
-		sw.reset().start();
-		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, classpath, Duration.ofMinutes(1));
-		long spoonParsingTime = sw.elapsed().toMillis();
 
 		// Spoon API
 		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
 		sw.reset().start();
-		API spoonApi = spoonExtractor.extractTypes(spoonModel).toAPI();
+		API spoonApi = spoonExtractor.extractTypes(sourcesLibrary).toAPI();
 		long spoonApiTime = sw.elapsed().toMillis();
 
 		// Diffs
@@ -152,14 +147,12 @@ class PopularLibrariesTestIT {
 			.sum();
 
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
-				"\tSpoon: %dms parsing; %dms API; %dms diff%n" +
+				"\tSpoon: %dms; %dms diff%n" +
 				"\tASM: %dms%n" +
 				"\tJDT: %dms%n" +
 				"\tBCs: %s %s %s %s %s %s%n",
 			libraryGAV, loc, numTypes, numMethods, numFields,
-			spoonParsingTime, spoonApiTime, diffTime,
-			asmApiTime,
-			jdtApiTime,
+			spoonApiTime, diffTime, asmApiTime, jdtApiTime,
 			asmToSpoonBCs, asmToJdtBCs, jdtToSpoonBCs, jdtToAsmBCs, spoonToAsmBCs, spoonToJdtBCs);
 
 		System.out.println("### JDT to Sources API diff:");
@@ -190,10 +183,12 @@ class PopularLibrariesTestIT {
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibrarySpoon(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
+		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
+		Library library = Library.builder().path(sourcesDir).classpath(classpath).build();
 
 		// Spoon API
 		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
-		API spoonApi = spoonExtractor.extractTypes(sourcesDir).toAPI();
+		API spoonApi = spoonExtractor.extractTypes(library).toAPI();
 
 		// Diff
 		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff();
@@ -210,10 +205,11 @@ class PopularLibrariesTestIT {
 	void analyzeLibraryJdt(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
 		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
+		Library library = Library.builder().path(sourcesDir).classpath(classpath).build();
 
 		// JDT API
 		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
-		API jdtApi = jdtExtractor.extractTypes(sourcesDir, classpath).toAPI();
+		API jdtApi = jdtExtractor.extractTypes(library).toAPI();
 
 		// Diff
 		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff();
@@ -229,10 +225,11 @@ class PopularLibrariesTestIT {
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibraryAsm(String libraryGAV) {
 		Path binaryJar = binaryJars.get(libraryGAV);
+		Library library = Library.builder().path(binaryJar).build();
 
 		// ASM API
 		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
-		API asmApi = asmExtractor.extractTypes(binaryJar).toAPI();
+		API asmApi = asmExtractor.extractTypes(library).toAPI();
 
 		// Diff
 		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff();
@@ -380,12 +377,14 @@ class PopularLibrariesTestIT {
 		binaryJars.values().forEach(path -> {
 			try {
 				cleanup(path);
-			} catch (Exception ignored) {}
+			} catch (Exception ignored) {
+			}
 		});
 		sourcesDirs.values().forEach(path -> {
 			try {
 				cleanup(path);
-			} catch (Exception ignored) {}
+			} catch (Exception ignored) {
+			}
 		});
 	}
 

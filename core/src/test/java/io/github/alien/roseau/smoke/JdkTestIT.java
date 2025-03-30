@@ -1,5 +1,6 @@
 package io.github.alien.roseau.smoke;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
@@ -38,6 +39,8 @@ class JdkTestIT {
 		var moduleName = jmod.getFileName().toString().replace(".jmod", "");
 		var src = Path.of(String.format("%s/src/%s/share/classes", JDK_SRC_PATH, moduleName));
 		var sw = Stopwatch.createUnstarted();
+		var jmodLibrary = Library.of(jmod);
+		var srcLibrary = Library.of(src);
 		var spoonExtractor = new SpoonTypesExtractor();
 		var asmExtractor = new AsmTypesExtractor();
 		var jdtExtractor = new JdtTypesExtractor();
@@ -46,22 +49,17 @@ class JdkTestIT {
 			fail("No sources for " + jmod);
 
 		sw.reset().start();
-		var jarApi = asmExtractor.extractTypes(jmod);
+		var jarApi = asmExtractor.extractTypes(jmodLibrary);
 		var jarApiTime = sw.elapsed().toMillis();
 		System.out.printf("ASM API took %dms (%d types)%n", jarApiTime, jarApi.getAllTypes().size());
 
 		sw.reset().start();
-		var jdtApi = jdtExtractor.extractTypes(src);
+		var jdtApi = jdtExtractor.extractTypes(srcLibrary);
 		var jdtApiTime = sw.elapsed().toMillis();
 		System.out.printf("JDT API took %dms (%d types)%n", jdtApiTime, jdtApi.getAllTypes().size());
 
 		sw.reset().start();
-		var model = SpoonUtils.buildModel(src, List.of(), Duration.ofMinutes(1));
-		var parsingTime = sw.elapsed().toMillis();
-		System.out.printf("Parsing took %dms%n", parsingTime);
-
-		sw.reset().start();
-		var srcApi = spoonExtractor.extractTypes(model).toAPI();
+		var srcApi = spoonExtractor.extractTypes(srcLibrary).toAPI();
 		var apiTime = sw.elapsed().toMillis();
 		System.out.printf("Spoon API took %dms (%d types)%n", apiTime, srcApi.getLibraryTypes().getAllTypes().size());
 

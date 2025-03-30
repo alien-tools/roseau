@@ -2,6 +2,7 @@ package io.github.alien.roseau.cli;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -86,25 +87,26 @@ public final class RoseauCLI implements Callable<Integer> {
 	private static final String UNDERLINE = "\u001B[4m";
 	private static final String RESET = "\u001B[0m";
 
-	private API buildAPI(Path sources, List<Path> classpath) {
-		TypesExtractor extractor = sources.toString().endsWith(".jar")
+	private API buildAPI(Library library) {
+		TypesExtractor extractor = library.isJar()
 			? new AsmTypesExtractor()
 			: TypesExtractorFactory.newExtractor(extractorFactory);
 
-		if (extractor.canExtract(sources)) {
+		if (extractor.canExtract(library.getPath())) {
 			Stopwatch sw = Stopwatch.createStarted();
-			API api = extractor.extractTypes(sources, classpath).toAPI();
+			API api = extractor.extractTypes(library).toAPI();
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
-				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().size());
+				library.getPath(), extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;
 		} else {
-			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractor.getName(), sources));
+			throw new RoseauException("Extractor %s does not support sources %s".formatted(
+				extractor.getName(), library.getPath()));
 		}
 	}
 
-	private List<BreakingChange> diff(Path v1path, Path v2path, List<Path> classpath) {
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1path, classpath));
-		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2path, classpath));
+	private List<BreakingChange> diff(Library libraryV1, Library libraryV2) {
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV1));
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV2));
 
 		CompletableFuture.allOf(futureV1, futureV2).join();
 
@@ -206,15 +208,17 @@ public final class RoseauCLI implements Callable<Integer> {
 		try {
 			checkArguments();
 			List<Path> classpath = buildClasspath();
+			Library libraryV1 = Library.builder().path(v1).classpath(classpath).build();
 
 			if (apiMode) {
-				API api = buildAPI(v1, classpath);
+				API api = buildAPI(libraryV1);
 				api.getLibraryTypes().writeJson(apiPath);
 				LOGGER.info("Wrote API to {}", apiPath);
 			}
 
 			if (diffMode) {
-				List<BreakingChange> bcs = diff(v1, v2, classpath);
+				Library libraryV2 = Library.builder().path(v2).classpath(classpath).build();
+				List<BreakingChange> bcs = diff(libraryV1, libraryV2);
 
 				if (bcs.isEmpty()) {
 					System.out.println("No breaking changes found.");

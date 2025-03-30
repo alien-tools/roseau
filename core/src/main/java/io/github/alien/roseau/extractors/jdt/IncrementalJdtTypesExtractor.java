@@ -2,18 +2,16 @@ package io.github.alien.roseau.extractors.jdt;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
-import io.github.alien.roseau.extractors.incremental.IncrementalAPIExtractor;
+import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 
-import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Stream;
 
@@ -28,35 +26,34 @@ import java.util.stream.Stream;
  *   <li>Parses new files to extract new symbols</li>
  * </ul>
  */
-public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements IncrementalAPIExtractor {
+public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements IncrementalTypesExtractor {
 	@Override
-	public LibraryTypes refreshAPI(Path sources, ChangedFiles changedFiles, LibraryTypes previousApi) {
-		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(sources)), "Invalid sources: " + sources);
-		Objects.requireNonNull(changedFiles);
-		Objects.requireNonNull(previousApi);
+	public LibraryTypes incrementalUpdate(LibraryTypes previousTypes, Library newVersion, ChangedFiles changedFiles) {
+		Preconditions.checkNotNull(previousTypes);
+		Preconditions.checkArgument(newVersion != null && newVersion.isSources());
+		Preconditions.checkNotNull(changedFiles);
 
 		// If nothing's changed, just return the old one
 		if (changedFiles.hasNoChanges()) {
-			return previousApi;
+			return previousTypes;
 		}
 
 		// Collect types that should be discarded from the previous API
 		Set<Path> discarded = Sets.union(changedFiles.deletedFiles(), changedFiles.updatedFiles());
 
 		// Collect files to be parsed
-		List<Path> filesToParse = new ArrayList<>(
-			Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()));
+		List<Path> filesToParse = Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()).stream().toList();
 
 		// Parse, collect, and merge the updated files
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 		List<TypeDecl> newTypeDecls = Stream.concat(
 			// Previous unchanged types
-			previousApi.getAllTypes().stream()
+			previousTypes.getAllTypes().stream()
 				.filter(t -> !discarded.contains(t.getLocation().file())),
 			// New re-parsed types
-			parseTypes(filesToParse, sources, List.of(), typeRefFactory).stream()
+			parseTypes(newVersion, filesToParse, typeRefFactory).stream()
 		).toList();
 
-		return new LibraryTypes(newTypeDecls);
+		return new LibraryTypes(newVersion, newTypeDecls);
 	}
 }

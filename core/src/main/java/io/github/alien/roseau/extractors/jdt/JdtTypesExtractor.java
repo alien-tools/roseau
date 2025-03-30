@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors.jdt;
 
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -32,18 +34,18 @@ public class JdtTypesExtractor implements TypesExtractor {
 	private static final Logger LOGGER = LogManager.getLogger(JdtTypesExtractor.class);
 
 	@Override
-	public LibraryTypes extractTypes(Path sources, List<Path> classpath) {
-		Objects.requireNonNull(classpath);
-		try (Stream<Path> files = Files.walk(Objects.requireNonNull(sources))) {
+	public LibraryTypes extractTypes(Library library) {
+		Preconditions.checkArgument(library != null && library.isSources());
+		try (Stream<Path> files = Files.walk(library.getPath())) {
 			List<Path> sourceFiles = files
 				.filter(JdtTypesExtractor::isRegularJavaFile)
 				.toList();
 
 			TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-			List<TypeDecl> parsedTypes = parseTypes(sourceFiles, sources, classpath, typeRefFactory);
-			return new LibraryTypes(parsedTypes);
+			List<TypeDecl> parsedTypes = parseTypes(library, sourceFiles, typeRefFactory);
+			return new LibraryTypes(library, parsedTypes);
 		} catch (IOException e) {
-			throw new RoseauException("Failed to retrieve sources at " + sources, e);
+			throw new RoseauException("Failed to retrieve sources at " + library.getPath(), e);
 		}
 	}
 
@@ -52,8 +54,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 		return Files.isDirectory(sources);
 	}
 
-	List<TypeDecl> parseTypes(List<Path> sourcesToParse, Path sourcesRoot, List<Path> classpath,
-	                          TypeReferenceFactory typeRefFactory) {
+	List<TypeDecl> parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
 		List<TypeDecl> typeDecls = new ArrayList<>(sourcesToParse.size());
 
 		String[] sourcesArray = sourcesToParse.stream()
@@ -64,8 +65,8 @@ public class JdtTypesExtractor implements TypesExtractor {
 		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_21);
 		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
 
-		String[] sourcesRootArray = { sourcesRoot.toAbsolutePath().toString() };
-		String[] classpathEntries = classpath.stream()
+		String[] sourcesRootArray = { library.getPath().toAbsolutePath().toString() };
+		String[] classpathEntries = library.getClasspath().stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
 
@@ -105,7 +106,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 			return typeDecls;
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
-			throw new RoseauException("Failed to parse code from " + sourcesRoot, e);
+			throw new RoseauException("Failed to parse code from " + library.getPath(), e);
 		}
 	}
 
