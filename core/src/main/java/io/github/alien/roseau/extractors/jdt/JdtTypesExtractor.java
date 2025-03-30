@@ -24,7 +24,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
@@ -55,8 +54,6 @@ public class JdtTypesExtractor implements TypesExtractor {
 	}
 
 	List<TypeDecl> parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
-		List<TypeDecl> typeDecls = new ArrayList<>(sourcesToParse.size());
-
 		String[] sourcesArray = sourcesToParse.stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
@@ -82,6 +79,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 		parser.setEnvironment(classpathEntries, sourcesRootArray, null, true);
 
 		// Receive parsed ASTs and forward them to the visitor
+		List<TypeDecl> typeDecls = new ArrayList<>(sourcesToParse.size());
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
@@ -108,11 +106,6 @@ public class JdtTypesExtractor implements TypesExtractor {
 			// Catching JDT's internal messy errors
 			throw new RoseauException("Failed to parse code from " + library.getPath(), e);
 		}
-	}
-
-	@Override
-	public String getName() {
-		return "JDT";
 	}
 
 	private static boolean isRegularJavaFile(Path file) {

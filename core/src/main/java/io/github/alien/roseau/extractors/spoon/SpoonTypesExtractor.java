@@ -46,11 +46,6 @@ public class SpoonTypesExtractor implements TypesExtractor {
 		return new LibraryTypes(library, allTypes);
 	}
 
-	@Override
-	public String getName() {
-		return "Spoon";
-	}
-
 	// Returns all types within a package
 	private static Stream<CtType<?>> getAllTypes(CtPackage pkg) {
 		return pkg.getTypes().stream()

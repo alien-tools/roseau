@@ -48,11 +48,6 @@ public class AsmTypesExtractor implements TypesExtractor {
 			sources.toString().endsWith(".jar");
 	}
 
-	@Override
-	public String getName() {
-		return "ASM";
-	}
-
 	/**
 	 * Extracts the {@link LibraryTypes} stored in the provided JAR file.
 	 *

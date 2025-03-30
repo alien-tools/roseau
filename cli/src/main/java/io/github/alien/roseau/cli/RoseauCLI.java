@@ -10,10 +10,9 @@ import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.TypesExtractor;
-import io.github.alien.roseau.extractors.TypesExtractorFactory;
-import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -51,9 +50,8 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "Path to the second version of the library; either a source directory or a JAR")
 	private Path v2;
 	@CommandLine.Option(names = "--extractor",
-		description = "API extractor to use: ${COMPLETION-CANDIDATES}",
-		defaultValue = "JDT")
-	private TypesExtractorFactory extractorFactory;
+		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
+	private ExtractorType extractorType;
 	@CommandLine.Option(names = "--json",
 		description = "Where to serialize the JSON API model of --v1; defaults to api.json",
 		defaultValue = "api.json")
@@ -88,19 +86,17 @@ public final class RoseauCLI implements Callable<Integer> {
 	private static final String RESET = "\u001B[0m";
 
 	private API buildAPI(Library library) {
-		TypesExtractor extractor = library.isJar()
-			? new AsmTypesExtractor()
-			: TypesExtractorFactory.newExtractor(extractorFactory);
+		TypesExtractor extractor = library.getExtractorType().newExtractor();
 
 		if (extractor.canExtract(library.getPath())) {
 			Stopwatch sw = Stopwatch.createStarted();
 			API api = extractor.extractTypes(library).toAPI();
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
-				library.getPath(), extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().size());
+				library.getPath(), library.getExtractorType(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;
 		} else {
 			throw new RoseauException("Extractor %s does not support sources %s".formatted(
-				extractor.getName(), library.getPath()));
+				library.getExtractorType(), library.getPath()));
 		}
 	}
 
@@ -208,7 +204,13 @@ public final class RoseauCLI implements Callable<Integer> {
 		try {
 			checkArguments();
 			List<Path> classpath = buildClasspath();
-			Library libraryV1 = Library.builder().path(v1).classpath(classpath).build();
+			Library.Builder builder1 = Library.builder()
+				.path(v1)
+				.classpath(classpath);
+			if (extractorType != null) {
+				builder1.extractorType(extractorType);
+			}
+			Library libraryV1 = builder1.build();
 
 			if (apiMode) {
 				API api = buildAPI(libraryV1);
@@ -217,7 +219,13 @@ public final class RoseauCLI implements Callable<Integer> {
 			}
 
 			if (diffMode) {
-				Library libraryV2 = Library.builder().path(v2).classpath(classpath).build();
+				Library.Builder builder2 = Library.builder()
+					.path(v2)
+					.classpath(classpath);
+				if (extractorType != null) {
+					builder2.extractorType(extractorType);
+				}
+				Library libraryV2 = builder2.build();
 				List<BreakingChange> bcs = diff(libraryV1, libraryV2);
 
 				if (bcs.isEmpty()) {

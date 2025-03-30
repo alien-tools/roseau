@@ -196,7 +196,7 @@ class RoseauCLITest {
 
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out)
-			.contains("Extracting API from sources src/test/resources/test-project-v1/src using Spoon")
+			.contains("Extracting API from sources src/test/resources/test-project-v1/src using SPOON")
 			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
