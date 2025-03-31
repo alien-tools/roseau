@@ -27,7 +27,7 @@ public sealed class ClassBuilder extends TypeBuilder permits EnumBuilder, Record
 		TypeBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
 		builder.superClass = decl.getSuperClass();
-		builder.constructors = decl.getDeclaredConstructors().stream().map(ConstructorBuilder::from).toList();
+		builder.constructors = new ArrayList<>(decl.getDeclaredConstructors().stream().map(ConstructorBuilder::from).toList());
 		builder.permittedTypes = new ArrayList<>(decl.getPermittedTypes());
 
 		return builder;

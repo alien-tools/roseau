@@ -23,7 +23,7 @@ public final class RecordBuilder extends ClassBuilder {
 
 		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
-		builder.recordComponents = decl.getRecordComponents().stream().map(RecordComponentBuilder::from).toList();
+		builder.recordComponents = new ArrayList<>(decl.getRecordComponents().stream().map(RecordComponentBuilder::from).toList());
 
 		return builder;
 	}

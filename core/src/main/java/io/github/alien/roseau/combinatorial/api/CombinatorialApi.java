@@ -620,7 +620,7 @@ public final class CombinatorialApi {
 		methodBuilder.visibility = method.getVisibility();
 		methodBuilder.containingType = typeReferenceFactory.createTypeReference(typeDecl.getQualifiedName());
 		methodBuilder.thrownExceptions = method.getThrownExceptions();
-		methodBuilder.parameters.addAll(method.getParameters().stream().map(ParameterBuilder::from).toList());
+		methodBuilder.parameters.addAll(new ArrayList<>(method.getParameters().stream().map(ParameterBuilder::from).toList()));
 		methodBuilder.type = method.getType();
 
 		methodBuilder.modifiers = toEnumSet(method.getModifiers(), Modifier.class);

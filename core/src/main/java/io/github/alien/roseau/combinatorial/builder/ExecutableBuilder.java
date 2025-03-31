@@ -15,7 +15,7 @@ public abstract sealed class ExecutableBuilder extends TypeMemberBuilder permits
 	public static void mutateExecutableBuilderWithExecutable(ExecutableBuilder builder, ExecutableDecl decl) {
 		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, decl);
 
-		builder.parameters = decl.getParameters().stream().map(ParameterBuilder::from).toList();
+		builder.parameters = new ArrayList<>(decl.getParameters().stream().map(ParameterBuilder::from).toList());
 		builder.formalTypeParameters = new ArrayList<>(decl.getFormalTypeParameters());
 		builder.thrownExceptions = new ArrayList<>(decl.getThrownExceptions());
 	}

@@ -23,7 +23,7 @@ public final class EnumBuilder extends ClassBuilder {
 
 		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
 
-		builder.values = decl.getValues().stream().map(EnumValueBuilder::from).toList();
+		builder.values = new ArrayList<>(decl.getValues().stream().map(EnumValueBuilder::from).toList());
 
 		return builder;
 	}

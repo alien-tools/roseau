@@ -20,8 +20,8 @@ public abstract sealed class TypeBuilder extends SymbolBuilder implements Builde
 
 		builder.implementedInterfaces = new ArrayList<>(typeDecl.getImplementedInterfaces());
 		builder.formalTypeParameters = new ArrayList<>(typeDecl.getFormalTypeParameters());
-		builder.fields = typeDecl.getDeclaredFields().stream().map(FieldBuilder::from).toList();
-		builder.methods = typeDecl.getDeclaredMethods().stream().map(MethodBuilder::from).toList();
+		builder.fields = new ArrayList<>(typeDecl.getDeclaredFields().stream().map(FieldBuilder::from).toList());
+		builder.methods = new ArrayList<>(typeDecl.getDeclaredMethods().stream().map(MethodBuilder::from).toList());
 		builder.enclosingType = typeDecl.getEnclosingType().orElse(null);
 	}
 }

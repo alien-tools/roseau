@@ -8,6 +8,9 @@ import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException
 import io.github.alien.roseau.combinatorial.v2.breaker.tpMbr.AbstractTpMbrStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
+import java.util.HashSet;
+import java.util.List;
+
 abstract class AbstractCtrStrategy extends AbstractTpMbrStrategy<ConstructorDecl> {
 	AbstractCtrStrategy(ConstructorDecl ctr, NewApiQueue queue, String strategyName) {
 		super(ctr, queue, strategyName);
@@ -24,5 +27,12 @@ abstract class AbstractCtrStrategy extends AbstractTpMbrStrategy<ConstructorDecl
 		var containingType = getContainingClassFromMutableApi(mutableApi);
 
 		return getConstructorFrom(containingType);
+	}
+
+	protected static boolean areConstructorsInvalid(List<ConstructorBuilder> constructors) {
+		var erasureList = constructors.stream().map(c -> c.make().getErasure()).toList();
+		var erasureSet = new HashSet<>(erasureList);
+
+		return erasureSet.size() != erasureList.size();
 	}
 }
