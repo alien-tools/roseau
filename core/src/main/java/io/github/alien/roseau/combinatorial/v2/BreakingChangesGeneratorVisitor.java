@@ -1,7 +1,10 @@
 package io.github.alien.roseau.combinatorial.v2;
 
 import io.github.alien.roseau.api.model.*;
+import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
@@ -18,6 +21,14 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private final API api;
 
 	private final NewApiQueue queue;
+
+	private final TypeReferenceFactory typeReferenceFactory = new CachedTypeReferenceFactory();
+
+	private final ITypeReference voidType = typeReferenceFactory.createPrimitiveTypeReference("void");
+	private final ITypeReference intType = typeReferenceFactory.createPrimitiveTypeReference("int");
+	private final ITypeReference booleanType = typeReferenceFactory.createTypeReference("java.lang.Boolean");
+	private final ITypeReference threadType = typeReferenceFactory.createTypeReference("java.lang.Thread");
+	private final ITypeReference charArrType = typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("char"), 1);
 
 	public BreakingChangesGeneratorVisitor(API api, NewApiQueue queue) {
 		this.api = api;
@@ -112,6 +123,11 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveModifierFieldStrategy(Modifier.FINAL, f, queue).breakApi(api);
 		new AddModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
 		new RemoveModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
+
+		new ChangeTypeFieldStrategy(intType, f, queue).breakApi(api);
+		new ChangeTypeFieldStrategy(booleanType, f, queue).breakApi(api);
+		new ChangeTypeFieldStrategy(threadType, f, queue).breakApi(api);
+		new ChangeTypeFieldStrategy(charArrType, f, queue).breakApi(api);
 	}
 
 	private void breakMethodDecl(MethodDecl m) {
@@ -132,6 +148,12 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveModifierMethodStrategy(Modifier.STATIC, m, queue).breakApi(api);
 		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
+
+		new ChangeTypeMethodStrategy(voidType, m, queue).breakApi(api);
+		new ChangeTypeMethodStrategy(intType, m, queue).breakApi(api);
+		new ChangeTypeMethodStrategy(booleanType, m, queue).breakApi(api);
+		new ChangeTypeMethodStrategy(threadType, m, queue).breakApi(api);
+		new ChangeTypeMethodStrategy(charArrType, m, queue).breakApi(api);
 
 		new AddExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
 		new RemoveExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);

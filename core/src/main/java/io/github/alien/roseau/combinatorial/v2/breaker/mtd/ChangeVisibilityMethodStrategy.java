@@ -12,7 +12,7 @@ public final class ChangeVisibilityMethodStrategy extends AbstractMtdStrategy {
 	private final AccessModifier accessModifier;
 
 	public ChangeVisibilityMethodStrategy(AccessModifier modifier, MethodDecl mtd, NewApiQueue queue) {
-		super(mtd, queue, "ReduceMethod%sFrom%sVisibilityTo%s".formatted(
+		super(mtd, queue, "ReduceMethod%sIn%sVisibilityTo%s".formatted(
 				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
 				mtd.getContainingType().getPrettyQualifiedName(),
 				modifier.toCapitalize())

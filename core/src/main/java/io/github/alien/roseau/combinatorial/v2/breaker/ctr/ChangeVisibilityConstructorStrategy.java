@@ -11,7 +11,7 @@ public final class ChangeVisibilityConstructorStrategy extends AbstractCtrStrate
 	private final AccessModifier accessModifier;
 
 	public ChangeVisibilityConstructorStrategy(AccessModifier modifier, ConstructorDecl ctr, NewApiQueue queue) {
-		super(ctr, queue, "ReduceConstructor%sFrom%sVisibilityTo%s".formatted(
+		super(ctr, queue, "ReduceConstructor%sIn%sVisibilityTo%s".formatted(
 				StringUtils.splitSpecialCharsAndCapitalize(ctr.getErasure()),
 				ctr.getContainingType().getPrettyQualifiedName(),
 				modifier.toCapitalize())

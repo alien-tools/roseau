@@ -12,7 +12,7 @@ public final class ChangeVisibilityFieldStrategy extends AbstractFldStrategy {
 	private final AccessModifier accessModifier;
 
 	public ChangeVisibilityFieldStrategy(AccessModifier modifier, FieldDecl fld, NewApiQueue queue) {
-		super(fld, queue, "ReduceField%sFrom%sVisibilityTo%s".formatted(
+		super(fld, queue, "ReduceField%sIn%sVisibilityTo%s".formatted(
 				StringUtils.capitalizeFirstLetter(fld.getSimpleName()),
 				fld.getContainingType().getPrettyQualifiedName(),
 				modifier.toCapitalize())
