@@ -8,17 +8,13 @@ import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException
 import io.github.alien.roseau.combinatorial.v2.breaker.tpMbr.AbstractTpMbrStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-abstract class AbstractCtrStrategy extends AbstractTpMbrStrategy {
-	protected final ConstructorDecl ctr;
-
+abstract class AbstractCtrStrategy extends AbstractTpMbrStrategy<ConstructorDecl> {
 	AbstractCtrStrategy(ConstructorDecl ctr, NewApiQueue queue, String strategyName) {
 		super(ctr, queue, strategyName);
-
-		this.ctr = ctr;
 	}
 
 	protected ConstructorBuilder getConstructorFrom(ClassBuilder containingType) throws ImpossibleChangeException {
-		var constructor = containingType.constructors.stream().filter(m -> m.make().equals(ctr)).findFirst();
+		var constructor = containingType.constructors.stream().filter(m -> m.make().equals(tpMbr)).findFirst();
 		if (constructor.isEmpty()) throw new ImpossibleChangeException();
 
 		return constructor.get();

@@ -6,10 +6,10 @@ import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public class AddModifierTypeStrategy extends AbstractTpStrategy {
+public class AddModifierTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
 	protected final Modifier modifier;
 
-	public AddModifierTypeStrategy(Modifier modifier, TypeDecl tp, NewApiQueue queue) {
+	public AddModifierTypeStrategy(Modifier modifier, T tp, NewApiQueue queue) {
 		super(tp, queue, "Add%sModifierTo%s".formatted(modifier.toCapitalize(), tp.getSimpleName()));
 
 		this.modifier = modifier;

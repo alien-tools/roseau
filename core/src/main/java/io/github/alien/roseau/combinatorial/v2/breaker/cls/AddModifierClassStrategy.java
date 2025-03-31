@@ -7,7 +7,7 @@ import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddModifierTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class AddModifierClassStrategy extends AddModifierTypeStrategy {
+public final class AddModifierClassStrategy extends AddModifierTypeStrategy<ClassDecl> {
 	public AddModifierClassStrategy(Modifier modifier, ClassDecl cls, NewApiQueue queue) {
 		super(modifier, cls, queue);
 	}

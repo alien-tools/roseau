@@ -9,8 +9,8 @@ import io.github.alien.roseau.combinatorial.builder.MethodBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public class AddMethodTypeStrategy extends AbstractTpStrategy {
-	public AddMethodTypeStrategy(TypeDecl tp, NewApiQueue queue) {
+public class AddMethodTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
+	public AddMethodTypeStrategy(T tp, NewApiQueue queue) {
 		super(tp, queue, "AddMethodToType%s".formatted(tp.getSimpleName()));
 	}
 

@@ -17,7 +17,7 @@ public class RemoveConstructorStrategy extends AbstractCtrStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var containingClass = getContainingClassFromMutableApi(mutableApi);
 
-		containingClass.constructors = containingClass.constructors.stream().filter(c -> !c.make().equals(ctr)).toList();
+		containingClass.constructors = containingClass.constructors.stream().filter(c -> !c.make().equals(tpMbr)).toList();
 
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}

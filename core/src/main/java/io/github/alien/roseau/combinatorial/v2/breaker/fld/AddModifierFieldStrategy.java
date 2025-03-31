@@ -22,11 +22,11 @@ public final class AddModifierFieldStrategy extends AbstractFldStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (fld.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
+		if (tpMbr.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
 
 		var field = getFieldFrom(mutableApi);
 
-		LOGGER.info("Adding modifier {} to field {}", modifier.toCapitalize(), fld.getQualifiedName());
+		LOGGER.info("Adding modifier {} to field {}", modifier.toCapitalize(), tpMbr.getQualifiedName());
 
 		field.modifiers.add(modifier);
 

@@ -8,17 +8,13 @@ import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException
 import io.github.alien.roseau.combinatorial.v2.breaker.tpMbr.AbstractTpMbrStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-abstract class AbstractFldStrategy extends AbstractTpMbrStrategy {
-	protected final FieldDecl fld;
-
+abstract class AbstractFldStrategy extends AbstractTpMbrStrategy<FieldDecl> {
 	AbstractFldStrategy(FieldDecl fld, NewApiQueue queue, String strategyName) {
 		super(fld, queue, strategyName);
-
-		this.fld = fld;
 	}
 
 	protected FieldBuilder getFieldFrom(TypeBuilder containingType) throws ImpossibleChangeException {
-		var field = containingType.fields.stream().filter(m -> m.make().equals(fld)).findFirst();
+		var field = containingType.fields.stream().filter(m -> m.make().equals(tpMbr)).findFirst();
 		if (field.isEmpty()) throw new ImpossibleChangeException();
 
 		return field.get();

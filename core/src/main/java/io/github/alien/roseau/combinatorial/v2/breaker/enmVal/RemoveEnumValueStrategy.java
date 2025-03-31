@@ -17,7 +17,7 @@ public class RemoveEnumValueStrategy extends AbstractEnmValStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var containingEnum = getContainingEnumFromMutableApi(mutableApi);
 
-		containingEnum.values = containingEnum.values.stream().filter(e -> !e.make().equals(enmVal)).toList();
+		containingEnum.values = containingEnum.values.stream().filter(e -> !e.make().equals(tpMbr)).toList();
 
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}

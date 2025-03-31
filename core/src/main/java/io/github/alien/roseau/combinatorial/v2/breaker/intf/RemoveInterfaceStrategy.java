@@ -11,7 +11,7 @@ import io.github.alien.roseau.combinatorial.builder.TypeBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class RemoveInterfaceStrategy extends RemoveTypeStrategy {
+public final class RemoveInterfaceStrategy extends RemoveTypeStrategy<InterfaceDecl> {
 	public RemoveInterfaceStrategy(InterfaceDecl intf, NewApiQueue queue) {
 		super(intf, queue);
 	}

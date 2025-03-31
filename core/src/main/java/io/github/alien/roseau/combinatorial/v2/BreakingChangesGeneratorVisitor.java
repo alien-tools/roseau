@@ -53,24 +53,24 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakEnumDecl(EnumDecl e) {
-		new RemoveTypeStrategy(e, queue).breakApi(api);
+		new RemoveTypeStrategy<>(e, queue).breakApi(api);
 
-		new ReduceVisibilityTypeStrategy(AccessModifier.PACKAGE_PRIVATE, e, queue).breakApi(api);
+		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, e, queue).breakApi(api);
 	}
 
 	private void breakRecordDecl(RecordDecl r) {
-		new RemoveTypeStrategy(r, queue).breakApi(api);
+		new RemoveTypeStrategy<>(r, queue).breakApi(api);
 
-		new ReduceVisibilityTypeStrategy(AccessModifier.PACKAGE_PRIVATE, r, queue).breakApi(api);
+		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, r, queue).breakApi(api);
 
-		new AddModifierTypeStrategy(Modifier.FINAL, r, queue).breakApi(api);
-		new RemoveModifierTypeStrategy(Modifier.FINAL, r, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
 	}
 
 	private void breakClassDecl(ClassDecl c) {
-		new RemoveTypeStrategy(c, queue).breakApi(api);
+		new RemoveTypeStrategy<>(c, queue).breakApi(api);
 
-		new ReduceVisibilityTypeStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
+		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
 
 		new AddModifierClassStrategy(Modifier.ABSTRACT, c, queue).breakApi(api);
 		new RemoveModifierClassStrategy(Modifier.ABSTRACT, c, queue).breakApi(api);
@@ -83,12 +83,12 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private void breakInterfaceDecl(InterfaceDecl i) {
 		new RemoveInterfaceStrategy(i, queue).breakApi(api);
 
-		new ReduceVisibilityTypeStrategy(AccessModifier.PACKAGE_PRIVATE, i, queue).breakApi(api);
+		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, i, queue).breakApi(api);
 
-		new AddModifierTypeStrategy(Modifier.ABSTRACT, i, queue).breakApi(api);
-		new RemoveModifierTypeStrategy(Modifier.ABSTRACT, i, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
 
-		new AddMethodTypeStrategy(i, queue).breakApi(api);
+		new AddMethodTypeStrategy<>(i, queue).breakApi(api);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {

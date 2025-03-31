@@ -23,14 +23,14 @@ public final class RemoveModifierFieldStrategy extends AbstractFldStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!fld.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
+		if (!tpMbr.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
 
 		var containingType = getContainingTypeFromMutableApi(mutableApi);
 		if (containingType instanceof RecordBuilder && modifier == Modifier.STATIC) throw new ImpossibleChangeException();
 
 		var field = getFieldFrom(containingType);
 
-		LOGGER.info("Removing modifier {} to field {}", modifier.toCapitalize(), fld.getQualifiedName());
+		LOGGER.info("Removing modifier {} to field {}", modifier.toCapitalize(), tpMbr.getQualifiedName());
 
 		field.modifiers.remove(modifier);
 

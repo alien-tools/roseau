@@ -22,11 +22,11 @@ public final class RemoveExceptionMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!mtd.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
+		if (!tpMbr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
 
 		var method = getMethodFrom(mutableApi);
 
-		LOGGER.info("Removing exception {} from method {}", exception.getPrettyQualifiedName(), mtd.getQualifiedName());
+		LOGGER.info("Removing exception {} from method {}", exception.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 
 		method.thrownExceptions.remove(exception);
 

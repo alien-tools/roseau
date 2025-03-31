@@ -17,7 +17,7 @@ public class RemoveRecordComponentStrategy extends AbstractRcdCptValStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var containingRecord = getContainingRecordFromMutableApi(mutableApi);
 
-		containingRecord.recordComponents = containingRecord.recordComponents.stream().filter(r -> !r.make().equals(rcdCpt)).toList();
+		containingRecord.recordComponents = containingRecord.recordComponents.stream().filter(r -> !r.make().equals(tpMbr)).toList();
 
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}

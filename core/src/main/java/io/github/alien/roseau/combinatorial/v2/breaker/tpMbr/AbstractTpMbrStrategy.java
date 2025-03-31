@@ -6,10 +6,10 @@ import io.github.alien.roseau.combinatorial.v2.breaker.AbstractApiBreakerStrateg
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public abstract class AbstractTpMbrStrategy extends AbstractApiBreakerStrategy {
-	private final TypeMemberDecl tpMbr;
+public abstract class AbstractTpMbrStrategy<T extends TypeMemberDecl> extends AbstractApiBreakerStrategy {
+	protected final T tpMbr;
 
-	public AbstractTpMbrStrategy(TypeMemberDecl tpMbr, NewApiQueue queue, String strategyName) {
+	public AbstractTpMbrStrategy(T tpMbr, NewApiQueue queue, String strategyName) {
 		super(queue, strategyName);
 
 		this.tpMbr = tpMbr;

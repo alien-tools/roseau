@@ -23,7 +23,7 @@ public final class ChangeVisibilityFieldStrategy extends AbstractFldStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (fld.getVisibility() == accessModifier) throw new ImpossibleChangeException();
+		if (tpMbr.getVisibility() == accessModifier) throw new ImpossibleChangeException();
 
 		var containingType = getContainingTypeFromMutableApi(mutableApi);
 		if (containingType instanceof InterfaceBuilder && (accessModifier == AccessModifier.PRIVATE || accessModifier == AccessModifier.PROTECTED))
@@ -31,7 +31,7 @@ public final class ChangeVisibilityFieldStrategy extends AbstractFldStrategy {
 
 		var field = this.getFieldFrom(containingType);
 
-		LOGGER.info("Reducing field {} visibility to {}", fld.getQualifiedName(), accessModifier.toCapitalize());
+		LOGGER.info("Reducing field {} visibility to {}", tpMbr.getQualifiedName(), accessModifier.toCapitalize());
 
 		field.visibility = accessModifier;
 

@@ -27,13 +27,13 @@ public final class AddModifierMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (mtd.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
-		if (mtd.isPrivate() && modifier == ABSTRACT) throw new ImpossibleChangeException();
-		if (mtd.isAbstract() && (modifier == DEFAULT || modifier == FINAL || modifier == STATIC || modifier == SYNCHRONIZED)) throw new ImpossibleChangeException();
-		if (mtd.isDefault() && (modifier == ABSTRACT || modifier == STATIC)) throw new ImpossibleChangeException();
-		if (mtd.isFinal() && modifier == ABSTRACT) throw new ImpossibleChangeException();
-		if (mtd.isStatic() && (modifier == ABSTRACT || modifier == DEFAULT)) throw new ImpossibleChangeException();
-		if (mtd.getModifiers().contains(SYNCHRONIZED) && modifier == ABSTRACT) throw new ImpossibleChangeException();
+		if (tpMbr.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
+		if (tpMbr.isPrivate() && modifier == ABSTRACT) throw new ImpossibleChangeException();
+		if (tpMbr.isAbstract() && (modifier == DEFAULT || modifier == FINAL || modifier == STATIC || modifier == SYNCHRONIZED)) throw new ImpossibleChangeException();
+		if (tpMbr.isDefault() && (modifier == ABSTRACT || modifier == STATIC)) throw new ImpossibleChangeException();
+		if (tpMbr.isFinal() && modifier == ABSTRACT) throw new ImpossibleChangeException();
+		if (tpMbr.isStatic() && (modifier == ABSTRACT || modifier == DEFAULT)) throw new ImpossibleChangeException();
+		if (tpMbr.getModifiers().contains(SYNCHRONIZED) && modifier == ABSTRACT) throw new ImpossibleChangeException();
 
 		var containingType = getContainingTypeFromMutableApi(mutableApi);
 		if (containingType instanceof RecordBuilder) {
@@ -47,7 +47,7 @@ public final class AddModifierMethodStrategy extends AbstractMtdStrategy {
 
 		var method = getMethodFrom(containingType);
 
-		LOGGER.info("Adding modifier {} to method {}", modifier.toCapitalize(), mtd.getQualifiedName());
+		LOGGER.info("Adding modifier {} to method {}", modifier.toCapitalize(), tpMbr.getQualifiedName());
 
 		method.modifiers.add(modifier);
 

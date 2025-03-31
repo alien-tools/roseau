@@ -23,8 +23,8 @@ public final class ChangeVisibilityMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (mtd.getVisibility() == accessModifier) throw new ImpossibleChangeException();
-		if (mtd.isAbstract() && accessModifier == AccessModifier.PRIVATE) throw new ImpossibleChangeException();
+		if (tpMbr.getVisibility() == accessModifier) throw new ImpossibleChangeException();
+		if (tpMbr.isAbstract() && accessModifier == AccessModifier.PRIVATE) throw new ImpossibleChangeException();
 
 		var containingType = getContainingTypeFromMutableApi(mutableApi);
 		if (containingType instanceof InterfaceBuilder && (accessModifier == AccessModifier.PRIVATE || accessModifier == AccessModifier.PROTECTED))
@@ -32,7 +32,7 @@ public final class ChangeVisibilityMethodStrategy extends AbstractMtdStrategy {
 
 		var method = getMethodFrom(containingType);
 
-		LOGGER.info("Reducing method {} visibility to {}", mtd.getQualifiedName(), accessModifier.toCapitalize());
+		LOGGER.info("Reducing method {} visibility to {}", tpMbr.getQualifiedName(), accessModifier.toCapitalize());
 
 		method.visibility = accessModifier;
 

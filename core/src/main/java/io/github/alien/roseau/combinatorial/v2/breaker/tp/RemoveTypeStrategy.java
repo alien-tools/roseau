@@ -4,8 +4,8 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public class RemoveTypeStrategy extends AbstractTpStrategy {
-	public RemoveTypeStrategy(TypeDecl tp, NewApiQueue queue) {
+public class RemoveTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
+	public RemoveTypeStrategy(T tp, NewApiQueue queue) {
 		super(tp, queue, "RemoveType" + tp.getSimpleName());
 	}
 

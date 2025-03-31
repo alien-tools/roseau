@@ -22,11 +22,11 @@ public final class RemoveExceptionConstructorStrategy extends AbstractCtrStrateg
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!ctr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
+		if (!tpMbr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
 
 		var constructor = getConstructorFrom(mutableApi);
 
-		LOGGER.info("Removing exception {} from constructor {}", exception.getPrettyQualifiedName(), ctr.getQualifiedName());
+		LOGGER.info("Removing exception {} from constructor {}", exception.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 
 		constructor.thrownExceptions.remove(exception);
 

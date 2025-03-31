@@ -22,11 +22,11 @@ public final class ChangeVisibilityConstructorStrategy extends AbstractCtrStrate
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (ctr.getVisibility() == accessModifier) throw new ImpossibleChangeException();
+		if (tpMbr.getVisibility() == accessModifier) throw new ImpossibleChangeException();
 
 		var constructor = this.getConstructorFrom(mutableApi);
 
-		LOGGER.info("Reducing constructor {} visibility to {}", ctr.getQualifiedName(), accessModifier.toCapitalize());
+		LOGGER.info("Reducing constructor {} visibility to {}", tpMbr.getQualifiedName(), accessModifier.toCapitalize());
 
 		constructor.visibility = accessModifier;
 

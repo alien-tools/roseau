@@ -7,7 +7,7 @@ import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddMethodTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public class AddMethodAbstractClassStrategy extends AddMethodTypeStrategy {
+public final class AddMethodAbstractClassStrategy extends AddMethodTypeStrategy<ClassDecl> {
 	public AddMethodAbstractClassStrategy(ClassDecl cls, NewApiQueue queue) {
 		super(cls, queue);
 	}

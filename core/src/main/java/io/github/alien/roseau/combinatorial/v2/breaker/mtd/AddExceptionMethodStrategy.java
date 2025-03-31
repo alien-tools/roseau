@@ -22,11 +22,11 @@ public final class AddExceptionMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (mtd.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
+		if (tpMbr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
 
 		var method = getMethodFrom(mutableApi);
 
-		LOGGER.info("Adding exception {} to method {}", exception.getPrettyQualifiedName(), mtd.getQualifiedName());
+		LOGGER.info("Adding exception {} to method {}", exception.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 
 		method.thrownExceptions.add(exception);
 

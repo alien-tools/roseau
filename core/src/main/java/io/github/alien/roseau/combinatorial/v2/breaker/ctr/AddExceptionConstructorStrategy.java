@@ -22,11 +22,11 @@ public final class AddExceptionConstructorStrategy extends AbstractCtrStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (ctr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
+		if (tpMbr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
 
 		var constructor = getConstructorFrom(mutableApi);
 
-		LOGGER.info("Adding exception {} to constructor {}", exception.getPrettyQualifiedName(), ctr.getQualifiedName());
+		LOGGER.info("Adding exception {} to constructor {}", exception.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 
 		constructor.thrownExceptions.add(exception);
 

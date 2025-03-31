@@ -22,11 +22,11 @@ public final class RemoveModifierMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!mtd.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
+		if (!tpMbr.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
 
 		var method = getMethodFrom(mutableApi);
 
-		LOGGER.info("Removing modifier {} to method {}", modifier.toCapitalize(), mtd.getQualifiedName());
+		LOGGER.info("Removing modifier {} to method {}", modifier.toCapitalize(), tpMbr.getQualifiedName());
 
 		method.modifiers.remove(modifier);
 

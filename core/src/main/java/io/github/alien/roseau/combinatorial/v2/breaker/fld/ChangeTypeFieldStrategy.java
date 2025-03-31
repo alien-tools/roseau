@@ -22,11 +22,11 @@ public final class ChangeTypeFieldStrategy extends AbstractFldStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (fld.getType().equals(type)) throw new ImpossibleChangeException();
+		if (tpMbr.getType().equals(type)) throw new ImpossibleChangeException();
 
 		var field = getFieldFrom(mutableApi);
 
-		LOGGER.info("Changing field {} type to {}", fld.getQualifiedName(), type.getPrettyQualifiedName());
+		LOGGER.info("Changing field {} type to {}", tpMbr.getQualifiedName(), type.getPrettyQualifiedName());
 
 		field.type = type;
 
