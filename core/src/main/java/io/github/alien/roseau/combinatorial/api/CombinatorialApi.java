@@ -6,7 +6,6 @@ import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
-import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
@@ -14,17 +13,7 @@ import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.combinatorial.Constants;
-import io.github.alien.roseau.combinatorial.builder.Builder;
-import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
-import io.github.alien.roseau.combinatorial.builder.ConstructorBuilder;
-import io.github.alien.roseau.combinatorial.builder.EnumBuilder;
-import io.github.alien.roseau.combinatorial.builder.EnumValueBuilder;
-import io.github.alien.roseau.combinatorial.builder.FieldBuilder;
-import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
-import io.github.alien.roseau.combinatorial.builder.MethodBuilder;
-import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
-import io.github.alien.roseau.combinatorial.builder.RecordComponentBuilder;
-import io.github.alien.roseau.combinatorial.builder.TypeBuilder;
+import io.github.alien.roseau.combinatorial.builder.*;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -157,10 +146,10 @@ public final class CombinatorialApi {
 								}
 
 								methodsParamsTypesForParamsCount.forEach(methodParamsTypes -> {
-									var parameters = new ArrayList<ParameterDecl>();
+									var parameters = new ArrayList<ParameterBuilder>();
 									IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
 										var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
-										parameters.add(new ParameterDecl("p" + paramIndex, param, false));
+										parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
 									});
 
 									createMethodAndAddToType(visibility, modifiers, parameters, t);
@@ -172,14 +161,14 @@ public final class CombinatorialApi {
 									fieldTypes.forEach(varArgsParamType -> {
 										var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
 										var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
-										var parameters = new ArrayList<ParameterDecl>();
+										var parameters = new ArrayList<ParameterBuilder>();
 
 										IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
 											var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
-											parameters.add(new ParameterDecl("p" + paramIndex, param, false));
+											parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
 										});
 
-										parameters.add(new ParameterDecl("p" + methodParamsCount, varArgsParamType, true));
+										parameters.add(generateParameterBuilder("p" + methodParamsCount, varArgsParamType, true));
 
 										createMethodAndAddToType(visibility, modifiers, parameters, t);
 									})
@@ -190,11 +179,11 @@ public final class CombinatorialApi {
 							IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
 								var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
 								var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
-								var parameters = new ArrayList<ParameterDecl>();
+								var parameters = new ArrayList<ParameterBuilder>();
 
 								IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
 									var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
-									parameters.add(new ParameterDecl("p" + paramIndex, param, false));
+									parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
 								});
 
 								createMethodAndAddToType(overloadedQualifiedName, visibility, modifiers, parameters, t);
@@ -531,11 +520,11 @@ public final class CombinatorialApi {
 		typeStore.put(type.qualifiedName, type);
 	}
 
-	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterDecl> parameters, TypeBuilder type) {
+	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
 		createMethodAndAddToType(type.qualifiedName + ".m" + ++symbolCounter, visibility, modifiers, parameters, type);
 	}
 
-	private static void createMethodAndAddToType(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers, List<ParameterDecl> parameters, TypeBuilder type) {
+	private static void createMethodAndAddToType(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
 		var methodBuilder = new MethodBuilder();
 
 		methodBuilder.visibility = visibility;
@@ -562,7 +551,7 @@ public final class CombinatorialApi {
 		IntStream.range(0, params.size()).forEach(constructorParamTypeIndex -> {
 			var constructorsParamType = params.get(constructorParamTypeIndex);
 			boolean isVarargs = lastParamIsVarargs && constructorParamTypeIndex == params.size() - 1;
-			constructorBuilder.parameters.add(new ParameterDecl("c" + constructorParamTypeIndex, constructorsParamType, isVarargs));
+			constructorBuilder.parameters.add(generateParameterBuilder("c" + constructorParamTypeIndex, constructorsParamType, isVarargs));
 		});
 
 		classBuilder.constructors.add(constructorBuilder);
@@ -631,7 +620,7 @@ public final class CombinatorialApi {
 		methodBuilder.visibility = method.getVisibility();
 		methodBuilder.containingType = typeReferenceFactory.createTypeReference(typeDecl.getQualifiedName());
 		methodBuilder.thrownExceptions = method.getThrownExceptions();
-		methodBuilder.parameters.addAll(method.getParameters());
+		methodBuilder.parameters.addAll(method.getParameters().stream().map(ParameterBuilder::from).toList());
 		methodBuilder.type = method.getType();
 
 		methodBuilder.modifiers = toEnumSet(method.getModifiers(), Modifier.class);
@@ -641,6 +630,16 @@ public final class CombinatorialApi {
 			methodBuilder.modifiers.remove(DEFAULT);
 
 		return methodBuilder;
+	}
+
+	private static ParameterBuilder generateParameterBuilder(String name, ITypeReference type, boolean isVarargs) {
+		var paramBuilder = new ParameterBuilder();
+
+		paramBuilder.name = name;
+		paramBuilder.type = type;
+		paramBuilder.isVarargs = isVarargs;
+
+		return paramBuilder;
 	}
 
 	private static List<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {

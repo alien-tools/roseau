@@ -4,6 +4,8 @@ import io.github.alien.roseau.api.model.ConstructorDecl;
 
 public final class ConstructorBuilder extends ExecutableBuilder {
 	public ConstructorDecl make() {
+		var parameters = this.parameters.stream().map(ParameterBuilder::make).toList();
+
 		return new ConstructorDecl(qualifiedName, visibility, modifiers, annotations, location,
 				containingType, type, parameters, formalTypeParameters, thrownExceptions);
 	}
