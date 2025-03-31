@@ -7,7 +7,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveFieldStrategy extends AbstractFldStrategy {
 	public RemoveFieldStrategy(FieldDecl fld, NewApiQueue queue) {
-		super(fld, queue, "RemoveField%sFrom%s".formatted(
+		super(fld, queue, "RemoveField%sIn%s".formatted(
 				StringUtils.capitalizeFirstLetter(fld.getSimpleName()),
 				fld.getContainingType().getPrettyQualifiedName())
 		);

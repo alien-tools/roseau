@@ -11,7 +11,7 @@ public final class AddModifierFieldStrategy extends AbstractFldStrategy {
 	private final Modifier modifier;
 
 	public AddModifierFieldStrategy(Modifier modifier, FieldDecl fld, NewApiQueue queue) {
-		super(fld, queue, "AddModifier%sToField%sFrom%s".formatted(
+		super(fld, queue, "AddModifier%sToField%sIn%s".formatted(
 				modifier.toCapitalize(),
 				StringUtils.capitalizeFirstLetter(fld.getSimpleName()),
 				fld.getContainingType().getPrettyQualifiedName())

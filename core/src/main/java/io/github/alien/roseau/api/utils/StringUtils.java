@@ -5,7 +5,7 @@ import java.util.stream.Collectors;
 
 public final class StringUtils {
     public static String splitSpecialCharsAndCapitalize(String s) {
-        return Arrays.stream(s.split("\\W+|_+"))
+        return Arrays.stream(s.replaceAll("\\[]", "Arr").split("\\W+|_+"))
                 .map(StringUtils::capitalizeFirstLetter)
                 .collect(Collectors.joining());
     }

@@ -12,7 +12,7 @@ public final class RemoveModifierFieldStrategy extends AbstractFldStrategy {
 	private final Modifier modifier;
 
 	public RemoveModifierFieldStrategy(Modifier modifier, FieldDecl fld, NewApiQueue queue) {
-		super(fld, queue, "RemoveModifier%sToField%sFrom%s".formatted(
+		super(fld, queue, "RemoveModifier%sToField%sIn%s".formatted(
 				modifier.toCapitalize(),
 				StringUtils.capitalizeFirstLetter(fld.getSimpleName()),
 				fld.getContainingType().getPrettyQualifiedName())

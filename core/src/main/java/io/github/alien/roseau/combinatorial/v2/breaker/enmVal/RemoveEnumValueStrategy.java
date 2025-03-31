@@ -7,7 +7,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveEnumValueStrategy extends AbstractEnmValStrategy {
 	public RemoveEnumValueStrategy(EnumValueDecl enmVal, NewApiQueue queue) {
-		super(enmVal, queue, "RemoveEnumValue%sFrom%s".formatted(
+		super(enmVal, queue, "RemoveEnumValue%sIn%s".formatted(
 				StringUtils.capitalizeFirstLetter(enmVal.getSimpleName()),
 				enmVal.getContainingType().getPrettyQualifiedName())
 		);

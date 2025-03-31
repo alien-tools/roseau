@@ -16,7 +16,7 @@ public final class AddModifierMethodStrategy extends AbstractMtdStrategy {
 	private final Modifier modifier;
 
 	public AddModifierMethodStrategy(Modifier modifier, MethodDecl mtd, NewApiQueue queue) {
-		super(mtd, queue, "AddModifier%sToMethod%sFrom%s".formatted(
+		super(mtd, queue, "AddModifier%sToMethod%sIn%s".formatted(
 				modifier.toCapitalize(),
 				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
 				mtd.getContainingType().getPrettyQualifiedName())

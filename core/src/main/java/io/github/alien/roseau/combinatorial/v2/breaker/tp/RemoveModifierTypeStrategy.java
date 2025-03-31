@@ -10,7 +10,7 @@ public class RemoveModifierTypeStrategy extends AbstractTpStrategy {
 	protected final Modifier modifier;
 
 	public RemoveModifierTypeStrategy(Modifier modifier, TypeDecl tp, NewApiQueue queue) {
-		super(tp, queue, "Remove%sModifierFrom%s".formatted(modifier.toCapitalize(), tp.getSimpleName()));
+		super(tp, queue, "Remove%sModifierIn%s".formatted(modifier.toCapitalize(), tp.getSimpleName()));
 
 		this.modifier = modifier;
 	}

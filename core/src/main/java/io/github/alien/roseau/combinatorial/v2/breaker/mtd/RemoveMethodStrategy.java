@@ -7,7 +7,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveMethodStrategy extends AbstractMtdStrategy {
 	public RemoveMethodStrategy(MethodDecl mtd, NewApiQueue queue) {
-		super(mtd, queue, "RemoveMethod%sFrom%s".formatted(
+		super(mtd, queue, "RemoveMethod%sIn%s".formatted(
 				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
 				mtd.getContainingType().getPrettyQualifiedName())
 		);

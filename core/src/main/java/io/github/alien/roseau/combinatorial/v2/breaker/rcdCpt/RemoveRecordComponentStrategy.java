@@ -7,7 +7,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveRecordComponentStrategy extends AbstractRcdCptValStrategy {
 	public RemoveRecordComponentStrategy(RecordComponentDecl rcdCpt, NewApiQueue queue) {
-		super(rcdCpt, queue, "RemoveRecordComponent%sFrom%s".formatted(
+		super(rcdCpt, queue, "RemoveRecordComponent%sIn%s".formatted(
 				StringUtils.capitalizeFirstLetter(rcdCpt.getSimpleName()),
 				rcdCpt.getContainingType().getPrettyQualifiedName())
 		);

@@ -1,29 +1,17 @@
 package io.github.alien.roseau.combinatorial.v2;
 
 import io.github.alien.roseau.api.model.*;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
-import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddMethodAbstractClassStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.cls.AddModifierClassStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.cls.RemoveModifierClassStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.ctr.ChangeVisibilityConstructorStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.ctr.RemoveConstructorStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
+import io.github.alien.roseau.combinatorial.v2.breaker.ctr.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.RemoveEnumValueStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.fld.AddModifierFieldStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.fld.ChangeVisibilityFieldStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.fld.RemoveFieldStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.fld.RemoveModifierFieldStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.fld.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.mtd.AddModifierMethodStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.mtd.ChangeVisibilityMethodStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.mtd.RemoveMethodStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.mtd.RemoveModifierMethodStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.mtd.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcdCpt.RemoveRecordComponentStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddMethodTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tp.AddModifierTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tp.ReduceVisibilityTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveModifierTypeStrategy;
-import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveTypeStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.tp.*;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
@@ -99,6 +87,9 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PROTECTED, c, queue).breakApi(api);
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PRIVATE, c, queue).breakApi(api);
+
+		new AddExceptionConstructorStrategy(TypeReference.EXCEPTION, c, queue).breakApi(api);
+		new RemoveExceptionConstructorStrategy(TypeReference.EXCEPTION, c, queue).breakApi(api);
 	}
 
 	private void breakEnumValueDecl(EnumValueDecl eV) {
@@ -141,5 +132,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveModifierMethodStrategy(Modifier.STATIC, m, queue).breakApi(api);
 		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
+
+		new AddExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
+		new RemoveExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
 	}
 }
