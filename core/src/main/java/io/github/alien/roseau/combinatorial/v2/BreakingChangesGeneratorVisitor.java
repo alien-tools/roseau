@@ -139,6 +139,10 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddParameterConstructorStrategy(threadVarargsParam, c, queue).breakApi(api);
 		new AddParameterConstructorStrategy(charArrVarargsParam, c, queue).breakApi(api);
 
+		for (var paramIndex = 0; paramIndex < c.getParameters().size(); paramIndex++) {
+			new RemoveParameterConstructorStrategy(paramIndex, c, queue).breakApi(api);
+		}
+
 		new AddExceptionConstructorStrategy(TypeReference.EXCEPTION, c, queue).breakApi(api);
 		new RemoveExceptionConstructorStrategy(TypeReference.EXCEPTION, c, queue).breakApi(api);
 	}
