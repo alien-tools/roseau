@@ -13,7 +13,9 @@ import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.RemoveEnumValueStr
 import io.github.alien.roseau.combinatorial.v2.breaker.fld.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.mtd.*;
-import io.github.alien.roseau.combinatorial.v2.breaker.rcdCpt.RemoveRecordComponentStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.rcd.AddRecordComponentStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.rcd.ChangeRecordComponentStrategy;
+import io.github.alien.roseau.combinatorial.v2.breaker.rcd.RemoveRecordComponentStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.*;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
@@ -48,7 +50,6 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 			case InterfaceDecl i: breakInterfaceDecl(i); break;
 			case ConstructorDecl c: breakConstructorDecl(c); break;
 			case EnumValueDecl eV: breakEnumValueDecl(eV); break;
-			case RecordComponentDecl rC: breakRecordComponentDecl(rC); break;
 			case FieldDecl f: breakFieldDecl(f); break;
 			case MethodDecl m: breakMethodDecl(m); break;
 			default: break;
@@ -70,6 +71,20 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 		new AddModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
+
+		for (var paramType: paramTypes) {
+			new AddRecordComponentStrategy(paramType, false, r, queue).breakApi(api);
+			new AddRecordComponentStrategy(paramType, true, r, queue).breakApi(api);
+		}
+
+		for (var recordComponentIndex = 0; recordComponentIndex < r.getRecordComponents().size(); recordComponentIndex++) {
+			for (var type : paramTypes) {
+				new ChangeRecordComponentStrategy(recordComponentIndex, type, false, r, queue).breakApi(api);
+				new ChangeRecordComponentStrategy(recordComponentIndex, type, true, r, queue).breakApi(api);
+			}
+
+			new RemoveRecordComponentStrategy(recordComponentIndex, r, queue).breakApi(api);
+		}
 	}
 
 	private void breakClassDecl(ClassDecl c) {
@@ -124,10 +139,6 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 	private void breakEnumValueDecl(EnumValueDecl eV) {
 		new RemoveEnumValueStrategy(eV, queue).breakApi(api);
-	}
-
-	private void breakRecordComponentDecl(RecordComponentDecl rC) {
-		new RemoveRecordComponentStrategy(rC, queue).breakApi(api);
 	}
 
 	private void breakFieldDecl(FieldDecl f) {

@@ -29,7 +29,7 @@ public final class ChangeParameterMethodStrategy extends AbstractMtdStrategy {
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
-		var method = getMethodFrom(mutableApi);
+		var method = getMethodFrom(containingType);
 		if (parameterIndex < 0 || parameterIndex >= method.parameters.size()) throw new ImpossibleChangeException();
 		if (parameterIsVarargs && parameterIndex != method.parameters.size() - 1) throw new ImpossibleChangeException();
 

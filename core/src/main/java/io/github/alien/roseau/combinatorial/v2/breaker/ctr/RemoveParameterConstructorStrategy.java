@@ -3,7 +3,6 @@ package io.github.alien.roseau.combinatorial.v2.breaker.ctr;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.builder.ParameterBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
@@ -23,7 +22,7 @@ public final class RemoveParameterConstructorStrategy extends AbstractCtrStrateg
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
-		var constructor = getConstructorFrom(mutableApi);
+		var constructor = getConstructorFrom(containingType);
 		if (parameterIndex < 0 || parameterIndex >= constructor.parameters.size()) throw new ImpossibleChangeException();
 
 		constructor.parameters.remove(parameterIndex);

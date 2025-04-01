@@ -27,7 +27,7 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
-		var method = getMethodFrom(mutableApi);
+		var method = getMethodFrom(containingType);
 		if (!method.parameters.isEmpty() && method.parameters.getLast().isVarargs) throw new ImpossibleChangeException();
 
 		var paramBuilder = new ParameterBuilder();

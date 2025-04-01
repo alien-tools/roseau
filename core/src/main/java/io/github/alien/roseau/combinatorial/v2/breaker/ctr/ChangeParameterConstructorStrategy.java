@@ -29,7 +29,7 @@ public final class ChangeParameterConstructorStrategy extends AbstractCtrStrateg
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
-		var constructor = getConstructorFrom(mutableApi);
+		var constructor = getConstructorFrom(containingType);
 		if (parameterIndex < 0 || parameterIndex >= constructor.parameters.size()) throw new ImpossibleChangeException();
 		if (parameterIsVarargs && parameterIndex != constructor.parameters.size() - 1) throw new ImpossibleChangeException();
 
