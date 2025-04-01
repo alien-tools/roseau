@@ -7,7 +7,6 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
-import io.github.alien.roseau.combinatorial.builder.ParameterBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.ctr.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.RemoveEnumValueStrategy;
@@ -17,6 +16,8 @@ import io.github.alien.roseau.combinatorial.v2.breaker.mtd.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcdCpt.RemoveRecordComponentStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.*;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
+
+import java.util.List;
 
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private final API api;
@@ -31,39 +32,12 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private final ITypeReference threadType = typeReferenceFactory.createTypeReference("java.lang.Thread");
 	private final ITypeReference charArrType = typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("char"), 1);
 
-	private final ParameterBuilder intParam = new ParameterBuilder();
-	private final ParameterBuilder booleanParam = new ParameterBuilder();
-	private final ParameterBuilder threadParam = new ParameterBuilder();
-	private final ParameterBuilder charArrParam = new ParameterBuilder();
-	private final ParameterBuilder intVarargsParam = new ParameterBuilder();
-	private final ParameterBuilder booleanVarargsParam = new ParameterBuilder();
-	private final ParameterBuilder threadVarargsParam = new ParameterBuilder();
-	private final ParameterBuilder charArrVarargsParam = new ParameterBuilder();
+	private final List<ITypeReference> paramTypes = List.of(intType, booleanType, threadType, charArrType);
+	private final List<ITypeReference> types = List.of(voidType, intType, booleanType, threadType, charArrType);
 
 	public BreakingChangesGeneratorVisitor(API api, NewApiQueue queue) {
 		this.api = api;
 		this.queue = queue;
-
-		intParam.name = "newParam";
-		intParam.type = intType;
-		booleanParam.name = "newParam";
-		booleanParam.type = booleanType;
-		threadParam.name = "newParam";
-		threadParam.type = threadType;
-		charArrParam.name = "newParam";
-		charArrParam.type = charArrType;
-		intVarargsParam.name = "newParam";
-		intVarargsParam.type = intType;
-		intVarargsParam.isVarargs = true;
-		booleanVarargsParam.name = "newParam";
-		booleanVarargsParam.type = booleanType;
-		booleanVarargsParam.isVarargs = true;
-		threadVarargsParam.name = "newParam";
-		threadVarargsParam.type = threadType;
-		threadVarargsParam.isVarargs = true;
-		charArrVarargsParam.name = "newParam";
-		charArrVarargsParam.type = charArrType;
-		charArrVarargsParam.isVarargs = true;
 	}
 
 	public Visit symbol(Symbol it) {
@@ -130,16 +104,17 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PRIVATE, c, queue).breakApi(api);
 
-		new AddParameterConstructorStrategy(intParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(booleanParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(threadParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(charArrParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(intVarargsParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(booleanVarargsParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(threadVarargsParam, c, queue).breakApi(api);
-		new AddParameterConstructorStrategy(charArrVarargsParam, c, queue).breakApi(api);
+		for (var type : paramTypes) {
+			new AddParameterConstructorStrategy(type, false, c, queue).breakApi(api);
+			new AddParameterConstructorStrategy(type, true, c, queue).breakApi(api);
+		}
 
 		for (var paramIndex = 0; paramIndex < c.getParameters().size(); paramIndex++) {
+			for (var type : paramTypes) {
+				new ChangeParameterConstructorStrategy(paramIndex, type, false, c, queue).breakApi(api);
+				new ChangeParameterConstructorStrategy(paramIndex, type, true, c, queue).breakApi(api);
+			}
+
 			new RemoveParameterConstructorStrategy(paramIndex, c, queue).breakApi(api);
 		}
 
@@ -193,11 +168,9 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 
-		new ChangeTypeMethodStrategy(voidType, m, queue).breakApi(api);
-		new ChangeTypeMethodStrategy(intType, m, queue).breakApi(api);
-		new ChangeTypeMethodStrategy(booleanType, m, queue).breakApi(api);
-		new ChangeTypeMethodStrategy(threadType, m, queue).breakApi(api);
-		new ChangeTypeMethodStrategy(charArrType, m, queue).breakApi(api);
+		for (var type : types) {
+			new ChangeTypeMethodStrategy(type, m, queue).breakApi(api);
+		}
 
 		new AddExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
 		new RemoveExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);

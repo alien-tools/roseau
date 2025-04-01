@@ -4,22 +4,24 @@ import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.builder.ParameterBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class AddParameterConstructorStrategy extends AbstractCtrStrategy {
+public final class ChangeParameterConstructorStrategy extends AbstractCtrStrategy {
+	private final int parameterIndex;
 	private final ITypeReference parameterType;
 	private final boolean parameterIsVarargs;
 
-	public AddParameterConstructorStrategy(ITypeReference type, boolean isVarargs, ConstructorDecl ctr, NewApiQueue queue) {
-		super(ctr, queue, "AddParameter%s%sToConstructor%sIn%s".formatted(
+	public ChangeParameterConstructorStrategy(int index, ITypeReference type, boolean isVarargs, ConstructorDecl ctr, NewApiQueue queue) {
+		super(ctr, queue, "ChangeParameter%dTo%s%sFromConstructor%sIn%s".formatted(
+				index,
 				type.getPrettyQualifiedName(),
 				isVarargs ? "Varargs" : "",
 				StringUtils.splitSpecialCharsAndCapitalize(ctr.getErasure()),
 				ctr.getContainingType().getPrettyQualifiedName())
 		);
 
+		this.parameterIndex = index;
 		this.parameterType = type;
 		this.parameterIsVarargs = isVarargs;
 	}
@@ -28,16 +30,18 @@ public final class AddParameterConstructorStrategy extends AbstractCtrStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
 		var constructor = getConstructorFrom(mutableApi);
-		if (!constructor.parameters.isEmpty() && constructor.parameters.getLast().isVarargs) throw new ImpossibleChangeException();
+		if (parameterIndex < 0 || parameterIndex >= constructor.parameters.size()) throw new ImpossibleChangeException();
+		if (parameterIsVarargs && parameterIndex != constructor.parameters.size() - 1) throw new ImpossibleChangeException();
 
-		var paramBuilder = new ParameterBuilder();
-		paramBuilder.name = "newParamAdded";
-		paramBuilder.type = parameterType;
-		paramBuilder.isVarargs = parameterIsVarargs;
-		constructor.parameters.add(paramBuilder);
+		var currentParameter = constructor.parameters.get(parameterIndex);
+		if (currentParameter == null) throw new ImpossibleChangeException();
+		if (currentParameter.type.equals(parameterType) && currentParameter.isVarargs == parameterIsVarargs) throw new ImpossibleChangeException();
+
+		currentParameter.type = parameterType;
+		currentParameter.isVarargs = parameterIsVarargs;
 		if (areConstructorsInvalid(containingType.constructors)) throw new ImpossibleChangeException();
 
-		LOGGER.info("Adding parameter {} to constructor {}", parameterType.getPrettyQualifiedName(), tpMbr.getQualifiedName());
+		LOGGER.info("Changing parameter at index {} from constructor {}", parameterIndex, tpMbr.getQualifiedName());
 
 		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
