@@ -172,6 +172,20 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 			new ChangeTypeMethodStrategy(type, m, queue).breakApi(api);
 		}
 
+		for (var type : paramTypes) {
+			new AddParameterMethodStrategy(type, false, m, queue).breakApi(api);
+			new AddParameterMethodStrategy(type, true, m, queue).breakApi(api);
+		}
+
+		for (var paramIndex = 0; paramIndex < m.getParameters().size(); paramIndex++) {
+			for (var type : paramTypes) {
+				new ChangeParameterMethodStrategy(paramIndex, type, false, m, queue).breakApi(api);
+				new ChangeParameterMethodStrategy(paramIndex, type, true, m, queue).breakApi(api);
+			}
+
+			new RemoveParameterMethodStrategy(paramIndex, m, queue).breakApi(api);
+		}
+
 		new AddExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
 		new RemoveExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
 	}
