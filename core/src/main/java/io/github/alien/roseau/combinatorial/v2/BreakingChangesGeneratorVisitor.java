@@ -154,10 +154,9 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
 		new RemoveModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
 
-		new ChangeTypeFieldStrategy(intType, f, queue).breakApi(api);
-		new ChangeTypeFieldStrategy(booleanType, f, queue).breakApi(api);
-		new ChangeTypeFieldStrategy(threadType, f, queue).breakApi(api);
-		new ChangeTypeFieldStrategy(charArrType, f, queue).breakApi(api);
+		for (var paramType: paramTypes) {
+			new ChangeTypeFieldStrategy(paramType, f, queue).breakApi(api);
+		}
 	}
 
 	private void breakMethodDecl(MethodDecl m) {
