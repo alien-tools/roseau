@@ -70,15 +70,15 @@ final class ApiStats {
 	}
 
 	private static void countEntities(TypeDecl type) {
-		methodsCount += (int) type.getDeclaredMethods().stream().filter(TypeMemberDecl::isExported).count();
-		fieldsCount += (int) type.getDeclaredFields().stream().filter(TypeMemberDecl::isExported).count();
+		methodsCount += (int) type.getAllMethods().count();
+		fieldsCount += (int) type.getAllFields().count();
 
 		if (type instanceof EnumDecl enumDecl) {
 			enumValuesCount += enumDecl.getValues().size();
 		}
 
 		if (type instanceof ClassDecl classDecl) {
-			constructorsCount += (int) classDecl.getDeclaredConstructors().stream().filter(TypeMemberDecl::isExported).count();
+			constructorsCount += classDecl.getDeclaredConstructors().size();
 		}
 	}
 }
