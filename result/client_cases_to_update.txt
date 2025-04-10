@@ -5,8 +5,8 @@ AddModifierToMethodIn
 AddParameterToConstructorIn
 AddParameterToMethodIn
 AddRecordComponentToRecord
-ChangeFieldInTypeTo
-ChangeMethodInTypeTo
+ChangeFieldInTypeTo -> I THINK IT'S DONE
+ChangeMethodInTypeTo -> I THINK IT'S DONE
 ChangeParameterToFromMethodIn
 ReduceVisibilityTo
 RemoveConstructorIn

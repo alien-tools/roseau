@@ -102,13 +102,14 @@ public class ClientWriter extends AbstractWriter {
 		var imports = getImportsForType(containingEnum);
 
 		var caller = getContainingTypeAccessForTypeMember(containingEnum, enumValueDecl);
-		var enumValueReadCode = "var %sVal = %s.%s;".formatted(enumValueDecl.getPrettyQualifiedName(), caller, enumValueDecl.getSimpleName());
+		var enumValueReadCode = "%s %sVal = %s.%s;".formatted(containingEnum.getSimpleName(), enumValueDecl.getPrettyQualifiedName(), caller, enumValueDecl.getSimpleName());
 
 		addInstructionToClientMain(imports, enumValueReadCode);
 	}
 
 	public void writeFieldRead(FieldDecl fieldDecl, TypeDecl containingType) {
 		var imports = getImportsForType(containingType);
+		var type = fieldDecl.getType().getQualifiedName();
 		var name = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
 
 		String methodName = null, template = null;
@@ -117,7 +118,7 @@ public class ClientWriter extends AbstractWriter {
 			template = ClientTemplates.ABSTRACT_CLASS_EXTENSION_TEMPLATE;
 		} else if (fieldDecl.isPublic()) {
 			var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
-			var fieldReadCode = "var %sVal = %s.%s;".formatted(fieldDecl.getPrettyQualifiedName(), caller, fieldDecl.getSimpleName());
+			var fieldReadCode = "%s %sVal = %s.%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), caller, fieldDecl.getSimpleName());
 
 			addInstructionToClientMain(imports, fieldReadCode);
 		} else if (fieldDecl.isProtected()) {
@@ -128,7 +129,7 @@ public class ClientWriter extends AbstractWriter {
 		if (methodName == null || containingType.isSealed()) return;
 
 		var caller = fieldDecl.isStatic() ? containingType.getSimpleName() : "this";
-		var methodCode = "var val = %s.%s;".formatted(caller, fieldDecl.getSimpleName());
+		var methodCode = "%s val = %s.%s;".formatted(type, caller, fieldDecl.getSimpleName());
 		var method = generateMethodDeclaration(methodName, methodCode);
 		var code = template.formatted(name, containingType.getSimpleName(), method);
 
@@ -166,9 +167,10 @@ public class ClientWriter extends AbstractWriter {
 
 	public void writeRecordComponentRead(RecordComponentDecl recordComponentDecl, RecordDecl containingRecord) {
 		var imports = getImportsForType(containingRecord);
+		var type = recordComponentDecl.isVarargs() ? "%s[]".formatted(recordComponentDecl.getType().getQualifiedName()) : recordComponentDecl.getType().getQualifiedName();
 
 		var caller = getContainingTypeAccessForTypeMember(containingRecord, recordComponentDecl);
-		var recordComponentReadCode = "var %sVal = %s.%s();".formatted(recordComponentDecl.getPrettyQualifiedName(), caller, recordComponentDecl.getSimpleName());
+		var recordComponentReadCode = "%s %sVal = %s.%s();".formatted(type, recordComponentDecl.getPrettyQualifiedName(), caller, recordComponentDecl.getSimpleName());
 
 		addInstructionToClientMain(imports, recordComponentReadCode);
 	}
