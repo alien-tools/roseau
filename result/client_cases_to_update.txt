@@ -1,17 +1,17 @@
-AddExceptionToConstructorIn -> I THINK IT'S DONE
-AddExceptionToMethodIn -> I THINK IT'S DONE
+AddExceptionToConstructorIn
+AddExceptionToMethodIn
 AddModifierToFieldIn
 AddModifierToMethodIn
 AddParameterToConstructorIn
 AddParameterToMethodIn
 AddRecordComponentToRecord
-ChangeFieldInTypeTo -> I THINK IT'S DONE
-ChangeMethodInTypeTo -> I THINK IT'S DONE
+ChangeFieldInTypeTo
+ChangeMethodInTypeTo
 ChangeParameterToFromMethodIn
 ReduceVisibilityTo
 RemoveConstructorIn
-RemoveExceptionFromConstructorIn -> I THINK IT'S DONE
-RemoveExceptionFromMethodIn -> I THINK IT'S DONE
+RemoveExceptionFromConstructorIn
+RemoveExceptionFromMethodIn
 RemoveFieldIn
 RemoveMethodIn
 RemoveModifierToFieldIn
