@@ -20,8 +20,9 @@ public class ClientWriter extends AbstractWriter {
 
 	private final Set<String> imports = new HashSet<>();
 	private final List<String> innerTypes = new ArrayList<>();
-	private final Set<String> mainExceptions = new HashSet<>();
-	private final List<String> mainInstructions = new ArrayList<>();
+	private final Set<String> exceptions = new HashSet<>();
+	private final List<String> notThrowingInstructions = new ArrayList<>();
+	private final List<String> throwingInstructions = new ArrayList<>();
 
 	public ClientWriter(Path outputDir) {
 		super(outputDir);
@@ -94,7 +95,7 @@ public class ClientWriter extends AbstractWriter {
 		var imports = getImportsForType(classDecl);
 
 		this.imports.addAll(imports);
-		this.mainExceptions.add(classDecl.getSimpleName());
+		this.exceptions.add(classDecl.getSimpleName());
 	}
 
 	public void writeEnumValueRead(EnumValueDecl enumValueDecl, EnumDecl containingEnum) {
@@ -254,16 +255,20 @@ public class ClientWriter extends AbstractWriter {
 		try {
 			var sortedImports = imports.stream().sorted().map("import %s;"::formatted).collect(Collectors.joining("\n"));
 			var innerTypesCode = String.join("\n", innerTypes);
-			var sortedMainExceptions = formatExceptionNames(mainExceptions.stream().toList());
-			var mainCode = String.join("\n", mainInstructions);
+			var sortedExceptions = formatExceptionNames(exceptions.stream().toList());
+			var exceptionsCode = sortedExceptions.isBlank() ? "" : " throws %s".formatted(sortedExceptions);
+			var notThrowingCode = String.join("\n\t\t", notThrowingInstructions);
+			var throwingCode = String.join("\n\t\t", throwingInstructions);
 
 			var fullCode = ClientTemplates.FULL_CLIENT_FILE_TEMPLATE.formatted(
 					clientPackageName,
 					sortedImports,
 					Constants.CLIENT_FILENAME,
 					innerTypesCode,
-					sortedMainExceptions.isBlank() ? "" : " throws %s".formatted(sortedMainExceptions),
-					mainCode
+					exceptionsCode,
+					notThrowingCode,
+					exceptionsCode,
+					throwingCode
 			).getBytes();
 
 			var packagePath = clientPackageName.replace(".", "/");
@@ -285,10 +290,15 @@ public class ClientWriter extends AbstractWriter {
 		addInstructionToClientMain(imports, List.of(), code);
 	}
 
-	private void addInstructionToClientMain(List<String> imports, List<String> mainExceptions, String code) {
+	private void addInstructionToClientMain(List<String> imports, List<String> exceptions, String code) {
 		this.imports.addAll(imports);
-		this.mainExceptions.addAll(mainExceptions);
-		this.mainInstructions.add("\t\t%s".formatted(code));
+		this.exceptions.addAll(exceptions);
+
+		if (exceptions.isEmpty()) {
+			this.notThrowingInstructions.add(code);
+		} else {
+			this.throwingInstructions.add(code);
+		}
 	}
 
 	private static List<String> getImportsForType(TypeDecl typeDecl) {

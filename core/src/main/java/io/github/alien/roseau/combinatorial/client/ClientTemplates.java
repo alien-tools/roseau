@@ -9,8 +9,17 @@ public interface ClientTemplates {
 			public class %s {
 			%s
 				public static void main(String[] args)%s {
-			%s
+					callInstructionsWithoutException();
+					callInstructionsWithException();
 			    }
+
+				private static void callInstructionsWithoutException() {
+					%s
+				}
+
+				private static void callInstructionsWithException()%s {
+					%s
+				}
 			}
 			""";
 

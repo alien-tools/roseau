@@ -1,5 +1,5 @@
-AddExceptionToConstructorIn
-AddExceptionToMethodIn
+AddExceptionToConstructorIn -> I THINK IT'S DONE
+AddExceptionToMethodIn -> I THINK IT'S DONE
 AddModifierToFieldIn
 AddModifierToMethodIn
 AddParameterToConstructorIn
@@ -10,8 +10,8 @@ ChangeMethodInTypeTo
 ChangeParameterToFromMethodIn
 ReduceVisibilityTo
 RemoveConstructorIn
-RemoveExceptionFromConstructorIn
-RemoveExceptionFromMethodIn
+RemoveExceptionFromConstructorIn -> I THINK IT'S DONE
+RemoveExceptionFromMethodIn -> I THINK IT'S DONE
 RemoveFieldIn
 RemoveMethodIn
 RemoveModifierToFieldIn
