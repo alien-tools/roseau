@@ -197,6 +197,12 @@ public class ClientWriter extends AbstractWriter {
 		var code = ClientTemplates.INTERFACE_IMPLEMENTATION_TEMPLATE.formatted(name, interfaceDecl.getSimpleName(), methodsImplemented);
 
 		addInnerTypeToClientMain(imports, code);
+		interfaceDecl.getAllMethodsToImplement().forEach(method -> {
+			var params = getParamsForExecutableInvocation(method);
+			var exceptions = getExceptionsForExecutableInvocation(method);
+
+			addInstructionToClientMain(imports, exceptions, "new %s().%s(%s);".formatted(name, method.getSimpleName(), params));
+		});
 	}
 
 	public void writeMethodInvocation(MethodDecl methodDecl, ClassDecl containingClass) {
@@ -273,6 +279,8 @@ public class ClientWriter extends AbstractWriter {
 					Constants.CLIENT_FILENAME,
 					innerTypesCode,
 					exceptionsCode,
+					Constants.CLIENT_FILENAME,
+					Constants.CLIENT_FILENAME,
 					notThrowingCode,
 					exceptionsCode,
 					throwingCode

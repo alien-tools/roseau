@@ -9,15 +9,15 @@ public interface ClientTemplates {
 			public class %s {
 			%s
 				public static void main(String[] args)%s {
-					callInstructionsWithoutException();
-					callInstructionsWithException();
+					new %s().callInstructionsWithoutException();
+					new %s().callInstructionsWithException();
 			    }
 
-				private static void callInstructionsWithoutException() {
+				private void callInstructionsWithoutException() {
 					%s
 				}
 
-				private static void callInstructionsWithException()%s {
+				private void callInstructionsWithException()%s {
 					%s
 				}
 			}

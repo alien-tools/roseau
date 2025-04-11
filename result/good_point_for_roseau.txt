@@ -1,0 +1,10 @@
+AddExceptionJavaLangExceptionToConstructor
+public final class C {
+    protected C(java.lang.Thread c) {}
+}
+
+AddExceptionJavaLangExceptionToMethod
+public record R() {
+    protected void m() {}
+}
+// Records are implicitly final, so you can't extend the method and as method is protected you can't call it from outside the class

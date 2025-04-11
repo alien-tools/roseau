@@ -1,5 +1,5 @@
-AddExceptionToConstructorIn
-AddExceptionToMethodIn
+AddExceptionToConstructorIn -> I THINK IT'S OK
+AddExceptionToMethodIn -> I THINK IT'S OK
 AddModifierToFieldIn
 AddModifierToMethodIn
 AddParameterToConstructorIn
