@@ -31,7 +31,7 @@ public class ClientWriter extends AbstractWriter {
 	public void writeClassInheritance(ClassDecl classDecl) {
 		var imports = getImportsForType(classDecl);
 		var name = "%sClassInheritance".formatted(classDecl.getPrettyQualifiedName());
-		var constructorRequired = implementRequiredConstructor(classDecl, name);
+		var constructorRequired = implementAllConstructors(classDecl, name);
 		var methodsImplemented = implementNecessaryMethods(classDecl);
 		var classBody = constructorRequired.isBlank()
 				? methodsImplemented
@@ -40,7 +40,12 @@ public class ClientWriter extends AbstractWriter {
 		var code = ClientTemplates.CLASS_EXTENSION_TEMPLATE.formatted(name, classDecl.getSimpleName(), classBody);
 
 		addInnerTypeToClientMain(imports, code);
-		addInstructionToClientMain(imports, "new %s().new %s();".formatted(Constants.CLIENT_FILENAME, name));
+		classDecl.getDeclaredConstructors().forEach(constructor -> {
+			var params = getParamsForExecutableInvocation(constructor);
+			var exceptions = getExceptionsForExecutableInvocation(constructor);
+
+			addInstructionToClientMain(imports, exceptions, "new %s().new %s(%s);".formatted(Constants.CLIENT_FILENAME, name, params));
+		});
 	}
 
 	public void writeConstructorInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -315,6 +320,28 @@ public class ClientWriter extends AbstractWriter {
 		else if (typeDecl instanceof ClassDecl classDecl) return generateEasiestConstructorInvocationForClass(classDecl);
 
 		throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
+	}
+
+	private static String implementAllConstructors(ClassDecl classDecl, String className) {
+		var constructors = getSortedConstructors(classDecl);
+
+		if (constructors.isEmpty()) return "";
+
+		var implementedConstructors = constructors.stream().map(c -> {
+			var params = c.getParameters().stream().map(ParameterDecl::toString).collect(Collectors.joining(", "));
+			var superParams = c.getParameters().stream().map(p -> p.toString().split(" ")[1]).collect(Collectors.joining(", "));
+			var exceptions = getExceptionsForExecutableInvocation(c);
+			var exceptionsFormatted = formatExceptionNames(exceptions);
+
+			return "\t%s(%s)%s {\n\t\tsuper(%s);\n\t}\n".formatted(
+					className,
+					params,
+					exceptionsFormatted.isBlank() ? "" : " throws %s".formatted(exceptionsFormatted),
+					superParams
+			);
+		}).toList();
+
+		return String.join("\n", implementedConstructors);
 	}
 
 	private static String implementRequiredConstructor(ClassDecl classDecl, String className) {
