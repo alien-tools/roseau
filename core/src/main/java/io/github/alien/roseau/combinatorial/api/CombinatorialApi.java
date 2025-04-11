@@ -48,11 +48,11 @@ public final class CombinatorialApi {
 			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
 			.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
 			.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
-			.collect(Collectors.toSet());
+			.collect(Collectors.toCollection(LinkedHashSet::new));
 	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
 			.stream()
 			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
-			.collect(Collectors.toSet());
+			.collect(Collectors.toCollection(LinkedHashSet::new));
 	static final Set<Set<Modifier>> recordModifiers = powerSet(FINAL);
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 
@@ -653,7 +653,7 @@ public final class CombinatorialApi {
 		return switch (container) {
 			case RecordBuilder ignored -> powerSet(STATIC, FINAL).stream()
 					.filter(mods -> mods.contains(STATIC))
-					.collect(Collectors.toSet());
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 			default -> powerSet(STATIC, FINAL);
 		};
 	}
@@ -671,19 +671,19 @@ public final class CombinatorialApi {
 				.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
 				.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(STATIC, SYNCHRONIZED)).isEmpty())
 				.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
-				.collect(Collectors.toSet());
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return switch (container) {
 			case InterfaceBuilder ignored -> modifiers.stream()
 					.filter(mods -> Sets.intersection(mods, Set.of(SYNCHRONIZED, FINAL)).isEmpty())
-					.collect(Collectors.toSet());
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 			case RecordBuilder ignored -> modifiers.stream()
 					.filter(mods -> Sets.intersection(mods, Set.of(ABSTRACT, DEFAULT)).isEmpty())
-					.collect(Collectors.toSet());
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 			case ClassBuilder b -> modifiers.stream()
 					.filter(mods -> !mods.contains(DEFAULT))
 					.filter(mods -> b.make().isAbstract() || !mods.contains(ABSTRACT))
-					.collect(Collectors.toSet());
+					.collect(Collectors.toCollection(LinkedHashSet::new));
 			default -> modifiers;
 		};
 	}
