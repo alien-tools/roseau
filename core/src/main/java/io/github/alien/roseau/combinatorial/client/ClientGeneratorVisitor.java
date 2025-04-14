@@ -87,8 +87,12 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (!containingType.isClass()) return;
 		var containingClass = (ClassDecl) containingType;
 
-		if (!containingClass.isEffectivelyAbstract()) {
-			writer.writeConstructorInvocation(it, containingClass);
+		if (it.isPublic() && !containingClass.isEffectivelyAbstract()) {
+			writer.writeConstructorDirectInvocation(it, containingClass);
+		}
+
+		if (!containingClass.isEffectivelyFinal()) {
+			writer.writeConstructorInheritanceInvocation(it, containingClass);
 		}
 	}
 
@@ -107,10 +111,20 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (containingTypeOpt.isEmpty()) return;
 		var containingType = containingTypeOpt.get();
 
-		writer.writeFieldRead(it, containingType);
+		if (it.isPublic() && !containingType.isAbstract()) {
+			writer.writeFieldDirectRead(it, containingType);
 
-		if (!it.isFinal() && containingType.isClass()) {
-			writer.writeFieldWrite(it, containingType);
+			if (!it.isFinal() && containingType.isClass()) {
+				writer.writeFieldDirectWrite(it, containingType);
+			}
+		}
+
+		if (!containingType.isEffectivelyFinal()) {
+			writer.writeFieldInheritanceRead(it, containingType);
+
+			if (!it.isFinal() && containingType.isClass()) {
+				writer.writeFieldInheritanceWrite(it, containingType);
+			}
 		}
 	}
 
@@ -119,13 +133,18 @@ public class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (containingTypeOpt.isEmpty()) return;
 		var containingType = containingTypeOpt.get();
 
-		if (!containingType.isClass()) return;
-		var containingClass = (ClassDecl) containingType;
+		if (!containingType.isEffectivelyFinal()) {
+			writer.writeMethodInheritanceInvocation(it, containingType);
+		}
 
-		writer.writeMethodInvocation(it, containingClass);
+		if (containingType instanceof ClassDecl containingClass) {
+			if (it.isPublic() && !containingType.isAbstract()) {
+				writer.writeMethodDirectInvocation(it, containingClass);
+			}
 
-		if (!it.isEffectivelyFinal()) { // Checks also if containing class is final or sealed
-			writer.writeMethodOverride(it, containingClass);
+			if (containingType.isClass() && !it.isEffectivelyFinal()) { // Checks also if containing class is final or sealed
+				writer.writeMethodOverride(it, containingClass);
+			}
 		}
 	}
 

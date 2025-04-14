@@ -8,3 +8,8 @@ public record R() {
     protected void m() {}
 }
 // Records are implicitly final, so you can't extend the method and as method is protected you can't call it from outside the class
+
+AddModifierFinalToField
+public final class C {
+    protected int f;
+}

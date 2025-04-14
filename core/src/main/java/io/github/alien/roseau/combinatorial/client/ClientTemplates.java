@@ -29,12 +29,6 @@ public interface ClientTemplates {
 			}
 			""";
 
-	String ABSTRACT_CLASS_EXTENSION_TEMPLATE = """
-			abstract class %s extends %s {
-			%s
-			}
-			""";
-
 	String INTERFACE_EXTENSION_TEMPLATE = "interface %s extends %s {}\n";
 
 	String INTERFACE_IMPLEMENTATION_TEMPLATE = """
