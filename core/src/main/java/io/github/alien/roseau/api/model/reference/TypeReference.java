@@ -58,6 +58,10 @@ public final class TypeReference<T extends TypeDecl> implements ITypeReference {
 	 * A reference to {@link java.lang.RuntimeException}.
 	 */
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION = new TypeReference<>("java.lang.RuntimeException");
+	/**
+	 * A reference to {@link java.lang.RuntimeException}.
+	 */
+	public static final TypeReference<ClassDecl> IO_EXCEPTION = new TypeReference<>("java.io.IOException");
 
 	private static final Logger LOGGER = LogManager.getLogger(TypeReference.class);
 

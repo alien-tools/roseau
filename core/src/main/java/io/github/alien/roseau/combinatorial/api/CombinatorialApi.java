@@ -71,7 +71,7 @@ public final class CombinatorialApi {
 			.concat(fieldTypes.stream(), Stream.of(new PrimitiveTypeReference("void")))
 			.toList();
 
-	static final List<List<ITypeReference>> thrownExceptions = powerSet(TypeReference.EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/)
+	static final List<List<ITypeReference>> thrownExceptions = powerSet(TypeReference.IO_EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/)
 			.stream()
 			.map(set -> set.stream().map(ITypeReference.class::cast).toList())
 			.toList();
