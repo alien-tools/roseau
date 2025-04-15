@@ -180,7 +180,8 @@ public class ClientWriter extends AbstractWriter {
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, ClassDecl containingClass) {
 		var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
 		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodInvocationCode = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
+		var methodReturn = getReturnHandleForMethod(methodDecl);
+		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
 
 		var imports = getImportsForType(containingClass);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
@@ -193,7 +194,8 @@ public class ClientWriter extends AbstractWriter {
 
 		var caller = methodDecl.isStatic() ? containingType.getSimpleName() : "this";
 		var params = getParamsForExecutableInvocation(methodDecl);
-		var invokeMethodBody = "%s.%s(%s);".formatted(caller, methodDecl.getSimpleName(), params);
+		var methodReturn = getReturnHandleForMethod(methodDecl);
+		var invokeMethodBody = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 
 		generateAndInvokeNewMethodForType(className, "invoke", invokeMethodBody, exceptions, containingType);
@@ -395,6 +397,15 @@ public class ClientWriter extends AbstractWriter {
 		return executableDecl.getThrownCheckedExceptions().stream()
 				.map(ITypeReference::getQualifiedName)
 				.toList();
+	}
+
+	private static String getReturnHandleForMethod(MethodDecl methodDecl) {
+		if (methodDecl.getType().getQualifiedName().equals("void")) return "";
+
+		var varType = methodDecl.getType().getQualifiedName();
+		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
+		var varName = "%s%sVal".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
+		return "%s %s = ".formatted(varType, varName);
 	}
 
 	private static String overrideMethod(MethodDecl methodDecl) {
