@@ -6,7 +6,7 @@ import io.github.alien.roseau.api.visit.APIPrettyPrinter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
-public class ApiWriter extends AbstractWriter {
+public final class ApiWriter extends AbstractWriter {
 	public ApiWriter(Path outputDir) {
 		super(outputDir);
 	}

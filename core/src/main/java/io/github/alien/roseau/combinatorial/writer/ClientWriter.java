@@ -14,7 +14,7 @@ import java.util.stream.Collectors;
 
 import static io.github.alien.roseau.combinatorial.client.ClientTemplates.*;
 
-public class ClientWriter extends AbstractWriter {
+public final class ClientWriter extends AbstractWriter {
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
 	private static final String clientPackageName = Constants.CLIENT_FOLDER;
@@ -127,6 +127,12 @@ public class ClientWriter extends AbstractWriter {
 		var readMethodBody = "%s val = %s.%s;".formatted(type, caller, fieldDecl.getSimpleName());
 
 		generateAndInvokeNewMethodForType(className, "read", readMethodBody, containingType);
+
+		if (!fieldDecl.isPublic()) return;
+
+		var imports = getImportsForType(containingType);
+		var fieldReadCode = "%s %sInhVal = new %s().%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), className, fieldDecl.getSimpleName());
+		addInstructionToClientMain(imports, fieldReadCode);
 	}
 
 	public void writeFieldDirectWrite(FieldDecl fieldDecl, TypeDecl containingType) {
@@ -146,6 +152,12 @@ public class ClientWriter extends AbstractWriter {
 		var writeMethodBody = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
 		generateAndInvokeNewMethodForType(className, "write", writeMethodBody, containingType);
+
+		if (!fieldDecl.isPublic()) return;
+
+		var imports = getImportsForType(containingType);
+		var fieldWriteCode = "new %s().%s = %s;".formatted(className, fieldDecl.getSimpleName(), value);
+		addInstructionToClientMain(imports, fieldWriteCode);
 	}
 
 	public void writeRecordComponentRead(RecordComponentDecl recordComponentDecl, RecordDecl containingRecord) {
@@ -177,13 +189,13 @@ public class ClientWriter extends AbstractWriter {
 		addInstructionToClientMain(imports, "new %s().new %s();".formatted(Constants.CLIENT_FILENAME, className));
 	}
 
-	public void writeMethodDirectInvocation(MethodDecl methodDecl, ClassDecl containingClass) {
-		var caller = getContainingTypeAccessForTypeMember(containingClass, methodDecl);
+	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
+		var caller = getContainingTypeAccessForTypeMember(containingType, methodDecl);
 		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodReturn = getReturnHandleForMethod(methodDecl);
+		var methodReturn = getReturnHandleForMethod(methodDecl, "Dir");
 		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
 
-		var imports = getImportsForType(containingClass);
+		var imports = getImportsForType(containingType);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		addInstructionToClientMain(imports, exceptions, methodInvocationCode);
 	}
@@ -194,25 +206,33 @@ public class ClientWriter extends AbstractWriter {
 
 		var caller = methodDecl.isStatic() ? containingType.getSimpleName() : "this";
 		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodReturn = getReturnHandleForMethod(methodDecl);
-		var invokeMethodBody = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		var methodInvokeReturn = getReturnHandleForMethod(methodDecl, "InhInv");
+		var invokeMethodBody = "%s%s.%s(%s);".formatted(methodInvokeReturn, caller, methodDecl.getSimpleName(), params);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 
 		generateAndInvokeNewMethodForType(className, "invoke", invokeMethodBody, exceptions, containingType);
+
+		if (!methodDecl.isPublic() || (containingType.isInterface() && methodDecl.isStatic())) return;
+
+		var imports = getImportsForType(containingType);
+		var methodDirectReturn = getReturnHandleForMethod(methodDecl, "InhDir");
+		var methodInvocationCode = "%snew %s().%s(%s);".formatted(methodDirectReturn, className, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(imports, exceptions, methodInvocationCode);
 	}
 
-	public void writeMethodOverride(MethodDecl methodDecl, ClassDecl containingClass) {
+	public void writeMethodOverride(MethodDecl methodDecl, TypeDecl containingType) {
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
 		var className = "%s%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 
-		var necessaryConstructor = implementRequiredConstructor(containingClass, className);
+		var necessaryConstructor = implementRequiredConstructor(containingType, className);
 		var overrideMethod = methodDecl.isStatic() ? implementMethod(methodDecl) : overrideMethod(methodDecl);
-		var necessaryMethods = implementNecessaryMethods(containingClass, methodDecl);
+		var necessaryMethods = implementNecessaryMethods(containingType, methodDecl);
 		var classBody = concatDeclarations(necessaryConstructor, overrideMethod, necessaryMethods);
 
-		var classCode = CLASS_EXTENSION_TEMPLATE.formatted(className, containingClass.getSimpleName(), classBody);
+		var template = containingType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
+		var classCode = template.formatted(className, containingType.getSimpleName(), classBody);
 
-		var imports = getImportsForType(containingClass);
+		var imports = getImportsForType(containingType);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		var params = getParamsForExecutableInvocation(methodDecl);
 		addInnerTypeToClientMain(imports, classCode);
@@ -399,12 +419,12 @@ public class ClientWriter extends AbstractWriter {
 				.toList();
 	}
 
-	private static String getReturnHandleForMethod(MethodDecl methodDecl) {
+	private static String getReturnHandleForMethod(MethodDecl methodDecl, String suffix) {
 		if (methodDecl.getType().getQualifiedName().equals("void")) return "";
 
 		var varType = methodDecl.getType().getQualifiedName();
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var varName = "%s%sVal".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
+		var varName = "%s%s%sVal".formatted(methodDecl.getPrettyQualifiedName(), paramTypes, suffix);
 		return "%s %s = ".formatted(varType, varName);
 	}
 
@@ -414,7 +434,9 @@ public class ClientWriter extends AbstractWriter {
 
 	private static String implementMethod(MethodDecl methodDecl) {
 		var methodReturnTypeName = methodDecl.getType().getQualifiedName();
-		var methodSignature = methodDecl.toString().replace("abstract ", "");
+		var methodSignature = methodDecl.toString()
+				.replace("abstract ", "")
+				.replace("default ", "");
 
 		if (methodDecl.isNative()) {
 			return "\t" + methodSignature + ";";
