@@ -133,8 +133,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 			new RemoveParameterConstructorStrategy(paramIndex, c, queue).breakApi(api);
 		}
 
-		new AddExceptionConstructorStrategy(TypeReference.EXCEPTION, c, queue).breakApi(api);
-		new RemoveExceptionConstructorStrategy(TypeReference.EXCEPTION, c, queue).breakApi(api);
+		new AddExceptionConstructorStrategy(TypeReference.IO_EXCEPTION, c, queue).breakApi(api);
+		new RemoveExceptionConstructorStrategy(TypeReference.IO_EXCEPTION, c, queue).breakApi(api);
 	}
 
 	private void breakEnumValueDecl(EnumValueDecl eV) {
@@ -196,7 +196,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 			new RemoveParameterMethodStrategy(paramIndex, m, queue).breakApi(api);
 		}
 
-		new AddExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
-		new RemoveExceptionMethodStrategy(TypeReference.EXCEPTION, m, queue).breakApi(api);
+		new AddExceptionMethodStrategy(TypeReference.IO_EXCEPTION, m, queue).breakApi(api);
+		new RemoveExceptionMethodStrategy(TypeReference.IO_EXCEPTION, m, queue).breakApi(api);
 	}
 }
