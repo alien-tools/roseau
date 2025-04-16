@@ -7,7 +7,8 @@ public interface ClientTemplates {
 			%s
 
 			public class %s {
-			%s
+				%s
+
 				public static void main(String[] args)%s {
 					callInstructionsWithoutException();
 					callInstructionsWithException();
@@ -34,7 +35,7 @@ public interface ClientTemplates {
 			}
 			""";
 
-	String INTERFACE_EXTENSION_TEMPLATE = "static interface %s extends %s {}\n";
+	String INTERFACE_EXTENSION_TEMPLATE = "static interface %s extends %s {}";
 
 	String INTERFACE_IMPLEMENTATION_TEMPLATE = """
 			static class %s implements %s {

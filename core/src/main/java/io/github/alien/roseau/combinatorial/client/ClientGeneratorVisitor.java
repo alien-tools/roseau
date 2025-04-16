@@ -112,18 +112,20 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		var containingType = containingTypeOpt.get();
 
 		if (it.isPublic() && !containingType.isAbstract()) {
-			writer.writeFieldDirectRead(it, containingType);
+			writer.writeReadFieldThroughContainingType(it, containingType);
 
 			if (!it.isFinal() && containingType.isClass()) {
-				writer.writeFieldDirectWrite(it, containingType);
+				writer.writeWriteFieldThroughContainingType(it, containingType);
 			}
 		}
 
 		if (!containingType.isEffectivelyFinal()) {
-			writer.writeFieldInheritanceRead(it, containingType);
+			writer.writeReadFieldThroughMethodCall(it, containingType);
+			if (it.isPublic()) writer.writeReadFieldThroughSubType(it, containingType);
 
 			if (!it.isFinal() && containingType.isClass()) {
-				writer.writeFieldInheritanceWrite(it, containingType);
+				writer.writeWriteFieldThroughMethodCall(it, containingType);
+				if (it.isPublic()) writer.writeWriteFieldThroughSubType(it, containingType);
 			}
 		}
 	}
@@ -142,7 +144,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 				writer.writeMethodDirectInvocation(it, containingClass);
 			}
 
-			if (!it.isEffectivelyFinal()) { // Checks also if containing class is final or sealed
+			if (!it.isAbstract() && !it.isEffectivelyFinal()) { // Checks also if containing class is final or sealed
 				writer.writeMethodOverride(it, containingClass);
 			}
 		}

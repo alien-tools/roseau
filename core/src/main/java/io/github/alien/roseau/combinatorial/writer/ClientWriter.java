@@ -15,12 +15,34 @@ import java.util.stream.Collectors;
 import static io.github.alien.roseau.combinatorial.client.ClientTemplates.*;
 
 public final class ClientWriter extends AbstractWriter {
+	private static final class InnerType {
+		public String typeName;
+		public TypeDecl superType;
+
+		public List<String> constructors = new ArrayList<>();
+		public List<String> methods = new ArrayList<>();
+
+		public String generateTypeCode() {
+			var constructors = String.join("\n\n", this.constructors);
+			var methods = String.join("\n\n", this.methods);
+			var typeBody = concatDeclarations(constructors, methods);
+
+			if (typeBody.isBlank() && superType.isInterface()) {
+				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, superType.getSimpleName());
+			}
+
+			var template = superType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
+
+			return String.join("\n\t", template.formatted(typeName, superType.getSimpleName(), typeBody).split("\n"));
+		}
+	}
+
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
 	private static final String clientPackageName = Constants.CLIENT_FOLDER;
 
 	private final Set<String> imports = new HashSet<>();
-	private final List<String> innerTypes = new ArrayList<>();
+	private final Map<String, InnerType> innerTypes = new HashMap<>();
 	private final Set<String> exceptions = new HashSet<>();
 	private final List<String> notThrowingInstructions = new ArrayList<>();
 	private final List<String> throwingInstructions = new ArrayList<>();
@@ -31,56 +53,45 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeClassInheritance(ClassDecl classDecl) {
-		var name = "%sClassInheritance".formatted(classDecl.getPrettyQualifiedName());
+		var innerTypeName = "%sInner".formatted(classDecl.getPrettyQualifiedName());
 
-		var constructorRequired = implementRequiredConstructor(classDecl, name);
+		var constructorRequired = implementRequiredConstructor(classDecl, innerTypeName);
 		var necessaryMethods = implementNecessaryMethods(classDecl);
-		var classBody = concatDeclarations(constructorRequired, necessaryMethods);
-		var code = CLASS_EXTENSION_TEMPLATE.formatted(name, classDecl.getSimpleName(), classBody);
 
-		var imports = getImportsForType(classDecl);
-		addInnerTypeToClientMain(imports, code);
-		addInstructionToClientMain(imports, "new %s();".formatted(name));
+		insertDeclarationsToInnerType(classDecl, innerTypeName, constructorRequired, necessaryMethods);
+		addInstructionToClientMain("new %s();".formatted(innerTypeName));
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
 		var params = getParamsForExecutableInvocation(constructorDecl);
 		var code = "new %s(%s);".formatted(containingClass.getSimpleName(), params);
 
-		var imports = getImportsForType(containingClass);
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
-		addInstructionToClientMain(imports, exceptions, code);
+		addInstructionToClientMain(exceptions, code);
 	}
 
 	public void writeConstructorInheritanceInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
-		var paramTypes = formatParamTypeNames(constructorDecl.getParameters());
-		var className = "%s%sConstructorInvocation".formatted(constructorDecl.getPrettyQualifiedName(), paramTypes);
+		var innerTypeName = "%sInner".formatted(containingClass.getPrettyQualifiedName());
 
-		var params = getParamsForExecutableInvocation(constructorDecl);
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 		var formattedExceptions = formatExceptionNames(exceptions);
+		var paramsValue = getParamsForExecutableInvocation(constructorDecl);
 
-		var constructor = "\t%s()%s {\n\t\tsuper(%s);\n\t}".formatted(
-				className,
+		var constructor = "\t%s%s {\n\t\tsuper(%s);\n\t}".formatted(
+				constructorDecl.toString().replace(constructorDecl.getSimpleName(), innerTypeName),
 				formattedExceptions.isBlank() ? "" : " throws %s".formatted(formattedExceptions),
-				params
+				paramsValue
 		);
-		var necessaryMethods = implementNecessaryMethods(containingClass);
-		var classBody = concatDeclarations(constructor, necessaryMethods);
 
-		var classCode = CLASS_EXTENSION_TEMPLATE.formatted(className, containingClass.getSimpleName(), classBody);
-
-		var imports = getImportsForType(containingClass);
-		addInnerTypeToClientMain(imports, classCode);
-		addInstructionToClientMain(imports, exceptions, "new %s();".formatted(className));
+		insertDeclarationsToInnerType(containingClass, innerTypeName, constructor, "");
+		addInstructionToClientMain(exceptions, "new %s(%s);".formatted(innerTypeName, paramsValue));
 	}
 
 	public void writeExceptionCatch(ClassDecl classDecl) {
 		var constructor = generateEasiestConstructorInvocationForClass(classDecl);
 		var code = "try {\n\t\t\tthrow %s;\n\t\t} catch (%s e) {}".formatted(constructor, classDecl.getSimpleName());
 
-		var imports = getImportsForType(classDecl);
-		addInstructionToClientMain(imports, code);
+		addInstructionToClientMain(code);
 	}
 
 	public void writeExceptionThrow(ClassDecl classDecl) {
@@ -92,14 +103,10 @@ public final class ClientWriter extends AbstractWriter {
 			exceptions.add(classDecl.getSimpleName());
 		}
 
-		var imports = getImportsForType(classDecl);
-		addInstructionToClientMain(imports, exceptions, code);
+		addInstructionToClientMain(exceptions, code);
 	}
 
 	public void writeExceptionThrows(ClassDecl classDecl) {
-		var imports = getImportsForType(classDecl);
-
-		this.imports.addAll(imports);
 		this.exceptions.add(classDecl.getSimpleName());
 	}
 
@@ -107,60 +114,63 @@ public final class ClientWriter extends AbstractWriter {
 		var caller = getContainingTypeAccessForTypeMember(containingEnum, enumValueDecl);
 		var enumValueReadCode = "%s %sVal = %s.%s;".formatted(containingEnum.getSimpleName(), enumValueDecl.getPrettyQualifiedName(), caller, enumValueDecl.getSimpleName());
 
-		var imports = getImportsForType(containingEnum);
-		addInstructionToClientMain(imports, enumValueReadCode);
+		addInstructionToClientMain(enumValueReadCode);
 	}
 
-	public void writeFieldDirectRead(FieldDecl fieldDecl, TypeDecl containingType) {
+	public void writeReadFieldThroughContainingType(FieldDecl fieldDecl, TypeDecl containingType) {
 		var type = fieldDecl.getType().getQualifiedName();
 		var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
 		var fieldReadCode = "%s %sVal = %s.%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), caller, fieldDecl.getSimpleName());
 
-		var imports = getImportsForType(containingType);
-		addInstructionToClientMain(imports, fieldReadCode);
+		addInstructionToClientMain(fieldReadCode);
 	}
 
-	public void writeFieldInheritanceRead(FieldDecl fieldDecl, TypeDecl containingType) {
-		var className = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
+	public void writeReadFieldThroughMethodCall(FieldDecl fieldDecl, TypeDecl containingType) {
+		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var readFieldMethodName = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
 
 		var type = fieldDecl.getType().getQualifiedName();
 		var caller = fieldDecl.isStatic() ? containingType.getSimpleName() : "this";
 		var readMethodBody = "%s val = %s.%s;".formatted(type, caller, fieldDecl.getSimpleName());
 
-		generateAndInvokeNewMethodForType(className, "read", readMethodBody, containingType);
-
-		if (!fieldDecl.isPublic()) return;
-
-		var imports = getImportsForType(containingType);
-		var inheritedCaller = fieldDecl.isStatic() ? className : "new %s()".formatted(className);
-		var fieldReadCode = "%s %sInhVal = %s.%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), inheritedCaller, fieldDecl.getSimpleName());
-		addInstructionToClientMain(imports, fieldReadCode);
+		addNewMethodToInnerType(innerTypeName, readFieldMethodName, readMethodBody, containingType);
 	}
 
-	public void writeFieldDirectWrite(FieldDecl fieldDecl, TypeDecl containingType) {
+	public void writeReadFieldThroughSubType(FieldDecl fieldDecl, TypeDecl containingType) {
+		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+
+		var type = fieldDecl.getType().getQualifiedName();
+		var inheritedCaller = fieldDecl.isStatic() ? innerTypeName : "new %s()".formatted(innerTypeName);
+		var fieldReadCode = "%s %sInhVal = %s.%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), inheritedCaller, fieldDecl.getSimpleName());
+		addInstructionToClientMain(fieldReadCode);
+	}
+
+	public void writeWriteFieldThroughContainingType(FieldDecl fieldDecl, TypeDecl containingType) {
 		var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
 		var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
 		var fieldWriteCode = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
-		var imports = getImportsForType(containingType);
-		addInstructionToClientMain(imports, fieldWriteCode);
+		addInstructionToClientMain(fieldWriteCode);
 	}
 
-	public void writeFieldInheritanceWrite(FieldDecl fieldDecl, TypeDecl containingType) {
-		var className = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
+	public void writeWriteFieldThroughMethodCall(FieldDecl fieldDecl, TypeDecl containingType) {
+		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var writeFieldMethodName = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
 
 		var caller = fieldDecl.isStatic() ? containingType.getSimpleName() : "this";
 		var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
 		var writeMethodBody = "%s.%s = %s;".formatted(caller, fieldDecl.getSimpleName(), value);
 
-		generateAndInvokeNewMethodForType(className, "write", writeMethodBody, containingType);
+		addNewMethodToInnerType(innerTypeName, writeFieldMethodName, writeMethodBody, containingType);
+	}
 
-		if (!fieldDecl.isPublic()) return;
+	public void writeWriteFieldThroughSubType(FieldDecl fieldDecl, TypeDecl containingType) {
+		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
 
-		var imports = getImportsForType(containingType);
-		var inheritedCaller = fieldDecl.isStatic() ? className : "new %s()".formatted(className);
+		var inheritedCaller = fieldDecl.isStatic() ? innerTypeName : "new %s()".formatted(innerTypeName);
+		var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
 		var fieldWriteCode = "%s.%s = %s;".formatted(inheritedCaller, fieldDecl.getSimpleName(), value);
-		addInstructionToClientMain(imports, fieldWriteCode);
+		addInstructionToClientMain(fieldWriteCode);
 	}
 
 	public void writeRecordComponentRead(RecordComponentDecl recordComponentDecl, RecordDecl containingRecord) {
@@ -168,28 +178,21 @@ public final class ClientWriter extends AbstractWriter {
 		var caller = getContainingTypeAccessForTypeMember(containingRecord, recordComponentDecl);
 		var recordComponentReadCode = "%s %sVal = %s.%s();".formatted(type, recordComponentDecl.getPrettyQualifiedName(), caller, recordComponentDecl.getSimpleName());
 
-		var imports = getImportsForType(containingRecord);
-		addInstructionToClientMain(imports, recordComponentReadCode);
+		addInstructionToClientMain(recordComponentReadCode);
 	}
 
 	public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
-		var interfaceName = "%sInterfaceExtension".formatted(interfaceDecl.getPrettyQualifiedName());
+		var interfaceName = "%sExtension".formatted(interfaceDecl.getPrettyQualifiedName());
 
-		var code = INTERFACE_EXTENSION_TEMPLATE.formatted(interfaceName, interfaceDecl.getSimpleName());
-
-		var imports = getImportsForType(interfaceDecl);
-		addInnerTypeToClientMain(imports, code);
+		insertDeclarationsToInnerType(interfaceDecl, interfaceName, "", "");
 	}
 
 	public void writeInterfaceImplementation(InterfaceDecl interfaceDecl) {
-		var className = "%sInterfaceImplementation".formatted(interfaceDecl.getPrettyQualifiedName());
-		var methodsImplemented = implementNecessaryMethods(interfaceDecl);
+		var innerTypeName = "%sInner".formatted(interfaceDecl.getPrettyQualifiedName());
+		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
 
-		var code = INTERFACE_IMPLEMENTATION_TEMPLATE.formatted(className, interfaceDecl.getSimpleName(), methodsImplemented);
-
-		var imports = getImportsForType(interfaceDecl);
-		addInnerTypeToClientMain(imports, code);
-		addInstructionToClientMain(imports, "new %s();".formatted(className));
+		insertDeclarationsToInnerType(interfaceDecl, innerTypeName, "", necessaryMethods);
+		addInstructionToClientMain("new %s();".formatted(innerTypeName));
 	}
 
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
@@ -198,64 +201,53 @@ public final class ClientWriter extends AbstractWriter {
 		var methodReturn = getReturnHandleForMethod(methodDecl, "Dir");
 		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
 
-		var imports = getImportsForType(containingType);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(imports, exceptions, methodInvocationCode);
+		addInstructionToClientMain(exceptions, methodInvocationCode);
 	}
 
 	public void writeMethodInheritanceInvocation(MethodDecl methodDecl, TypeDecl containingType) {
+		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var className = "%s%sMethodInvocation".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
+		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 
-		var caller = methodDecl.isStatic() ? containingType.getSimpleName() : "this";
-		var params = getParamsForExecutableInvocation(methodDecl);
 		var methodInvokeReturn = getReturnHandleForMethod(methodDecl);
-		var invokeMethodBody = "%s%s.%s(%s);".formatted(methodInvokeReturn, caller, methodDecl.getSimpleName(), params);
+		var caller = methodDecl.isStatic() ? containingType.getSimpleName() : "this";
+		var methodName = methodDecl.getSimpleName();
+		var params = getParamsForExecutableInvocation(methodDecl);
+		var methodBody = "%s%s.%s(%s);".formatted(methodInvokeReturn, caller, methodName, params);
+
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-
-		generateAndInvokeNewMethodForType(className, "invoke", invokeMethodBody, exceptions, containingType);
-
-		if (!methodDecl.isPublic() || (containingType.isInterface() && methodDecl.isStatic())) return;
-
-		var imports = getImportsForType(containingType);
-		var methodInheritanceReturn = getReturnHandleForMethod(methodDecl, "Inh");
-		var inheritedCaller = methodDecl.isStatic() ? className : "new %s()".formatted(className);
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodInheritanceReturn, inheritedCaller, methodDecl.getSimpleName(), params);
-		addInstructionToClientMain(imports, exceptions, methodInvocationCode);
+		addNewMethodToInnerType(innerTypeName, invokeMethodName, methodBody, exceptions, containingType);
 	}
 
 	public void writeMethodOverride(MethodDecl methodDecl, TypeDecl containingType) {
-		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var className = "%s%sMethodOverride".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
-
-		var necessaryConstructor = implementRequiredConstructor(containingType, className);
+		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
 		var overrideMethod = methodDecl.isStatic() ? implementMethod(methodDecl) : overrideMethod(methodDecl);
-		var necessaryMethods = implementNecessaryMethods(containingType, methodDecl);
-		var classBody = concatDeclarations(necessaryConstructor, overrideMethod, necessaryMethods);
 
-		var template = containingType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
-		var classCode = template.formatted(className, containingType.getSimpleName(), classBody);
+		insertDeclarationsToInnerType(containingType, innerTypeName, "", overrideMethod);
 
-		var imports = getImportsForType(containingType);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		var methodReturn = getReturnHandleForMethod(methodDecl, "Ove");
-		var caller = methodDecl.isStatic() ? className : "new %s()".formatted(className);
+		var caller = methodDecl.isStatic() ? innerTypeName : "new %s()".formatted(innerTypeName);
 		var params = getParamsForExecutableInvocation(methodDecl);
-		addInnerTypeToClientMain(imports, classCode);
-		addInstructionToClientMain(imports, exceptions, "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params));
+		addInstructionToClientMain(exceptions, "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params));
 	}
 
 	public void writeTypeReference(TypeDecl typeDecl) {
+		var imports = getImportsForType(typeDecl);
+		this.imports.addAll(imports);
+
 		var code = "%s %sRef;".formatted(typeDecl.getSimpleName(), typeDecl.getPrettyQualifiedName());
 
-		var imports = getImportsForType(typeDecl);
-		addInstructionToClientMain(imports, code);
+		addInstructionToClientMain(code);
 	}
 
 	public void writeClientFile() {
 		try {
 			var sortedImports = imports.stream().sorted().map("import %s;"::formatted).collect(Collectors.joining("\n"));
-			var innerTypesCode = String.join("\n", innerTypes);
+			var innerTypesCode = innerTypes.values().stream()
+					.map(InnerType::generateTypeCode)
+					.collect(Collectors.joining("\n\n\t"));
 			var sortedExceptions = formatExceptionNames(exceptions.stream().toList());
 			var exceptionsCode = sortedExceptions.isBlank() ? "" : " throws %s".formatted(sortedExceptions);
 			var notThrowingCode = String.join("\n\t\t", notThrowingInstructions);
@@ -284,17 +276,27 @@ public final class ClientWriter extends AbstractWriter {
 		}
 	}
 
-	private void addInnerTypeToClientMain(List<String> imports, String code) {
-		this.imports.addAll(imports);
-		this.innerTypes.add(Arrays.stream(code.split("\n")).map("\t%s"::formatted).collect(Collectors.joining("\n")) + "\n");
+	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, String constructors, String methods) {
+		if (innerTypes.containsKey(typeName)) {
+			var innerType = innerTypes.get(typeName);
+			if (!constructors.isBlank()) innerType.constructors.add(constructors);
+			if (!methods.isBlank()) innerType.methods.add(methods);
+		} else {
+			var innerType = new InnerType();
+			innerType.typeName = typeName;
+			innerType.superType = superType;
+			if (!constructors.isBlank()) innerType.constructors.add(constructors);
+			if (!methods.isBlank()) innerType.methods.add(methods);
+
+			innerTypes.put(typeName, innerType);
+		}
 	}
 
-	private void addInstructionToClientMain(List<String> imports, String code) {
-		addInstructionToClientMain(imports, List.of(), code);
+	private void addInstructionToClientMain(String code) {
+		addInstructionToClientMain(List.of(), code);
 	}
 
-	private void addInstructionToClientMain(List<String> imports, List<String> exceptions, String code) {
-		this.imports.addAll(imports);
+	private void addInstructionToClientMain(List<String> exceptions, String code) {
 		this.exceptions.addAll(exceptions);
 
 		if (exceptions.isEmpty()) {
@@ -309,22 +311,15 @@ public final class ClientWriter extends AbstractWriter {
 		return List.of(typeDecl.getQualifiedName());
 	}
 
-	private void generateAndInvokeNewMethodForType(String className, String methodName, String methodBody, List<String> exceptions, TypeDecl containingType) {
-		var necessaryConstructor = implementRequiredConstructor(containingType, className);
+	private void addNewMethodToInnerType(String className, String methodName, String methodBody, List<String> exceptions, TypeDecl containingType) {
 		var newMethod = generateMethodDeclaration(methodName, methodBody, exceptions);
-		var necessaryMethods = implementNecessaryMethods(containingType);
-		var classBody = concatDeclarations(necessaryConstructor, newMethod, necessaryMethods);
 
-		var template = containingType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
-		var classCode = template.formatted(className, containingType.getSimpleName(), classBody);
-
-		var imports = getImportsForType(containingType);
-		addInnerTypeToClientMain(imports, classCode);
-		addInstructionToClientMain(imports, exceptions, "new %s().%s();".formatted(className, methodName));
+		insertDeclarationsToInnerType(containingType, className, "", newMethod);
+		addInstructionToClientMain(exceptions, "new %s().%s();".formatted(className, methodName));
 	}
 
-	private void generateAndInvokeNewMethodForType(String className, String methodName, String methodBody, TypeDecl containingType) {
-		generateAndInvokeNewMethodForType(className, methodName, methodBody, List.of(), containingType);
+	private void addNewMethodToInnerType(String className, String methodName, String methodBody, TypeDecl containingType) {
+		addNewMethodToInnerType(className, methodName, methodBody, List.of(), containingType);
 	}
 
 	private static String concatDeclarations(String... declarations) {
@@ -388,16 +383,11 @@ public final class ClientWriter extends AbstractWriter {
 		return "new %s(%s)".formatted(recordDecl.getSimpleName(), params);
 	}
 
-	private static String implementNecessaryMethods(TypeDecl typeDecl, MethodDecl ignoreMethod) {
+	private static String implementNecessaryMethods(TypeDecl typeDecl) {
 		return typeDecl
 				.getAllMethodsToImplement()
-				.filter(methodDecl -> !methodDecl.equals(ignoreMethod))
 				.map(ClientWriter::overrideMethod)
 				.collect(Collectors.joining("\n\n"));
-	}
-
-	private static String implementNecessaryMethods(TypeDecl typeDecl) {
-		return implementNecessaryMethods(typeDecl, null);
 	}
 
 	private static String getParamsForExecutableInvocation(ExecutableDecl executableDecl) {
