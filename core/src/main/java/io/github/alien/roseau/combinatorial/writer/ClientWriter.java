@@ -53,13 +53,16 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeClassInheritance(ClassDecl classDecl) {
-		var innerTypeName = "%sInner".formatted(classDecl.getPrettyQualifiedName());
-
-		var constructorRequired = implementRequiredConstructor(classDecl, innerTypeName);
 		var necessaryMethods = implementNecessaryMethods(classDecl);
 
-		insertDeclarationsToInnerType(classDecl, innerTypeName, constructorRequired, necessaryMethods);
-		addInstructionToClientMain("new %s();".formatted(innerTypeName));
+		var inheritanceClassName = "%sInheritance".formatted(classDecl.getPrettyQualifiedName());
+		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
+		insertDeclarationsToInnerType(classDecl, inheritanceClassName, inheritanceConstructorRequired, necessaryMethods);
+		addInstructionToClientMain("new %s();".formatted(inheritanceClassName));
+
+		var fullClassName = "%sFull".formatted(classDecl.getPrettyQualifiedName());
+		var fullConstructorRequired = implementRequiredConstructor(classDecl, fullClassName);
+		insertDeclarationsToInnerType(classDecl, fullClassName, fullConstructorRequired, necessaryMethods);
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -71,7 +74,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeConstructorInheritanceInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
-		var innerTypeName = "%sInner".formatted(containingClass.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingClass.getPrettyQualifiedName());
 
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 		var formattedExceptions = formatExceptionNames(exceptions);
@@ -126,7 +129,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeReadFieldThroughMethodCall(FieldDecl fieldDecl, TypeDecl containingType) {
-		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 		var readFieldMethodName = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
 
 		var type = fieldDecl.getType().getQualifiedName();
@@ -137,7 +140,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeReadFieldThroughSubType(FieldDecl fieldDecl, TypeDecl containingType) {
-		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 
 		var type = fieldDecl.getType().getQualifiedName();
 		var inheritedCaller = fieldDecl.isStatic() ? innerTypeName : "new %s()".formatted(innerTypeName);
@@ -154,7 +157,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeWriteFieldThroughMethodCall(FieldDecl fieldDecl, TypeDecl containingType) {
-		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 		var writeFieldMethodName = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
 
 		var caller = fieldDecl.isStatic() ? containingType.getSimpleName() : "this";
@@ -165,7 +168,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeWriteFieldThroughSubType(FieldDecl fieldDecl, TypeDecl containingType) {
-		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 
 		var inheritedCaller = fieldDecl.isStatic() ? innerTypeName : "new %s()".formatted(innerTypeName);
 		var value = getDefaultValueForType(fieldDecl.getType().getQualifiedName());
@@ -188,11 +191,14 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInterfaceImplementation(InterfaceDecl interfaceDecl) {
-		var innerTypeName = "%sInner".formatted(interfaceDecl.getPrettyQualifiedName());
 		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
 
-		insertDeclarationsToInnerType(interfaceDecl, innerTypeName, "", necessaryMethods);
-		addInstructionToClientMain("new %s();".formatted(innerTypeName));
+		var interfaceName = "%sImplementation".formatted(interfaceDecl.getPrettyQualifiedName());
+		insertDeclarationsToInnerType(interfaceDecl, interfaceName, "", necessaryMethods);
+		addInstructionToClientMain("new %s();".formatted(interfaceName));
+
+		var fullInterfaceName = "%sFull".formatted(interfaceDecl.getPrettyQualifiedName());
+		insertDeclarationsToInnerType(interfaceDecl, fullInterfaceName, "", necessaryMethods);
 	}
 
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
@@ -206,7 +212,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeMethodInheritanceInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
 		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 
@@ -221,7 +227,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeMethodOverride(MethodDecl methodDecl, TypeDecl containingType) {
-		var innerTypeName = "%sInner".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 		var overrideMethod = methodDecl.isStatic() ? implementMethod(methodDecl) : overrideMethod(methodDecl);
 
 		insertDeclarationsToInnerType(containingType, innerTypeName, "", overrideMethod);
