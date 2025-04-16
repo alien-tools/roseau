@@ -9,30 +9,35 @@ public interface ClientTemplates {
 			public class %s {
 			%s
 				public static void main(String[] args)%s {
-					new %s().callInstructionsWithoutException();
-					new %s().callInstructionsWithException();
+					callInstructionsWithoutException();
+					callInstructionsWithException();
+					callInstructionsWithTryCatch();
 			    }
 
-				private void callInstructionsWithoutException() {
+				private static void callInstructionsWithoutException() {
 					%s
 				}
 
-				private void callInstructionsWithException()%s {
+				private static void callInstructionsWithException()%s {
+					%s
+				}
+
+				private static void callInstructionsWithTryCatch() {
 					%s
 				}
 			}
 			""";
 
 	String CLASS_EXTENSION_TEMPLATE = """
-			class %s extends %s {
+			static class %s extends %s {
 			%s
 			}
 			""";
 
-	String INTERFACE_EXTENSION_TEMPLATE = "interface %s extends %s {}\n";
+	String INTERFACE_EXTENSION_TEMPLATE = "static interface %s extends %s {}\n";
 
 	String INTERFACE_IMPLEMENTATION_TEMPLATE = """
-			class %s implements %s {
+			static class %s implements %s {
 			%s
 			}
 			""";

@@ -18,7 +18,7 @@ import io.github.alien.roseau.combinatorial.writer.ClientWriter;
 
 import java.util.Optional;
 
-public class ClientGeneratorVisitor extends AbstractAPIVisitor {
+public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	private final ClientWriter writer;
 
 	public ClientGeneratorVisitor(ClientWriter writer) {
