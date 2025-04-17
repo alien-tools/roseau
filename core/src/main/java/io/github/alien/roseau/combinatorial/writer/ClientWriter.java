@@ -63,6 +63,10 @@ public final class ClientWriter extends AbstractWriter {
 		var fullClassName = "%sFull".formatted(classDecl.getPrettyQualifiedName());
 		var fullConstructorRequired = implementRequiredConstructor(classDecl, fullClassName);
 		insertDeclarationsToInnerType(classDecl, fullClassName, fullConstructorRequired, necessaryMethods);
+
+		var overrideClassName = "%sOverride".formatted(classDecl.getPrettyQualifiedName());
+		var overrideConstructorRequired = implementRequiredConstructor(classDecl, overrideClassName);
+		insertDeclarationsToInnerType(classDecl, overrideClassName, overrideConstructorRequired, necessaryMethods);
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -199,6 +203,9 @@ public final class ClientWriter extends AbstractWriter {
 
 		var fullInterfaceName = "%sFull".formatted(interfaceDecl.getPrettyQualifiedName());
 		insertDeclarationsToInnerType(interfaceDecl, fullInterfaceName, "", necessaryMethods);
+
+		var overrideInterfaceName = "%sOverride".formatted(interfaceDecl.getPrettyQualifiedName());
+		insertDeclarationsToInnerType(interfaceDecl, overrideInterfaceName, "", necessaryMethods);
 	}
 
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
@@ -234,10 +241,16 @@ public final class ClientWriter extends AbstractWriter {
 
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		addNewMethodToInnerType(fullTypeName, invokeMethodName, methodBody, exceptions, containingType);
+
+		if (exceptions.isEmpty()) return;
+
+		var tryCatchMethodName = "%s%sTryInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
+		var tryCatchMethodBody = "try { %s } catch (%s ignored) {}".formatted(methodBody, formatExceptionNames(exceptions, " | "));
+		addNewMethodToInnerType(fullTypeName, tryCatchMethodName, tryCatchMethodBody, containingType);
 	}
 
 	public void writeMethodOverride(MethodDecl methodDecl, TypeDecl containingType) {
-		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sOverride".formatted(containingType.getPrettyQualifiedName());
 		var overrideMethod = methodDecl.isStatic() ? implementMethod(methodDecl) : overrideMethod(methodDecl);
 
 		insertDeclarationsToInnerType(containingType, innerTypeName, "", overrideMethod);
