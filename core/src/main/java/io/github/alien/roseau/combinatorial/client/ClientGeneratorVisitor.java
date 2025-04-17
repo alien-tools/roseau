@@ -144,7 +144,11 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 				writer.writeMethodDirectInvocation(it, containingClass);
 			}
 
-			if (!it.isAbstract() && !it.isEffectivelyFinal()) { // Checks also if containing class is final or sealed
+			if (it.isPublic() && !it.isEffectivelyFinal() && !containingClass.isEnum() && !containingClass.isRecord()) {
+				writer.writeMethodMinimalDirectInvocation(it, containingClass);
+			}
+
+			if (!it.isAbstract() && !it.isEffectivelyFinal()) {
 				writer.writeMethodOverride(it, containingClass);
 			}
 		}
@@ -152,6 +156,8 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (containingType instanceof InterfaceDecl containingInterface) {
 			if (it.isStatic()) {
 				writer.writeMethodDirectInvocation(it, containingInterface);
+			} else {
+				writer.writeMethodMinimalDirectInvocation(it, containingInterface);
 			}
 
 			if (it.isDefault() || it.isStatic()) {

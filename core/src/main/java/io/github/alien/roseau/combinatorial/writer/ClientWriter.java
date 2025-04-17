@@ -55,7 +55,7 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeClassInheritance(ClassDecl classDecl) {
 		var necessaryMethods = implementNecessaryMethods(classDecl);
 
-		var inheritanceClassName = "%sInheritance".formatted(classDecl.getPrettyQualifiedName());
+		var inheritanceClassName = "%sMinimal".formatted(classDecl.getPrettyQualifiedName());
 		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
 		insertDeclarationsToInnerType(classDecl, inheritanceClassName, inheritanceConstructorRequired, necessaryMethods);
 		addInstructionToClientMain("new %s();".formatted(inheritanceClassName));
@@ -193,7 +193,7 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeInterfaceImplementation(InterfaceDecl interfaceDecl) {
 		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
 
-		var interfaceName = "%sImplementation".formatted(interfaceDecl.getPrettyQualifiedName());
+		var interfaceName = "%sMinimal".formatted(interfaceDecl.getPrettyQualifiedName());
 		insertDeclarationsToInnerType(interfaceDecl, interfaceName, "", necessaryMethods);
 		addInstructionToClientMain("new %s();".formatted(interfaceName));
 
@@ -211,8 +211,18 @@ public final class ClientWriter extends AbstractWriter {
 		addInstructionToClientMain(exceptions, methodInvocationCode);
 	}
 
+	public void writeMethodMinimalDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
+		var minimalTypeName = "%sMinimal".formatted(containingType.getPrettyQualifiedName());
+		var params = getParamsForExecutableInvocation(methodDecl);
+		var methodReturn = getReturnHandleForMethod(methodDecl, "MinDir");
+		var methodInvocationCode = "%snew %s().%s(%s);".formatted(methodReturn, minimalTypeName, methodDecl.getSimpleName(), params);
+
+		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
+		addInstructionToClientMain(exceptions, methodInvocationCode);
+	}
+
 	public void writeMethodInheritanceInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var innerTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
+		var fullTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
 		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 
@@ -223,7 +233,7 @@ public final class ClientWriter extends AbstractWriter {
 		var methodBody = "%s%s.%s(%s);".formatted(methodInvokeReturn, caller, methodName, params);
 
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addNewMethodToInnerType(innerTypeName, invokeMethodName, methodBody, exceptions, containingType);
+		addNewMethodToInnerType(fullTypeName, invokeMethodName, methodBody, exceptions, containingType);
 	}
 
 	public void writeMethodOverride(MethodDecl methodDecl, TypeDecl containingType) {
