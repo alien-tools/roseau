@@ -13,3 +13,55 @@ AddModifierFinalToField
 public final class C {
     protected int f;
 }
+// Can't extend C
+
+AddParameterToFirstConstructor
+public class C {
+    public C(int i) {}
+    public C(int ...i) {}
+}
+// By changing first constructor, clients calling new C(0) will use the varargs constructor.
+
+AddVarargsParameterToMethod
+public class C {
+    public void m(int i) {}
+}
+// Clients calling m(0) are still valid as varargs could be empty
+
+ChangeMethodReturnedType
+public (final class | record | enum) T {
+    public (final) void m() {}
+}
+// Can't extend method in those cases, so changing type has no effect as it is void in V1
+
+ChangeParameterTypeToVarargs
+public class C {
+    public void m(int i) {}
+}
+// Clients calling m(0) are still valid as it is corresponding to varargs type
+
+ReduceVisibilityOrRemoveFirstConstructor
+public class C {
+    public C(int i) {}
+    public C(int ...i) {}
+}
+// By changing first constructor, clients calling new C(0) will use the varargs constructor.
+
+// ReduceVisibilityForMethod
+public abstract class Abstr {
+	public abstract void m();
+	public static void mStatic() {}
+	public final void mFinal() {}
+}
+// Not sure what is going on here
+
+// RemoveExceptionFromConstructor
+public class C {
+    protected C() throws java.io.IOException {}
+}
+public class C2 extends C {
+    public C2() throws java.io.IOException {
+        super();
+    }
+}
+// Try/catch not possible to surround constructor call, so removing exception for protected constructor is not a problem
