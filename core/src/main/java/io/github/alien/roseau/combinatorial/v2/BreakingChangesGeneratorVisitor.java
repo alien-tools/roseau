@@ -1,10 +1,7 @@
 package io.github.alien.roseau.combinatorial.v2;
 
 import io.github.alien.roseau.api.model.*;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.ITypeReference;
-import io.github.alien.roseau.api.model.reference.TypeReference;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.*;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
@@ -20,6 +17,7 @@ import io.github.alien.roseau.combinatorial.v2.breaker.tp.*;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private final API api;
@@ -28,14 +26,21 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 	private final TypeReferenceFactory typeReferenceFactory = new CachedTypeReferenceFactory();
 
-	private final ITypeReference voidType = typeReferenceFactory.createPrimitiveTypeReference("void");
-	private final ITypeReference intType = typeReferenceFactory.createPrimitiveTypeReference("int");
-	private final ITypeReference booleanType = typeReferenceFactory.createTypeReference("java.lang.Boolean");
-	private final ITypeReference threadType = typeReferenceFactory.createTypeReference("java.lang.Thread");
-	private final ITypeReference charArrType = typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("char"), 1);
-
-	private final List<ITypeReference> paramTypes = List.of(intType, booleanType, threadType, charArrType);
-	private final List<ITypeReference> types = List.of(voidType, intType, booleanType, threadType, charArrType);
+	private final List<ITypeReference> types = List.of(
+			typeReferenceFactory.createPrimitiveTypeReference("long"),
+			typeReferenceFactory.createPrimitiveTypeReference("byte"),
+			typeReferenceFactory.createTypeReference("java.lang.Integer"),
+			typeReferenceFactory.createTypeReference("java.security.SecureRandom"),
+			typeReferenceFactory.createTypeReference("java.util.Date"),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("long"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("byte"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.lang.Integer"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.security.SecureRandom"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.util.Date"), 1)
+	);
+	private final List<ITypeReference> returnTypes = Stream
+			.concat(types.stream(), Stream.of(new PrimitiveTypeReference("void")))
+			.toList();
 
 	public BreakingChangesGeneratorVisitor(API api, NewApiQueue queue) {
 		this.api = api;
@@ -72,13 +77,13 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
 
-		for (var paramType: paramTypes) {
+		for (var paramType: types) {
 			new AddRecordComponentStrategy(paramType, false, r, queue).breakApi(api);
 			new AddRecordComponentStrategy(paramType, true, r, queue).breakApi(api);
 		}
 
 		for (var recordComponentIndex = 0; recordComponentIndex < r.getRecordComponents().size(); recordComponentIndex++) {
-			for (var type : paramTypes) {
+			for (var type : types) {
 				new ChangeRecordComponentStrategy(recordComponentIndex, type, false, r, queue).breakApi(api);
 				new ChangeRecordComponentStrategy(recordComponentIndex, type, true, r, queue).breakApi(api);
 			}
@@ -119,13 +124,13 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
 		new ChangeVisibilityConstructorStrategy(AccessModifier.PRIVATE, c, queue).breakApi(api);
 
-		for (var type : paramTypes) {
+		for (var type : types) {
 			new AddParameterConstructorStrategy(type, false, c, queue).breakApi(api);
 			new AddParameterConstructorStrategy(type, true, c, queue).breakApi(api);
 		}
 
 		for (var paramIndex = 0; paramIndex < c.getParameters().size(); paramIndex++) {
-			for (var type : paramTypes) {
+			for (var type : types) {
 				new ChangeParameterConstructorStrategy(paramIndex, type, false, c, queue).breakApi(api);
 				new ChangeParameterConstructorStrategy(paramIndex, type, true, c, queue).breakApi(api);
 			}
@@ -154,7 +159,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
 		new RemoveModifierFieldStrategy(Modifier.STATIC, f, queue).breakApi(api);
 
-		for (var paramType: paramTypes) {
+		for (var paramType: types) {
 			new ChangeTypeFieldStrategy(paramType, f, queue).breakApi(api);
 		}
 	}
@@ -178,17 +183,17 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue).breakApi(api);
 
-		for (var type : types) {
+		for (var type : returnTypes) {
 			new ChangeTypeMethodStrategy(type, m, queue).breakApi(api);
 		}
 
-		for (var type : paramTypes) {
+		for (var type : types) {
 			new AddParameterMethodStrategy(type, false, m, queue).breakApi(api);
 			new AddParameterMethodStrategy(type, true, m, queue).breakApi(api);
 		}
 
 		for (var paramIndex = 0; paramIndex < m.getParameters().size(); paramIndex++) {
-			for (var type : paramTypes) {
+			for (var type : types) {
 				new ChangeParameterMethodStrategy(paramIndex, type, false, m, queue).breakApi(api);
 				new ChangeParameterMethodStrategy(paramIndex, type, true, m, queue).breakApi(api);
 			}

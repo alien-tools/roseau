@@ -15,28 +15,6 @@ import java.util.stream.Collectors;
 import static io.github.alien.roseau.combinatorial.client.ClientTemplates.*;
 
 public final class ClientWriter extends AbstractWriter {
-	private static final class InnerType {
-		public String typeName;
-		public TypeDecl superType;
-
-		public List<String> constructors = new ArrayList<>();
-		public List<String> methods = new ArrayList<>();
-
-		public String generateTypeCode() {
-			var constructors = String.join("\n\n", this.constructors);
-			var methods = String.join("\n\n", this.methods);
-			var typeBody = concatDeclarations(constructors, methods);
-
-			if (typeBody.isBlank() && superType.isInterface()) {
-				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, superType.getSimpleName());
-			}
-
-			var template = superType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
-
-			return String.join("\n\t", template.formatted(typeName, superType.getSimpleName(), typeBody).split("\n"));
-		}
-	}
-
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
 	private static final String clientPackageName = Constants.CLIENT_FOLDER;
@@ -526,5 +504,27 @@ public final class ClientWriter extends AbstractWriter {
 
 	private static String formatExceptionNames(List<String> exceptions) {
 		return formatExceptionNames(exceptions, ", ");
+	}
+
+	private static final class InnerType {
+		public String typeName;
+		public TypeDecl superType;
+
+		public List<String> constructors = new ArrayList<>();
+		public List<String> methods = new ArrayList<>();
+
+		public String generateTypeCode() {
+			var constructors = String.join("\n\n", this.constructors);
+			var methods = String.join("\n\n", this.methods);
+			var typeBody = concatDeclarations(constructors, methods);
+
+			if (typeBody.isBlank() && superType.isInterface()) {
+				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, superType.getSimpleName());
+			}
+
+			var template = superType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
+
+			return String.join("\n\t", template.formatted(typeName, superType.getSimpleName(), typeBody).split("\n"));
+		}
 	}
 }

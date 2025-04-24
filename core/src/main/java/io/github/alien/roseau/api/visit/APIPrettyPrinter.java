@@ -275,8 +275,14 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	}
 
 	private static String getDefaultValue(ITypeReference ref) {
-		if (ref.getQualifiedName().equals("int"))
-			return "0";
-		return "null";
+		var typeName = ref.getQualifiedName();
+		if (typeName.contains("String") && !typeName.contains("[]")) return "\"\"";
+
+		return switch (typeName) {
+			case "int", "long", "float", "double", "byte", "short" -> "0";
+			case "char" -> "'c'";
+			case "boolean" -> "false";
+			default -> "(%s) null".formatted(typeName);
+		};
 	}
 }

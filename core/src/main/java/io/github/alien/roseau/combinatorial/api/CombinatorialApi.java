@@ -7,11 +7,7 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.ITypeReference;
-import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
-import io.github.alien.roseau.api.model.reference.TypeReference;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.*;
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.builder.*;
 
@@ -57,10 +53,14 @@ public final class CombinatorialApi {
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 
 	static final List<ITypeReference> fieldTypes = List.of(
-			typeReferenceFactory.createPrimitiveTypeReference("int"), // Primitive
-			typeReferenceFactory.createTypeReference("java.lang.Boolean"), // Boxed
-			typeReferenceFactory.createTypeReference("java.lang.Thread"), // Object reference
-			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("char"), 1) // Array
+			typeReferenceFactory.createPrimitiveTypeReference("int"),
+			typeReferenceFactory.createTypeReference("java.lang.Long"),
+			typeReferenceFactory.createTypeReference("java.util.Random"),
+			typeReferenceFactory.createTypeReference("java.sql.Time"),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("int"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.lang.Long"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.util.Random"), 1),
+			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.sql.Time"), 1)
 	);
 
 	static final List<List<ITypeReference>> methodParamsTypes = powerSet(fieldTypes)
@@ -289,8 +289,8 @@ public final class CombinatorialApi {
 									}
 								}
 
-								var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
-								var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
+								var constructorVisibility = constructorsVisibilities.get(Math.ceilDiv(constructorCounter, thrownExceptions.size()) % constructorsVisibilities.size());
+								var constructorExceptions = thrownExceptions.get(constructorCounter % thrownExceptions.size());
 								var constructorParamsTypesWithVarargs = new ArrayList<>(constructorParamsTypes);
 								constructorParamsTypesWithVarargs.add(varArgsParamType);
 
@@ -541,6 +541,8 @@ public final class CombinatorialApi {
 
 	private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params,
 													 List<ITypeReference> exceptions, boolean lastParamIsVarargs) {
+		constructorCounter++;
+
 		var constructorBuilder = new ConstructorBuilder();
 		constructorBuilder.qualifiedName = classBuilder.qualifiedName;
 		constructorBuilder.visibility = visibility;
@@ -554,8 +556,22 @@ public final class CombinatorialApi {
 			constructorBuilder.parameters.add(generateParameterBuilder("c" + constructorParamTypeIndex, constructorsParamType, isVarargs));
 		});
 
+		if (lastParamIsVarargs) {
+			var currentConstructor = constructorBuilder.make();
+			var constructorsWithSameErasure = classBuilder.constructors.stream()
+					.filter(c -> c.make().hasSameErasure(currentConstructor))
+					.toList();
+
+			if (!constructorsWithSameErasure.isEmpty()) {
+				if (constructorCounter % 4 == 0 || constructorCounter % 4 == 2) {
+					constructorsWithSameErasure.forEach(c -> classBuilder.constructors.remove(c));
+				} else {
+					return;
+				}
+			}
+		}
+
 		classBuilder.constructors.add(constructorBuilder);
-		constructorCounter++;
 	}
 
 	private static void addImplementedInterfacesToTypeDeclBuilder(TypeBuilder builder, List<InterfaceBuilder> implementingIntfBuilders) {
