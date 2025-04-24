@@ -76,15 +76,15 @@ public final class CombinatorialApi {
 			.map(set -> set.stream().map(ITypeReference.class::cast).toList())
 			.toList();
 
-	static final List<Boolean> isHidingAndOverriding = List.of(true, false);
+	static final List<Boolean> isHidingAndOverriding = List.of(/*true, */false);
 
 	static List<ClassBuilder> classBuilders = new ArrayList<>();
 	static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
 	static final String apiPackageName = Constants.API_FOLDER;
 
-	static final int typeHierarchyDepth = 0;
-	static final int typeHierarchyWidth = 0;
+	static final int typeHierarchyDepth = 1;
+	static final int typeHierarchyWidth = 1;
 	static final int enumValuesCount = 2;
 	static final int paramsCount = 1;
 
@@ -416,7 +416,7 @@ public final class CombinatorialApi {
 							var implementingIntf = implementingIntfBuilder.make();
 
 							clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-							implementingIntf.getAllMethods()
+							implementingIntf.getAllMethodsToImplement()
 									.forEach(m -> {
 										if (!methodsToGenerate.containsKey(m.getSignature())) {
 											methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
@@ -579,7 +579,7 @@ public final class CombinatorialApi {
 			var implementingIntf = implementingIntfBuilder.make();
 
 			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-			implementingIntf.getAllMethods()
+			implementingIntf.getAllMethodsToImplement()
 					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
 			if (implementingIntf.isSealed()) {
