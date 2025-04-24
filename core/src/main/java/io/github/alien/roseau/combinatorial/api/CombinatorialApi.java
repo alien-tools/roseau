@@ -278,24 +278,24 @@ public final class CombinatorialApi {
 
 					// Constructors with Varargs
 					IntStream.range(0, paramsCountToConstructorsParamsTypes.size() - 1).forEach(paramsCount ->
-						fieldTypes.forEach(varArgsParamType -> {
-							var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
-							var constructorParamsTypes = constructorsParamsTypesForParamsCount.get(constructorCounter % constructorsParamsTypesForParamsCount.size());
+							fieldTypes.forEach(varArgsParamType -> {
+								var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
+								var constructorParamsTypes = constructorsParamsTypesForParamsCount.get(constructorCounter % constructorsParamsTypesForParamsCount.size());
 
-							if (!constructorParamsTypes.isEmpty()) {
-								var paramTypeBeforeVarargs = constructorParamsTypes.getLast();
-								if (varArgsParamType.getQualifiedName().equals(paramTypeBeforeVarargs.getQualifiedName())) {
-									return;
+								if (!constructorParamsTypes.isEmpty()) {
+									var paramTypeBeforeVarargs = constructorParamsTypes.getLast();
+									if (varArgsParamType.getQualifiedName().equals(paramTypeBeforeVarargs.getQualifiedName())) {
+										return;
+									}
 								}
-							}
 
-							var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
-							var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
-							var constructorParamsTypesWithVarargs = new ArrayList<>(constructorParamsTypes);
-							constructorParamsTypesWithVarargs.add(varArgsParamType);
+								var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
+								var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
+								var constructorParamsTypesWithVarargs = new ArrayList<>(constructorParamsTypes);
+								constructorParamsTypesWithVarargs.add(varArgsParamType);
 
-							addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypesWithVarargs, constructorExceptions, true);
-						})
+								addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypesWithVarargs, constructorExceptions, true);
+							})
 					);
 
 					store(classBuilder);
@@ -645,6 +645,9 @@ public final class CombinatorialApi {
 	private static List<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {
 		return switch (container) {
 			case InterfaceBuilder ignored -> List.of(PUBLIC);
+			case RecordBuilder record -> record.recordComponents.isEmpty()
+					? List.of(PUBLIC, PROTECTED)
+					: List.of();
 			default -> List.of(PUBLIC, PROTECTED);
 		};
 	}
@@ -661,6 +664,9 @@ public final class CombinatorialApi {
 	private static List<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
 		return switch (container) {
 			case InterfaceBuilder ignored -> List.of(PUBLIC);
+			case RecordBuilder record -> record.recordComponents.isEmpty()
+					? List.of(PUBLIC, PROTECTED)
+					: List.of();
 			default -> List.of(PUBLIC, PROTECTED);
 		};
 	}
