@@ -84,7 +84,7 @@
         <dependency>
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-paranamer</artifactId>
-            <version>2.18.2</version>
+            <version>2.19.0</version>
         </dependency>
         <!-- Drop that someday -->
         <dependency>
