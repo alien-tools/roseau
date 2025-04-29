@@ -8,7 +8,6 @@ import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.ctr.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.RemoveEnumValueStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.fld.*;
-import io.github.alien.roseau.combinatorial.v2.breaker.intf.RemoveInterfaceStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.mtd.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcd.AddRecordComponentStrategy;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcd.ChangeRecordComponentStrategy;
@@ -106,7 +105,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
-		new RemoveInterfaceStrategy(i, queue).breakApi(api);
+		new RemoveTypeStrategy<>(i, queue).breakApi(api);
 
 		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, i, queue).breakApi(api);
 
