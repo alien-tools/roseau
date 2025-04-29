@@ -407,7 +407,7 @@ public final class CombinatorialApi {
 							superCls.getDeclaredMethods().stream()
 									.filter(m -> !m.isFinal())
 									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
-						} else if (superCls.isAbstract()) {
+						} else if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
 							superCls.getAllMethodsToImplement()
 									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
 						}
@@ -416,12 +416,14 @@ public final class CombinatorialApi {
 							var implementingIntf = implementingIntfBuilder.make();
 
 							clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-							implementingIntf.getAllMethodsToImplement()
-									.forEach(m -> {
-										if (!methodsToGenerate.containsKey(m.getSignature())) {
-											methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
-										}
-									});
+							if (!clsBuilder.modifiers.contains(ABSTRACT)) {
+								implementingIntf.getAllMethodsToImplement()
+										.forEach(m -> {
+											if (!methodsToGenerate.containsKey(m.getSignature())) {
+												methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
+											}
+										});
+							}
 
 							if (implementingIntf.isSealed()) {
 								implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
@@ -579,8 +581,10 @@ public final class CombinatorialApi {
 			var implementingIntf = implementingIntfBuilder.make();
 
 			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-			implementingIntf.getAllMethodsToImplement()
-					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+			if (!builder.modifiers.contains(ABSTRACT)) {
+				implementingIntf.getAllMethodsToImplement()
+						.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+			}
 
 			if (implementingIntf.isSealed()) {
 				implementingIntfBuilder.permittedTypes.add(builder.qualifiedName);
