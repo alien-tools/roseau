@@ -392,6 +392,7 @@ public final class CombinatorialApi {
 						clsBuilder.visibility = visibility;
 						clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 						clsBuilder.superClass = typeReferenceFactory.createTypeReference(superCls.getQualifiedName());
+						addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
 
 						if (superCls.isSealed()) {
 							superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
@@ -444,7 +445,8 @@ public final class CombinatorialApi {
 		topLevelVisibilities.forEach(visibility ->
 				interfaceModifiers.forEach(modifiers -> {
 					// Last level of hierarchy can't have sealed interfaces
-					if (depth == 0 && modifiers.contains(SEALED)) return;
+					if (depth == 0 && modifiers.contains(SEALED))
+						return;
 					// Interface extending at least one sealed interface must be sealed or non-sealed
 					if (extendingIntfBuilders.stream().anyMatch(p -> p.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
 						return;
@@ -482,6 +484,7 @@ public final class CombinatorialApi {
 					clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
 					clsBuilder.visibility = visibility;
 					clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+					addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
 					addImplementedInterfacesToTypeDeclBuilder(clsBuilder, implementingIntfBuilders);
 
 					store(clsBuilder);
