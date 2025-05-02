@@ -160,7 +160,13 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	}
 
 	public Stream<MethodDecl> getAllMethodsToImplement() {
-		return getAllMethods().filter(MethodDecl::isAbstract);
+		return getAllMethods().filter(m -> {
+			if (m.getContainingType().getResolvedApiType().map(TypeDecl::isInterface).orElse(false)) {
+				return !m.isDefault() && !m.isStatic();
+			}
+
+			return m.isAbstract();
+		});
 	}
 
 	/**
