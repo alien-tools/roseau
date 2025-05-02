@@ -10,23 +10,23 @@ public interface ClientTemplates {
 				%s
 
 				public static void main(String[] args)%s {
-					callInstructionsWithoutException();
-					callInstructionsWithException();
-					callInstructionsWithTryCatch();
+					%s
 			    }
 
-				private static void callInstructionsWithoutException() {
-					%s
-				}
-
-				private static void callInstructionsWithException()%s {
-					%s
-				}
-
-				private static void callInstructionsWithTryCatch() {
-					%s
-				}
+			%s
 			}
+			""";
+
+	String CALL_INSTRUCTIONS_WITHOUT_EXCEPTION_TEMPLATE = """
+				private static void %s() {
+					%s
+				}
+			""";
+
+	String CALL_INSTRUCTIONS_WITH_EXCEPTION_TEMPLATE = """
+				private static void %s()%s {
+					%s
+				}
 			""";
 
 	String CLASS_EXTENSION_TEMPLATE = """

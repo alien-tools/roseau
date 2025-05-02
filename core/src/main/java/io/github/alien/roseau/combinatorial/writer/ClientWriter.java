@@ -257,9 +257,32 @@ public final class ClientWriter extends AbstractWriter {
 					.collect(Collectors.joining("\n\n\t"));
 			var sortedExceptions = formatExceptionNames(exceptions.stream().toList());
 			var exceptionsCode = sortedExceptions.isBlank() ? "" : " throws %s".formatted(sortedExceptions);
-			var notThrowingCode = String.join("\n\t\t", notThrowingInstructions);
-			var throwingCode = String.join("\n\t\t", throwingInstructions);
-			var tryCatchCode = String.join("\n\t\t", tryCatchInstructions);
+
+			List<String> mainCalls = new ArrayList<>();
+			List<String> methodsInstructions = new ArrayList<>();
+			dispatchInstructionsToMethodsAndInvokeThem(
+					"callInstructionsWithoutException",
+					notThrowingInstructions,
+					mainCalls,
+					methodsInstructions
+			);
+			dispatchInstructionsToMethodsAndInvokeThem(
+					"callInstructionsWithException",
+					throwingInstructions,
+					exceptionsCode,
+					CALL_INSTRUCTIONS_WITH_EXCEPTION_TEMPLATE,
+					mainCalls,
+					methodsInstructions
+			);
+			dispatchInstructionsToMethodsAndInvokeThem(
+					"callInstructionsWithTryCatch",
+					tryCatchInstructions,
+					mainCalls,
+					methodsInstructions
+			);
+
+			var mainCode = concatDeclarations("\n\t\t", false, mainCalls.toArray(String[]::new));
+			var methodsCode = concatDeclarations("\n", false, methodsInstructions.toArray(String[]::new));
 
 			var fullCode = FULL_CLIENT_FILE_TEMPLATE.formatted(
 					clientPackageName,
@@ -267,10 +290,8 @@ public final class ClientWriter extends AbstractWriter {
 					Constants.CLIENT_FILENAME,
 					innerTypesCode,
 					exceptionsCode,
-					notThrowingCode,
-					exceptionsCode,
-					throwingCode,
-					tryCatchCode
+					mainCode,
+					methodsCode
 			).getBytes();
 
 			var packagePath = clientPackageName.replace(".", "/");
@@ -281,6 +302,27 @@ public final class ClientWriter extends AbstractWriter {
 		} catch (IOException e) {
 			LOGGER.error("Error writing client code to file: {}", e.getMessage());
 		}
+	}
+
+	private void dispatchInstructionsToMethodsAndInvokeThem(String instructionsName, List<String> instructions, String exceptionsCode, String template, List<String> mainCalls, List<String> methodsInstructions) {
+		int maxLinesByMethod = 1000;
+
+		for (var index = 0; index < instructions.size(); index += maxLinesByMethod) {
+			var instructionName = "%s%s".formatted(instructionsName, index / maxLinesByMethod);
+			var subInstructionsList = instructions.subList(index, Math.min(index + maxLinesByMethod, instructions.size()));
+
+			mainCalls.add("%s();".formatted(instructionName));
+
+			if (exceptionsCode.isEmpty()) {
+				methodsInstructions.add(template.formatted(instructionName, concatDeclarations("\n\t\t", false, subInstructionsList.toArray(String[]::new))));
+			} else {
+				methodsInstructions.add(template.formatted(instructionName, exceptionsCode, concatDeclarations("\n\t\t", false, subInstructionsList.toArray(String[]::new))));
+			}
+		}
+	}
+
+	private void dispatchInstructionsToMethodsAndInvokeThem(String instructionsName, List<String> instructions, List<String> mainCalls, List<String> methodsInstructions) {
+		dispatchInstructionsToMethodsAndInvokeThem(instructionsName, instructions, "", CALL_INSTRUCTIONS_WITHOUT_EXCEPTION_TEMPLATE, mainCalls, methodsInstructions);
 	}
 
 	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, String constructors, String methods) {
@@ -329,10 +371,14 @@ public final class ClientWriter extends AbstractWriter {
 		addNewMethodToInnerType(className, methodName, methodBody, List.of(), containingType);
 	}
 
-	private static String concatDeclarations(String... declarations) {
+	private static String concatDeclarations(String delimiter, boolean isDefault, String... declarations) {
 		return Arrays.stream(declarations)
 				.filter(decl -> !decl.isBlank())
-				.collect(Collectors.joining("\n\n"));
+				.collect(Collectors.joining(delimiter));
+	}
+
+	private static String concatDeclarations(String... declarations) {
+		return concatDeclarations("\n\n", true, declarations);
 	}
 
 	private static String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {

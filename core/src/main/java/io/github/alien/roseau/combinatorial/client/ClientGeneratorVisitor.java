@@ -1,17 +1,6 @@
 package io.github.alien.roseau.combinatorial.client;
 
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.EnumDecl;
-import io.github.alien.roseau.api.model.EnumValueDecl;
-import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.InterfaceDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.RecordComponentDecl;
-import io.github.alien.roseau.api.model.RecordDecl;
-import io.github.alien.roseau.api.model.Symbol;
-import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
+import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.writer.ClientWriter;
