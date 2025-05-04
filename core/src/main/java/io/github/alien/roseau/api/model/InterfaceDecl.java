@@ -1,16 +1,13 @@
 package io.github.alien.roseau.api.model;
 
-import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
-import java.util.Objects;
-import java.util.stream.Stream;
 
 /**
- * An interface declaration in an {@link API}.
+ * An interface declaration in an {@link LibraryTypes}.
  */
 public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 	private final List<String> permittedTypes;
@@ -23,7 +20,8 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType);
 
-		this.permittedTypes = Objects.requireNonNull(permittedTypes);
+		Preconditions.checkNotNull(permittedTypes);
+		this.permittedTypes = List.copyOf(permittedTypes);
 	}
 
 	@Override
@@ -32,13 +30,8 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 	}
 
 	@Override
-	public Stream<MethodDecl> getAllMethodsToImplement() {
-		return getAllMethods().filter(m -> !m.isDefault() && !m.isStatic());
-	}
-
-	@Override
 	public List<String> getPermittedTypes() {
-		return Collections.unmodifiableList(permittedTypes);
+		return permittedTypes;
 	}
 
 	@Override
@@ -48,25 +41,5 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 			  %s
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
-	}
-
-	@Override
-	public InterfaceDecl deepCopy() {
-		return new InterfaceDecl(qualifiedName, visibility, modifiers,
-			annotations.stream().map(Annotation::deepCopy).toList(), location,
-			TypeReference.deepCopy(implementedInterfaces),
-			formalTypeParameters.stream().map(FormalTypeParameter::deepCopy).toList(),
-			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
-			getEnclosingType().map(TypeReference::deepCopy).orElse(null), getPermittedTypes());
-	}
-
-	@Override
-	public InterfaceDecl deepCopy(ReflectiveTypeFactory factory) {
-		return new InterfaceDecl(qualifiedName, visibility, modifiers,
-			annotations.stream().map(a -> a.deepCopy(factory)).toList(), location,
-			TypeReference.deepCopy(implementedInterfaces, factory),
-			formalTypeParameters.stream().map(fT -> fT.deepCopy(factory)).toList(),
-			fields.stream().map(f -> f.deepCopy(factory)).toList(), methods.stream().map(m -> m.deepCopy(factory)).toList(),
-			getEnclosingType().map(t -> t.deepCopy(factory)).orElse(null), getPermittedTypes());
 	}
 }

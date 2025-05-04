@@ -403,7 +403,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 			}
 		}
 		// Otherwise, assume it's a same-package type
-		return packageName + "." + simpleName;
+		return packageName.isEmpty() ? simpleName : (packageName + "." + simpleName);
 	}
 
 	private ITypeReference makeTypeReference(ITypeBinding binding) {

@@ -6,7 +6,7 @@ import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 
 import java.util.HashMap;
@@ -27,7 +27,7 @@ public final class ApiBuilder implements Builder<API> {
 	}
 
 	public static ApiBuilder from(API api) {
-		var factory = new CachedTypeReferenceFactory();
+		var factory = new CachingTypeReferenceFactory();
 		var apiBuilder = new ApiBuilder(factory);
 
 		var apiCloned = api.deepCopy(factory);

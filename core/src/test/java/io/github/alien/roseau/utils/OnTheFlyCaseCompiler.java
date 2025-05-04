@@ -4,8 +4,8 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.APIExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIExtractor;
+import io.github.alien.roseau.extractors.TypesExtractor;
+import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.opentest4j.AssertionFailedError;
@@ -205,9 +205,9 @@ public class OnTheFlyCaseCompiler {
 				}""".formatted(clientSnippet));
 
 			// --- Extract APIs and compute diff ---
-			APIExtractor extractor = new SpoonAPIExtractor();
-			API v1 = extractor.extractAPI(srcDir1);
-			API v2 = extractor.extractAPI(srcDir2);
+			TypesExtractor extractor = new SpoonTypesExtractor();
+			API v1 = extractor.extractTypes(srcDir1).toAPI();
+			API v2 = extractor.extractTypes(srcDir2).toAPI();
 			List<BreakingChange> bcs = new APIDiff(v1, v2).diff();
 
 			// --- Compile client against API v1 (sanity check) ---

@@ -1,17 +1,17 @@
 package io.github.alien.roseau.extractors.incremental;
 
-import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.extractors.APIExtractor;
+import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.extractors.TypesExtractor;
 
 import java.nio.file.Path;
 
 /**
- * A complement to {@link APIExtractor} that allows "refreshing" an existing {@link API} based on some
+ * A complement to {@link TypesExtractor} that allows "refreshing" an existing {@link LibraryTypes} based on some
  * {@link ChangedFiles}.
  */
 public interface IncrementalAPIExtractor {
 	/**
-	 * Returns a fresh new instance of {@link API} that reuses the symbols declared in a previous API and incorporates the
+	 * Returns a fresh new instance of {@link LibraryTypes} that reuses the symbols declared in a previous API and incorporates the
 	 * changes pointed by {@code changedFiles}.
 	 *
 	 * @param sources      the file or directory to use as source
@@ -19,5 +19,5 @@ public interface IncrementalAPIExtractor {
 	 * @param previousApi  the previous API to refresh
 	 * @return a fresh API instance incoporating the changes on top of deep copies of the previous API's symbols
 	 */
-	API refreshAPI(Path sources, ChangedFiles changedFiles, API previousApi);
+	LibraryTypes refreshAPI(Path sources, ChangedFiles changedFiles, LibraryTypes previousApi);
 }

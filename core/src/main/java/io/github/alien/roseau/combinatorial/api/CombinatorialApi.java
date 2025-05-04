@@ -4,6 +4,7 @@ import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -33,7 +34,7 @@ import static io.github.alien.roseau.api.model.Modifier.STATIC;
 import static io.github.alien.roseau.api.model.Modifier.SYNCHRONIZED;
 
 public final class CombinatorialApi {
-	static final TypeReferenceFactory typeReferenceFactory = new CachedTypeReferenceFactory();
+	static final TypeReferenceFactory typeReferenceFactory = new CachingTypeReferenceFactory();
 
 	static final List<AccessModifier> topLevelVisibilities = List.of(PUBLIC);
 	static final List<AccessModifier> constructorsVisibilities = List.of(PROTECTED, PUBLIC);
@@ -104,7 +105,8 @@ public final class CombinatorialApi {
 	}
 
 	public API getAPI() {
-		return new API(typeStore.values().stream().map(TypeBuilder::make).toList(), typeReferenceFactory);
+		var types = new LibraryTypes(typeStore.values().stream().map(TypeBuilder::make).toList());
+		return types.toAPI();
 	}
 
 	private void createTypes() {
