@@ -1,0 +1,35 @@
+package io.github.alien.roseau.combinatorial.v2.breaker.cls;
+
+import io.github.alien.roseau.api.model.ClassDecl;
+import io.github.alien.roseau.api.model.Modifier;
+import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
+import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
+
+public final class AddFinalModifierClassStrategy extends AddModifierClassStrategy {
+	public AddFinalModifierClassStrategy(ClassDecl cls, NewApiQueue queue) {
+		super(Modifier.ABSTRACT, cls, queue);
+	}
+
+	@Override
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+		if (tp.getModifiers().contains(Modifier.ABSTRACT)) throw new ImpossibleChangeException();
+		if (tp.getModifiers().contains(Modifier.NON_SEALED)) throw new ImpossibleChangeException();
+		if (tp.getModifiers().contains(Modifier.SEALED)) throw new ImpossibleChangeException();
+
+		super.applyBreakToMutableApi(mutableApi);
+
+		mutableApi.allTypes.values().forEach(typeBuilder -> {
+			if (typeBuilder.qualifiedName.equals(tp.getQualifiedName())) return;
+
+			if (typeBuilder instanceof ClassBuilder classBuilder) {
+				if (classBuilder.superClass != null && classBuilder.superClass.getQualifiedName().equals(tp.getQualifiedName())) {
+					classBuilder.superClass = null;
+				}
+			}
+		});
+
+		// TODO: For now we don't have hierarchy, so we don't need to update possible references
+	}
+}
