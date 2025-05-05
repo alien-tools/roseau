@@ -9,14 +9,14 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddFinalModifierClassStrategy extends AddModifierClassStrategy {
 	public AddFinalModifierClassStrategy(ClassDecl cls, NewApiQueue queue) {
-		super(Modifier.ABSTRACT, cls, queue);
+		super(Modifier.FINAL, cls, queue);
 	}
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (tp.getModifiers().contains(Modifier.ABSTRACT)) throw new ImpossibleChangeException();
-		if (tp.getModifiers().contains(Modifier.NON_SEALED)) throw new ImpossibleChangeException();
-		if (tp.getModifiers().contains(Modifier.SEALED)) throw new ImpossibleChangeException();
+		if (tp.isAbstract()) throw new ImpossibleChangeException();
+		if (tp.isNonSealed()) throw new ImpossibleChangeException();
+		if (tp.isSealed()) throw new ImpossibleChangeException();
 
 		super.applyBreakToMutableApi(mutableApi);
 
@@ -29,7 +29,5 @@ public final class AddFinalModifierClassStrategy extends AddModifierClassStrateg
 				}
 			}
 		});
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

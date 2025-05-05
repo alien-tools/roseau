@@ -13,7 +13,7 @@ public final class AddAbstractModifierClassStrategy extends AddModifierClassStra
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (tp.getModifiers().contains(Modifier.FINAL)) throw new ImpossibleChangeException();
+		if (tp.isFinal()) throw new ImpossibleChangeException();
 
 		super.applyBreakToMutableApi(mutableApi);
 	}
