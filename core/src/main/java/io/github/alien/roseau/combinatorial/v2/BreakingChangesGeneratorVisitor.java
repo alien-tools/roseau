@@ -99,7 +99,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddAbstractModifierClassStrategy(c, queue).breakApi(api);
 		new RemoveAbstractModifierClassStrategy(c, queue).breakApi(api);
 		new AddFinalModifierClassStrategy(c, queue).breakApi(api);
-		new RemoveModifierClassStrategy(Modifier.FINAL, c, queue).breakApi(api);
+		new RemoveFinalModifierClassStrategy(c, queue).breakApi(api);
 
 		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
 	}
