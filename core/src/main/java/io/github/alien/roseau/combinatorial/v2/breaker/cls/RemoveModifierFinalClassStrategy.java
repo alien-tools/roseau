@@ -7,8 +7,8 @@ import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class RemoveFinalModifierClassStrategy extends RemoveModifierClassStrategy {
-	public RemoveFinalModifierClassStrategy(ClassDecl cls, NewApiQueue queue) {
+public final class RemoveModifierFinalClassStrategy extends RemoveModifierClassStrategy {
+	public RemoveModifierFinalClassStrategy(ClassDecl cls, NewApiQueue queue) {
 		super(Modifier.FINAL, cls, queue);
 	}
 

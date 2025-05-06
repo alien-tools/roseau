@@ -6,8 +6,8 @@ import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class AddAbstractModifierClassStrategy extends AddModifierClassStrategy {
-	public AddAbstractModifierClassStrategy(ClassDecl cls, NewApiQueue queue) {
+public final class AddModifierAbstractClassStrategy extends AddModifierClassStrategy {
+	public AddModifierAbstractClassStrategy(ClassDecl cls, NewApiQueue queue) {
 		super(Modifier.ABSTRACT, cls, queue);
 	}
 

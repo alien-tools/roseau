@@ -96,10 +96,11 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
 
-		new AddAbstractModifierClassStrategy(c, queue).breakApi(api);
-		new RemoveAbstractModifierClassStrategy(c, queue).breakApi(api);
-		new AddFinalModifierClassStrategy(c, queue).breakApi(api);
-		new RemoveFinalModifierClassStrategy(c, queue).breakApi(api);
+		new AddModifierAbstractClassStrategy(c, queue).breakApi(api);
+		new RemoveModifierAbstractClassStrategy(c, queue).breakApi(api);
+		new AddModifierFinalClassStrategy(c, queue).breakApi(api);
+		new RemoveModifierFinalClassStrategy(c, queue).breakApi(api);
+		new AddModifierSealedClassStrategy(c, queue).breakApi(api);
 
 		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
 	}

@@ -14,7 +14,7 @@ public final class AddMethodAbstractClassStrategy extends AddMethodTypeStrategy<
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!tp.getModifiers().contains(Modifier.ABSTRACT)) throw new ImpossibleChangeException();
+		if (!tp.isAbstract()) throw new ImpossibleChangeException();
 
 		super.applyBreakToMutableApi(mutableApi);
 	}

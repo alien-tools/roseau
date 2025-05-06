@@ -23,7 +23,5 @@ public final class ReduceVisibilityTypeStrategy<T extends TypeDecl> extends Abst
 		if (mutableType == null) throw new ImpossibleChangeException();
 
 		mutableType.visibility = accessModifier;
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

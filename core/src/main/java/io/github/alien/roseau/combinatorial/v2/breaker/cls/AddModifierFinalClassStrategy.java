@@ -7,8 +7,8 @@ import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-public final class AddFinalModifierClassStrategy extends AddModifierClassStrategy {
-	public AddFinalModifierClassStrategy(ClassDecl cls, NewApiQueue queue) {
+public final class AddModifierFinalClassStrategy extends AddModifierClassStrategy {
+	public AddModifierFinalClassStrategy(ClassDecl cls, NewApiQueue queue) {
 		super(Modifier.FINAL, cls, queue);
 	}
 
@@ -20,9 +20,7 @@ public final class AddFinalModifierClassStrategy extends AddModifierClassStrateg
 
 		super.applyBreakToMutableApi(mutableApi);
 
-		mutableApi.allTypes.values().forEach(typeBuilder -> {
-			if (typeBuilder.qualifiedName.equals(tp.getQualifiedName())) return;
-
+		getAllOtherMutableTypes(mutableApi).forEach(typeBuilder -> {
 			if (typeBuilder instanceof ClassBuilder classBuilder) {
 				if (classBuilder.superClass != null && classBuilder.superClass.getQualifiedName().equals(tp.getQualifiedName())) {
 					classBuilder.superClass = null;
