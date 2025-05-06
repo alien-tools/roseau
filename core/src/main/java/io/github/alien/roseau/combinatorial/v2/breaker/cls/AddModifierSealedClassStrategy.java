@@ -17,29 +17,26 @@ public final class AddModifierSealedClassStrategy extends AddModifierClassStrate
 		if (tp.isFinal()) throw new ImpossibleChangeException();
 		if (tp.isNonSealed()) throw new ImpossibleChangeException();
 
-		var otherTypes = getAllOtherMutableTypes(mutableApi);
-		var hasSubclasses = otherTypes.stream().anyMatch(t -> {
-			if (t instanceof ClassBuilder classBuilder) {
-				return classBuilder.superClass != null && classBuilder.superClass.getQualifiedName().equals(tp.getQualifiedName());
-			}
+		var subclasses = getAllOtherMutableTypes(mutableApi).stream()
+				.filter(t -> {
+					if (t instanceof ClassBuilder classBuilder) {
+						return classBuilder.superClass != null && classBuilder.superClass.getQualifiedName().equals(tp.getQualifiedName());
+					}
 
-			return false;
-		});
-		if (!hasSubclasses) throw new ImpossibleChangeException();
+					return false;
+				})
+				.toList();
+		if (subclasses.isEmpty()) throw new ImpossibleChangeException();
 
 		var mutableClass = getMutableClass(mutableApi);
 
 		super.applyBreakToMutableApi(mutableApi);
 
-		otherTypes.forEach(typeBuilder -> {
-			if (typeBuilder instanceof ClassBuilder classBuilder) {
-				if (classBuilder.superClass != null && classBuilder.superClass.getQualifiedName().equals(tp.getQualifiedName())) {
-					mutableClass.permittedTypes.add(typeBuilder.qualifiedName);
+		subclasses.forEach(typeBuilder -> {
+			mutableClass.permittedTypes.add(typeBuilder.qualifiedName);
 
-					if (!typeBuilder.modifiers.contains(Modifier.FINAL) && !typeBuilder.modifiers.contains(Modifier.NON_SEALED)) {
-						typeBuilder.modifiers.add(Modifier.NON_SEALED);
-					}
-				}
+			if (!typeBuilder.modifiers.contains(Modifier.FINAL) && !typeBuilder.modifiers.contains(Modifier.NON_SEALED)) {
+				typeBuilder.modifiers.add(Modifier.NON_SEALED);
 			}
 		});
 	}

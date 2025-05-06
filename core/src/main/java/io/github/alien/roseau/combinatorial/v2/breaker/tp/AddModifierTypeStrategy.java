@@ -25,7 +25,5 @@ public class AddModifierTypeStrategy<T extends TypeDecl> extends AbstractTpStrat
 		if (mutableType == null) throw new ImpossibleChangeException();
 
 		mutableType.modifiers.add(modifier);
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }
