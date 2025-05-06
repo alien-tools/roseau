@@ -18,8 +18,7 @@ public class AddMethodTypeStrategy<T extends TypeDecl> extends AbstractTpStrateg
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		LOGGER.info("Adding new method to type {}", tp.getSimpleName());
 
-		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
-		if (mutableType == null) throw new ImpossibleChangeException();
+		var mutableType = getMutableType(mutableApi);
 
 		var methodBuilder = new MethodBuilder();
 		methodBuilder.qualifiedName = "%s.%s".formatted(tp.getQualifiedName(), "newMethodAddedToType");

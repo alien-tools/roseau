@@ -22,7 +22,7 @@ public final class RemoveModifierAbstractClassStrategy extends RemoveModifierCla
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		super.applyBreakToMutableApi(mutableApi);
 
-		ClassBuilder mutableClass = getMutableType(mutableApi);
+		var mutableClass = getMutableClass(mutableApi);
 		mutableClass.methods = mutableClass.methods.stream()
 				.peek(methodBuilder -> methodBuilder.modifiers.remove(Modifier.ABSTRACT))
 				.collect(Collectors.toCollection(ArrayList::new));

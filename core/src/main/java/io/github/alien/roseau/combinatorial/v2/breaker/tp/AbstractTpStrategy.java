@@ -1,7 +1,5 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.tp;
 
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
@@ -22,17 +20,29 @@ public abstract class AbstractTpStrategy<T extends TypeDecl> extends AbstractApi
 		this.tp = tp;
 	}
 
-	protected <B extends TypeBuilder> B getMutableType(ApiBuilder mutableApi) {
+	protected TypeBuilder getMutableType(ApiBuilder mutableApi) {
 		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
 		if (mutableType == null) throw new ImpossibleChangeException();
 
-		if (tp instanceof ClassDecl && mutableType instanceof ClassBuilder classBuilder) {
-			return (B) classBuilder;
-		} else if (tp instanceof InterfaceDecl && mutableType instanceof InterfaceBuilder interfaceBuilder) {
-			return (B) interfaceBuilder;
-		} else {
-			throw new ImpossibleChangeException();
-		}
+		return mutableType;
+	}
+
+	protected ClassBuilder getMutableClass(ApiBuilder mutableApi) {
+		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
+		if (mutableType == null) throw new ImpossibleChangeException();
+
+		if (mutableType instanceof ClassBuilder classBuilder) return classBuilder;
+
+		throw new ImpossibleChangeException();
+	}
+
+	protected InterfaceBuilder getMutableInterface(ApiBuilder mutableApi) {
+		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
+		if (mutableType == null) throw new ImpossibleChangeException();
+
+		if (mutableType instanceof InterfaceBuilder interfaceBuilder) return interfaceBuilder;
+
+		throw new ImpossibleChangeException();
 	}
 
 	protected List<TypeBuilder> getAllOtherMutableTypes(ApiBuilder mutableApi) {

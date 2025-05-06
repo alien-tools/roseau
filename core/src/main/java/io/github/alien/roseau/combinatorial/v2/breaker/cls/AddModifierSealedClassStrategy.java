@@ -27,7 +27,7 @@ public final class AddModifierSealedClassStrategy extends AddModifierClassStrate
 		});
 		if (!hasSubclasses) throw new ImpossibleChangeException();
 
-		ClassBuilder mutableClass = getMutableType(mutableApi);
+		var mutableClass = getMutableClass(mutableApi);
 
 		super.applyBreakToMutableApi(mutableApi);
 

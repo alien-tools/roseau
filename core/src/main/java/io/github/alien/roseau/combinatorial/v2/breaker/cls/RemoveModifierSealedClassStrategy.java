@@ -17,7 +17,7 @@ public final class RemoveModifierSealedClassStrategy extends RemoveModifierClass
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
 		super.applyBreakToMutableApi(mutableApi);
 
-		ClassBuilder mutableClass = getMutableType(mutableApi);
+		var mutableClass = getMutableClass(mutableApi);
 		mutableClass.permittedTypes.clear();
 
 		getAllOtherMutableTypes(mutableApi).forEach(typeBuilder -> {
