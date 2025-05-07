@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 public final class ResultsWriter implements Runnable {
 	private static final Logger LOGGER = LogManager.getLogger(ResultsWriter.class);
 
-	private final Path resultsPath = Path.of(Constants.RESULTS_FOLDER);
+	private final Path resultsPath = Constants.RESULTS_PATH;
 	private final ResultsProcessQueue resultsQueue;
 
 	private FileWriter resultsFileWriter = null;

@@ -9,6 +9,7 @@ import io.github.alien.roseau.combinatorial.v2.benchmark.tool.JapicmpTool;
 import io.github.alien.roseau.combinatorial.v2.benchmark.tool.RevapiTool;
 import io.github.alien.roseau.combinatorial.v2.benchmark.tool.RoseauTool;
 import io.github.alien.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
+import io.github.alien.roseau.combinatorial.v2.queue.FailedStrategyQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import io.github.alien.roseau.combinatorial.writer.ApiWriter;
@@ -31,6 +32,7 @@ public final class Benchmark implements Runnable {
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
+	private final FailedStrategyQueue failedStrategyQueue;
 	private final NewApiQueue apiQueue;
 	private final ResultsProcessQueue resultsQueue;
 
@@ -45,6 +47,7 @@ public final class Benchmark implements Runnable {
 
 	public Benchmark(
 			String id,
+			FailedStrategyQueue failedStrategyQueue,
 			NewApiQueue apiQueue,
 			ResultsProcessQueue resultsQueue,
 			Path clientBinPath,
@@ -61,6 +64,7 @@ public final class Benchmark implements Runnable {
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
 
+		this.failedStrategyQueue = failedStrategyQueue;
 		this.apiQueue = apiQueue;
 		this.resultsQueue = resultsQueue;
 
@@ -78,11 +82,10 @@ public final class Benchmark implements Runnable {
 		while (isNewApisGenerationOngoing || apiQueue.hasStillWork()) {
 			var strategyAndApi = apiQueue.poll();
 			if (strategyAndApi == null) break;
+			var strategy = strategyAndApi.getValue0();
+			var v2Api = strategyAndApi.getValue1();
 
 			try {
-				var strategy = strategyAndApi.getValue0();
-				var v2Api = strategyAndApi.getValue1();
-
 				LOGGER.info("--------------------------------");
 				LOGGER.info("Running Benchmark Thread n°{}", id);
 				LOGGER.info("Breaking Change: {}", strategy);
@@ -95,12 +98,10 @@ public final class Benchmark implements Runnable {
 				LOGGER.info("--------------------------------\n");
 			} catch (Exception e) {
 				errorsCount++;
+				failedStrategyQueue.put(strategy, e.getMessage());
 				LOGGER.info("Benchmark Thread n°{} failed: {}", id, e.getMessage());
 			}
 		}
-
-		if (errorsCount == 0)
-			ExplorerUtils.removeDirectory(benchmarkWorkingPath);
 	}
 
 	public void informApisGenerationIsOver() {

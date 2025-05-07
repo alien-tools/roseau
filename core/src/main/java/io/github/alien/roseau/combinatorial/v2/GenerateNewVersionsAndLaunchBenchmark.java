@@ -6,8 +6,10 @@ import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.StepExecutionException;
 import io.github.alien.roseau.combinatorial.utils.ExplorerUtils;
 import io.github.alien.roseau.combinatorial.v2.benchmark.Benchmark;
+import io.github.alien.roseau.combinatorial.v2.benchmark.error.ErrorsWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.result.ResultsWriter;
 import io.github.alien.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
+import io.github.alien.roseau.combinatorial.v2.queue.FailedStrategyQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import org.apache.logging.log4j.LogManager;
@@ -25,10 +27,12 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private final API v1Api;
 	private final int maxParallelAnalysis;
 
+	private final FailedStrategyQueue failedStrategyQueue;
 	private final NewApiQueue newApiQueue;
 	private final ResultsProcessQueue resultsQueue;
 
 	private final Map<Benchmark, Thread> benchmarkThreads = new HashMap<>();
+	private ErrorsWriter errorsWriter = null;
 	private ResultsWriter resultsWriter = null;
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
@@ -45,6 +49,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		this.v1Api = v1Api;
 		this.maxParallelAnalysis = maxParallelAnalysis;
 
+		failedStrategyQueue = new FailedStrategyQueue();
 		newApiQueue = new NewApiQueue(maxParallelAnalysis);
 		resultsQueue = new ResultsProcessQueue();
 
@@ -64,12 +69,13 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		try {
 			initializeBenchmarkThreads();
+			initializeErrorsThread();
 			initializeResultsThread();
 
 			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
 			visitor.$(v1Api).visit();
 
-			informAllBenchmarksGenerationIsOver();
+			informAllThreadsGenerationIsOver();
 		} catch (Exception e) {
 			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
 		}
@@ -115,7 +121,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		for (int i = 0; i < maxParallelAnalysis; i++) {
 			var benchmark = new Benchmark(
 					String.valueOf(i),
-					newApiQueue, resultsQueue,
+					failedStrategyQueue, newApiQueue, resultsQueue,
 					clientBinPath, clientSourcePath,
 					v1JarPath,
 					tmpPath
@@ -129,6 +135,15 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		LOGGER.info("--- All bench threads started --\n");
 	}
 
+	private void initializeErrorsThread() {
+		LOGGER.info("---- Starting errors thread ---");
+
+		errorsWriter = new ErrorsWriter(failedStrategyQueue);
+		new Thread(errorsWriter).start();
+
+		LOGGER.info("---- Errors thread started ----\n");
+	}
+
 	private void initializeResultsThread() {
 		LOGGER.info("---- Starting results thread ---");
 
@@ -138,7 +153,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		LOGGER.info("---- Results thread started ----\n");
 	}
 
-	private void informAllBenchmarksGenerationIsOver() {
+	private void informAllThreadsGenerationIsOver() {
 		for (var benchmark : benchmarkThreads.keySet())
 			benchmark.informApisGenerationIsOver();
 
@@ -149,15 +164,9 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();
 		LOGGER.info("Total benchmark errors: {}", totalErrors);
 
-		if (totalErrors == 0)
-			ExplorerUtils.removeDirectory(tmpPath);
+		ExplorerUtils.removeDirectory(tmpPath);
 
-		informResultsThreadNoMoreResults();
-	}
-
-	private void informResultsThreadNoMoreResults() {
-		if (resultsWriter != null) {
-			resultsWriter.informNoMoreResults();
-		}
+		if (errorsWriter != null) errorsWriter.informNoMoreBenchmark();
+		if (resultsWriter != null) resultsWriter.informNoMoreResults();
 	}
 }
