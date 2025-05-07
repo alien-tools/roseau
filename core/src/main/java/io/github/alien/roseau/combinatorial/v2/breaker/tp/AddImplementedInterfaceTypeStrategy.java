@@ -9,7 +9,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddImplementedInterfaceTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
 	public AddImplementedInterfaceTypeStrategy(T tp, NewApiQueue queue) {
-		super(tp, queue, "AddInterfaceToType%s".formatted(tp.getSimpleName()));
+		super(tp, queue, "AddImplementedInterfaceToType%s".formatted(tp.getSimpleName()));
 	}
 
 	@Override
