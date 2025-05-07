@@ -112,6 +112,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 		new AddImplementedInterfaceTypeStrategy<>(c, queue).breakApi(api);
 		new AddSuperClassClassStrategy(c, queue).breakApi(api);
+		new RemoveSuperClassClassStrategy(c, queue).breakApi(api);
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
