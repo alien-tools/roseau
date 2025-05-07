@@ -65,6 +65,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveTypeStrategy<>(e, queue).breakApi(api);
 
 		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, e, queue).breakApi(api);
+
+		new AddImplementedInterfaceTypeStrategy<>(e, queue).breakApi(api);
 	}
 
 	private void breakRecordDecl(RecordDecl r) {
@@ -88,6 +90,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 			new RemoveRecordComponentStrategy(recordComponentIndex, r, queue).breakApi(api);
 		}
+
+		new AddImplementedInterfaceTypeStrategy<>(r, queue).breakApi(api);
 	}
 
 	private void breakClassDecl(ClassDecl c) {
@@ -105,6 +109,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveModifierNonSealedClassStrategy(c, queue).breakApi(api);
 
 		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
+
+		new AddImplementedInterfaceTypeStrategy<>(c, queue).breakApi(api);
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
@@ -118,6 +124,8 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new RemoveModifierSealedInterfaceStrategy(i, queue).breakApi(api);
 
 		new AddMethodTypeStrategy<>(i, queue).breakApi(api);
+
+		new AddImplementedInterfaceTypeStrategy<>(i, queue).breakApi(api);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {
