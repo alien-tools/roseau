@@ -27,13 +27,13 @@ public final class RemoveModifierAbstractClassStrategy extends RemoveModifierCla
 				.peek(methodBuilder -> methodBuilder.modifiers.remove(Modifier.ABSTRACT))
 				.collect(Collectors.toCollection(ArrayList::new));
 
-		if (mutableClass.superClass != null && mutableClass.superClass.getResolvedApiType().isPresent()) {
-			var superClass = mutableClass.superClass.getResolvedApiType().get();
+		if (tp.getSuperClass().getResolvedApiType().isPresent()) {
+			var superClass = tp.getSuperClass().getResolvedApiType().get();
 
 			addMethodsToImplementFromTypeDeclToClassBuilder(superClass, mutableClass, mutableApi.typeReferenceFactory);
 		}
 
-		mutableClass.implementedInterfaces.forEach(interfaceTR -> {
+		tp.getImplementedInterfaces().forEach(interfaceTR -> {
 			if (interfaceTR.getResolvedApiType().isEmpty()) return;
 			var interfaceDecl = interfaceTR.getResolvedApiType().get();
 

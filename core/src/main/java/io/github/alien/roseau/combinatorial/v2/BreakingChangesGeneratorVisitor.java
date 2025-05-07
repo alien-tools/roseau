@@ -47,33 +47,55 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 	public Visit symbol(Symbol it) {
 		switch (it) {
-			case EnumDecl e: breakEnumDecl(e); break;
-			case RecordDecl r: breakRecordDecl(r); break;
-			case ClassDecl c: breakClassDecl(c); break;
-			case InterfaceDecl i: breakInterfaceDecl(i); break;
-			case ConstructorDecl c: breakConstructorDecl(c); break;
-			case EnumValueDecl eV: breakEnumValueDecl(eV); break;
-			case FieldDecl f: breakFieldDecl(f); break;
-			case MethodDecl m: breakMethodDecl(m); break;
-			default: break;
+			case EnumDecl e:
+				breakTypeDecl(e);
+				break;
+			case RecordDecl r:
+				breakTypeDecl(r);
+				breakRecordDecl(r);
+				break;
+			case ClassDecl c:
+				breakTypeDecl(c);
+				breakClassDecl(c);
+				break;
+			case InterfaceDecl i:
+				breakTypeDecl(i);
+				breakInterfaceDecl(i);
+				break;
+			case ConstructorDecl c:
+				breakConstructorDecl(c);
+				break;
+			case EnumValueDecl eV:
+				breakEnumValueDecl(eV);
+				break;
+			case FieldDecl f:
+				breakFieldDecl(f);
+				break;
+			case MethodDecl m:
+				breakMethodDecl(m);
+				break;
+			default:
+				break;
 		}
 
 		return () -> it.getAnnotations().forEach(ann -> $(ann).visit());
 	}
 
-	private void breakEnumDecl(EnumDecl e) {
-		new RemoveTypeStrategy<>(e, queue).breakApi(api);
+	private void breakTypeDecl(TypeDecl t) {
+		new RemoveTypeStrategy<>(t, queue).breakApi(api);
 
-		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, e, queue).breakApi(api);
+		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, t, queue).breakApi(api);
 
-		new AddImplementedInterfaceTypeStrategy<>(e, queue).breakApi(api);
+		new AddImplementedInterfaceTypeStrategy<>(t, queue).breakApi(api);
+		for (var interfaceTypeRef : t.getImplementedInterfaces()) {
+			var interfaceDecl = interfaceTypeRef.getResolvedApiType().orElse(null);
+			if (interfaceDecl == null) continue;
+
+			new RemoveImplementedInterfaceTypeStrategy<>(interfaceDecl, t, queue).breakApi(api);
+		}
 	}
 
 	private void breakRecordDecl(RecordDecl r) {
-		new RemoveTypeStrategy<>(r, queue).breakApi(api);
-
-		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, r, queue).breakApi(api);
-
 		new AddModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
 
@@ -90,15 +112,9 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 			new RemoveRecordComponentStrategy(recordComponentIndex, r, queue).breakApi(api);
 		}
-
-		new AddImplementedInterfaceTypeStrategy<>(r, queue).breakApi(api);
 	}
 
 	private void breakClassDecl(ClassDecl c) {
-		new RemoveTypeStrategy<>(c, queue).breakApi(api);
-
-		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, c, queue).breakApi(api);
-
 		new AddModifierAbstractClassStrategy(c, queue).breakApi(api);
 		new RemoveModifierAbstractClassStrategy(c, queue).breakApi(api);
 		new AddModifierFinalClassStrategy(c, queue).breakApi(api);
@@ -110,24 +126,17 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 
 		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
 
-		new AddImplementedInterfaceTypeStrategy<>(c, queue).breakApi(api);
 		new AddSuperClassClassStrategy(c, queue).breakApi(api);
 		new RemoveSuperClassClassStrategy(c, queue).breakApi(api);
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
-		new RemoveTypeStrategy<>(i, queue).breakApi(api);
-
-		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, i, queue).breakApi(api);
-
 		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
 		new AddModifierSealedInterfaceStrategy(i, queue).breakApi(api);
 		new RemoveModifierSealedInterfaceStrategy(i, queue).breakApi(api);
 
 		new AddMethodTypeStrategy<>(i, queue).breakApi(api);
-
-		new AddImplementedInterfaceTypeStrategy<>(i, queue).breakApi(api);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {
