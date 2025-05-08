@@ -1,15 +1,17 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class RemoveMethodStrategy extends AbstractMtdStrategy {
-	public RemoveMethodStrategy(MethodDecl mtd, NewApiQueue queue) {
+	public RemoveMethodStrategy(MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "RemoveMethod%sIn%s".formatted(
-				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
-				mtd.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				mtd.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 	}
 

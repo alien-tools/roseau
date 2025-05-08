@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.ctr;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -10,11 +11,12 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 public final class AddExceptionConstructorStrategy extends AbstractCtrStrategy {
 	private final ITypeReference exception;
 
-	public AddExceptionConstructorStrategy(ITypeReference exception, ConstructorDecl ctr, NewApiQueue queue) {
+	public AddExceptionConstructorStrategy(ITypeReference exception, ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "AddException%sToConstructor%sIn%s".formatted(
 				exception.getPrettyQualifiedName(),
-				StringUtils.splitSpecialCharsAndCapitalize(ctr.getErasure()),
-				ctr.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				ctr.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 
 		this.exception = exception;

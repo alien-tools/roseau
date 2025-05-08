@@ -5,6 +5,7 @@ import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -23,7 +24,8 @@ public final class ApiBuilder implements Builder<API> {
 
 	@Override
 	public API make() {
-		return new API(allTypes.values().stream().map(TypeBuilder::make).toList(), typeReferenceFactory);
+		var types = new LibraryTypes(allTypes.values().stream().map(TypeBuilder::make).toList());
+		return types.toAPI();
 	}
 
 	public static ApiBuilder from(API api) {

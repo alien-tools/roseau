@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.ctr;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -12,13 +13,14 @@ public final class ChangeParameterConstructorStrategy extends AbstractCtrStrateg
 	private final ITypeReference parameterType;
 	private final boolean parameterIsVarargs;
 
-	public ChangeParameterConstructorStrategy(int index, ITypeReference type, boolean isVarargs, ConstructorDecl ctr, NewApiQueue queue) {
+	public ChangeParameterConstructorStrategy(int index, ITypeReference type, boolean isVarargs, ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "ChangeParameter%dTo%s%sFromConstructor%sIn%s".formatted(
 				index,
 				type.getPrettyQualifiedName(),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(ctr.getErasure()),
-				ctr.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				ctr.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 
 		this.parameterIndex = index;
@@ -39,7 +41,7 @@ public final class ChangeParameterConstructorStrategy extends AbstractCtrStrateg
 
 		currentParameter.type = parameterType;
 		currentParameter.isVarargs = parameterIsVarargs;
-		if (areConstructorsInvalid(containingType.constructors)) throw new ImpossibleChangeException();
+		if (areConstructorsInvalid(containingType.constructors, api)) throw new ImpossibleChangeException();
 
 		LOGGER.info("Changing parameter at index {} from constructor {}", parameterIndex, tpMbr.getQualifiedName());
 

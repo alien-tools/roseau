@@ -29,23 +29,23 @@ final class ApiStats {
 		fieldsCount = 0;
 		enumValuesCount = 0;
 
-		for (TypeDecl type : api.getAllTypes().toList()) {
+		for (TypeDecl type : api.getLibraryTypes().getAllTypes()) {
 			switch (type) {
 				case EnumDecl enumDecl:
 					enumsCount++;
-					countEntities(enumDecl);
+					countEntities(enumDecl, api);
 					break;
 				case RecordDecl recordDecl:
 					recordsCount++;
-					countEntities(recordDecl);
+					countEntities(recordDecl, api);
 					break;
 				case ClassDecl classDecl:
 					classesCount++;
-					countEntities(classDecl);
+					countEntities(classDecl, api);
 					break;
 				case InterfaceDecl interfaceDecl:
 					interfacesCount++;
-					countEntities(interfaceDecl);
+					countEntities(interfaceDecl, api);
 					break;
 				case AnnotationDecl ignored:
 					break;
@@ -55,7 +55,7 @@ final class ApiStats {
 		LOGGER.info("--------------------------------");
 		LOGGER.info("---------- API stats -----------");
 		LOGGER.info("--------------------------------");
-		LOGGER.info(api.getAllTypes().count() + " types");
+		LOGGER.info(api.getLibraryTypes().getAllTypes().size() + " types");
 		LOGGER.info("--------------------------------");
 		LOGGER.info(classesCount + " classes");
 		LOGGER.info(interfacesCount + " interfaces");
@@ -69,9 +69,9 @@ final class ApiStats {
 		LOGGER.info("--------------------------------\n");
 	}
 
-	private static void countEntities(TypeDecl type) {
-		methodsCount += (int) type.getAllMethods().count();
-		fieldsCount += (int) type.getAllFields().count();
+	private static void countEntities(TypeDecl type, API api) {
+		methodsCount += (int) api.getAllMethods(type).size();
+		fieldsCount += (int) api.getAllFields(type).size();
 
 		if (type instanceof EnumDecl enumDecl) {
 			enumValuesCount += enumDecl.getValues().size();

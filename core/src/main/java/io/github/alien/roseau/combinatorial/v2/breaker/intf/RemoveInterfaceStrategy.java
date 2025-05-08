@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.intf;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.Modifier;
@@ -12,8 +13,8 @@ import io.github.alien.roseau.combinatorial.v2.breaker.tp.RemoveTypeStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveInterfaceStrategy extends RemoveTypeStrategy<InterfaceDecl> {
-	public RemoveInterfaceStrategy(InterfaceDecl intf, NewApiQueue queue) {
-		super(intf, queue);
+	public RemoveInterfaceStrategy(InterfaceDecl intf, NewApiQueue queue, API api) {
+		super(intf, queue, api);
 	}
 
 	@Override

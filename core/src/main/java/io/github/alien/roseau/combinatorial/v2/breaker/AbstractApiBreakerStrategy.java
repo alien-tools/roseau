@@ -11,10 +11,12 @@ public abstract class AbstractApiBreakerStrategy {
 
 	private final NewApiQueue queue;
 	private final String strategyName;
+	protected final API api;
 
-	public AbstractApiBreakerStrategy(NewApiQueue queue, String strategyName) {
+	public AbstractApiBreakerStrategy(NewApiQueue queue, String strategyName, API api) {
 		this.queue = queue;
 		this.strategyName = strategyName;
+		this.api = api;
 	}
 
 	public void breakApi(API api) {

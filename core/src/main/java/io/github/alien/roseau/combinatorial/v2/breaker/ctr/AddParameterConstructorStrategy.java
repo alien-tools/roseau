@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.ctr;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -12,12 +13,13 @@ public final class AddParameterConstructorStrategy extends AbstractCtrStrategy {
 	private final ITypeReference parameterType;
 	private final boolean parameterIsVarargs;
 
-	public AddParameterConstructorStrategy(ITypeReference type, boolean isVarargs, ConstructorDecl ctr, NewApiQueue queue) {
+	public AddParameterConstructorStrategy(ITypeReference type, boolean isVarargs, ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "AddParameter%s%sToConstructor%sIn%s".formatted(
 				type.getPrettyQualifiedName(),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(ctr.getErasure()),
-				ctr.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				ctr.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 
 		this.parameterType = type;
@@ -35,7 +37,7 @@ public final class AddParameterConstructorStrategy extends AbstractCtrStrategy {
 		paramBuilder.type = parameterType;
 		paramBuilder.isVarargs = parameterIsVarargs;
 		constructor.parameters.add(paramBuilder);
-		if (areConstructorsInvalid(containingType.constructors)) throw new ImpossibleChangeException();
+		if (areConstructorsInvalid(containingType.constructors, api)) throw new ImpossibleChangeException();
 
 		LOGGER.info("Adding parameter {} to constructor {}", parameterType.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 

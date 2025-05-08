@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.rcd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
@@ -8,8 +9,8 @@ import io.github.alien.roseau.combinatorial.v2.breaker.tp.AbstractTpStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 abstract class AbstractRcdStrategy extends AbstractTpStrategy<RecordDecl> {
-	AbstractRcdStrategy(RecordDecl rcd, NewApiQueue queue, String strategyName) {
-		super(rcd, queue, strategyName);
+	AbstractRcdStrategy(RecordDecl rcd, NewApiQueue queue, String strategyName, API api) {
+		super(rcd, queue, strategyName, api);
 	}
 
 	protected RecordBuilder getMutableBuilderFromMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {

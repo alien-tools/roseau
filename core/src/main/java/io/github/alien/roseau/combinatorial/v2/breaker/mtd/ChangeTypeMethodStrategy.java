@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -10,11 +11,12 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 public final class ChangeTypeMethodStrategy extends AbstractMtdStrategy {
 	private final ITypeReference type;
 
-	public ChangeTypeMethodStrategy(ITypeReference type, MethodDecl mtd, NewApiQueue queue) {
+	public ChangeTypeMethodStrategy(ITypeReference type, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "ChangeMethod%sIn%sTypeTo%s".formatted(
-				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
 				mtd.getContainingType().getPrettyQualifiedName(),
-				type.getPrettyQualifiedName())
+				type.getPrettyQualifiedName()),
+				api
 		);
 
 		this.type = type;

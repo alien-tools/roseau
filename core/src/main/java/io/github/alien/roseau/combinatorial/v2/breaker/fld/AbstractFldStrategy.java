@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.fld;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.FieldBuilder;
@@ -9,8 +10,8 @@ import io.github.alien.roseau.combinatorial.v2.breaker.tpMbr.AbstractTpMbrStrate
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 abstract class AbstractFldStrategy extends AbstractTpMbrStrategy<FieldDecl> {
-	AbstractFldStrategy(FieldDecl fld, NewApiQueue queue, String strategyName) {
-		super(fld, queue, strategyName);
+	AbstractFldStrategy(FieldDecl fld, NewApiQueue queue, String strategyName, API api) {
+		super(fld, queue, strategyName, api);
 	}
 
 	protected FieldBuilder getFieldFrom(TypeBuilder containingType) throws ImpossibleChangeException {

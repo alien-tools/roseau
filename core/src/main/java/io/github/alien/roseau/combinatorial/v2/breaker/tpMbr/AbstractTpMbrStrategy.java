@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.tpMbr;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.combinatorial.builder.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.AbstractApiBreakerStrategy;
@@ -9,8 +10,8 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 public abstract class AbstractTpMbrStrategy<T extends TypeMemberDecl> extends AbstractApiBreakerStrategy {
 	protected final T tpMbr;
 
-	public AbstractTpMbrStrategy(T tpMbr, NewApiQueue queue, String strategyName) {
-		super(queue, strategyName);
+	public AbstractTpMbrStrategy(T tpMbr, NewApiQueue queue, String strategyName, API api) {
+		super(queue, strategyName, api);
 
 		this.tpMbr = tpMbr;
 	}

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.MethodBuilder;
@@ -12,8 +13,8 @@ import java.util.HashSet;
 import java.util.List;
 
 abstract class AbstractMtdStrategy extends AbstractTpMbrStrategy<MethodDecl> {
-	AbstractMtdStrategy(MethodDecl mtd, NewApiQueue queue, String strategyName) {
-		super(mtd, queue, strategyName);
+	AbstractMtdStrategy(MethodDecl mtd, NewApiQueue queue, String strategyName, API api) {
+		super(mtd, queue, strategyName, api);
 	}
 
 	protected MethodBuilder getMethodFrom(TypeBuilder containingType) throws ImpossibleChangeException {
@@ -29,8 +30,8 @@ abstract class AbstractMtdStrategy extends AbstractTpMbrStrategy<MethodDecl> {
 		return getMethodFrom(containingType);
 	}
 
-	protected static boolean areMethodsInvalid(List<MethodBuilder> methods) {
-		var erasureList = methods.stream().map(c -> c.make().getErasure()).toList();
+	protected static boolean areMethodsInvalid(List<MethodBuilder> methods, API api) {
+		var erasureList = methods.stream().map(c -> api.getErasure(c.make())).toList();
 		var erasureSet = new HashSet<>(erasureList);
 
 		return erasureSet.size() != erasureList.size();

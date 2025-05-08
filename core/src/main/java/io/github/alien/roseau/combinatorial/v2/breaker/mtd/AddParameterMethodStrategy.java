@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -12,12 +13,13 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 	private final ITypeReference parameterType;
 	private final boolean parameterIsVarargs;
 
-	public AddParameterMethodStrategy(ITypeReference type, boolean isVarargs, MethodDecl mtd, NewApiQueue queue) {
+	public AddParameterMethodStrategy(ITypeReference type, boolean isVarargs, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "AddParameter%s%sToMethod%sIn%s".formatted(
 				type.getPrettyQualifiedName(),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
-				mtd.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				mtd.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 
 		this.parameterType = type;
@@ -35,7 +37,7 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 		paramBuilder.type = parameterType;
 		paramBuilder.isVarargs = parameterIsVarargs;
 		method.parameters.add(paramBuilder);
-		if (areMethodsInvalid(containingType.methods)) throw new ImpossibleChangeException();
+		if (areMethodsInvalid(containingType.methods, api)) throw new ImpossibleChangeException();
 
 		LOGGER.info("Adding parameter {} to method {}", parameterType.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 

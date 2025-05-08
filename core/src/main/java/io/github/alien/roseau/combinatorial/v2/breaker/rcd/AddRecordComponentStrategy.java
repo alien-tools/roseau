@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.rcd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
@@ -11,11 +12,12 @@ public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
 	private final ITypeReference recordComponentType;
 	private final boolean recordComponentIsVarargs;
 
-	public AddRecordComponentStrategy(ITypeReference type, boolean isVarargs, RecordDecl rcd, NewApiQueue queue) {
+	public AddRecordComponentStrategy(ITypeReference type, boolean isVarargs, RecordDecl rcd, NewApiQueue queue, API api) {
 		super(rcd, queue, "AddRecordComponent%s%sToRecord%s".formatted(
 				type.getPrettyQualifiedName(),
 				isVarargs ? "Varargs" : "",
-				rcd.getPrettyQualifiedName())
+				rcd.getPrettyQualifiedName()),
+				api
 		);
 
 		this.recordComponentType = type;

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -11,11 +12,12 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 public final class ChangeVisibilityMethodStrategy extends AbstractMtdStrategy {
 	private final AccessModifier accessModifier;
 
-	public ChangeVisibilityMethodStrategy(AccessModifier modifier, MethodDecl mtd, NewApiQueue queue) {
+	public ChangeVisibilityMethodStrategy(AccessModifier modifier, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "ReduceMethod%sIn%sVisibilityTo%s".formatted(
-				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
 				mtd.getContainingType().getPrettyQualifiedName(),
-				modifier.toCapitalize())
+				modifier.toCapitalize()),
+				api
 		);
 
 		this.accessModifier = modifier;

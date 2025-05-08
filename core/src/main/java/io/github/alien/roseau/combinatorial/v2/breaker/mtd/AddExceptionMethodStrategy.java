@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -10,11 +11,12 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 public final class AddExceptionMethodStrategy extends AbstractMtdStrategy {
 	private final ITypeReference exception;
 
-	public AddExceptionMethodStrategy(ITypeReference exception, MethodDecl mtd, NewApiQueue queue) {
+	public AddExceptionMethodStrategy(ITypeReference exception, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "AddException%sToMethod%sIn%s".formatted(
 				exception.getPrettyQualifiedName(),
-				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
-				mtd.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				mtd.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 
 		this.exception = exception;

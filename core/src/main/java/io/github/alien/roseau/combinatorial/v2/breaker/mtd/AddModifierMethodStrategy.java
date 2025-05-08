@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.utils.StringUtils;
@@ -15,11 +16,12 @@ import static io.github.alien.roseau.api.model.Modifier.*;
 public final class AddModifierMethodStrategy extends AbstractMtdStrategy {
 	private final Modifier modifier;
 
-	public AddModifierMethodStrategy(Modifier modifier, MethodDecl mtd, NewApiQueue queue) {
+	public AddModifierMethodStrategy(Modifier modifier, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "AddModifier%sToMethod%sIn%s".formatted(
 				modifier.toCapitalize(),
-				StringUtils.splitSpecialCharsAndCapitalize(mtd.getErasure()),
-				mtd.getContainingType().getPrettyQualifiedName())
+				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				mtd.getContainingType().getPrettyQualifiedName()),
+				api
 		);
 
 		this.modifier = modifier;

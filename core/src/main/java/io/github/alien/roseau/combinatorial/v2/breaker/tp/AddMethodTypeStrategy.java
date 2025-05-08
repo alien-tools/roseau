@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.tp;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.Modifier;
@@ -10,8 +11,8 @@ import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public class AddMethodTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
-	public AddMethodTypeStrategy(T tp, NewApiQueue queue) {
-		super(tp, queue, "AddMethodToType%s".formatted(tp.getSimpleName()));
+	public AddMethodTypeStrategy(T tp, NewApiQueue queue, API api) {
+		super(tp, queue, "AddMethodToType%s".formatted(tp.getSimpleName()), api);
 	}
 
 	@Override
