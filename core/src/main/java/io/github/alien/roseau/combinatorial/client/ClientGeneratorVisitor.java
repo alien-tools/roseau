@@ -129,12 +129,16 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		}
 
 		if (containingType instanceof ClassDecl containingClass) {
-			if (it.isPublic() && !containingType.isAbstract()) {
-				writer.writeMethodDirectInvocation(it, containingClass);
-			}
+			if (it.isPublic()) {
+				if (!containingType.isAbstract()) {
+					writer.writeMethodDirectInvocation(it, containingClass);
+				} else if (!containingClass.isEffectivelyFinal()) {
+					writer.writeMethodFullDirectInvocation(it, containingClass);
+				}
 
-			if (it.isPublic() && !it.isEffectivelyFinal() && !containingClass.isEnum() && !containingClass.isRecord()) {
-				writer.writeMethodMinimalDirectInvocation(it, containingClass);
+				if (!it.isEffectivelyFinal() && !containingClass.isEnum() && !containingClass.isRecord()) {
+					writer.writeMethodMinimalDirectInvocation(it, containingClass);
+				}
 			}
 
 			if (!it.isAbstract() && !it.isEffectivelyFinal()) {

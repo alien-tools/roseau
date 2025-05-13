@@ -186,6 +186,16 @@ public final class ClientWriter extends AbstractWriter {
 		insertDeclarationsToInnerType(interfaceDecl, overrideInterfaceName, "", necessaryMethods);
 	}
 
+	public void writeMethodFullDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
+		var minimalTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
+		var params = getParamsForExecutableInvocation(methodDecl);
+		var methodReturn = getReturnHandleForMethod(methodDecl, "FullDir");
+		var methodInvocationCode = "%snew %s().%s(%s);".formatted(methodReturn, minimalTypeName, methodDecl.getSimpleName(), params);
+
+		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
+		addInstructionToClientMain(exceptions, methodInvocationCode);
+	}
+
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
 		var caller = getContainingTypeAccessForTypeMember(containingType, methodDecl);
 		var params = getParamsForExecutableInvocation(methodDecl);
