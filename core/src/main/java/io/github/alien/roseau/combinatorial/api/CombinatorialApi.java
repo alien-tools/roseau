@@ -372,17 +372,13 @@ public final class CombinatorialApi {
 			// Last level of hierarchy can't have sealed classes
 			if (depth == 0 && modifiers.contains(SEALED))
 				return;
-			// Class extending sealed class must be sealed, non-sealed or final
-			if (superCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+			var superClsIsSealed = superCls.isSealed();
+			var atLeastOneImplementingInterfaceIsSealed = implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed());
+			// Class extending sealed class or implementing at least one sealed interface must be sealed, non-sealed or final
+			if ((superClsIsSealed || atLeastOneImplementingInterfaceIsSealed) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
 				return;
-			// Class implementing at least one sealed interface must be sealed, non-sealed or final
-			if (implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
-				return;
-			// Class extending non-sealed class can't be non-sealed
-			if (!superCls.isSealed() && modifiers.contains(NON_SEALED))
-				return;
-			// Class implementing non-sealed interfaces can't be non-sealed
-			if (implementingIntfBuilders.stream().noneMatch(iB -> iB.make().isSealed()) && modifiers.contains(NON_SEALED))
+			// Class extending non-sealed class and implementing non-sealed interfaces can't be non-sealed
+			if (!superClsIsSealed && !atLeastOneImplementingInterfaceIsSealed && modifiers.contains(NON_SEALED))
 				return;
 
 			topLevelVisibilities.forEach(visibility ->
