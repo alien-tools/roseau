@@ -4,8 +4,6 @@ public interface ClientTemplates {
 	String FULL_CLIENT_FILE_TEMPLATE = """
 			package %s;
 
-			%s
-
 			public class %s {
 				%s
 
