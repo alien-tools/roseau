@@ -65,7 +65,7 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	public abstract boolean isExported();
 
 	public String getQualifiedName() {
-		return qualifiedName;
+		return qualifiedName.replace('$', '.');
 	}
 
 	public String getPrettyQualifiedName() {
