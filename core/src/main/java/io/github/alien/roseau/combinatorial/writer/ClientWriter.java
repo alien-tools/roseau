@@ -250,9 +250,14 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeTypeReference(TypeDecl typeDecl) {
-		var code = "%s %sRef;".formatted(typeDecl.getQualifiedName(), typeDecl.getPrettyQualifiedName());
+		var referenceVarName = "%sRef".formatted(typeDecl.getPrettyQualifiedName());
+		var code = new StringBuilder("%s %s = null;".formatted(typeDecl.getQualifiedName(), referenceVarName));
 
-		addInstructionToClientMain(code);
+		typeDecl.getAllSuperTypes().forEach(superType ->
+				code.append("\n\t\t%s %sUpcastTo%s = %s;".formatted(superType.getQualifiedName(), typeDecl.getPrettyQualifiedName(), superType.getPrettyQualifiedName(), referenceVarName))
+		);
+
+		addInstructionToClientMain(code.toString());
 	}
 
 	public void writeClientFile() {
