@@ -4,7 +4,6 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveModifierMethodStrategy extends AbstractMtdStrategy {
@@ -21,15 +20,10 @@ public final class RemoveModifierMethodStrategy extends AbstractMtdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!tpMbr.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
-
-		var method = getMethodFrom(mutableApi);
-
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		LOGGER.info("Removing modifier {} to method {}", modifier.toCapitalize(), tpMbr.getQualifiedName());
 
+		var method = getMethodFrom(mutableApi);
 		method.modifiers.remove(modifier);
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

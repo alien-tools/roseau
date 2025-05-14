@@ -4,7 +4,6 @@ import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordComponentBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
@@ -23,9 +22,8 @@ public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		var recordComponents = tp.getRecordComponents();
-		if (!recordComponents.isEmpty() && recordComponents.getLast().isVarargs()) throw new ImpossibleChangeException();
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		LOGGER.info("Adding record component {} to record {}", recordComponentType.getPrettyQualifiedName(), tp.getQualifiedName());
 
 		var mutableRecord = getMutableBuilderFromMutableApi(mutableApi);
 		var recordComponentBuilder = new RecordComponentBuilder();
@@ -34,7 +32,5 @@ public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
 		recordComponentBuilder.type = recordComponentType;
 		recordComponentBuilder.isVarargs = recordComponentIsVarargs;
 		mutableRecord.recordComponents.add(recordComponentBuilder);
-
-		LOGGER.info("Adding record component {} to record {}", recordComponentType.getPrettyQualifiedName(), tp.getQualifiedName());
 	}
 }

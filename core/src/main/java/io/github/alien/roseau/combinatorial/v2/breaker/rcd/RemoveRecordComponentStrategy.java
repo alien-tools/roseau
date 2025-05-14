@@ -2,7 +2,6 @@ package io.github.alien.roseau.combinatorial.v2.breaker.rcd;
 
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveRecordComponentStrategy extends AbstractRcdStrategy {
@@ -15,14 +14,10 @@ public final class RemoveRecordComponentStrategy extends AbstractRcdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		var recordComponents = tp.getRecordComponents();
-		if (recordComponentIndex < 0 || recordComponentIndex >= recordComponents.size()) throw new ImpossibleChangeException();
-
-		var mutableRecord = getMutableBuilderFromMutableApi(mutableApi);
-
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		LOGGER.info("Removing record component at index {} from record {}", recordComponentIndex, tp.getQualifiedName());
 
+		var mutableRecord = getMutableBuilderFromMutableApi(mutableApi);
 		mutableRecord.recordComponents.remove(recordComponentIndex);
 	}
 }

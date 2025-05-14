@@ -8,7 +8,6 @@ import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.ctr.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.enmVal.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.fld.*;
-import io.github.alien.roseau.combinatorial.v2.breaker.intf.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.mtd.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.rcd.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.tp.*;
@@ -115,16 +114,16 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakClassDecl(ClassDecl c) {
-		new AddModifierAbstractClassStrategy(c, queue).breakApi(api);
-		new RemoveModifierAbstractClassStrategy(c, queue).breakApi(api);
-		new AddModifierFinalClassStrategy(c, queue).breakApi(api);
-		new RemoveModifierFinalClassStrategy(c, queue).breakApi(api);
-		new AddModifierSealedClassStrategy(c, queue).breakApi(api);
-		new RemoveModifierSealedClassStrategy(c, queue).breakApi(api);
-		new AddModifierNonSealedClassStrategy(c, queue).breakApi(api);
-		new RemoveModifierNonSealedClassStrategy(c, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, c, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, c, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.FINAL, c, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.FINAL, c, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.SEALED, c, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.SEALED, c, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue).breakApi(api);
 
-		new AddMethodAbstractClassStrategy(c, queue).breakApi(api);
+		new AddMethodTypeStrategy<>(c, queue).breakApi(api);
 
 		new AddSuperClassClassStrategy(c, queue).breakApi(api);
 		new RemoveSuperClassClassStrategy(c, queue).breakApi(api);
@@ -133,8 +132,10 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	private void breakInterfaceDecl(InterfaceDecl i) {
 		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
-		new AddModifierSealedInterfaceStrategy(i, queue).breakApi(api);
-		new RemoveModifierSealedInterfaceStrategy(i, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.SEALED, i, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.SEALED, i, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue).breakApi(api);
+		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue).breakApi(api);
 
 		new AddMethodTypeStrategy<>(i, queue).breakApi(api);
 	}

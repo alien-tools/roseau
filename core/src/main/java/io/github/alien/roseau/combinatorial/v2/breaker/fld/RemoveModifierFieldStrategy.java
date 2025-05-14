@@ -5,7 +5,6 @@ import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveModifierFieldStrategy extends AbstractFldStrategy {
@@ -22,18 +21,11 @@ public final class RemoveModifierFieldStrategy extends AbstractFldStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		if (!tpMbr.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
-
-		var containingType = getContainingTypeFromMutableApi(mutableApi);
-		if (containingType instanceof RecordBuilder && modifier == Modifier.STATIC) throw new ImpossibleChangeException();
-
-		var field = getFieldFrom(containingType);
-
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		LOGGER.info("Removing modifier {} to field {}", modifier.toCapitalize(), tpMbr.getQualifiedName());
 
+		var containingType = getContainingTypeFromMutableApi(mutableApi);
+		var field = getFieldFrom(containingType);
 		field.modifiers.remove(modifier);
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

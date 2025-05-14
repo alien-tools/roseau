@@ -4,7 +4,6 @@ import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddImplementedInterfaceTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
@@ -13,7 +12,9 @@ public final class AddImplementedInterfaceTypeStrategy<T extends TypeDecl> exten
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		LOGGER.info("Adding interface to type {}", tp.getQualifiedName());
+
 		var newInterface = new InterfaceBuilder();
 		newInterface.qualifiedName = "api.NewInterface";
 		newInterface.visibility = AccessModifier.PUBLIC;
