@@ -69,8 +69,8 @@ public final class Benchmark implements Runnable {
 		this.resultsQueue = resultsQueue;
 
 		this.tools = List.of(
-				new JapicmpTool(v1JarPath, v2JarPath),
-				new RevapiTool(v1JarPath, v2JarPath),
+//				new JapicmpTool(v1JarPath, v2JarPath),
+//				new RevapiTool(v1JarPath, v2JarPath),
 				new RoseauTool(v1JarPath, v2JarPath)
 		);
 
