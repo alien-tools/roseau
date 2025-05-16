@@ -3,6 +3,7 @@ package io.github.alien.roseau.combinatorial;
 import io.github.alien.roseau.combinatorial.api.GenerateCombinatorialApi;
 import io.github.alien.roseau.combinatorial.client.GenerateApiClient;
 import io.github.alien.roseau.combinatorial.v2.GenerateNewVersionsAndLaunchBenchmark;
+import io.github.alien.roseau.extractors.jdt.JdtAPIExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -24,10 +25,11 @@ public final class CombinatorialBenchmark {
 		try {
 			var currentNow = System.currentTimeMillis();
 
-			var apiGeneration = new GenerateCombinatorialApi(outputPath);
-			apiGeneration.run();
-			var api = apiGeneration.getApi();
+//			var apiGeneration = new GenerateCombinatorialApi(outputPath);
+//			apiGeneration.run();
+//			var api = apiGeneration.getApi();
 
+			var api = new JdtAPIExtractor().extractAPI(Path.of(Constants.OUTPUT_FOLDER, Constants.API_FOLDER));
 			var clientGeneration = new GenerateApiClient(api, outputPath);
 			clientGeneration.run();
 

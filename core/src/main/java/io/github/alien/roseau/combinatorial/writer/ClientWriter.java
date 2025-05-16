@@ -19,11 +19,11 @@ public final class ClientWriter extends AbstractWriter {
 
 	private static final String clientPackageName = Constants.CLIENT_FOLDER;
 
-	private final Map<String, InnerType> innerTypes = new HashMap<>();
-	private final Set<String> exceptions = new HashSet<>();
-	private final List<String> notThrowingInstructions = new ArrayList<>();
-	private final List<String> throwingInstructions = new ArrayList<>();
-	private final List<String> tryCatchInstructions = new ArrayList<>();
+	private final Map<String, InnerType> _innerTypes = new HashMap<>();
+	private final Set<String> _exceptions = new HashSet<>();
+	private final List<String> _notThrowingInstructions = new ArrayList<>();
+	private final List<String> _throwingInstructions = new ArrayList<>();
+	private final List<String> _tryCatchInstructions = new ArrayList<>();
 
 	public ClientWriter(Path outputDir) {
 		super(outputDir);
@@ -44,6 +44,20 @@ public final class ClientWriter extends AbstractWriter {
 		var overrideClassName = "%sOverride".formatted(classDecl.getPrettyQualifiedName());
 		var overrideConstructorRequired = implementRequiredConstructor(classDecl, overrideClassName);
 		insertDeclarationsToInnerType(classDecl, overrideClassName, overrideConstructorRequired, necessaryMethods);
+	}
+
+	public void writeInnerClassInheritance(ClassDecl classDecl) {
+//		var enclosingType = classDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+//		var inheritanceClassName = "Inner%sIn%sMinimal".formatted(classDecl.getPrettyQualifiedName(), enclosingType.getPrettyQualifiedName());
+//		var innerInheritanceTypeName = "Inner%s".formatted(classDecl.getPrettyQualifiedName());
+//
+//		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
+//		var necessaryMethods = implementNecessaryMethods(classDecl);
+//
+//		var innerClassCode = "public static class %s extends %s {}".formatted(innerInheritanceTypeName, classDecl.getQualifiedName());
+//
+//		insertDeclarationsToInnerType(enclosingType, inheritanceClassName, innerClassCode, inheritanceConstructorRequired, necessaryMethods);
+//		addInstructionToClientMain("new %s().new %s();".formatted(inheritanceClassName, innerInheritanceTypeName));
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -91,7 +105,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeExceptionThrows(ClassDecl classDecl) {
-		this.exceptions.add(classDecl.getQualifiedName());
+		this._exceptions.add(classDecl.getQualifiedName());
 	}
 
 	public void writeEnumValueRead(EnumValueDecl enumValueDecl, EnumDecl containingEnum) {
@@ -185,6 +199,12 @@ public final class ClientWriter extends AbstractWriter {
 		insertDeclarationsToInnerType(interfaceDecl, overrideInterfaceName, "", necessaryMethods);
 	}
 
+	public void writeInnerInterfaceExtension(InterfaceDecl interfaceDecl) {
+	}
+
+	public void writeInnerInterfaceImplementation(InterfaceDecl interfaceDecl) {
+	}
+
 	public void writeMethodFullDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
 		var minimalTypeName = "%sFull".formatted(containingType.getPrettyQualifiedName());
 		var params = getParamsForExecutableInvocation(methodDecl);
@@ -262,23 +282,23 @@ public final class ClientWriter extends AbstractWriter {
 
 	public void writeClientFile() {
 		try {
-			var innerTypesCode = innerTypes.values().stream()
+			var innerTypesCode = _innerTypes.values().stream()
 					.map(InnerType::generateTypeCode)
 					.collect(Collectors.joining("\n\n\t"));
-			var sortedExceptions = formatExceptionNames(exceptions.stream().toList());
+			var sortedExceptions = formatExceptionNames(_exceptions.stream().toList());
 			var exceptionsCode = sortedExceptions.isBlank() ? "" : " throws %s".formatted(sortedExceptions);
 
 			List<String> mainCalls = new ArrayList<>();
 			List<String> methodsInstructions = new ArrayList<>();
 			dispatchInstructionsToMethodsAndInvokeThem(
 					"callInstructionsWithoutException",
-					notThrowingInstructions,
+					_notThrowingInstructions,
 					mainCalls,
 					methodsInstructions
 			);
 			dispatchInstructionsToMethodsAndInvokeThem(
 					"callInstructionsWithException",
-					throwingInstructions,
+					_throwingInstructions,
 					exceptionsCode,
 					CALL_INSTRUCTIONS_WITH_EXCEPTION_TEMPLATE,
 					mainCalls,
@@ -286,7 +306,7 @@ public final class ClientWriter extends AbstractWriter {
 			);
 			dispatchInstructionsToMethodsAndInvokeThem(
 					"callInstructionsWithTryCatch",
-					tryCatchInstructions,
+					_tryCatchInstructions,
 					mainCalls,
 					methodsInstructions
 			);
@@ -335,8 +355,12 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, String constructors, String methods) {
-		if (innerTypes.containsKey(typeName)) {
-			var innerType = innerTypes.get(typeName);
+		insertDeclarationsToInnerType(superType, typeName, "", constructors, methods);
+	}
+
+	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, String innerTypes, String constructors, String methods) {
+		if (_innerTypes.containsKey(typeName)) {
+			var innerType = _innerTypes.get(typeName);
 			if (!constructors.isBlank()) innerType.constructors.add(constructors);
 			if (!methods.isBlank()) innerType.methods.add(methods);
 		} else {
@@ -346,7 +370,7 @@ public final class ClientWriter extends AbstractWriter {
 			if (!constructors.isBlank()) innerType.constructors.add(constructors);
 			if (!methods.isBlank()) innerType.methods.add(methods);
 
-			innerTypes.put(typeName, innerType);
+			_innerTypes.put(typeName, innerType);
 		}
 	}
 
@@ -355,13 +379,13 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	private void addInstructionToClientMain(List<String> exceptions, String code) {
-		this.exceptions.addAll(exceptions);
+		this._exceptions.addAll(exceptions);
 
 		if (exceptions.isEmpty()) {
-			this.notThrowingInstructions.add(code);
+			this._notThrowingInstructions.add(code);
 		} else {
-			this.throwingInstructions.add(code);
-			this.tryCatchInstructions.add("try { %s } catch (%s ignored) {}".formatted(code, formatExceptionNames(exceptions, " | ")));
+			this._throwingInstructions.add(code);
+			this._tryCatchInstructions.add("try { %s } catch (%s ignored) {}".formatted(code, formatExceptionNames(exceptions, " | ")));
 		}
 	}
 
@@ -561,13 +585,15 @@ public final class ClientWriter extends AbstractWriter {
 		public String typeName;
 		public TypeDecl superType;
 
+		public List<String> innerTypes = new ArrayList<>();
 		public List<String> constructors = new ArrayList<>();
 		public List<String> methods = new ArrayList<>();
 
 		public String generateTypeCode() {
+			var innerTypes = String.join("\n\n\t", this.innerTypes);
 			var constructors = String.join("\n\n", this.constructors);
 			var methods = String.join("\n\n", this.methods);
-			var typeBody = concatDeclarations(constructors, methods);
+			var typeBody = concatDeclarations(innerTypes, constructors, methods);
 
 			if (typeBody.isBlank() && superType.isInterface()) {
 				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, superType.getQualifiedName());

@@ -67,18 +67,18 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		packageV1Api();
 		compileClient();
 
-		try {
-			initializeBenchmarkThreads();
-			initializeErrorsThread();
-			initializeResultsThread();
-
-			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
-			visitor.$(v1Api).visit();
-
-			informAllThreadsGenerationIsOver();
-		} catch (Exception e) {
-			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
-		}
+//		try {
+//			initializeBenchmarkThreads();
+//			initializeErrorsThread();
+//			initializeResultsThread();
+//
+//			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
+//			visitor.$(v1Api).visit();
+//
+//			informAllThreadsGenerationIsOver();
+//		} catch (Exception e) {
+//			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
+//		}
 	}
 
 	private void checkSourcesArePresent() throws StepExecutionException {

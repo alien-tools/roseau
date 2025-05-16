@@ -42,7 +42,11 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		writer.writeTypeReference(it);
 
 		if (!it.isEffectivelyFinal() && !it.isSealed()) {
-			writer.writeClassInheritance(it);
+			if (it.isNested()) {
+				writer.writeInnerClassInheritance(it);
+			} else {
+				writer.writeClassInheritance(it);
+			}
 		}
 
 		if (it.isCheckedException() || it.isUncheckedException()) {
@@ -63,8 +67,13 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		writer.writeTypeReference(it);
 
 		if (!it.isSealed()) {
-			writer.writeInterfaceExtension(it);
-			writer.writeInterfaceImplementation(it);
+			if (it.isNested()) {
+				writer.writeInnerInterfaceExtension(it);
+				writer.writeInnerInterfaceImplementation(it);
+			} else {
+				writer.writeInterfaceExtension(it);
+				writer.writeInterfaceImplementation(it);
+			}
 		}
 	}
 

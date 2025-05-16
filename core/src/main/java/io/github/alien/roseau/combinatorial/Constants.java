@@ -3,7 +3,7 @@ package io.github.alien.roseau.combinatorial;
 import java.nio.file.Path;
 
 public final class Constants {
-	public static final String API_FOLDER = "api";
+	public static final String API_FOLDER = "testing_lib";
 	public static final String BINARIES_FOLDER = "bin";
 	public static final String CLIENT_FOLDER = "client";
 	public static final String CLIENT_FILENAME = "FullClient";
