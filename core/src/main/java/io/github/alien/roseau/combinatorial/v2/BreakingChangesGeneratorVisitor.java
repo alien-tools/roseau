@@ -123,7 +123,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue).breakApi(api);
 
-		new AddMethodTypeStrategy<>(c, queue).breakApi(api);
+		new AddAbstractMethodTypeStrategy<>(c, queue).breakApi(api);
 
 		new AddSuperClassClassStrategy(c, queue).breakApi(api);
 		new RemoveSuperClassClassStrategy(c, queue).breakApi(api);
@@ -137,7 +137,7 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue).breakApi(api);
 		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue).breakApi(api);
 
-		new AddMethodTypeStrategy<>(i, queue).breakApi(api);
+		new AddAbstractMethodTypeStrategy<>(i, queue).breakApi(api);
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {
