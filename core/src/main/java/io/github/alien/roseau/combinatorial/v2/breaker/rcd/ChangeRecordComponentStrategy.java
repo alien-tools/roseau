@@ -3,6 +3,7 @@ package io.github.alien.roseau.combinatorial.v2.breaker.rcd;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class ChangeRecordComponentStrategy extends AbstractRcdStrategy {
@@ -25,10 +26,13 @@ public final class ChangeRecordComponentStrategy extends AbstractRcdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		LOGGER.info("Changing record component at index {} from record {}", recordComponentIndex, tp.getQualifiedName());
-
 		var mutableRecord = getMutableBuilderFromMutableApi(mutableApi);
 		var currentRecordComponent = mutableRecord.recordComponents.get(recordComponentIndex);
+		if (currentRecordComponent == null) throw new ImpossibleChangeException();
+		if (currentRecordComponent.type.equals(recordComponentType) && currentRecordComponent.isVarargs == recordComponentIsVarargs) throw new ImpossibleChangeException();
+
+		LOGGER.info("Changing record component at index {} from record {}", recordComponentIndex, tp.getQualifiedName());
+
 		currentRecordComponent.type = recordComponentType;
 		currentRecordComponent.isVarargs = recordComponentIsVarargs;
 	}

@@ -4,6 +4,7 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class ChangeParameterMethodStrategy extends AbstractMtdStrategy {
@@ -27,11 +28,14 @@ public final class ChangeParameterMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		LOGGER.info("Changing parameter at index {} from method {}", parameterIndex, tpMbr.getQualifiedName());
-
 		var containingType = getContainingClassFromMutableApi(mutableApi);
 		var method = getMethodFrom(containingType);
 		var currentParameter = method.parameters.get(parameterIndex);
+		if (currentParameter == null) throw new ImpossibleChangeException();
+		if (currentParameter.type.equals(parameterType) && currentParameter.isVarargs == parameterIsVarargs) throw new ImpossibleChangeException();
+
+		LOGGER.info("Changing parameter at index {} from method {}", parameterIndex, tpMbr.getQualifiedName());
+
 		currentParameter.type = parameterType;
 		currentParameter.isVarargs = parameterIsVarargs;
 	}

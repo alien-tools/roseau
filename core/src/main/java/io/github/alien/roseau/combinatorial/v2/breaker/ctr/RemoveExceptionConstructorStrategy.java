@@ -4,6 +4,7 @@ import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveExceptionConstructorStrategy extends AbstractCtrStrategy {
@@ -21,6 +22,8 @@ public final class RemoveExceptionConstructorStrategy extends AbstractCtrStrateg
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		if (!tpMbr.getThrownExceptions().contains(exception)) throw new ImpossibleChangeException();
+
 		LOGGER.info("Removing exception {} from constructor {}", exception.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 
 		var constructor = getConstructorFrom(mutableApi);

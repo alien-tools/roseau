@@ -4,6 +4,7 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class ChangeTypeMethodStrategy extends AbstractMtdStrategy {
@@ -21,6 +22,8 @@ public final class ChangeTypeMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		if (tpMbr.getType().equals(type)) throw new ImpossibleChangeException();
+
 		LOGGER.info("Changing method {} type to {}", tpMbr.getQualifiedName(), type.getPrettyQualifiedName());
 
 		var method = getMethodFrom(mutableApi);

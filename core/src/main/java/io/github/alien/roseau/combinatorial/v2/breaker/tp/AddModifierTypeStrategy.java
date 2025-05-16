@@ -3,6 +3,7 @@ package io.github.alien.roseau.combinatorial.v2.breaker.tp;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddModifierTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
@@ -16,6 +17,8 @@ public final class AddModifierTypeStrategy<T extends TypeDecl> extends AbstractT
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		if (tp.getModifiers().contains(modifier)) throw new ImpossibleChangeException();
+
 		LOGGER.info("Adding {} modifier to {}", modifier, tp.getSimpleName());
 
 		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());

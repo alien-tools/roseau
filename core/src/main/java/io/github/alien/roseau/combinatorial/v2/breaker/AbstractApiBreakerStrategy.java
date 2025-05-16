@@ -30,5 +30,5 @@ public abstract class AbstractApiBreakerStrategy {
 		}
 	}
 
-	protected abstract void applyBreakToMutableApi(ApiBuilder mutableApi);
+	protected abstract void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException;
 }
