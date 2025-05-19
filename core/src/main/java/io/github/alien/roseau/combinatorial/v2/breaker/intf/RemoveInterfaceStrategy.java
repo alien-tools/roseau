@@ -39,11 +39,11 @@ public final class RemoveInterfaceStrategy extends RemoveTypeStrategy<InterfaceD
 		if (implementedInterfacesCount != typeBuilder.implementedInterfaces.size()) {
 			if (typeBuilder.modifiers.contains(Modifier.NON_SEALED)) {
 				var hasNoOtherSealedInterfacesImplemented = typeBuilder.implementedInterfaces.stream()
-						.noneMatch(i -> i.getResolvedApiType().map(TypeDecl::isSealed).orElse(false));
+						.noneMatch(i -> api.resolver().resolve(i).map(TypeDecl::isSealed).orElse(false));
 
 				var hasSealedSuperClass = false;
 				if (typeBuilder instanceof ClassBuilder classBuilder && classBuilder.superClass != null) {
-					hasSealedSuperClass = classBuilder.superClass.getResolvedApiType().map(ClassDecl::isSealed).orElse(false);
+					hasSealedSuperClass = api.resolver().resolve(classBuilder.superClass).map(TypeDecl::isSealed).orElse(false);
 				}
 
 				if (hasNoOtherSealedInterfacesImplemented && !hasSealedSuperClass) {

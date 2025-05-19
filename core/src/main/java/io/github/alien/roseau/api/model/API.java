@@ -45,6 +45,10 @@ public class API extends CachingAPIAnalyzer {
 			.findFirst();
 	}
 
+	public API deepCopy() {
+		return this;
+	}
+
 	@Override
 	public String toString() {
 		return getExportedTypes().stream()

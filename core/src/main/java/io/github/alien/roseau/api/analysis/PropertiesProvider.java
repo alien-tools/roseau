@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
@@ -17,6 +18,14 @@ public interface PropertiesProvider {
 	TypeResolver resolver();
 	SubtypingResolver subtyping();
 	TypeParameterResolver typeParameter();
+
+	default boolean isExported(Symbol symbol) {
+		Preconditions.checkNotNull(symbol);
+		return switch (symbol) {
+			case TypeDecl type -> isExported(type);
+			case TypeMemberDecl member -> isExported(member);
+		};
+	}
 
 	/**
 	 * Checks whether the type pointed by this reference is exported.

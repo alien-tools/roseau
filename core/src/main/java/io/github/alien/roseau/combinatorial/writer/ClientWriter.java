@@ -15,6 +15,8 @@ import java.util.stream.Collectors;
 import static io.github.alien.roseau.combinatorial.client.ClientTemplates.*;
 
 public final class ClientWriter extends AbstractWriter {
+	private final API api;
+
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
 	private static final String clientPackageName = Constants.CLIENT_FOLDER;
@@ -26,8 +28,9 @@ public final class ClientWriter extends AbstractWriter {
 	private final List<String> throwingInstructions = new ArrayList<>();
 	private final List<String> tryCatchInstructions = new ArrayList<>();
 
-	public ClientWriter(Path outputDir) {
+	public ClientWriter(Path outputDir, API api) {
 		super(outputDir);
+		this.api = api;
 	}
 
 	public void writeClassInheritance(ClassDecl classDecl) {
@@ -84,7 +87,7 @@ public final class ClientWriter extends AbstractWriter {
 		var code = "throw %s;".formatted(constructor);
 
 		var exceptions = new ArrayList<String>();
-		if (classDecl.isCheckedException()) {
+		if (api.isCheckedException(classDecl)) {
 			exceptions.add(classDecl.getSimpleName());
 		}
 
@@ -417,8 +420,8 @@ public final class ClientWriter extends AbstractWriter {
 				.collect(Collectors.joining(", "));
 	}
 
-	private static List<String> getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
-		return executableDecl.getThrownCheckedExceptions().stream()
+	private List<String> getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
+		return api.getThrownCheckedExceptions(executableDecl).stream()
 				.map(ITypeReference::getQualifiedName)
 				.toList();
 	}

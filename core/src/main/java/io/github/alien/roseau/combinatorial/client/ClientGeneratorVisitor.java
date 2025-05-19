@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.client;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -20,14 +21,16 @@ import java.util.Optional;
 
 public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	private final ClientWriter writer;
+	private final API api;
 
-	public ClientGeneratorVisitor(ClientWriter writer) {
+	public ClientGeneratorVisitor(API api, ClientWriter writer) {
+		this.api = api;
 		this.writer = writer;
 	}
 
 	@Override
 	public Visit symbol(Symbol it) {
-		if (it.isExported()) {
+		if (api.isExported(it)) {
 			switch (it) {
 				case EnumDecl e: generateClassClients(e); break;
 				case RecordDecl r: generateClassClients(r); break;
@@ -52,11 +55,11 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	private void generateClassClients(ClassDecl it) {
 		writer.writeTypeReference(it);
 
-		if (!it.isEffectivelyFinal() && !it.isSealed()) {
+		if (!api.isEffectivelyFinal(it) && !it.isSealed()) {
 			writer.writeClassInheritance(it);
 		}
 
-		if (it.isCheckedException() || it.isUncheckedException()) {
+		if (api.isCheckedException(it) || api.isUncheckedException(it)) {
 			generateExceptionClients(it);
 		}
 	}
@@ -91,7 +94,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 			writer.writeConstructorDirectInvocation(it, containingClass);
 		}
 
-		if (!containingClass.isEffectivelyFinal()) {
+		if (!api.isEffectivelyFinal(containingClass)) {
 			writer.writeConstructorInheritanceInvocation(it, containingClass);
 		}
 	}
@@ -119,7 +122,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 			}
 		}
 
-		if (!containingType.isEffectivelyFinal()) {
+		if (!api.isEffectivelyFinal(containingType)) {
 			writer.writeReadFieldThroughMethodCall(it, containingType);
 			if (it.isPublic()) writer.writeReadFieldThroughSubType(it, containingType);
 
@@ -135,7 +138,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (containingTypeOpt.isEmpty()) return;
 		var containingType = containingTypeOpt.get();
 
-		if (!containingType.isEffectivelyFinal()) {
+		if (!api.isEffectivelyFinal(containingType)) {
 			writer.writeMethodInheritanceInvocation(it, containingType);
 		}
 
@@ -144,11 +147,11 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 				writer.writeMethodDirectInvocation(it, containingClass);
 			}
 
-			if (it.isPublic() && !it.isEffectivelyFinal() && !containingClass.isEnum() && !containingClass.isRecord()) {
+			if (it.isPublic() && !api.isEffectivelyFinal(it) && !containingClass.isEnum() && !containingClass.isRecord()) {
 				writer.writeMethodMinimalDirectInvocation(it, containingClass);
 			}
 
-			if (!it.isAbstract() && !it.isEffectivelyFinal()) {
+			if (!it.isAbstract() && !api.isEffectivelyFinal(it)) {
 				writer.writeMethodOverride(it, containingClass);
 			}
 		}
@@ -156,11 +159,11 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (containingType instanceof InterfaceDecl containingInterface) {
 			if (it.isStatic()) {
 				writer.writeMethodDirectInvocation(it, containingInterface);
-			} else if (!it.isEffectivelyFinal()) {
+			} else if (!api.isEffectivelyFinal(it)) {
 				writer.writeMethodMinimalDirectInvocation(it, containingInterface);
 			}
 
-			if ((it.isDefault() || it.isStatic()) && !it.isEffectivelyFinal()) {
+			if ((it.isDefault() || it.isStatic()) && !api.isEffectivelyFinal(it)) {
 				writer.writeMethodOverride(it, containingInterface);
 			}
 		}
@@ -176,9 +179,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		}
 	}
 
-	private static Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
-		if (typeMemberDecl.getContainingType().getResolvedApiType().isEmpty()) return Optional.empty();
-
-		return Optional.of(typeMemberDecl.getContainingType().getResolvedApiType().get());
+	private Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
+		return api.resolver().resolve(typeMemberDecl.getContainingType());
 	}
 }
