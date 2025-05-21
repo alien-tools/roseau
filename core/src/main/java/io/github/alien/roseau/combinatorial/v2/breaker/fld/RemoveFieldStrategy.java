@@ -16,11 +16,8 @@ public final class RemoveFieldStrategy extends AbstractFldStrategy {
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var containingType = getContainingTypeFromMutableApi(mutableApi);
-
 		LOGGER.info("Removing field {} from {}", tpMbr.getPrettyQualifiedName(), containingType.qualifiedName);
 
 		containingType.fields = containingType.fields.stream().filter(f -> !f.make().equals(tpMbr)).toList();
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

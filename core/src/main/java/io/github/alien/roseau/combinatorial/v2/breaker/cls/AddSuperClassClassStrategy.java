@@ -14,8 +14,10 @@ public final class AddSuperClassClassStrategy extends AbstractTpStrategy<ClassDe
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		if (!tp.getSuperClass().getQualifiedName().equals("java.lang.Object")) throw new ImpossibleChangeException();
+
+		LOGGER.info("Adding super class to class {}", tp.getQualifiedName());
 
 		var newClass = new ClassBuilder();
 		newClass.qualifiedName = "api.NewClass";

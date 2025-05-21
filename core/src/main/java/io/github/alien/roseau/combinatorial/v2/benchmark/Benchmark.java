@@ -32,9 +32,10 @@ public final class Benchmark implements Runnable {
 	private final Path v2SourcesPath;
 	private final Path v2JarPath;
 
-	private final FailedStrategyQueue failedStrategyQueue;
+	private final FailedStrategyQueue failedStrategyQueue = FailedStrategyQueue.getInstance();
+	private final ResultsProcessQueue resultsQueue = ResultsProcessQueue.getInstance();
+
 	private final NewApiQueue apiQueue;
-	private final ResultsProcessQueue resultsQueue;
 
 	private final List<AbstractTool> tools;
 
@@ -47,9 +48,7 @@ public final class Benchmark implements Runnable {
 
 	public Benchmark(
 			String id,
-			FailedStrategyQueue failedStrategyQueue,
 			NewApiQueue apiQueue,
-			ResultsProcessQueue resultsQueue,
 			Path clientBinPath,
 			Path clientSourcePath,
 			Path v1JarPath,
@@ -64,9 +63,7 @@ public final class Benchmark implements Runnable {
 		this.v2SourcesPath = benchmarkWorkingPath.resolve(Constants.API_FOLDER);
 		this.v2JarPath = benchmarkWorkingPath.resolve(Path.of(Constants.JAR_FOLDER, "v2.jar"));
 
-		this.failedStrategyQueue = failedStrategyQueue;
 		this.apiQueue = apiQueue;
-		this.resultsQueue = resultsQueue;
 
 		this.tools = List.of(
 //				new JapicmpTool(v1JarPath, v2JarPath),

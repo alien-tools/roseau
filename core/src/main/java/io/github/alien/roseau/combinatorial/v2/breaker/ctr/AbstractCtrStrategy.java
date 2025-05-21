@@ -4,7 +4,6 @@ import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
 import io.github.alien.roseau.combinatorial.builder.ConstructorBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.breaker.tpMbr.AbstractTpMbrStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
@@ -16,14 +15,14 @@ abstract class AbstractCtrStrategy extends AbstractTpMbrStrategy<ConstructorDecl
 		super(ctr, queue, strategyName);
 	}
 
-	protected ConstructorBuilder getConstructorFrom(ClassBuilder containingType) throws ImpossibleChangeException {
+	protected ConstructorBuilder getConstructorFrom(ClassBuilder containingType) {
 		var constructor = containingType.constructors.stream().filter(m -> m.make().equals(tpMbr)).findFirst();
-		if (constructor.isEmpty()) throw new ImpossibleChangeException();
+		if (constructor.isEmpty()) throw new RuntimeException();
 
 		return constructor.get();
 	}
 
-	protected ConstructorBuilder getConstructorFrom(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected ConstructorBuilder getConstructorFrom(ApiBuilder mutableApi) {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
 
 		return getConstructorFrom(containingType);

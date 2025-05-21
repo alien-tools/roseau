@@ -6,12 +6,11 @@ import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.StepExecutionException;
 import io.github.alien.roseau.combinatorial.utils.ExplorerUtils;
 import io.github.alien.roseau.combinatorial.v2.benchmark.Benchmark;
-import io.github.alien.roseau.combinatorial.v2.benchmark.error.ErrorsWriter;
-import io.github.alien.roseau.combinatorial.v2.benchmark.result.ResultsWriter;
+import io.github.alien.roseau.combinatorial.v2.benchmark.writer.FailedStrategiesWriter;
+import io.github.alien.roseau.combinatorial.v2.benchmark.writer.ImpossibleStrategiesWriter;
+import io.github.alien.roseau.combinatorial.v2.benchmark.writer.ResultsWriter;
 import io.github.alien.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
-import io.github.alien.roseau.combinatorial.v2.queue.FailedStrategyQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
-import io.github.alien.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,13 +26,13 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private final API v1Api;
 	private final int maxParallelAnalysis;
 
-	private final FailedStrategyQueue failedStrategyQueue;
 	private final NewApiQueue newApiQueue;
-	private final ResultsProcessQueue resultsQueue;
+
+	private final FailedStrategiesWriter failedStrategiesWriter = new FailedStrategiesWriter();
+	private final ImpossibleStrategiesWriter impossibleStrategiesWriter = new ImpossibleStrategiesWriter();
+	private final ResultsWriter resultsWriter = new ResultsWriter();
 
 	private final Map<Benchmark, Thread> benchmarkThreads = new HashMap<>();
-	private ErrorsWriter errorsWriter = null;
-	private ResultsWriter resultsWriter = null;
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
@@ -49,9 +48,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		this.v1Api = v1Api;
 		this.maxParallelAnalysis = maxParallelAnalysis;
 
-		failedStrategyQueue = new FailedStrategyQueue();
 		newApiQueue = new NewApiQueue(maxParallelAnalysis);
-		resultsQueue = new ResultsProcessQueue();
 
 		v1SourcesPath = outputPath.resolve(Constants.API_FOLDER);
 		v1JarPath = tmpPath.resolve(Path.of(Constants.JAR_FOLDER, "v1.jar"));
@@ -67,18 +64,17 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		packageV1Api();
 		compileClient();
 
-//		try {
-//			initializeBenchmarkThreads();
-//			initializeErrorsThread();
-//			initializeResultsThread();
-//
-//			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
-//			visitor.$(v1Api).visit();
-//
-//			informAllThreadsGenerationIsOver();
-//		} catch (Exception e) {
-//			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
-//		}
+		try {
+			initializeBenchmarkThreads();
+			initializeWritersThreads();
+
+			var visitor = new BreakingChangesGeneratorVisitor(v1Api, newApiQueue);
+			visitor.$(v1Api).visit();
+
+			informAllThreadsGenerationIsOver();
+		} catch (Exception e) {
+			throw new StepExecutionException(this.getClass().getSimpleName(), e.getMessage());
+		}
 	}
 
 	private void checkSourcesArePresent() throws StepExecutionException {
@@ -121,7 +117,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		for (int i = 0; i < maxParallelAnalysis; i++) {
 			var benchmark = new Benchmark(
 					String.valueOf(i),
-					failedStrategyQueue, newApiQueue, resultsQueue,
+					newApiQueue,
 					clientBinPath, clientSourcePath,
 					v1JarPath,
 					tmpPath
@@ -135,22 +131,14 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		LOGGER.info("--- All bench threads started --\n");
 	}
 
-	private void initializeErrorsThread() {
-		LOGGER.info("---- Starting errors thread ---");
+	private void initializeWritersThreads() {
+		LOGGER.info("---- Starting writers threads ---");
 
-		errorsWriter = new ErrorsWriter(failedStrategyQueue);
-		new Thread(errorsWriter).start();
-
-		LOGGER.info("---- Errors thread started ----\n");
-	}
-
-	private void initializeResultsThread() {
-		LOGGER.info("---- Starting results thread ---");
-
-		resultsWriter = new ResultsWriter(resultsQueue);
+		new Thread(failedStrategiesWriter).start();
+		new Thread(impossibleStrategiesWriter).start();
 		new Thread(resultsWriter).start();
 
-		LOGGER.info("---- Results thread started ----\n");
+		LOGGER.info("---- All writers threads started ----\n");
 	}
 
 	private void informAllThreadsGenerationIsOver() {
@@ -166,7 +154,8 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 		ExplorerUtils.removeDirectory(tmpPath);
 
-		if (errorsWriter != null) errorsWriter.informNoMoreBenchmark();
-		if (resultsWriter != null) resultsWriter.informNoMoreResults();
+		failedStrategiesWriter.informNoMoreBenchmark();
+		impossibleStrategiesWriter.informNoMoreBenchmark();
+		resultsWriter.informNoMoreBenchmark();
 	}
 }

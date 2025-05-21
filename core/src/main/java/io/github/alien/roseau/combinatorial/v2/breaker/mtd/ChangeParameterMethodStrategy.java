@@ -27,22 +27,16 @@ public final class ChangeParameterMethodStrategy extends AbstractMtdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var containingType = getContainingClassFromMutableApi(mutableApi);
 		var method = getMethodFrom(containingType);
-		if (parameterIndex < 0 || parameterIndex >= method.parameters.size()) throw new ImpossibleChangeException();
-		if (parameterIsVarargs && parameterIndex != method.parameters.size() - 1) throw new ImpossibleChangeException();
-
 		var currentParameter = method.parameters.get(parameterIndex);
 		if (currentParameter == null) throw new ImpossibleChangeException();
 		if (currentParameter.type.equals(parameterType) && currentParameter.isVarargs == parameterIsVarargs) throw new ImpossibleChangeException();
 
-		currentParameter.type = parameterType;
-		currentParameter.isVarargs = parameterIsVarargs;
-		if (areMethodsInvalid(containingType.methods)) throw new ImpossibleChangeException();
-
 		LOGGER.info("Changing parameter at index {} from method {}", parameterIndex, tpMbr.getQualifiedName());
 
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
+		currentParameter.type = parameterType;
+		currentParameter.isVarargs = parameterIsVarargs;
 	}
 }

@@ -16,11 +16,8 @@ public final class RemoveMethodStrategy extends AbstractMtdStrategy {
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var containingType = getContainingTypeFromMutableApi(mutableApi);
-
 		LOGGER.info("Removing method {} from {}", tpMbr.getPrettyQualifiedName(), containingType.qualifiedName);
 
 		containingType.methods = containingType.methods.stream().filter(m -> !m.make().equals(tpMbr)).toList();
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

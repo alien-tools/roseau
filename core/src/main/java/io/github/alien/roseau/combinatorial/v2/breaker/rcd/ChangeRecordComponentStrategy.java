@@ -25,11 +25,7 @@ public final class ChangeRecordComponentStrategy extends AbstractRcdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		var recordComponents = tp.getRecordComponents();
-		if (recordComponentIndex < 0 || recordComponentIndex >= recordComponents.size()) throw new ImpossibleChangeException();
-		if (recordComponentIsVarargs && recordComponentIndex != recordComponents.size() - 1) throw new ImpossibleChangeException();
-
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		var mutableRecord = getMutableBuilderFromMutableApi(mutableApi);
 		var currentRecordComponent = mutableRecord.recordComponents.get(recordComponentIndex);
 		if (currentRecordComponent == null) throw new ImpossibleChangeException();
