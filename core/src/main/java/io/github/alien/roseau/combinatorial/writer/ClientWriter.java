@@ -34,16 +34,16 @@ public final class ClientWriter extends AbstractWriter {
 
 		var inheritanceClassName = "%sMinimal".formatted(classDecl.getPrettyQualifiedName());
 		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
-		insertDeclarationsToInnerType(classDecl, inheritanceClassName, inheritanceConstructorRequired, necessaryMethods);
+		insertDeclarationsToInnerClass(classDecl, inheritanceClassName, inheritanceConstructorRequired, necessaryMethods);
 		addInstructionToClientMain("new %s();".formatted(inheritanceClassName));
 
 		var fullClassName = "%sFull".formatted(classDecl.getPrettyQualifiedName());
 		var fullConstructorRequired = implementRequiredConstructor(classDecl, fullClassName);
-		insertDeclarationsToInnerType(classDecl, fullClassName, fullConstructorRequired, necessaryMethods);
+		insertDeclarationsToInnerClass(classDecl, fullClassName, fullConstructorRequired, necessaryMethods);
 
 		var overrideClassName = "%sOverride".formatted(classDecl.getPrettyQualifiedName());
 		var overrideConstructorRequired = implementRequiredConstructor(classDecl, overrideClassName);
-		insertDeclarationsToInnerType(classDecl, overrideClassName, overrideConstructorRequired, necessaryMethods);
+		insertDeclarationsToInnerClass(classDecl, overrideClassName, overrideConstructorRequired, necessaryMethods);
 	}
 
 	public void writeInnerClassInheritance(ClassDecl classDecl) {
@@ -56,7 +56,7 @@ public final class ClientWriter extends AbstractWriter {
 //
 //		var innerClassCode = "public static class %s extends %s {}".formatted(innerInheritanceTypeName, classDecl.getQualifiedName());
 //
-//		insertDeclarationsToInnerType(enclosingType, inheritanceClassName, innerClassCode, inheritanceConstructorRequired, necessaryMethods);
+//		insertDeclarationsToInnerClass(enclosingType, inheritanceClassName, innerClassCode, inheritanceConstructorRequired, necessaryMethods);
 //		addInstructionToClientMain("new %s().new %s();".formatted(inheritanceClassName, innerInheritanceTypeName));
 	}
 
@@ -81,7 +81,7 @@ public final class ClientWriter extends AbstractWriter {
 				paramsValue
 		);
 
-		insertDeclarationsToInnerType(containingClass, innerTypeName, constructor, "");
+		insertDeclarationsToInnerClass(containingClass, innerTypeName, constructor, "");
 		addInstructionToClientMain(exceptions, "new %s(%s);".formatted(innerTypeName, paramsValue));
 	}
 
@@ -182,21 +182,21 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
 		var interfaceName = "%sExtension".formatted(interfaceDecl.getPrettyQualifiedName());
 
-		insertDeclarationsToInnerType(interfaceDecl, interfaceName, "", "");
+		insertDeclarationsToInnerInterface(interfaceDecl, interfaceName);
 	}
 
 	public void writeInterfaceImplementation(InterfaceDecl interfaceDecl) {
 		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
 
 		var interfaceName = "%sMinimal".formatted(interfaceDecl.getPrettyQualifiedName());
-		insertDeclarationsToInnerType(interfaceDecl, interfaceName, "", necessaryMethods);
+		insertDeclarationsToInnerClass(interfaceDecl, interfaceName, "", necessaryMethods);
 		addInstructionToClientMain("new %s();".formatted(interfaceName));
 
 		var fullInterfaceName = "%sFull".formatted(interfaceDecl.getPrettyQualifiedName());
-		insertDeclarationsToInnerType(interfaceDecl, fullInterfaceName, "", necessaryMethods);
+		insertDeclarationsToInnerClass(interfaceDecl, fullInterfaceName, "", necessaryMethods);
 
 		var overrideInterfaceName = "%sOverride".formatted(interfaceDecl.getPrettyQualifiedName());
-		insertDeclarationsToInnerType(interfaceDecl, overrideInterfaceName, "", necessaryMethods);
+		insertDeclarationsToInnerClass(interfaceDecl, overrideInterfaceName, "", necessaryMethods);
 	}
 
 	public void writeInnerInterfaceExtension(InterfaceDecl interfaceDecl) {
@@ -260,7 +260,7 @@ public final class ClientWriter extends AbstractWriter {
 		var innerTypeName = "%sOverride".formatted(containingType.getPrettyQualifiedName());
 		var overrideMethod = methodDecl.isStatic() ? implementMethod(methodDecl) : overrideMethod(methodDecl);
 
-		insertDeclarationsToInnerType(containingType, innerTypeName, "", overrideMethod);
+		insertDeclarationsToInnerClass(containingType, innerTypeName, "", overrideMethod);
 
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		var methodReturn = getReturnHandleForMethod(methodDecl, "Ove");
@@ -354,24 +354,32 @@ public final class ClientWriter extends AbstractWriter {
 		dispatchInstructionsToMethodsAndInvokeThem(instructionsName, instructions, "", CALL_INSTRUCTIONS_WITHOUT_EXCEPTION_TEMPLATE, mainCalls, methodsInstructions);
 	}
 
-	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, String constructors, String methods) {
-		insertDeclarationsToInnerType(superType, typeName, "", constructors, methods);
+	private void insertDeclarationsToInnerClass(TypeDecl superType, String typeName, String innerTypes, String constructors, String methods) {
+		insertDeclarationsToInnerType(superType, typeName, false, innerTypes, constructors, methods);
 	}
 
-	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, String innerTypes, String constructors, String methods) {
-		if (_innerTypes.containsKey(typeName)) {
-			var innerType = _innerTypes.get(typeName);
-			if (!constructors.isBlank()) innerType.constructors.add(constructors);
-			if (!methods.isBlank()) innerType.methods.add(methods);
-		} else {
+	private void insertDeclarationsToInnerClass(TypeDecl superType, String typeName, String constructors, String methods) {
+		insertDeclarationsToInnerType(superType, typeName, false, "", constructors, methods);
+	}
+
+	private void insertDeclarationsToInnerInterface(TypeDecl superType, String typeName) {
+		insertDeclarationsToInnerType(superType, typeName, true, "", "", "");
+	}
+
+	private void insertDeclarationsToInnerType(TypeDecl superType, String typeName, boolean isInterface, String innerTypes, String constructors, String methods) {
+		if (!_innerTypes.containsKey(typeName)) {
 			var innerType = new InnerType();
 			innerType.typeName = typeName;
 			innerType.superType = superType;
-			if (!constructors.isBlank()) innerType.constructors.add(constructors);
-			if (!methods.isBlank()) innerType.methods.add(methods);
+			innerType.isTypeInterface = isInterface;
 
 			_innerTypes.put(typeName, innerType);
 		}
+
+		var innerType = _innerTypes.get(typeName);
+		if (!innerTypes.isBlank()) innerType.innerTypes.add(innerTypes);
+		if (!constructors.isBlank()) innerType.constructors.add(constructors);
+		if (!methods.isBlank()) innerType.methods.add(methods);
 	}
 
 	private void addInstructionToClientMain(String code) {
@@ -392,7 +400,7 @@ public final class ClientWriter extends AbstractWriter {
 	private void addNewMethodToInnerType(String className, String methodName, String methodBody, List<String> exceptions, TypeDecl containingType) {
 		var newMethod = generateMethodDeclaration(methodName, methodBody, exceptions);
 
-		insertDeclarationsToInnerType(containingType, className, "", newMethod);
+		insertDeclarationsToInnerClass(containingType, className, "", newMethod);
 		addInstructionToClientMain(exceptions, "new %s().%s();".formatted(className, methodName));
 	}
 
@@ -584,6 +592,7 @@ public final class ClientWriter extends AbstractWriter {
 	private static final class InnerType {
 		public String typeName;
 		public TypeDecl superType;
+		public boolean isTypeInterface;
 
 		public List<String> innerTypes = new ArrayList<>();
 		public List<String> constructors = new ArrayList<>();
@@ -595,7 +604,7 @@ public final class ClientWriter extends AbstractWriter {
 			var methods = String.join("\n\n", this.methods);
 			var typeBody = concatDeclarations(innerTypes, constructors, methods);
 
-			if (typeBody.isBlank() && superType.isInterface()) {
+			if (isTypeInterface) {
 				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, superType.getQualifiedName());
 			}
 

@@ -39,7 +39,9 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void generateClassClients(ClassDecl it) {
-		writer.writeTypeReference(it);
+		if (!it.isNested() || it.isPublic()) {
+			writer.writeTypeReference(it);
+		}
 
 		if (!it.isEffectivelyFinal() && !it.isSealed()) {
 			if (it.isNested()) {
@@ -64,7 +66,9 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void generateInterfaceClients(InterfaceDecl it) {
-		writer.writeTypeReference(it);
+		if (!it.isNested() || it.isPublic()) {
+			writer.writeTypeReference(it);
+		}
 
 		if (!it.isSealed()) {
 			if (it.isNested()) {
