@@ -47,17 +47,21 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInnerClassInheritance(ClassDecl classDecl) {
-//		var enclosingType = classDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
-//		var inheritanceClassName = "Inner%sIn%sMinimal".formatted(classDecl.getPrettyQualifiedName(), enclosingType.getPrettyQualifiedName());
-//		var innerInheritanceTypeName = "Inner%s".formatted(classDecl.getPrettyQualifiedName());
-//
-//		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
-//		var necessaryMethods = implementNecessaryMethods(classDecl);
-//
-//		var innerClassCode = "public static class %s extends %s {}".formatted(innerInheritanceTypeName, classDecl.getQualifiedName());
-//
-//		insertDeclarationsToInnerClass(enclosingType, inheritanceClassName, innerClassCode, inheritanceConstructorRequired, necessaryMethods);
-//		addInstructionToClientMain("new %s().new %s();".formatted(inheritanceClassName, innerInheritanceTypeName));
+		var enclosingType = classDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+		var innerInheritanceTypeName = "Inner%s".formatted(classDecl.getPrettyQualifiedName());
+		var inheritanceClassName = "%sIn%sMinimal".formatted(innerInheritanceTypeName, enclosingType.getPrettyQualifiedName());
+		if ("%s.%s".formatted(inheritanceClassName, innerInheritanceTypeName).length() > 245) {
+			innerInheritanceTypeName = "Inner%s".formatted(classDecl.getSimpleName());
+			inheritanceClassName = "%sIn%sMinimal".formatted(innerInheritanceTypeName, enclosingType.getSimpleName());
+		}
+
+		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
+		var necessaryMethods = implementNecessaryMethods(classDecl);
+
+		var innerClassCode = "\tpublic class %s extends %s {}".formatted(innerInheritanceTypeName, classDecl.getQualifiedName());
+
+		insertDeclarationsToInnerClass(enclosingType, inheritanceClassName, innerClassCode, inheritanceConstructorRequired, necessaryMethods);
+		addInstructionToClientMain("new %s().new %s();".formatted(inheritanceClassName, innerInheritanceTypeName));
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
