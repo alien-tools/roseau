@@ -207,6 +207,21 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInnerInterfaceImplementation(InterfaceDecl interfaceDecl) {
+		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+		var innerImplementationTypeName = "Inner%s".formatted(interfaceDecl.getPrettyQualifiedName());
+		var implementationClassName = "%sImplementationIn%sMinimal".formatted(innerImplementationTypeName, enclosingType.getPrettyQualifiedName());
+		if ("%s.%s".formatted(implementationClassName, innerImplementationTypeName).length() > 245) {
+			innerImplementationTypeName = "Inner%s".formatted(interfaceDecl.getSimpleName());
+			implementationClassName = "%sImplIn%sMinimal".formatted(innerImplementationTypeName, enclosingType.getSimpleName());
+		}
+
+		var implementationConstructorRequired = implementRequiredConstructor(interfaceDecl, implementationClassName);
+		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
+
+		var innerClassCode = "\tpublic class %s implements %s {}".formatted(innerImplementationTypeName, interfaceDecl.getQualifiedName());
+
+		insertDeclarationsToInnerClass(enclosingType, implementationClassName, innerClassCode, implementationConstructorRequired, necessaryMethods);
+		addInstructionToClientMain("new %s().new %s();".formatted(implementationClassName, innerImplementationTypeName));
 	}
 
 	public void writeMethodFullDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
