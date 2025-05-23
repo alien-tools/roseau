@@ -48,20 +48,16 @@ public final class ClientWriter extends AbstractWriter {
 
 	public void writeInnerClassInheritance(ClassDecl classDecl) {
 		var enclosingType = classDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
-		var innerInheritanceTypeName = "Inner%s".formatted(classDecl.getPrettyQualifiedName());
-		var inheritanceClassName = "%sIn%sMinimal".formatted(innerInheritanceTypeName, enclosingType.getPrettyQualifiedName());
-		if ("%s.%s".formatted(inheritanceClassName, innerInheritanceTypeName).length() > 245) {
-			innerInheritanceTypeName = "Inner%s".formatted(classDecl.getSimpleName());
-			inheritanceClassName = "%sIn%sMinimal".formatted(innerInheritanceTypeName, enclosingType.getSimpleName());
-		}
+		var innerInheritanceName = "Inner%s".formatted(classDecl.getSimpleName().split("\\$")[1]);
+		var inheritanceClassName = "%sIn%sMinimal".formatted(innerInheritanceName, enclosingType.getPrettyQualifiedName());
 
 		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
 		var necessaryMethods = implementNecessaryMethods(classDecl);
 
-		var innerClassCode = "\tpublic class %s extends %s {}".formatted(innerInheritanceTypeName, classDecl.getQualifiedName());
+		var innerClassCode = "\tpublic class %s extends %s {}".formatted(innerInheritanceName, classDecl.getQualifiedName());
 
 		insertDeclarationsToInnerClass(enclosingType, inheritanceClassName, innerClassCode, inheritanceConstructorRequired, necessaryMethods);
-		addInstructionToClientMain("new %s().new %s();".formatted(inheritanceClassName, innerInheritanceTypeName));
+		addInstructionToClientMain("new %s().new %s();".formatted(inheritanceClassName, innerInheritanceName));
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -204,24 +200,31 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInnerInterfaceExtension(InterfaceDecl interfaceDecl) {
+		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+		var innerExtensionName = "Inner%s".formatted(interfaceDecl.getSimpleName().split("\\$")[1]);
+		var extensionInterfaceName = "%sExtensionIn%sMinimal".formatted(innerExtensionName, enclosingType.getPrettyQualifiedName());
+
+		var extensionConstructorRequired = implementRequiredConstructor(interfaceDecl, extensionInterfaceName);
+		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
+
+		var innerClassCode = "\tpublic interface %s extends %s {}".formatted(innerExtensionName, interfaceDecl.getQualifiedName());
+
+		insertDeclarationsToInnerClass(enclosingType, extensionInterfaceName, innerClassCode, extensionConstructorRequired, necessaryMethods);
+		addInstructionToClientMain("new %s.%s() {};".formatted(extensionInterfaceName, innerExtensionName));
 	}
 
 	public void writeInnerInterfaceImplementation(InterfaceDecl interfaceDecl) {
 		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
-		var innerImplementationTypeName = "Inner%s".formatted(interfaceDecl.getPrettyQualifiedName());
-		var implementationClassName = "%sImplementationIn%sMinimal".formatted(innerImplementationTypeName, enclosingType.getPrettyQualifiedName());
-		if ("%s.%s".formatted(implementationClassName, innerImplementationTypeName).length() > 245) {
-			innerImplementationTypeName = "Inner%s".formatted(interfaceDecl.getSimpleName());
-			implementationClassName = "%sImplIn%sMinimal".formatted(innerImplementationTypeName, enclosingType.getSimpleName());
-		}
+		var innerImplementationName = "Inner%s".formatted(interfaceDecl.getSimpleName().split("\\$")[1]);
+		var implementationClassName = "%sImplementationIn%sMinimal".formatted(innerImplementationName, enclosingType.getPrettyQualifiedName());
 
 		var implementationConstructorRequired = implementRequiredConstructor(interfaceDecl, implementationClassName);
 		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
 
-		var innerClassCode = "\tpublic class %s implements %s {}".formatted(innerImplementationTypeName, interfaceDecl.getQualifiedName());
+		var innerClassCode = "\tpublic class %s implements %s {}".formatted(innerImplementationName, interfaceDecl.getQualifiedName());
 
 		insertDeclarationsToInnerClass(enclosingType, implementationClassName, innerClassCode, implementationConstructorRequired, necessaryMethods);
-		addInstructionToClientMain("new %s().new %s();".formatted(implementationClassName, innerImplementationTypeName));
+		addInstructionToClientMain("new %s().new %s();".formatted(implementationClassName, innerImplementationName));
 	}
 
 	public void writeMethodFullDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
