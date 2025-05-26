@@ -24,7 +24,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>io.github.alien.roseau.combinatorial.CombinatorialBenchmark</mainClass>
+                            <mainClass>io.github.alien.roseau.combinatorial.GenerateClients</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Multi-Release>true</Multi-Release>
@@ -51,7 +51,7 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>io.github.alien.roseau.combinatorial.CombinatorialBenchmark</mainClass>
+                            <mainClass>io.github.alien.roseau.combinatorial.GenerateClients</mainClass>
                             <id>roseau</id>
                         </program>
                     </programs>

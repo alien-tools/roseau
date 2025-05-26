@@ -1,0 +1,7 @@
+package testing_lib.accessModifierClazzConstructorAccessIncreaseProtectedToPublic;
+
+public class AccessModifierClazzConstructorAccessIncreaseProtectedToPublic {
+
+    protected AccessModifierClazzConstructorAccessIncreaseProtectedToPublic() {}
+
+}
