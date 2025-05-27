@@ -90,10 +90,14 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		var containingClass = (ClassDecl) containingType;
 
 		if (it.isPublic() && !containingClass.isEffectivelyAbstract()) {
-			writer.writeConstructorDirectInvocation(it, containingClass);
+			if (containingClass.isNested()) {
+				writer.writeNestedConstructorDirectInvocation(it, containingClass);
+			} else {
+				writer.writeConstructorDirectInvocation(it, containingClass);
+			}
 		}
 
-		if (!containingClass.isEffectivelyFinal()) {
+		if (!containingClass.isEffectivelyFinal() && !containingClass.isNested()) {
 			writer.writeConstructorInheritanceInvocation(it, containingClass);
 		}
 	}

@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.writer;
 
 import io.github.alien.roseau.api.model.*;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.Constants;
 import org.apache.logging.log4j.LogManager;
@@ -68,6 +69,32 @@ public final class ClientWriter extends AbstractWriter {
 
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 		addInstructionToClientMain(exceptions, code);
+	}
+
+	public void writeNestedConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
+		Stack<ClassDecl> containingClasses = new Stack<>();
+		StringBuilder code = new StringBuilder();
+		var currentClass = containingClass;
+		while (currentClass.isNested()) {
+			var enclosingClass = (ClassDecl) currentClass.getEnclosingType()
+					.flatMap(TypeReference::getResolvedApiType)
+					.filter(tR -> tR instanceof ClassDecl)
+					.orElse(null);
+			if (enclosingClass == null) return;
+
+			containingClasses.push(enclosingClass);
+			currentClass = enclosingClass;
+		}
+
+		while (!containingClasses.isEmpty()) {
+			code.append("%s.".formatted(generateEasiestConstructorInvocationForClass(containingClasses.pop())));
+		}
+
+		var params = getParamsForExecutableInvocation(constructorDecl);
+		code.append("new %s(%s);".formatted(StringUtils.cleanInnerSymbolInSimpleName(containingClass.getSimpleName()), params));
+
+		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
+		addInstructionToClientMain(exceptions, code.toString());
 	}
 
 	public void writeConstructorInheritanceInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -480,10 +507,12 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	private static String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
-		var name = StringUtils.cleanInnerSymbolInQualifiedName(classDecl.getQualifiedName());
+		// TODO: Handle nested classes here
+		var name = classDecl.isNested()
+				? StringUtils.cleanInnerSymbolInSimpleName(classDecl.getSimpleName())
+				: StringUtils.cleanInnerSymbolInQualifiedName(classDecl.getQualifiedName());
 
 		var sortedConstructors = getSortedConstructors(classDecl);
-
 		if (sortedConstructors.isEmpty()) return "new %s()".formatted(name);
 
 		var params = getParamsForExecutableInvocation(sortedConstructors.getFirst());
