@@ -14,6 +14,15 @@ public final class StringUtils {
                 .collect(Collectors.joining());
     }
 
+    public static String cleanInnerSymbolInQualifiedName(String s) {
+        return s.replaceAll("\\$", ".");
+    }
+
+    public static String cleanInnerSymbolInSimpleName(String s) {
+        var parts = s.split("\\$");
+        return parts[parts.length - 1];
+    }
+
     public static String capitalizeFirstLetter(String s) {
         return s.substring(0, 1).toUpperCase() + s.substring(1);
     }
