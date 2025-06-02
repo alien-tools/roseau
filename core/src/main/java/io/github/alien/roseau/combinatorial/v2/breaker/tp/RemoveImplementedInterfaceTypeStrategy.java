@@ -1,17 +1,17 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.tp;
 
-import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveImplementedInterfaceTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
-	private final InterfaceDecl implementedInterfaceDecl;
+	private final String implementedInterfaceQualifiedName;
 
-	public RemoveImplementedInterfaceTypeStrategy(InterfaceDecl implementedInterfaceDecl, T tp, NewApiQueue queue) {
-		super(tp, queue, "RemoveImplementedInterface%sFromType%s".formatted(implementedInterfaceDecl.getPrettyQualifiedName(), tp.getSimpleName()));
+	public RemoveImplementedInterfaceTypeStrategy(String implementedInterfaceQualifiedName, T tp, NewApiQueue queue, API api) {
+		super(tp, queue, "RemoveImplementedInterface%sFromType%s".formatted(implementedInterfaceQualifiedName, tp.getSimpleName()), api);
 
-		this.implementedInterfaceDecl = implementedInterfaceDecl;
+		this.implementedInterfaceQualifiedName = implementedInterfaceQualifiedName;
 	}
 
 	@Override
@@ -19,6 +19,6 @@ public final class RemoveImplementedInterfaceTypeStrategy<T extends TypeDecl> ex
 		LOGGER.info("Removing interface from type {}", tp.getQualifiedName());
 
 		var mutableType = getMutableType(mutableApi);
-		mutableType.implementedInterfaces.removeIf(tR -> tR.getQualifiedName().equals(implementedInterfaceDecl.getQualifiedName()));
+		mutableType.implementedInterfaces.removeIf(tR -> tR.getQualifiedName().equals(implementedInterfaceQualifiedName));
 	}
 }

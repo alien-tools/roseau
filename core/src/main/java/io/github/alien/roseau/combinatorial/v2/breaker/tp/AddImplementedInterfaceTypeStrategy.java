@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.v2.breaker.tp;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
@@ -7,8 +8,8 @@ import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddImplementedInterfaceTypeStrategy<T extends TypeDecl> extends AbstractTpStrategy<T> {
-	public AddImplementedInterfaceTypeStrategy(T tp, NewApiQueue queue) {
-		super(tp, queue, "AddImplementedInterfaceToType%s".formatted(tp.getSimpleName()));
+	public AddImplementedInterfaceTypeStrategy(T tp, NewApiQueue queue, API api) {
+		super(tp, queue, "AddImplementedInterfaceToType%s".formatted(tp.getSimpleName()), api);
 	}
 
 	@Override

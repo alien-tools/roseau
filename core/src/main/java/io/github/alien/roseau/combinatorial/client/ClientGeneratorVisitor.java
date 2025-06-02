@@ -147,7 +147,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 			if (it.isPublic()) {
 				if (!containingType.isAbstract()) {
 					writer.writeMethodDirectInvocation(it, containingClass);
-				} else if (!containingClass.isEffectivelyFinal()) {
+				} else if (!api.isEffectivelyFinal(containingClass)) {
 					writer.writeMethodFullDirectInvocation(it, containingClass);
 				}
 

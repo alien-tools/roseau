@@ -81,151 +81,148 @@ public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void breakTypeDecl(TypeDecl t) {
-		new RemoveTypeStrategy<>(t, queue).breakApi(api);
+		new RemoveTypeStrategy<>(t, queue, api).breakApi();
 
-		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, t, queue).breakApi(api);
+		new ReduceVisibilityTypeStrategy<>(AccessModifier.PACKAGE_PRIVATE, t, queue, api).breakApi();
 
-		new AddImplementedInterfaceTypeStrategy<>(t, queue).breakApi(api);
+		new AddImplementedInterfaceTypeStrategy<>(t, queue, api).breakApi();
 		for (var interfaceTypeRef : t.getImplementedInterfaces()) {
-			var interfaceDecl = interfaceTypeRef.getResolvedApiType().orElse(null);
-			if (interfaceDecl == null) continue;
-
-			new RemoveImplementedInterfaceTypeStrategy<>(interfaceDecl, t, queue).breakApi(api);
+			new RemoveImplementedInterfaceTypeStrategy<>(interfaceTypeRef.getQualifiedName(), t, queue, api).breakApi();
 		}
 	}
 
 	private void breakRecordDecl(RecordDecl r) {
-		new AddModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.FINAL, r, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.FINAL, r, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.FINAL, r, queue, api).breakApi();
 
 		for (var paramType: types) {
-			new AddRecordComponentStrategy(paramType, false, r, queue, api).breakApi(api);
-			new AddRecordComponentStrategy(paramType, true, r, queue, api).breakApi(api);
+			new AddRecordComponentStrategy(paramType, false, r, queue, api).breakApi();
+			new AddRecordComponentStrategy(paramType, true, r, queue, api).breakApi();
 		}
 
 		for (var recordComponentIndex = 0; recordComponentIndex < r.getRecordComponents().size(); recordComponentIndex++) {
 			for (var type : types) {
-				new ChangeRecordComponentStrategy(recordComponentIndex, type, false, r, queue, api).breakApi(api);
-				new ChangeRecordComponentStrategy(recordComponentIndex, type, true, r, queue, api).breakApi(api);
+				new ChangeRecordComponentStrategy(recordComponentIndex, type, false, r, queue, api).breakApi();
+				new ChangeRecordComponentStrategy(recordComponentIndex, type, true, r, queue, api).breakApi();
 			}
 
-			new RemoveRecordComponentStrategy(recordComponentIndex, r, queue, api).breakApi(api);
+			new RemoveRecordComponentStrategy(recordComponentIndex, r, queue, api).breakApi();
 		}
 	}
 
 	private void breakClassDecl(ClassDecl c) {
-		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, c, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, c, queue).breakApi(api);
-		new AddModifierTypeStrategy<>(Modifier.FINAL, c, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.FINAL, c, queue).breakApi(api);
-		new AddModifierTypeStrategy<>(Modifier.SEALED, c, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.SEALED, c, queue).breakApi(api);
-		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, c, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, c, queue, api).breakApi();
+		new AddModifierTypeStrategy<>(Modifier.FINAL, c, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.FINAL, c, queue, api).breakApi();
+		new AddModifierTypeStrategy<>(Modifier.SEALED, c, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.SEALED, c, queue, api).breakApi();
+		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, c, queue, api).breakApi();
 
-		new AddAbstractMethodTypeStrategy<>(c, queue).breakApi(api);
+		new AddAbstractMethodTypeStrategy<>(c, queue, api).breakApi();
 
-		new AddSuperClassClassStrategy(c, queue).breakApi(api);
-		new RemoveSuperClassClassStrategy(c, queue).breakApi(api);
+		new AddSuperClassClassStrategy(c, queue, api).breakApi();
+		new RemoveSuperClassClassStrategy(c, queue, api).breakApi();
 	}
 
 	private void breakInterfaceDecl(InterfaceDecl i) {
-		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue).breakApi(api);
-		new AddModifierTypeStrategy<>(Modifier.SEALED, i, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.SEALED, i, queue).breakApi(api);
-		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue).breakApi(api);
-		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue).breakApi(api);
+		new AddModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.ABSTRACT, i, queue, api).breakApi();
+		new AddModifierTypeStrategy<>(Modifier.SEALED, i, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.SEALED, i, queue, api).breakApi();
+		new AddModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue, api).breakApi();
+		new RemoveModifierTypeStrategy<>(Modifier.NON_SEALED, i, queue, api).breakApi();
 
-		new AddAbstractMethodTypeStrategy<>(i, queue).breakApi(api);
+		new AddAbstractMethodTypeStrategy<>(i, queue, api).breakApi();
 	}
 
 	private void breakConstructorDecl(ConstructorDecl c) {
-		new RemoveConstructorStrategy(c, queue, api).breakApi(api);
+		new RemoveConstructorStrategy(c, queue, api).breakApi();
 
-		new ChangeVisibilityConstructorStrategy(AccessModifier.PUBLIC, c, queue, api).breakApi(api);
-		new ChangeVisibilityConstructorStrategy(AccessModifier.PROTECTED, c, queue, api).breakApi(api);
-		new ChangeVisibilityConstructorStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue, api).breakApi(api);
-		new ChangeVisibilityConstructorStrategy(AccessModifier.PRIVATE, c, queue, api).breakApi(api);
+		new ChangeVisibilityConstructorStrategy(AccessModifier.PUBLIC, c, queue, api).breakApi();
+		new ChangeVisibilityConstructorStrategy(AccessModifier.PROTECTED, c, queue, api).breakApi();
+		new ChangeVisibilityConstructorStrategy(AccessModifier.PACKAGE_PRIVATE, c, queue, api).breakApi();
+		new ChangeVisibilityConstructorStrategy(AccessModifier.PRIVATE, c, queue, api).breakApi();
 
 		for (var type : types) {
-			new AddParameterConstructorStrategy(type, false, c, queue, api).breakApi(api);
-			new AddParameterConstructorStrategy(type, true, c, queue, api).breakApi(api);
+			new AddParameterConstructorStrategy(type, false, c, queue, api).breakApi();
+			new AddParameterConstructorStrategy(type, true, c, queue, api).breakApi();
 		}
 
 		for (var paramIndex = 0; paramIndex < c.getParameters().size(); paramIndex++) {
 			for (var type : types) {
-				new ChangeParameterConstructorStrategy(paramIndex, type, false, c, queue, api).breakApi(api);
-				new ChangeParameterConstructorStrategy(paramIndex, type, true, c, queue, api).breakApi(api);
+				new ChangeParameterConstructorStrategy(paramIndex, type, false, c, queue, api).breakApi();
+				new ChangeParameterConstructorStrategy(paramIndex, type, true, c, queue, api).breakApi();
 			}
 
-			new RemoveParameterConstructorStrategy(paramIndex, c, queue, api).breakApi(api);
+			new RemoveParameterConstructorStrategy(paramIndex, c, queue, api).breakApi();
 		}
 
-		new AddExceptionConstructorStrategy(TypeReference.IO_EXCEPTION, c, queue, api).breakApi(api);
-		new RemoveExceptionConstructorStrategy(TypeReference.IO_EXCEPTION, c, queue, api).breakApi(api);
+		new AddExceptionConstructorStrategy(TypeReference.IO_EXCEPTION, c, queue, api).breakApi();
+		new RemoveExceptionConstructorStrategy(TypeReference.IO_EXCEPTION, c, queue, api).breakApi();
 	}
 
 	private void breakEnumValueDecl(EnumValueDecl eV) {
-		new RemoveEnumValueStrategy(eV, queue, api).breakApi(api);
+		new RemoveEnumValueStrategy(eV, queue, api).breakApi();
 	}
 
 	private void breakFieldDecl(FieldDecl f) {
-		new RemoveFieldStrategy(f, queue, api).breakApi(api);
+		new RemoveFieldStrategy(f, queue, api).breakApi();
 
-		new ChangeVisibilityFieldStrategy(AccessModifier.PUBLIC, f, queue, api).breakApi(api);
-		new ChangeVisibilityFieldStrategy(AccessModifier.PROTECTED, f, queue, api).breakApi(api);
-		new ChangeVisibilityFieldStrategy(AccessModifier.PACKAGE_PRIVATE, f, queue, api).breakApi(api);
-		new ChangeVisibilityFieldStrategy(AccessModifier.PRIVATE, f, queue, api).breakApi(api);
+		new ChangeVisibilityFieldStrategy(AccessModifier.PUBLIC, f, queue, api).breakApi();
+		new ChangeVisibilityFieldStrategy(AccessModifier.PROTECTED, f, queue, api).breakApi();
+		new ChangeVisibilityFieldStrategy(AccessModifier.PACKAGE_PRIVATE, f, queue, api).breakApi();
+		new ChangeVisibilityFieldStrategy(AccessModifier.PRIVATE, f, queue, api).breakApi();
 
-		new AddModifierFieldStrategy(Modifier.FINAL, f, queue, api).breakApi(api);
-		new RemoveModifierFieldStrategy(Modifier.FINAL, f, queue, api).breakApi(api);
-		new AddModifierFieldStrategy(Modifier.STATIC, f, queue, api).breakApi(api);
-		new RemoveModifierFieldStrategy(Modifier.STATIC, f, queue, api).breakApi(api);
+		new AddModifierFieldStrategy(Modifier.FINAL, f, queue, api).breakApi();
+		new RemoveModifierFieldStrategy(Modifier.FINAL, f, queue, api).breakApi();
+		new AddModifierFieldStrategy(Modifier.STATIC, f, queue, api).breakApi();
+		new RemoveModifierFieldStrategy(Modifier.STATIC, f, queue, api).breakApi();
 
 		for (var paramType: types) {
-			new ChangeTypeFieldStrategy(paramType, f, queue, api).breakApi(api);
+			new ChangeTypeFieldStrategy(paramType, f, queue, api).breakApi();
 		}
 	}
 
 	private void breakMethodDecl(MethodDecl m) {
-		new RemoveMethodStrategy(m, queue, api).breakApi(api);
+		new RemoveMethodStrategy(m, queue, api).breakApi();
 
-		new ChangeVisibilityMethodStrategy(AccessModifier.PUBLIC, m, queue, api).breakApi(api);
-		new ChangeVisibilityMethodStrategy(AccessModifier.PROTECTED, m, queue, api).breakApi(api);
-		new ChangeVisibilityMethodStrategy(AccessModifier.PACKAGE_PRIVATE, m, queue, api).breakApi(api);
-		new ChangeVisibilityMethodStrategy(AccessModifier.PRIVATE, m, queue, api).breakApi(api);
+		new ChangeVisibilityMethodStrategy(AccessModifier.PUBLIC, m, queue, api).breakApi();
+		new ChangeVisibilityMethodStrategy(AccessModifier.PROTECTED, m, queue, api).breakApi();
+		new ChangeVisibilityMethodStrategy(AccessModifier.PACKAGE_PRIVATE, m, queue, api).breakApi();
+		new ChangeVisibilityMethodStrategy(AccessModifier.PRIVATE, m, queue, api).breakApi();
 
-		new AddModifierMethodStrategy(Modifier.ABSTRACT, m, queue, api).breakApi(api);
-		new RemoveModifierMethodStrategy(Modifier.ABSTRACT, m, queue, api).breakApi(api);
-		new AddModifierMethodStrategy(Modifier.DEFAULT, m, queue, api).breakApi(api);
-		new RemoveModifierMethodStrategy(Modifier.DEFAULT, m, queue, api).breakApi(api);
-		new AddModifierMethodStrategy(Modifier.FINAL, m, queue, api).breakApi(api);
-		new RemoveModifierMethodStrategy(Modifier.FINAL, m, queue, api).breakApi(api);
-		new AddModifierMethodStrategy(Modifier.STATIC, m, queue, api).breakApi(api);
-		new RemoveModifierMethodStrategy(Modifier.STATIC, m, queue, api).breakApi(api);
-		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue, api).breakApi(api);
-		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue, api).breakApi(api);
+		new AddModifierMethodStrategy(Modifier.ABSTRACT, m, queue, api).breakApi();
+		new RemoveModifierMethodStrategy(Modifier.ABSTRACT, m, queue, api).breakApi();
+		new AddModifierMethodStrategy(Modifier.DEFAULT, m, queue, api).breakApi();
+		new RemoveModifierMethodStrategy(Modifier.DEFAULT, m, queue, api).breakApi();
+		new AddModifierMethodStrategy(Modifier.FINAL, m, queue, api).breakApi();
+		new RemoveModifierMethodStrategy(Modifier.FINAL, m, queue, api).breakApi();
+		new AddModifierMethodStrategy(Modifier.STATIC, m, queue, api).breakApi();
+		new RemoveModifierMethodStrategy(Modifier.STATIC, m, queue, api).breakApi();
+		new AddModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue, api).breakApi();
+		new RemoveModifierMethodStrategy(Modifier.SYNCHRONIZED, m, queue, api).breakApi();
 
 		for (var type : returnTypes) {
-			new ChangeTypeMethodStrategy(type, m, queue, api).breakApi(api);
+			new ChangeTypeMethodStrategy(type, m, queue, api).breakApi();
 		}
 
 		for (var type : types) {
-			new AddParameterMethodStrategy(type, false, m, queue, api).breakApi(api);
-			new AddParameterMethodStrategy(type, true, m, queue, api).breakApi(api);
+			new AddParameterMethodStrategy(type, false, m, queue, api).breakApi();
+			new AddParameterMethodStrategy(type, true, m, queue, api).breakApi();
 		}
 
 		for (var paramIndex = 0; paramIndex < m.getParameters().size(); paramIndex++) {
 			for (var type : types) {
-				new ChangeParameterMethodStrategy(paramIndex, type, false, m, queue, api).breakApi(api);
-				new ChangeParameterMethodStrategy(paramIndex, type, true, m, queue, api).breakApi(api);
+				new ChangeParameterMethodStrategy(paramIndex, type, false, m, queue, api).breakApi();
+				new ChangeParameterMethodStrategy(paramIndex, type, true, m, queue, api).breakApi();
 			}
 
-			new RemoveParameterMethodStrategy(paramIndex, m, queue, api).breakApi(api);
+			new RemoveParameterMethodStrategy(paramIndex, m, queue, api).breakApi();
 		}
 
-		new AddExceptionMethodStrategy(TypeReference.IO_EXCEPTION, m, queue, api).breakApi(api);
-		new RemoveExceptionMethodStrategy(TypeReference.IO_EXCEPTION, m, queue, api).breakApi(api);
+		new AddExceptionMethodStrategy(TypeReference.IO_EXCEPTION, m, queue, api).breakApi();
+		new RemoveExceptionMethodStrategy(TypeReference.IO_EXCEPTION, m, queue, api).breakApi();
 	}
 }

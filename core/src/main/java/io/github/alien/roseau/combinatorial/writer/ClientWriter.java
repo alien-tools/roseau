@@ -50,7 +50,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInnerClassInheritance(ClassDecl classDecl) {
-		var enclosingType = classDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+		var enclosingType = classDecl.getEnclosingType().map(eT -> api.resolver().resolve(eT).orElseThrow()).orElseThrow();
 		var innerInheritanceName = "Inner%s".formatted(classDecl.getSimpleName().split("\\$")[1]);
 		var inheritanceClassName = "%sIn%sMinimal".formatted(innerInheritanceName, enclosingType.getPrettyQualifiedName());
 
@@ -203,7 +203,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInnerInterfaceExtension(InterfaceDecl interfaceDecl) {
-		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> api.resolver().resolve(eT).orElseThrow()).orElseThrow();
 		var innerExtensionName = "Inner%s".formatted(interfaceDecl.getSimpleName().split("\\$")[1]);
 		var extensionInterfaceName = "%sExtensionIn%sMinimal".formatted(innerExtensionName, enclosingType.getPrettyQualifiedName());
 
@@ -217,7 +217,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeInnerInterfaceImplementation(InterfaceDecl interfaceDecl) {
-		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> eT.getResolvedApiType().orElseThrow()).orElseThrow();
+		var enclosingType = interfaceDecl.getEnclosingType().map(eT -> api.resolver().resolve(eT).orElseThrow()).orElseThrow();
 		var innerImplementationName = "Inner%s".formatted(interfaceDecl.getSimpleName().split("\\$")[1]);
 		var implementationClassName = "%sImplementationIn%sMinimal".formatted(innerImplementationName, enclosingType.getPrettyQualifiedName());
 
@@ -298,7 +298,7 @@ public final class ClientWriter extends AbstractWriter {
 		var referenceVarName = "%sRef".formatted(typeDecl.getPrettyQualifiedName());
 		var code = new StringBuilder("%s %s = null;".formatted(typeDecl.getQualifiedName(), referenceVarName));
 
-		typeDecl.getAllSuperTypes().forEach(superType ->
+		api.getAllSuperTypes(typeDecl).forEach(superType ->
 				code.append("\n\t\t%s %sUpcastTo%s = %s;".formatted(superType.getQualifiedName(), typeDecl.getPrettyQualifiedName(), superType.getPrettyQualifiedName(), referenceVarName))
 		);
 
