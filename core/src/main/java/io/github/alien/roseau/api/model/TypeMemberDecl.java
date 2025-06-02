@@ -23,8 +23,6 @@ public abstract sealed class TypeMemberDecl extends Symbol
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(containingType);
 		Preconditions.checkNotNull(type);
-		Preconditions.checkArgument(Set.of(AccessModifier.PUBLIC, AccessModifier.PROTECTED).contains(visibility),
-			"Type member declarations are either PUBLIC or PROTECTED");
 		this.containingType = containingType;
 		this.type = type;
 	}
