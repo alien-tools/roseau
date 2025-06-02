@@ -17,14 +17,12 @@ public final class ReduceVisibilityTypeStrategy<T extends TypeDecl> extends Abst
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		if (tp.getVisibility() == accessModifier) throw new ImpossibleChangeException();
+
 		LOGGER.info("Reducing {} visibility to {}", tp.getQualifiedName(), accessModifier.toCapitalize());
 
 		var mutableType = mutableApi.allTypes.get(tp.getQualifiedName());
-		if (mutableType == null) throw new ImpossibleChangeException();
-
 		mutableType.visibility = accessModifier;
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

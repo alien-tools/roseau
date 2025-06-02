@@ -24,19 +24,13 @@ public final class ChangeVisibilityFieldStrategy extends AbstractFldStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		if (tpMbr.getVisibility() == accessModifier) throw new ImpossibleChangeException();
-
-		var containingType = getContainingTypeFromMutableApi(mutableApi);
-		if (containingType instanceof InterfaceBuilder && (accessModifier == AccessModifier.PRIVATE || accessModifier == AccessModifier.PROTECTED))
-			throw new ImpossibleChangeException();
-
-		var field = this.getFieldFrom(containingType);
 
 		LOGGER.info("Reducing field {} visibility to {}", tpMbr.getQualifiedName(), accessModifier.toCapitalize());
 
+		var containingType = getContainingTypeFromMutableApi(mutableApi);
+		var field = this.getFieldFrom(containingType);
 		field.visibility = accessModifier;
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

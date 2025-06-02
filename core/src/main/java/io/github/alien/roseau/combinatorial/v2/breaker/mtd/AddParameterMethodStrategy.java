@@ -6,7 +6,6 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ParameterBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
@@ -27,20 +26,16 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		var containingType = getContainingClassFromMutableApi(mutableApi);
-		var method = getMethodFrom(containingType);
-		if (!method.parameters.isEmpty() && method.parameters.getLast().isVarargs) throw new ImpossibleChangeException();
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
+		LOGGER.info("Adding parameter {} to method {}", parameterType.getPrettyQualifiedName(), tpMbr.getQualifiedName());
 
 		var paramBuilder = new ParameterBuilder();
 		paramBuilder.name = "newParamAdded";
 		paramBuilder.type = parameterType;
 		paramBuilder.isVarargs = parameterIsVarargs;
+
+		var containingType = getContainingClassFromMutableApi(mutableApi);
+		var method = getMethodFrom(containingType);
 		method.parameters.add(paramBuilder);
-		if (areMethodsInvalid(containingType.methods, api)) throw new ImpossibleChangeException();
-
-		LOGGER.info("Adding parameter {} to method {}", parameterType.getPrettyQualifiedName(), tpMbr.getQualifiedName());
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

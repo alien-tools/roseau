@@ -4,7 +4,6 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveParameterConstructorStrategy extends AbstractCtrStrategy {
@@ -22,16 +21,11 @@ public final class RemoveParameterConstructorStrategy extends AbstractCtrStrateg
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
-		var containingType = getContainingClassFromMutableApi(mutableApi);
-		var constructor = getConstructorFrom(containingType);
-		if (parameterIndex < 0 || parameterIndex >= constructor.parameters.size()) throw new ImpossibleChangeException();
-
-		constructor.parameters.remove(parameterIndex);
-		if (areConstructorsInvalid(containingType.constructors, api)) throw new ImpossibleChangeException();
-
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		LOGGER.info("Removing parameter at index {} from constructor {}", parameterIndex, tpMbr.getQualifiedName());
 
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
+		var containingType = getContainingClassFromMutableApi(mutableApi);
+		var constructor = getConstructorFrom(containingType);
+		constructor.parameters.remove(parameterIndex);
 	}
 }

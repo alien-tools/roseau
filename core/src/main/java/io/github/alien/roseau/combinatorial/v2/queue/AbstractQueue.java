@@ -6,7 +6,7 @@ import java.util.concurrent.BlockingQueue;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
-public abstract sealed class AbstractQueue<T> permits NewApiQueue, ResultsProcessQueue {
+public abstract sealed class AbstractQueue<T> permits FailedStrategyQueue, ImpossibleStrategyQueue, NewApiQueue, ResultsProcessQueue {
 	private final BlockingQueue<Pair<String, T>> queue;
 
 	public AbstractQueue(BlockingQueue<Pair<String, T>> queue) {

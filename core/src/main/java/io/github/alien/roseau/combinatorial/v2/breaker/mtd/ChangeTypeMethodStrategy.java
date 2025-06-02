@@ -23,15 +23,12 @@ public final class ChangeTypeMethodStrategy extends AbstractMtdStrategy {
 	}
 
 	@Override
-	protected void applyBreakToMutableApi(ApiBuilder mutableApi) throws ImpossibleChangeException {
+	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		if (tpMbr.getType().equals(type)) throw new ImpossibleChangeException();
-
-		var method = getMethodFrom(mutableApi);
 
 		LOGGER.info("Changing method {} type to {}", tpMbr.getQualifiedName(), type.getPrettyQualifiedName());
 
+		var method = getMethodFrom(mutableApi);
 		method.type = type;
-
-		// TODO: For now we don't have hierarchy, so we don't need to update possible references
 	}
 }

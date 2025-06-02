@@ -1,18 +1,6 @@
 package io.github.alien.roseau.combinatorial.client;
 
-import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.EnumDecl;
-import io.github.alien.roseau.api.model.EnumValueDecl;
-import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.InterfaceDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.RecordComponentDecl;
-import io.github.alien.roseau.api.model.RecordDecl;
-import io.github.alien.roseau.api.model.Symbol;
-import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
+import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.writer.ClientWriter;
@@ -53,10 +41,16 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void generateClassClients(ClassDecl it) {
-		writer.writeTypeReference(it);
+		if (!it.isNested() || it.isPublic()) {
+			writer.writeTypeReference(it);
+		}
 
 		if (!api.isEffectivelyFinal(it) && !it.isSealed()) {
-			writer.writeClassInheritance(it);
+			if (it.isNested()) {
+				writer.writeInnerClassInheritance(it);
+			} else {
+				writer.writeClassInheritance(it);
+			}
 		}
 
 		if (api.isCheckedException(it) || api.isUncheckedException(it)) {
@@ -74,11 +68,18 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void generateInterfaceClients(InterfaceDecl it) {
-		writer.writeTypeReference(it);
+		if (!it.isNested() || it.isPublic()) {
+			writer.writeTypeReference(it);
+		}
 
 		if (!it.isSealed()) {
-			writer.writeInterfaceExtension(it);
-			writer.writeInterfaceImplementation(it);
+			if (it.isNested()) {
+				writer.writeInnerInterfaceExtension(it);
+				writer.writeInnerInterfaceImplementation(it);
+			} else {
+				writer.writeInterfaceExtension(it);
+				writer.writeInterfaceImplementation(it);
+			}
 		}
 	}
 
@@ -143,12 +144,16 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		}
 
 		if (containingType instanceof ClassDecl containingClass) {
-			if (it.isPublic() && !containingType.isAbstract()) {
-				writer.writeMethodDirectInvocation(it, containingClass);
-			}
+			if (it.isPublic()) {
+				if (!containingType.isAbstract()) {
+					writer.writeMethodDirectInvocation(it, containingClass);
+				} else if (!containingClass.isEffectivelyFinal()) {
+					writer.writeMethodFullDirectInvocation(it, containingClass);
+				}
 
-			if (it.isPublic() && !api.isEffectivelyFinal(it) && !containingClass.isEnum() && !containingClass.isRecord()) {
-				writer.writeMethodMinimalDirectInvocation(it, containingClass);
+				if (!api.isEffectivelyFinal(it) && !containingClass.isEnum() && !containingClass.isRecord()) {
+					writer.writeMethodMinimalDirectInvocation(it, containingClass);
+				}
 			}
 
 			if (!it.isAbstract() && !api.isEffectivelyFinal(it)) {

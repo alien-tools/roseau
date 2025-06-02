@@ -374,17 +374,13 @@ public final class CombinatorialApi {
 			// Last level of hierarchy can't have sealed classes
 			if (depth == 0 && modifiers.contains(SEALED))
 				return;
-			// Class extending sealed class must be sealed, non-sealed or final
-			if (superCls.isSealed() && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+			var superClsIsSealed = superCls.isSealed();
+			var atLeastOneImplementingInterfaceIsSealed = implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed());
+			// Class extending sealed class or implementing at least one sealed interface must be sealed, non-sealed or final
+			if ((superClsIsSealed || atLeastOneImplementingInterfaceIsSealed) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
 				return;
-			// Class implementing at least one sealed interface must be sealed, non-sealed or final
-			if (implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
-				return;
-			// Class extending non-sealed class can't be non-sealed
-			if (!superCls.isSealed() && modifiers.contains(NON_SEALED))
-				return;
-			// Class implementing non-sealed interfaces can't be non-sealed
-			if (implementingIntfBuilders.stream().noneMatch(iB -> iB.make().isSealed()) && modifiers.contains(NON_SEALED))
+			// Class extending non-sealed class and implementing non-sealed interfaces can't be non-sealed
+			if (!superClsIsSealed && !atLeastOneImplementingInterfaceIsSealed && modifiers.contains(NON_SEALED))
 				return;
 
 			topLevelVisibilities.forEach(visibility ->
@@ -394,6 +390,7 @@ public final class CombinatorialApi {
 						clsBuilder.visibility = visibility;
 						clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 						clsBuilder.superClass = typeReferenceFactory.createTypeReference(superCls.getQualifiedName());
+						addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
 
 						if (superCls.isSealed()) {
 							superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
@@ -410,7 +407,7 @@ public final class CombinatorialApi {
 							superCls.getDeclaredMethods().stream()
 									.filter(m -> !m.isFinal())
 									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
-						} else if (superCls.isAbstract()) {
+						} else if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
 							currentApi.getAllMethodsToImplement(superCls)
 									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
 						}
@@ -419,12 +416,14 @@ public final class CombinatorialApi {
 							var implementingIntf = implementingIntfBuilder.make();
 
 							clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-							currentApi.getAllMethodsToImplement(implementingIntf)
-									.forEach(m -> {
-										if (!methodsToGenerate.containsKey(m.getSignature())) {
-											methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
-										}
-									});
+							if (!clsBuilder.modifiers.contains(ABSTRACT)) {
+								currentApi.getAllMethodsToImplement(implementingIntf)
+										.forEach(m -> {
+											if (!methodsToGenerate.containsKey(m.getSignature())) {
+												methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
+											}
+										});
+							}
 
 							if (implementingIntf.isSealed()) {
 								implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
@@ -445,7 +444,8 @@ public final class CombinatorialApi {
 		topLevelVisibilities.forEach(visibility ->
 				interfaceModifiers.forEach(modifiers -> {
 					// Last level of hierarchy can't have sealed interfaces
-					if (depth == 0 && modifiers.contains(SEALED)) return;
+					if (depth == 0 && modifiers.contains(SEALED))
+						return;
 					// Interface extending at least one sealed interface must be sealed or non-sealed
 					if (extendingIntfBuilders.stream().anyMatch(p -> p.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
 						return;
@@ -483,6 +483,7 @@ public final class CombinatorialApi {
 					clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
 					clsBuilder.visibility = visibility;
 					clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+					addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
 					addImplementedInterfacesToTypeDeclBuilder(clsBuilder, implementingIntfBuilders);
 
 					store(clsBuilder);
@@ -564,8 +565,10 @@ public final class CombinatorialApi {
 			var implementingIntf = implementingIntfBuilder.make();
 
 			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-			getAPI().getAllMethodsToImplement(implementingIntf)
-					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+			if (!builder.modifiers.contains(ABSTRACT)) {
+				getAPI().getAllMethodsToImplement(implementingIntf)
+						.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+			}
 
 			if (implementingIntf.isSealed()) {
 				implementingIntfBuilder.permittedTypes.add(builder.qualifiedName);
