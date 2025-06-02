@@ -404,13 +404,14 @@ public final class CombinatorialApi {
 									.forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
 						}
 
+						var currentApi = getAPI();
 						var methodsToGenerate = new HashMap<String, MethodBuilder>();
 						if (isHidingAndOverriding) {
 							superCls.getDeclaredMethods().stream()
 									.filter(m -> !m.isFinal())
 									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
 						} else if (superCls.isAbstract()) {
-							superCls.getAllMethodsToImplement()
+							currentApi.getAllMethodsToImplement(superCls)
 									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
 						}
 
@@ -418,7 +419,7 @@ public final class CombinatorialApi {
 							var implementingIntf = implementingIntfBuilder.make();
 
 							clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-							implementingIntf.getAllMethodsToImplement()
+							currentApi.getAllMethodsToImplement(implementingIntf)
 									.forEach(m -> {
 										if (!methodsToGenerate.containsKey(m.getSignature())) {
 											methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
@@ -522,26 +523,7 @@ public final class CombinatorialApi {
 		typeStore.put(type.qualifiedName, type);
 	}
 
-	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
-		createMethodAndAddToType(type.qualifiedName + ".m" + ++symbolCounter, visibility, modifiers, parameters, type);
-	}
-
-	private static void createMethodAndAddToType(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
-		var methodBuilder = new MethodBuilder();
-
-		methodBuilder.visibility = visibility;
-		methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-		methodBuilder.parameters = parameters;
-		methodBuilder.containingType = typeReferenceFactory.createTypeReference(type.qualifiedName);
-		methodBuilder.qualifiedName = qualifiedName;
-		methodBuilder.type = methodReturnTypes.get(methodCounter % methodReturnTypes.size());
-		methodBuilder.thrownExceptions = thrownExceptions.get(methodCounter % thrownExceptions.size());
-
-		type.methods.add(methodBuilder);
-		methodCounter++;
-	}
-
-	private static void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params,
+	private void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params,
 													 List<ITypeReference> exceptions, boolean lastParamIsVarargs) {
 		constructorCounter++;
 
@@ -559,9 +541,10 @@ public final class CombinatorialApi {
 		});
 
 		if (lastParamIsVarargs) {
+			var currentApi = getAPI();
 			var currentConstructor = constructorBuilder.make();
 			var constructorsWithSameErasure = classBuilder.constructors.stream()
-					.filter(c -> c.make().hasSameErasure(currentConstructor))
+					.filter(c -> currentApi.haveSameErasure(c.make(), currentConstructor))
 					.toList();
 
 			if (!constructorsWithSameErasure.isEmpty()) {
@@ -576,18 +559,37 @@ public final class CombinatorialApi {
 		classBuilder.constructors.add(constructorBuilder);
 	}
 
-	private static void addImplementedInterfacesToTypeDeclBuilder(TypeBuilder builder, List<InterfaceBuilder> implementingIntfBuilders) {
+	private void addImplementedInterfacesToTypeDeclBuilder(TypeBuilder builder, List<InterfaceBuilder> implementingIntfBuilders) {
 		implementingIntfBuilders.forEach(implementingIntfBuilder -> {
 			var implementingIntf = implementingIntfBuilder.make();
 
 			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-			implementingIntf.getAllMethodsToImplement()
+			getAPI().getAllMethodsToImplement(implementingIntf)
 					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 
 			if (implementingIntf.isSealed()) {
 				implementingIntfBuilder.permittedTypes.add(builder.qualifiedName);
 			}
 		});
+	}
+
+	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
+		createMethodAndAddToType(type.qualifiedName + ".m" + ++symbolCounter, visibility, modifiers, parameters, type);
+	}
+
+	private static void createMethodAndAddToType(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
+		var methodBuilder = new MethodBuilder();
+
+		methodBuilder.visibility = visibility;
+		methodBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+		methodBuilder.parameters = parameters;
+		methodBuilder.containingType = typeReferenceFactory.createTypeReference(type.qualifiedName);
+		methodBuilder.qualifiedName = qualifiedName;
+		methodBuilder.type = methodReturnTypes.get(methodCounter % methodReturnTypes.size());
+		methodBuilder.thrownExceptions = thrownExceptions.get(methodCounter % thrownExceptions.size());
+
+		type.methods.add(methodBuilder);
+		methodCounter++;
 	}
 
 	private static void addRecordComponentsToRecordBuilder(RecordBuilder recordBuilder, List<ITypeReference> recordsParamsTypes) {

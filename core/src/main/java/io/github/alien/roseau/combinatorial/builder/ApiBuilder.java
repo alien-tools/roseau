@@ -32,8 +32,7 @@ public final class ApiBuilder implements Builder<API> {
 		var factory = new CachingTypeReferenceFactory();
 		var apiBuilder = new ApiBuilder(factory);
 
-		var apiCloned = api.deepCopy(factory);
-		apiCloned.getAllTypes().forEach(typeDecl -> {
+		api.getLibraryTypes().getAllTypes().forEach(typeDecl -> {
 			switch (typeDecl) {
 				case EnumDecl enumDecl:
 					var enumBuilder = EnumBuilder.from(enumDecl);
