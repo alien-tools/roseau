@@ -7,7 +7,6 @@ import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -70,8 +69,8 @@ final class ApiStats {
 	}
 
 	private static void countEntities(TypeDecl type, API api) {
-		methodsCount += (int) api.getAllMethods(type).size();
-		fieldsCount += (int) api.getAllFields(type).size();
+		methodsCount += api.getAllMethods(type).size();
+		fieldsCount += api.getAllFields(type).size();
 
 		if (type instanceof EnumDecl enumDecl) {
 			enumValuesCount += enumDecl.getValues().size();

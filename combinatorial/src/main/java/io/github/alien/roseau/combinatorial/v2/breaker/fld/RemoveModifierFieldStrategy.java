@@ -5,7 +5,6 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
-import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 

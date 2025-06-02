@@ -8,9 +8,6 @@ import io.github.alien.roseau.combinatorial.builder.TypeBuilder;
 import io.github.alien.roseau.combinatorial.v2.breaker.tpMbr.AbstractTpMbrStrategy;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
-import java.util.HashSet;
-import java.util.List;
-
 abstract class AbstractMtdStrategy extends AbstractTpMbrStrategy<MethodDecl> {
 	AbstractMtdStrategy(MethodDecl mtd, NewApiQueue queue, String strategyName, API api) {
 		super(mtd, queue, strategyName, api);
