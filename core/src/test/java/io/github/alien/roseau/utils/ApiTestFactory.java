@@ -13,21 +13,21 @@ import java.util.Set;
 public class ApiTestFactory {
 	public static ClassDecl newClass(String fqn, AccessModifier visibility) {
 		return new ClassDecl(fqn, visibility, Set.of(), List.of(), SourceLocation.NO_LOCATION,
-			List.of(), List.of(), List.of(), List.of(), null, null, List.of());
+			List.of(), List.of(), List.of(), List.of(), null, null, List.of(), List.of());
 	}
 
 	public static InterfaceDecl newInterface(String fqn, AccessModifier visibility) {
 		return new InterfaceDecl(fqn, visibility, Set.of(), List.of(), SourceLocation.NO_LOCATION,
-			List.of(), List.of(), List.of(), List.of(), null);
+			List.of(), List.of(), List.of(), List.of(), null, List.of());
 	}
 
 	public static EnumDecl newEnum(String fqn, AccessModifier visibility) {
 		return new EnumDecl(fqn, visibility, Set.of(), List.of(), SourceLocation.NO_LOCATION,
-			List.of(), List.of(), List.of(), null, List.of());
+			List.of(), List.of(), List.of(), null, List.of(), List.of());
 	}
 
 	public static RecordDecl newRecord(String fqn, AccessModifier visibility) {
 		return new RecordDecl(fqn, visibility, Set.of(), List.of(), SourceLocation.NO_LOCATION,
-			List.of(), List.of(), List.of(), List.of(), null, List.of());
+			List.of(), List.of(), List.of(), List.of(), null, List.of(), List.of());
 	}
 }
