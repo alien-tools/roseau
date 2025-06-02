@@ -21,9 +21,8 @@ public final class GenerateCombinatorialApi extends AbstractStep {
 
 		try {
 			var combinatorialApi = new CombinatorialApi();
-			combinatorialApi.build();
+			api = combinatorialApi.build();
 
-			api = combinatorialApi.getAPI();
 			apiWriter.write(api);
 
 			ApiStats.display(api);

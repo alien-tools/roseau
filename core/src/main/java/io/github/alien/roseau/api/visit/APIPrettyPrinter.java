@@ -32,6 +32,10 @@ import java.util.stream.Collectors;
 public class APIPrettyPrinter implements APIAlgebra<Print> {
 	private API api;
 
+	public APIPrettyPrinter(API api) {
+		this.api = api;
+	}
+
 	@Override
 	public Print api(API it) {
 		api = it;

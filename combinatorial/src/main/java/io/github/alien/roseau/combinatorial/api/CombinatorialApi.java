@@ -95,18 +95,15 @@ public final class CombinatorialApi {
 
 	final Map<String, TypeBuilder> typeStore = new HashMap<>();
 
-	public void build() {
+	public API build() {
 		createTypes();
 
 		weaveFields();
 		weaveMethods();
 
 		createHierarchies();
-	}
 
-	public API getAPI() {
-		var types = new LibraryTypes(typeStore.values().stream().map(TypeBuilder::make).toList());
-		return types.toAPI();
+		return getAPI();
 	}
 
 	private void createTypes() {
@@ -227,6 +224,11 @@ public final class CombinatorialApi {
 				createNewRecordsImplementingInterfaces(interfaceBuildersForWidth);
 			});
 		});
+	}
+
+	private API getAPI() {
+		var types = new LibraryTypes(typeStore.values().stream().map(TypeBuilder::make).toList());
+		return types.toAPI();
 	}
 
 	private void createInterfaces() {
