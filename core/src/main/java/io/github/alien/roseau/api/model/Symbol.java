@@ -68,7 +68,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	public String getQualifiedName() {
-		return qualifiedName.replace('$', '.');
+		return qualifiedName;
 	}
 
 	public String getPrettyQualifiedName() {
