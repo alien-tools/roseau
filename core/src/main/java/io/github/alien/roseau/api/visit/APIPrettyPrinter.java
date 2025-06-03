@@ -171,7 +171,14 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
-			it.getDeclaredConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
+			it.getDeclaredConstructors().stream()
+					.filter(cD -> {
+						var constructorParams = cD.getParameters().stream().map(p -> p.type().getPrettyQualifiedName()).collect(Collectors.joining(", "));
+						var recordParams = it.getRecordComponents().stream().map(rC -> rC.getType().getPrettyQualifiedName()).collect(Collectors.joining(", "));
+
+						return !constructorParams.equals(recordParams);
+					})
+					.map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
 		);
 	}

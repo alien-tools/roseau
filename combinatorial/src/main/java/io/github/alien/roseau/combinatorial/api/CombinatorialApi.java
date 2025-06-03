@@ -346,6 +346,7 @@ public final class CombinatorialApi {
 								varArgsRecordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
 								varArgsRecordComponentBuilder.isVarargs = true;
 								recordBuilder.recordComponents.add(varArgsRecordComponentBuilder);
+								recordBuilder.constructors.getFirst().parameters.add(generateParameterBuilder("c" + recordComponentParamsCount, varArgsParamType, true));
 
 								store(recordBuilder);
 							})
@@ -578,6 +579,21 @@ public final class CombinatorialApi {
 		});
 	}
 
+	private void addRecordComponentsToRecordBuilder(RecordBuilder recordBuilder, List<ITypeReference> recordsParamsTypes) {
+		IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
+			var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
+
+			var recordComponentBuilder = new RecordComponentBuilder();
+			recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
+			recordComponentBuilder.type = recordComponentType;
+			recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+
+			recordBuilder.recordComponents.add(recordComponentBuilder);
+		});
+
+		addConstructorToClassBuilder(recordBuilder, PUBLIC, recordsParamsTypes, List.of(), false);
+	}
+
 	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {
 		createMethodAndAddToType(type.qualifiedName + ".m" + ++symbolCounter, visibility, modifiers, parameters, type);
 	}
@@ -595,19 +611,6 @@ public final class CombinatorialApi {
 
 		type.methods.add(methodBuilder);
 		methodCounter++;
-	}
-
-	private static void addRecordComponentsToRecordBuilder(RecordBuilder recordBuilder, List<ITypeReference> recordsParamsTypes) {
-		IntStream.range(0, recordsParamsTypes.size()).forEach(recordComponentTypeIndex -> {
-			var recordComponentType = recordsParamsTypes.get(recordComponentTypeIndex);
-
-			var recordComponentBuilder = new RecordComponentBuilder();
-			recordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentTypeIndex);
-			recordComponentBuilder.type = recordComponentType;
-			recordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
-
-			recordBuilder.recordComponents.add(recordComponentBuilder);
-		});
 	}
 
 	private static void addEnumValuesToEnumBuilder(EnumBuilder enumBuilder) {
