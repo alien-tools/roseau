@@ -47,6 +47,7 @@ import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtWildcardReference;
 
+import java.io.File;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,11 +71,21 @@ public class SpoonAPIFactory {
 	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
 		Factory spoonFactory = new Launcher().createFactory();
 		spoonFactory.getEnvironment().setSourceClasspath(
-			classpath.stream()
+			sanitizeClasspath(classpath).stream()
 				.map(p -> p.toAbsolutePath().toString())
 				.toArray(String[]::new));
 		this.typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
+	}
+
+	// Avoid having Spoon throwing at us due to "invalid" classpath
+	private List<Path> sanitizeClasspath(List<Path> classpath) {
+		return classpath.stream()
+			.map(Path::toFile)
+			.filter(File::exists)
+			.filter(f -> f.isDirectory() || !f.getName().endsWith(".class"))
+			.map(File::toPath)
+			.toList();
 	}
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {

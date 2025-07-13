@@ -67,14 +67,23 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
+	 * Creates a new resolved API using the given classpath and a default resolver.
+	 *
+	 * @param classpath the classpath used for type resolution
+	 * @return the new resolved API
+	 */
+	public API toAPI(List<Path> classpath) {
+		TypeProvider reflectiveTypeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
+		return toAPI(new CachingTypeResolver(List.of(this, reflectiveTypeProvider)));
+	}
+
+	/**
 	 * Convenience method to create a resolved API using a default resolver.
 	 *
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		// FIXME: this is just temporary
-		TypeProvider reflectiveTypeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), List.of());
-		return new API(this, new CachingTypeResolver(List.of(this, reflectiveTypeProvider)));
+		return toAPI(List.of());
 	}
 
 	/**
