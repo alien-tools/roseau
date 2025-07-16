@@ -6,6 +6,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.utils.StringUtils;
 
 import java.io.IOException;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -57,6 +58,7 @@ public record TypeReference<T extends TypeDecl>(
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION =
 		new TypeReference<>(RuntimeException.class.getCanonicalName(), List.of());
 	/**
+<<<<<<< HEAD
 	 * A reference to {@link IOException}.
 	 */
 	public static final TypeReference<ClassDecl> IO_EXCEPTION =

@@ -93,7 +93,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		if (extractor.canExtract(sources)) {
 			Stopwatch sw = Stopwatch.createStarted();
-			API api = extractor.extractTypes(sources, classpath).toAPI();
+			API api = extractor.extractTypes(sources, classpath).toAPI(classpath);
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
 				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;

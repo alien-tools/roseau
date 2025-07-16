@@ -3,7 +3,6 @@ package io.github.alien.roseau.api.model;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -39,12 +38,13 @@ public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl perm
 
 	/**
 	 * Checks whether the current class is effectively abstract. A class is effectively abstract if it is explicitly
-	 * declared abstract or if is has no subclass-accessible constructors.
+	 * declared abstract or if it has no subclass-accessible constructors.
 	 *
 	 * @return whether the current class is effectively abstract
 	 */
 	public boolean isEffectivelyAbstract() {
-		return isAbstract() || constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected());
+		// FIXME: return isAbstract() || constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected());
+		return isAbstract() || constructors.isEmpty();
 	}
 
 	public TypeReference<ClassDecl> getSuperClass() {
@@ -52,7 +52,7 @@ public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl perm
 	}
 
 	public List<ConstructorDecl> getDeclaredConstructors() {
-		return Collections.unmodifiableList(constructors);
+		return constructors;
 	}
 
 	@Override
