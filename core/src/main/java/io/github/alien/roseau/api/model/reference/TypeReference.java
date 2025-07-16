@@ -58,7 +58,6 @@ public record TypeReference<T extends TypeDecl>(
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION =
 		new TypeReference<>(RuntimeException.class.getCanonicalName(), List.of());
 	/**
-<<<<<<< HEAD
 	 * A reference to {@link IOException}.
 	 */
 	public static final TypeReference<ClassDecl> IO_EXCEPTION =
