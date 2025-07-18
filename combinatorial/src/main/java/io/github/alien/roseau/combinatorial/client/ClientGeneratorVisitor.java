@@ -20,8 +20,8 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	public Visit symbol(Symbol it) {
 		if (api.isExported(it)) {
 			switch (it) {
-				case EnumDecl e: generateClassClients(e); break;
-				case RecordDecl r: generateClassClients(r); break;
+				case EnumDecl e: generateTypeClients(e); break;
+				case RecordDecl r: generateTypeClients(r); break;
 				case ClassDecl c: generateClassClients(c); break;
 				case InterfaceDecl i: generateInterfaceClients(i); break;
 				case ConstructorDecl c: generateConstructorClients(c); break;
@@ -40,17 +40,17 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		return () -> it.getAnnotations().forEach(ann -> $(ann).visit());
 	}
 
-	private void generateClassClients(ClassDecl it) {
+	private void generateTypeClients(TypeDecl it) {
 		if (!it.isNested() || it.isPublic()) {
 			writer.writeTypeReference(it);
 		}
+	}
+
+	private void generateClassClients(ClassDecl it) {
+		generateTypeClients(it);
 
 		if (!api.isEffectivelyFinal(it) && !it.isSealed()) {
-			if (it.isNested()) {
-				writer.writeInnerClassInheritance(it);
-			} else {
-				writer.writeClassInheritance(it);
-			}
+			writer.writeClassInheritance(it);
 		}
 
 		if (api.isCheckedException(it) || api.isUncheckedException(it)) {
@@ -68,18 +68,11 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	}
 
 	private void generateInterfaceClients(InterfaceDecl it) {
-		if (!it.isNested() || it.isPublic()) {
-			writer.writeTypeReference(it);
-		}
+		generateTypeClients(it);
 
 		if (!it.isSealed()) {
-			if (it.isNested()) {
-				writer.writeInnerInterfaceExtension(it);
-				writer.writeInnerInterfaceImplementation(it);
-			} else {
-				writer.writeInterfaceExtension(it);
-				writer.writeInterfaceImplementation(it);
-			}
+			writer.writeInterfaceExtension(it);
+			writer.writeInterfaceImplementation(it);
 		}
 	}
 
@@ -95,7 +88,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 			writer.writeConstructorDirectInvocation(it, containingClass);
 		}
 
-		if (!api.isEffectivelyFinal(containingClass)) {
+		if (!isTypeFinal(containingType)) {
 			writer.writeConstructorInheritanceInvocation(it, containingClass);
 		}
 	}
@@ -123,7 +116,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 			}
 		}
 
-		if (!api.isEffectivelyFinal(containingType)) {
+		if (!isTypeFinal(containingType)) {
 			writer.writeReadFieldThroughMethodCall(it, containingType);
 			if (it.isPublic()) writer.writeReadFieldThroughSubType(it, containingType);
 
@@ -139,7 +132,8 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 		if (containingTypeOpt.isEmpty()) return;
 		var containingType = containingTypeOpt.get();
 
-		if (!api.isEffectivelyFinal(containingType)) {
+		var isContainingTypeFinal = isTypeFinal(containingType);
+		if (!isContainingTypeFinal) {
 			writer.writeMethodInheritanceInvocation(it, containingType);
 		}
 
@@ -147,16 +141,16 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 			if (it.isPublic()) {
 				if (!containingType.isAbstract()) {
 					writer.writeMethodDirectInvocation(it, containingClass);
-				} else if (!api.isEffectivelyFinal(containingClass)) {
+				} else if (!isContainingTypeFinal) {
 					writer.writeMethodFullDirectInvocation(it, containingClass);
 				}
 
-				if (!api.isEffectivelyFinal(it) && !containingClass.isEnum() && !containingClass.isRecord()) {
+				if (!api.isEffectivelyFinal(it) && !isContainingTypeFinal) {
 					writer.writeMethodMinimalDirectInvocation(it, containingClass);
 				}
 			}
 
-			if (!it.isAbstract() && !api.isEffectivelyFinal(it)) {
+			if (!it.isAbstract() && !api.isEffectivelyFinal(it) && !isContainingTypeFinal) {
 				writer.writeMethodOverride(it, containingClass);
 			}
 		}
@@ -186,5 +180,9 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 
 	private Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
 		return api.resolver().resolve(typeMemberDecl.getContainingType());
+	}
+
+	private boolean isTypeFinal(TypeDecl type) {
+		return type.isEnum() || type.isRecord() || api.isEffectivelyFinal(type);
 	}
 }
