@@ -72,11 +72,6 @@
     <profiles>
         <profile>
             <id>publish-sonatype</id>
-            <modules>
-                <module>core</module>
-                <module>cli</module>
-                <!-- Do not publish <module>combinatorial</module> -->
-            </modules>
             <build>
                 <plugins>
                     <plugin>
@@ -86,6 +81,7 @@
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
+                            <excludeArtifacts>io.github.alien-tools.roseau.roseau-parent,io.github.alien-tools.roseau-combinatorial</excludeArtifacts>
                         </configuration>
                     </plugin>
                     <plugin>
