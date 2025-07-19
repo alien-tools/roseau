@@ -30,13 +30,21 @@ We consider both source-level and binary-level compatibility changes.
 
 ### As a standalone CLI tool
 
+Download the latest stable version of the CLI JAR from the [releases page](https://github.com/alien-tools/roseau/releases) or build it locally: 
+
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
-$ mvn package appassembler:assemble
-$ target/appassembler/bin/roseau --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
-$ target/appassembler/bin/roseau --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ mvn package
+$ ls cli/target/roseau-cli-0.2.0-jar-with-dependencies.jar 
+```
+
+Identify breaking changes between two versions, either from source trees or compiled JARs:
+
+```
+$ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
+$ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -44,7 +52,7 @@ $ target/appassembler/bin/roseau --diff --v1 /path/to/sources-v1 --v2 /path/to/s
 Roseau supports different modes, output formats, and options:
 
 ```
-$ cli/target/appassembler/bin/roseau --help
+$ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --help
 Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
           [--classpath=<classpathString>] [--extractor=<extractorFactory>]
           [--format=<format>] [--json=<apiPath>] [--pom=<pom>]
