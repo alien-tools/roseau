@@ -12,6 +12,7 @@
 
     <artifactId>roseau-cli</artifactId>
     <name>Roseau CLI</name>
+    <packaging>jar</packaging>
 
     <build>
         <plugins>
@@ -60,6 +61,15 @@
                         </program>
                     </programs>
                 </configuration>
+                <executions>
+                    <execution>
+                        <id>assemble-cli</id>
+                        <phase>package</phase>
+                        <goals>
+                            <goal>assemble</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
 
         </plugins>

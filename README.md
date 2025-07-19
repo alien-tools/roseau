@@ -24,29 +24,38 @@ We consider both source-level and binary-level compatibility changes.
 ```
 $ git clone https://github.com/alien-tools/roseau.git
 $ mvn package appassembler:assemble
-$ target/appassembler/bin/roseau --diff --v1 /path/to/version1 --v2 /path/to/version2
-CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
-        com/pkg/ClassNowAbstract.java:4
-METHOD_REMOVED com.pkg.Interface.m(int)
-        com/pkg/Interface.java:18
+$ target/appassembler/bin/roseau --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ target/appassembler/bin/roseau --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+  CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
+    com/pkg/ClassNowAbstract.java:4
+  METHOD_REMOVED com.pkg.Interface.m(int)
+    com/pkg/Interface.java:18
 ```
 
-Roseau supports different modes and output formats:
+Roseau supports different modes, output formats, and options:
 
 ```
-$ target/appassembler/bin/roseau
-Usage: roseau [--api] [--diff] [--fail] [--verbose] [--format=<format>]
-              [--json=<apiPath>] [--report=<reportPath>] --v1=<v1> [--v2=<v2>]
-      --api               Serialize the API model of --v1; see --json
-      --diff              Compute breaking changes between versions --v1 and --v2
-      --fail              Return a non-zero code if breaking changes are detected
-      --format=<format>   Format of the report; possible values: CSV, HTML, JSON
-      --json=<apiPath>    Where to serialize the JSON API model of --v1; defaults to api.json
-      --report=<reportPath>
-                          Where to write the breaking changes report
-      --v1=<v1>           Path to the first version of the library; either a source directory or a JAR
-      --v2=<v2>           Path to the second version of the library; either a source directory or a JAR
-      --verbose           Print debug information
+$ cli/target/appassembler/bin/roseau --help
+Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
+          [--classpath=<classpathString>] [--extractor=<extractorFactory>]
+          [--format=<format>] [--json=<apiPath>] [--pom=<pom>]
+          [--report=<reportPath>] --v1=<v1> [--v2=<v2>]
+  --api               Serialize the API model of --v1; see --json
+  --classpath=<classpathString>
+                      A colon-separated list of elements to include in the classpath
+  --diff              Compute breaking changes between versions --v1 and --v2
+  --extractor=<extractorFactory>
+                      API extractor to use: JDT or SPOON (from sources), ASM (from JARs)
+  --fail              Return a non-zero code if breaking changes are detected
+  --format=<format>   Format of the report; possible values: CSV, HTML, JSON
+  --json=<apiPath>    Where to serialize the JSON API model of --v1; defaults to api.json
+  --plain             Disable ANSI colors, output plain text
+  --pom=<pom>         A pom.xml file to build a classpath from
+  --report=<reportPath>
+                      Where to write the breaking changes report
+  --v1=<v1>           Path to the first version of the library; either a source directory or a JAR
+  --v2=<v2>           Path to the second version of the library; either a source directory or a JAR
+  --verbose           Print debug information
 ```
 
 ### Git Integration
