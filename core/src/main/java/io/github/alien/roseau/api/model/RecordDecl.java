@@ -21,7 +21,7 @@ public final class RecordDecl extends ClassDecl {
 	                  List<RecordComponentDecl> recordComponents) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType, TypeReference.RECORD, constructors, List.of());
-		this.recordComponents = Objects.requireNonNull(recordComponents);
+		this.recordComponents = Objects.requireNonNull(List.copyOf(recordComponents));
 	}
 
 	@Override

@@ -21,8 +21,7 @@ public final class EnumDecl extends ClassDecl {
 									List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
 			fields, methods, enclosingType, TypeReference.ENUM, constructors, List.of());
-
-		this.values = Objects.requireNonNull(values);
+		this.values = Objects.requireNonNull(List.copyOf(values));
 	}
 
 	@Override
