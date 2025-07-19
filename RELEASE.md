@@ -26,6 +26,7 @@ $ git push origin v<x.y.z>
   1. [Draft a release](https://github.com/alien-tools/roseau/releases/new)
      - Document changes
      - Attach `v<x.y.z>-v<x.y.z>-breaking-changes.csv`
+     - Attach `roseau-cli-<x.y.z>.jar`
   2. Publish the release and wait for `release.yml` to finish
   3. Manually publish the release on https://central.sonatype.com/publishing 
 
