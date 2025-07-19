@@ -18,7 +18,7 @@ public final class EnumDecl extends ClassDecl {
 	                List<Annotation> annotations, SourceLocation location,
 	                List<TypeReference<InterfaceDecl>> implementedInterfaces, List<FieldDecl> fields,
 	                List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType,
-									List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
+	                List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
 			fields, methods, enclosingType, TypeReference.ENUM, constructors, List.of());
 		this.values = Objects.requireNonNull(List.copyOf(values));
@@ -41,5 +41,25 @@ public final class EnumDecl extends ClassDecl {
 			  %s
 			  %s
 			""".formatted(visibility, qualifiedName, values, fields, methods);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		EnumDecl enumDecl = (EnumDecl) o;
+		return Objects.equals(values, enumDecl.values);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), values);
 	}
 }

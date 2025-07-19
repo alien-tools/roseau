@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -19,7 +20,6 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 	                     TypeReference<TypeDecl> enclosingType, List<String> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType);
-
 		Preconditions.checkNotNull(permittedTypes);
 		this.permittedTypes = List.copyOf(permittedTypes);
 	}
@@ -41,5 +41,25 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 			  %s
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		InterfaceDecl interfaceDecl = (InterfaceDecl) o;
+		return Objects.equals(permittedTypes, interfaceDecl.permittedTypes);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), permittedTypes);
 	}
 }

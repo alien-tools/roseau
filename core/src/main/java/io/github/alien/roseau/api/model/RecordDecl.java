@@ -46,4 +46,24 @@ public final class RecordDecl extends ClassDecl {
 			  %s
 			""".formatted(visibility, qualifiedName, fields, methods);
 	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		RecordDecl recordDecl = (RecordDecl) o;
+		return Objects.equals(recordComponents, recordDecl.recordComponents);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), recordComponents);
+	}
 }
