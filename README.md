@@ -6,12 +6,13 @@ Whether you're a library maintainer or a developer worrying about upgrading your
 ## Key Features
 
   - Detects both binary-level and source-level breaking changes
-  - Indifferently analyzes Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon)) and **compiled JARs** (using [ASM](https://asm.ow2.io/))
+  - Indifferently analyzes Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon)) and compiled JARs (using [ASM](https://asm.ow2.io/))
   - Excellent accuracy and performance
-  - Supports Java up to version 21 (records, sealed classes, etc.)
+  - Supports Java up to version 21 (including records, sealed classes, etc.)
   - CLI-first and scriptable
 
-As Roseau can directly analyze source code, it is ideal for analyzing commits, pull requests, or local code in an IDE, as well as libraries hosted on software forges such as GitHub for which compiled JARs are unavailable.
+Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
+But unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
 
 ## In a nutshell
 
@@ -42,7 +43,7 @@ $ target/appassembler/bin/roseau --diff --v1 /path/to/sources-v1 --v2 /path/to/s
 
 Roseau supports different modes, output formats, and options:
 
-```bash
+```
 $ cli/target/appassembler/bin/roseau --help
 Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
           [--classpath=<classpathString>] [--extractor=<extractorFactory>]
@@ -80,7 +81,7 @@ The following minimal `.gitconfig` registers Roseau as a difftool aliased to `bc
 
 Then, Roseau can be invoked on Git objects using the usual syntax, for example:
 
-```
+```bash
 $ git bc                   # BCs in unstaged changes
 $ git bc HEAD              # BCs in uncommitted changes (including staged ones)
 $ git bc --staged          # BCs in staged changes
