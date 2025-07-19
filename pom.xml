@@ -77,11 +77,11 @@
                     <plugin>
                         <groupId>org.sonatype.central</groupId>
                         <artifactId>central-publishing-maven-plugin</artifactId>
-                        <version>0.7.0</version>
+                        <version>0.8.0</version>
                         <extensions>true</extensions>
                         <configuration>
                             <publishingServerId>central</publishingServerId>
-                            <excludeArtifacts>io.github.alien-tools.roseau.roseau-parent,io.github.alien-tools.roseau-combinatorial</excludeArtifacts>
+                            <excludeArtifacts>roseau-combinatorial</excludeArtifacts>
                         </configuration>
                     </plugin>
                     <plugin>
