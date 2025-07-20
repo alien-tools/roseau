@@ -16,4 +16,6 @@ public sealed interface ITypeReference
 	 * @return the qualified name
 	 */
 	String getQualifiedName();
+
+	String getPrettyQualifiedName();
 }

@@ -3,6 +3,9 @@ package io.github.alien.roseau.api.model.reference;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.utils.StringUtils;
+
+import java.io.IOException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -55,6 +58,11 @@ public record TypeReference<T extends TypeDecl>(
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION =
 		new TypeReference<>(RuntimeException.class.getCanonicalName(), List.of());
 	/**
+	 * A reference to {@link IOException}.
+	 */
+	public static final TypeReference<ClassDecl> IO_EXCEPTION =
+		new TypeReference<>(IOException.class.getCanonicalName(), List.of());
+	/**
 	 * A reference to {@link String}.
 	 */
 	public static final TypeReference<ClassDecl> STRING =
@@ -63,6 +71,11 @@ public record TypeReference<T extends TypeDecl>(
 	@Override
 	public String getQualifiedName() {
 		return qualifiedName;
+	}
+
+	@Override
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
 	@Override

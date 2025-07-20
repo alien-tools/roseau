@@ -266,16 +266,16 @@ final class AsmClassVisitor extends ClassVisitor {
 				fields, methods, enclosingType);
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, List.of());
 		} else if (isEnum(classAccess)) {
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, fields, methods, enclosingType, constructors);
+				implementedInterfaces, fields, methods, enclosingType, constructors, List.of());
 		} else if (isRecord(classAccess)) {
 			typeDecl = new RecordDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors);
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors, List.of());
 		} else {
 			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors);
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors, List.of());
 		}
 	}
 

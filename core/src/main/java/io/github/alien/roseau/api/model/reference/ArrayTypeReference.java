@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model.reference;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.utils.StringUtils;
 
 /**
  * A reference to an array type (e.g., {@code String[]}).
@@ -27,6 +28,11 @@ public record ArrayTypeReference(
 	@Override
 	public String getQualifiedName() {
 		return componentType().getQualifiedName() + "[]".repeat(dimension);
+	}
+
+	@Override
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName() + "Array".repeat(dimension));
 	}
 
 	@Override

@@ -150,19 +150,19 @@ final class JdtAPIVisitor extends ASTVisitor {
 		TypeDecl typeDecl = switch (type) {
 			case TypeDeclaration c when !c.isInterface() ->
 				new ClassDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType, superClassRef, constructors);
+					typeParams, fields, methods, enclosingType, superClassRef, constructors, List.of());
 			case TypeDeclaration i when i.isInterface() -> {
 				// FIXME: interfaces should be implicitly abstract
 				modifiers.add(Modifier.ABSTRACT);
 				yield new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType);
+					typeParams, fields, methods, enclosingType, List.of());
 			}
 			case EnumDeclaration e ->
 				new EnumDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					fields, methods, enclosingType, constructors);
+					fields, methods, enclosingType, constructors, List.of());
 			case RecordDeclaration r ->
 				new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType, constructors);
+					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
 				// FIXME: annotations should be implicitly abstract
 				modifiers.add(Modifier.ABSTRACT);
@@ -403,7 +403,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 			}
 		}
 		// Otherwise, assume it's a same-package type
-		return packageName + "." + simpleName;
+		return packageName.isEmpty() ? simpleName : (packageName + "." + simpleName);
 	}
 
 	private ITypeReference makeTypeReference(ITypeBinding binding) {

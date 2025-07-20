@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.utils.StringUtils;
 
 import java.util.Collections;
 import java.util.EnumSet;
@@ -68,6 +69,10 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public String getQualifiedName() {
 		return qualifiedName;
+	}
+
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(qualifiedName);
 	}
 
 	public AccessModifier getVisibility() {

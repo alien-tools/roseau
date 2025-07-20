@@ -11,21 +11,24 @@ import java.util.Set;
  * A class declaration is a {@link TypeDecl} with an optional superclass and a list of {@link ConstructorDecl}.
  * {@link ClassDecl} instantiated without superclass implicitly extend {@link java.lang.Object}.
  */
-public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
+public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
 	protected final List<ConstructorDecl> constructors;
+	private final List<String> permittedTypes;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location,
 	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
 	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
-	                 List<ConstructorDecl> constructors) {
+	                 List<ConstructorDecl> constructors, List<String> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		Preconditions.checkNotNull(constructors);
+		Preconditions.checkNotNull(permittedTypes);
 		this.superClass = superClass != null ? superClass : TypeReference.OBJECT;
 		this.constructors = List.copyOf(constructors);
+		this.permittedTypes = List.copyOf(permittedTypes);
 	}
 
 	@Override
@@ -40,6 +43,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	 * @return whether the current class is effectively abstract
 	 */
 	public boolean isEffectivelyAbstract() {
+		// FIXME: return isAbstract() || constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected());
 		return isAbstract() || constructors.isEmpty();
 	}
 
@@ -49,6 +53,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	public List<ConstructorDecl> getDeclaredConstructors() {
 		return constructors;
+	}
+
+	@Override
+	public List<String> getPermittedTypes() {
+		return permittedTypes;
 	}
 
 	@Override

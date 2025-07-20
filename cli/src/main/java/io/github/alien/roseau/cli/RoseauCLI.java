@@ -90,7 +90,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		if (extractor.canExtract(library.getPath())) {
 			Stopwatch sw = Stopwatch.createStarted();
-			API api = extractor.extractTypes(library).toAPI();
+			API api = extractor.extractTypes(library).toAPI(library.getClasspath());
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
 				library.getPath(), library.getExtractorType(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;
@@ -116,10 +116,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			List<BreakingChange> bcs = diff.diff();
 			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
-			if (reportPath != null) {
-				writeReport(bcs);
-			}
-
+			writeReport(apiV1, bcs);
 			return bcs;
 		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
@@ -153,11 +150,14 @@ public final class RoseauCLI implements Callable<Integer> {
 		return classpath;
 	}
 
-	private void writeReport(List<BreakingChange> bcs) {
+	private void writeReport(API api, List<BreakingChange> bcs) {
+		if (reportPath == null)
+			return;
+
 		BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 
 		try {
-			Files.writeString(reportPath, fmt.format(bcs));
+			Files.writeString(reportPath, fmt.format(api, bcs));
 			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);

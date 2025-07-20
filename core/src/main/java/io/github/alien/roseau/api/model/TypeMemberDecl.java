@@ -12,7 +12,8 @@ import java.util.Set;
  * A member declared by a {@link TypeDecl}, either a {@link FieldDecl} or {@link ExecutableDecl}. Type members have a
  * type and belong to some containing type.
  */
-public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, ExecutableDecl {
+public abstract sealed class TypeMemberDecl extends Symbol
+	permits FieldDecl, ExecutableDecl, EnumValueDecl, RecordComponentDecl {
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
@@ -22,8 +23,9 @@ public abstract sealed class TypeMemberDecl extends Symbol permits FieldDecl, Ex
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(containingType);
 		Preconditions.checkNotNull(type);
-		Preconditions.checkArgument(Set.of(AccessModifier.PUBLIC, AccessModifier.PROTECTED).contains(visibility),
-			"Type member declarations are either PUBLIC or PROTECTED");
+		// FIXME: review
+		//Preconditions.checkArgument(Set.of(AccessModifier.PUBLIC, AccessModifier.PROTECTED).contains(visibility),
+		//	"Type member declarations are either PUBLIC or PROTECTED");
 		this.containingType = containingType;
 		this.type = type;
 	}

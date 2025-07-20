@@ -181,6 +181,22 @@ public interface HierarchyProvider {
 	}
 
 	/**
+	 * Returns all methods that must be implemented on this type, including those declared in its super types.
+	 *
+	 * @param type the base type
+	 * @return each {@link MethodDecl} that must be implemented on this type
+	 */
+	default List<MethodDecl> getAllMethodsToImplement(TypeDecl type) {
+		return getAllMethods(type).stream().filter(m -> {
+			if (resolver().resolve(m.getContainingType()).map(TypeDecl::isInterface).orElse(false)) {
+				return !m.isDefault() && !m.isStatic();
+			}
+
+			return m.isAbstract();
+		}).toList();
+	}
+
+	/**
 	 * Returns all fields that can be accessed on this type, including those declared in its super types. In case of
 	 * shadowing, returns the visible field.
 	 *

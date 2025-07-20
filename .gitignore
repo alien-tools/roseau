@@ -34,3 +34,11 @@ build/
 
 ### Mac OS ###
 .DS_Store
+
+### Generated ###
+logs/
+output/
+tmp/
+
+sample/
+!sample/api/v1/
