@@ -150,7 +150,7 @@ class IncrementalJdtTypesExtractorTest {
 			package pkg2;
 			class D {}""");
 
-		var api1 = new JdtTypesExtractor().extractTypes(wd).toAPI();
+		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
 		assertThat(api1.getExportedTypes()).hasSize(3);
 
 		Files.writeString(b, """
@@ -164,7 +164,7 @@ class IncrementalJdtTypesExtractorTest {
 		var changedFiles = new ChangedFiles(Set.of(b), Set.of(), Set.of());
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 
-		var api2 = incrementalExtractor.refreshAPI(root, changedFiles, api1.getLibraryTypes()).toAPI();
+		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(root), changedFiles).toAPI();
 		assertThat(api2.getExportedTypes()).hasSize(2);
 
 		var clsB = assertClass(api2, "pkg2.B");

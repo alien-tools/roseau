@@ -131,7 +131,7 @@ class JdtTypesExtractorTest {
 			}""");
 
 		var extractor = new JdtTypesExtractor();
-		var types = extractor.extractTypes(wd);
+		var types = extractor.extractTypes(Library.of(wd));
 
 		assertThat(types.getAllTypes()).hasSize(7);
 

@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.api;
 
 import com.google.common.collect.Sets;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.FieldDecl;
@@ -12,6 +13,7 @@ import io.github.alien.roseau.api.model.reference.*;
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.builder.*;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.EnumSet;
 import java.util.HashMap;
@@ -227,7 +229,7 @@ public final class CombinatorialApi {
 	}
 
 	private API getAPI() {
-		var types = new LibraryTypes(typeStore.values().stream().map(TypeBuilder::make).toList());
+		var types = new LibraryTypes(Library.of(Path.of("v1")), typeStore.values().stream().map(TypeBuilder::make).toList());
 		return types.toAPI();
 	}
 

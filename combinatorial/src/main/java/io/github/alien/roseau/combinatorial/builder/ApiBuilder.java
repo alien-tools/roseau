@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.builder;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
@@ -10,6 +11,7 @@ import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 
+import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -24,7 +26,7 @@ public final class ApiBuilder implements Builder<API> {
 
 	@Override
 	public API make() {
-		var types = new LibraryTypes(allTypes.values().stream().map(TypeBuilder::make).toList());
+		var types = new LibraryTypes(Library.of(Path.of("api")), allTypes.values().stream().map(TypeBuilder::make).toList());
 		return types.toAPI();
 	}
 
