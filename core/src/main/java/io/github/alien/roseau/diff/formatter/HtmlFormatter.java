@@ -5,6 +5,7 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import org.xmlet.htmlapifaster.Tr;
 
@@ -15,11 +16,11 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * A formatter for {@link BreakingChange} instances that produces an HTML output.
+ * A formatter of {@link RoseauReport} that produces an HTML output.
  */
 public class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
-	public String format(API api, List<BreakingChange> changes) {
+	public String format(API api, RoseauReport report) {
 		StringBuilder sb = new StringBuilder();
 		HtmlFlow.doc(sb)
 			.html()
@@ -41,7 +42,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.div().addAttr("class", "container mt-5")
 			.h1().text("Breaking Changes Report").__()
 			.table().addAttr("class", "table")
-			.of(table -> getImpactedApiTree(api, changes).forEach(node ->
+			.of(table -> getImpactedApiTree(api, report.breakingChanges()).forEach(node ->
 				table.tr().of(tr -> appendNode(tr, node)).__()
 					.of(theTable -> node.children.forEach(member -> theTable.tr().of(tr -> appendNode(tr, member)).__()))
 			))

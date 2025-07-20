@@ -11,6 +11,7 @@ import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
@@ -37,18 +38,19 @@ public final class Roseau {
 		return toAPI(library, extractTypes(library));
 	}
 
-	public static List<BreakingChange> diff(API v1, API v2) {
+	public static RoseauReport diff(API v1, API v2) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
 
 		Stopwatch sw = Stopwatch.createStarted();
-		List<BreakingChange> bcs = new APIDiff(v1, v2).diff();
-		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
+		RoseauReport report = new APIDiff(v1, v2).diff();
+		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
+			sw.elapsed().toMillis(), report.breakingChanges().size());
 
-		return bcs;
+		return report;
 	}
 
-	public static List<BreakingChange> parallelDiff(Library v1, Library v2) {
+	public static RoseauReport parallelDiff(Library v1, Library v2) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
 
@@ -64,7 +66,7 @@ public final class Roseau {
 		return diff(api1, api2);
 	}
 
-	public static List<BreakingChange> incrementalDiff(Library v1, Library v2) {
+	public static RoseauReport incrementalDiff(Library v1, Library v2) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkArgument(v2 != null && v2.getExtractorType() == ExtractorType.JDT,
 			"Incremental building is only available with JDT");

@@ -314,7 +314,7 @@ public class TestUtils {
 			System.out.println("JApiCmp comparison failed: " + e.getMessage());
 		}*/
 
-		return roseauBCs;
+		return roseauBCs.breakingChanges();
 	}
 
 	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) {

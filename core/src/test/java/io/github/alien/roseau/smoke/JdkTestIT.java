@@ -64,7 +64,7 @@ class JdkTestIT {
 		System.out.printf("Spoon API took %dms (%d types)%n", apiTime, srcApi.getLibraryTypes().getAllTypes().size());
 
 		sw.reset().start();
-		var bcs = new APIDiff(srcApi, srcApi).diff();
+		var bcs = new APIDiff(srcApi, srcApi).diff().breakingChanges();
 		var diffTime = sw.elapsed().toMillis();
 		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, bcs.size());
 

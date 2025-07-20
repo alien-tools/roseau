@@ -127,13 +127,13 @@ class PopularLibrariesTestIT {
 		long spoonApiTime = sw.elapsed().toMillis();
 
 		// Diffs
-		List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff();
-		List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff();
-		List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff();
-		List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff();
-		List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff();
+		List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff().breakingChanges();
+		List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff().breakingChanges();
+		List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff().breakingChanges();
+		List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff().breakingChanges();
+		List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff().breakingChanges();
 		sw.reset().start();
-		List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff();
+		List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff().breakingChanges();
 		long diffTime = sw.elapsed().toMillis();
 
 		// Stats
@@ -191,7 +191,7 @@ class PopularLibrariesTestIT {
 		API spoonApi = spoonExtractor.extractTypes(library).toAPI();
 
 		// Diff
-		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff();
+		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff().breakingChanges();
 
 		// Check everything went well
 		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
@@ -212,7 +212,7 @@ class PopularLibrariesTestIT {
 		API jdtApi = jdtExtractor.extractTypes(library).toAPI();
 
 		// Diff
-		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff();
+		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff().breakingChanges();
 
 		// Check everything went well
 		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
@@ -232,7 +232,7 @@ class PopularLibrariesTestIT {
 		API asmApi = asmExtractor.extractTypes(library).toAPI();
 
 		// Diff
-		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff();
+		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff().breakingChanges();
 
 		// Check everything went well
 		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());

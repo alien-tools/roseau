@@ -7,6 +7,7 @@ import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
@@ -100,7 +101,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private List<BreakingChange> diff(Library libraryV1, Library libraryV2) {
+	private RoseauReport diff(Library libraryV1, Library libraryV2) {
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV1));
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV2));
 
@@ -113,17 +114,18 @@ public final class RoseauCLI implements Callable<Integer> {
 			// API diff
 			APIDiff diff = new APIDiff(apiV1, apiV2);
 			Stopwatch sw = Stopwatch.createStarted();
-			List<BreakingChange> bcs = diff.diff();
-			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
+			RoseauReport report = diff.diff();
+			LOGGER.debug("API diff took {}ms ({} breaking changes)",
+				sw.elapsed().toMillis(), report.breakingChanges().size());
 
-			writeReport(apiV1, bcs);
-			return bcs;
+			writeReport(apiV1, report);
+			return report;
 		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
 			LOGGER.error("Couldn't compute diff", e);
 		}
 
-		return Collections.emptyList();
+		return new RoseauReport(libraryV1, libraryV2, Collections.emptyList());
 	}
 
 	private List<Path> buildClasspath() {
@@ -150,14 +152,14 @@ public final class RoseauCLI implements Callable<Integer> {
 		return classpath;
 	}
 
-	private void writeReport(API api, List<BreakingChange> bcs) {
+	private void writeReport(API api, RoseauReport report) {
 		if (reportPath == null)
 			return;
 
 		BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 
 		try {
-			Files.writeString(reportPath, fmt.format(api, bcs));
+			Files.writeString(reportPath, fmt.format(api, report));
 			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
@@ -226,7 +228,7 @@ public final class RoseauCLI implements Callable<Integer> {
 					builder2.extractorType(extractorType);
 				}
 				Library libraryV2 = builder2.build();
-				List<BreakingChange> bcs = diff(libraryV1, libraryV2);
+				List<BreakingChange> bcs = diff(libraryV1, libraryV2).breakingChanges();
 
 				if (bcs.isEmpty()) {
 					System.out.println("No breaking changes found.");

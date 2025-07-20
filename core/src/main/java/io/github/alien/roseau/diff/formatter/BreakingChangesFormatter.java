@@ -1,19 +1,17 @@
 package io.github.alien.roseau.diff.formatter;
 
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.diff.changes.BreakingChange;
-
-import java.util.List;
+import io.github.alien.roseau.diff.RoseauReport;
 
 /**
- * A formatter that takes a list of {@link BreakingChange} as input and produces as a string representation of them.
+ * A formatter that takes a {@link RoseauReport} as input and formats it.
  */
 public interface BreakingChangesFormatter {
 	/**
-	 * Returns a string representation of the supplied list of {@link BreakingChange}.
+	 * Returns a string representation of the supplied report
 	 *
-	 * @param changes the breaking changes to format
+	 * @param report the report to format
 	 * @return the formatted list
 	 */
-	String format(API api, List<BreakingChange> changes);
+	String format(API api, RoseauReport report);
 }
