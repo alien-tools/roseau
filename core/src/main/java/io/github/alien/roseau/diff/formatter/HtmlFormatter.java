@@ -1,23 +1,25 @@
 package io.github.alien.roseau.diff.formatter;
 
+import htmlflow.HtmlFlow;
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
-import htmlflow.HtmlFlow;
 import org.xmlet.htmlapifaster.Tr;
 
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * A formatter for {@link BreakingChange} instances that produces an HTML output.
  */
 public class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
-	public String format(List<BreakingChange> changes) {
+	public String format(API api, List<BreakingChange> changes) {
 		StringBuilder sb = new StringBuilder();
 		HtmlFlow.doc(sb)
 			.html()
@@ -39,7 +41,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.div().addAttr("class", "container mt-5")
 			.h1().text("Breaking Changes Report").__()
 			.table().addAttr("class", "table")
-			.of(table -> getImpactedApiTree(changes).forEach(node ->
+			.of(table -> getImpactedApiTree(api, changes).forEach(node ->
 				table.tr().of(tr -> appendNode(tr, node)).__()
 					.of(theTable -> node.children.forEach(member -> theTable.tr().of(tr -> appendNode(tr, member)).__()))
 			))
@@ -65,7 +67,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.__();
 	}
 
-	private static List<TypeNode> getImpactedApiTree(List<BreakingChange> changes) {
+	private static List<TypeNode> getImpactedApiTree(API api, List<BreakingChange> changes) {
 		Map<Symbol, Node> nodes = new HashMap<>();
 		for (BreakingChange change : changes) {
 			Symbol sym = change.impactedSymbol();
@@ -75,13 +77,14 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 					nodes.get(sym).addBreakingChange(change);
 					break;
 				case TypeMemberDecl tmd:
-					// FIXME
-					/*TypeDecl container = tmd.getContainingType().resolve().get();
-					nodes.computeIfAbsent(container, k -> fromTypeDecl(container));
-					nodes.computeIfAbsent(sym, k -> fromTypeMemberDecl(tmd));
-					if (!((TypeNode) nodes.get(container)).children.contains(nodes.get(sym)))
-						((TypeNode) nodes.get(container)).addChild((MemberNode) nodes.get(sym));
-					nodes.get(sym).addBreakingChange(change);*/
+					Optional<TypeDecl> opt = api.resolver().resolve(tmd.getContainingType());
+					opt.ifPresent(container -> {
+						nodes.computeIfAbsent(container, k -> fromTypeDecl(container));
+						nodes.computeIfAbsent(sym, k -> fromTypeMemberDecl(tmd));
+						if (!((TypeNode) nodes.get(container)).children.contains(nodes.get(sym)))
+							((TypeNode) nodes.get(container)).addChild((MemberNode) nodes.get(sym));
+						nodes.get(sym).addBreakingChange(change);
+					});
 					break;
 			}
 		}
