@@ -12,9 +12,9 @@ public final class ApiWriter extends AbstractWriter {
 	}
 
 	public void write(API api) {
-		var prettyPrinter = new APIPrettyPrinter();
+		var prettyPrinter = new APIPrettyPrinter(api);
 
-		api.getAllTypes().forEach(t -> {
+		api.getLibraryTypes().getAllTypes().forEach(t -> {
 			try {
 				var code = prettyPrinter.$(t).print();
 
