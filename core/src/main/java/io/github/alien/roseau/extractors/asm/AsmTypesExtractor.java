@@ -1,11 +1,11 @@
 package io.github.alien.roseau.extractors.asm;
 
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import io.github.alien.roseau.extractors.APIExtractor;
+import io.github.alien.roseau.extractors.TypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
@@ -22,17 +22,17 @@ import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 
 /**
- * An ASM-based {@link APIExtractor}.
+ * An ASM-based {@link TypesExtractor}.
  */
-public class AsmAPIExtractor implements APIExtractor {
+public class AsmTypesExtractor implements TypesExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;
-	private static final Logger LOGGER = LogManager.getLogger(AsmAPIExtractor.class);
+	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
 
 	@Override
-	public API extractAPI(Path sources, List<Path> classpath) {
+	public LibraryTypes extractTypes(Path sources, List<Path> classpath) {
 		try (JarFile jar = new JarFile(Objects.requireNonNull(sources).toFile())) {
-			return extractAPI(jar);
+			return extractTypes(jar);
 		} catch (IOException e) {
 			throw new RoseauException("Error processing JAR file", e);
 		}
@@ -51,13 +51,14 @@ public class AsmAPIExtractor implements APIExtractor {
 	}
 
 	/**
-	 * Extracts the {@link API} stored in the provided JAR file.
+	 * Extracts the {@link LibraryTypes} stored in the provided JAR file.
 	 *
 	 * @param jar the JAR file to analyze
-	 * @return the extracted {@link API}
+	 * @return the extracted {@link LibraryTypes}
 	 */
-	public API extractAPI(JarFile jar) {
-		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
+	public LibraryTypes extractTypes(JarFile jar) {
+		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
+
 		List<TypeDecl> typeDecls =
 			Objects.requireNonNull(jar).stream()
 				.filter(entry -> entry.getName().endsWith(".class") && !entry.isDirectory())
@@ -67,7 +68,7 @@ public class AsmAPIExtractor implements APIExtractor {
 				.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
 				.toList();
 
-		return new API(typeDecls, typeRefFactory);
+		return new LibraryTypes(typeDecls);
 	}
 
 	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {

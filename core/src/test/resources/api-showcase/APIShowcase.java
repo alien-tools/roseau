@@ -16,7 +16,7 @@ public class APIShowcase {
 	}
 
 	// Use of sealed classes to restrict subclasses (part of JEP 409 in Java 17)
-	public sealed interface Shape permits Circle, Rectangle {
+	public sealed interface Shape permits Circle, Rectangle, Square {
 		double area();
 	}
 
@@ -193,6 +193,18 @@ public class APIShowcase {
 		// Main method to demonstrate the execution
 		public static void main(String[] args) {
 			System.out.println("Showcasing additional Java 17 constructs for API definitions.");
+		}
+	}
+
+	public final class Square implements Shape {
+		private final double radius;
+
+		Square(double radius) {
+			this.radius = radius;
+		}
+
+		public double area() {
+			return Math.PI * radius * radius;
 		}
 	}
 }

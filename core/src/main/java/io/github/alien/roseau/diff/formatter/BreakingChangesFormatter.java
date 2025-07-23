@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
 import java.util.List;
@@ -14,5 +15,5 @@ public interface BreakingChangesFormatter {
 	 * @param changes the breaking changes to format
 	 * @return the formatted list
 	 */
-	String format(List<BreakingChange> changes);
+	String format(API api, List<BreakingChange> changes);
 }

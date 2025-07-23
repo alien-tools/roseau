@@ -2,7 +2,7 @@ package io.github.alien.roseau.combinatorial;
 
 import io.github.alien.roseau.combinatorial.client.GenerateApiClient;
 import io.github.alien.roseau.combinatorial.compiler.CompileClientAndV1;
-import io.github.alien.roseau.extractors.jdt.JdtAPIExtractor;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -27,11 +27,12 @@ public final class GenerateClients {
 				if (!v1Folder.isDirectory()) return;
 				var v1Path = v1Folder.toPath();
 
-				var api = new JdtAPIExtractor().extractAPI(v1Path);
-				if (api == null) {
+				var types = new JdtTypesExtractor().extractTypes(v1Path);
+				if (types == null) {
 					LOGGER.error("Failed to extract API from {}", v1Folder.getName());
 					return;
 				}
+				var api = types.toAPI();
 
 				Path clientPath = clientsOutputPath.resolve(v1Folder.getName());
 				try {

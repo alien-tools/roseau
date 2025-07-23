@@ -9,10 +9,10 @@ import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
-import io.github.alien.roseau.extractors.APIExtractor;
-import io.github.alien.roseau.extractors.APIExtractorFactory;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
-import io.github.alien.roseau.extractors.asm.AsmAPIExtractor;
+import io.github.alien.roseau.extractors.TypesExtractor;
+import io.github.alien.roseau.extractors.TypesExtractorFactory;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -52,7 +52,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--extractor",
 		description = "API extractor to use: ${COMPLETION-CANDIDATES}",
 		defaultValue = "JDT")
-	private APIExtractorFactory extractorFactory;
+	private TypesExtractorFactory extractorFactory;
 	@CommandLine.Option(names = "--json",
 		description = "Where to serialize the JSON API model of --v1; defaults to api.json",
 		defaultValue = "api.json")
@@ -87,15 +87,15 @@ public final class RoseauCLI implements Callable<Integer> {
 	private static final String RESET = "\u001B[0m";
 
 	private API buildAPI(Path sources, List<Path> classpath) {
-		APIExtractor extractor = sources.toString().endsWith(".jar")
-			? new AsmAPIExtractor()
-			: APIExtractorFactory.newExtractor(extractorFactory);
+		TypesExtractor extractor = sources.toString().endsWith(".jar")
+			? new AsmTypesExtractor()
+			: TypesExtractorFactory.newExtractor(extractorFactory);
 
 		if (extractor.canExtract(sources)) {
 			Stopwatch sw = Stopwatch.createStarted();
-			API api = extractor.extractAPI(sources, classpath);
+			API api = extractor.extractTypes(sources, classpath).toAPI(classpath);
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
-				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().count());
+				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;
 		} else {
 			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractor.getName(), sources));
@@ -118,10 +118,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			List<BreakingChange> bcs = diff.diff();
 			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
 
-			if (reportPath != null) {
-				writeReport(bcs);
-			}
-
+			writeReport(apiV1, bcs);
 			return bcs;
 		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
@@ -155,11 +152,14 @@ public final class RoseauCLI implements Callable<Integer> {
 		return classpath;
 	}
 
-	private void writeReport(List<BreakingChange> bcs) {
+	private void writeReport(API api, List<BreakingChange> bcs) {
+		if (reportPath == null)
+			return;
+
 		BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 
 		try {
-			Files.writeString(reportPath, fmt.format(bcs));
+			Files.writeString(reportPath, fmt.format(api, bcs));
 			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
@@ -209,7 +209,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			if (apiMode) {
 				API api = buildAPI(v1, classpath);
-				api.writeJson(apiPath);
+				api.getLibraryTypes().writeJson(apiPath);
 				LOGGER.info("Wrote API to {}", apiPath);
 			}
 

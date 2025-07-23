@@ -14,12 +14,12 @@ public final class GenerateApiClient {
 	public GenerateApiClient() {}
 
 	public void run(API api, Path outputPath) throws StepExecutionException {
-		var clientWriter = new ClientWriter(outputPath);
+		var clientWriter = new ClientWriter(outputPath, api);
 
 		try {
 			LOGGER.info("-- Generating client for API --");
 			LOGGER.info(outputPath.toFile().getName());
-			new ClientGeneratorVisitor(clientWriter).$(api).visit();
+			new ClientGeneratorVisitor(api, clientWriter).$(api).visit();
 
 			clientWriter.writeClientFile();
 			LOGGER.info("-- Client generated for API ---");

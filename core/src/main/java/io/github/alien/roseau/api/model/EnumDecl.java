@@ -1,6 +1,5 @@
 package io.github.alien.roseau.api.model;
 
-import io.github.alien.roseau.api.model.reference.ReflectiveTypeFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -19,11 +18,10 @@ public final class EnumDecl extends ClassDecl {
 	                List<Annotation> annotations, SourceLocation location,
 	                List<TypeReference<InterfaceDecl>> implementedInterfaces, List<FieldDecl> fields,
 	                List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType,
-									List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
+	                List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
 			fields, methods, enclosingType, TypeReference.ENUM, constructors, List.of());
-
-		this.values = Objects.requireNonNull(values);
+		this.values = Objects.requireNonNull(List.copyOf(values));
 	}
 
 	@Override
@@ -46,22 +44,22 @@ public final class EnumDecl extends ClassDecl {
 	}
 
 	@Override
-	public EnumDecl deepCopy() {
-		return new EnumDecl(qualifiedName, visibility, modifiers, annotations.stream().map(Annotation::deepCopy).toList(),
-			location, TypeReference.deepCopy(implementedInterfaces),
-			fields.stream().map(FieldDecl::deepCopy).toList(), methods.stream().map(MethodDecl::deepCopy).toList(),
-			getEnclosingType().map(TypeReference::deepCopy).orElse(null),
-			constructors.stream().map(ConstructorDecl::deepCopy).toList(),
-			values.stream().map(EnumValueDecl::deepCopy).toList());
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		EnumDecl enumDecl = (EnumDecl) o;
+		return Objects.equals(values, enumDecl.values);
 	}
 
 	@Override
-	public EnumDecl deepCopy(ReflectiveTypeFactory factory) {
-		return new EnumDecl(qualifiedName, visibility, modifiers, annotations.stream().map(a -> a.deepCopy(factory)).toList(),
-			location, TypeReference.deepCopy(implementedInterfaces, factory),
-			fields.stream().map(f -> f.deepCopy(factory)).toList(), methods.stream().map(m -> m.deepCopy(factory)).toList(),
-			getEnclosingType().map(t -> t.deepCopy(factory)).orElse(null),
-			constructors.stream().map(c -> c.deepCopy(factory)).toList(),
-			values.stream().map(eV -> eV.deepCopy(factory)).toList());
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), values);
 	}
 }

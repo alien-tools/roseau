@@ -11,6 +11,7 @@ import io.github.alien.roseau.api.model.EnumValueDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.ParameterDecl;
@@ -29,8 +30,20 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class APIPrettyPrinter implements APIAlgebra<Print> {
+	private API api;
+
+	public APIPrettyPrinter(API api) {
+		this.api = api;
+	}
+
 	@Override
 	public Print api(API it) {
+		api = it;
+		return () -> "";
+	}
+
+	@Override
+	public Print libraryTypes(LibraryTypes it) {
 		return () -> "";
 	}
 
@@ -158,7 +171,14 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				? ""
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
-			it.getDeclaredConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
+			it.getDeclaredConstructors().stream()
+					.filter(cD -> {
+						var constructorParams = cD.getParameters().stream().map(p -> p.type().getPrettyQualifiedName()).collect(Collectors.joining(", "));
+						var recordParams = it.getRecordComponents().stream().map(rC -> rC.getType().getPrettyQualifiedName()).collect(Collectors.joining(", "));
+
+						return !constructorParams.equals(recordParams);
+					})
+					.map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
 		);
 	}
@@ -191,7 +211,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 	public Print fieldDecl(FieldDecl it) {
 		return () -> "\t%s %s %s %s%s;".formatted(
 			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
-			it.isFinal() || it.getContainingType().getResolvedApiType().get().isInterface() ? " = " + getDefaultValue(it.getType()) : "");
+			it.isFinal() || api.resolver().resolve(it.getContainingType()).get().isInterface() ? " = " + getDefaultValue(it.getType()) : "");
 	}
 
 	@Override
@@ -268,8 +288,8 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 		return visibility.toString();
 	}
 
-	private static boolean hasBody(MethodDecl it) {
-		if (it.getContainingType().getResolvedApiType().get().isInterface())
+	private boolean hasBody(MethodDecl it) {
+		if (api.resolver().resolve(it.getContainingType()).get().isInterface())
 			return it.isDefault() || it.isStatic() || it.getVisibility() == AccessModifier.PRIVATE;
 		return !it.isAbstract() && !it.isNative();
 	}

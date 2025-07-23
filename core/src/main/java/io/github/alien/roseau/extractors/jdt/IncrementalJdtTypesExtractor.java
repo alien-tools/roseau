@@ -1,13 +1,13 @@
 package io.github.alien.roseau.extractors.jdt;
 
-import io.github.alien.roseau.api.model.API;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalAPIExtractor;
-import com.google.common.base.Preconditions;
-import com.google.common.collect.Sets;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -15,9 +15,10 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- * A JDT-based incremental {@link API} extractor.
+ * A JDT-based incremental {@link LibraryTypes} extractor.
  * <br>
  * This implementation:
  * <ul>
@@ -25,12 +26,11 @@ import java.util.Set;
  *   <li>Discards deleted symbols</li>
  *   <li>Re-parses changed symbols</li>
  *   <li>Parses new files to extract new symbols</li>
- *   <li>Deep-copies unchanged symbols</li>
  * </ul>
  */
-public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements IncrementalAPIExtractor {
+public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements IncrementalAPIExtractor {
 	@Override
-	public API refreshAPI(Path sources, ChangedFiles changedFiles, API previousApi) {
+	public LibraryTypes refreshAPI(Path sources, ChangedFiles changedFiles, LibraryTypes previousApi) {
 		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(sources)), "Invalid sources: " + sources);
 		Objects.requireNonNull(changedFiles);
 		Objects.requireNonNull(previousApi);
@@ -43,19 +43,20 @@ public class IncrementalJdtAPIExtractor extends JdtAPIExtractor implements Incre
 		// Collect types that should be discarded from the previous API
 		Set<Path> discarded = Sets.union(changedFiles.deletedFiles(), changedFiles.updatedFiles());
 
-		// Copying unchanged types to the new API
-		List<TypeDecl> typeDecls = new ArrayList<>(previousApi.getAllTypes()
-			.filter(t -> !discarded.contains(t.getLocation().file()))
-			.map(TypeDecl::deepCopy)
-			.toList());
-
 		// Collect files to be parsed
 		List<Path> filesToParse = new ArrayList<>(
 			Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()));
 
 		// Parse, collect, and merge the updated files
-		TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
-		typeDecls.addAll(parseTypes(filesToParse, sources, List.of(), typeRefFactory));
-		return new API(typeDecls, typeRefFactory);
+		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
+		List<TypeDecl> newTypeDecls = Stream.concat(
+			// Previous unchanged types
+			previousApi.getAllTypes().stream()
+				.filter(t -> !discarded.contains(t.getLocation().file())),
+			// New re-parsed types
+			parseTypes(filesToParse, sources, List.of(), typeRefFactory).stream()
+		).toList();
+
+		return new LibraryTypes(newTypeDecls);
 	}
 }

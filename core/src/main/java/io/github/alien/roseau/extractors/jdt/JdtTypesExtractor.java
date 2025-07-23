@@ -1,11 +1,11 @@
 package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachedTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import io.github.alien.roseau.extractors.APIExtractor;
+import io.github.alien.roseau.extractors.TypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
@@ -26,22 +26,22 @@ import java.util.Objects;
 import java.util.stream.Stream;
 
 /**
- * A JDT-based {@link APIExtractor}.
+ * A JDT-based {@link TypesExtractor}.
  */
-public class JdtAPIExtractor implements APIExtractor {
-	private static final Logger LOGGER = LogManager.getLogger(JdtAPIExtractor.class);
+public class JdtTypesExtractor implements TypesExtractor {
+	private static final Logger LOGGER = LogManager.getLogger(JdtTypesExtractor.class);
 
 	@Override
-	public API extractAPI(Path sources, List<Path> classpath) {
+	public LibraryTypes extractTypes(Path sources, List<Path> classpath) {
 		Objects.requireNonNull(classpath);
 		try (Stream<Path> files = Files.walk(Objects.requireNonNull(sources))) {
 			List<Path> sourceFiles = files
-				.filter(JdtAPIExtractor::isRegularJavaFile)
+				.filter(JdtTypesExtractor::isRegularJavaFile)
 				.toList();
 
-			TypeReferenceFactory typeRefFactory = new CachedTypeReferenceFactory();
+			TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 			List<TypeDecl> parsedTypes = parseTypes(sourceFiles, sources, classpath, typeRefFactory);
-			return new API(parsedTypes, typeRefFactory);
+			return new LibraryTypes(parsedTypes);
 		} catch (IOException e) {
 			throw new RoseauException("Failed to retrieve sources at " + sources, e);
 		}
