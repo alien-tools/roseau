@@ -5,7 +5,11 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import io.github.alien.roseau.utils.ApiBuilder;
+import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.EnumSource;
 
 import java.nio.file.Path;
 import java.util.stream.Stream;
@@ -14,13 +18,13 @@ import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertConstructor;
 import static io.github.alien.roseau.utils.TestUtils.assertField;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
-import static io.github.alien.roseau.utils.TestUtils.buildJdtAPI;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LocationsExtractionTest {
-	@Test
-	void accurate_jdt_locations() {
-		var api = buildJdtAPI("""
+	@ParameterizedTest
+	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
+	void unified_source_locations(ApiBuilder builder) {
+		var api = builder.build("""
 			public class C1 {
 				public int f;
 				public void m() {}
