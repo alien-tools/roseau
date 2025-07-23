@@ -28,6 +28,7 @@ import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
+import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtEnum;
 import spoon.reflect.declaration.CtEnumValue;
 import spoon.reflect.declaration.CtExecutable;
@@ -167,7 +168,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonAnnotations(cls.getAnnotations()),
-			convertSpoonPosition(cls.getPosition()),
+			convertSpoonPosition(cls.getPosition(), cls),
 			createTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
 			convertCtFields(cls),
@@ -185,7 +186,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonAnnotations(intf.getAnnotations()),
-			convertSpoonPosition(intf.getPosition()),
+			convertSpoonPosition(intf.getPosition(), intf),
 			createTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
@@ -201,7 +202,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(annotation.getVisibility()),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
 			convertSpoonAnnotations(annotation.getAnnotations()),
-			convertSpoonPosition(annotation.getPosition()),
+			convertSpoonPosition(annotation.getPosition(), annotation),
 			convertCtFields(annotation),
 			convertCtMethods(annotation),
 			createTypeReference(annotation.getDeclaringType())
@@ -214,7 +215,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonAnnotations(enm.getAnnotations()),
-			convertSpoonPosition(enm.getPosition()),
+			convertSpoonPosition(enm.getPosition(), enm),
 			createTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
 			convertCtMethods(enm),
@@ -230,7 +231,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(rcrd.getVisibility()),
 			convertSpoonNonAccessModifiers(rcrd.getModifiers()),
 			convertSpoonAnnotations(rcrd.getAnnotations()),
-			convertSpoonPosition(rcrd.getPosition()),
+			convertSpoonPosition(rcrd.getPosition(), rcrd),
 			createTypeReferences(rcrd.getSuperInterfaces()),
 			convertCtFormalTypeParameters(rcrd),
 			convertCtFields(rcrd),
@@ -247,7 +248,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(field.getVisibility()),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
 			convertSpoonAnnotations(field.getAnnotations()),
-			convertSpoonPosition(field.getPosition()),
+			convertSpoonPosition(field.getPosition(), field.getDeclaringType()),
 			createTypeReference(field.getDeclaringType()),
 			createITypeReference(field.getType())
 		);
@@ -265,7 +266,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(method.getVisibility()),
 			modifiers,
 			convertSpoonAnnotations(method.getAnnotations()),
-			convertSpoonPosition(method.getPosition()),
+			convertSpoonPosition(method.getPosition(), method.getDeclaringType()),
 			createTypeReference(method.getDeclaringType()),
 			createITypeReference(method.getType()),
 			convertCtParameters(method),
@@ -280,7 +281,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cons.getVisibility()),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
 			convertSpoonAnnotations(cons.getAnnotations()),
-			convertSpoonPosition(cons.getPosition()),
+			convertSpoonPosition(cons.getPosition(), cons.getDeclaringType()),
 			createTypeReference(cons.getDeclaringType()),
 			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
@@ -366,12 +367,12 @@ public class SpoonAPIFactory {
 
 	private RecordComponentDecl convertCtRecordComponent(CtRecordComponent rcrdCpt, CtRecord rcrd) {
 		return new RecordComponentDecl(
-				makeQualifiedName(rcrdCpt, rcrd),
-				convertSpoonAnnotations(rcrdCpt.getAnnotations()),
-				convertSpoonPosition(rcrdCpt.getPosition()),
-				createTypeReference(rcrd),
-				createITypeReference(rcrdCpt.getType()),
-				false
+			makeQualifiedName(rcrdCpt, rcrd),
+			convertSpoonAnnotations(rcrdCpt.getAnnotations()),
+			convertSpoonPosition(rcrdCpt.getPosition(), rcrd),
+			createTypeReference(rcrd),
+			createITypeReference(rcrdCpt.getType()),
+			false
 		);
 	}
 
@@ -385,7 +386,7 @@ public class SpoonAPIFactory {
 		return new EnumValueDecl(
 			makeQualifiedName(enmVal),
 			convertSpoonAnnotations(enmVal.getAnnotations()),
-			convertSpoonPosition(enmVal.getPosition()),
+			convertSpoonPosition(enmVal.getPosition(), enmVal.getDeclaringType()),
 			createTypeReference(enmVal.getDeclaringType()),
 			createITypeReference(enmVal.getType())
 		);
@@ -434,12 +435,23 @@ public class SpoonAPIFactory {
 		return new Annotation(createTypeReference(annotation.getAnnotationType()));
 	}
 
-	private static SourceLocation convertSpoonPosition(SourcePosition position) {
-		return position.isValidPosition()
-			? new SourceLocation(
-			position.getFile() != null ? position.getFile().toPath() : null,
-			position.getLine())
-			: SourceLocation.NO_LOCATION;
+	/**
+	 * If the provided position isn't valid, fallback to the other element's file. e.g., an implicit constructor will
+	 * point to the file it's contained in.
+	 */
+	private static SourceLocation convertSpoonPosition(SourcePosition position, CtElement fallback) {
+		if (position.isValidPosition()) {
+			return new SourceLocation(
+				position.getFile() != null ? position.getFile().toPath() : null,
+				position.getLine());
+		} else if (fallback != null && fallback.getPosition() != null) {
+			SourcePosition fallbackPosition = fallback.getPosition();
+			if (fallbackPosition.isValidPosition() && fallbackPosition.getFile() != null) {
+				return new SourceLocation(fallback.getPosition().getFile().toPath(), -1);
+			}
+		}
+
+		return SourceLocation.NO_LOCATION;
 	}
 
 	private static boolean isExported(CtTypeMember member) {

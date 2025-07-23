@@ -18,6 +18,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertConstructor;
 import static io.github.alien.roseau.utils.TestUtils.assertField;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
+import static io.github.alien.roseau.utils.TestUtils.assertRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LocationsExtractionTest {
@@ -82,6 +83,37 @@ class LocationsExtractionTest {
 		assertThat(cs21.getLocation().line()).isEqualTo(16);
 		assertThat(cs22.getLocation().file()).hasFileName("C1.java");
 		assertThat(cs22.getLocation().line()).isEqualTo(17);
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
+	void implicit_symbol_location(ApiBuilder builder) {
+		var api = builder.build("""
+			public record R(
+				int i
+			) {}""");
+		var r = assertRecord(api, "R");
+		var i = assertMethod(api, r, "i()");
+
+		assertThat(r.getLocation().file()).hasFileName("R.java");
+		assertThat(r.getLocation().line()).isEqualTo(1);
+		assertThat(i.getLocation().file()).hasFileName("R.java");
+		assertThat(i.getLocation().line()).isEqualTo(-1);
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
+	void implicit_constructor_location(ApiBuilder builder) {
+		var api = builder.build("""
+			public class C {
+			}""");
+		var c = assertClass(api, "C");
+		var cons = assertConstructor(api, c, "<init>()");
+
+		assertThat(c.getLocation().file()).hasFileName("C.java");
+		assertThat(c.getLocation().line()).isEqualTo(1);
+		assertThat(cons.getLocation().file()).hasFileName("C.java");
+		assertThat(cons.getLocation().line()).isEqualTo(-1);
 	}
 
 	@Test
