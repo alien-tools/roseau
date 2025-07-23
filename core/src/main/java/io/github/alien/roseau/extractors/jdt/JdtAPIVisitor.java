@@ -103,7 +103,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 		node.fragments().forEach(fragment -> {
 			if (fragment instanceof VariableDeclarationFragment vdf) {
 				IVariableBinding binding = vdf.resolveBinding();
-				lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getStartPosition()));
+				if (binding != null) {
+					lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getStartPosition()));
+				}
 			}
 		});
 		return false;
