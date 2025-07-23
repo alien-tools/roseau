@@ -26,8 +26,13 @@ class LocationsExtractionTest {
 	void unified_source_locations(ApiBuilder builder) {
 		var api = builder.build("""
 			public class C1 {
+			  @Deprecated
 				public int f;
+				// One-line comment
 				public void m() {}
+				/**
+				 * multi-line comment
+				 */
 				public void m(int i) {}
 				public C1() {}
 				public C1(int i) {}
@@ -56,27 +61,27 @@ class LocationsExtractionTest {
 		assertThat(c1.getLocation().file()).hasFileName("C1.java");
 		assertThat(c1.getLocation().line()).isEqualTo(1);
 		assertThat(f1.getLocation().file()).hasFileName("C1.java");
-		assertThat(f1.getLocation().line()).isEqualTo(2);
+		assertThat(f1.getLocation().line()).isEqualTo(3);
 		assertThat(m11.getLocation().file()).hasFileName("C1.java");
-		assertThat(m11.getLocation().line()).isEqualTo(3);
+		assertThat(m11.getLocation().line()).isEqualTo(5);
 		assertThat(m12.getLocation().file()).hasFileName("C1.java");
-		assertThat(m12.getLocation().line()).isEqualTo(4);
+		assertThat(m12.getLocation().line()).isEqualTo(9);
 		assertThat(cs11.getLocation().file()).hasFileName("C1.java");
-		assertThat(cs11.getLocation().line()).isEqualTo(5);
+		assertThat(cs11.getLocation().line()).isEqualTo(10);
 		assertThat(cs12.getLocation().file()).hasFileName("C1.java");
-		assertThat(cs12.getLocation().line()).isEqualTo(6);
+		assertThat(cs12.getLocation().line()).isEqualTo(11);
 		assertThat(c2.getLocation().file()).hasFileName("C1.java");
-		assertThat(c2.getLocation().line()).isEqualTo(7);
+		assertThat(c2.getLocation().line()).isEqualTo(12);
 		assertThat(f2.getLocation().file()).hasFileName("C1.java");
-		assertThat(f2.getLocation().line()).isEqualTo(8);
+		assertThat(f2.getLocation().line()).isEqualTo(13);
 		assertThat(m21.getLocation().file()).hasFileName("C1.java");
-		assertThat(m21.getLocation().line()).isEqualTo(9);
+		assertThat(m21.getLocation().line()).isEqualTo(14);
 		assertThat(m22.getLocation().file()).hasFileName("C1.java");
-		assertThat(m22.getLocation().line()).isEqualTo(10);
+		assertThat(m22.getLocation().line()).isEqualTo(15);
 		assertThat(cs21.getLocation().file()).hasFileName("C1.java");
-		assertThat(cs21.getLocation().line()).isEqualTo(11);
+		assertThat(cs21.getLocation().line()).isEqualTo(16);
 		assertThat(cs22.getLocation().file()).hasFileName("C1.java");
-		assertThat(cs22.getLocation().line()).isEqualTo(12);
+		assertThat(cs22.getLocation().line()).isEqualTo(17);
 	}
 
 	@Test

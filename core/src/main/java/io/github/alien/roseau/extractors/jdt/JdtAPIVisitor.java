@@ -93,7 +93,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 	public boolean visit(MethodDeclaration node) {
 		IMethodBinding binding = node.resolveBinding();
 		if (binding != null) {
-			lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(node.getStartPosition()));
+			// node.getStartPosition() includes leading comments/javadoc/annotations
+			// so we (arbitrarily) decide that the method's name is the relevant one
+			lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(node.getName().getStartPosition()));
 		}
 		return false;
 	}
@@ -104,7 +106,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 			if (fragment instanceof VariableDeclarationFragment vdf) {
 				IVariableBinding binding = vdf.resolveBinding();
 				if (binding != null) {
-					lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getStartPosition()));
+					lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getName().getStartPosition()));
 				}
 			}
 		});
@@ -126,7 +128,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		List<Annotation> annotations = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getStartPosition()));
+		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 
 		// Not present in bindings: https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
