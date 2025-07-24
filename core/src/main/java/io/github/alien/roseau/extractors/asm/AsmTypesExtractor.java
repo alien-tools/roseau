@@ -26,7 +26,8 @@ import java.util.jar.JarFile;
  */
 public class AsmTypesExtractor implements TypesExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
-	private static final int PARSING_OPTIONS = ClassReader.SKIP_CODE | ClassReader.SKIP_FRAMES;
+	// TODO: how bad is the performance penalty for no SKIP_CODE for source locations?
+	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
 	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
 
 	@Override
