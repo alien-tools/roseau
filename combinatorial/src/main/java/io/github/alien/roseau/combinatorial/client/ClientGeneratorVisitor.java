@@ -49,7 +49,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	private void generateClassClients(ClassDecl it) {
 		generateTypeClients(it);
 
-		if (!api.isEffectivelyFinal(it) && !it.isSealed()) {
+		if (!api.isEffectivelyFinal(it) && !it.isProtected()) {
 			writer.writeClassInheritance(it);
 		}
 
@@ -70,7 +70,7 @@ public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
 	private void generateInterfaceClients(InterfaceDecl it) {
 		generateTypeClients(it);
 
-		if (!it.isSealed()) {
+		if (!api.isEffectivelyFinal(it) && !it.isProtected()) {
 			writer.writeInterfaceExtension(it);
 			writer.writeInterfaceImplementation(it);
 		}
