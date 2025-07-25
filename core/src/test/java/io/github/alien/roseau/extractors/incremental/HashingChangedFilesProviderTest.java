@@ -45,7 +45,7 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var changed = Set.of(left.resolve("A.java"), left.resolve("C.java"));
+		var changed = Set.of(Path.of("A.java"), Path.of("C.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(changed, Set.of(), Set.of()));
 	}
 
@@ -57,7 +57,7 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var deleted = Set.of(left.resolve("A.java"), left.resolve("C.java"));
+		var deleted = Set.of(Path.of("A.java"), Path.of("C.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(Set.of(), deleted, Set.of()));
 	}
 
@@ -70,7 +70,7 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var created = Set.of(right.resolve("F.java"), right.resolve("new/G.java"));
+		var created = Set.of(Path.of("F.java"), Path.of("new/G.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(Set.of(), Set.of(), created));
 	}
 
@@ -80,7 +80,7 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var changed = Set.of(left.resolve("A.java"));
+		var changed = Set.of(Path.of("A.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(changed, Set.of(), Set.of()));
 	}
 
@@ -91,8 +91,8 @@ class HashingChangedFilesProviderTest {
 
 		var result = provider.getChangedFiles(left, right);
 
-		var deleted = Set.of(left.resolve("A.java"));
-		var created = Set.of(right.resolve("new/A.java"));
+		var deleted = Set.of(Path.of("A.java"));
+		var created = Set.of(Path.of("new/A.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(Set.of(), deleted, created));
 	}
 }
