@@ -211,7 +211,7 @@ public final class ClientWriter extends AbstractWriter {
 
 	public void writeMethodMinimalDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
 		var methodReturn = getReturnHandleForMethod(methodDecl, "MinDir");
-		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Minimal");
+		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Minimal", true);
 		var params = getParamsForExecutableInvocation(methodDecl);
 		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
 
@@ -539,21 +539,24 @@ public final class ClientWriter extends AbstractWriter {
 		return needsNewAtBeginning ? "new %s".formatted(code) : code.toString();
 	}
 
-	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix) {
+	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix, boolean withUpCast) {
 		var constructorName = "%s%s".formatted(typeDecl.getPrettyQualifiedName(), suffix);
+		var constructorInvocation = "new %s()".formatted(constructorName);
 
-		if (typeDecl.isStatic()) {
-			return "new %s()".formatted(constructorName);
-		}
-
-		if (typeDecl.isNested()) {
-			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElseThrow();
+		if (!typeDecl.isStatic()) {
+			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElse(null);
 			if (enclosingType instanceof ClassDecl) {
-				return "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
+				constructorInvocation = "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
 			}
 		}
 
-		return "new %s()".formatted(constructorName);
+		return withUpCast
+				? "((%s) %s)".formatted(StringUtils.cleanQualifiedNameForType(typeDecl), constructorInvocation)
+				: constructorInvocation;
+	}
+
+	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix) {
+		return generateConstructorDirectInvocationFromInheritance(typeDecl, suffix, false);
 	}
 
 	private Stack<TypeDecl> getContainingTypesForConstructorInvocation(TypeDecl typeDecl) {
