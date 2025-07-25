@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.writer;
 
 import io.github.alien.roseau.api.model.*;
+import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.Constants;
 import org.apache.logging.log4j.LogManager;
@@ -51,11 +52,17 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
-		var params = getParamsForExecutableInvocation(constructorDecl);
-		var code = generateConstructorInvocationWithParamsForClass(containingClass, params);
-
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
+		var params = getParamsForExecutableInvocation(constructorDecl);
+
+		var code = generateConstructorInvocationWithParamsForClass(containingClass, params);
 		addInstructionToClientMain(exceptions, "%s;".formatted(code));
+
+		if (constructorDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var formalParams = getFormalParamsForExecutableInvocation(constructorDecl);
+		var codeWithFormalParams = generateConstructorInvocationWithParamsForClass(containingClass, formalParams, params);
+		addInstructionToClientMain(exceptions, "%s;".formatted(codeWithFormalParams));
 	}
 
 	public void writeConstructorInheritanceInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -489,11 +496,11 @@ public final class ClientWriter extends AbstractWriter {
 		return generateConstructorInvocationWithParamsForClass(classDecl, params);
 	}
 
-	private String generateConstructorInvocationWithParamsForClass(ClassDecl classDecl, String params) {
+	private String generateConstructorInvocationWithParamsForClass(ClassDecl classDecl, String formalParams, String params) {
 		if (classDecl == null) return "";
 
 		if (!classDecl.isNested() || classDecl.isStatic()) {
-			return "new %s(%s)".formatted(StringUtils.cleanQualifiedNameForType(classDecl), params);
+			return "new %s%s(%s)".formatted(formalParams, StringUtils.cleanQualifiedNameForType(classDecl), params);
 		}
 
 		var containingTypes = getContainingTypesForConstructorInvocation(classDecl);
@@ -537,6 +544,10 @@ public final class ClientWriter extends AbstractWriter {
 		}
 
 		return needsNewAtBeginning ? "new %s".formatted(code) : code.toString();
+	}
+
+	private String generateConstructorInvocationWithParamsForClass(ClassDecl classDecl, String params) {
+		return generateConstructorInvocationWithParamsForClass(classDecl, "", params);
 	}
 
 	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix, boolean withUpCast) {
@@ -615,6 +626,14 @@ public final class ClientWriter extends AbstractWriter {
 				.collect(Collectors.joining(", "));
 	}
 
+	private static String getFormalParamsForExecutableInvocation(ExecutableDecl executableDecl) {
+		return executableDecl.getFormalTypeParameters().isEmpty()
+			? ""
+			: "<%s>".formatted(executableDecl.getFormalTypeParameters().stream()
+				.map(p -> getDefaultTypeForBounds(p.bounds()))
+				.collect(Collectors.joining(", ")));
+	}
+
 	private static String getReturnHandleForMethod(MethodDecl methodDecl, String suffix) {
 		if (methodDecl.getType().getQualifiedName().equals("void")) return "";
 
@@ -649,6 +668,20 @@ public final class ClientWriter extends AbstractWriter {
 			case "boolean" -> "false";
 			default -> "(%s) null".formatted(typeName);
 		};
+	}
+
+	private static String getDefaultTypeForBounds(List<ITypeReference> bounds) {
+		if (bounds.isEmpty()) return "";
+
+		if (bounds.size() == 1) {
+			return bounds.getFirst().getQualifiedName();
+		}
+
+		if (bounds.stream().anyMatch(b -> b.getQualifiedName().equals("java.lang.Number"))) {
+			return "Integer";
+		}
+
+		return "java.lang.Object";
 	}
 
 	private static List<ConstructorDecl> getSortedConstructors(ClassDecl classDecl) {
