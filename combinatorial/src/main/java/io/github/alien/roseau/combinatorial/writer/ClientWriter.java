@@ -67,16 +67,19 @@ public final class ClientWriter extends AbstractWriter {
 
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 		var formattedExceptions = formatExceptionNames(exceptions);
-		var paramsValue = getParamsForExecutableInvocation(constructorDecl);
+		var paramsNames = constructorDecl.getParameters().stream()
+				.map(ParameterDecl::name)
+				.collect(Collectors.joining(", "));
+		var paramsValues = getParamsForExecutableInvocation(constructorDecl);
 
 		var constructor = "\t%s%s {\n\t\tsuper(%s);\n\t}".formatted(
 				constructorDecl.toString().replace(constructorDecl.getSimpleName(), innerTypeName),
 				formattedExceptions.isBlank() ? "" : " throws %s".formatted(formattedExceptions),
-				paramsValue
+				paramsNames
 		);
 
 		insertDeclarationsToInnerClass(containingClass, innerTypeName, constructor, "");
-		addInstructionToClientMain(exceptions, "new %s(%s);".formatted(innerTypeName, paramsValue));
+		addInstructionToClientMain(exceptions, "new %s(%s);".formatted(innerTypeName, paramsValues));
 	}
 
 	public void writeExceptionCatch(ClassDecl classDecl) {
