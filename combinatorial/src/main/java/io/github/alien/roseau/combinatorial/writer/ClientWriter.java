@@ -544,9 +544,11 @@ public final class ClientWriter extends AbstractWriter {
 		var constructorName = "%s%s".formatted(typeDecl.getPrettyQualifiedName(), suffix);
 		var constructorInvocation = "new %s()".formatted(constructorName);
 
-		var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElse(null);
-		if (enclosingType instanceof ClassDecl) {
-			constructorInvocation = "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
+		if (!typeDecl.isStatic()) {
+			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElse(null);
+			if (enclosingType instanceof ClassDecl) {
+				constructorInvocation = "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
+			}
 		}
 
 		return withUpCast
