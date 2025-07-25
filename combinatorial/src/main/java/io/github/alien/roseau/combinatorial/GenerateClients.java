@@ -51,7 +51,7 @@ public final class GenerateClients {
 				}
 			});
 
-			LOGGER.info("\nCombinatorial clients generation took {} ms", System.currentTimeMillis() - currentNow);
+			LOGGER.info("Combinatorial clients generation took {} ms", System.currentTimeMillis() - currentNow);
 		} catch (Exception e) {
 			LOGGER.error("Failed to run combinatorial clients generation");
 			LOGGER.error(e.getMessage());
