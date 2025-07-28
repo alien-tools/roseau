@@ -26,6 +26,7 @@ public final class GenerateClients {
 			Arrays.stream(v1sPath.toFile().listFiles()).toList().forEach(v1Folder -> {
 				if (!v1Folder.isDirectory()) return;
 				var v1Path = v1Folder.toPath();
+				if (!v1Path.toString().endsWith("genericsClazzMethodTypeAddSecond")) return;
 
 				var types = new JdtTypesExtractor().extractTypes(v1Path);
 				if (types == null) {
