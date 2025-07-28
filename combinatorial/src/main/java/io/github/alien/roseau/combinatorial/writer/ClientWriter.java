@@ -198,44 +198,71 @@ public final class ClientWriter extends AbstractWriter {
 
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
 		var caller = getContainingTypeAccessForTypeMember(containingType, methodDecl);
-		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodReturn = getReturnHandleForMethod(methodDecl, "Dir");
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
-
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(exceptions, methodInvocationCode);
+		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "Dir");
+		var code = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, code);
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "DirFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeMethodFullDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var methodReturn = getReturnHandleForMethod(methodDecl, "FullDir");
 		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Full");
-		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
-
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(exceptions, methodInvocationCode);
+		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "FullDir");
+		var code = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, code);
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "FullDirFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeMethodMinimalDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var methodReturn = getReturnHandleForMethod(methodDecl, "MinDir");
 		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Minimal", true);
-		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
-
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(exceptions, methodInvocationCode);
+		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "MinDir");
+		var code = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, code);
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "MinDirFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeMethodInheritanceInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
-
-		var methodInvokeReturn = getReturnHandleForMethod(methodDecl);
 		var caller = methodDecl.isStatic() ? StringUtils.cleanQualifiedNameForType(containingType) : "this";
 		var methodName = methodDecl.getSimpleName();
 		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodInvokeReturn = getReturnHandleForMethod(methodDecl);
 		var methodBody = "%s%s.%s(%s);".formatted(methodInvokeReturn, caller, methodName, params);
 
+		if (!methodDecl.getFormalTypeParameters().isEmpty()) {
+			var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "FormalParams");
+			var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+			methodBody += "\n\t\t%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodName, params);
+		}
+
+		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
+		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		addNewMethodToInnerType(containingType, invokeMethodName, methodBody, exceptions);
 
@@ -252,11 +279,19 @@ public final class ClientWriter extends AbstractWriter {
 
 		insertDeclarationsToInnerClass(containingType, innerTypeName, "", overrideMethod);
 
-		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		var methodReturn = getReturnHandleForMethod(methodDecl, "Ove");
 		var caller = methodDecl.isStatic() ? innerTypeName : generateConstructorDirectInvocationFromInheritance(containingType, "Override");
+		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "Ove");
 		addInstructionToClientMain(exceptions, "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params));
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "OveFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeTypeReference(TypeDecl typeDecl) {

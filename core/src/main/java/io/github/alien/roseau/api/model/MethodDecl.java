@@ -62,9 +62,14 @@ public final class MethodDecl extends ExecutableDecl {
 
 	@Override
 	public String toString() {
-		return "%s %s %s %s(%s)".formatted(
+		return "%s %s%s%s %s(%s)".formatted(
 			visibility,
-			modifiers.stream().map(Modifier::toString).collect(Collectors.joining(" ")),
+			modifiers.isEmpty()
+				? ""
+				: modifiers.stream().map(Modifier::toString).collect(Collectors.joining(" ")) + " ",
+			formalTypeParameters.isEmpty()
+				? ""
+				: "<" + formalTypeParameters.stream().map(FormalTypeParameter::name).collect(Collectors.joining(", ")) + "> ",
 			type,
 			getSimpleName(),
 			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", ")));
