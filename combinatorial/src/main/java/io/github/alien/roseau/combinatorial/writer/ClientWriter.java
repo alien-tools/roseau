@@ -759,13 +759,25 @@ public final class ClientWriter extends AbstractWriter {
 			var methods = String.join("\n\n", this.methods);
 			var typeBody = concatDeclarations(constructors, methods);
 
+			var typeNameFormatted = typeName;
+			var superTypeNameFormatted = StringUtils.cleanQualifiedNameForType(superType);
+			if (!superType.getFormalTypeParameters().isEmpty()) {
+				typeNameFormatted += "<%s>".formatted(superType.getFormalTypeParameters().stream()
+						.map(FormalTypeParameter::toString)
+						.collect(Collectors.joining(", ")));
+
+				superTypeNameFormatted += "<%s>".formatted(superType.getFormalTypeParameters().stream()
+						.map(FormalTypeParameter::name)
+						.collect(Collectors.joining(", ")));
+			}
+
 			if (isTypeInterface) {
-				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, StringUtils.cleanQualifiedNameForType(superType));
+				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeNameFormatted, superTypeNameFormatted);
 			}
 
 			var template = superType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
 
-			return String.join("\n\t", template.formatted(typeName, StringUtils.cleanQualifiedNameForType(superType), typeBody).split("\n"));
+			return String.join("\n\t", template.formatted(typeNameFormatted, superTypeNameFormatted, typeBody).split("\n"));
 		}
 	}
 }
