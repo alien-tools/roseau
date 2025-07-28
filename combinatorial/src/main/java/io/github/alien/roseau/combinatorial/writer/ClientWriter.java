@@ -77,11 +77,15 @@ public final class ClientWriter extends AbstractWriter {
 		var paramsNames = constructorDecl.getParameters().stream()
 				.map(ParameterDecl::name)
 				.collect(Collectors.joining(", "));
+		var formalParamsNames = constructorDecl.getFormalTypeParameters().stream()
+				.map(FormalTypeParameter::name)
+				.collect(Collectors.joining(", "));
 		var paramsValues = getParamsForExecutableInvocation(constructorDecl);
 
-		var constructor = "\t%s%s {\n\t\tsuper(%s);\n\t}".formatted(
+		var constructor = "\t%s%s {\n\t\t%ssuper(%s);\n\t}".formatted(
 				constructorDecl.toString().replace(constructorDecl.getSimpleName(), innerTypeName),
 				formattedExceptions.isBlank() ? "" : " throws %s".formatted(formattedExceptions),
+				formalParamsNames.isEmpty() ? "" : "<%s> ".formatted(formalParamsNames),
 				paramsNames
 		);
 
