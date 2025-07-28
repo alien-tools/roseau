@@ -69,7 +69,7 @@ public final class MethodDecl extends ExecutableDecl {
 				: modifiers.stream().map(Modifier::toString).collect(Collectors.joining(" ")) + " ",
 			formalTypeParameters.isEmpty()
 				? ""
-				: "<" + formalTypeParameters.stream().map(FormalTypeParameter::name).collect(Collectors.joining(", ")) + "> ",
+				: "<" + formalTypeParameters.stream().map(FormalTypeParameter::toString).collect(Collectors.joining(", ")) + "> ",
 			type,
 			getSimpleName(),
 			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", ")));
