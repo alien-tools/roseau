@@ -16,11 +16,9 @@ import java.util.stream.Collectors;
 import static io.github.alien.roseau.combinatorial.client.ClientTemplates.*;
 
 public final class ClientWriter extends AbstractWriter {
-	private final API api;
-
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
-	private static final String clientPackageName = Constants.CLIENT_FOLDER;
+	private final API api;
 
 	private final Map<String, InnerType> _innerTypes = new HashMap<>();
 	private final Set<String> _exceptions = new HashSet<>();
@@ -28,8 +26,9 @@ public final class ClientWriter extends AbstractWriter {
 	private final List<String> _throwingInstructions = new ArrayList<>();
 	private final List<String> _tryCatchInstructions = new ArrayList<>();
 
-	public ClientWriter(Path outputDir, API api) {
-		super(outputDir);
+	public ClientWriter(Path clientOutputDir, API api) {
+		super(clientOutputDir);
+
 		this.api = api;
 	}
 
@@ -344,7 +343,7 @@ public final class ClientWriter extends AbstractWriter {
 			var methodsCode = concatDeclarations("\n", false, methodsInstructions.toArray(String[]::new));
 
 			var fullCode = FULL_CLIENT_FILE_TEMPLATE.formatted(
-					clientPackageName,
+					outputDir.toFile().getName(),
 					Constants.CLIENT_FILENAME,
 					innerTypesCode,
 					exceptionsCode,
@@ -352,8 +351,7 @@ public final class ClientWriter extends AbstractWriter {
 					methodsCode
 			).getBytes();
 
-			var packagePath = clientPackageName.replace(".", "/");
-			var filePath = outputDir.resolve("%s/FullClient.java".formatted(packagePath));
+			var filePath = outputDir.resolve("%s.java".formatted(Constants.CLIENT_FILENAME));
 			filePath.toFile().getParentFile().mkdirs();
 
 			Files.write(filePath, fullCode);

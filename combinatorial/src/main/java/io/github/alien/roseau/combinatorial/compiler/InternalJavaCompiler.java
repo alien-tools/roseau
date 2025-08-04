@@ -1,7 +1,9 @@
-package io.github.alien.roseau.combinatorial.v2.compiler;
+package io.github.alien.roseau.combinatorial.compiler;
 
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.utils.ExplorerUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import javax.tools.Diagnostic;
 import javax.tools.DiagnosticCollector;
@@ -22,8 +24,11 @@ import java.util.Locale;
 import java.util.Objects;
 import java.util.jar.JarEntry;
 import java.util.jar.JarOutputStream;
+import java.util.stream.Collectors;
 
 public final class InternalJavaCompiler {
+	private static final Logger LOGGER = LogManager.getLogger(InternalJavaCompiler.class);
+
 	private final JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 
 	public List<Diagnostic<? extends JavaFileObject>> packageApiToJar(Path apiPath, Path jarPath) {
@@ -87,6 +92,13 @@ public final class InternalJavaCompiler {
 		return List.of();
 	}
 
+	public void checkClientCompilesWithApi(Path clientSourcesPath, Path apiSourcesPath, Path clientBinPath, Path apiJarPath) {
+		checkSourcesArePresent(apiSourcesPath, clientSourcesPath);
+
+		packageApi(apiSourcesPath, apiJarPath);
+		compileClient(clientSourcesPath, clientBinPath, apiJarPath);
+	}
+
 	private List<Diagnostic<? extends JavaFileObject>> compileApi(Path apiPath, Path binPath) {
 		var apiFiles = ExplorerUtils.getFilesInPath(apiPath, "java");
 		if (!ExplorerUtils.cleanOrCreateDirectory(binPath))
@@ -140,5 +152,39 @@ public final class InternalJavaCompiler {
 		@Override public String getCode() { return null; }
 		@Override public String getMessage(Locale locale) { return message; }
 		@Override public String toString() { return message; }
+	}
+
+	private void checkSourcesArePresent(Path apiSourcesPath, Path clientSourcesPath) {
+		if (!ExplorerUtils.checkPathExists(apiSourcesPath))
+			throw new RuntimeException("API sources are missing");
+
+		if (!ExplorerUtils.checkPathExists(clientSourcesPath))
+			throw new RuntimeException("Client sources are missing");
+	}
+
+	private void packageApi(Path apiSourcesPath, Path apiJarPath) {
+		LOGGER.info("------- Packaging API -------");
+
+		var errors = packageApiToJar(apiSourcesPath, apiJarPath);
+
+		if (!errors.isEmpty())
+			throw new RuntimeException("Couldn't package API: " + formatCompilerErrors(errors));
+
+		LOGGER.info("-------- API packaged -------\n");
+	}
+
+	private void compileClient(Path clientSourcePath, Path clientBinPath, Path apiJarPath) {
+		LOGGER.info("------- Compiling client ------");
+
+		var errors = compileClientWithApi(clientSourcePath, Constants.CLIENT_FILENAME, apiJarPath, clientBinPath);
+
+		if (!errors.isEmpty())
+			throw new RuntimeException("Couldn't compile client:\n" + formatCompilerErrors(errors));
+
+		LOGGER.info("------- Client compiled -------");
+	}
+
+	private static String formatCompilerErrors(List<?> errors) {
+		return errors.stream().map(Object::toString).collect(Collectors.joining(System.lineSeparator()));
 	}
 }

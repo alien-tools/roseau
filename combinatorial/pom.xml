@@ -28,7 +28,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>io.github.alien.roseau.combinatorial.CombinatorialBenchmark</mainClass>
+                            <mainClass>io.github.alien.roseau.combinatorial.CombinatorialCLI</mainClass>
                         </manifest>
                         <manifestEntries>
                             <Multi-Release>true</Multi-Release>
@@ -55,7 +55,7 @@
                 <configuration>
                     <programs>
                         <program>
-                            <mainClass>io.github.alien.roseau.combinatorial.CombinatorialBenchmark</mainClass>
+                            <mainClass>io.github.alien.roseau.combinatorial.CombinatorialCLI</mainClass>
                             <id>roseau</id>
                         </program>
                     </programs>
@@ -84,6 +84,11 @@
             <groupId>com.github.siom79.japicmp</groupId>
             <artifactId>japicmp</artifactId>
             <version>0.23.1</version>
+        </dependency>
+        <dependency>
+            <groupId>info.picocli</groupId>
+            <artifactId>picocli</artifactId>
+            <version>4.7.7</version>
         </dependency>
     </dependencies>
 </project>
