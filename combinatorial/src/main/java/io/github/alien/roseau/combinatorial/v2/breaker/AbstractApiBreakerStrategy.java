@@ -2,17 +2,22 @@ package io.github.alien.roseau.combinatorial.v2.breaker;
 
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.v2.filter.PreviousFailuresFilter;
+import io.github.alien.roseau.combinatorial.v2.filter.StrategyFilter;
 import io.github.alien.roseau.combinatorial.v2.queue.ImpossibleStrategyQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import java.util.List;
+
 public abstract class AbstractApiBreakerStrategy {
 	protected static final Logger LOGGER = LogManager.getLogger(AbstractApiBreakerStrategy.class);
 
-	private final ImpossibleStrategyQueue impossibleStrategyQueue = ImpossibleStrategyQueue.getInstance();
-	private final NewApiQueue newApiQueue;
+	private static final ImpossibleStrategyQueue impossibleStrategyQueue = ImpossibleStrategyQueue.getInstance();
+	private static final List<StrategyFilter> strategyFilters = List.of(PreviousFailuresFilter.getInstance());
 
+	private final NewApiQueue newApiQueue;
 	private final String strategyName;
 
 	protected final API api;
@@ -24,6 +29,8 @@ public abstract class AbstractApiBreakerStrategy {
 	}
 
 	public void breakApi() {
+		if (strategyFilters.stream().anyMatch(filter -> filter.ignores(strategyName))) return;
+
 		try {
 			var mutableApi = ApiBuilder.from(api);
 

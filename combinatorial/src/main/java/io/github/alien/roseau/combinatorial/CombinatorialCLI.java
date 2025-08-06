@@ -24,6 +24,11 @@ public final class CombinatorialCLI implements Callable<Integer> {
 		defaultValue = "0")
 	private int threads;
 
+	@CommandLine.Option(names = { "-s", "--skip-previous-v2-failures" },
+		description = "Skip all cases either impossible or in error when generating new api from the previous benchmark run; only for BENCH mode; defaults to false",
+		defaultValue = "false")
+	private boolean skipPreviousV2Failures;
+
 	@CommandLine.Option(names = { "--api" },
 		description = "Path to the API sources to use for the client generation; only and mandatory for CLIENT mode")
 	private Path apiPath;
@@ -72,7 +77,7 @@ public final class CombinatorialCLI implements Callable<Integer> {
 			checkArguments();
 
 			if (mode == CLIMode.BENCH) {
-				new CombinatorialBenchmark(threads, outputPath, tmpOutputPath).run();
+				new CombinatorialBenchmark(threads, skipPreviousV2Failures, outputPath, tmpOutputPath).run();
 			} else if (mode == CLIMode.CLIENT) {
 				new GenerateClient(apiPath, outputPath, tmpOutputPath).run();
 			}

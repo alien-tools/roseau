@@ -11,6 +11,7 @@ import io.github.alien.roseau.combinatorial.v2.benchmark.writer.AbstractWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.writer.FailedStrategiesWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.writer.ImpossibleStrategiesWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.writer.ResultsWriter;
+import io.github.alien.roseau.combinatorial.v2.filter.PreviousFailuresFilter;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -40,7 +41,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private final Path clientSourcePath;
 	private final Path clientBinPath;
 
-	public GenerateNewVersionsAndLaunchBenchmark(API v1Api, int maxParallelAnalysis, Path outputPath, Path tmpOutputPath) {
+	public GenerateNewVersionsAndLaunchBenchmark(API v1Api, int maxParallelAnalysis, boolean skipPreviousFailures, Path outputPath, Path tmpOutputPath) {
 		super(outputPath);
 
 		this.v1Api = v1Api;
@@ -53,6 +54,8 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		v1JarPath = tmpPath.resolve(Path.of(Constants.JAR_FOLDER, "v1.jar"));
 		clientSourcePath = outputPath.resolve(Constants.CLIENT_FOLDER);
 		clientBinPath = tmpPath.resolve(Constants.BINARIES_FOLDER);
+
+		PreviousFailuresFilter.initialize(skipPreviousFailures, outputPath);
 
 		ExplorerUtils.cleanOrCreateDirectory(tmpPath);
 	}

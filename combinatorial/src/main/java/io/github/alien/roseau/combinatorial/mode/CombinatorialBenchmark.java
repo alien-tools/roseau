@@ -15,12 +15,14 @@ public final class CombinatorialBenchmark extends AbstractStep {
 	private static final Logger LOGGER = LogManager.getLogger(CombinatorialBenchmark.class);
 
 	private final int maxParallelAnalysis;
+	private final boolean skipPreviousFailures;
 	private final Path tmpOutputPath;
 
-	public CombinatorialBenchmark(int threads, Path outputPath, Path tmpOutputPath) {
+	public CombinatorialBenchmark(int threads, boolean skipPreviousFailures, Path outputPath, Path tmpOutputPath) {
 		super(outputPath);
 
-		this.maxParallelAnalysis = threads - 2;
+		this.maxParallelAnalysis = Math.max(1, threads - 2);
+		this.skipPreviousFailures = skipPreviousFailures;
 		this.tmpOutputPath = tmpOutputPath;
 	}
 
@@ -35,7 +37,7 @@ public final class CombinatorialBenchmark extends AbstractStep {
 		var clientGeneration = new GenerateApiClient(api, outputPath.resolve(Constants.CLIENT_FOLDER));
 		clientGeneration.run();
 
-		var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(api, maxParallelAnalysis, outputPath, tmpOutputPath);
+		var newVersionsAndBenchmarkStep = new GenerateNewVersionsAndLaunchBenchmark(api, maxParallelAnalysis, skipPreviousFailures, outputPath, tmpOutputPath);
 		newVersionsAndBenchmarkStep.run();
 
 		LOGGER.info("\nCombinatorial benchmark took {} ms", System.currentTimeMillis() - currentNow);

@@ -82,7 +82,7 @@ public final class CombinatorialApi {
 	static List<ClassBuilder> classBuilders = new ArrayList<>();
 	static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-	static final String apiPackageName = Constants.API_FOLDER;
+	static final String apiPackageName = "api";
 
 	static final int typeHierarchyDepth = 1;
 	static final int typeHierarchyWidth = 1;
