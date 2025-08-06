@@ -4,13 +4,16 @@ import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.v2.benchmark.result.ToolResult;
 import io.github.alien.roseau.combinatorial.v2.queue.ResultsProcessQueue;
 
+import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.List;
 import java.util.stream.Collectors;
 
 public final class ResultsWriter extends AbstractWriter<List<ToolResult>> {
-	public ResultsWriter() {
-		super(Constants.RESULTS_PATH, ResultsProcessQueue.getInstance());
+	public ResultsWriter(Path outputPath) {
+		super(Constants.getResultsPath(outputPath), ResultsProcessQueue.getInstance());
+
+		LOGGER.info("Creating ResultsWriter");
 	}
 
 	@Override
@@ -20,7 +23,7 @@ public final class ResultsWriter extends AbstractWriter<List<ToolResult>> {
 			var toolNames = results.stream().map(t -> "%s Binary,%s Source".formatted(t.toolName(), t.toolName())).toList();
 			var header = "Strategy," + String.join(",", toolNames);
 
-			if (initializeFile(Constants.RESULTS_PATH.getFileName().toString(), header))
+			if (initializeFile(filePath.getFileName().toString(), header))
 				return;
 		}
 

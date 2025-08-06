@@ -11,9 +11,9 @@ import java.nio.file.Path;
 public sealed abstract class AbstractWriter<T> implements Runnable permits FailedStrategiesWriter, ImpossibleStrategiesWriter, ResultsWriter {
 	protected static final Logger LOGGER = LogManager.getLogger(AbstractWriter.class);
 
-	private final Path filePath;
 	private final AbstractQueue<T> queue;
 
+	protected final Path filePath;
 	protected FileWriter fileWriter = null;
 
 	protected boolean isBenchmarkStillOngoing = true;
@@ -40,6 +40,8 @@ public sealed abstract class AbstractWriter<T> implements Runnable permits Faile
 
 	public void informNoMoreBenchmark() {
 		isBenchmarkStillOngoing = false;
+
+		run();
 	}
 
 	protected abstract void addToFile(String strategy, T data);
@@ -66,6 +68,7 @@ public sealed abstract class AbstractWriter<T> implements Runnable permits Faile
 		if (fileWriter != null) {
 			try {
 				fileWriter.close();
+				fileWriter = null;
 			} catch (Exception e) {
 				LOGGER.error("Error while closing file");
 			}

@@ -7,6 +7,7 @@ import io.github.alien.roseau.combinatorial.StepExecutionException;
 import io.github.alien.roseau.combinatorial.compiler.InternalJavaCompiler;
 import io.github.alien.roseau.combinatorial.utils.ExplorerUtils;
 import io.github.alien.roseau.combinatorial.v2.benchmark.Benchmark;
+import io.github.alien.roseau.combinatorial.v2.benchmark.writer.AbstractWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.writer.FailedStrategiesWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.writer.ImpossibleStrategiesWriter;
 import io.github.alien.roseau.combinatorial.v2.benchmark.writer.ResultsWriter;
@@ -15,7 +16,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
@@ -26,11 +29,8 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 
 	private final NewApiQueue newApiQueue;
 
-	private final FailedStrategiesWriter failedStrategiesWriter = new FailedStrategiesWriter();
-	private final ImpossibleStrategiesWriter impossibleStrategiesWriter = new ImpossibleStrategiesWriter();
-	private final ResultsWriter resultsWriter = new ResultsWriter();
-
 	private final Map<Benchmark, Thread> benchmarkThreads = new HashMap<>();
+	private final List<AbstractWriter<?>> writers = new ArrayList<>();
 
 	private final InternalJavaCompiler compiler = new InternalJavaCompiler();
 
@@ -96,9 +96,12 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 	private void initializeWritersThreads() {
 		LOGGER.info("---- Starting writers threads ---");
 
-		new Thread(failedStrategiesWriter).start();
-		new Thread(impossibleStrategiesWriter).start();
-		new Thread(resultsWriter).start();
+		writers.add(new FailedStrategiesWriter(outputPath));
+		writers.add(new ImpossibleStrategiesWriter(outputPath));
+		writers.add(new ResultsWriter(outputPath));
+
+		for (var writer : writers)
+			new Thread(writer).start();
 
 		LOGGER.info("---- All writers threads started ----\n");
 	}
@@ -114,8 +117,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();
 		LOGGER.info("Total benchmark errors: {}", totalErrors);
 
-		failedStrategiesWriter.informNoMoreBenchmark();
-		impossibleStrategiesWriter.informNoMoreBenchmark();
-		resultsWriter.informNoMoreBenchmark();
+		for (var writer : writers)
+			writer.informNoMoreBenchmark();
 	}
 }
