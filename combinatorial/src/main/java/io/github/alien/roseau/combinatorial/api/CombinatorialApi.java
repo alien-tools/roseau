@@ -346,7 +346,6 @@ public final class CombinatorialApi {
 								varArgsRecordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
 								varArgsRecordComponentBuilder.isVarargs = true;
 								recordBuilder.recordComponents.add(varArgsRecordComponentBuilder);
-								recordBuilder.constructors.getFirst().parameters.add(generateParameterBuilder("c" + recordComponentParamsCount, varArgsParamType, true));
 
 								store(recordBuilder);
 							})
@@ -590,8 +589,6 @@ public final class CombinatorialApi {
 
 			recordBuilder.recordComponents.add(recordComponentBuilder);
 		});
-
-		addConstructorToClassBuilder(recordBuilder, PUBLIC, recordsParamsTypes, List.of(), false);
 	}
 
 	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {

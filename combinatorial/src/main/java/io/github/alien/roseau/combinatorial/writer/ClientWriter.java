@@ -521,9 +521,16 @@ public final class ClientWriter extends AbstractWriter {
 	private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
 		if (typeMemberDecl.isStatic() || typeDecl instanceof InterfaceDecl) return StringUtils.cleanQualifiedNameForType(typeDecl);
 		else if (typeDecl instanceof EnumDecl enumDecl) return generateAccessToFirstEnumValue(enumDecl);
+		else if (typeDecl instanceof RecordDecl recordDecl) return generateConstructorInvocationForRecord(recordDecl);
 		else if (typeDecl instanceof ClassDecl classDecl) return generateEasiestConstructorInvocationForClass(classDecl);
 
 		throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
+	}
+
+	private String generateConstructorInvocationForRecord(RecordDecl recordDecl) {
+		var params = getParamsFromRecordComponents(recordDecl.getRecordComponents());
+
+		return generateConstructorInvocationWithParamsForClass(recordDecl, params);
 	}
 
 	private String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
@@ -659,6 +666,18 @@ public final class ClientWriter extends AbstractWriter {
 					var value = getDefaultValueForType(StringUtils.cleanQualifiedNameForType(p.type()));
 
 					return p.isVarargs() ? "%s, %s".formatted(value, value) : value;
+				})
+				.collect(Collectors.joining(", "));
+	}
+
+	private static String getParamsFromRecordComponents(List<RecordComponentDecl> recordComponentDecls) {
+		if (recordComponentDecls.isEmpty()) return "";
+
+		return recordComponentDecls.stream()
+				.map(rC -> {
+					var value = getDefaultValueForType(StringUtils.cleanQualifiedNameForType(rC.getType()));
+
+					return rC.isVarargs() ? "%s, %s".formatted(value, value) : value;
 				})
 				.collect(Collectors.joining(", "));
 	}
