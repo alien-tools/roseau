@@ -21,7 +21,7 @@ public final class EnumBuilder extends ClassBuilder {
 	public static EnumBuilder from(EnumDecl decl) {
 		var builder = new EnumBuilder();
 
-		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+		builder.mutateWithDecl(decl);
 
 		builder.values = new ArrayList<>(decl.getValues().stream().map(EnumValueBuilder::from).toList());
 

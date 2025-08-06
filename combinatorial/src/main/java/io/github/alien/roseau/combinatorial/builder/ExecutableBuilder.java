@@ -12,11 +12,11 @@ public abstract sealed class ExecutableBuilder extends TypeMemberBuilder permits
 	public List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	public List<ITypeReference> thrownExceptions = new ArrayList<>();
 
-	public static void mutateExecutableBuilderWithExecutable(ExecutableBuilder builder, ExecutableDecl decl) {
-		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, decl);
+	protected void mutateWithDecl(ExecutableDecl decl) {
+		super.mutateWithDecl(decl);
 
-		builder.parameters = new ArrayList<>(decl.getParameters().stream().map(ParameterBuilder::from).toList());
-		builder.formalTypeParameters = new ArrayList<>(decl.getFormalTypeParameters());
-		builder.thrownExceptions = new ArrayList<>(decl.getThrownExceptions());
+		parameters = new ArrayList<>(decl.getParameters().stream().map(ParameterBuilder::from).toList());
+		formalTypeParameters = new ArrayList<>(decl.getFormalTypeParameters());
+		thrownExceptions = new ArrayList<>(decl.getThrownExceptions());
 	}
 }

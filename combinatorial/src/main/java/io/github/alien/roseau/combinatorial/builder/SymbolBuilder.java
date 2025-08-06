@@ -1,10 +1,6 @@
 package io.github.alien.roseau.combinatorial.builder;
 
-import io.github.alien.roseau.api.model.AccessModifier;
-import io.github.alien.roseau.api.model.Annotation;
-import io.github.alien.roseau.api.model.Modifier;
-import io.github.alien.roseau.api.model.SourceLocation;
-import io.github.alien.roseau.api.model.Symbol;
+import io.github.alien.roseau.api.model.*;
 
 import java.util.ArrayList;
 import java.util.EnumSet;
@@ -17,13 +13,13 @@ abstract class SymbolBuilder {
 	public List<Annotation> annotations = new ArrayList<>();
 	public SourceLocation location = SourceLocation.NO_LOCATION;
 
-	public static void mutateSymbolBuilderWithSymbol(SymbolBuilder builder, Symbol symbol) {
-		builder.qualifiedName = symbol.getQualifiedName();
-		builder.visibility = symbol.getVisibility();
-		builder.modifiers = symbol.getModifiers().isEmpty()
+	protected void mutateWithDecl(Symbol symbol) {
+		qualifiedName = symbol.getQualifiedName();
+		visibility = symbol.getVisibility();
+		modifiers = symbol.getModifiers().isEmpty()
 				? EnumSet.noneOf(Modifier.class)
 				: EnumSet.copyOf(symbol.getModifiers());
-		builder.annotations = new ArrayList<>(symbol.getAnnotations());
-		builder.location = symbol.getLocation();
+		annotations = new ArrayList<>(symbol.getAnnotations());
+		location = symbol.getLocation();
 	}
 }

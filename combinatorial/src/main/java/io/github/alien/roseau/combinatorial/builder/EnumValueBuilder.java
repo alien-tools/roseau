@@ -10,7 +10,7 @@ public final class EnumValueBuilder extends TypeMemberBuilder {
 	public static EnumValueBuilder from(EnumValueDecl decl) {
 		var builder = new EnumValueBuilder();
 
-		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, decl);
+		builder.mutateWithDecl(decl);
 
 		return builder;
 	}

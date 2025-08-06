@@ -13,7 +13,7 @@ public final class MethodBuilder extends ExecutableBuilder {
 	public static MethodBuilder from(MethodDecl methodDecl) {
 		var builder = new MethodBuilder();
 
-		ExecutableBuilder.mutateExecutableBuilderWithExecutable(builder, methodDecl);
+		builder.mutateWithDecl(methodDecl);
 
 		return builder;
 	}
