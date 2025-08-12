@@ -1,5 +1,6 @@
 package io.github.alien.roseau.utils;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -252,27 +253,41 @@ public class TestUtils {
 	}
 
 	public static API buildSpoonAPI(String sources) {
-		Map<String, String> sourcesMap = buildSourcesMap(sources);
-		CtModel m = buildModel(sourcesMap);
-		return new SpoonTypesExtractor().extractTypes(m).toAPI();
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			Path sourcesPath = writeSources(sourcesMap);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
+			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
+			return api.toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static API buildAsmAPI(String sources) {
-		Map<String, String> sourcesMap = buildSourcesMap(sources);
-		JarFile jar = buildJar(sourcesMap);
-		return new AsmTypesExtractor().extractTypes(jar).toAPI();
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
+			tempJarFile.deleteOnExit();
+			buildJar(sourcesMap, tempJarFile.toPath());
+			Library library = Library.of(tempJarFile.toPath());
+			return new AsmTypesExtractor().extractTypes(library).toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static API buildJdtAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			LibraryTypes api = new JdtTypesExtractor().extractTypes(sourcesPath);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api.toAPI();
 		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -299,11 +314,11 @@ public class TestUtils {
 			System.out.println("JApiCmp comparison failed: " + e.getMessage());
 		}*/
 
-		return roseauBCs;
+		return roseauBCs.breakingChanges();
 	}
 
 	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) {
-		Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
+		/*Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
 		Map<String, String> sourcesMap2 = buildSourcesMap(sourcesV2);
 		Path jar1 = Path.of(buildJar(sourcesMap1).getName());
 		Path jar2 = Path.of(buildJar(sourcesMap2).getName());
@@ -340,10 +355,11 @@ public class TestUtils {
 				bcs.addAll(jApiSuperclass.getCompatibilityChanges());
 			}
 		});
-		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
+		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();*/
+		return List.of();
 	}
 
-	public static JarFile buildJar(Map<String, String> sourcesMap) {
+	public static JarFile buildJar(Map<String, String> sourcesMap, Path jar) {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		StandardJavaFileManager stdFileManager = compiler.getStandardFileManager(null, null, null);
 		MemoryJavaFileManager fileManager = new MemoryJavaFileManager(stdFileManager);
@@ -381,12 +397,10 @@ public class TestUtils {
 		}
 
 		try {
-			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
-			tempJarFile.deleteOnExit();
-			try (FileOutputStream fos = new FileOutputStream(tempJarFile)) {
+			try (FileOutputStream fos = new FileOutputStream(jar.toFile())) {
 				fos.write(jarByteStream.toByteArray());
 			}
-			return new JarFile(tempJarFile);
+			return new JarFile(jar.toFile());
 		} catch (IOException e) {
 			throw new RuntimeException("Error while creating temporary JarFile", e);
 		}

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.utils;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
@@ -206,9 +207,9 @@ public class OnTheFlyCaseCompiler {
 
 			// --- Extract APIs and compute diff ---
 			TypesExtractor extractor = new SpoonTypesExtractor();
-			API v1 = extractor.extractTypes(srcDir1).toAPI();
-			API v2 = extractor.extractTypes(srcDir2).toAPI();
-			List<BreakingChange> bcs = new APIDiff(v1, v2).diff();
+			API v1 = extractor.extractTypes(Library.of(srcDir1)).toAPI();
+			API v2 = extractor.extractTypes(Library.of(srcDir2)).toAPI();
+			List<BreakingChange> bcs = new APIDiff(v1, v2).diff().breakingChanges();
 
 			// --- Compile client against API v1 (sanity check) ---
 			List<Diagnostic<? extends JavaFileObject>> compilationErrors1 = otf.compileClient(clientFile, clsDir1);
