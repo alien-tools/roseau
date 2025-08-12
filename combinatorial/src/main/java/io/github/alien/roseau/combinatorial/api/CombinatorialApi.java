@@ -77,17 +77,17 @@ public final class CombinatorialApi {
 			.map(set -> set.stream().map(ITypeReference.class::cast).toList())
 			.toList();
 
-	static final List<Boolean> isHidingAndOverriding = List.of(/*true, */false);
+	static final List<Boolean> isHidingAndOverriding = List.of(true, false);
 
 	static List<ClassBuilder> classBuilders = new ArrayList<>();
 	static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
 	static final String apiPackageName = "api";
 
-	static final int typeHierarchyDepth = 1;
-	static final int typeHierarchyWidth = 1;
+	static final int typeHierarchyDepth = 2;
+	static final int typeHierarchyWidth = 2;
 	static final int enumValuesCount = 2;
-	static final int paramsCount = 1;
+	static final int paramsCount = 2;
 
 	static int symbolCounter = 0;
 	static int constructorCounter = 0;
