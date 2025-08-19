@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
@@ -20,19 +21,20 @@ class IncrementalJdtTypesExtractorTest {
 	@Test
 	void unchanged_symbols_are_kept(@TempDir Path wd) throws Exception {
 		var i = wd.resolve("I.java");
+		var library1 = Library.of(wd);
 		Files.writeString(i, "public interface I {}");
 		Files.writeString(wd.resolve("C.java"), "public class C implements I {}");
 		Files.writeString(wd.resolve("R.java"), "public record R() {}");
 
 		var extractor = new JdtTypesExtractor();
-		var types1 = extractor.extractTypes(wd);
+		var types1 = extractor.extractTypes(library1);
 		var api1 = types1.toAPI();
 
 		Files.writeString(i, "public interface I { void m(); }");
 		var changedFiles = new ChangedFiles(Set.of(i), Set.of(), Set.of());
 
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
-		var types2 = incrementalExtractor.refreshAPI(wd, changedFiles, types1);
+		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
 		var api2 = types2.toAPI();
 
 		var i1 = assertInterface(api1, "I");
@@ -62,13 +64,13 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(wd.resolve("A.java"), "public class A {}");
 		Files.writeString(wd.resolve("B.java"), "public class B {}");
 
-		var api1 = new JdtTypesExtractor().extractTypes(wd);
+		var types1 = new JdtTypesExtractor().extractTypes(Library.of(wd));
 
 		var changedFiles = ChangedFiles.NO_CHANGES;
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
-		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1);
+		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
 
-		assertThat(api1).isSameAs(api2);
+		assertThat(types1).isSameAs(types2);
 	}
 
 	@Test
@@ -78,11 +80,12 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(a, "public class A {}");
 		Files.writeString(b, "public class B {}");
 
-		var api1 = new JdtTypesExtractor().extractTypes(wd).toAPI();
+		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(a), Set.of());
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
-		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1.getLibraryTypes()).toAPI();
+		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd),
+			changedFiles).toAPI();
 
 		assertClass(api1, "A");
 		var b1 = assertClass(api1, "B");
@@ -99,14 +102,14 @@ class IncrementalJdtTypesExtractorTest {
 		var a = wd.resolve("A.java");
 		Files.writeString(a, "public class A {}");
 
-		var api1 = new JdtTypesExtractor().extractTypes(wd).toAPI();
+		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
 
 		var b = wd.resolve("B.java");
 		Files.writeString(b, "public class B {}");
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(b));
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
-		var api2 = incrementalExtractor.refreshAPI(wd, changedFiles, api1.getLibraryTypes()).toAPI();
+		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd), changedFiles).toAPI();
 
 		var a1 = assertClass(api1, "A");
 		var a2 = assertClass(api2, "A");
@@ -147,7 +150,7 @@ class IncrementalJdtTypesExtractorTest {
 			package pkg2;
 			class D {}""");
 
-		var api1 = new JdtTypesExtractor().extractTypes(wd).toAPI();
+		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
 		assertThat(api1.getExportedTypes()).hasSize(3);
 
 		Files.writeString(b, """
@@ -161,7 +164,7 @@ class IncrementalJdtTypesExtractorTest {
 		var changedFiles = new ChangedFiles(Set.of(b), Set.of(), Set.of());
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 
-		var api2 = incrementalExtractor.refreshAPI(root, changedFiles, api1.getLibraryTypes()).toAPI();
+		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(root), changedFiles).toAPI();
 		assertThat(api2.getExportedTypes()).hasSize(2);
 
 		var clsB = assertClass(api2, "pkg2.B");
