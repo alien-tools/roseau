@@ -100,7 +100,7 @@ public final class SpoonUtils {
 		// Set log level; messages are redirected to log4j with our own independent level
 		launcher.getEnvironment().setLevel("ERROR");
 		// Ignore missing types/classpath related errors
-		//launcher.getEnvironment().setNoClasspath(true);
+		launcher.getEnvironment().setNoClasspath(true);
 		// Proceed even if we find the same type twice; affects the precision of the result.
 		// Caution: this will make the not-so-safe generics typecasts break if two types
 		// of different kinds (e.g. class vs interface) exist in our sources

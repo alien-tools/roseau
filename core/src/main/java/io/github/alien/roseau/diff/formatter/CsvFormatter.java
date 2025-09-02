@@ -15,10 +15,14 @@ public class CsvFormatter implements BreakingChangesFormatter {
 		return "element,oldPosition,newPosition,kind,nature" + System.lineSeparator() +
 			changes.stream().map(bc -> "%s,%s,%s,%s,%s".formatted(
 				bc.impactedSymbol().getQualifiedName(),
-				bc.impactedSymbol().getLocation(),
-				bc.newSymbol() != null ? bc.newSymbol().getLocation() : "",
+				formatLocation(bc.impactedSymbol().getLocation()),
+				bc.newSymbol() != null ? formatLocation(bc.newSymbol().getLocation()) : "",
 				bc.kind(),
 				bc.kind().getNature())
 			).collect(Collectors.joining(System.lineSeparator()));
+	}
+
+	private static String formatLocation(io.github.alien.roseau.api.model.SourceLocation l) {
+		return l.file() + ":" + l.line() + ":" + l.column();
 	}
 }

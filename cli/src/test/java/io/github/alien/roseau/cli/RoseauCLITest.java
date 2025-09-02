@@ -34,6 +34,19 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void diff_includes_line_and_column_in_output() throws Exception {
+		var out = tapSystemOutNormalized(() ->
+			cmd.execute("--v1=src/test/resources/test-project-v1/src",
+				"--v2=src/test/resources/test-project-v2/src",
+				"--diff",
+				"--plain")
+		);
+
+		// Expect file:line:column; for JDT sources, method m() is on line 4
+		assertThat(out).contains("src/test/resources/test-project-v1/src/pkg/T.java:4:");
+	}
+
+	@Test
 	void heterogeneous_diff_1() throws Exception {
 		var out = tapSystemOutNormalized(() ->
 			cmd.execute("--v1=src/test/resources/test-project-v1/src",

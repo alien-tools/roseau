@@ -55,6 +55,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private final String filePath;
 	private final TypeReferenceFactory typeRefFactory;
 	private final Map<String, Integer> lineNumbersMapping = new HashMap<>(10);
+	private final Map<String, Integer> columnNumbersMapping = new HashMap<>(10);
 
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIVisitor.class);
 
@@ -96,6 +97,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 			// node.getStartPosition() includes leading comments/javadoc/annotations
 			// so we (arbitrarily) decide that the method's name is the relevant one
 			lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(node.getName().getStartPosition()));
+			columnNumbersMapping.put(getFullyQualifiedName(binding), cu.getColumnNumber(node.getName().getStartPosition()));
 		}
 		return false;
 	}
@@ -107,6 +109,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 				IVariableBinding binding = vdf.resolveBinding();
 				if (binding != null) {
 					lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getName().getStartPosition()));
+					columnNumbersMapping.put(getFullyQualifiedName(binding), cu.getColumnNumber(vdf.getName().getStartPosition()));
 				}
 			}
 		});
@@ -128,7 +131,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		List<Annotation> annotations = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getName().getStartPosition()));
+		SourceLocation location = new SourceLocation(Paths.get(filePath),
+			cu.getLineNumber(type.getName().getStartPosition()),
+			cu.getColumnNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 
 		// Not present in bindings: https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
@@ -208,7 +213,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		int column = columnNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line, column);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 
 		return new FieldDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods,
@@ -220,7 +226,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		int column = columnNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line, column);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -249,7 +256,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		int column = columnNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line, column);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));

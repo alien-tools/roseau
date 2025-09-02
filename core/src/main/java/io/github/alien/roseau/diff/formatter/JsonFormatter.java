@@ -41,6 +41,7 @@ public class JsonFormatter implements BreakingChangesFormatter {
 		JSONObject position = new JSONObject();
 		position.put("path", location.file());
 		position.put("line", location.line());
+		position.put("column", location.column());
 		return position;
 	}
 }

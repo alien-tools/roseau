@@ -443,11 +443,12 @@ public class SpoonAPIFactory {
 		if (position.isValidPosition()) {
 			return new SourceLocation(
 				position.getFile() != null ? position.getFile().toPath() : null,
-				position.getLine());
+				position.getLine(),
+				position.getColumn());
 		} else if (fallback != null && fallback.getPosition() != null) {
 			SourcePosition fallbackPosition = fallback.getPosition();
 			if (fallbackPosition.isValidPosition() && fallbackPosition.getFile() != null) {
-				return new SourceLocation(fallback.getPosition().getFile().toPath(), -1);
+				return new SourceLocation(fallback.getPosition().getFile().toPath(), -1, -1);
 			}
 		}
 

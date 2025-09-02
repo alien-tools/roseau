@@ -257,7 +257,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
 		List<Annotation> anns = convertAnnotations(annotations);
 		// No bullet-proof line information for types
-		SourceLocation location = new SourceLocation(sourceFile, -1);
+		SourceLocation location = new SourceLocation(sourceFile, -1, -1);
 
 		if (isSealed) {
 			modifiers.add(Modifier.SEALED);
@@ -307,7 +307,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		// No bullet-proof line information for fields
-		SourceLocation location = new SourceLocation(sourceFile, -1);
+		SourceLocation location = new SourceLocation(sourceFile, -1, -1);
 		return new FieldDecl(String.format("%s.%s", className, name), convertVisibility(access),
 			convertFieldModifiers(access), convertAnnotations(annotations), location,
 			typeRefFactory.createTypeReference(className), fieldType);
@@ -343,7 +343,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new ConstructorDecl(String.format("%s.<init>", className), convertVisibility(access),
-			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
+			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line, -1),
 			typeRefFactory.createTypeReference(className),
 			typeRefFactory.createTypeReference(className),
 			parameters, typeParameters, thrownExceptions);
@@ -378,7 +378,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new MethodDecl(String.format("%s.%s", className, name), convertVisibility(access),
-			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
+			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line, -1),
 			typeRefFactory.createTypeReference(className), returnType, parameters,
 			typeParameters, thrownExceptions);
 	}

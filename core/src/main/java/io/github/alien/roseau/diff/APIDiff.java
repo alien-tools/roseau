@@ -15,6 +15,8 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.diff.changes.NonBreakingChange;
+import io.github.alien.roseau.diff.changes.NonBreakingChangeKind;
 
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +46,7 @@ public class APIDiff {
 	 * List of all the breaking changes identified in the comparison.
 	 */
 	private final Set<BreakingChange> breakingChanges;
+	private final Set<NonBreakingChange> nonBreakingChanges;
 
 	/**
 	 * Constructs an APIDiff instance to compare two {@link LibraryTypes} versions for breaking changes detection.
@@ -55,6 +58,7 @@ public class APIDiff {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
 		breakingChanges = ConcurrentHashMap.newKeySet();
+		nonBreakingChanges = ConcurrentHashMap.newKeySet();
 	}
 
 	/**
@@ -72,6 +76,11 @@ public class APIDiff {
 			)
 		);
 
+		// Record non-breaking added types
+		v2.getExportedTypes().stream().parallel()
+			.filter(t2 -> v1.findExportedType(t2.getQualifiedName()).isEmpty())
+			.forEach(t2 -> nbc(NonBreakingChangeKind.TYPE_ADDED, null, t2));
+
 		return getBreakingChanges();
 	}
 
@@ -84,6 +93,14 @@ public class APIDiff {
 				() -> bc(BreakingChangeKind.FIELD_REMOVED, f1, null)
 			)
 		);
+
+		// Added fields (non-breaking)
+		v2.getAllFields(t2).forEach(f2 -> {
+			boolean exists = v1.getAllFields(t1).stream().anyMatch(f1 -> f1.getSimpleName().equals(f2.getSimpleName()));
+			if (!exists) {
+				nbc(NonBreakingChangeKind.FIELD_ADDED, null, f2);
+			}
+		});
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
@@ -95,6 +112,14 @@ public class APIDiff {
 				() -> bc(BreakingChangeKind.METHOD_REMOVED, m1, null)
 			)
 		);
+
+		// Added methods (non-breaking)
+		v2.getAllMethods(t2).forEach(m2 -> {
+			boolean exists = v1.getAllMethods(t1).stream().anyMatch(m1 -> v1.haveSameErasure(m1, m2));
+			if (!exists && !m2.isAbstract()) {
+				nbc(NonBreakingChangeKind.METHOD_ADDED, null, m2);
+			}
+		});
 	}
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
@@ -106,6 +131,14 @@ public class APIDiff {
 				() -> bc(BreakingChangeKind.CONSTRUCTOR_REMOVED, cons1, null)
 			)
 		);
+
+		// Added constructors (non-breaking)
+		c2.getDeclaredConstructors().forEach(cons2 -> {
+			boolean exists = c1.getDeclaredConstructors().stream().anyMatch(cons1 -> v1.haveSameErasure(cons1, cons2));
+			if (!exists) {
+				nbc(NonBreakingChangeKind.CONSTRUCTOR_ADDED, null, cons2);
+			}
+		});
 	}
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
@@ -170,6 +203,11 @@ public class APIDiff {
 		}
 
 		diffConstructors(c1, c2);
+
+		// Visibility increases (non-breaking)
+		if (c1.isProtected() && c2.isPublic()) {
+			nbc(NonBreakingChangeKind.TYPE_VISIBILITY_INCREASED, c1, c2);
+		}
 	}
 
 	private void diffField(FieldDecl f1, FieldDecl f2) {
@@ -191,6 +229,10 @@ public class APIDiff {
 
 		if (f1.isPublic() && f2.isProtected()) {
 			bc(BreakingChangeKind.FIELD_NOW_PROTECTED, f1, f2);
+		}
+
+		if (f1.isProtected() && f2.isPublic()) {
+			nbc(NonBreakingChangeKind.FIELD_VISIBILITY_INCREASED, f1, f2);
 		}
 	}
 
@@ -215,6 +257,10 @@ public class APIDiff {
 			bc(BreakingChangeKind.METHOD_NOW_PROTECTED, m1, m2);
 		}
 
+		if (m1.isProtected() && m2.isPublic()) {
+			nbc(NonBreakingChangeKind.METHOD_VISIBILITY_INCREASED, m1, m2);
+		}
+
 		if (!m1.getType().equals(m2.getType())) {
 			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2);
 		}
@@ -227,6 +273,10 @@ public class APIDiff {
 	private void diffConstructor(ConstructorDecl cons1, ConstructorDecl cons2) {
 		if (cons1.isPublic() && cons2.isProtected()) {
 			bc(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cons1, cons2);
+		}
+
+		if (cons1.isProtected() && cons2.isPublic()) {
+			nbc(NonBreakingChangeKind.CONSTRUCTOR_VISIBILITY_INCREASED, cons1, cons2);
 		}
 
 		// We report that as a CONSTRUCTOR_REMOVED
@@ -365,8 +415,16 @@ public class APIDiff {
 		breakingChanges.add(bc);
 	}
 
+	private void nbc(NonBreakingChangeKind kind, Symbol impacted, Symbol added) {
+		nonBreakingChanges.add(new NonBreakingChange(kind, impacted, added));
+	}
+
 	public List<BreakingChange> getBreakingChanges() {
 		return breakingChanges.stream().toList();
+	}
+
+	public List<NonBreakingChange> getNonBreakingChanges() {
+		return nonBreakingChanges.stream().toList();
 	}
 
 	@Override

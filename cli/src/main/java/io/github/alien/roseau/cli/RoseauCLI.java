@@ -8,11 +8,21 @@ import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
+import io.github.alien.roseau.diff.changes.NonBreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.TypesExtractorFactory;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import org.json.JSONArray;
+import org.json.JSONObject;
+import spoon.Launcher;
+import spoon.reflect.CtModel;
+import spoon.reflect.cu.SourcePosition;
+import spoon.reflect.declaration.CtElement;
+import spoon.reflect.declaration.CtField;
+import spoon.reflect.declaration.CtType;
+import spoon.reflect.declaration.CtExecutable;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -63,6 +73,9 @@ public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--verbose",
 		description = "Print debug information")
 	private boolean verbose;
+	@CommandLine.Option(names = "--quiet",
+		description = "Suppress warnings; only show errors")
+	private boolean quiet;
 	@CommandLine.Option(names = "--fail",
 		description = "Return a non-zero code if breaking changes are detected")
 	private boolean failMode;
@@ -79,12 +92,46 @@ public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
 	private boolean plain;
+	@CommandLine.Option(names = "--code-block",
+		description = "Include full source block for old and new symbols in the output (Spoon recommended)")
+	private boolean includeCodeBlock;
+	@CommandLine.Option(names = "--code",
+		description = "Include source code line for old and new symbols in the output")
+	private boolean includeCode;
+	@CommandLine.Option(names = "--all",
+		description = "Show both breaking and non-breaking changes")
+	private boolean showAll;
+	@CommandLine.Option(names = "--stdout-format",
+		description = "Stdout format: TEXT or JSON",
+		defaultValue = "TEXT")
+	private StdoutFormat stdoutFormat;
+
+	private enum StdoutFormat { TEXT, JSON }
+
+	private List<NonBreakingChange> lastNonBreakingChanges = List.of();
 
 	private static final Logger LOGGER = LogManager.getLogger(RoseauCLI.class);
 	private static final String RED_TEXT = "\u001B[31m";
 	private static final String BOLD = "\u001B[1m";
 	private static final String UNDERLINE = "\u001B[4m";
 	private static final String RESET = "\u001B[0m";
+
+	// Returns a display-friendly path by stripping temp/extraction prefixes and starting at a likely groupId root
+	private static String displayPath(Path path) {
+		if (path == null) return "";
+		Path abs = path.toAbsolutePath();
+		// Heuristic roots for Java packages (groupIds)
+		String[] roots = new String[]{"com", "org", "io", "net", "edu", "gov", "jakarta", "javax"};
+		for (int i = 0; i < abs.getNameCount(); i++) {
+			String segment = abs.getName(i).toString();
+			for (String root : roots) {
+				if (segment.equals(root)) {
+					return abs.subpath(i, abs.getNameCount()).toString();
+				}
+			}
+		}
+		return abs.toString();
+	}
 
 	private API buildAPI(Path sources, List<Path> classpath) {
 		TypesExtractor extractor = sources.toString().endsWith(".jar")
@@ -117,6 +164,16 @@ public final class RoseauCLI implements Callable<Integer> {
 			Stopwatch sw = Stopwatch.createStarted();
 			List<BreakingChange> bcs = diff.diff();
 			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
+
+			if (showAll) {
+				lastNonBreakingChanges = diff.getNonBreakingChanges();
+				if (stdoutFormat == StdoutFormat.TEXT) {
+					if (!lastNonBreakingChanges.isEmpty()) {
+						System.out.println((plain ? "Non-breaking changes:" : BOLD + "Non-breaking changes:" + RESET));
+						System.out.println(lastNonBreakingChanges.stream().map(this::formatNonBreaking).collect(Collectors.joining(System.lineSeparator())));
+					}
+				}
+			}
 
 			writeReport(apiV1, bcs);
 			return bcs;
@@ -168,14 +225,222 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private String format(BreakingChange bc) {
 		if (plain) {
-			return String.format("%s %s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
-				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+			String base = String.format("%s %s%n\t%s:%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+				displayPath(bc.impactedSymbol().getLocation().file()), bc.impactedSymbol().getLocation().line(), bc.impactedSymbol().getLocation().column());
+			if (includeCodeBlock) {
+				String oldBlock = readSourceBlock(bc.impactedSymbol().getLocation());
+				String newBlock = bc.newSymbol() != null ? readSourceBlock(bc.newSymbol().getLocation()) : null;
+				StringBuilder sb = new StringBuilder(base);
+				if (oldBlock != null) sb.append(String.format("%n\told:%n%s", indentBlock(oldBlock)));
+				if (newBlock != null) sb.append(String.format("%n\tnew:%n%s", indentBlock(newBlock)));
+				return sb.toString();
+			}
+			if (includeCode) {
+				String oldLine = readSourceLine(bc.impactedSymbol().getLocation());
+				String newLine = bc.newSymbol() != null ? readSourceLine(bc.newSymbol().getLocation()) : null;
+				StringBuilder sb = new StringBuilder(base);
+				if (oldLine != null) sb.append(String.format("%n\told: %s", oldLine));
+				if (newLine != null) sb.append(String.format("%n\tnew: %s", newLine));
+				return sb.toString();
+			}
+			return base;
 		} else {
-			return String.format("%s %s%n\t%s:%s",
+			String base = String.format("%s %s%n\t%s:%s:%s",
 				RED_TEXT + BOLD + bc.kind() + RESET,
 				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+				displayPath(bc.impactedSymbol().getLocation().file()), bc.impactedSymbol().getLocation().line(), bc.impactedSymbol().getLocation().column());
+			if (includeCodeBlock) {
+				String oldBlock = readSourceBlock(bc.impactedSymbol().getLocation());
+				String newBlock = bc.newSymbol() != null ? readSourceBlock(bc.newSymbol().getLocation()) : null;
+				StringBuilder sb = new StringBuilder(base);
+				if (oldBlock != null) sb.append(String.format("%n\t%s%n%s", BOLD + "old:" + RESET, indentBlock(oldBlock)));
+				if (newBlock != null) sb.append(String.format("%n\t%s%n%s", BOLD + "new:" + RESET, indentBlock(newBlock)));
+				return sb.toString();
+			}
+			if (includeCode) {
+				String oldLine = readSourceLine(bc.impactedSymbol().getLocation());
+				String newLine = bc.newSymbol() != null ? readSourceLine(bc.newSymbol().getLocation()) : null;
+				StringBuilder sb = new StringBuilder(base);
+				if (oldLine != null) sb.append(String.format("%n\t%s", BOLD + "old:" + RESET + " " + oldLine));
+				if (newLine != null) sb.append(String.format("%n\t%s", BOLD + "new:" + RESET + " " + newLine));
+				return sb.toString();
+			}
+			return base;
 		}
+	}
+
+	private String formatNonBreaking(NonBreakingChange nbc) {
+		String title = nbc.kind() + " " + (nbc.newSymbol() != null ? nbc.newSymbol().getQualifiedName() : nbc.impactedSymbol() != null ? nbc.impactedSymbol().getQualifiedName() : "");
+		var symbol = nbc.newSymbol() != null ? nbc.newSymbol() : nbc.impactedSymbol();
+		if (symbol == null) return title;
+		String base = String.format("%s%n\t%s:%s:%s",
+			title,
+			displayPath(symbol.getLocation().file()), symbol.getLocation().line(), symbol.getLocation().column());
+		if (includeCodeBlock) {
+			String block = readSourceBlock(symbol.getLocation());
+			if (block != null) return base + String.format("%n\tcode:%n%s", indentBlock(block));
+		}
+		if (includeCode) {
+			String line = readSourceLine(symbol.getLocation());
+			if (line != null) return base + String.format("%n\tcode: %s", line);
+		}
+		return base;
+	}
+
+	private static String indentBlock(String block) {
+		return block.lines().map(l -> "\t\t" + l).collect(Collectors.joining(System.lineSeparator()));
+	}
+
+	private String readSourceLine(SourceLocation location) {
+		try {
+			if (location == null || location.line() <= 0 || location.file() == null) return null;
+			List<String> lines = Files.readAllLines(location.file());
+			int idx = location.line() - 1;
+			if (idx >= 0 && idx < lines.size()) {
+				return lines.get(idx).stripTrailing();
+			}
+			return null;
+		} catch (IOException e) {
+			return null;
+		}
+	}
+
+	private String readSourceBlock(SourceLocation location) {
+		try {
+			if (location == null || location.file() == null || location.line() <= 0)
+				return null;
+
+			// Build a small Spoon model for this file only
+			Launcher launcher = new Launcher();
+			launcher.getEnvironment().setNoClasspath(true);
+			launcher.addInputResource(location.file().toString());
+			CtModel model = launcher.buildModel();
+
+			int line = location.line();
+			int column = Math.max(1, location.column());
+
+			CtElement best = null;
+			int bestSpan = Integer.MAX_VALUE;
+			for (CtElement el : model.getAllTypes()) {
+				best = findBestElement(el, location.file(), line, column, best, bestSpan);
+				if (best != null) {
+					SourcePosition p = best.getPosition();
+					bestSpan = p.getSourceEnd() - p.getSourceStart();
+				}
+			}
+
+			if (best == null)
+				return null;
+
+			// For inner-most element, climb to the nearest declaration kind we care about
+			CtElement decl = best;
+			while (decl != null && !(decl instanceof CtType || decl instanceof CtField || decl instanceof CtExecutable)) {
+				decl = decl.getParent();
+			}
+			if (decl == null)
+				decl = best;
+
+			SourcePosition pos = decl.getPosition();
+			if (pos == null || !pos.isValidPosition())
+				return null;
+
+			String content = Files.readString(location.file());
+			int start = Math.max(0, pos.getSourceStart());
+			int end = Math.min(content.length(), pos.getSourceEnd() + 1);
+			return content.substring(start, end).stripTrailing();
+		} catch (Exception e) {
+			return null;
+		}
+	}
+
+	private CtElement findBestElement(CtElement el, Path file, int line, int column, CtElement currentBest, int currentBestSpan) {
+		SourcePosition p = el.getPosition();
+		if (p != null && p.isValidPosition() && p.getFile() != null && file.equals(p.getFile().toPath())) {
+			boolean contains = false;
+			int startLine = Math.max(1, p.getLine());
+			int endLine = Math.max(startLine, p.getEndLine());
+			int startCol = Math.max(1, p.getColumn());
+			int endCol = Math.max(startCol, p.getEndColumn());
+			contains = (line > startLine || (line == startLine && column >= startCol)) &&
+				(line < endLine || (line == endLine && column <= endCol));
+			if (contains) {
+				int span = p.getSourceEnd() - p.getSourceStart();
+				if (span >= 0 && span < currentBestSpan) {
+					currentBest = el;
+					currentBestSpan = span;
+				}
+			}
+		}
+		for (CtElement child : el.getDirectChildren()) {
+			currentBest = findBestElement(child, file, line, column, currentBest, currentBestSpan);
+			if (currentBest != null) {
+				currentBestSpan = currentBest.getPosition() != null ? (currentBest.getPosition().getSourceEnd() - currentBest.getPosition().getSourceStart()) : currentBestSpan;
+			}
+		}
+		return currentBest;
+	}
+
+	private String toJsonOutput(List<BreakingChange> bcs, List<NonBreakingChange> nbcs) {
+		JSONObject root = new JSONObject();
+		JSONArray breaking = new JSONArray();
+		for (BreakingChange bc : bcs) {
+			JSONObject obj = new JSONObject();
+			obj.put("kind", bc.kind().toString());
+			obj.put("element", bc.impactedSymbol().getQualifiedName());
+			obj.put("oldLocation", createLocationJson(bc.impactedSymbol().getLocation()));
+			if (bc.newSymbol() != null) {
+				obj.put("newLocation", createLocationJson(bc.newSymbol().getLocation()));
+			}
+			if (includeCode) {
+				String oldLine = readSourceLine(bc.impactedSymbol().getLocation());
+				String newLine = bc.newSymbol() != null ? readSourceLine(bc.newSymbol().getLocation()) : null;
+				if (oldLine != null) obj.put("oldCode", oldLine);
+				if (newLine != null) obj.put("newCode", newLine);
+			}
+			if (includeCodeBlock) {
+				String oldBlock = readSourceBlock(bc.impactedSymbol().getLocation());
+				String newBlock = bc.newSymbol() != null ? readSourceBlock(bc.newSymbol().getLocation()) : null;
+				if (oldBlock != null) obj.put("oldBlock", oldBlock);
+				if (newBlock != null) obj.put("newBlock", newBlock);
+			}
+			breaking.put(obj);
+		}
+		root.put("breaking", breaking);
+
+		if (showAll && nbcs != null) {
+			JSONArray nonBreaking = new JSONArray();
+			for (NonBreakingChange nbc : nbcs) {
+				JSONObject obj = new JSONObject();
+				obj.put("kind", nbc.kind().toString());
+				if (nbc.newSymbol() != null) {
+					obj.put("element", nbc.newSymbol().getQualifiedName());
+					obj.put("location", createLocationJson(nbc.newSymbol().getLocation()));
+					if (includeCode) {
+						String line = readSourceLine(nbc.newSymbol().getLocation());
+						if (line != null) obj.put("code", line);
+					}
+					if (includeCodeBlock) {
+						String block = readSourceBlock(nbc.newSymbol().getLocation());
+						if (block != null) obj.put("block", block);
+					}
+				} else if (nbc.impactedSymbol() != null) {
+					obj.put("element", nbc.impactedSymbol().getQualifiedName());
+					obj.put("location", createLocationJson(nbc.impactedSymbol().getLocation()));
+				}
+				nonBreaking.put(obj);
+			}
+			root.put("nonBreaking", nonBreaking);
+		}
+
+		return root.toString();
+	}
+
+	private static JSONObject createLocationJson(SourceLocation location) {
+		JSONObject position = new JSONObject();
+		position.put("path", displayPath(location.file()));
+		position.put("line", location.line());
+		position.put("column", location.column());
+		return position;
 	}
 
 	private void checkArguments() {
@@ -194,7 +459,9 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	@Override
 	public Integer call() {
-		if (verbose) {
+		if (quiet) {
+			Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.ERROR);
+		} else if (verbose) {
 			Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
 		}
 
@@ -211,14 +478,18 @@ public final class RoseauCLI implements Callable<Integer> {
 			if (diffMode) {
 				List<BreakingChange> bcs = diff(v1, v2, classpath);
 
-				if (bcs.isEmpty()) {
-					System.out.println("No breaking changes found.");
+				if (stdoutFormat == StdoutFormat.JSON) {
+					System.out.println(toJsonOutput(bcs, lastNonBreakingChanges));
 				} else {
-					System.out.println(
-						bcs.stream()
-							.map(this::format)
-							.collect(Collectors.joining(System.lineSeparator()))
-					);
+					if (bcs.isEmpty()) {
+						System.out.println("No breaking changes found.");
+					} else {
+						System.out.println(
+							bcs.stream()
+								.map(this::format)
+								.collect(Collectors.joining(System.lineSeparator()))
+						);
+					}
 				}
 
 				if (failMode && !bcs.isEmpty()) {
