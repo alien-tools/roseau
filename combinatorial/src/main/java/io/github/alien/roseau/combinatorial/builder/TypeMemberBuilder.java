@@ -9,10 +9,10 @@ sealed abstract class TypeMemberBuilder extends SymbolBuilder implements Builder
 	public TypeReference<TypeDecl> containingType;
 	public ITypeReference type;
 
-	public static void mutateTypeMemberBuilderWithTypeMember(TypeMemberBuilder builder, TypeMemberDecl typeMemberDecl) {
-		SymbolBuilder.mutateSymbolBuilderWithSymbol(builder, typeMemberDecl);
+	protected void mutateWithDecl(TypeMemberDecl typeMemberDecl) {
+		super.mutateWithDecl(typeMemberDecl);
 
-		builder.containingType = typeMemberDecl.getContainingType();
-		builder.type = typeMemberDecl.getType();
+		containingType = typeMemberDecl.getContainingType();
+		type = typeMemberDecl.getType();
 	}
 }

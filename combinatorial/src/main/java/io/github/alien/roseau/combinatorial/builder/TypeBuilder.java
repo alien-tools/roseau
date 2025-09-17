@@ -15,13 +15,13 @@ public abstract sealed class TypeBuilder extends SymbolBuilder implements Builde
 	public List<MethodBuilder> methods = new ArrayList<>();
 	public TypeReference<TypeDecl> enclosingType;
 
-	public static void mutateTypeDeclBuilderWithTypeDecl(TypeBuilder builder, TypeDecl typeDecl) {
-		SymbolBuilder.mutateSymbolBuilderWithSymbol(builder, typeDecl);
+	protected void mutateWithDecl(TypeDecl typeDecl) {
+		super.mutateWithDecl(typeDecl);
 
-		builder.implementedInterfaces = new ArrayList<>(typeDecl.getImplementedInterfaces());
-		builder.formalTypeParameters = new ArrayList<>(typeDecl.getFormalTypeParameters());
-		builder.fields = new ArrayList<>(typeDecl.getDeclaredFields().stream().map(FieldBuilder::from).toList());
-		builder.methods = new ArrayList<>(typeDecl.getDeclaredMethods().stream().map(MethodBuilder::from).toList());
-		builder.enclosingType = typeDecl.getEnclosingType().orElse(null);
+		implementedInterfaces = new ArrayList<>(typeDecl.getImplementedInterfaces());
+		formalTypeParameters = new ArrayList<>(typeDecl.getFormalTypeParameters());
+		fields = new ArrayList<>(typeDecl.getDeclaredFields().stream().map(FieldBuilder::from).toList());
+		methods = new ArrayList<>(typeDecl.getDeclaredMethods().stream().map(MethodBuilder::from).toList());
+		enclosingType = typeDecl.getEnclosingType().orElse(null);
 	}
 }

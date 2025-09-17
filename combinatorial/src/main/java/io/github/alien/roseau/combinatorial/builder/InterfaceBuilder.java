@@ -19,7 +19,7 @@ public final class InterfaceBuilder extends TypeBuilder {
 	public static InterfaceBuilder from(InterfaceDecl decl) {
 		var builder = new InterfaceBuilder();
 
-		TypeBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+		builder.mutateWithDecl(decl);
 
 		builder.permittedTypes = new ArrayList<>(decl.getPermittedTypes());
 

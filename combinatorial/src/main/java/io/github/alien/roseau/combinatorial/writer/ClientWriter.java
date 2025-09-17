@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.writer;
 
 import io.github.alien.roseau.api.model.*;
+import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.Constants;
 import org.apache.logging.log4j.LogManager;
@@ -15,11 +16,9 @@ import java.util.stream.Collectors;
 import static io.github.alien.roseau.combinatorial.client.ClientTemplates.*;
 
 public final class ClientWriter extends AbstractWriter {
-	private final API api;
-
 	private static final Logger LOGGER = LogManager.getLogger(ClientWriter.class);
 
-	private static final String clientPackageName = Constants.CLIENT_FOLDER;
+	private final API api;
 
 	private final Map<String, InnerType> _innerTypes = new HashMap<>();
 	private final Set<String> _exceptions = new HashSet<>();
@@ -27,8 +26,9 @@ public final class ClientWriter extends AbstractWriter {
 	private final List<String> _throwingInstructions = new ArrayList<>();
 	private final List<String> _tryCatchInstructions = new ArrayList<>();
 
-	public ClientWriter(Path outputDir, API api) {
-		super(outputDir);
+	public ClientWriter(Path clientOutputDir, API api) {
+		super(clientOutputDir);
+
 		this.api = api;
 	}
 
@@ -51,11 +51,17 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeConstructorDirectInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
-		var params = getParamsForExecutableInvocation(constructorDecl);
-		var code = generateConstructorInvocationWithParamsForClass(containingClass, params);
-
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
+		var params = getParamsForExecutableInvocation(constructorDecl);
+
+		var code = generateConstructorInvocationWithParamsForClass(containingClass, params);
 		addInstructionToClientMain(exceptions, "%s;".formatted(code));
+
+		if (constructorDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var formalParams = getFormalParamsForExecutableInvocation(constructorDecl);
+		var codeWithFormalParams = generateConstructorInvocationWithParamsForClass(containingClass, formalParams, params);
+		addInstructionToClientMain(exceptions, "%s;".formatted(codeWithFormalParams));
 	}
 
 	public void writeConstructorInheritanceInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
@@ -65,16 +71,23 @@ public final class ClientWriter extends AbstractWriter {
 
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 		var formattedExceptions = formatExceptionNames(exceptions);
-		var paramsValue = getParamsForExecutableInvocation(constructorDecl);
+		var paramsNames = constructorDecl.getParameters().stream()
+				.map(ParameterDecl::name)
+				.collect(Collectors.joining(", "));
+		var formalParamsNames = constructorDecl.getFormalTypeParameters().stream()
+				.map(FormalTypeParameter::name)
+				.collect(Collectors.joining(", "));
+		var paramsValues = getParamsForExecutableInvocation(constructorDecl);
 
-		var constructor = "\t%s%s {\n\t\tsuper(%s);\n\t}".formatted(
+		var constructor = "\t%s%s {\n\t\t%ssuper(%s);\n\t}".formatted(
 				constructorDecl.toString().replace(constructorDecl.getSimpleName(), innerTypeName),
 				formattedExceptions.isBlank() ? "" : " throws %s".formatted(formattedExceptions),
-				paramsValue
+				formalParamsNames.isEmpty() ? "" : "<%s> ".formatted(formalParamsNames),
+				paramsNames
 		);
 
 		insertDeclarationsToInnerClass(containingClass, innerTypeName, constructor, "");
-		addInstructionToClientMain(exceptions, "new %s(%s);".formatted(innerTypeName, paramsValue));
+		addInstructionToClientMain(exceptions, "new %s(%s);".formatted(innerTypeName, paramsValues));
 	}
 
 	public void writeExceptionCatch(ClassDecl classDecl) {
@@ -188,44 +201,71 @@ public final class ClientWriter extends AbstractWriter {
 
 	public void writeMethodDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
 		var caller = getContainingTypeAccessForTypeMember(containingType, methodDecl);
-		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodReturn = getReturnHandleForMethod(methodDecl, "Dir");
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
-
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(exceptions, methodInvocationCode);
+		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "Dir");
+		var code = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, code);
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "DirFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeMethodFullDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var methodReturn = getReturnHandleForMethod(methodDecl, "FullDir");
 		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Full");
-		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
-
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(exceptions, methodInvocationCode);
+		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "FullDir");
+		var code = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, code);
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "FullDirFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeMethodMinimalDirectInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var methodReturn = getReturnHandleForMethod(methodDecl, "MinDir");
-		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Minimal");
-		var params = getParamsForExecutableInvocation(methodDecl);
-		var methodInvocationCode = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
-
+		var caller = generateConstructorDirectInvocationFromInheritance(containingType, "Minimal", true);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		addInstructionToClientMain(exceptions, methodInvocationCode);
+		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "MinDir");
+		var code = "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, code);
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "MinDirFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeMethodInheritanceInvocation(MethodDecl methodDecl, TypeDecl containingType) {
-		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
-
-		var methodInvokeReturn = getReturnHandleForMethod(methodDecl);
 		var caller = methodDecl.isStatic() ? StringUtils.cleanQualifiedNameForType(containingType) : "this";
 		var methodName = methodDecl.getSimpleName();
 		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodInvokeReturn = getReturnHandleForMethod(methodDecl);
 		var methodBody = "%s%s.%s(%s);".formatted(methodInvokeReturn, caller, methodName, params);
 
+		if (!methodDecl.getFormalTypeParameters().isEmpty()) {
+			var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "FormalParams");
+			var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+			methodBody += "\n\t\t%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodName, params);
+		}
+
+		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
+		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		addNewMethodToInnerType(containingType, invokeMethodName, methodBody, exceptions);
 
@@ -242,11 +282,19 @@ public final class ClientWriter extends AbstractWriter {
 
 		insertDeclarationsToInnerClass(containingType, innerTypeName, "", overrideMethod);
 
-		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
-		var methodReturn = getReturnHandleForMethod(methodDecl, "Ove");
 		var caller = methodDecl.isStatic() ? innerTypeName : generateConstructorDirectInvocationFromInheritance(containingType, "Override");
+		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		var params = getParamsForExecutableInvocation(methodDecl);
+
+		var methodReturn = getReturnHandleForMethod(methodDecl, "Ove");
 		addInstructionToClientMain(exceptions, "%s%s.%s(%s);".formatted(methodReturn, caller, methodDecl.getSimpleName(), params));
+
+		if (methodDecl.getFormalTypeParameters().isEmpty()) return;
+
+		var methodReturnWithFormalParams = getReturnHandleForMethod(methodDecl, "OveFormalParams");
+		var formalParams = getFormalParamsForExecutableInvocation(methodDecl);
+		var codeWithFormalParams = "%s%s.%s%s(%s);".formatted(methodReturnWithFormalParams, caller, formalParams, methodDecl.getSimpleName(), params);
+		addInstructionToClientMain(exceptions, codeWithFormalParams);
 	}
 
 	public void writeTypeReference(TypeDecl typeDecl) {
@@ -295,7 +343,7 @@ public final class ClientWriter extends AbstractWriter {
 			var methodsCode = concatDeclarations("\n", false, methodsInstructions.toArray(String[]::new));
 
 			var fullCode = FULL_CLIENT_FILE_TEMPLATE.formatted(
-					clientPackageName,
+					outputDir.toFile().getName(),
 					Constants.CLIENT_FILENAME,
 					innerTypesCode,
 					exceptionsCode,
@@ -303,8 +351,7 @@ public final class ClientWriter extends AbstractWriter {
 					methodsCode
 			).getBytes();
 
-			var packagePath = clientPackageName.replace(".", "/");
-			var filePath = outputDir.resolve("%s/FullClient.java".formatted(packagePath));
+			var filePath = outputDir.resolve("%s.java".formatted(Constants.CLIENT_FILENAME));
 			filePath.toFile().getParentFile().mkdirs();
 
 			Files.write(filePath, fullCode);
@@ -474,9 +521,16 @@ public final class ClientWriter extends AbstractWriter {
 	private String getContainingTypeAccessForTypeMember(TypeDecl typeDecl, TypeMemberDecl typeMemberDecl) {
 		if (typeMemberDecl.isStatic() || typeDecl instanceof InterfaceDecl) return StringUtils.cleanQualifiedNameForType(typeDecl);
 		else if (typeDecl instanceof EnumDecl enumDecl) return generateAccessToFirstEnumValue(enumDecl);
+		else if (typeDecl instanceof RecordDecl recordDecl) return generateConstructorInvocationForRecord(recordDecl);
 		else if (typeDecl instanceof ClassDecl classDecl) return generateEasiestConstructorInvocationForClass(classDecl);
 
 		throw new IllegalArgumentException("Type member must be static, or type must be enum or class");
+	}
+
+	private String generateConstructorInvocationForRecord(RecordDecl recordDecl) {
+		var params = getParamsFromRecordComponents(recordDecl.getRecordComponents());
+
+		return generateConstructorInvocationWithParamsForClass(recordDecl, params);
 	}
 
 	private String generateEasiestConstructorInvocationForClass(ClassDecl classDecl) {
@@ -486,11 +540,11 @@ public final class ClientWriter extends AbstractWriter {
 		return generateConstructorInvocationWithParamsForClass(classDecl, params);
 	}
 
-	private String generateConstructorInvocationWithParamsForClass(ClassDecl classDecl, String params) {
+	private String generateConstructorInvocationWithParamsForClass(ClassDecl classDecl, String formalParams, String params) {
 		if (classDecl == null) return "";
 
 		if (!classDecl.isNested() || classDecl.isStatic()) {
-			return "new %s(%s)".formatted(StringUtils.cleanQualifiedNameForType(classDecl), params);
+			return "new %s%s(%s)".formatted(formalParams, StringUtils.cleanQualifiedNameForType(classDecl), params);
 		}
 
 		var containingTypes = getContainingTypesForConstructorInvocation(classDecl);
@@ -536,21 +590,28 @@ public final class ClientWriter extends AbstractWriter {
 		return needsNewAtBeginning ? "new %s".formatted(code) : code.toString();
 	}
 
-	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix) {
+	private String generateConstructorInvocationWithParamsForClass(ClassDecl classDecl, String params) {
+		return generateConstructorInvocationWithParamsForClass(classDecl, "", params);
+	}
+
+	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix, boolean withUpCast) {
 		var constructorName = "%s%s".formatted(typeDecl.getPrettyQualifiedName(), suffix);
+		var constructorInvocation = "new %s()".formatted(constructorName);
 
-		if (typeDecl.isStatic()) {
-			return "new %s()".formatted(constructorName);
-		}
-
-		if (typeDecl.isNested()) {
-			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElseThrow();
+		if (!typeDecl.isStatic()) {
+			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElse(null);
 			if (enclosingType instanceof ClassDecl) {
-				return "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
+				constructorInvocation = "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
 			}
 		}
 
-		return "new %s()".formatted(constructorName);
+		return withUpCast
+				? "((%s) %s)".formatted(StringUtils.cleanQualifiedNameForType(typeDecl), constructorInvocation)
+				: constructorInvocation;
+	}
+
+	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix) {
+		return generateConstructorDirectInvocationFromInheritance(typeDecl, suffix, false);
 	}
 
 	private Stack<TypeDecl> getContainingTypesForConstructorInvocation(TypeDecl typeDecl) {
@@ -609,6 +670,26 @@ public final class ClientWriter extends AbstractWriter {
 				.collect(Collectors.joining(", "));
 	}
 
+	private static String getParamsFromRecordComponents(List<RecordComponentDecl> recordComponentDecls) {
+		if (recordComponentDecls.isEmpty()) return "";
+
+		return recordComponentDecls.stream()
+				.map(rC -> {
+					var value = getDefaultValueForType(StringUtils.cleanQualifiedNameForType(rC.getType()));
+
+					return rC.isVarargs() ? "%s, %s".formatted(value, value) : value;
+				})
+				.collect(Collectors.joining(", "));
+	}
+
+	private static String getFormalParamsForExecutableInvocation(ExecutableDecl executableDecl) {
+		return executableDecl.getFormalTypeParameters().isEmpty()
+			? ""
+			: "<%s>".formatted(executableDecl.getFormalTypeParameters().stream()
+				.map(p -> getDefaultTypeForBounds(p.bounds()))
+				.collect(Collectors.joining(", ")));
+	}
+
 	private static String getReturnHandleForMethod(MethodDecl methodDecl, String suffix) {
 		if (methodDecl.getType().getQualifiedName().equals("void")) return "";
 
@@ -643,6 +724,20 @@ public final class ClientWriter extends AbstractWriter {
 			case "boolean" -> "false";
 			default -> "(%s) null".formatted(typeName);
 		};
+	}
+
+	private static String getDefaultTypeForBounds(List<ITypeReference> bounds) {
+		if (bounds.isEmpty()) return "";
+
+		if (bounds.size() == 1) {
+			return bounds.getFirst().getQualifiedName();
+		}
+
+		if (bounds.stream().anyMatch(b -> b.getQualifiedName().equals("java.lang.Number"))) {
+			return "Integer";
+		}
+
+		return "java.lang.Object";
 	}
 
 	private static List<ConstructorDecl> getSortedConstructors(ClassDecl classDecl) {
@@ -681,13 +776,25 @@ public final class ClientWriter extends AbstractWriter {
 			var methods = String.join("\n\n", this.methods);
 			var typeBody = concatDeclarations(constructors, methods);
 
+			var typeNameFormatted = typeName;
+			var superTypeNameFormatted = StringUtils.cleanQualifiedNameForType(superType);
+			if (!superType.getFormalTypeParameters().isEmpty()) {
+				typeNameFormatted += "<%s>".formatted(superType.getFormalTypeParameters().stream()
+						.map(FormalTypeParameter::toString)
+						.collect(Collectors.joining(", ")));
+
+				superTypeNameFormatted += "<%s>".formatted(superType.getFormalTypeParameters().stream()
+						.map(FormalTypeParameter::name)
+						.collect(Collectors.joining(", ")));
+			}
+
 			if (isTypeInterface) {
-				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeName, StringUtils.cleanQualifiedNameForType(superType));
+				return INTERFACE_EXTENSION_TEMPLATE.formatted(typeNameFormatted, superTypeNameFormatted);
 			}
 
 			var template = superType.isInterface() ? INTERFACE_IMPLEMENTATION_TEMPLATE : CLASS_EXTENSION_TEMPLATE;
 
-			return String.join("\n\t", template.formatted(typeName, StringUtils.cleanQualifiedNameForType(superType), typeBody).split("\n"));
+			return String.join("\n\t", template.formatted(typeNameFormatted, superTypeNameFormatted, typeBody).split("\n"));
 		}
 	}
 }

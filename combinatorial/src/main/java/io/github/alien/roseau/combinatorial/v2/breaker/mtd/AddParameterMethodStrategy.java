@@ -34,7 +34,7 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 		paramBuilder.type = parameterType;
 		paramBuilder.isVarargs = parameterIsVarargs;
 
-		var containingType = getContainingClassFromMutableApi(mutableApi);
+		var containingType = getContainingTypeFromMutableApi(mutableApi);
 		var method = getMethodFrom(containingType);
 		method.parameters.add(paramBuilder);
 	}

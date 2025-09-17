@@ -24,7 +24,7 @@ public final class RemoveParameterMethodStrategy extends AbstractMtdStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		LOGGER.info("Removing parameter at index {} from method {}", parameterIndex, tpMbr.getQualifiedName());
 
-		var containingType = getContainingClassFromMutableApi(mutableApi);
+		var containingType = getContainingTypeFromMutableApi(mutableApi);
 		var method = getMethodFrom(containingType);
 		method.parameters.remove(parameterIndex);
 	}

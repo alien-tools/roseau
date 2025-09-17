@@ -98,5 +98,18 @@ $ git bc main..feature     # BCs between two branches
 $ git bc HEAD~2 HEAD       # BCs between two commits
 ```
 
+## Citing Roseau
+If you use Roseau for academic purposes, please cite: "[Roseau: Fast, Accurate, Source-based Breaking Change Analysis in Java](https://hal.science/hal-05176866/document)". Corentin Latappy, Thomas Degueule, Jean-Rémy Falleri, Romain Robbes, Lina Ochoa. In _IEEE International Conference on Software Maintenance and Evolution_ (ICSME 2025).
+
+```bibtex
+@inproceedings{latappy25roseau,
+    author    = {Corentin Latappy and Thomas Degueule and Jean-Rémy Falleri and Romain Robbes and Lina Ochoa},
+    title     = {{Roseau}: Fast, Accurate, Source-based Breaking Change Analysis in {Java}},
+    booktitle = {{IEEE} International Conference on Software Maintenance and Evolution, {ICSME} 2025, Auckland, New Zealand, September 7-12, 2025},
+    publisher = {{IEEE}},
+    year      = {2025}
+}
+```
+
 ## License
 This repository—and all its content—is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).  („• ‿ •„) 

@@ -12,7 +12,7 @@ public final class RecordComponentBuilder extends TypeMemberBuilder {
 	public static RecordComponentBuilder from(RecordComponentDecl decl) {
 		var builder = new RecordComponentBuilder();
 
-		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, decl);
+		builder.mutateWithDecl(decl);
 
 		builder.isVarargs = decl.isVarargs();
 

@@ -3,15 +3,19 @@ package io.github.alien.roseau.combinatorial.v2.benchmark.writer;
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.v2.queue.ImpossibleStrategyQueue;
 
+import java.nio.file.Path;
+
 public final class ImpossibleStrategiesWriter extends AbstractWriter<String> {
-	public ImpossibleStrategiesWriter() {
-		super(Constants.IMPOSSIBLE_STRATEGIES_PATH, ImpossibleStrategyQueue.getInstance());
+	public ImpossibleStrategiesWriter(Path outputPath) {
+		super(Constants.getImpossibleStrategiesPath(outputPath), ImpossibleStrategyQueue.getInstance());
+
+		LOGGER.info("Creating ImpossibleStrategiesWriter");
 	}
 
 	@Override
 	protected void addToFile(String strategy, String data) {
 		if (fileWriter == null)
-			if (initializeFile(Constants.IMPOSSIBLE_STRATEGIES_PATH.getFileName().toString(), "Strategy"))
+			if (initializeFile(filePath.getFileName().toString(), "Strategy"))
 				return;
 
 		try {

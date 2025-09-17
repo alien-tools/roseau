@@ -10,7 +10,6 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.*;
-import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.builder.*;
 
 import java.nio.file.Path;
@@ -79,14 +78,14 @@ public final class CombinatorialApi {
 			.map(set -> set.stream().map(ITypeReference.class::cast).toList())
 			.toList();
 
-	static final List<Boolean> isHidingAndOverriding = List.of(/*true, */false);
+	static final List<Boolean> isHidingAndOverridingValues = List.of(/*true, */false);
 
 	static List<ClassBuilder> classBuilders = new ArrayList<>();
 	static List<InterfaceBuilder> interfaceBuilders = new ArrayList<>();
 
-	static final String apiPackageName = Constants.API_FOLDER;
+	static final String apiPackageName = "api";
 
-	static final int typeHierarchyDepth = 1;
+	static final int typeHierarchyDepth = 2;
 	static final int typeHierarchyWidth = 1;
 	static final int enumValuesCount = 2;
 	static final int paramsCount = 1;
@@ -348,7 +347,6 @@ public final class CombinatorialApi {
 								varArgsRecordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
 								varArgsRecordComponentBuilder.isVarargs = true;
 								recordBuilder.recordComponents.add(varArgsRecordComponentBuilder);
-								recordBuilder.constructors.getFirst().parameters.add(generateParameterBuilder("c" + recordComponentParamsCount, varArgsParamType, true));
 
 								store(recordBuilder);
 							})
@@ -389,7 +387,7 @@ public final class CombinatorialApi {
 				return;
 
 			topLevelVisibilities.forEach(visibility ->
-					isHidingAndOverriding.forEach(isHidingAndOverriding -> {
+					isHidingAndOverridingValues.forEach(isHidingAndOverriding -> {
 						var clsBuilder = new ClassBuilder();
 						clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
 						clsBuilder.visibility = visibility;
@@ -408,13 +406,19 @@ public final class CombinatorialApi {
 
 						var currentApi = getAPI();
 						var methodsToGenerate = new HashMap<String, MethodBuilder>();
+						if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
+							currentApi.getAllMethodsToImplement(superCls)
+									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
+						}
 						if (isHidingAndOverriding) {
 							superCls.getDeclaredMethods().stream()
 									.filter(m -> !m.isFinal())
-									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
-						} else if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
-							currentApi.getAllMethodsToImplement(superCls)
-									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
+									.forEach(m -> {
+										var methodSignature = m.getSignature();
+										if (!methodsToGenerate.containsKey(methodSignature)) {
+											methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
+										}
+									});
 						}
 
 						implementingIntfBuilders.forEach(implementingIntfBuilder -> {
@@ -592,8 +596,6 @@ public final class CombinatorialApi {
 
 			recordBuilder.recordComponents.add(recordComponentBuilder);
 		});
-
-		addConstructorToClassBuilder(recordBuilder, PUBLIC, recordsParamsTypes, List.of(), false);
 	}
 
 	private static void createMethodAndAddToType(AccessModifier visibility, Set<Modifier> modifiers, List<ParameterBuilder> parameters, TypeBuilder type) {

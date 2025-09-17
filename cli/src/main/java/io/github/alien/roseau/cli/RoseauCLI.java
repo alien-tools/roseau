@@ -174,12 +174,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			return String.format("%s %s%n\t%s:%s",
 				RED_TEXT + BOLD + bc.kind() + RESET,
 				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-					? "unknown"
-					: v1.toAbsolutePath().relativize(bc.impactedSymbol().getLocation().file()),
-				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-					? "unknown"
-					: bc.impactedSymbol().getLocation().line());
+				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
 		}
 	}
 

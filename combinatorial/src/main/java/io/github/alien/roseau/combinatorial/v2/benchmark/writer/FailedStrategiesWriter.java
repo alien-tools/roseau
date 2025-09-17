@@ -3,15 +3,19 @@ package io.github.alien.roseau.combinatorial.v2.benchmark.writer;
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.v2.queue.FailedStrategyQueue;
 
+import java.nio.file.Path;
+
 public final class FailedStrategiesWriter extends AbstractWriter<String> {
-	public FailedStrategiesWriter() {
-		super(Constants.ERRORS_PATH, FailedStrategyQueue.getInstance());
+	public FailedStrategiesWriter(Path outputPath) {
+		super(Constants.getFailedStrategiesPath(outputPath), FailedStrategyQueue.getInstance());
+
+		LOGGER.info("Creating FailedStrategiesWriter");
 	}
 
 	@Override
 	protected void addToFile(String strategy, String error) {
 		if (fileWriter == null)
-			if (initializeFile(Constants.ERRORS_PATH.getFileName().toString(), "Strategy,Error"))
+			if (initializeFile(filePath.getFileName().toString(), "Strategy,Error"))
 				return;
 
 		try {

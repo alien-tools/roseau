@@ -21,7 +21,7 @@ public final class RecordBuilder extends ClassBuilder {
 	public static RecordBuilder from(RecordDecl decl) {
 		var builder = new RecordBuilder();
 
-		ClassBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
+		builder.mutateWithDecl(decl);
 
 		builder.recordComponents = new ArrayList<>(decl.getRecordComponents().stream().map(RecordComponentBuilder::from).toList());
 

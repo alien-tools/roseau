@@ -24,12 +24,16 @@ public sealed class ClassBuilder extends TypeBuilder permits EnumBuilder, Record
 	public static ClassBuilder from(ClassDecl decl) {
 		var builder = new ClassBuilder();
 
-		TypeBuilder.mutateTypeDeclBuilderWithTypeDecl(builder, decl);
-
-		builder.superClass = decl.getSuperClass();
-		builder.constructors = new ArrayList<>(decl.getDeclaredConstructors().stream().map(ConstructorBuilder::from).toList());
-		builder.permittedTypes = new ArrayList<>(decl.getPermittedTypes());
+		builder.mutateWithDecl(decl);
 
 		return builder;
+	}
+
+	protected void mutateWithDecl(ClassDecl decl) {
+		super.mutateWithDecl(decl);
+
+		superClass = decl.getSuperClass();
+		constructors = new ArrayList<>(decl.getDeclaredConstructors().stream().map(ConstructorBuilder::from).toList());
+		permittedTypes = new ArrayList<>(decl.getPermittedTypes());
 	}
 }

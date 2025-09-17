@@ -11,7 +11,7 @@ public final class FieldBuilder extends TypeMemberBuilder {
 	public static FieldBuilder from(FieldDecl decl) {
 		var builder = new FieldBuilder();
 
-		TypeMemberBuilder.mutateTypeMemberBuilderWithTypeMember(builder, decl);
+		builder.mutateWithDecl(decl);
 
 		return builder;
 	}

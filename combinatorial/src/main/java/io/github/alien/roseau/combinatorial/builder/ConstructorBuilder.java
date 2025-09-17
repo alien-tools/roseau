@@ -13,7 +13,7 @@ public final class ConstructorBuilder extends ExecutableBuilder {
 	public static ConstructorBuilder from(ConstructorDecl constructorDecl) {
 		var builder = new ConstructorBuilder();
 
-		ExecutableBuilder.mutateExecutableBuilderWithExecutable(builder, constructorDecl);
+		builder.mutateWithDecl(constructorDecl);
 
 		return builder;
 	}

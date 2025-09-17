@@ -14,14 +14,19 @@ public final class GenerateApiClient extends AbstractStep {
 
 	private final API api;
 
-	public GenerateApiClient(API api, Path outputPath) {
-		super(outputPath);
+	private final ClientWriter clientWriter;
+
+	public GenerateApiClient(API api, Path clientOutputPath) {
+		super(clientOutputPath);
 
 		this.api = api;
+
+		clientWriter = new ClientWriter(clientOutputPath, api);
 	}
 
 	public void run() throws StepExecutionException {
-		var clientWriter = new ClientWriter(outputPath, api);
+		if (!clientWriter.createOutputHierarchy())
+			throw new StepExecutionException(this.getClass().getSimpleName(), "Failed to create client sources hierarchy");
 
 		try {
 			LOGGER.info("-- Generating client for API --");

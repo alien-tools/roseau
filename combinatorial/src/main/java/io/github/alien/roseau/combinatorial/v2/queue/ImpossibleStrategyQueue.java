@@ -5,7 +5,7 @@ import java.util.concurrent.LinkedBlockingQueue;
 public final class ImpossibleStrategyQueue extends AbstractQueue<String> {
 	private static ImpossibleStrategyQueue _instance = null;
 
-	public ImpossibleStrategyQueue() {
+	private ImpossibleStrategyQueue() {
 		super(new LinkedBlockingQueue<>());
 	}
 

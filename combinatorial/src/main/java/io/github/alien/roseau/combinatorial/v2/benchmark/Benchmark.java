@@ -6,7 +6,7 @@ import io.github.alien.roseau.combinatorial.utils.ExplorerUtils;
 import io.github.alien.roseau.combinatorial.v2.benchmark.result.ToolResult;
 import io.github.alien.roseau.combinatorial.v2.benchmark.tool.AbstractTool;
 import io.github.alien.roseau.combinatorial.v2.benchmark.tool.RoseauTool;
-import io.github.alien.roseau.combinatorial.v2.compiler.InternalJavaCompiler;
+import io.github.alien.roseau.combinatorial.compiler.InternalJavaCompiler;
 import io.github.alien.roseau.combinatorial.v2.queue.FailedStrategyQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 import io.github.alien.roseau.combinatorial.v2.queue.ResultsProcessQueue;

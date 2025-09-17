@@ -26,21 +26,26 @@ import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
@@ -49,6 +54,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private final String packageName;
 	private final String filePath;
 	private final TypeReferenceFactory typeRefFactory;
+	private final Map<String, Integer> lineNumbersMapping = new HashMap<>(10);
 
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIVisitor.class);
 
@@ -64,26 +70,46 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	@Override
-	public boolean visit(TypeDeclaration node) {
+	public void endVisit(TypeDeclaration node) {
 		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(RecordDeclaration node) {
+		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(EnumDeclaration node) {
+		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(AnnotationTypeDeclaration node) {
+		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public boolean visit(MethodDeclaration node) {
+		IMethodBinding binding = node.resolveBinding();
+		if (binding != null) {
+			// node.getStartPosition() includes leading comments/javadoc/annotations
+			// so we (arbitrarily) decide that the method's name is the relevant one
+			lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(node.getName().getStartPosition()));
+		}
 		return false;
 	}
 
 	@Override
-	public boolean visit(RecordDeclaration node) {
-		processAbstractTypeDeclaration(node);
-		return false;
-	}
-
-	@Override
-	public boolean visit(EnumDeclaration node) {
-		processAbstractTypeDeclaration(node);
-		return false;
-	}
-
-	@Override
-	public boolean visit(AnnotationTypeDeclaration node) {
-		processAbstractTypeDeclaration(node);
+	public boolean visit(FieldDeclaration node) {
+		node.fragments().forEach(fragment -> {
+			if (fragment instanceof VariableDeclarationFragment vdf) {
+				IVariableBinding binding = vdf.resolveBinding();
+				if (binding != null) {
+					lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getName().getStartPosition()));
+				}
+			}
+		});
 		return false;
 	}
 
@@ -102,7 +128,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		List<Annotation> annotations = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getStartPosition()));
+		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 
 		// Not present in bindings: https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
@@ -117,7 +143,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		if (type instanceof EnumDeclaration enm &&
 			((List<?>) enm.enumConstants()).stream().anyMatch(cons ->
 				((EnumConstantDeclaration) cons).getAnonymousClassDeclaration() != null)) {
-				modifiers.add(Modifier.SEALED);
+			modifiers.add(Modifier.SEALED);
 		}
 
 		List<TypeReference<InterfaceDecl>> implementedInterfaces = Arrays.stream(binding.getInterfaces())
@@ -173,7 +199,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		};
 
 		collectedTypeDecls.add(typeDecl);
-		getInnerTypes(type).forEach(this::processAbstractTypeDeclaration);
+		//getInnerTypes(type).forEach(this::processAbstractTypeDeclaration);
 	}
 
 	private FieldDecl convertField(IVariableBinding binding, ITypeBinding enclosingType) {
@@ -181,8 +207,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		// FIXME
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1);
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 
 		return new FieldDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods,
@@ -193,8 +219,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		// FIXME
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1);
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -222,7 +248,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1); // FIXME
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -436,5 +463,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 			return typeRefFactory.createTypeReference(lookupUnresolvedName(binding.getName()));
 		}
 		return typeRefFactory.createTypeReference(toRoseauFqn(binding));
+	}
+
+	private String getFullyQualifiedName(IMethodBinding method) {
+		return "%s#%s(%s)".formatted(
+			method.getDeclaringClass().getQualifiedName(),
+			method.getName(),
+			Arrays.stream(method.getParameterTypes()).map(Object::toString).toList()
+		);
+	}
+
+	private String getFullyQualifiedName(IVariableBinding field) {
+		return field.getDeclaringClass().getQualifiedName() + '#' + field.getName();
 	}
 }
