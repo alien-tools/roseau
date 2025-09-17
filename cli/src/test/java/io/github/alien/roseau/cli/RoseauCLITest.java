@@ -8,13 +8,7 @@ import java.io.File;
 import java.nio.file.Files;
 
 import static com.github.stefanbirkner.systemlambda.SystemLambda.tapSystemOutNormalized;
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.io.FileMatchers.aFileWithSize;
-import static org.hamcrest.io.FileMatchers.anExistingFile;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class RoseauCLITest {
 	RoseauCLI app;
@@ -56,7 +50,7 @@ class RoseauCLITest {
 				"--plain")
 		);
 
-		assertThat(out, containsString("METHOD_REMOVED pkg.T.m"));
+		assertThat(out).contains("METHOD_REMOVED pkg.T.m");
 	}
 
 	@Test
@@ -68,7 +62,7 @@ class RoseauCLITest {
 				"--plain")
 		);
 
-		assertThat(out, containsString("METHOD_REMOVED pkg.T.m"));
+		assertThat(out).contains("METHOD_REMOVED pkg.T.m");
 	}
 
 	@Test
@@ -80,7 +74,7 @@ class RoseauCLITest {
 				"--plain")
 		);
 
-		assertThat(out, containsString("No breaking changes found."));
+		assertThat(out).contains("No breaking changes found.");
 	}
 
 	@Test
@@ -91,23 +85,23 @@ class RoseauCLITest {
 				"--diff")
 		);
 
-		assertThat(out, containsString("No breaking changes found."));
+		assertThat(out).contains("No breaking changes found.");
 	}
 
 	@Test
-	void invalid_v1_path() throws Exception {
+	void invalid_v1_path() {
 		var exitCode = cmd.execute("--v1=src/test/resources/invalid-path",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(exitCode, is(not(0)));
+		assertThat(exitCode).isNotZero();
 	}
 
 	@Test
 	void missing_v2_in_diff() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--diff");
-		assertThat(exitCode, is(not(0)));
+		assertThat(exitCode).isNotZero();
 	}
 
 	@Test
@@ -117,7 +111,7 @@ class RoseauCLITest {
 			"--diff",
 			"--fail");
 
-		assertThat(exitCode, is(1));
+		assertThat(exitCode).isOne();
 	}
 
 	@Test
@@ -126,7 +120,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(exitCode, is(0));
+		assertThat(exitCode).isZero();
 	}
 
 	// --- APIs --- //
@@ -139,10 +133,10 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(json, aFileWithSize(greaterThan(1L)));
-		assertThat(out, containsString(
-			"Extracting API from sources src/test/resources/test-project-v1/src using JDT"));
-		assertThat(out, containsString("Wrote API to api.json"));
+		assertThat(json).isFile().isNotEmpty();
+		assertThat(out)
+			.contains("Extracting API from sources src/test/resources/test-project-v1/src using JDT")
+			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
 	}
@@ -156,10 +150,10 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(json, aFileWithSize(greaterThan(1L)));
-		assertThat(out, containsString(
-			"Extracting API from sources src/test/resources/test-project-v1/test-project-v1.jar using ASM"));
-		assertThat(out, containsString("Wrote API to api.json"));
+		assertThat(json).isFile().isNotEmpty();
+		assertThat(out)
+			.contains("Extracting API from sources src/test/resources/test-project-v1/test-project-v1.jar using ASM")
+			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
 	}
@@ -174,8 +168,8 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(out, containsString("Wrote API to out.json"));
-		assertThat(json, aFileWithSize(greaterThan(1L)));
+		assertThat(out).contains("Wrote API to out.json");
+		assertThat(json).isFile().isNotEmpty();
 
 		Files.deleteIfExists(json.toPath());
 	}
@@ -188,8 +182,8 @@ class RoseauCLITest {
 			"--extractor=ASM",
 			"--verbose");
 
-		assertThat(exitCode, is(not(0)));
-		assertThat(json, not(anExistingFile()));
+		assertThat(exitCode).isNotZero();
+		assertThat(json).doesNotExist();
 	}
 
 	@Test
@@ -202,10 +196,10 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(json, aFileWithSize(greaterThan(1L)));
-		assertThat(out, containsString(
-			"Extracting API from sources src/test/resources/test-project-v1/test-project-v1.jar using ASM"));
-		assertThat(out, containsString("Wrote API to api.json"));
+		assertThat(json).isFile().isNotEmpty();
+		assertThat(out)
+			.contains("Extracting API from sources src/test/resources/test-project-v1/test-project-v1.jar using ASM")
+			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
 	}
@@ -220,10 +214,10 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(json, aFileWithSize(greaterThan(1L)));
-		assertThat(out, containsString(
-			"Extracting API from sources src/test/resources/test-project-v1/src using Spoon"));
-		assertThat(out, containsString("Wrote API to api.json"));
+		assertThat(json).isFile().isNotEmpty();
+		assertThat(out)
+			.contains("Extracting API from sources src/test/resources/test-project-v1/src using Spoon")
+			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
 	}
@@ -233,7 +227,7 @@ class RoseauCLITest {
 	void missing_v1() {
 		var exitCode = cmd.execute("--v2=src/test/resources/test-project-v2/src",
 			"--diff");
-		assertThat(exitCode, is(not(0)));
+		assertThat(exitCode).isNotZero();
 	}
 
 	@Test
@@ -244,7 +238,7 @@ class RoseauCLITest {
 				"--diff")
 		);
 
-		assertThat(out, containsString("No classpath provided, results may be inaccurate"));
+		assertThat(out).contains("No classpath provided, results may be inaccurate");
 	}
 
 	@Test
@@ -252,7 +246,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
 			"--pom=src/test/resources/none.xml");
-		assertThat(exitCode, is(not(0)));
+		assertThat(exitCode).isNotZero();
 	}
 
 	@Test
@@ -261,7 +255,7 @@ class RoseauCLITest {
 			"--extractor=UNKNOWN",
 			"--api");
 
-		assertThat(exitCode, is(not(0)));
+		assertThat(exitCode).isNotZero();
 	}
 
 	@Test
@@ -271,7 +265,7 @@ class RoseauCLITest {
 			"--formatter=UNKNOWN",
 			"--diff");
 
-		assertThat(exitCode, is(not(0)));
+		assertThat(exitCode).isNotZero();
 	}
 
 	// --- Reports --- //
@@ -286,8 +280,8 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(out, containsString("Wrote report to out.csv"));
-		assertThat(reportFile, aFileWithSize(greaterThan(1L)));
+		assertThat(out).contains("Wrote report to out.csv");
+		assertThat(reportFile).isFile().isNotEmpty();
 
 		Files.deleteIfExists(reportFile.toPath());
 	}
@@ -304,8 +298,8 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(out, containsString("Wrote report to report.html"));
-		assertThat(reportFile, aFileWithSize(greaterThan(1L)));
+		assertThat(out).contains("Wrote report to report.html");
+		assertThat(reportFile).isFile().isNotEmpty();
 
 		Files.deleteIfExists(reportFile.toPath());
 	}
@@ -322,8 +316,8 @@ class RoseauCLITest {
 				"--verbose")
 		);
 
-		assertThat(out, containsString("Wrote report to report.json"));
-		assertThat(reportFile, aFileWithSize(greaterThan(1L)));
+		assertThat(out).contains("Wrote report to report.json");
+		assertThat(reportFile).isFile().isNotEmpty();
 
 		Files.deleteIfExists(reportFile.toPath());
 	}

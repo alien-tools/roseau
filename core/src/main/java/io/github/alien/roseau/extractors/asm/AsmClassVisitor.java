@@ -25,11 +25,13 @@ import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
+import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -40,6 +42,7 @@ import java.util.stream.IntStream;
 final class AsmClassVisitor extends ClassVisitor {
 	private final TypeReferenceFactory typeRefFactory;
 	private String className;
+	private Path sourceFile = Path.of("<unknown>");
 	private int classAccess;
 	private TypeDecl typeDecl;
 	private TypeReference<TypeDecl> enclosingType;
@@ -69,8 +72,12 @@ final class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitSource(String source, String debug) {
 		// Skipping our non-Java JVM friends
-		if (source != null && !source.endsWith(".java")) {
-			shouldSkip = true;
+		if (source != null) {
+			if (source.endsWith(".java")) {
+				sourceFile = Path.of(source);
+			} else {
+				shouldSkip = true;
+			}
 		}
 	}
 
@@ -179,6 +186,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		return new MethodVisitor(api) {
 			private final List<String> annotations = new ArrayList<>();
+			private int firstLine = -1;
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -187,11 +195,17 @@ final class AsmClassVisitor extends ClassVisitor {
 			}
 
 			@Override
+			public void visitLineNumber(int line, Label start) {
+				firstLine = firstLine > 0 ? Math.min(firstLine, line) : line;
+				super.visitLineNumber(line, start);
+			}
+
+			@Override
 			public void visitEnd() {
 				if ("<init>".equals(name)) {
-					constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations));
+					constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations, firstLine));
 				} else {
-					methods.add(convertMethod(access, name, descriptor, signature, exceptions, annotations));
+					methods.add(convertMethod(access, name, descriptor, signature, exceptions, annotations, firstLine));
 				}
 			}
 		};
@@ -242,7 +256,8 @@ final class AsmClassVisitor extends ClassVisitor {
 		AccessModifier visibility = convertVisibility(classAccess);
 		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
 		List<Annotation> anns = convertAnnotations(annotations);
-		SourceLocation location = SourceLocation.NO_LOCATION;
+		// No bullet-proof line information for types
+		SourceLocation location = new SourceLocation(sourceFile, -1);
 
 		if (isSealed) {
 			modifiers.add(Modifier.SEALED);
@@ -266,16 +281,16 @@ final class AsmClassVisitor extends ClassVisitor {
 				fields, methods, enclosingType);
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, List.of());
 		} else if (isEnum(classAccess)) {
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, fields, methods, enclosingType, constructors);
+				implementedInterfaces, fields, methods, enclosingType, constructors, List.of());
 		} else if (isRecord(classAccess)) {
 			typeDecl = new RecordDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors);
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors, List.of());
 		} else {
 			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors);
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors, List.of());
 		}
 	}
 
@@ -291,13 +306,15 @@ final class AsmClassVisitor extends ClassVisitor {
 			fieldType = convertType(descriptor);
 		}
 
+		// No bullet-proof line information for fields
+		SourceLocation location = new SourceLocation(sourceFile, -1);
 		return new FieldDecl(String.format("%s.%s", className, name), convertVisibility(access),
-			convertFieldModifiers(access), convertAnnotations(annotations), SourceLocation.NO_LOCATION,
+			convertFieldModifiers(access), convertAnnotations(annotations), location,
 			typeRefFactory.createTypeReference(className), fieldType);
 	}
 
 	private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
-	                                           List<String> annotations) {
+	                                           List<String> annotations, int line) {
 		List<ParameterDecl> parameters;
 		List<ITypeReference> thrownExceptions;
 		List<FormalTypeParameter> typeParameters;
@@ -326,14 +343,14 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new ConstructorDecl(String.format("%s.<init>", className), convertVisibility(access),
-			convertMethodModifiers(access), convertAnnotations(annotations), SourceLocation.NO_LOCATION,
+			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
 			typeRefFactory.createTypeReference(className),
 			typeRefFactory.createTypeReference(className),
 			parameters, typeParameters, thrownExceptions);
 	}
 
 	private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
-	                                 List<String> annotations) {
+	                                 List<String> annotations, int line) {
 		ITypeReference returnType;
 		List<ParameterDecl> parameters;
 		List<FormalTypeParameter> typeParameters;
@@ -361,7 +378,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new MethodDecl(String.format("%s.%s", className, name), convertVisibility(access),
-			convertMethodModifiers(access), convertAnnotations(annotations), SourceLocation.NO_LOCATION,
+			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
 			typeRefFactory.createTypeReference(className), returnType, parameters,
 			typeParameters, thrownExceptions);
 	}
@@ -416,7 +433,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	private List<ParameterDecl> convertParameters(Type[] paramTypes) {
 		return IntStream.range(0, paramTypes.length)
-			.mapToObj(i -> new ParameterDecl("p" +  i, convertType(paramTypes[i].getDescriptor()), false))
+			.mapToObj(i -> new ParameterDecl("p" + i, convertType(paramTypes[i].getDescriptor()), false))
 			.toList();
 	}
 

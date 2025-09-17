@@ -1,35 +1,32 @@
 package io.github.alien.roseau.api.model.reference;
 
-import java.util.Objects;
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.utils.StringUtils;
 
 /**
  * A reference to a formal type parameter or type variable (e.g., {@code A} referring {@code <A>}).
  *
- * @param qualifiedName the simple name of the pointed type variable
+ * @param name the simple name of the pointed type variable
  */
-public record TypeParameterReference(String qualifiedName) implements ITypeReference {
+public record TypeParameterReference(
+	String name
+) implements ITypeReference {
 	public TypeParameterReference {
-		Objects.requireNonNull(qualifiedName);
+		Preconditions.checkNotNull(name);
 	}
 
 	@Override
 	public String getQualifiedName() {
-		return qualifiedName;
-	}
-
-	@Override
-	public boolean isSubtypeOf(ITypeReference other) {
-		// FIXME
-		return Objects.equals(qualifiedName, other.getQualifiedName());
+		return name;
 	}
 
 	@Override
 	public String toString() {
-		return qualifiedName;
+		return name;
 	}
 
 	@Override
-	public TypeParameterReference deepCopy() {
-		return this;
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 }

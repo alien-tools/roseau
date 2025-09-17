@@ -1,17 +1,20 @@
 package io.github.alien.roseau.api.visit;
 
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
+import io.github.alien.roseau.api.model.EnumValueDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
+import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -27,13 +30,17 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
  * value.
  */
 public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
+	public Visit api(API it) {
+		return () -> $(it.getLibraryTypes()).visit();
+	}
+
 	/**
-	 * Visits the given {@link API}.
+	 * Visits the given {@link LibraryTypes}.
 	 *
-	 * @param it the {@link API} to visit
+	 * @param it the {@link LibraryTypes} to visit
 	 * @return a lambda {@link Visit} that must be invoked to run the actual visit
 	 */
-	public Visit api(API it) {
+	public Visit libraryTypes(LibraryTypes it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}
 
@@ -53,7 +60,10 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit enumDecl(EnumDecl it) {
-		return classDecl(it);
+		return () -> {
+			classDecl(it).visit();
+			it.getValues().forEach(eV -> $(eV).visit());
+		};
 	}
 
 	@Override
@@ -63,7 +73,10 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public Visit recordDecl(RecordDecl it) {
-		return classDecl(it);
+		return () -> {
+			classDecl(it).visit();
+			it.getRecordComponents().forEach(rC -> $(rC).visit());
+		};
 	}
 
 	@Override
@@ -88,7 +101,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 
 	@Override
 	public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-		return () -> it.getTypeArguments().forEach(ta -> $(ta).visit());
+		return () -> it.typeArguments().forEach(ta -> $(ta).visit());
 	}
 
 	@Override
@@ -121,6 +134,16 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	@Override
 	public Visit formalTypeParameter(FormalTypeParameter it) {
 		return () -> it.bounds().forEach(b -> $(b).visit());
+	}
+
+	@Override
+	public Visit enumValueDecl(EnumValueDecl it) {
+		return typeMemberDecl(it);
+	}
+
+	@Override
+	public Visit recordComponentDecl(RecordComponentDecl it) {
+		return typeMemberDecl(it);
 	}
 
 	public Visit symbol(Symbol it) {

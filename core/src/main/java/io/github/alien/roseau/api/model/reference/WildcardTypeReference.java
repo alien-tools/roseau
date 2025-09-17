@@ -1,5 +1,8 @@
 package io.github.alien.roseau.api.model.reference;
 
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.utils.StringUtils;
+
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -8,22 +11,27 @@ import java.util.stream.Collectors;
  * <br>
  * {@code <? extends A>} and {@code <?>} are upper bounds while {@code <? super A>} is a lower bound. Wildcards have at
  * least one upper bounds ({@link java.lang.Object} always included) or exactly one lower bound.
+ *
+ * @param bounds the wildcard's bounds
+ * @param upper  is true if {@code <?> or <? extends>} and false if {@code <? super>}
  */
-public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) implements ITypeReference {
+public record WildcardTypeReference(
+	List<ITypeReference> bounds,
+	boolean upper
+) implements ITypeReference {
 	/**
 	 * Creates a new wildcard type reference
 	 *
 	 * @param bounds the wildcard's bounds
-	 * @param upper whether these are lower or upper bounds
+	 * @param upper  whether these are lower or upper bounds
 	 * @throws IllegalArgumentException if no bounds is supplied, or if there are more than one lower bound
 	 */
 	public WildcardTypeReference {
-		if (bounds == null || bounds.isEmpty()) {
-			throw new IllegalArgumentException("Wildcards must have at least one bound (Object included)");
-		}
-		if (!upper && bounds.size() > 1) {
-			throw new IllegalArgumentException("Wildcards cannot have multiple lower bounds");
-		}
+		Preconditions.checkArgument(bounds != null && !bounds.isEmpty(),
+			"Wildcards must have at least one bound (java.lang.Object included)");
+		Preconditions.checkArgument(upper || bounds.size() == 1,
+			"Wildcards cannot have multiple lower bounds");
+		bounds = List.copyOf(bounds);
 	}
 
 	@Override
@@ -32,45 +40,17 @@ public record WildcardTypeReference(List<ITypeReference> bounds, boolean upper) 
 	}
 
 	@Override
-	public boolean isSubtypeOf(ITypeReference other) {
-		if (other instanceof WildcardTypeReference wtr) {
-			if (wtr.isUnbounded()) {
-				// Always subtype of unbounded wildcard
-				return true;
-			}
-
-			if (upper()) {
-				// Upper bounds can be made weaker
-				return wtr.upper() && hasStricterBoundsThan(wtr);
-			} else {
-				// Changing the (one) lower bound to a subtype is fine
-				return !wtr.upper() && wtr.bounds().getFirst().isSubtypeOf(bounds().getFirst());
-			}
-		}
-
-		return false;
+	public String getPrettyQualifiedName() {
+		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
-	private boolean isUnbounded() {
+	public boolean isUnbounded() {
 		return upper() && bounds().size() == 1 && bounds.getFirst().equals(TypeReference.OBJECT);
-	}
-
-	/**
-	 * Checks whether these bounds are stricter than the bounds of another wildcard
-	 */
-	private boolean hasStricterBoundsThan(WildcardTypeReference other) {
-		return other.bounds().stream()
-			.allMatch(otherBound -> bounds().stream().anyMatch(thisBound -> thisBound.isSubtypeOf(otherBound)));
 	}
 
 	@Override
 	public String toString() {
 		return "? %s %s".formatted(upper ? "extends" : "super",
-			bounds.stream().map(Object::toString).collect(Collectors.joining("&")));
-	}
-
-	@Override
-	public WildcardTypeReference deepCopy() {
-		return new WildcardTypeReference(ITypeReference.deepCopy(bounds), upper);
+			bounds.stream().map(ITypeReference::toString).collect(Collectors.joining("&")));
 	}
 }

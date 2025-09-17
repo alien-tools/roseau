@@ -1,13 +1,13 @@
 package io.github.alien.roseau.diff.changes;
 
-import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.ADDITION;
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.DELETION;
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.MUTATION;
 
 /**
- * Kinds of breaking changes that can be detected when comparing two {@link API} instances.
+ * Kinds of breaking changes that can be detected when comparing two {@link LibraryTypes} instances.
  * <br>
  * These mostly align with the JLS' §13, with additional source-incompatible changes related to generics.
  *

@@ -1,8 +1,7 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
-
-import java.util.Objects;
 
 /**
  * An {@link ExecutableDecl}'s parameter.
@@ -15,15 +14,10 @@ public record ParameterDecl(
 	String name,
 	ITypeReference type,
 	boolean isVarargs
-) implements DeepCopyable<ParameterDecl> {
+) {
 	public ParameterDecl {
-		Objects.requireNonNull(name);
-		Objects.requireNonNull(type);
-	}
-
-	@Override
-	public ParameterDecl deepCopy() {
-		return new ParameterDecl(name, type.deepCopy(), isVarargs);
+		Preconditions.checkNotNull(name);
+		Preconditions.checkNotNull(type);
 	}
 
 	@Override
