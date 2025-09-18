@@ -60,9 +60,9 @@ public class APIDiff {
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return the list of all identified {@link BreakingChange}
+	 * @return the report built for the two APIs
 	 */
-	public List<BreakingChange> diff() {
+	public RoseauReport diff() {
 		v1.getExportedTypes().stream().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
@@ -72,7 +72,7 @@ public class APIDiff {
 			)
 		);
 
-		return getBreakingChanges();
+		return new RoseauReport(v1.getLibraryTypes().getLibrary(), v2.getLibraryTypes().getLibrary(), getBreakingChanges());
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
