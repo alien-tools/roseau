@@ -19,6 +19,7 @@ import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,7 +74,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "A pom.xml file to build a classpath from")
 	private Path pom;
 	@CommandLine.Option(names = "--classpath",
-		description = "A colon-separated list of elements to include in the classpath")
+		description = "A list of elements to include in the classpath; OS-specific separator (':'or ';')")
 	private String classpathString;
 	@CommandLine.Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
@@ -88,7 +89,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	private API buildAPI(Library library) {
 		TypesExtractor extractor = library.getExtractorType().newExtractor();
 
-		if (extractor.canExtract(library.getLocation())) {
+		if (extractor.canExtract(library)) {
 			Stopwatch sw = Stopwatch.createStarted();
 			API api = extractor.extractTypes(library).toAPI(library.getClasspath());
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
@@ -137,7 +138,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (!Strings.isNullOrEmpty(classpathString)) {
-			classpath.addAll(Arrays.stream(classpathString.split(":"))
+			classpath.addAll(Arrays.stream(classpathString.split(File.pathSeparator))
 				.map(Path::of)
 				.toList());
 		}
