@@ -53,7 +53,8 @@ public final class Library {
 	}
 
 	private static boolean isJar(Path file) {
-		return file != null && Files.exists(file) && Files.isRegularFile(file) && file.toString().endsWith(".jar");
+		// Can't do much more, except listing all extensions (jar, war, ear, jmod, etc.)
+		return file != null && Files.exists(file) && Files.isRegularFile(file);
 	}
 
 	private static boolean isSources(Path file) {
