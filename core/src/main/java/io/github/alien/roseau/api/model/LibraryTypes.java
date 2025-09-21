@@ -99,6 +99,7 @@ public final class LibraryTypes implements TypeProvider {
 	 *
 	 * @return the library
 	 */
+	@JsonProperty("library")
 	public Library getLibrary() {
 		return library;
 	}
@@ -173,11 +174,11 @@ public final class LibraryTypes implements TypeProvider {
 			return false;
 		}
 		LibraryTypes api = (LibraryTypes) o;
-		return Objects.equals(allTypes, api.allTypes);
+		return Objects.equals(library, api.library) && Objects.equals(allTypes, api.allTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(allTypes);
+		return Objects.hash(library, allTypes);
 	}
 }

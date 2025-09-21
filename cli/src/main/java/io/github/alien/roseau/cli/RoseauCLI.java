@@ -201,7 +201,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			checkArguments();
 			List<Path> classpath = buildClasspath();
 			Library.Builder builder1 = Library.builder()
-				.path(v1)
+				.location(v1)
 				.classpath(classpath);
 			if (extractorType != null) {
 				builder1.extractorType(extractorType);
@@ -216,7 +216,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			if (diffMode) {
 				Library.Builder builder2 = Library.builder()
-					.path(v2)
+					.location(v2)
 					.classpath(classpath);
 				if (extractorType != null) {
 					builder2.extractorType(extractorType);

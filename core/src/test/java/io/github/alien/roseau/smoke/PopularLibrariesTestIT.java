@@ -105,8 +105,8 @@ class PopularLibrariesTestIT {
 		Path binaryJar = binaryJars.get(libraryGAV);
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
 		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		Library binaryLibrary = Library.builder().path(binaryJar).classpath(classpath).build();
-		Library sourcesLibrary = Library.builder().path(sourcesDir).classpath(classpath).build();
+		Library binaryLibrary = Library.builder().location(binaryJar).classpath(classpath).build();
+		Library sourcesLibrary = Library.builder().location(sourcesDir).classpath(classpath).build();
 
 		// ASM API
 		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
@@ -184,7 +184,7 @@ class PopularLibrariesTestIT {
 	void analyzeLibrarySpoon(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
 		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		Library library = Library.builder().path(sourcesDir).classpath(classpath).build();
+		Library library = Library.builder().location(sourcesDir).classpath(classpath).build();
 
 		// Spoon API
 		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
@@ -205,7 +205,7 @@ class PopularLibrariesTestIT {
 	void analyzeLibraryJdt(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
 		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		Library library = Library.builder().path(sourcesDir).classpath(classpath).build();
+		Library library = Library.builder().location(sourcesDir).classpath(classpath).build();
 
 		// JDT API
 		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
@@ -225,7 +225,7 @@ class PopularLibrariesTestIT {
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibraryAsm(String libraryGAV) {
 		Path binaryJar = binaryJars.get(libraryGAV);
-		Library library = Library.builder().path(binaryJar).build();
+		Library library = Library.builder().location(binaryJar).build();
 
 		// ASM API
 		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();

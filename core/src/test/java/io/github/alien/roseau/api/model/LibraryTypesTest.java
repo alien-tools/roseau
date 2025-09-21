@@ -81,7 +81,7 @@ class LibraryTypesTest {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
 		List<Path> classpath = builder.buildClasspath(Path.of("."));
-		Library library = Library.builder().path(sources).classpath(classpath).build();
+		Library library = Library.builder().location(sources).classpath(classpath).build();
 		TypesExtractor extractor = new JdtTypesExtractor();
 		LibraryTypes orig = extractor.extractTypes(library);
 

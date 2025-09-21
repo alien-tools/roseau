@@ -5,6 +5,7 @@ import io.github.alien.roseau.extractors.ExtractorType;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Objects;
 
 public final class Library {
 	private final Path location;
@@ -13,7 +14,7 @@ public final class Library {
 	private final ExtractorType extractorType;
 
 	private Library(Path location, List<Path> classpath, Path pom, ExtractorType extractorType) {
-		this.location = location;
+		this.location = location.toAbsolutePath();
 		this.classpath = List.copyOf(classpath);
 		this.pom = pom;
 		this.extractorType = extractorType;
@@ -59,6 +60,23 @@ public final class Library {
 		return file != null && Files.exists(file) && Files.isDirectory(file);
 	}
 
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		Library library = (Library) o;
+		return Objects.equals(location, library.location) &&
+			Objects.equals(classpath, library.classpath) &&
+			Objects.equals(pom, library.pom) &&
+			extractorType == library.extractorType;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(location, classpath, pom, extractorType);
+	}
+
 	public static final class Builder {
 		private Path location;
 		private List<Path> classpath = List.of();
@@ -69,7 +87,7 @@ public final class Library {
 
 		}
 
-		public Builder path(Path location) {
+		public Builder location(Path location) {
 			this.location = location;
 			return this;
 		}
