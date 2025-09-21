@@ -9,6 +9,7 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -43,7 +44,7 @@ public class MavenClasspathBuilder {
 
 			if (result.getExitCode() == 0 && Files.exists(classpathFile)) {
 				String cpString = Files.readString(classpathFile);
-				return Arrays.stream(cpString.split(":"))
+				return Arrays.stream(cpString.split(File.pathSeparator))
 					.map(Path::of)
 					.toList();
 			} else {
