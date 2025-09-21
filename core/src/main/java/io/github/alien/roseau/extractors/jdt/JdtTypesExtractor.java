@@ -34,7 +34,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 
 	@Override
 	public LibraryTypes extractTypes(Library library) {
-		Preconditions.checkArgument(library != null && library.isSources());
+		Preconditions.checkArgument(canExtract(library));
 		try (Stream<Path> files = Files.walk(library.getPath())) {
 			List<Path> sourceFiles = files
 				.filter(JdtTypesExtractor::isRegularJavaFile)
@@ -49,8 +49,8 @@ public class JdtTypesExtractor implements TypesExtractor {
 	}
 
 	@Override
-	public boolean canExtract(Path sources) {
-		return Files.isDirectory(sources);
+	public boolean canExtract(Library library) {
+		return library != null && library.isSources();
 	}
 
 	List<TypeDecl> parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {

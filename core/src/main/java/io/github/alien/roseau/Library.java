@@ -103,7 +103,7 @@ public final class Library {
 			}
 
 			if (pom != null && !isValidPom(pom)) {
-				throw new IllegalArgumentException("Invalid path to POM file: " + path);
+				throw new IllegalArgumentException("Invalid path to POM file: " + pom);
 			}
 
 			if (extractorType == null) {

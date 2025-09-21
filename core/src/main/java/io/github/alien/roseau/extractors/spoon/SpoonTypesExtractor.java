@@ -11,8 +11,6 @@ import spoon.reflect.CtModel;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
 
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.time.Duration;
 import java.util.List;
 import java.util.stream.Stream;
@@ -23,14 +21,14 @@ import java.util.stream.Stream;
 public class SpoonTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
-		Preconditions.checkArgument(library != null && library.isSources());
+		Preconditions.checkArgument(canExtract(library));
 		CtModel model = SpoonUtils.buildModel(library.getPath(), library.getClasspath(), Duration.ofSeconds(Long.MAX_VALUE));
 		return extractTypes(library, model);
 	}
 
 	@Override
-	public boolean canExtract(Path sources) {
-		return Files.isDirectory(sources);
+	public boolean canExtract(Library library) {
+		return library != null && library.isSources();
 	}
 
 	public LibraryTypes extractTypes(Library library, CtModel model) {

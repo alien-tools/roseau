@@ -5,7 +5,6 @@ import com.google.common.base.Strings;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;

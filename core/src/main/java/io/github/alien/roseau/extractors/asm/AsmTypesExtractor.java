@@ -16,7 +16,6 @@ import org.objectweb.asm.Opcodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,7 +33,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 
 	@Override
 	public LibraryTypes extractTypes(Library library) {
-		Preconditions.checkArgument(library != null && library.isJar());
+		Preconditions.checkArgument(canExtract(library));
 		try (JarFile jar = new JarFile(library.getPath().toFile())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
@@ -43,10 +42,8 @@ public class AsmTypesExtractor implements TypesExtractor {
 	}
 
 	@Override
-	public boolean canExtract(Path sources) {
-		return sources != null &&
-			Files.isRegularFile(sources) &&
-			sources.toString().endsWith(".jar");
+	public boolean canExtract(Library library) {
+		return library != null && library.isJar();
 	}
 
 	/**
