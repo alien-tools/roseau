@@ -31,8 +31,7 @@ public class HashingChangedFilesProvider {
 
 	/**
 	 * Compares two directories and identifies .java files that have been updated, deleted, or created, using the first
-	 * directory as reference. Updated and deleted files point to the left directory, created files point to the right
-	 * directory.
+	 * directory as reference. The returned files use relative paths.
 	 *
 	 * @param leftDirectory  the first (reference) directory
 	 * @param rightDirectory the second (new) directory
@@ -52,14 +51,13 @@ public class HashingChangedFilesProvider {
 			leftHashes.forEach((file, leftHash) -> {
 				Long rightHash = rightHashes.remove(file);
 				if (rightHash == null) {
-					deleted.add(leftDirectory.resolve(file));
+					deleted.add(file);
 				} else if (!leftHash.equals(rightHash)) {
-					updated.add(leftDirectory.resolve(file));
+					updated.add(file);
 				}
 			});
 
-			return new ChangedFiles(updated, deleted,
-				rightHashes.keySet().stream().map(rightDirectory::resolve).collect(Collectors.toSet()));
+			return new ChangedFiles(updated, deleted, rightHashes.keySet());
 		} catch (InterruptedException | ExecutionException e) {
 			throw new RoseauException("Couldn't compute changed files", e);
 		}

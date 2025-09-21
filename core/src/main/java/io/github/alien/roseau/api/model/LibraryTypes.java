@@ -8,6 +8,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
@@ -32,6 +33,11 @@ import java.util.function.Function;
  */
 public final class LibraryTypes implements TypeProvider {
 	/**
+	 * The analyzed library
+	 */
+	private final Library library;
+
+	/**
 	 * An immutable map that stores all types within the library, including both exported and non-exported
 	 * {@link TypeDecl} instances. Allows for efficient lookup of type declarations by their qualified names.
 	 */
@@ -44,8 +50,10 @@ public final class LibraryTypes implements TypeProvider {
 	 *
 	 * @param types Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(@JsonProperty("allTypes") List<TypeDecl> types) {
+	public LibraryTypes(Library library, @JsonProperty("allTypes") List<TypeDecl> types) {
+		Preconditions.checkNotNull(library);
 		Preconditions.checkNotNull(types);
+		this.library = library;
 		this.allTypes = types.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
@@ -84,6 +92,16 @@ public final class LibraryTypes implements TypeProvider {
 	 */
 	public API toAPI() {
 		return toAPI(List.of());
+	}
+
+	/**
+	 * The analyzed library.
+	 *
+	 * @return the library
+	 */
+	@JsonProperty("library")
+	public Library getLibrary() {
+		return library;
 	}
 
 	/**
@@ -156,11 +174,11 @@ public final class LibraryTypes implements TypeProvider {
 			return false;
 		}
 		LibraryTypes api = (LibraryTypes) o;
-		return Objects.equals(allTypes, api.allTypes);
+		return Objects.equals(library, api.library) && Objects.equals(allTypes, api.allTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(allTypes);
+		return Objects.hash(library, allTypes);
 	}
 }

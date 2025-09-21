@@ -1,5 +1,6 @@
 package io.github.alien.roseau.combinatorial.mode;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.combinatorial.AbstractStep;
 import io.github.alien.roseau.combinatorial.Constants;
 import io.github.alien.roseau.combinatorial.StepExecutionException;
@@ -33,7 +34,7 @@ public final class GenerateClient extends AbstractStep {
 
 		LOGGER.info("Starting combinatorial client generation...");
 
-		var types = new JdtTypesExtractor().extractTypes(apiPath);
+		var types = new JdtTypesExtractor().extractTypes(Library.of(apiPath));
 		if (types == null) {
 			throw new StepExecutionException(this.getClass().getSimpleName(), "Failed to extract API from %s".formatted(apiPath));
 		}
