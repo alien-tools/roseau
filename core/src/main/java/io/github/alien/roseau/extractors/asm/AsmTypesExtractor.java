@@ -15,7 +15,6 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -34,7 +33,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (JarFile jar = new JarFile(library.getPath().toFile())) {
+		try (JarFile jar = new JarFile(library.getLocation().toFile())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Error processing JAR file", e);

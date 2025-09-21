@@ -22,7 +22,7 @@ public class SpoonTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		CtModel model = SpoonUtils.buildModel(library.getPath(), library.getClasspath(), Duration.ofSeconds(Long.MAX_VALUE));
+		CtModel model = SpoonUtils.buildModel(library.getLocation(), library.getClasspath(), Duration.ofSeconds(Long.MAX_VALUE));
 		return extractTypes(library, model);
 	}
 

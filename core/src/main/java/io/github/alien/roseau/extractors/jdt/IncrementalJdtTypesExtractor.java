@@ -39,8 +39,8 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			return previousTypes;
 		}
 
-		Path oldRoot = previousTypes.getLibrary().getPath();
-		Path newRoot = newVersion.getPath();
+		Path oldRoot = previousTypes.getLibrary().getLocation();
+		Path newRoot = newVersion.getLocation();
 
 		// Collect types that should be discarded from the previous API
 		Set<Path> discarded = Sets.union(resolve(oldRoot, changedFiles.deletedFiles()),

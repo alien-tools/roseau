@@ -12,7 +12,6 @@ import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
@@ -75,7 +74,7 @@ public final class Roseau {
 		Stopwatch sw = Stopwatch.createStarted();
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
 		CompletableFuture<ChangedFiles> futureChanges = CompletableFuture.supplyAsync(
-			() -> provider.getChangedFiles(v1.getPath(), v2.getPath()));
+			() -> provider.getChangedFiles(v1.getLocation(), v2.getLocation()));
 		CompletableFuture<API> futureV2 = futureV1.thenCombineAsync(futureChanges, (api, changes) -> {
 			IncrementalTypesExtractor extractor = new IncrementalJdtTypesExtractor();
 			return toAPI(v2, extractor.incrementalUpdate(api.getLibraryTypes(), v2, changes));
@@ -95,7 +94,7 @@ public final class Roseau {
 		Stopwatch sw = Stopwatch.createStarted();
 		LibraryTypes types = extractor.extractTypes(library);
 		LOGGER.debug("Extracting types from library {} using {} took {}ms ({} types)",
-			library.getPath(), library.getExtractorType(), sw.elapsed().toMillis(), types.getAllTypes().size());
+			library.getLocation(), library.getExtractorType(), sw.elapsed().toMillis(), types.getAllTypes().size());
 
 		return types;
 	}

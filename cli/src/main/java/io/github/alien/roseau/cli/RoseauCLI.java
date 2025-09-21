@@ -88,15 +88,15 @@ public final class RoseauCLI implements Callable<Integer> {
 	private API buildAPI(Library library) {
 		TypesExtractor extractor = library.getExtractorType().newExtractor();
 
-		if (extractor.canExtract(library.getPath())) {
+		if (extractor.canExtract(library.getLocation())) {
 			Stopwatch sw = Stopwatch.createStarted();
 			API api = extractor.extractTypes(library).toAPI(library.getClasspath());
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
-				library.getPath(), library.getExtractorType(), sw.elapsed().toMillis(), api.getExportedTypes().size());
+				library.getLocation(), library.getExtractorType(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;
 		} else {
 			throw new RoseauException("Extractor %s does not support sources %s".formatted(
-				library.getExtractorType(), library.getPath()));
+				library.getExtractorType(), library.getLocation()));
 		}
 	}
 

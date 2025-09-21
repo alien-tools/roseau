@@ -7,13 +7,13 @@ import java.nio.file.Path;
 import java.util.List;
 
 public final class Library {
-	private final Path path;
+	private final Path location;
 	private final List<Path> classpath;
 	private final Path pom;
 	private final ExtractorType extractorType;
 
-	private Library(Path path, List<Path> classpath, Path pom, ExtractorType extractorType) {
-		this.path = path;
+	private Library(Path location, List<Path> classpath, Path pom, ExtractorType extractorType) {
+		this.location = location;
 		this.classpath = List.copyOf(classpath);
 		this.pom = pom;
 		this.extractorType = extractorType;
@@ -27,8 +27,8 @@ public final class Library {
 		return new Library(path, List.of(), null, isJar(path) ? ExtractorType.ASM : ExtractorType.JDT);
 	}
 
-	public Path getPath() {
-		return path;
+	public Path getLocation() {
+		return location;
 	}
 
 	public List<Path> getClasspath() {
@@ -44,11 +44,11 @@ public final class Library {
 	}
 
 	public boolean isJar() {
-		return isJar(this.path);
+		return isJar(this.location);
 	}
 
 	public boolean isSources() {
-		return isSources(this.path);
+		return isSources(this.location);
 	}
 
 	private static boolean isJar(Path file) {
@@ -60,7 +60,7 @@ public final class Library {
 	}
 
 	public static final class Builder {
-		private Path path;
+		private Path location;
 		private List<Path> classpath = List.of();
 		private Path pom;
 		private ExtractorType extractorType;
@@ -69,8 +69,8 @@ public final class Library {
 
 		}
 
-		public Builder path(Path path) {
-			this.path = path;
+		public Builder path(Path location) {
+			this.location = location;
 			return this;
 		}
 
@@ -98,8 +98,8 @@ public final class Library {
 		}
 
 		public Library build() {
-			if (!isValidSource(path)) {
-				throw new IllegalArgumentException("Invalid path to library; directory or JAR expected: " + path);
+			if (!isValidSource(location)) {
+				throw new IllegalArgumentException("Invalid path to library; directory or JAR expected: " + location);
 			}
 
 			if (pom != null && !isValidPom(pom)) {
@@ -107,22 +107,22 @@ public final class Library {
 			}
 
 			if (extractorType == null) {
-				if (isJar(path)) {
+				if (isJar(location)) {
 					extractorType = ExtractorType.ASM;
 				} else {
 					extractorType = ExtractorType.JDT;
 				}
 			}
 
-			if (extractorType == ExtractorType.ASM && isSources(path)) {
+			if (extractorType == ExtractorType.ASM && isSources(location)) {
 				throw new IllegalArgumentException("ASM extractor cannot be used on source directories");
 			}
 
-			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(path)) {
+			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(location)) {
 				throw new IllegalArgumentException("Source extractors cannot be used on JARs");
 			}
 
-			return new Library(path, classpath, pom, extractorType);
+			return new Library(location, classpath, pom, extractorType);
 		}
 	}
 }
