@@ -59,6 +59,7 @@ public class HashingChangedFilesProvider {
 
 			return new ChangedFiles(updated, deleted, rightHashes.keySet());
 		} catch (InterruptedException | ExecutionException e) {
+			Thread.currentThread().interrupt();
 			throw new RoseauException("Couldn't compute changed files", e);
 		}
 	}
@@ -83,6 +84,7 @@ public class HashingChangedFilesProvider {
 				try {
 					return entry.getValue().get();
 				} catch (InterruptedException | ExecutionException e) {
+					Thread.currentThread().interrupt();
 					return -1L;
 				}
 			}

@@ -1,11 +1,11 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -22,7 +22,9 @@ import java.util.stream.Stream;
 public interface HierarchyProvider {
 	// Dependencies
 	TypeResolver resolver();
+
 	ErasureProvider erasure();
+
 	SubtypingResolver subtyping();
 
 	/**
@@ -120,7 +122,7 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return all interfaces implemented by this type, directly or indirectly
 	 */
-	default List<TypeReference<? extends TypeDecl>> getAllImplementedInterfaces(TypeDecl type) {
+	default List<TypeReference<TypeDecl>> getAllImplementedInterfaces(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return getAllSuperTypes(type).stream()
 			.filter(ref -> resolver().resolve(ref).map(TypeDecl::isInterface).orElse(false))
@@ -134,11 +136,14 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return all super types in this type's hierarchy
 	 */
-	default List<TypeReference<? extends TypeDecl>> getAllSuperTypes(TypeDecl type) {
+	@SuppressWarnings("unchecked")
+	default List<TypeReference<TypeDecl>> getAllSuperTypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getImplementedInterfaces().stream(),
-				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.empty())
+				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.empty()
+			)
+			.map(ref -> (TypeReference<TypeDecl>) (TypeReference<?>) ref)
 			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
 			.flatMap(ref -> Stream.concat(Stream.of(ref), getAllSuperTypes(ref).stream()))
 			.distinct()
@@ -152,7 +157,7 @@ public interface HierarchyProvider {
 	 * @param reference reference to the base type
 	 * @return all super types in this type's hierarchy
 	 */
-	default List<TypeReference<? extends TypeDecl>> getAllSuperTypes(TypeReference<?> reference) {
+	default List<TypeReference<TypeDecl>> getAllSuperTypes(TypeReference<?> reference) {
 		Preconditions.checkNotNull(reference);
 		return resolver().resolve(reference)
 			.map(this::getAllSuperTypes)
@@ -218,10 +223,10 @@ public interface HierarchyProvider {
 	}
 
 	/**
-	 * Checks whether the two executables are overloading each others. Assuming that the {@link LibraryTypes} they belong to is
-	 * consistent (the source compiles), there should not be two methods with the same erasure but different return types,
-	 * so an executable overloads another if it has the same name but different erasure. An {@link ExecutableDecl} does
-	 * not overload itself.
+	 * Checks whether the two executables are overloading each others. Assuming that the {@link LibraryTypes} they belong
+	 * to is consistent (the source compiles), there should not be two methods with the same erasure but different return
+	 * types, so an executable overloads another if it has the same name but different erasure. An {@link ExecutableDecl}
+	 * does not overload itself.
 	 *
 	 * @param executable the first executable
 	 * @param other      the second executable

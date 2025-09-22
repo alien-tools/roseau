@@ -43,7 +43,6 @@ public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl perm
 	 * @return whether the current class is effectively abstract
 	 */
 	public boolean isEffectivelyAbstract() {
-		// FIXME: return isAbstract() || constructors.stream().noneMatch(cons -> cons.isPublic() || cons.isProtected());
 		return isAbstract() || constructors.isEmpty();
 	}
 

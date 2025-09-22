@@ -49,12 +49,12 @@ import java.util.Map;
 import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
-	private final List<TypeDecl> collectedTypeDecls = new ArrayList<>();
+	private final List<TypeDecl> collectedTypeDecls = new ArrayList<>(10);
 	private final CompilationUnit cu;
 	private final String packageName;
 	private final String filePath;
 	private final TypeReferenceFactory typeRefFactory;
-	private final Map<String, Integer> lineNumbersMapping = new HashMap<>(10);
+	private final Map<String, Integer> lineNumbersMapping = HashMap.newHashMap(10);
 
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIVisitor.class);
 
@@ -178,7 +178,6 @@ final class JdtAPIVisitor extends ASTVisitor {
 				new ClassDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, superClassRef, constructors, List.of());
 			case TypeDeclaration i when i.isInterface() -> {
-				// FIXME: interfaces should be implicitly abstract
 				modifiers.add(Modifier.ABSTRACT);
 				yield new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, List.of());
@@ -190,7 +189,6 @@ final class JdtAPIVisitor extends ASTVisitor {
 				new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
-				// FIXME: annotations should be implicitly abstract
 				modifiers.add(Modifier.ABSTRACT);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
 					fields, methods, enclosingType);
@@ -199,7 +197,6 @@ final class JdtAPIVisitor extends ASTVisitor {
 		};
 
 		collectedTypeDecls.add(typeDecl);
-		//getInnerTypes(type).forEach(this::processAbstractTypeDeclaration);
 	}
 
 	private FieldDecl convertField(IVariableBinding binding, ITypeBinding enclosingType) {
@@ -418,14 +415,12 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private String lookupUnresolvedName(String simpleName) {
 		List<?> imports = cu.imports();
 		for (Object imp : imports) {
-			if (imp instanceof ImportDeclaration id) {
-				// Only consider single type imports.
-				if (!id.isOnDemand()) {
-					String fqn = id.getName().getFullyQualifiedName();
-					// If the fully qualified name ends with '.' + simpleName, we assume a match.
-					if (fqn.endsWith("." + simpleName)) {
-						return fqn;
-					}
+			// Only consider single type imports.
+			if (imp instanceof ImportDeclaration id && !id.isOnDemand()) {
+				String fqn = id.getName().getFullyQualifiedName();
+				// If the fully qualified name ends with '.' + simpleName, we assume a match.
+				if (fqn.endsWith("." + simpleName)) {
+					return fqn;
 				}
 			}
 		}

@@ -35,7 +35,7 @@ class AnnotationsExtractionTest {
 			@interface A {}
 			@A public class C {}""");
 
-		var a = assertAnnotation(api, "A");
+		assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
 
 		assertThat(c.getAnnotations())

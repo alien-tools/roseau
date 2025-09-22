@@ -2,7 +2,6 @@ package io.github.alien.roseau.diff.formatter;
 
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.diff.changes.BreakingChange;
 
 import java.util.stream.Collectors;
 
