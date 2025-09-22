@@ -462,16 +462,19 @@ public class SpoonAPIFactory {
 
 	private Set<ElementType> convertAnnotationTargets(CtAnnotationType<?> annotation) {
 		CtAnnotation<Target> target = annotation.getAnnotation(typeFactory.createReference(Target.class));
-		Object value = target.getValue("value");
 
-		if (value instanceof CtNewArray array) {
-			List<CtExpression<?>> elems = (List<CtExpression<?>>) array.getElements();
-			return elems.stream()
-				.map(CtFieldRead.class::cast)
-				.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
-				.collect(Collectors.toSet());
-		} else if (value instanceof CtFieldRead<?> fieldRead) {
-			return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
+		if (target != null) {
+			Object value = target.getValue("value");
+
+			if (value instanceof CtNewArray array) {
+				List<CtExpression<?>> elems = (List<CtExpression<?>>) array.getElements();
+				return elems.stream()
+					.map(CtFieldRead.class::cast)
+					.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
+					.collect(Collectors.toSet());
+			} else if (value instanceof CtFieldRead<?> fieldRead) {
+				return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
+			}
 		}
 
 		return Collections.emptySet();
