@@ -1,12 +1,14 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -85,6 +87,16 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public List<Annotation> getAnnotations() {
 		return annotations;
+	}
+
+	public Optional<Annotation> getAnnotation(TypeReference<AnnotationDecl> annotation) {
+		return annotations.stream()
+			.filter(ann -> Objects.equals(ann.actualAnnotation(), annotation))
+			.findFirst();
+	}
+
+	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation) {
+		return getAnnotation(annotation).isPresent();
 	}
 
 	public SourceLocation getLocation() {

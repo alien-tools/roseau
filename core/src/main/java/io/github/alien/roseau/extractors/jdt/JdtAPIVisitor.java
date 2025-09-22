@@ -29,6 +29,7 @@ import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -39,12 +40,14 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
+import java.lang.annotation.ElementType;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -194,8 +197,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 				List<AnnotationMethodDecl> annotationMethodDecls = Arrays.stream(binding.getDeclaredMethods())
 					.map(method -> convertAnnotationMethod(method, binding))
 					.toList();
+				Set<ElementType> targets = convertAnnotationTargets(binding);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
-					fields, annotationMethodDecls, enclosingType);
+					fields, annotationMethodDecls, enclosingType, targets);
 			}
 			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
 		};
@@ -378,6 +382,27 @@ final class JdtAPIVisitor extends ASTVisitor {
 		return type.bodyDeclarations().stream()
 			.filter(AbstractTypeDeclaration.class::isInstance)
 			.toList();
+	}
+
+	private Set<ElementType> convertAnnotationTargets(ITypeBinding binding) {
+		Set<ElementType> targets = new HashSet<>();
+		for (IAnnotationBinding ab : binding.getAnnotations()) {
+			ITypeBinding annType = ab.getAnnotationType();
+			if ("java.lang.annotation.Target".equals(annType.getQualifiedName())) {
+				IMemberValuePairBinding[] pairs = ab.getAllMemberValuePairs();
+				for (IMemberValuePairBinding pair : pairs) {
+					if ("value".equals(pair.getName())) {
+						Object[] vals = (Object[]) pair.getValue();
+						for (Object v : vals) {
+							IVariableBinding enumConst = (IVariableBinding) v;
+							String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
+							targets.add(ElementType.valueOf(elemTypeName.toUpperCase()));
+						}
+					}
+				}
+			}
+		}
+		return targets;
 	}
 
 	private AccessModifier convertVisibility(int modifiers) {

@@ -24,6 +24,9 @@ import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
+import spoon.reflect.code.CtExpression;
+import spoon.reflect.code.CtFieldRead;
+import spoon.reflect.code.CtNewArray;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
 import spoon.reflect.declaration.CtAnnotationMethod;
@@ -57,6 +60,8 @@ import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtWildcardReference;
 
 import java.io.File;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -207,7 +212,8 @@ public class SpoonAPIFactory {
 			convertSpoonPosition(annotation.getPosition(), annotation),
 			convertCtFields(annotation),
 			convertCtAnnotationMethods(annotation),
-			createTypeReference(annotation.getDeclaringType())
+			createTypeReference(annotation.getDeclaringType()),
+			convertAnnotationTargets(annotation)
 		);
 	}
 
@@ -452,6 +458,23 @@ public class SpoonAPIFactory {
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
 		return new Annotation(createTypeReference(annotation.getAnnotationType()));
+	}
+
+	private Set<ElementType> convertAnnotationTargets(CtAnnotationType<?> annotation) {
+		CtAnnotation<Target> target = annotation.getAnnotation(typeFactory.createReference(Target.class));
+		Object value = target.getValue("value");
+
+		if (value instanceof CtNewArray array) {
+			List<CtExpression<?>> elems = (List<CtExpression<?>>) array.getElements();
+			return elems.stream()
+				.map(CtFieldRead.class::cast)
+				.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
+				.collect(Collectors.toSet());
+		} else if (value instanceof CtFieldRead<?> fieldRead) {
+			return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
+		}
+
+		return Collections.emptySet();
 	}
 
 	/**

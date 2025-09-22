@@ -7,6 +7,8 @@ import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.lang.annotation.ElementType;
+
 import static io.github.alien.roseau.utils.TestUtils.assertAnnotation;
 import static io.github.alien.roseau.utils.TestUtils.assertAnnotationMethod;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
@@ -232,57 +234,69 @@ class AnnotationsExtractionTest {
 			}""");
 
 		// The annotation type itself
-		var everything = assertAnnotation(api, "Everything");
+		var ann = assertAnnotation(api, "Everything");
+		assertThat(ann.isPublic()).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_DOCUMENTED)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_INHERITED)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_RETENTION)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_TARGET)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_REPEATABLE)).isTrue();
+
+		assertThat(ann.getTargets()).containsExactlyInAnyOrder(
+			ElementType.ANNOTATION_TYPE, ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.FIELD,
+			ElementType.LOCAL_VARIABLE, ElementType.METHOD, ElementType.PACKAGE, ElementType.PARAMETER,
+			ElementType.MODULE, ElementType.RECORD_COMPONENT, ElementType.TYPE_PARAMETER, ElementType.TYPE_USE
+		);
 
 		// We focus on the declared elements of the annotation type itself (methods/fields/nested types).
 
 		// Declared element methods and their return types
-		assertThat(everything.getAnnotationMethods()).hasSize(19);
-		assertThat(assertAnnotationMethod(api, everything, "flag()").getType().getQualifiedName()).isEqualTo("boolean");
-		assertThat(assertAnnotationMethod(api, everything, "flag()").hasDefault()).isFalse();
-		assertThat(assertAnnotationMethod(api, everything, "b()").getType().getQualifiedName()).isEqualTo("byte");
-		assertThat(assertAnnotationMethod(api, everything, "b()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "s()").getType().getQualifiedName()).isEqualTo("short");
-		assertThat(assertAnnotationMethod(api, everything, "s()").hasDefault()).isFalse();
-		assertThat(assertAnnotationMethod(api, everything, "i()").getType().getQualifiedName()).isEqualTo("int");
-		assertThat(assertAnnotationMethod(api, everything, "i()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "l()").getType().getQualifiedName()).isEqualTo("long");
-		assertThat(assertAnnotationMethod(api, everything, "l()").hasDefault()).isFalse();
-		assertThat(assertAnnotationMethod(api, everything, "c()").getType().getQualifiedName()).isEqualTo("char");
-		assertThat(assertAnnotationMethod(api, everything, "c()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "f()").getType().getQualifiedName()).isEqualTo("float");
-		assertThat(assertAnnotationMethod(api, everything, "f()").hasDefault()).isFalse();
-		assertThat(assertAnnotationMethod(api, everything, "d()").getType().getQualifiedName()).isEqualTo("double");
-		assertThat(assertAnnotationMethod(api, everything, "d()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "name()").getType().getQualifiedName()).isEqualTo("java.lang.String");
-		assertThat(assertAnnotationMethod(api, everything, "name()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "type()").getType().getQualifiedName()).isEqualTo("java.lang.Class");
-		assertThat(assertAnnotationMethod(api, everything, "type()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "numberType()").getType().getQualifiedName()).isEqualTo("java.lang.Class");
-		assertThat(assertAnnotationMethod(api, everything, "numberType()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "level()").getType().getQualifiedName()).isEqualTo("Everything$Level");
-		assertThat(assertAnnotationMethod(api, everything, "level()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "meta()").getType().getQualifiedName()).isEqualTo("Everything$Meta");
-		assertThat(assertAnnotationMethod(api, everything, "meta()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "annotatedReturn()").getType().getQualifiedName()).isEqualTo("java.lang.String");
-		assertThat(assertAnnotationMethod(api, everything, "annotatedReturn()").hasDefault()).isTrue();
+		assertThat(ann.getAnnotationMethods()).hasSize(19);
+		assertThat(assertAnnotationMethod(api, ann, "flag()").getType().getQualifiedName()).isEqualTo("boolean");
+		assertThat(assertAnnotationMethod(api, ann, "flag()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "b()").getType().getQualifiedName()).isEqualTo("byte");
+		assertThat(assertAnnotationMethod(api, ann, "b()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "s()").getType().getQualifiedName()).isEqualTo("short");
+		assertThat(assertAnnotationMethod(api, ann, "s()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "i()").getType().getQualifiedName()).isEqualTo("int");
+		assertThat(assertAnnotationMethod(api, ann, "i()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "l()").getType().getQualifiedName()).isEqualTo("long");
+		assertThat(assertAnnotationMethod(api, ann, "l()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "c()").getType().getQualifiedName()).isEqualTo("char");
+		assertThat(assertAnnotationMethod(api, ann, "c()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "f()").getType().getQualifiedName()).isEqualTo("float");
+		assertThat(assertAnnotationMethod(api, ann, "f()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "d()").getType().getQualifiedName()).isEqualTo("double");
+		assertThat(assertAnnotationMethod(api, ann, "d()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "name()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, ann, "name()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "type()").getType().getQualifiedName()).isEqualTo("java.lang.Class");
+		assertThat(assertAnnotationMethod(api, ann, "type()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "numberType()").getType().getQualifiedName()).isEqualTo("java.lang.Class");
+		assertThat(assertAnnotationMethod(api, ann, "numberType()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "level()").getType().getQualifiedName()).isEqualTo("Everything$Level");
+		assertThat(assertAnnotationMethod(api, ann, "level()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "meta()").getType().getQualifiedName()).isEqualTo("Everything$Meta");
+		assertThat(assertAnnotationMethod(api, ann, "meta()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "annotatedReturn()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, ann, "annotatedReturn()").hasDefault()).isTrue();
 		// Arrays
-		assertThat(assertAnnotationMethod(api, everything, "ports()").getType().getQualifiedName()).isEqualTo("int[]");
-		assertThat(assertAnnotationMethod(api, everything, "ports()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "tags()").getType().getQualifiedName()).isEqualTo("java.lang.String[]");
-		assertThat(assertAnnotationMethod(api, everything, "tags()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "components()").getType().getQualifiedName()).isEqualTo("java.lang.Class[]");
-		assertThat(assertAnnotationMethod(api, everything, "components()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "levels()").getType().getQualifiedName()).isEqualTo("Everything$Level[]");
-		assertThat(assertAnnotationMethod(api, everything, "levels()").hasDefault()).isTrue();
-		assertThat(assertAnnotationMethod(api, everything, "metas()").getType().getQualifiedName()).isEqualTo("Everything$Meta[]");
-		assertThat(assertAnnotationMethod(api, everything, "metas()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "ports()").getType().getQualifiedName()).isEqualTo("int[]");
+		assertThat(assertAnnotationMethod(api, ann, "ports()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "tags()").getType().getQualifiedName()).isEqualTo("java.lang.String[]");
+		assertThat(assertAnnotationMethod(api, ann, "tags()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "components()").getType().getQualifiedName()).isEqualTo("java.lang.Class[]");
+		assertThat(assertAnnotationMethod(api, ann, "components()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "levels()").getType().getQualifiedName()).isEqualTo("Everything$Level[]");
+		assertThat(assertAnnotationMethod(api, ann, "levels()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "metas()").getType().getQualifiedName()).isEqualTo("Everything$Meta[]");
+		assertThat(assertAnnotationMethod(api, ann, "metas()").hasDefault()).isTrue();
 
 		// Declared constant fields
-		assertThat(everything.getDeclaredFields()).hasSize(3);
-		assertThat(assertField(api, everything, "CONST_INT").getType().getQualifiedName()).isEqualTo("int");
-		assertThat(assertField(api, everything, "CONST_STR").getType().getQualifiedName()).isEqualTo("java.lang.String");
-		assertThat(assertField(api, everything, "CONST_MASK").getType().getQualifiedName()).isEqualTo("long");
+		assertThat(ann.getDeclaredFields()).hasSize(3);
+		assertThat(assertField(api, ann, "CONST_INT").getType().getQualifiedName()).isEqualTo("int");
+		assertThat(assertField(api, ann, "CONST_STR").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertField(api, ann, "CONST_MASK").getType().getQualifiedName()).isEqualTo("long");
 
 		// Nested types: existence and basic properties
 		assertEnum(api, "Everything$Level");

@@ -32,12 +32,15 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 
+import java.lang.annotation.ElementType;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 final class AsmClassVisitor extends ClassVisitor {
@@ -52,6 +55,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	private final List<FieldDecl> fields = new ArrayList<>();
 	private final List<MethodDecl> methods = new ArrayList<>();
 	private final List<AnnotationMethodDecl> annotationMethods = new ArrayList<>();
+	private final Set<ElementType> targets = new HashSet<>();
 	private final List<ConstructorDecl> constructors = new ArrayList<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	private final List<String> annotations = new ArrayList<>();
@@ -254,6 +258,22 @@ final class AsmClassVisitor extends ClassVisitor {
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (!shouldSkip) {
 			annotations.add(descriptor);
+			if ("Ljava/lang/annotation/Target;".equals(descriptor)) {
+				return new AnnotationVisitor(api) {
+					@Override
+					public AnnotationVisitor visitArray(String name) {
+						if (!"value".equals(name)) return super.visitArray(name);
+						return new AnnotationVisitor(api) {
+							@Override
+							public void visitEnum(String n, String enumDesc, String value) {
+								if ("Ljava/lang/annotation/ElementType;".equals(enumDesc)) {
+									targets.add(ElementType.valueOf(value));
+								}
+							}
+						};
+					}
+				};
+			}
 		}
 		return null;
 	}
@@ -289,7 +309,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		if (isAnnotation(classAccess)) {
 			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
-				fields, annotationMethods, enclosingType);
+				fields, annotationMethods, enclosingType, targets);
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, List.of());
