@@ -10,7 +10,7 @@ import java.util.Objects;
 /**
  * A library, in source or compiled form, provided for analysis. The library points to a physical location and can be
  * complemented with a custom classpath or {@code pom.xml} file for dependency resolution. The extractor used to parse
- * and infer types can be customized. Use {@link #of(Path)} or the associated {@link Builder} to create new instances.
+ * and infer types can be customized. Use {@link #of(Path)} or {@link #builder()} to create new instances.
  */
 public final class Library {
 	private final Path location;
@@ -18,6 +18,9 @@ public final class Library {
 	private final Path pom;
 	private final ExtractorType extractorType;
 
+	/**
+	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
+	 */
 	private Library(Path location, List<Path> classpath, Path pom, ExtractorType extractorType) {
 		this.location = location.toAbsolutePath();
 		this.classpath = List.copyOf(classpath);

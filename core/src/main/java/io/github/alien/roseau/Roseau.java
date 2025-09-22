@@ -24,7 +24,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ForkJoinPool;
 
+/**
+ * Entry point utilities for building APIs and computing breaking changes between versions.
+ */
 public final class Roseau {
 	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
 
@@ -32,11 +37,24 @@ public final class Roseau {
 
 	}
 
+	/**
+	 * Builds an {@link API} model from the given {@link Library}.
+	 *
+	 * @param library the library to analyze (must not be null)
+	 * @return the built API model
+	 */
 	public static API buildAPI(Library library) {
 		Preconditions.checkNotNull(library);
 		return toAPI(library, extractTypes(library));
 	}
 
+	/**
+	 * Computes a diff between two API versions.
+	 *
+	 * @param v1 the baseline API (must not be null)
+	 * @param v2 the target API to compare against (must not be null)
+	 * @return a {@link RoseauReport} containing the list of breaking changes
+	 */
 	public static RoseauReport diff(API v1, API v2) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
@@ -49,13 +67,21 @@ public final class Roseau {
 		return report;
 	}
 
-	public static RoseauReport parallelDiff(Library v1, Library v2) {
+	/**
+	 * Builds both APIs in parallel using the provided {@link Executor} and computes their diff.
+	 *
+	 * @param v1 the baseline library (must not be null)
+	 * @param v2 the target library (must not be null)
+	 * @param executor the executor to use
+	 * @return a {@link RoseauReport} containing the list of breaking changes
+	 */
+	public static RoseauReport diff(Library v1, Library v2, Executor executor) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
 
 		Stopwatch sw = Stopwatch.createStarted();
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
-		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2));
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1), executor);
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2), executor);
 
 		API api1 = futureV1.join();
 		API api2 = futureV2.join();
@@ -65,6 +91,26 @@ public final class Roseau {
 		return diff(api1, api2);
 	}
 
+	/**
+	 * Builds both APIs in parallel using the default {@link ForkJoinPool#commonPool()} and computes their diff.
+	 *
+	 * @param v1 the baseline library (must not be null)
+	 * @param v2 the target library (must not be null)
+	 * @return a {@link RoseauReport} containing the list of breaking changes
+	 */
+	public static RoseauReport diff(Library v1, Library v2) {
+		return diff(v1, v2, ForkJoinPool.commonPool());
+	}
+
+	/**
+	 * Performs an incremental build of the target API when possible and computes the diff. The baseline API is fully
+	 * built. The target API is incrementally built from the baseline based on changed files.
+	 *
+	 * @param v1 the baseline library (must not be null)
+	 * @param v2 the target library (must not be null and use {@link ExtractorType#JDT})
+	 * @return a {@link RoseauReport} containing the list of breaking changes
+	 * @throws IllegalArgumentException if {@code v2} is not using the JDT extractor
+	 */
 	public static RoseauReport incrementalDiff(Library v1, Library v2) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkArgument(v2 != null && v2.getExtractorType() == ExtractorType.JDT,
