@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.spoon;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -25,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
+import spoon.reflect.declaration.CtAnnotationMethod;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -204,7 +206,7 @@ public class SpoonAPIFactory {
 			convertSpoonAnnotations(annotation.getAnnotations()),
 			convertSpoonPosition(annotation.getPosition(), annotation),
 			convertCtFields(annotation),
-			convertCtMethods(annotation),
+			convertCtAnnotationMethods(annotation),
 			createTypeReference(annotation.getDeclaringType())
 		);
 	}
@@ -275,6 +277,17 @@ public class SpoonAPIFactory {
 		);
 	}
 
+	private AnnotationMethodDecl convertCtAnnotationMethod(CtAnnotationMethod<?> method) {
+		return new AnnotationMethodDecl(
+			makeQualifiedName(method),
+			convertSpoonAnnotations(method.getAnnotations()),
+			convertSpoonPosition(method.getPosition(), method.getDeclaringType()),
+			createTypeReference(method.getDeclaringType()),
+			createITypeReference(method.getType()),
+			method.getDefaultExpression() != null
+		);
+	}
+
 	private ConstructorDecl convertCtConstructor(CtConstructor<?> cons) {
 		return new ConstructorDecl(
 			makeQualifiedName(cons),
@@ -301,6 +314,12 @@ public class SpoonAPIFactory {
 		return type.getMethods().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtMethod)
+			.toList();
+	}
+
+	private List<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
+		return type.getAnnotationMethods().stream()
+			.map(this::convertCtAnnotationMethod)
 			.toList();
 	}
 

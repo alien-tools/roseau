@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.jdt;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -190,8 +191,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
 				modifiers.add(Modifier.ABSTRACT);
+				List<AnnotationMethodDecl> annotationMethodDecls = Arrays.stream(binding.getDeclaredMethods())
+					.map(method -> convertAnnotationMethod(method, binding))
+					.toList();
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
-					fields, methods, enclosingType);
+					fields, annotationMethodDecls, enclosingType);
 			}
 			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
 		};
@@ -256,6 +260,18 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 		return new MethodDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods, anns, location,
 			enclosingTypeRef, returnType, params, typeParams, thrownExceptions);
+	}
+
+	private AnnotationMethodDecl convertAnnotationMethod(IMethodBinding binding, ITypeBinding enclosingType) {
+		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
+		ITypeReference returnType = makeTypeReference(binding.getReturnType());
+		boolean hasDefault = binding.getDefaultValue() != null;
+
+		return new AnnotationMethodDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), anns, location,
+			enclosingTypeRef, returnType, hasDefault);
 	}
 
 	private List<ParameterDecl> convertParameters(String[] names, ITypeBinding[] types, boolean isVarargs) {

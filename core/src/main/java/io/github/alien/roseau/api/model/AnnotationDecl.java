@@ -7,14 +7,21 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * An annotation declaration in the {@link LibraryTypes} (e.g., {@code public @interface Ann {}}).
+ * An annotation declaration (e.g., {@code public @interface Ann {}}).
  */
 public final class AnnotationDecl extends TypeDecl {
+	private final List<AnnotationMethodDecl> annotationMethods;
+
 	public AnnotationDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                      List<Annotation> annotations, SourceLocation location, List<FieldDecl> fields,
-	                      List<MethodDecl> methods, TypeReference<TypeDecl> enclosingType) {
+	                      List<AnnotationMethodDecl> annotationMethods, TypeReference<TypeDecl> enclosingType) {
 		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),
-			Collections.emptyList(), fields, methods, enclosingType);
+			Collections.emptyList(), fields, Collections.emptyList(), enclosingType);
+		this.annotationMethods = List.copyOf(annotationMethods);
+	}
+
+	public List<AnnotationMethodDecl> getAnnotationMethods() {
+		return annotationMethods;
 	}
 
 	@Override
@@ -28,6 +35,6 @@ public final class AnnotationDecl extends TypeDecl {
 			%s annotation %s
 			  %s
 			  %s
-			""".formatted(visibility, qualifiedName, fields, methods);
+			""".formatted(visibility, qualifiedName, fields, annotationMethods);
 	}
 }

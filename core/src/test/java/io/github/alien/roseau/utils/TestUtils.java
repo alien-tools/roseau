@@ -2,6 +2,7 @@ package io.github.alien.roseau.utils;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
@@ -178,6 +179,16 @@ public class TestUtils {
 
 	public static MethodDecl assertMethod(API api, TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
+			.filter(m -> api.getErasure(m).equals(erasure))
+			.toList();
+
+		if (findMethod.isEmpty())
+			throw new AssertionFailedError("No such method", erasure, "No such method");
+		return findMethod.getFirst();
+	}
+
+	public static AnnotationMethodDecl assertAnnotationMethod(API api, AnnotationDecl decl, String erasure) {
+		List<AnnotationMethodDecl> findMethod = decl.getAnnotationMethods().stream()
 			.filter(m -> api.getErasure(m).equals(erasure))
 			.toList();
 

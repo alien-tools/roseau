@@ -10,7 +10,7 @@ import java.util.stream.Collectors;
 /**
  * A method declaration is a kind of {@link ExecutableDecl} within a {@link TypeDecl}.
  */
-public final class MethodDecl extends ExecutableDecl {
+public sealed class MethodDecl extends ExecutableDecl permits AnnotationMethodDecl {
 	public MethodDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                  List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                  ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
