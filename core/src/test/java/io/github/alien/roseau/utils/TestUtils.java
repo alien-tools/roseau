@@ -241,7 +241,7 @@ public class TestUtils {
 
 	public static Map<String, String> buildSourcesMap(String sources) {
 		Pattern typePattern = Pattern.compile(
-			"(?m)^(?!\\s)(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
+			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
 				"(class|interface|@interface|enum|record)\\s+(\\w+)");
 		Matcher matcher = typePattern.matcher(sources);
 
