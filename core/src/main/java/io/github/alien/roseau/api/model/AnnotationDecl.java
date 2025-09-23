@@ -13,7 +13,13 @@ import java.util.Set;
  * An annotation interface declaration (e.g., {@code public @interface Ann {}}).
  */
 public final class AnnotationDecl extends TypeDecl {
+	/**
+	 * The methods declared in this annotation, which correspond to annotation elements, possibly with a default value
+	 */
 	private final List<AnnotationMethodDecl> annotationMethods;
+	/**
+	 * The {@link ElementType} this annotation can be used on
+	 */
 	private final Set<ElementType> targets;
 
 	public AnnotationDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
@@ -24,12 +30,13 @@ public final class AnnotationDecl extends TypeDecl {
 			Collections.emptyList(), fields, Collections.emptyList(), enclosingType);
 		this.annotationMethods = List.copyOf(annotationMethods);
 		if (hasAnnotation(TypeReference.ANNOTATION_TARGET)) {
-			this.targets = targets.isEmpty()
+			this.targets = Collections.unmodifiableSet(targets.isEmpty()
+				// If @Target({}), the annotation cannot be placed on anything (cf. @Target's javadoc)
 				? EnumSet.noneOf(ElementType.class)
-				: EnumSet.copyOf(targets);
+				: EnumSet.copyOf(targets));
 		} else {
-			// §9.6.4.1
-			this.targets = EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE));
+			// §9.6.4.1: if no explicit @Target annotation, defaults to everything but TYPE_USE
+			this.targets = Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)));
 		}
 	}
 

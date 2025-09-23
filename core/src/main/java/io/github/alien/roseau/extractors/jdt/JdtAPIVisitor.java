@@ -389,7 +389,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<ElementType> targets = new HashSet<>();
 		for (IAnnotationBinding ab : binding.getAnnotations()) {
 			ITypeBinding annType = ab.getAnnotationType();
-			if (Target.class.getCanonicalName().equals(annType.getQualifiedName())) {
+			if (annType != null && Target.class.getCanonicalName().equals(annType.getQualifiedName())) {
 				IMemberValuePairBinding[] pairs = ab.getAllMemberValuePairs();
 				for (IMemberValuePairBinding pair : pairs) {
 					if ("value".equals(pair.getName())) {
@@ -397,7 +397,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 						for (Object v : vals) {
 							IVariableBinding enumConst = (IVariableBinding) v;
 							String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
-							targets.add(ElementType.valueOf(elemTypeName.toUpperCase()));
+							targets.add(ElementType.valueOf(elemTypeName));
 						}
 					}
 				}
