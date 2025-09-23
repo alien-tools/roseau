@@ -65,7 +65,6 @@ public enum BreakingChangeKind {
 	METHOD_FORMAL_TYPE_PARAMETERS_CHANGED(MUTATION, false, true),
 
 	// Annotation-related BCs
-	// FIXME: check binary/source compatibilities
 	ANNOTATION_TARGET_REMOVED(MUTATION, false, true),
 	ANNOTATION_METHOD_NO_LONGER_DEFAULT(MUTATION, false, true),
 	ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT(ADDITION, false, true),
