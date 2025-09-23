@@ -9,10 +9,27 @@ import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
 import static io.github.alien.roseau.utils.TestUtils.assertNoMethod;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MethodsExtractionTest {
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void package_qualified_method(ApiBuilder builder) {
+		var api = builder.build("""
+			package pkg;
+			public interface I {
+				public void m();
+			}""");
+
+		var i = assertInterface(api, "pkg.I");
+		var m = assertMethod(api, i, "m()");
+
+		assertThat(m.getQualifiedName()).isEqualTo("pkg.I.m");
+		assertThat(m.getSimpleName()).isEqualTo("m");
+	}
+
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
 	void interface_methods(ApiBuilder builder) {
