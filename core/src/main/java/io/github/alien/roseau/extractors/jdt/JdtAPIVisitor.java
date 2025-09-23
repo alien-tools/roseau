@@ -12,6 +12,7 @@ import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -27,6 +28,7 @@ import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.ExportsDirective;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
@@ -35,6 +37,7 @@ import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
@@ -55,6 +58,7 @@ import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
 	private final List<TypeDecl> collectedTypeDecls = new ArrayList<>(10);
+	private final List<ModuleDecl> collectedModuleDecls = new ArrayList<>(1);
 	private final CompilationUnit cu;
 	private final String packageName;
 	private final String filePath;
@@ -72,6 +76,10 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	List<TypeDecl> getCollectedTypeDecls() {
 		return Collections.unmodifiableList(collectedTypeDecls);
+	}
+
+	List<ModuleDecl> getCollectedModuleDecls() {
+		return Collections.unmodifiableList(collectedModuleDecls);
 	}
 
 	@Override
@@ -92,6 +100,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 	@Override
 	public void endVisit(AnnotationTypeDeclaration node) {
 		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(ModuleDeclaration node) {
+		Set<String> exports = new HashSet<>();
+		for (var stmt : node.moduleStatements()) {
+			if (stmt instanceof ExportsDirective export && export.modules().isEmpty()) {
+				exports.add(export.getName().getFullyQualifiedName());
+			}
+		}
+		collectedModuleDecls.add(new ModuleDecl(node.getName().getFullyQualifiedName(), exports));
 	}
 
 	@Override

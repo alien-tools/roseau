@@ -13,6 +13,7 @@ import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
@@ -42,7 +43,9 @@ import spoon.reflect.declaration.CtFormalTypeDeclarer;
 import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtModifiable;
+import spoon.reflect.declaration.CtModule;
 import spoon.reflect.declaration.CtNamedElement;
+import spoon.reflect.declaration.CtPackageExport;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtRecord;
 import spoon.reflect.declaration.CtRecordComponent;
@@ -55,6 +58,7 @@ import spoon.reflect.factory.Factory;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtIntersectionTypeReference;
+import spoon.reflect.reference.CtPackageReference;
 import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtWildcardReference;
@@ -145,6 +149,17 @@ public class SpoonAPIFactory {
 			.map(this::<T>createTypeReference)
 			.filter(Objects::nonNull)
 			.toList();
+	}
+
+	public ModuleDecl convertCtModule(CtModule module) {
+		return new ModuleDecl(
+			module.getSimpleName(),
+			module.getExportedPackages().stream()
+				// qualified exports (`exports pkg to m`) are not considered exported
+				.filter(pkg -> pkg.getTargetExport().isEmpty())
+				.map(CtPackageExport::getPackageReference)
+				.map(CtPackageReference::getQualifiedName)
+				.collect(Collectors.toSet()));
 	}
 
 	public TypeDecl convertCtType(CtType<?> type) {

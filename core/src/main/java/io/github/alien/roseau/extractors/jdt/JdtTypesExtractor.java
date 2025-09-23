@@ -42,8 +42,15 @@ public class JdtTypesExtractor implements TypesExtractor {
 				.toList();
 
 			TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-			List<TypeDecl> parsedTypes = parseTypes(library, sourceFiles, typeRefFactory);
-			return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, parsedTypes);
+			ParsingResult result = parseTypes(library, sourceFiles, typeRefFactory);
+
+			if (result.modules().isEmpty()) {
+				return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, result.types());
+			} else if (result.modules().size() == 1) {
+				return new LibraryTypes(library, result.modules().getFirst(), result.types());
+			} else {
+				throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, result.modules()));
+			}
 		} catch (IOException e) {
 			throw new RoseauException("Failed to retrieve sources at " + library.getLocation(), e);
 		}
@@ -54,7 +61,10 @@ public class JdtTypesExtractor implements TypesExtractor {
 		return library != null && library.isSources();
 	}
 
-	List<TypeDecl> parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
+	record ParsingResult(List<TypeDecl> types, List<ModuleDecl> modules) {
+	}
+
+	ParsingResult parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
 		String[] sourcesArray = sourcesToParse.stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
@@ -63,7 +73,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_21);
 		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
 
-		String[] sourcesRootArray = { library.getLocation().toAbsolutePath().toString() };
+		String[] sourcesRootArray = {library.getLocation().toAbsolutePath().toString()};
 		String[] classpathEntries = library.getClasspath().stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
@@ -81,6 +91,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 
 		// Receive parsed ASTs and forward them to the visitor
 		List<TypeDecl> typeDecls = new ArrayList<>(sourcesToParse.size());
+		List<ModuleDecl> moduleDecls = new ArrayList<>(1);
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
@@ -95,6 +106,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 
 				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
 				ast.accept(visitor);
+				moduleDecls.addAll(visitor.getCollectedModuleDecls());
 				typeDecls.addAll(visitor.getCollectedTypeDecls());
 			}
 		};
@@ -102,7 +114,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 		// Start parsing and forwarding ASTs
 		try {
 			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
-			return typeDecls;
+			return new ParsingResult(typeDecls, moduleDecls);
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
 			throw new RoseauException("Failed to parse code from " + library.getLocation(), e);
@@ -110,7 +122,6 @@ public class JdtTypesExtractor implements TypesExtractor {
 	}
 
 	private static boolean isRegularJavaFile(Path file) {
-		return Files.isRegularFile(file) && file.toString().endsWith(".java") &&
-			!file.endsWith("package-info.java") && !file.endsWith("module-info.java");
+		return Files.isRegularFile(file) && file.toString().endsWith(".java") && !file.endsWith("package-info.java");
 	}
 }

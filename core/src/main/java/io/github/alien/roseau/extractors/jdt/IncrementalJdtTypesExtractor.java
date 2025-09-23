@@ -58,7 +58,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			previousTypes.getAllTypes().stream()
 				.filter(t -> !discarded.contains(t.getLocation().file())),
 			// New re-parsed types
-			parseTypes(newVersion, filesToParse, typeRefFactory).stream()
+			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
 		).toList();
 
 		return new LibraryTypes(newVersion, ModuleDecl.UNNAMED_MODULE, newTypeDecls);

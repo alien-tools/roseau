@@ -17,7 +17,6 @@ import org.objectweb.asm.Opcodes;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -51,19 +50,26 @@ public class AsmTypesExtractor implements TypesExtractor {
 	 * @param jar the JAR file to analyze
 	 * @return the extracted {@link LibraryTypes}
 	 */
-	public LibraryTypes extractTypes(Library library, JarFile jar) {
+	private LibraryTypes extractTypes(Library library, JarFile jar) {
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 
-		List<TypeDecl> typeDecls =
-			Objects.requireNonNull(jar).stream()
-				.filter(entry -> entry.getName().endsWith(".class") && !entry.isDirectory())
-				// Multi-release JARs store version-specific class files there, so we could have duplicates
-				.filter(entry -> !entry.getName().startsWith("META-INF/"))
-				.parallel()
-				.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
-				.toList();
+		List<TypeDecl> typeDecls = jar.stream()
+			.filter(this::isRegularClassFile)
+			.parallel()
+			.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
+			.toList();
+		List<ModuleDecl> moduleDecls = jar.stream()
+			.filter(this::isModuleInfo)
+			.flatMap(entry -> extractModuleDecl(jar, entry).stream())
+			.toList();
 
-		return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, typeDecls);
+		if (moduleDecls.isEmpty()) {
+			return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, typeDecls);
+		} else if (moduleDecls.size() == 1) {
+			return new LibraryTypes(library, moduleDecls.getFirst(), typeDecls);
+		} else {
+			throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, moduleDecls));
+		}
 	}
 
 	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {
@@ -76,5 +82,30 @@ public class AsmTypesExtractor implements TypesExtractor {
 			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
 			return Optional.empty();
 		}
+	}
+
+	private static Optional<ModuleDecl> extractModuleDecl(JarFile jar, JarEntry entry) {
+		try (InputStream is = jar.getInputStream(entry)) {
+			ClassReader reader = new ClassReader(is);
+			AsmModuleVisitor visitor = new AsmModuleVisitor(ASM_VERSION);
+			reader.accept(visitor, PARSING_OPTIONS);
+			return Optional.ofNullable(visitor.getModuleDecl());
+		} catch (IOException e) {
+			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
+			return Optional.empty();
+		}
+	}
+
+	private boolean isModuleInfo(JarEntry entry) {
+		return !entry.isDirectory() &&
+			entry.getName().equals("module-info.class");
+	}
+
+	private boolean isRegularClassFile(JarEntry entry) {
+		return !entry.isDirectory() &&
+			entry.getName().endsWith(".class") &&
+			// Multi-release JARs store version-specific class files there, so we could have duplicates
+			!entry.getName().startsWith("META-INF/") &&
+			!isModuleInfo(entry);
 	}
 }

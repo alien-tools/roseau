@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
 
+import java.util.Objects;
 import java.util.Set;
 
 public sealed class ModuleDecl {
@@ -48,4 +49,23 @@ public sealed class ModuleDecl {
 	}
 
 	public static final ModuleDecl UNNAMED_MODULE = new UnnamedModule("<unnamed module>", Set.of(""));
+
+	@Override
+	public String toString() {
+		return "module %s [exports %s]".formatted(qualifiedName, String.join(", ", exports));
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		ModuleDecl that = (ModuleDecl) o;
+		return Objects.equals(qualifiedName, that.qualifiedName) && Objects.equals(exports, that.exports);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(qualifiedName, exports);
+	}
 }

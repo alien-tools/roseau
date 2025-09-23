@@ -9,6 +9,7 @@ import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import spoon.reflect.CtModel;
+import spoon.reflect.declaration.CtModule;
 import spoon.reflect.declaration.CtPackage;
 import spoon.reflect.declaration.CtType;
 
@@ -42,7 +43,17 @@ public class SpoonTypesExtractor implements TypesExtractor {
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
 			.toList();
 
-		return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, allTypes);
+		List<CtModule> modules = model.getAllModules().stream()
+			.filter(mod -> !mod.isUnnamedModule())
+			.toList();
+
+		if (modules.isEmpty()) {
+			return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, allTypes);
+		} else if (modules.size() == 1) {
+			return new LibraryTypes(library, factory.convertCtModule(modules.getFirst()), allTypes);
+		} else {
+			throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, modules));
+		}
 	}
 
 	// Returns all types within a package
