@@ -195,8 +195,18 @@ public class APIDiff {
 				if (m1.hasDefault() && !m2.hasDefault()) {
 					bc(BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, m1, null);
 				}
-			}, () -> bc(BreakingChangeKind.ANNOTATION_METHOD_REMOVED, m1, null));
+
+				if (!m1.getType().equals(m2.getType())) {
+					bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2);
+				}
+			}, () -> bc(BreakingChangeKind.METHOD_REMOVED, m1, null));
 		});
+
+		a2.getAnnotationMethods().stream()
+			.filter(m2 -> !m2.hasDefault())
+			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 ->
+				Objects.equals(m1.getSimpleName(), m2.getSimpleName())))
+			.forEach(m2 -> bc(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, m2));
 	}
 
 	private void diffField(FieldDecl f1, FieldDecl f2) {

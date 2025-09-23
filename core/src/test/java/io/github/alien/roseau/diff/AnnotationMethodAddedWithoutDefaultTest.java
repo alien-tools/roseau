@@ -7,30 +7,32 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class AnnotationMethodNoLongerDefaultTest {
+class AnnotationMethodAddedWithoutDefaultTest {
 	@Test
-	void annotation_method_no_longer_default() {
+	void new_annotation_method_without_default() {
 		var v1 = """
 			public @interface A {
-				String value() default "";
+				String s();
 			}""";
 		var v2 = """
 			public @interface A {
-				String value();
+				String s();
+				int i();
 			}""";
 
-		assertBC("A.value", BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, 2, buildDiff(v1, v2));
+		assertBC("A", BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, 1, buildDiff(v1, v2));
 	}
 
 	@Test
-	void annotation_method_now_default() {
+	void new_annotation_method_with_default() {
 		var v1 = """
 			public @interface A {
-				String value();
+				String s();
 			}""";
 		var v2 = """
 			public @interface A {
-				String value() default "";
+				String s();
+				int i() default 0;
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
