@@ -51,9 +51,11 @@ public final class LibraryTypes implements TypeProvider {
 	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
 
 	/**
-	 * Initializes from the given list of {@link TypeDecl}.
+	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}.
 	 *
-	 * @param types Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 * @param library The analyzed library
+	 * @param module  The module corresponding to the library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
 	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") List<TypeDecl> types) {
 		Preconditions.checkNotNull(library);
@@ -69,6 +71,16 @@ public final class LibraryTypes implements TypeProvider {
 					throw new IllegalArgumentException("Duplicated types " + fqn);
 				}
 			));
+	}
+
+	/**
+	 * Initializes from the given list of {@link TypeDecl}.
+	 *
+	 * @param library The analyzed library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 */
+	public LibraryTypes(Library library, @JsonProperty("allTypes") List<TypeDecl> types) {
+		this(library, ModuleDecl.UNNAMED_MODULE, types);
 	}
 
 	/**
@@ -113,6 +125,7 @@ public final class LibraryTypes implements TypeProvider {
 
 	/**
 	 * The module corresponding to the library.
+	 *
 	 * @return the module
 	 */
 	@JsonProperty("module")

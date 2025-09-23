@@ -61,7 +61,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
 		).toList();
 
-		return new LibraryTypes(newVersion, ModuleDecl.UNNAMED_MODULE, newTypeDecls);
+		return new LibraryTypes(newVersion, newTypeDecls);
 	}
 
 	private Set<Path> resolve(Path root, Set<Path> files) {

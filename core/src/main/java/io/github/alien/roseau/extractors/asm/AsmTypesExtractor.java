@@ -64,7 +64,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 			.toList();
 
 		if (moduleDecls.isEmpty()) {
-			return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, typeDecls);
+			return new LibraryTypes(library, typeDecls);
 		} else if (moduleDecls.size() == 1) {
 			return new LibraryTypes(library, moduleDecls.getFirst(), typeDecls);
 		} else {

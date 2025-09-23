@@ -48,7 +48,7 @@ public class SpoonTypesExtractor implements TypesExtractor {
 			.toList();
 
 		if (modules.isEmpty()) {
-			return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, allTypes);
+			return new LibraryTypes(library, allTypes);
 		} else if (modules.size() == 1) {
 			return new LibraryTypes(library, factory.convertCtModule(modules.getFirst()), allTypes);
 		} else {

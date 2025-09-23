@@ -29,7 +29,7 @@ class LibraryTypesTest {
 	void get_all_types() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I2", AccessModifier.PACKAGE_PRIVATE);
-		var lt = new LibraryTypes(mockLibrary, ModuleDecl.UNNAMED_MODULE, List.of(t1, t2));
+		var lt = new LibraryTypes(mockLibrary, List.of(t1, t2));
 
 		assertThat(lt.getAllTypes()).containsOnly(t1, t2);
 	}
@@ -38,7 +38,7 @@ class LibraryTypesTest {
 	void find_type_exists() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I2", AccessModifier.PACKAGE_PRIVATE);
-		var lt = new LibraryTypes(mockLibrary, ModuleDecl.UNNAMED_MODULE, List.of(t1, t2));
+		var lt = new LibraryTypes(mockLibrary, List.of(t1, t2));
 
 		assertThat(lt.findType("test.pkg.I1")).hasValue(t1);
 		assertThat(lt.findType("test.pkg.I2")).hasValue(t2);
@@ -46,7 +46,7 @@ class LibraryTypesTest {
 
 	@Test
 	void find_type_absent() {
-		var lt = new LibraryTypes(mockLibrary, ModuleDecl.UNNAMED_MODULE, List.of());
+		var lt = new LibraryTypes(mockLibrary, List.of());
 
 		assertThat(lt.findType("test.pkg.Unknown")).isEmpty();
 	}
@@ -54,7 +54,7 @@ class LibraryTypesTest {
 	@Test
 	void find_type_unexpected_kind() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
-		var lt = new LibraryTypes(mockLibrary, ModuleDecl.UNNAMED_MODULE, List.of(t1));
+		var lt = new LibraryTypes(mockLibrary, List.of(t1));
 		var opt = lt.findType("test.pkg.I1", ClassDecl.class);
 
 		assertThat(opt).isEmpty();
@@ -63,7 +63,7 @@ class LibraryTypesTest {
 	@Test
 	void find_type_unexpected_kind_sub() {
 		var t1 = ApiTestFactory.newRecord("test.pkg.R1", AccessModifier.PACKAGE_PRIVATE);
-		var lt = new LibraryTypes(mockLibrary, ModuleDecl.UNNAMED_MODULE, List.of(t1));
+		var lt = new LibraryTypes(mockLibrary, List.of(t1));
 		var opt = lt.findType("test.pkg.R1", ClassDecl.class);
 
 		assertThat(opt).isPresent();
@@ -74,7 +74,7 @@ class LibraryTypesTest {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PACKAGE_PRIVATE);
 		assertThatIllegalArgumentException().isThrownBy(() ->
-			new LibraryTypes(mockLibrary, ModuleDecl.UNNAMED_MODULE, List.of(t1, t2)));
+			new LibraryTypes(mockLibrary, List.of(t1, t2)));
 	}
 
 	@Test

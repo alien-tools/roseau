@@ -45,7 +45,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 			ParsingResult result = parseTypes(library, sourceFiles, typeRefFactory);
 
 			if (result.modules().isEmpty()) {
-				return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, result.types());
+				return new LibraryTypes(library, result.types());
 			} else if (result.modules().size() == 1) {
 				return new LibraryTypes(library, result.modules().getFirst(), result.types());
 			} else {
