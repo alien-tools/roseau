@@ -41,6 +41,7 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -388,7 +389,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<ElementType> targets = new HashSet<>();
 		for (IAnnotationBinding ab : binding.getAnnotations()) {
 			ITypeBinding annType = ab.getAnnotationType();
-			if ("java.lang.annotation.Target".equals(annType.getQualifiedName())) {
+			if (Target.class.getCanonicalName().equals(annType.getQualifiedName())) {
 				IMemberValuePairBinding[] pairs = ab.getAllMemberValuePairs();
 				for (IMemberValuePairBinding pair : pairs) {
 					if ("value".equals(pair.getName())) {

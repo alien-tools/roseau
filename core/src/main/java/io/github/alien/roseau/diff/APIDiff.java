@@ -181,19 +181,23 @@ public class APIDiff {
 
 	private void diffAnnotationInterface(AnnotationDecl a1, AnnotationDecl a2) {
 		if (!a2.getTargets().containsAll(a1.getTargets())) {
-			bc(BreakingChangeKind.ANNOTATION_TARGET_REMOVED, a1, null);
+			bc(BreakingChangeKind.ANNOTATION_TARGET_REMOVED, a1, a2);
+		}
+
+		if (a1.isRepeatable() && !a2.isRepeatable()) {
+			bc(BreakingChangeKind.ANNOTATION_NO_LONGER_REPEATABLE, a1, a2);
 		}
 
 		a1.getAnnotationMethods().forEach(m1 -> {
 			// Annotation methods do not have parameters, so no overloading going on
 			//   -> simple name matching should be enough
 			Optional<AnnotationMethodDecl> optMatch = a2.getAnnotationMethods().stream()
-				.filter(m2 -> Objects.equals(m1.getSimpleName(), m2.getSimpleName()))
+				.filter(m2 -> m1.getSimpleName().equals(m2.getSimpleName()))
 				.findFirst();
 
 			optMatch.ifPresentOrElse(m2 -> {
 				if (m1.hasDefault() && !m2.hasDefault()) {
-					bc(BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, m1, null);
+					bc(BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, m1, m2);
 				}
 
 				if (!m1.getType().equals(m2.getType())) {
@@ -204,8 +208,7 @@ public class APIDiff {
 
 		a2.getAnnotationMethods().stream()
 			.filter(m2 -> !m2.hasDefault())
-			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 ->
-				Objects.equals(m1.getSimpleName(), m2.getSimpleName())))
+			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
 			.forEach(m2 -> bc(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, m2));
 	}
 

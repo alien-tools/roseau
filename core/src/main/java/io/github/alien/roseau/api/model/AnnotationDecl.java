@@ -3,13 +3,15 @@ package io.github.alien.roseau.api.model;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Repeatable;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 
 /**
- * An annotation declaration (e.g., {@code public @interface Ann {}}).
+ * An annotation interface declaration (e.g., {@code public @interface Ann {}}).
  */
 public final class AnnotationDecl extends TypeDecl {
 	private final List<AnnotationMethodDecl> annotationMethods;
@@ -36,6 +38,11 @@ public final class AnnotationDecl extends TypeDecl {
 		return targets;
 	}
 
+	public boolean isRepeatable() {
+		return annotations.stream()
+			.anyMatch(ann -> Repeatable.class.getCanonicalName().equals(ann.actualAnnotation().getQualifiedName()));
+	}
+
 	@Override
 	public boolean isAnnotation() {
 		return true;
@@ -48,5 +55,23 @@ public final class AnnotationDecl extends TypeDecl {
 			  %s
 			  %s
 			""".formatted(visibility, qualifiedName, fields, annotationMethods);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		AnnotationDecl that = (AnnotationDecl) o;
+		return Objects.equals(annotationMethods, that.annotationMethods) &&
+			Objects.equals(targets, that.targets);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), annotationMethods, targets);
 	}
 }

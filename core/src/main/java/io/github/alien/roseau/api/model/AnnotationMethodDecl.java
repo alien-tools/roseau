@@ -5,6 +5,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * An annotation method, possibly holding a default value expression.
@@ -24,5 +25,22 @@ public final class AnnotationMethodDecl extends MethodDecl {
 
 	public boolean hasDefault() {
 		return hasDefault;
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (o == null || getClass() != o.getClass()) {
+			return false;
+		}
+		if (!super.equals(o)) {
+			return false;
+		}
+		AnnotationMethodDecl that = (AnnotationMethodDecl) o;
+		return hasDefault == that.hasDefault;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), hasDefault);
 	}
 }
