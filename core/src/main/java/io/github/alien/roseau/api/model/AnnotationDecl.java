@@ -26,7 +26,7 @@ public final class AnnotationDecl extends TypeDecl {
 		this.annotationMethods = List.copyOf(annotationMethods);
 		this.targets = Collections.unmodifiableSet(
 			targets.isEmpty()
-				? EnumSet.noneOf(ElementType.class)
+				? EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)) // §9.6.4.1
 				: EnumSet.copyOf(targets));
 	}
 
