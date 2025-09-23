@@ -71,7 +71,7 @@ class AnnotationTargetRemovedTest {
 	}
 
 	@Test
-	void default_annotation_targets_compatible() {
+	void default_annotation_target_compatible() {
 		// Default to all except TYPE_USE
 		var v1 = """
 			public @interface A {
@@ -94,7 +94,7 @@ class AnnotationTargetRemovedTest {
 	}
 
 	@Test
-	void default_annotation_targets_incompatible() {
+	void default_annotation_target_incompatible() {
 		// Default to all except TYPE_USE
 		var v1 = """
 			public @interface A {
@@ -107,5 +107,39 @@ class AnnotationTargetRemovedTest {
 			}""";
 
 		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void empty_annotation_target_compatible() {
+		// @Target({}) cannot be used anywhere
+		var v1 = """
+			@java.lang.annotation.Target({})
+			public @interface A {
+				String value();
+			}""";
+		var v2 = """
+			@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE)
+			public @interface A {
+				String value();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void empty_annotation_target_incompatible() {
+		// @Target({}) cannot be used anywhere
+		var v1 = """
+			@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE)
+			public @interface A {
+				String value();
+			}""";
+		var v2 = """
+			@java.lang.annotation.Target({})
+			public @interface A {
+				String value();
+			}""";
+
+		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 2, buildDiff(v1, v2));
 	}
 }

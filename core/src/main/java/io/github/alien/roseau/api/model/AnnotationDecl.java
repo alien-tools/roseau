@@ -3,7 +3,6 @@ package io.github.alien.roseau.api.model;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.lang.annotation.ElementType;
-import java.lang.annotation.Repeatable;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
@@ -24,10 +23,14 @@ public final class AnnotationDecl extends TypeDecl {
 		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),
 			Collections.emptyList(), fields, Collections.emptyList(), enclosingType);
 		this.annotationMethods = List.copyOf(annotationMethods);
-		this.targets = Collections.unmodifiableSet(
-			targets.isEmpty()
-				? EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)) // §9.6.4.1
-				: EnumSet.copyOf(targets));
+		if (hasAnnotation(TypeReference.ANNOTATION_TARGET)) {
+			this.targets = targets.isEmpty()
+				? EnumSet.noneOf(ElementType.class)
+				: EnumSet.copyOf(targets);
+		} else {
+			// §9.6.4.1
+			this.targets = EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE));
+		}
 	}
 
 	public List<AnnotationMethodDecl> getAnnotationMethods() {
@@ -39,8 +42,7 @@ public final class AnnotationDecl extends TypeDecl {
 	}
 
 	public boolean isRepeatable() {
-		return annotations.stream()
-			.anyMatch(ann -> Repeatable.class.getCanonicalName().equals(ann.actualAnnotation().getQualifiedName()));
+		return hasAnnotation(TypeReference.ANNOTATION_REPEATABLE);
 	}
 
 	@Override
