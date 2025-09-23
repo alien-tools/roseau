@@ -12,6 +12,9 @@ import java.util.stream.Collectors;
  * An API augments {@link LibraryTypes} with analysis capabilities and symbol export information.
  */
 public class API extends CachingAPIAnalyzer {
+	/**
+	 * The types, exported or not, declared in the library.
+	 */
 	private final LibraryTypes libraryTypes;
 
 	public API(LibraryTypes libraryTypes, TypeResolver resolver) {

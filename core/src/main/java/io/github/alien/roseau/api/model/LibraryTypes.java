@@ -38,6 +38,11 @@ public final class LibraryTypes implements TypeProvider {
 	private final Library library;
 
 	/**
+	 * The module corresponding to the library.
+	 */
+	private final ModuleDecl module;
+
+	/**
 	 * An immutable map that stores all types within the library, including both exported and non-exported
 	 * {@link TypeDecl} instances. Allows for efficient lookup of type declarations by their qualified names.
 	 */
@@ -50,10 +55,12 @@ public final class LibraryTypes implements TypeProvider {
 	 *
 	 * @param types Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(Library library, @JsonProperty("allTypes") List<TypeDecl> types) {
+	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") List<TypeDecl> types) {
 		Preconditions.checkNotNull(library);
+		Preconditions.checkNotNull(module);
 		Preconditions.checkNotNull(types);
 		this.library = library;
+		this.module = module;
 		this.allTypes = types.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
@@ -102,6 +109,15 @@ public final class LibraryTypes implements TypeProvider {
 	@JsonProperty("library")
 	public Library getLibrary() {
 		return library;
+	}
+
+	/**
+	 * The module corresponding to the library.
+	 * @return the module
+	 */
+	@JsonProperty("module")
+	public ModuleDecl getModule() {
+		return module;
 	}
 
 	/**

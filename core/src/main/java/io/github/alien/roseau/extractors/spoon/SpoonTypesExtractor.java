@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.spoon;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -32,7 +33,7 @@ public class SpoonTypesExtractor implements TypesExtractor {
 	}
 
 	public LibraryTypes extractTypes(Library library, CtModel model) {
-		Preconditions.checkArgument(library != null && library.isSources());
+		Preconditions.checkArgument(canExtract(library));
 		Preconditions.checkNotNull(model);
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 		SpoonAPIFactory factory = new SpoonAPIFactory(typeRefFactory, library.getClasspath());
@@ -41,7 +42,7 @@ public class SpoonTypesExtractor implements TypesExtractor {
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))
 			.toList();
 
-		return new LibraryTypes(library, allTypes);
+		return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, allTypes);
 	}
 
 	// Returns all types within a package

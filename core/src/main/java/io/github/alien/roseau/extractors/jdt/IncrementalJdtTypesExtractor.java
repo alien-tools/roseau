@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -60,7 +61,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			parseTypes(newVersion, filesToParse, typeRefFactory).stream()
 		).toList();
 
-		return new LibraryTypes(newVersion, newTypeDecls);
+		return new LibraryTypes(newVersion, ModuleDecl.UNNAMED_MODULE, newTypeDecls);
 	}
 
 	private Set<Path> resolve(Path root, Set<Path> files) {

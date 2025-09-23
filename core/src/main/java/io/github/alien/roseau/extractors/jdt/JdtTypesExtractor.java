@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -42,7 +43,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 
 			TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 			List<TypeDecl> parsedTypes = parseTypes(library, sourceFiles, typeRefFactory);
-			return new LibraryTypes(library, parsedTypes);
+			return new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, parsedTypes);
 		} catch (IOException e) {
 			throw new RoseauException("Failed to retrieve sources at " + library.getLocation(), e);
 		}
