@@ -80,6 +80,17 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "Disable ANSI colors, output plain text")
 	private boolean plain;
 
+	@CommandLine.ArgGroup(exclusive = true)
+	FilteringOptions exclusive;
+	static class FilteringOptions {
+		@CommandLine.Option(names = "--source-only",
+			description = "Only report source-breaking changes")
+		static boolean sourceOnly;
+		@CommandLine.Option(names = "--binary-only",
+			description = "Only report binary-breaking changes")
+		static boolean binaryOnly;
+	}
+
 	private static final Logger LOGGER = LogManager.getLogger(RoseauCLI.class);
 	private static final String RED_TEXT = "\u001B[31m";
 	private static final String BOLD = "\u001B[1m";
@@ -230,6 +241,8 @@ public final class RoseauCLI implements Callable<Integer> {
 				} else {
 					System.out.println(
 						bcs.stream()
+							.filter(bc -> (bc.kind().isBinaryBreaking() && !FilteringOptions.sourceOnly) ||
+								(bc.kind().isSourceBreaking() && !FilteringOptions.binaryOnly))
 							.map(this::format)
 							.collect(Collectors.joining(System.lineSeparator()))
 					);
