@@ -382,8 +382,7 @@ class NestedTypesExtractionTest {
 	}
 
 	@ParameterizedTest
-	// FIXME: ASM sees the inner type as a class?
-	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
+	@EnumSource(value = ApiBuilderType.class)
 	void nested_record_in_class(ApiBuilder builder) {
 		var api = builder.build("public class A { record B() {} }");
 		assertClass(api, "A");

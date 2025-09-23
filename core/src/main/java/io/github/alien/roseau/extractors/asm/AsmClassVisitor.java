@@ -246,7 +246,11 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		if (outerName != null && innerName != null) {
 			// Nested/inner types
-			classAccess = access;
+			// Merge the kind bits (class/interface/enum/annotation/record) from the class header with
+			// the visibility/modifier bits from the InnerClasses entry. Some compilers omit ACC_RECORD
+			// in the InnerClasses attributes for nested records, which would make us misclassify them.
+			int kindBits = Opcodes.ACC_INTERFACE | Opcodes.ACC_ENUM | Opcodes.ACC_ANNOTATION | Opcodes.ACC_RECORD;
+			classAccess = (access & ~kindBits) | (classAccess & kindBits);
 			enclosingType = typeRefFactory.createTypeReference(bytecodeToFqn(outerName));
 		} else {
 			// Anonymous/local types

@@ -301,31 +301,21 @@ class AnnotationsExtractionTest {
 		// Nested types: existence and basic properties
 		assertEnum(api, "Everything$Level");
 		var meta = assertAnnotation(api, "Everything$Meta");
-		var typeUseAnn = assertAnnotation(api, "Everything$TypeUseAnn");
+		assertAnnotation(api, "Everything$TypeUseAnn");
 		var helper = assertInterface(api, "Everything$Helper");
 		var helperImpl = assertClass(api, "Everything$HelperImpl");
-		// Pair may be extracted differently by some backends; prefer record if available, otherwise class
-		var pairRecordPresent = api.getLibraryTypes().findType("Everything$Pair").map(t -> t.isRecord()).orElse(false);
-		if (pairRecordPresent) {
-			assertRecord(api, "Everything$Pair");
-		} else {
-			assertClass(api, "Everything$Pair");
-		}
-		var marker = assertAnnotation(api, "Everything$Marker");
+		assertRecord(api, "Everything$Pair");
+		assertAnnotation(api, "Everything$Marker");
 		var container = assertAnnotation(api, "Everything$Container");
 
-		// Check some members of nested types
 		assertThat(assertMethod(api, helper, "help()").getType().getQualifiedName()).isEqualTo("java.lang.String");
 		assertThat(assertMethod(api, helperImpl, "help()").getType().getQualifiedName()).isEqualTo("java.lang.String");
-		// Meta annotation methods
 		assertThat(assertAnnotationMethod(api, meta, "key()").getType().getQualifiedName()).isEqualTo("java.lang.String");
 		assertThat(assertAnnotationMethod(api, meta, "key()").hasDefault()).isFalse();
 		assertThat(assertAnnotationMethod(api, meta, "value()").getType().getQualifiedName()).isEqualTo("java.lang.String");
 		assertThat(assertAnnotationMethod(api, meta, "value()").hasDefault()).isFalse();
-		// Container must have Everything[] value()
 		assertThat(assertAnnotationMethod(api, container, "value()").getType().getQualifiedName()).isEqualTo("Everything[]");
 		assertThat(assertAnnotationMethod(api, container, "value()").hasDefault()).isFalse();
-		// And any extra methods must have defaults (see note())
 		assertThat(assertAnnotationMethod(api, container, "note()").hasDefault()).isTrue();
 	}
 }
