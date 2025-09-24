@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -57,6 +58,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param module  The module corresponding to the library
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
+	@JsonCreator
 	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") List<TypeDecl> types) {
 		Preconditions.checkNotNull(library);
 		Preconditions.checkNotNull(module);
@@ -79,7 +81,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param library The analyzed library
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(Library library, @JsonProperty("allTypes") List<TypeDecl> types) {
+	public LibraryTypes(Library library, List<TypeDecl> types) {
 		this(library, ModuleDecl.UNNAMED_MODULE, types);
 	}
 
