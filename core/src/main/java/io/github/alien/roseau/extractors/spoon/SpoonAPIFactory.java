@@ -175,7 +175,7 @@ public class SpoonAPIFactory {
 		try {
 			return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
 		} catch (Exception e) {
-			LOGGER.warn("Couldn't convert {}", qualifiedName, e);
+			LOGGER.warn("Couldn't convert {}", qualifiedName);
 			return null;
 		}
 	}
