@@ -1,5 +1,6 @@
 package io.github.alien.roseau;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
@@ -35,22 +36,23 @@ public final class Library {
 	private final List<Path> customClasspath;
 	private final Path pom;
 	private final ExtractorType extractorType;
+	@JsonIgnore
 	private final Supplier<List<Path>> classpath;
 
 	/**
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
 	 */
-	private Library(Path location, List<Path> classpath, Path pom, ExtractorType extractorType) {
+	private Library(Path location, List<Path> customClasspath, Path pom, ExtractorType extractorType) {
 		this.location = location.toAbsolutePath();
-		this.customClasspath = List.copyOf(classpath);
+		this.customClasspath = List.copyOf(customClasspath);
 		this.pom = pom;
 		this.extractorType = extractorType;
 		this.classpath = Suppliers.memoize(() -> {
 			if (pom != null && Files.isRegularFile(pom)) {
 				MavenClasspathBuilder builder = new MavenClasspathBuilder();
-				return Stream.concat(builder.buildClasspath(pom).stream(), classpath.stream()).toList();
+				return Stream.concat(builder.buildClasspath(pom).stream(), customClasspath.stream()).toList();
 			} else {
-				return customClasspath;
+				return this.customClasspath;
 			}
 		});
 	}

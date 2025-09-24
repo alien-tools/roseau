@@ -81,7 +81,7 @@ class LibraryTypesTest {
 	void json_round_trip() throws IOException {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
-		List<Path> classpath = builder.buildClasspath(Path.of("."));
+		List<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
 		Library library = Library.builder().location(sources).classpath(classpath).build();
 		TypesExtractor extractor = new JdtTypesExtractor();
 		LibraryTypes orig = extractor.extractTypes(library);
