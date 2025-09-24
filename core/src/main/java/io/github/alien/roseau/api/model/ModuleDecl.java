@@ -56,12 +56,15 @@ public sealed class ModuleDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		ModuleDecl that = (ModuleDecl) o;
-		return Objects.equals(qualifiedName, that.qualifiedName) && Objects.equals(exports, that.exports);
+		ModuleDecl other = (ModuleDecl) obj;
+		return Objects.equals(qualifiedName, other.qualifiedName) && Objects.equals(exports, other.exports);
 	}
 
 	@Override
