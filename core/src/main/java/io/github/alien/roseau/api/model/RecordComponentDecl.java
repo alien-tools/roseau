@@ -22,17 +22,11 @@ public final class RecordComponentDecl extends TypeMemberDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		RecordComponentDecl other = (RecordComponentDecl) o;
+		RecordComponentDecl other = (RecordComponentDecl) obj;
 		return isVarargs == other.isVarargs;
 	}
 

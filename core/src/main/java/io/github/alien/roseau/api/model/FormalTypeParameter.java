@@ -26,22 +26,20 @@ public record FormalTypeParameter(
 	@Override
 	public String toString() {
 		return String.format("%s extends %s",
-				name,
-				bounds.stream()
-						.map(t -> {
-							if (t instanceof TypeReference<?> tR && !tR.typeArguments().isEmpty()) {
-
-								return String.format("%s<%s>",
-										tR.getQualifiedName(),
-										tR.typeArguments().stream()
-											.map(ITypeReference::getQualifiedName)
-											.collect(Collectors.joining(", "))
-								);
-							}
-
-							return t.getQualifiedName();
-						})
-						.collect(Collectors.joining(" & "))
+			name,
+			bounds.stream()
+				.map(t -> {
+					if (t instanceof TypeReference<?> tr && !tr.typeArguments().isEmpty()) {
+						return String.format("%s<%s>",
+							tr.getQualifiedName(),
+							tr.typeArguments().stream()
+								.map(ITypeReference::getQualifiedName)
+								.collect(Collectors.joining(", "))
+						);
+					}
+					return t.getQualifiedName();
+				})
+				.collect(Collectors.joining(" & "))
 		);
 	}
 }

@@ -39,17 +39,11 @@ public abstract sealed class TypeMemberDecl extends Symbol
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		TypeMemberDecl other = (TypeMemberDecl) o;
+		TypeMemberDecl other = (TypeMemberDecl) obj;
 		return Objects.equals(type, other.type) && Objects.equals(containingType, other.containingType);
 	}
 

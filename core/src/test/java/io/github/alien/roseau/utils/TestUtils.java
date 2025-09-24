@@ -1,14 +1,17 @@
 package io.github.alien.roseau.utils;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -18,21 +21,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
-import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
-import japicmp.cmp.JApiCmpArchive;
-import japicmp.cmp.JarArchiveComparator;
-import japicmp.cmp.JarArchiveComparatorOptions;
-import japicmp.config.Options;
-import japicmp.model.JApiAnnotation;
-import japicmp.model.JApiClass;
 import japicmp.model.JApiCompatibilityChange;
-import japicmp.model.JApiConstructor;
-import japicmp.model.JApiField;
-import japicmp.model.JApiImplementedInterface;
-import japicmp.model.JApiMethod;
-import japicmp.model.JApiSuperclass;
-import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -55,7 +44,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -73,9 +61,9 @@ public class TestUtils {
 	public static void assertBC(String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
 		List<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
-				   kind == bc.kind()
-				&& line == bc.impactedSymbol().getLocation().line()
-				&& symbol.equals(bc.impactedSymbol().getQualifiedName())
+				kind == bc.kind()
+					&& line == bc.impactedSymbol().getLocation().line()
+					&& symbol.equals(bc.impactedSymbol().getQualifiedName())
 			).toList();
 
 		if (matches.size() != 1) {
@@ -186,6 +174,16 @@ public class TestUtils {
 		return findMethod.getFirst();
 	}
 
+	public static AnnotationMethodDecl assertAnnotationMethod(API api, AnnotationDecl decl, String erasure) {
+		List<AnnotationMethodDecl> findMethod = decl.getAnnotationMethods().stream()
+			.filter(m -> api.getErasure(m).equals(erasure))
+			.toList();
+
+		if (findMethod.isEmpty())
+			throw new AssertionFailedError("No such method", erasure, "No such method");
+		return findMethod.getFirst();
+	}
+
 	public static ConstructorDecl assertConstructor(API api, ClassDecl decl, String erasure) {
 		List<ConstructorDecl> findCons = decl.getDeclaredConstructors().stream()
 			.filter(m -> api.getErasure(m).equals(erasure))
@@ -230,7 +228,7 @@ public class TestUtils {
 
 	public static Map<String, String> buildSourcesMap(String sources) {
 		Pattern typePattern = Pattern.compile(
-			"(?m)^(?!\\s)(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
+			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
 				"(class|interface|@interface|enum|record)\\s+(\\w+)");
 		Matcher matcher = typePattern.matcher(sources);
 

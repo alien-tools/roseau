@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -21,7 +22,8 @@ public final class EnumDecl extends ClassDecl {
 	                List<ConstructorDecl> constructors, List<EnumValueDecl> values) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, Collections.emptyList(),
 			fields, methods, enclosingType, TypeReference.ENUM, constructors, List.of());
-		this.values = Objects.requireNonNull(List.copyOf(values));
+		Preconditions.checkNotNull(values);
+		this.values = List.copyOf(values);
 	}
 
 	@Override
@@ -44,18 +46,12 @@ public final class EnumDecl extends ClassDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		EnumDecl enumDecl = (EnumDecl) o;
-		return Objects.equals(values, enumDecl.values);
+		EnumDecl other = (EnumDecl) obj;
+		return Objects.equals(values, other.values);
 	}
 
 	@Override

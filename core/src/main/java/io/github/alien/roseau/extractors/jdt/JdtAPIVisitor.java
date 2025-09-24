@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.jdt;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -28,6 +29,7 @@ import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
@@ -38,12 +40,15 @@ import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -190,8 +195,12 @@ final class JdtAPIVisitor extends ASTVisitor {
 					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
 				modifiers.add(Modifier.ABSTRACT);
+				List<AnnotationMethodDecl> annotationMethodDecls = Arrays.stream(binding.getDeclaredMethods())
+					.map(method -> convertAnnotationMethod(method, binding))
+					.toList();
+				Set<ElementType> targets = convertAnnotationTargets(binding);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
-					fields, methods, enclosingType);
+					fields, annotationMethodDecls, enclosingType, targets);
 			}
 			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
 		};
@@ -256,6 +265,18 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 		return new MethodDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods, anns, location,
 			enclosingTypeRef, returnType, params, typeParams, thrownExceptions);
+	}
+
+	private AnnotationMethodDecl convertAnnotationMethod(IMethodBinding binding, ITypeBinding enclosingType) {
+		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
+		ITypeReference returnType = makeTypeReference(binding.getReturnType());
+		boolean hasDefault = binding.getDefaultValue() != null;
+
+		return new AnnotationMethodDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), anns, location,
+			enclosingTypeRef, returnType, hasDefault);
 	}
 
 	private List<ParameterDecl> convertParameters(String[] names, ITypeBinding[] types, boolean isVarargs) {
@@ -362,6 +383,27 @@ final class JdtAPIVisitor extends ASTVisitor {
 		return type.bodyDeclarations().stream()
 			.filter(AbstractTypeDeclaration.class::isInstance)
 			.toList();
+	}
+
+	private Set<ElementType> convertAnnotationTargets(ITypeBinding binding) {
+		Set<ElementType> targets = new HashSet<>();
+		for (IAnnotationBinding ab : binding.getAnnotations()) {
+			ITypeBinding annType = ab.getAnnotationType();
+			if (annType != null && Target.class.getCanonicalName().equals(annType.getQualifiedName())) {
+				IMemberValuePairBinding[] pairs = ab.getAllMemberValuePairs();
+				for (IMemberValuePairBinding pair : pairs) {
+					if ("value".equals(pair.getName())) {
+						Object[] vals = (Object[]) pair.getValue();
+						for (Object v : vals) {
+							IVariableBinding enumConst = (IVariableBinding) v;
+							String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
+							targets.add(ElementType.valueOf(elemTypeName));
+						}
+					}
+				}
+			}
+		}
+		return targets;
 	}
 
 	private AccessModifier convertVisibility(int modifiers) {

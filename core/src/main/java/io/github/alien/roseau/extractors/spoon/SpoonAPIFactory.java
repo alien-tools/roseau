@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.spoon;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -23,8 +24,12 @@ import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
+import spoon.reflect.code.CtExpression;
+import spoon.reflect.code.CtFieldRead;
+import spoon.reflect.code.CtNewArray;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
+import spoon.reflect.declaration.CtAnnotationMethod;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
@@ -55,6 +60,8 @@ import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtWildcardReference;
 
 import java.io.File;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -204,8 +211,9 @@ public class SpoonAPIFactory {
 			convertSpoonAnnotations(annotation.getAnnotations()),
 			convertSpoonPosition(annotation.getPosition(), annotation),
 			convertCtFields(annotation),
-			convertCtMethods(annotation),
-			createTypeReference(annotation.getDeclaringType())
+			convertCtAnnotationMethods(annotation),
+			createTypeReference(annotation.getDeclaringType()),
+			convertAnnotationTargets(annotation)
 		);
 	}
 
@@ -275,6 +283,17 @@ public class SpoonAPIFactory {
 		);
 	}
 
+	private AnnotationMethodDecl convertCtAnnotationMethod(CtAnnotationMethod<?> method) {
+		return new AnnotationMethodDecl(
+			makeQualifiedName(method),
+			convertSpoonAnnotations(method.getAnnotations()),
+			convertSpoonPosition(method.getPosition(), method.getDeclaringType()),
+			createTypeReference(method.getDeclaringType()),
+			createITypeReference(method.getType()),
+			method.getDefaultExpression() != null
+		);
+	}
+
 	private ConstructorDecl convertCtConstructor(CtConstructor<?> cons) {
 		return new ConstructorDecl(
 			makeQualifiedName(cons),
@@ -301,6 +320,12 @@ public class SpoonAPIFactory {
 		return type.getMethods().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtMethod)
+			.toList();
+	}
+
+	private List<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
+		return type.getAnnotationMethods().stream()
+			.map(this::convertCtAnnotationMethod)
 			.toList();
 	}
 
@@ -433,6 +458,26 @@ public class SpoonAPIFactory {
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
 		return new Annotation(createTypeReference(annotation.getAnnotationType()));
+	}
+
+	private Set<ElementType> convertAnnotationTargets(CtAnnotationType<?> annotation) {
+		CtAnnotation<Target> target = annotation.getAnnotation(typeFactory.createReference(Target.class));
+
+		if (target != null) {
+			Object value = target.getValue("value");
+
+			if (value instanceof CtNewArray array) {
+				List<CtExpression<?>> elems = (List<CtExpression<?>>) array.getElements();
+				return elems.stream()
+					.map(CtFieldRead.class::cast)
+					.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
+					.collect(Collectors.toSet());
+			} else if (value instanceof CtFieldRead<?> fieldRead) {
+				return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
+			}
+		}
+
+		return Collections.emptySet();
 	}
 
 	/**

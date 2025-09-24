@@ -1,12 +1,14 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.utils.StringUtils;
 
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -87,6 +89,16 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return annotations;
 	}
 
+	public Optional<Annotation> getAnnotation(TypeReference<AnnotationDecl> annotation) {
+		return annotations.stream()
+			.filter(ann -> Objects.equals(ann.actualAnnotation(), annotation))
+			.findFirst();
+	}
+
+	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation) {
+		return getAnnotation(annotation).isPresent();
+	}
+
 	public SourceLocation getLocation() {
 		return location;
 	}
@@ -120,19 +132,19 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		Symbol symbol = (Symbol) o;
-		return Objects.equals(qualifiedName, symbol.qualifiedName)
-			&& Objects.equals(visibility, symbol.visibility)
-			&& Objects.equals(modifiers, symbol.modifiers)
-			&& Objects.equals(annotations, symbol.annotations)
-			&& Objects.equals(location, symbol.location);
+		Symbol other = (Symbol) obj;
+		return Objects.equals(qualifiedName, other.qualifiedName)
+			&& visibility == other.visibility
+			&& Objects.equals(modifiers, other.modifiers)
+			&& Objects.equals(annotations, other.annotations)
+			&& Objects.equals(location, other.location);
 	}
 
 	@Override
