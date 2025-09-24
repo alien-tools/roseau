@@ -5,6 +5,7 @@ import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.RecordComponentBuilder;
+import io.github.alien.roseau.combinatorial.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
@@ -13,10 +14,10 @@ public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
 
 	public AddRecordComponentStrategy(ITypeReference type, boolean isVarargs, RecordDecl rcd, NewApiQueue queue, API api) {
 		super(rcd, queue, "AddRecordComponent%s%sToRecord%s".formatted(
-				type.getPrettyQualifiedName(),
+				StringUtils.getPrettyQualifiedName(type),
 				isVarargs ? "Varargs" : "",
-				rcd.getPrettyQualifiedName()),
-				api
+				StringUtils.getPrettyQualifiedName(rcd)),
+			api
 		);
 
 		this.recordComponentType = type;
@@ -25,7 +26,7 @@ public final class AddRecordComponentStrategy extends AbstractRcdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		LOGGER.info("Adding record component {} to record {}", recordComponentType.getPrettyQualifiedName(), tp.getQualifiedName());
+		LOGGER.info("Adding record component {} to record {}", StringUtils.getPrettyQualifiedName(recordComponentType), tp.getQualifiedName());
 
 		var mutableRecord = getMutableBuilderFromMutableApi(mutableApi);
 		var recordComponentBuilder = new RecordComponentBuilder();

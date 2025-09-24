@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.asm;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -31,12 +32,15 @@ import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
 
+import java.lang.annotation.ElementType;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 final class AsmClassVisitor extends ClassVisitor {
@@ -50,6 +54,8 @@ final class AsmClassVisitor extends ClassVisitor {
 	private List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
 	private final List<FieldDecl> fields = new ArrayList<>();
 	private final List<MethodDecl> methods = new ArrayList<>();
+	private final List<AnnotationMethodDecl> annotationMethods = new ArrayList<>();
+	private final Set<ElementType> targets = new HashSet<>();
 	private final List<ConstructorDecl> constructors = new ArrayList<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	private final List<String> annotations = new ArrayList<>();
@@ -185,12 +191,19 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new MethodVisitor(api) {
+			private boolean hasDefault;
 			private final List<String> annotations = new ArrayList<>();
 			private int firstLine = -1;
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 				annotations.add(descriptor);
+				return null;
+			}
+
+			@Override
+			public AnnotationVisitor visitAnnotationDefault() {
+				hasDefault = true;
 				return null;
 			}
 
@@ -204,6 +217,8 @@ final class AsmClassVisitor extends ClassVisitor {
 			public void visitEnd() {
 				if ("<init>".equals(name)) {
 					constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations, firstLine));
+				} else if (isAnnotation(classAccess)) {
+					annotationMethods.add(convertAnnotationMethod(name, descriptor, signature, annotations, firstLine, hasDefault));
 				} else {
 					methods.add(convertMethod(access, name, descriptor, signature, exceptions, annotations, firstLine));
 				}
@@ -231,7 +246,11 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		if (outerName != null && innerName != null) {
 			// Nested/inner types
-			classAccess = access;
+			// Merge the kind bits (class/interface/enum/annotation/record) from the class header with
+			// the visibility/modifier bits from the InnerClasses entry. Some compilers omit ACC_RECORD
+			// in the InnerClasses attributes for nested records, which would make us misclassify them.
+			int kindBits = Opcodes.ACC_INTERFACE | Opcodes.ACC_ENUM | Opcodes.ACC_ANNOTATION | Opcodes.ACC_RECORD;
+			classAccess = (access & ~kindBits) | (classAccess & kindBits);
 			enclosingType = typeRefFactory.createTypeReference(bytecodeToFqn(outerName));
 		} else {
 			// Anonymous/local types
@@ -243,6 +262,22 @@ final class AsmClassVisitor extends ClassVisitor {
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (!shouldSkip) {
 			annotations.add(descriptor);
+			if ("Ljava/lang/annotation/Target;".equals(descriptor)) {
+				return new AnnotationVisitor(api) {
+					@Override
+					public AnnotationVisitor visitArray(String name) {
+						if (!"value".equals(name)) return super.visitArray(name);
+						return new AnnotationVisitor(api) {
+							@Override
+							public void visitEnum(String n, String enumDesc, String value) {
+								if ("Ljava/lang/annotation/ElementType;".equals(enumDesc)) {
+									targets.add(ElementType.valueOf(value));
+								}
+							}
+						};
+					}
+				};
+			}
 		}
 		return null;
 	}
@@ -278,7 +313,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		if (isAnnotation(classAccess)) {
 			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
-				fields, methods, enclosingType);
+				fields, annotationMethods, enclosingType, targets);
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, List.of());
@@ -381,6 +416,22 @@ final class AsmClassVisitor extends ClassVisitor {
 			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
 			typeRefFactory.createTypeReference(className), returnType, parameters,
 			typeParameters, thrownExceptions);
+	}
+
+	private AnnotationMethodDecl convertAnnotationMethod(String name, String descriptor, String signature,
+	                                 List<String> annotations, int line, boolean hasDefault) {
+		ITypeReference returnType;
+
+		if (signature != null) {
+			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
+			new SignatureReader(signature).accept(visitor);
+			returnType = visitor.getReturnType();
+		} else {
+			returnType = convertType(Type.getReturnType(descriptor).getDescriptor());
+		}
+
+		return new AnnotationMethodDecl(String.format("%s.%s", className, name), convertAnnotations(annotations),
+			new SourceLocation(sourceFile, line), typeRefFactory.createTypeReference(className), returnType, hasDefault);
 	}
 
 	private List<ParameterDecl> convertVarargParameter(List<ParameterDecl> parameters) {

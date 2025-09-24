@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
@@ -21,7 +22,8 @@ public final class RecordDecl extends ClassDecl {
 	                  List<RecordComponentDecl> recordComponents) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType, TypeReference.RECORD, constructors, List.of());
-		this.recordComponents = Objects.requireNonNull(List.copyOf(recordComponents));
+		Preconditions.checkNotNull(recordComponents);
+		this.recordComponents = List.copyOf(recordComponents);
 	}
 
 	@Override
@@ -48,18 +50,12 @@ public final class RecordDecl extends ClassDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		RecordDecl recordDecl = (RecordDecl) o;
-		return Objects.equals(recordComponents, recordDecl.recordComponents);
+		RecordDecl other = (RecordDecl) obj;
+		return Objects.equals(recordComponents, other.recordComponents);
 	}
 
 	@Override

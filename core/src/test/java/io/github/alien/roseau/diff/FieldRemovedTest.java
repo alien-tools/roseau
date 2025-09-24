@@ -141,4 +141,34 @@ class FieldRemovedTest {
 		assertNoBC(BreakingChangeKind.FIELD_REMOVED, diff);
 		assertBC("A.f", BreakingChangeKind.FIELD_NOW_PROTECTED, 2, diff);
 	}
+
+	@Test
+	void enum_constant_removed() {
+		var v1 = """
+			public enum E {
+			    X, Y;
+			}""";
+		var v2 = """
+			public enum E {
+			    X;
+			}""";
+
+		assertBC("E.Y", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void annotation_interface_enum_constant_removed() {
+		var v1 = """
+			public @interface A {
+				E[] value() default E.X;
+				enum E { X, Y; }
+			}""";
+		var v2 = """
+			public @interface A {
+				E[] value() default E.X;
+				enum E { X; }
+			}""";
+
+		assertBC("A$E.Y", BreakingChangeKind.FIELD_REMOVED, 3, buildDiff(v1, v2));
+	}
 }

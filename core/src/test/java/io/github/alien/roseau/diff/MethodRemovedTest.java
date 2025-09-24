@@ -185,4 +185,15 @@ class MethodRemovedTest {
 
 		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
+
+	@Test
+	void annotation_method_removed() {
+		var v1 = """
+			public @interface A {
+				String value();
+			}""";
+		var v2 = "public @interface A {}";
+
+		assertBC("A.value", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+	}
 }

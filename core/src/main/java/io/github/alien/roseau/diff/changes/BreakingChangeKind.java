@@ -1,13 +1,11 @@
 package io.github.alien.roseau.diff.changes;
 
-import io.github.alien.roseau.api.model.LibraryTypes;
-
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.ADDITION;
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.DELETION;
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.MUTATION;
 
 /**
- * Kinds of breaking changes that can be detected when comparing two {@link LibraryTypes} instances.
+ * Kinds of breaking changes that can be detected when comparing two libraries.
  * <br>
  * These mostly align with the JLS' §13, with additional source-incompatible changes related to generics.
  *
@@ -64,7 +62,13 @@ public enum BreakingChangeKind {
 	TYPE_FORMAL_TYPE_PARAMETERS_CHANGED(MUTATION, false, true),
 	METHOD_FORMAL_TYPE_PARAMETERS_ADDED(MUTATION, false, true),
 	METHOD_FORMAL_TYPE_PARAMETERS_REMOVED(MUTATION, false, true),
-	METHOD_FORMAL_TYPE_PARAMETERS_CHANGED(MUTATION, false, true);
+	METHOD_FORMAL_TYPE_PARAMETERS_CHANGED(MUTATION, false, true),
+
+	// Annotation-related BCs
+	ANNOTATION_TARGET_REMOVED(MUTATION, false, true),
+	ANNOTATION_METHOD_NO_LONGER_DEFAULT(MUTATION, false, true),
+	ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT(ADDITION, false, true),
+	ANNOTATION_NO_LONGER_REPEATABLE(MUTATION, false, true);
 
 	/*
 	 * Handled by other BCs:

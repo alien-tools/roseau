@@ -2,8 +2,8 @@ package io.github.alien.roseau.combinatorial.v2.breaker.ctr;
 
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveParameterConstructorStrategy extends AbstractCtrStrategy {
@@ -13,8 +13,8 @@ public final class RemoveParameterConstructorStrategy extends AbstractCtrStrateg
 		super(ctr, queue, "RemoveParameter%dFromConstructor%sIn%s".formatted(
 				parameterIndex,
 				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
-				ctr.getContainingType().getPrettyQualifiedName()),
-				api
+				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
+			api
 		);
 
 		this.parameterIndex = parameterIndex;

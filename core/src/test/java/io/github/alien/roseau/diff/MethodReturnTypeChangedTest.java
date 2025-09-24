@@ -7,8 +7,8 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 /**
- * Will need some refinement once we distinguish source- vs. binary-compatibility.
- * Many cares are already written, but they all map to a simple METHOD_RETURN_TYPE_CHANGED.
+ * Will need some refinement once we distinguish source- vs. binary-compatibility. Many cares are already written, but
+ * they all map to a simple METHOD_RETURN_TYPE_CHANGED.
  */
 class MethodReturnTypeChangedTest {
 	@Test
@@ -337,5 +337,19 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void annotation_interface_method() {
+		var v1 = """
+			public @interface A {
+				int value();
+			}""";
+		var v2 = """
+			public @interface A {
+				String value();
+			}""";
+
+		assertBC("A.value", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 }

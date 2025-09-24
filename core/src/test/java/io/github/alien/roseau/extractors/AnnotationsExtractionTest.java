@@ -7,10 +7,16 @@ import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
+import java.lang.annotation.ElementType;
+
 import static io.github.alien.roseau.utils.TestUtils.assertAnnotation;
+import static io.github.alien.roseau.utils.TestUtils.assertAnnotationMethod;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
+import static io.github.alien.roseau.utils.TestUtils.assertEnum;
 import static io.github.alien.roseau.utils.TestUtils.assertField;
+import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
+import static io.github.alien.roseau.utils.TestUtils.assertRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class AnnotationsExtractionTest {
@@ -35,7 +41,7 @@ class AnnotationsExtractionTest {
 			@interface A {}
 			@A public class C {}""");
 
-		var a = assertAnnotation(api, "A");
+		assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
 
 		assertThat(c.getAnnotations())
@@ -109,5 +115,207 @@ class AnnotationsExtractionTest {
 		assertThat(f.getAnnotations())
 			.singleElement()
 			.isEqualTo(new Annotation(new TypeReference<>("A")));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void almighty_annotation(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Documented
+			@java.lang.annotation.Inherited
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+			@java.lang.annotation.Target({
+				java.lang.annotation.ElementType.TYPE, java.lang.annotation.ElementType.FIELD,
+				java.lang.annotation.ElementType.METHOD, java.lang.annotation.ElementType.PARAMETER,
+				java.lang.annotation.ElementType.CONSTRUCTOR, java.lang.annotation.ElementType.LOCAL_VARIABLE,
+				java.lang.annotation.ElementType.ANNOTATION_TYPE, java.lang.annotation.ElementType.PACKAGE,
+				java.lang.annotation.ElementType.TYPE_PARAMETER, java.lang.annotation.ElementType.TYPE_USE,
+				java.lang.annotation.ElementType.MODULE, java.lang.annotation.ElementType.RECORD_COMPONENT
+			})
+			@java.lang.annotation.Repeatable(Everything.Container.class)
+			public @interface Everything {
+				// ---------- Element types (all allowed kinds) ----------
+				// Primitives
+				boolean flag();
+				byte b() default 1;
+				short s();
+				int i() default 3;
+				long l();
+				char c() default 'E';
+				float f();
+				double d() default 6.0d;
+			
+				// String
+				String name() default "default";
+			
+				// Class and invocation of Class (bounded wildcard allowed)
+				Class<?> type() default Object.class;
+				Class<? extends Number> numberType() default Integer.class;
+			
+				// Enum type (uses nested enum below)
+				Level level() default Level.GOOD;
+			
+				// Annotation-typed element (uses nested annotation below)
+				Meta meta() default @Meta(key = "k", value = "v");
+			
+				// Arrays of any of the above
+				int[] ports() default {80, 443};
+				String[] tags() default {"alpha", "beta"};
+				Class<?>[] components() default {String.class, Integer.class};
+				Level[] levels() default {Level.GOOD, Level.EXCELLENT};
+				Meta[] metas() default {@Meta(key = "a", value = "1"), @Meta(key = "b", value = "2")};
+			
+				// Type-use annotated return type is allowed; define a TYPE_USE meta-annotation below
+				@TypeUseAnn String annotatedReturn() default "ok";
+			
+				// ---------- Constants (fields) ----------
+				// These are implicitly public static final and must be constant expressions.
+				int CONST_INT = 42;
+				String CONST_STR = "CONST";
+				long CONST_MASK = 0xFF_FF_FFL;
+			
+				// ---------- Nested member types (all are implicitly static) ----------
+			
+				// Nested enum for use by elements
+				enum Level {BAD, INDIFFERENT, GOOD, EXCELLENT}
+			
+				// Nested annotation usable as an element type
+				@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+				@java.lang.annotation.Target({java.lang.annotation.ElementType.ANNOTATION_TYPE, java.lang.annotation.ElementType.TYPE_USE})
+				@interface Meta {
+					String key();
+					String value();
+				}
+			
+				// Type-use-only annotation to demonstrate annotated element return type
+				@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+				@java.lang.annotation.Target(java.lang.annotation.ElementType.TYPE_USE)
+				@interface TypeUseAnn { }
+			
+				// Nested interface
+				interface Helper {
+					String help();
+				}
+			
+				// Nested class
+				class HelperImpl implements Helper {
+					public String help() {
+						return "help";
+					}
+				}
+			
+				// Nested record (Java 21 permits records as member types)
+				record Pair(int left, int right) { }
+			
+				// You can also nest another annotation interface that serves as a utility
+				@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+				@java.lang.annotation.Target({java.lang.annotation.ElementType.TYPE, java.lang.annotation.ElementType.METHOD})
+				@interface Marker { }
+			
+				// ---------- Repeatable container ----------
+				// This is the containing annotation required by @Repeatable on Everything.
+				@java.lang.annotation.Documented
+				@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+				@java.lang.annotation.Target({
+					java.lang.annotation.ElementType.TYPE, java.lang.annotation.ElementType.FIELD,
+					java.lang.annotation.ElementType.METHOD, java.lang.annotation.ElementType.PARAMETER,
+					java.lang.annotation.ElementType.CONSTRUCTOR, java.lang.annotation.ElementType.LOCAL_VARIABLE,
+					java.lang.annotation.ElementType.ANNOTATION_TYPE, java.lang.annotation.ElementType.PACKAGE,
+					java.lang.annotation.ElementType.TYPE_PARAMETER, java.lang.annotation.ElementType.TYPE_USE,
+					java.lang.annotation.ElementType.MODULE, java.lang.annotation.ElementType.RECORD_COMPONENT
+				})
+				@java.lang.annotation.Inherited
+				@interface Container {
+					Everything[] value();
+			
+					// Any extra methods must have defaults
+					String note() default "";
+				}
+			}""");
+
+		// The annotation type itself
+		var ann = assertAnnotation(api, "Everything");
+		assertThat(ann.isPublic()).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_DOCUMENTED)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_INHERITED)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_RETENTION)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_TARGET)).isTrue();
+		assertThat(ann.hasAnnotation(TypeReference.ANNOTATION_REPEATABLE)).isTrue();
+
+		assertThat(ann.getTargets()).containsExactlyInAnyOrder(
+			ElementType.ANNOTATION_TYPE, ElementType.TYPE, ElementType.CONSTRUCTOR, ElementType.FIELD,
+			ElementType.LOCAL_VARIABLE, ElementType.METHOD, ElementType.PACKAGE, ElementType.PARAMETER,
+			ElementType.MODULE, ElementType.RECORD_COMPONENT, ElementType.TYPE_PARAMETER, ElementType.TYPE_USE
+		);
+
+		// We focus on the declared elements of the annotation type itself (methods/fields/nested types).
+
+		// Declared element methods and their return types
+		assertThat(ann.getAnnotationMethods()).hasSize(19);
+		assertThat(assertAnnotationMethod(api, ann, "flag()").getType().getQualifiedName()).isEqualTo("boolean");
+		assertThat(assertAnnotationMethod(api, ann, "flag()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "b()").getType().getQualifiedName()).isEqualTo("byte");
+		assertThat(assertAnnotationMethod(api, ann, "b()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "s()").getType().getQualifiedName()).isEqualTo("short");
+		assertThat(assertAnnotationMethod(api, ann, "s()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "i()").getType().getQualifiedName()).isEqualTo("int");
+		assertThat(assertAnnotationMethod(api, ann, "i()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "l()").getType().getQualifiedName()).isEqualTo("long");
+		assertThat(assertAnnotationMethod(api, ann, "l()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "c()").getType().getQualifiedName()).isEqualTo("char");
+		assertThat(assertAnnotationMethod(api, ann, "c()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "f()").getType().getQualifiedName()).isEqualTo("float");
+		assertThat(assertAnnotationMethod(api, ann, "f()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, ann, "d()").getType().getQualifiedName()).isEqualTo("double");
+		assertThat(assertAnnotationMethod(api, ann, "d()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "name()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, ann, "name()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "type()").getType().getQualifiedName()).isEqualTo("java.lang.Class");
+		assertThat(assertAnnotationMethod(api, ann, "type()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "numberType()").getType().getQualifiedName()).isEqualTo("java.lang.Class");
+		assertThat(assertAnnotationMethod(api, ann, "numberType()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "level()").getType().getQualifiedName()).isEqualTo("Everything$Level");
+		assertThat(assertAnnotationMethod(api, ann, "level()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "meta()").getType().getQualifiedName()).isEqualTo("Everything$Meta");
+		assertThat(assertAnnotationMethod(api, ann, "meta()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "annotatedReturn()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, ann, "annotatedReturn()").hasDefault()).isTrue();
+		// Arrays
+		assertThat(assertAnnotationMethod(api, ann, "ports()").getType().getQualifiedName()).isEqualTo("int[]");
+		assertThat(assertAnnotationMethod(api, ann, "ports()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "tags()").getType().getQualifiedName()).isEqualTo("java.lang.String[]");
+		assertThat(assertAnnotationMethod(api, ann, "tags()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "components()").getType().getQualifiedName()).isEqualTo("java.lang.Class[]");
+		assertThat(assertAnnotationMethod(api, ann, "components()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "levels()").getType().getQualifiedName()).isEqualTo("Everything$Level[]");
+		assertThat(assertAnnotationMethod(api, ann, "levels()").hasDefault()).isTrue();
+		assertThat(assertAnnotationMethod(api, ann, "metas()").getType().getQualifiedName()).isEqualTo("Everything$Meta[]");
+		assertThat(assertAnnotationMethod(api, ann, "metas()").hasDefault()).isTrue();
+
+		// Declared constant fields
+		assertThat(ann.getDeclaredFields()).hasSize(3);
+		assertThat(assertField(api, ann, "CONST_INT").getType().getQualifiedName()).isEqualTo("int");
+		assertThat(assertField(api, ann, "CONST_STR").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertField(api, ann, "CONST_MASK").getType().getQualifiedName()).isEqualTo("long");
+
+		// Nested types: existence and basic properties
+		assertEnum(api, "Everything$Level");
+		var meta = assertAnnotation(api, "Everything$Meta");
+		assertAnnotation(api, "Everything$TypeUseAnn");
+		var helper = assertInterface(api, "Everything$Helper");
+		var helperImpl = assertClass(api, "Everything$HelperImpl");
+		assertRecord(api, "Everything$Pair");
+		assertAnnotation(api, "Everything$Marker");
+		var container = assertAnnotation(api, "Everything$Container");
+
+		assertThat(assertMethod(api, helper, "help()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertMethod(api, helperImpl, "help()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, meta, "key()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, meta, "key()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, meta, "value()").getType().getQualifiedName()).isEqualTo("java.lang.String");
+		assertThat(assertAnnotationMethod(api, meta, "value()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, container, "value()").getType().getQualifiedName()).isEqualTo("Everything[]");
+		assertThat(assertAnnotationMethod(api, container, "value()").hasDefault()).isFalse();
+		assertThat(assertAnnotationMethod(api, container, "note()").hasDefault()).isTrue();
 	}
 }

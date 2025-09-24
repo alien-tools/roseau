@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors.asm;
 
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -13,8 +15,6 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
@@ -26,29 +26,22 @@ import java.util.jar.JarFile;
  */
 public class AsmTypesExtractor implements TypesExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
-	// TODO: how bad is the performance penalty for no SKIP_CODE for source locations?
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
 	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
 
 	@Override
-	public LibraryTypes extractTypes(Path sources, List<Path> classpath) {
-		try (JarFile jar = new JarFile(Objects.requireNonNull(sources).toFile())) {
-			return extractTypes(jar);
+	public LibraryTypes extractTypes(Library library) {
+		Preconditions.checkArgument(canExtract(library));
+		try (JarFile jar = new JarFile(library.getLocation().toFile())) {
+			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Error processing JAR file", e);
 		}
 	}
 
 	@Override
-	public boolean canExtract(Path sources) {
-		return sources != null &&
-			Files.isRegularFile(sources) &&
-			sources.toString().endsWith(".jar");
-	}
-
-	@Override
-	public String getName() {
-		return "ASM";
+	public boolean canExtract(Library library) {
+		return library != null && library.isJar();
 	}
 
 	/**
@@ -57,7 +50,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	 * @param jar the JAR file to analyze
 	 * @return the extracted {@link LibraryTypes}
 	 */
-	public LibraryTypes extractTypes(JarFile jar) {
+	public LibraryTypes extractTypes(Library library, JarFile jar) {
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 
 		List<TypeDecl> typeDecls =
@@ -69,7 +62,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 				.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
 				.toList();
 
-		return new LibraryTypes(typeDecls);
+		return new LibraryTypes(library, typeDecls);
 	}
 
 	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {

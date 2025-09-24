@@ -2,23 +2,24 @@ package io.github.alien.roseau.cli;
 
 import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.TypesExtractor;
-import io.github.alien.roseau.extractors.TypesExtractorFactory;
-import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,9 +51,8 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "Path to the second version of the library; either a source directory or a JAR")
 	private Path v2;
 	@CommandLine.Option(names = "--extractor",
-		description = "API extractor to use: ${COMPLETION-CANDIDATES}",
-		defaultValue = "JDT")
-	private TypesExtractorFactory extractorFactory;
+		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
+	private ExtractorType extractorType;
 	@CommandLine.Option(names = "--json",
 		description = "Where to serialize the JSON API model of --v1; defaults to api.json",
 		defaultValue = "api.json")
@@ -74,7 +74,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "A pom.xml file to build a classpath from")
 	private Path pom;
 	@CommandLine.Option(names = "--classpath",
-		description = "A colon-separated list of elements to include in the classpath")
+		description = "A list of elements to include in the classpath; OS-specific separator (':'or ';')")
 	private String classpathString;
 	@CommandLine.Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
@@ -86,25 +86,24 @@ public final class RoseauCLI implements Callable<Integer> {
 	private static final String UNDERLINE = "\u001B[4m";
 	private static final String RESET = "\u001B[0m";
 
-	private API buildAPI(Path sources, List<Path> classpath) {
-		TypesExtractor extractor = sources.toString().endsWith(".jar")
-			? new AsmTypesExtractor()
-			: TypesExtractorFactory.newExtractor(extractorFactory);
+	private API buildAPI(Library library) {
+		TypesExtractor extractor = library.getExtractorType().newExtractor();
 
-		if (extractor.canExtract(sources)) {
+		if (extractor.canExtract(library)) {
 			Stopwatch sw = Stopwatch.createStarted();
-			API api = extractor.extractTypes(sources, classpath).toAPI(classpath);
+			API api = extractor.extractTypes(library).toAPI(library.getClasspath());
 			LOGGER.debug("Extracting API from sources {} using {} took {}ms ({} types)",
-				sources, extractor.getName(), sw.elapsed().toMillis(), api.getExportedTypes().size());
+				library.getLocation(), library.getExtractorType(), sw.elapsed().toMillis(), api.getExportedTypes().size());
 			return api;
 		} else {
-			throw new RoseauException("Extractor %s does not support sources %s".formatted(extractor.getName(), sources));
+			throw new RoseauException("Extractor %s does not support sources %s".formatted(
+				library.getExtractorType(), library.getLocation()));
 		}
 	}
 
-	private List<BreakingChange> diff(Path v1path, Path v2path, List<Path> classpath) {
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1path, classpath));
-		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2path, classpath));
+	private RoseauReport diff(Library libraryV1, Library libraryV2) {
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV1));
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV2));
 
 		CompletableFuture.allOf(futureV1, futureV2).join();
 
@@ -115,17 +114,18 @@ public final class RoseauCLI implements Callable<Integer> {
 			// API diff
 			APIDiff diff = new APIDiff(apiV1, apiV2);
 			Stopwatch sw = Stopwatch.createStarted();
-			List<BreakingChange> bcs = diff.diff();
-			LOGGER.debug("API diff took {}ms ({} breaking changes)", sw.elapsed().toMillis(), bcs.size());
+			RoseauReport report = diff.diff();
+			LOGGER.debug("API diff took {}ms ({} breaking changes)",
+				sw.elapsed().toMillis(), report.breakingChanges().size());
 
-			writeReport(apiV1, bcs);
-			return bcs;
+			writeReport(apiV1, report);
+			return report;
 		} catch (InterruptedException | ExecutionException e) {
 			Thread.currentThread().interrupt();
 			LOGGER.error("Couldn't compute diff", e);
 		}
 
-		return Collections.emptyList();
+		return new RoseauReport(libraryV1, libraryV2, Collections.emptyList());
 	}
 
 	private List<Path> buildClasspath() {
@@ -138,7 +138,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (!Strings.isNullOrEmpty(classpathString)) {
-			classpath.addAll(Arrays.stream(classpathString.split(":"))
+			classpath.addAll(Arrays.stream(classpathString.split(File.pathSeparator))
 				.map(Path::of)
 				.toList());
 		}
@@ -152,14 +152,14 @@ public final class RoseauCLI implements Callable<Integer> {
 		return classpath;
 	}
 
-	private void writeReport(API api, List<BreakingChange> bcs) {
+	private void writeReport(API api, RoseauReport report) {
 		if (reportPath == null)
 			return;
 
 		BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 
 		try {
-			Files.writeString(reportPath, fmt.format(api, bcs));
+			Files.writeString(reportPath, fmt.format(api, report));
 			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
@@ -201,15 +201,29 @@ public final class RoseauCLI implements Callable<Integer> {
 		try {
 			checkArguments();
 			List<Path> classpath = buildClasspath();
+			Library.Builder builder1 = Library.builder()
+				.location(v1)
+				.classpath(classpath);
+			if (extractorType != null) {
+				builder1.extractorType(extractorType);
+			}
+			Library libraryV1 = builder1.build();
 
 			if (apiMode) {
-				API api = buildAPI(v1, classpath);
+				API api = buildAPI(libraryV1);
 				api.getLibraryTypes().writeJson(apiPath);
 				LOGGER.info("Wrote API to {}", apiPath);
 			}
 
 			if (diffMode) {
-				List<BreakingChange> bcs = diff(v1, v2, classpath);
+				Library.Builder builder2 = Library.builder()
+					.location(v2)
+					.classpath(classpath);
+				if (extractorType != null) {
+					builder2.extractorType(extractorType);
+				}
+				Library libraryV2 = builder2.build();
+				List<BreakingChange> bcs = diff(libraryV1, libraryV2).breakingChanges();
 
 				if (bcs.isEmpty()) {
 					System.out.println("No breaking changes found.");

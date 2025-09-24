@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.analysis.CachingAPIAnalyzer;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
@@ -15,6 +16,7 @@ public class API extends CachingAPIAnalyzer {
 
 	public API(LibraryTypes libraryTypes, TypeResolver resolver) {
 		super(resolver);
+		Preconditions.checkNotNull(libraryTypes);
 		this.libraryTypes = libraryTypes;
 	}
 
@@ -43,10 +45,6 @@ public class API extends CachingAPIAnalyzer {
 		return getExportedTypes().stream()
 			.filter(type -> type.getQualifiedName().equals(qualifiedName))
 			.findFirst();
-	}
-
-	public API deepCopy() {
-		return this;
 	}
 
 	@Override

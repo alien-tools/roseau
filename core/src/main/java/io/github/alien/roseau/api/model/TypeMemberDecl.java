@@ -23,8 +23,8 @@ public abstract sealed class TypeMemberDecl extends Symbol
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(containingType);
 		Preconditions.checkNotNull(type);
-		// FIXME: review
-		//Preconditions.checkArgument(Set.of(AccessModifier.PUBLIC, AccessModifier.PROTECTED).contains(visibility),
+		// FIXME: Combinatorial prevents us from doing that
+		// Preconditions.checkArgument(Set.of(AccessModifier.PUBLIC, AccessModifier.PROTECTED).contains(visibility),
 		//	"Type member declarations are either PUBLIC or PROTECTED");
 		this.containingType = containingType;
 		this.type = type;
@@ -39,17 +39,11 @@ public abstract sealed class TypeMemberDecl extends Symbol
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		TypeMemberDecl other = (TypeMemberDecl) o;
+		TypeMemberDecl other = (TypeMemberDecl) obj;
 		return Objects.equals(type, other.type) && Objects.equals(containingType, other.containingType);
 	}
 

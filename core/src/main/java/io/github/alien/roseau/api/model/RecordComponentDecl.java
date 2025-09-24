@@ -5,6 +5,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Objects;
 
 public final class RecordComponentDecl extends TypeMemberDecl {
 	private final boolean isVarargs;
@@ -18,6 +19,20 @@ public final class RecordComponentDecl extends TypeMemberDecl {
 
 	public boolean isVarargs() {
 		return isVarargs;
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
+			return false;
+		}
+		RecordComponentDecl other = (RecordComponentDecl) obj;
+		return isVarargs == other.isVarargs;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), isVarargs);
 	}
 
 	@Override

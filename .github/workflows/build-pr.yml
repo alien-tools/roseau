@@ -4,26 +4,28 @@ on:
   pull_request:
     branches:
       - main
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.pull_request.head || github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      checks: write
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v5
       - name: Set up JDK 21
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v5
         with:
           java-version: '21'
           distribution: 'temurin'
           cache: 'maven'
-      - name: Set up Maven
-        uses: stCarolas/setup-maven@v5
-        with:
-          maven-version: 3.8.6
       - name: Build with Maven
         run: mvn --batch-mode -DskipTests package
       - name: Run tests
-        run: mvn --batch-mode -Dmaven.test.failure.ignore verify
+        run: mvn --batch-mode verify

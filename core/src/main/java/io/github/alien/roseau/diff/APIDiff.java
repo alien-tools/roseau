@@ -1,12 +1,14 @@
 package io.github.alien.roseau.diff;
 
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.Symbol;
@@ -19,6 +21,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -60,9 +63,9 @@ public class APIDiff {
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return the list of all identified {@link BreakingChange}
+	 * @return the report built for the two APIs
 	 */
-	public List<BreakingChange> diff() {
+	public RoseauReport diff() {
 		v1.getExportedTypes().stream().parallel().forEach(t1 ->
 			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
 				// There is a matching type
@@ -72,7 +75,7 @@ public class APIDiff {
 			)
 		);
 
-		return getBreakingChanges();
+		return new RoseauReport(v1.getLibraryTypes().getLibrary(), v2.getLibraryTypes().getLibrary(), getBreakingChanges());
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
@@ -146,6 +149,10 @@ public class APIDiff {
 		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
 			diffClass(c1, c2);
 		}
+
+		if (t1 instanceof AnnotationDecl a1 && t2 instanceof AnnotationDecl a2) {
+			diffAnnotationInterface(a1, a2);
+		}
 	}
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
@@ -170,6 +177,39 @@ public class APIDiff {
 		}
 
 		diffConstructors(c1, c2);
+	}
+
+	private void diffAnnotationInterface(AnnotationDecl a1, AnnotationDecl a2) {
+		if (!a2.getTargets().containsAll(a1.getTargets())) {
+			bc(BreakingChangeKind.ANNOTATION_TARGET_REMOVED, a1, a2);
+		}
+
+		if (a1.isRepeatable() && !a2.isRepeatable()) {
+			bc(BreakingChangeKind.ANNOTATION_NO_LONGER_REPEATABLE, a1, a2);
+		}
+
+		a1.getAnnotationMethods().forEach(m1 -> {
+			// Annotation methods do not have parameters, so no overloading going on
+			//   -> simple name matching should be enough
+			Optional<AnnotationMethodDecl> optMatch = a2.getAnnotationMethods().stream()
+				.filter(m2 -> m1.getSimpleName().equals(m2.getSimpleName()))
+				.findFirst();
+
+			optMatch.ifPresentOrElse(m2 -> {
+				if (m1.hasDefault() && !m2.hasDefault()) {
+					bc(BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, m1, m2);
+				}
+
+				if (!m1.getType().equals(m2.getType())) {
+					bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2);
+				}
+			}, () -> bc(BreakingChangeKind.METHOD_REMOVED, m1, null));
+		});
+
+		a2.getAnnotationMethods().stream()
+			.filter(m2 -> !m2.hasDefault())
+			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
+			.forEach(m2 -> bc(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, m2));
 	}
 
 	private void diffField(FieldDecl f1, FieldDecl f2) {
@@ -327,7 +367,7 @@ public class APIDiff {
 
 		// Ok, well. Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
-		//  - it's a constructor and there were more than one
+		//  - it's a constructor and there was more than one
 		if (paramsCount1 > paramsCount2 && (e1.isMethod() || paramsCount1 > 1)) {
 			bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, e1, e2);
 		}

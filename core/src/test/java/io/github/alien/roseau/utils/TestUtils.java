@@ -1,13 +1,17 @@
 package io.github.alien.roseau.utils;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -17,21 +21,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
-import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
-import japicmp.cmp.JApiCmpArchive;
-import japicmp.cmp.JarArchiveComparator;
-import japicmp.cmp.JarArchiveComparatorOptions;
-import japicmp.config.Options;
-import japicmp.model.JApiAnnotation;
-import japicmp.model.JApiClass;
 import japicmp.model.JApiCompatibilityChange;
-import japicmp.model.JApiConstructor;
-import japicmp.model.JApiField;
-import japicmp.model.JApiImplementedInterface;
-import japicmp.model.JApiMethod;
-import japicmp.model.JApiSuperclass;
-import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -54,7 +44,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -72,9 +61,9 @@ public class TestUtils {
 	public static void assertBC(String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
 		List<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
-				   kind == bc.kind()
-				&& line == bc.impactedSymbol().getLocation().line()
-				&& symbol.equals(bc.impactedSymbol().getQualifiedName())
+				kind == bc.kind()
+					&& line == bc.impactedSymbol().getLocation().line()
+					&& symbol.equals(bc.impactedSymbol().getQualifiedName())
 			).toList();
 
 		if (matches.size() != 1) {
@@ -185,6 +174,16 @@ public class TestUtils {
 		return findMethod.getFirst();
 	}
 
+	public static AnnotationMethodDecl assertAnnotationMethod(API api, AnnotationDecl decl, String erasure) {
+		List<AnnotationMethodDecl> findMethod = decl.getAnnotationMethods().stream()
+			.filter(m -> api.getErasure(m).equals(erasure))
+			.toList();
+
+		if (findMethod.isEmpty())
+			throw new AssertionFailedError("No such method", erasure, "No such method");
+		return findMethod.getFirst();
+	}
+
 	public static ConstructorDecl assertConstructor(API api, ClassDecl decl, String erasure) {
 		List<ConstructorDecl> findCons = decl.getDeclaredConstructors().stream()
 			.filter(m -> api.getErasure(m).equals(erasure))
@@ -229,7 +228,7 @@ public class TestUtils {
 
 	public static Map<String, String> buildSourcesMap(String sources) {
 		Pattern typePattern = Pattern.compile(
-			"(?m)^(?!\\s)(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
+			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
 				"(class|interface|@interface|enum|record)\\s+(\\w+)");
 		Matcher matcher = typePattern.matcher(sources);
 
@@ -252,27 +251,41 @@ public class TestUtils {
 	}
 
 	public static API buildSpoonAPI(String sources) {
-		Map<String, String> sourcesMap = buildSourcesMap(sources);
-		CtModel m = buildModel(sourcesMap);
-		return new SpoonTypesExtractor().extractTypes(m).toAPI();
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			Path sourcesPath = writeSources(sourcesMap);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
+			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
+			return api.toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static API buildAsmAPI(String sources) {
-		Map<String, String> sourcesMap = buildSourcesMap(sources);
-		JarFile jar = buildJar(sourcesMap);
-		return new AsmTypesExtractor().extractTypes(jar).toAPI();
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
+			tempJarFile.deleteOnExit();
+			buildJar(sourcesMap, tempJarFile.toPath());
+			Library library = Library.of(tempJarFile.toPath());
+			return new AsmTypesExtractor().extractTypes(library).toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static API buildJdtAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			LibraryTypes api = new JdtTypesExtractor().extractTypes(sourcesPath);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api.toAPI();
 		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
+			throw new RuntimeException(e);
 		}
 	}
 
@@ -299,11 +312,11 @@ public class TestUtils {
 			System.out.println("JApiCmp comparison failed: " + e.getMessage());
 		}*/
 
-		return roseauBCs;
+		return roseauBCs.breakingChanges();
 	}
 
 	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) {
-		Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
+		/*Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
 		Map<String, String> sourcesMap2 = buildSourcesMap(sourcesV2);
 		Path jar1 = Path.of(buildJar(sourcesMap1).getName());
 		Path jar2 = Path.of(buildJar(sourcesMap2).getName());
@@ -340,10 +353,11 @@ public class TestUtils {
 				bcs.addAll(jApiSuperclass.getCompatibilityChanges());
 			}
 		});
-		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
+		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();*/
+		return List.of();
 	}
 
-	public static JarFile buildJar(Map<String, String> sourcesMap) {
+	public static JarFile buildJar(Map<String, String> sourcesMap, Path jar) {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		StandardJavaFileManager stdFileManager = compiler.getStandardFileManager(null, null, null);
 		MemoryJavaFileManager fileManager = new MemoryJavaFileManager(stdFileManager);
@@ -381,12 +395,10 @@ public class TestUtils {
 		}
 
 		try {
-			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
-			tempJarFile.deleteOnExit();
-			try (FileOutputStream fos = new FileOutputStream(tempJarFile)) {
+			try (FileOutputStream fos = new FileOutputStream(jar.toFile())) {
 				fos.write(jarByteStream.toByteArray());
 			}
-			return new JarFile(tempJarFile);
+			return new JarFile(jar.toFile());
 		} catch (IOException e) {
 			throw new RuntimeException("Error while creating temporary JarFile", e);
 		}

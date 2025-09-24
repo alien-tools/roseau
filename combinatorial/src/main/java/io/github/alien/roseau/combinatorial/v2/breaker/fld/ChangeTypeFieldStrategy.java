@@ -3,8 +3,8 @@ package io.github.alien.roseau.combinatorial.v2.breaker.fld;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
-import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.v2.breaker.ImpossibleChangeException;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
@@ -14,9 +14,9 @@ public final class ChangeTypeFieldStrategy extends AbstractFldStrategy {
 	public ChangeTypeFieldStrategy(ITypeReference type, FieldDecl fld, NewApiQueue queue, API api) {
 		super(fld, queue, "ChangeField%sIn%sTypeTo%s".formatted(
 				StringUtils.splitSpecialCharsAndCapitalize(fld.getSimpleName()),
-				fld.getContainingType().getPrettyQualifiedName(),
-				type.getPrettyQualifiedName()),
-				api
+				StringUtils.getPrettyQualifiedName(fld.getContainingType()),
+				StringUtils.getPrettyQualifiedName(type)),
+			api
 		);
 
 		this.type = type;
@@ -26,7 +26,7 @@ public final class ChangeTypeFieldStrategy extends AbstractFldStrategy {
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
 		if (tpMbr.getType().equals(type)) throw new ImpossibleChangeException();
 
-		LOGGER.info("Changing field {} type to {}", tpMbr.getQualifiedName(), type.getPrettyQualifiedName());
+		LOGGER.info("Changing field {} type to {}", tpMbr.getQualifiedName(), StringUtils.getPrettyQualifiedName(type));
 
 		var field = getFieldFrom(mutableApi);
 		field.type = type;

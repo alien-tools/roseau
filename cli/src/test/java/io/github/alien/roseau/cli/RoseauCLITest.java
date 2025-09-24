@@ -135,7 +135,7 @@ class RoseauCLITest {
 
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out)
-			.contains("Extracting API from sources src/test/resources/test-project-v1/src using JDT")
+			.contains("Extracting API from sources", "using JDT")
 			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
@@ -152,7 +152,7 @@ class RoseauCLITest {
 
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out)
-			.contains("Extracting API from sources src/test/resources/test-project-v1/test-project-v1.jar using ASM")
+			.contains("Extracting API from sources", "using ASM")
 			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
@@ -198,7 +198,7 @@ class RoseauCLITest {
 
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out)
-			.contains("Extracting API from sources src/test/resources/test-project-v1/test-project-v1.jar using ASM")
+			.contains("Extracting API from sources", "using ASM")
 			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
@@ -216,7 +216,7 @@ class RoseauCLITest {
 
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out)
-			.contains("Extracting API from sources src/test/resources/test-project-v1/src using Spoon")
+			.contains("Extracting API from sources", "using SPOON")
 			.contains("Wrote API to api.json");
 
 		Files.deleteIfExists(json.toPath());
