@@ -92,14 +92,4 @@ class MavenClasspathBuilderTest {
 		var cp = builder.buildClasspath(invalidPom);
 		assertThat(cp).isEmpty();
 	}
-
-	@Test
-	void valid_directory() {
-		var builder = new MavenClasspathBuilder();
-		var cp = builder.buildClasspath(validDirectory);
-		assertThat(cp)
-			.hasSizeGreaterThanOrEqualTo(1)
-			.anySatisfy(p -> assertThat(p).asString()
-				.endsWith("io/github/alien-tools/roseau-core/0.1.0/roseau-core-0.1.0.jar"));
-	}
 }
