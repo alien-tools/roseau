@@ -32,7 +32,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 	@Override
 	public LibraryTypes incrementalUpdate(LibraryTypes previousTypes, Library newVersion, ChangedFiles changedFiles) {
 		Preconditions.checkNotNull(previousTypes);
-		Preconditions.checkArgument(newVersion != null && newVersion.isSources());
+		Preconditions.checkArgument(canExtract(newVersion));
 		Preconditions.checkNotNull(changedFiles);
 
 		// If nothing's changed, just return the old one
@@ -61,7 +61,8 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
 		).toList();
 
-		return new LibraryTypes(newVersion, newTypeDecls);
+		// FIXME: the module declaration might have changed between the two versions
+		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
 	}
 
 	private Set<Path> resolve(Path root, Set<Path> files) {
