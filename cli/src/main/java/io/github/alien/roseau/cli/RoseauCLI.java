@@ -244,7 +244,11 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			return 0;
 		} catch (Exception e) {
-			LOGGER.error(e.getMessage());
+			if (verbose) {
+				LOGGER.error(e, e.getCause());
+			} else {
+				LOGGER.error(e.getMessage());
+			}
 			return 1;
 		}
 	}
