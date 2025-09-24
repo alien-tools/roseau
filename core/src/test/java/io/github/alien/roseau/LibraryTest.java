@@ -13,12 +13,12 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LibraryTest {
-	final Path validJar = Path.of("/home/dig/.m2/repository/software/amazon/awssdk/bundle/2.25.53/bundle-2.25.53.jar");
+	final Path validJar = Path.of("src/test/resources/api-showcase.jar");
 
 	@Test
 	void of_jar_defaults_to_asm() {
 		var lib = Library.of(validJar);
-		assertThat(lib.getLocation()).isEqualTo(validJar);
+		assertThat(lib.getLocation()).isEqualTo(validJar.toAbsolutePath());
 		assertThat(lib.isJar()).isTrue();
 		assertThat(lib.isSources()).isFalse();
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
