@@ -70,22 +70,18 @@ public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl perm
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		ClassDecl classDecl = (ClassDecl) o;
-		return Objects.equals(superClass, classDecl.superClass) && Objects.equals(constructors, classDecl.constructors);
+		ClassDecl other = (ClassDecl) obj;
+		return Objects.equals(superClass, other.superClass) &&
+			Objects.equals(constructors, other.constructors) &&
+			Objects.equals(permittedTypes, other.permittedTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), superClass, constructors);
+		return Objects.hash(super.hashCode(), superClass, constructors, permittedTypes);
 	}
 }

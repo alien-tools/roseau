@@ -28,15 +28,12 @@ public final class AnnotationMethodDecl extends MethodDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		AnnotationMethodDecl that = (AnnotationMethodDecl) o;
-		return hasDefault == that.hasDefault;
+		AnnotationMethodDecl other = (AnnotationMethodDecl) obj;
+		return hasDefault == other.hasDefault;
 	}
 
 	@Override

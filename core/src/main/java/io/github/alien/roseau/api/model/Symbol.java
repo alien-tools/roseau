@@ -132,19 +132,19 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		Symbol symbol = (Symbol) o;
-		return Objects.equals(qualifiedName, symbol.qualifiedName)
-			&& Objects.equals(visibility, symbol.visibility)
-			&& Objects.equals(modifiers, symbol.modifiers)
-			&& Objects.equals(annotations, symbol.annotations)
-			&& Objects.equals(location, symbol.location);
+		Symbol other = (Symbol) obj;
+		return Objects.equals(qualifiedName, other.qualifiedName)
+			&& visibility == other.visibility
+			&& Objects.equals(modifiers, other.modifiers)
+			&& Objects.equals(annotations, other.annotations)
+			&& Objects.equals(location, other.location);
 	}
 
 	@Override

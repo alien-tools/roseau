@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.lang.annotation.ElementType;
@@ -28,6 +29,8 @@ public final class AnnotationDecl extends TypeDecl {
 	                      Set<ElementType> targets) {
 		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),
 			Collections.emptyList(), fields, Collections.emptyList(), enclosingType);
+		Preconditions.checkNotNull(annotationMethods);
+		Preconditions.checkNotNull(targets);
 		this.annotationMethods = List.copyOf(annotationMethods);
 		if (hasAnnotation(TypeReference.ANNOTATION_TARGET)) {
 			this.targets = Collections.unmodifiableSet(targets.isEmpty()
@@ -67,16 +70,13 @@ public final class AnnotationDecl extends TypeDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		AnnotationDecl that = (AnnotationDecl) o;
-		return Objects.equals(annotationMethods, that.annotationMethods) &&
-			Objects.equals(targets, that.targets);
+		AnnotationDecl other = (AnnotationDecl) obj;
+		return Objects.equals(annotationMethods, other.annotationMethods) &&
+			Objects.equals(targets, other.targets);
 	}
 
 	@Override

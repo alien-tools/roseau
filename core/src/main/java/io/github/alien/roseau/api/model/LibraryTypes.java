@@ -166,15 +166,15 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		LibraryTypes api = (LibraryTypes) o;
-		return Objects.equals(library, api.library) && Objects.equals(allTypes, api.allTypes);
+		LibraryTypes other = (LibraryTypes) obj;
+		return Objects.equals(library, other.library) && Objects.equals(allTypes, other.allTypes);
 	}
 
 	@Override

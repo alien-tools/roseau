@@ -44,18 +44,12 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
-			return true;
-		}
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
 			return false;
 		}
-		if (!super.equals(o)) {
-			return false;
-		}
-		InterfaceDecl interfaceDecl = (InterfaceDecl) o;
-		return Objects.equals(permittedTypes, interfaceDecl.permittedTypes);
+		InterfaceDecl other = (InterfaceDecl) obj;
+		return Objects.equals(permittedTypes, other.permittedTypes);
 	}
 
 	@Override
