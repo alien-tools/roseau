@@ -20,7 +20,7 @@ final class AsmModuleVisitor extends ClassVisitor {
 		return new ModuleVisitor(api) {
 			@Override
 			public void visitExport(String pkg, int access, String... modules) {
-				if (modules == null) {
+				if (modules == null || modules.length == 0) {
 					exports.add(pkg.replace('/', '.'));
 				}
 			}
