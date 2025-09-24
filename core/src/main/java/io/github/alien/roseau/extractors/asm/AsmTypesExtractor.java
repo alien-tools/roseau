@@ -98,7 +98,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 
 	private boolean isModuleInfo(JarEntry entry) {
 		return !entry.isDirectory() &&
-			entry.getName().equals("module-info.class");
+			"module-info.class".equals(entry.getName());
 	}
 
 	private boolean isRegularClassFile(JarEntry entry) {

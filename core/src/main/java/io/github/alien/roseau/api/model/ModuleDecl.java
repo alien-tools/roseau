@@ -33,8 +33,8 @@ public sealed class ModuleDecl {
 	}
 
 	private static final class UnnamedModule extends ModuleDecl {
-		private UnnamedModule(String qualifiedName, Set<String> exports) {
-			super(qualifiedName, exports);
+		private UnnamedModule() {
+			super("<unnamed module>", Set.of());
 		}
 
 		@Override
@@ -48,7 +48,7 @@ public sealed class ModuleDecl {
 		}
 	}
 
-	public static final ModuleDecl UNNAMED_MODULE = new UnnamedModule("<unnamed module>", Set.of());
+	public static final ModuleDecl UNNAMED_MODULE = new UnnamedModule();
 
 	@Override
 	public String toString() {

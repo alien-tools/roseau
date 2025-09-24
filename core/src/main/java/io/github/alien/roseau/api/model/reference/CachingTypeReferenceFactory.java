@@ -17,6 +17,7 @@ import java.util.stream.Collectors;
 public class CachingTypeReferenceFactory implements TypeReferenceFactory {
 	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>(100);
 
+	@SuppressWarnings("unchecked")
 	private <U extends ITypeReference> U cache(String key, Supplier<U> supplier) {
 		return (U) referencesCache.computeIfAbsent(key, k -> supplier.get());
 	}

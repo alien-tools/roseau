@@ -65,7 +65,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 				: EnumSet.copyOf(modifiers));
 		this.annotations = List.copyOf(annotations);
 		this.location = location;
-		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
+		simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
 
 	public String getQualifiedName() {

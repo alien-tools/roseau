@@ -59,7 +59,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	public String getSignature() {
 		var sb = new StringBuilder();
 		sb.append(simpleName);
-		sb.append("(");
+		sb.append('(');
 		for (int i = 0; i < parameters.size(); i++) {
 			var p = parameters.get(i);
 			sb.append(p.type());
@@ -67,10 +67,10 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 				sb.append("[]");
 			}
 			if (i < parameters.size() - 1) {
-				sb.append(",");
+				sb.append(',');
 			}
 		}
-		sb.append(")");
+		sb.append(')');
 		return sb.toString();
 	}
 

@@ -3,7 +3,6 @@ package io.github.alien.roseau.api.model;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -32,7 +31,7 @@ public final class RecordDecl extends ClassDecl {
 	}
 
 	public List<RecordComponentDecl> getRecordComponents() {
-		return Collections.unmodifiableList(recordComponents);
+		return recordComponents;
 	}
 
 	@Override

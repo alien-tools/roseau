@@ -267,10 +267,10 @@ final class AsmClassVisitor extends ClassVisitor {
 					@Override
 					public AnnotationVisitor visitArray(String name) {
 						if (!"value".equals(name)) return super.visitArray(name);
-						return new AnnotationVisitor(api) {
+						return new AnnotationVisitor(super.api) {
 							@Override
-							public void visitEnum(String n, String enumDesc, String value) {
-								if ("Ljava/lang/annotation/ElementType;".equals(enumDesc)) {
+							public void visitEnum(String name, String descriptor, String value) {
+								if ("Ljava/lang/annotation/ElementType;".equals(descriptor)) {
 									targets.add(ElementType.valueOf(value));
 								}
 							}

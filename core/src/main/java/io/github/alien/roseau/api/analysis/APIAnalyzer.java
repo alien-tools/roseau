@@ -3,7 +3,7 @@ package io.github.alien.roseau.api.analysis;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
-public abstract class APIAnalyzer
+public class APIAnalyzer
 	implements ErasureProvider, HierarchyProvider, PropertiesProvider, SubtypingResolver, TypeParameterResolver {
 	private final TypeResolver resolver;
 

@@ -30,7 +30,7 @@ public class SpoonTypeProvider implements TypeProvider {
 	public SpoonTypeProvider(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
 		Preconditions.checkNotNull(typeReferenceFactory);
 		Preconditions.checkNotNull(classpath);
-		this.spoonFactory = new SpoonAPIFactory(typeReferenceFactory, classpath);
+		spoonFactory = new SpoonAPIFactory(typeReferenceFactory, classpath);
 	}
 
 	@Override

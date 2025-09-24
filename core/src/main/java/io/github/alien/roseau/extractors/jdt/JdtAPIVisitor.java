@@ -69,9 +69,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
 		this.cu = cu;
-		this.packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
+		packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
 		this.filePath = filePath;
-		this.typeRefFactory = factory;
+		typeRefFactory = factory;
 	}
 
 	List<TypeDecl> getCollectedTypeDecls() {
@@ -380,16 +380,16 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private boolean isEnumMethod(IMethodBinding binding) {
 		if (binding.getDeclaringClass().isEnum()) {
-			if (binding.getName().equals("valueOf") && binding.getParameterTypes().length == 1 &&
-				binding.getParameterTypes()[0].getQualifiedName().equals("java.lang.String")) {
+			if ("valueOf".equals(binding.getName()) && binding.getParameterTypes().length == 1 &&
+				"java.lang.String".equals(binding.getParameterTypes()[0].getQualifiedName())) {
 				return true;
 			}
-			return binding.getName().equals("values") && binding.getParameterTypes().length == 0;
+			return "values".equals(binding.getName()) && binding.getParameterTypes().length == 0;
 		}
 		return false;
 	}
 
-	// We want the accessors, not the equals/hashCode/toString unless explicitly overriden...
+	// We want the accessors, not the equals/hashCode/toString unless explicitly overridden...
 	private boolean isSyntheticRecordMethod(IMethodBinding binding) {
 		return binding.isSyntheticRecordMethod() &&
 			Set.of("toString", "equals", "hashCode").contains(binding.getName());
@@ -398,11 +398,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 	// Available on TypeDeclaration, but not Enum/Record/Annotation, even though they can contain inner types
 	// The original implementation only returns inner Class/Interface, not Enum/Record/Annotation
 	// ITypeBinding properly implements inner types, but we need to visit ASTs (currently...)
-	private List<AbstractTypeDeclaration> getInnerTypes(AbstractTypeDeclaration type) {
-		return type.bodyDeclarations().stream()
-			.filter(AbstractTypeDeclaration.class::isInstance)
-			.toList();
-	}
+	// private List<AbstractTypeDeclaration> getInnerTypes(AbstractTypeDeclaration type) {
+	//   return type.bodyDeclarations().stream()
+	//   .filter(AbstractTypeDeclaration.class::isInstance)
+	//   .toList();
+	// }
 
 	private Set<ElementType> convertAnnotationTargets(ITypeBinding binding) {
 		Set<ElementType> targets = new HashSet<>();
@@ -514,7 +514,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 			return typeRefFactory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true);
 		}
 		// JDT attempts to recover the FQN of missing bindings; if it fails, the unresolved type
-		// is assumed to be in the current package. Try to fallback to imported types, or the current package.
+		// is assumed to be in the current package. Try to fall back to imported types, or the current package.
 		if (binding.isRecovered() && binding.getQualifiedName().startsWith(packageName)) {
 			return typeRefFactory.createTypeReference(lookupUnresolvedName(binding.getName()));
 		}

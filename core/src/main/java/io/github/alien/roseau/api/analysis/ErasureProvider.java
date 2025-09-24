@@ -22,7 +22,7 @@ public interface ErasureProvider {
 		Preconditions.checkNotNull(executable);
 		var sb = new StringBuilder();
 		sb.append(executable.getSimpleName());
-		sb.append("(");
+		sb.append('(');
 		for (int i = 0; i < executable.getParameters().size(); i++) {
 			var p = executable.getParameters().get(i);
 			sb.append(getErasedType(executable, p.type()).getQualifiedName());
@@ -30,10 +30,10 @@ public interface ErasureProvider {
 				sb.append("[]");
 			}
 			if (i < executable.getParameters().size() - 1) {
-				sb.append(",");
+				sb.append(',');
 			}
 		}
-		sb.append(")");
+		sb.append(')');
 		return sb.toString();
 	}
 

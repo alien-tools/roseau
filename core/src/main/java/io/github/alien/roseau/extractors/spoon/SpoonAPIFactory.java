@@ -92,12 +92,8 @@ public class SpoonAPIFactory {
 			sanitizeClasspath(classpath).stream()
 				.map(p -> p.toAbsolutePath().toString())
 				.toArray(String[]::new));
-		this.typeFactory = spoonFactory.Type();
+		typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
-	}
-
-	public TypeReferenceFactory getTypeReferenceFactory() {
-		return typeReferenceFactory;
 	}
 
 	// Avoid having Spoon throwing at us due to "invalid" classpath
@@ -481,8 +477,8 @@ public class SpoonAPIFactory {
 		if (target != null) {
 			Object value = target.getValue("value");
 
-			if (value instanceof CtNewArray array) {
-				List<CtExpression<?>> elems = (List<CtExpression<?>>) array.getElements();
+			if (value instanceof CtNewArray<?> array) {
+				List<CtExpression<?>> elems = array.getElements();
 				return elems.stream()
 					.map(CtFieldRead.class::cast)
 					.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
@@ -523,7 +519,7 @@ public class SpoonAPIFactory {
 		 * So we have to keep A's potentially-leaked declarations to mark them later as part of B's API.
 		 * It's possible to re-open and leak a type within the API if:
 		 *   - It has a non-private constructor (package-private can be re-opened within the same package)
-		 *   - It is not explicitly 'final' or 'sealed' (sealed subclasses can attempt to leak but they're final
+		 *   - It is not explicitly 'final' or 'sealed' (sealed subclasses can attempt to leak, but they're final
 		 *    themselves so they won't leak to clients)
 		 *
 		 * class A { // package 'pkg'
@@ -537,7 +533,7 @@ public class SpoonAPIFactory {
 
 	/**
 	 * Checks whether the given type is effectively final _within the API_. While package-private constructors cannot be
-	 * accessed from client code, they can be from the API itself, and sub-classes can leak internals.
+	 * accessed from client code, they can be from the API itself, and subclasses can leak internals.
 	 */
 	private static boolean isEffectivelyFinal(CtType<?> type) {
 		if (type instanceof CtClass<?> cls &&

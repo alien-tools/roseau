@@ -147,8 +147,8 @@ public final class Roseau {
 
 	private static API toAPI(Library library, LibraryTypes types) {
 		TypeReferenceFactory factory = new CachingTypeReferenceFactory();
-		TypeProvider reflectiveTypeProvider = new SpoonTypeProvider(factory, library.getClasspath());
-		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, reflectiveTypeProvider));
+		TypeProvider typeProvider = new SpoonTypeProvider(factory, library.getClasspath());
+		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, typeProvider));
 
 		return new API(types, cachingTypeResolver);
 	}

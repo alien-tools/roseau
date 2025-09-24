@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
-import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -24,7 +23,7 @@ import java.util.stream.Stream;
  * <ul>
  *   <li>Returns the previous API if no file has changed</li>
  *   <li>Discards deleted symbols</li>
- *   <li>Re-parses changed symbols</li>
+ *   <li>Reparses changed symbols</li>
  *   <li>Parses new files to extract new symbols</li>
  * </ul>
  */
@@ -57,7 +56,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			// Previous unchanged types
 			previousTypes.getAllTypes().stream()
 				.filter(t -> !discarded.contains(t.getLocation().file())),
-			// New re-parsed types
+			// New reparsed types
 			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
 		).toList();
 

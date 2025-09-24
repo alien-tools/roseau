@@ -21,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.function.Function;
@@ -47,7 +48,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * An immutable map that stores all types within the library, including both exported and non-exported
 	 * {@link TypeDecl} instances. Allows for efficient lookup of type declarations by their qualified names.
 	 */
-	private final ImmutableMap<String, TypeDecl> allTypes;
+	private final Map<String, TypeDecl> allTypes;
 
 	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
 
@@ -65,7 +66,7 @@ public final class LibraryTypes implements TypeProvider {
 		Preconditions.checkNotNull(types);
 		this.library = library;
 		this.module = module;
-		this.allTypes = types.stream()
+		allTypes = types.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
 				Function.identity(),
@@ -102,8 +103,8 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return the new resolved API
 	 */
 	public API toAPI(List<Path> classpath) {
-		TypeProvider reflectiveTypeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
-		return toAPI(new CachingTypeResolver(List.of(this, reflectiveTypeProvider)));
+		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
+		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
 	}
 
 	/**

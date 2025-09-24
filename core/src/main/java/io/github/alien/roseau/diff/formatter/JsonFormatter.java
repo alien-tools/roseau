@@ -8,7 +8,7 @@ import org.json.JSONArray;
 import org.json.JSONObject;
 
 /**
- * A formatter of {@link RoseauReport} that produces a Json output.
+ * A formatter of {@link RoseauReport} that produces a JSON output.
  */
 public class JsonFormatter implements BreakingChangesFormatter {
 	/**

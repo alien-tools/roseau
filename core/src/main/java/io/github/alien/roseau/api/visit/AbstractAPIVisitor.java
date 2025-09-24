@@ -30,6 +30,7 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
  * value.
  */
 public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
+	@Override
 	public Visit api(API it) {
 		return () -> $(it.getLibraryTypes()).visit();
 	}
@@ -40,6 +41,7 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 	 * @param it the {@link LibraryTypes} to visit
 	 * @return a lambda {@link Visit} that must be invoked to run the actual visit
 	 */
+	@Override
 	public Visit libraryTypes(LibraryTypes it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}

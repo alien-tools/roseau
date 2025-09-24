@@ -50,7 +50,7 @@ public interface SubtypingResolver {
 		Preconditions.checkNotNull(reference);
 		Preconditions.checkNotNull(other);
 
-		// FIXME: are primitive/arraytype/wildcard actually subtypes of OBJECT?
+		// FIXME: are primitive/array/wildcard actually subtypes of OBJECT?
 		if (reference.equals(other) || other.equals(TypeReference.OBJECT)) {
 			return true;
 		}

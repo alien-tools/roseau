@@ -195,7 +195,7 @@ public final class Library {
 				Integer.MAX_VALUE,
 				(Path p, BasicFileAttributes a) -> isModuleInfo(p)
 			)) {
-				return s.limit(2).count() > 1;  // short-circuits after the 2nd match
+				return s.limit(2L).count() > 1L;  // short-circuits after the 2nd match
 			} catch (IOException e) {
 				return false;
 			}

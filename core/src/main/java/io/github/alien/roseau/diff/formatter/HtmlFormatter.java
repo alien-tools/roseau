@@ -108,7 +108,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 		Node(String name, String type) {
 			this.name = name;
 			this.type = type;
-			this.breakingChanges = new ArrayList<>();
+			breakingChanges = new ArrayList<>();
 		}
 
 		void addBreakingChange(BreakingChange bc) {
@@ -125,7 +125,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 		}
 
 		void addChild(MemberNode child) {
-			this.children.add(child);
+			children.add(child);
 		}
 	}
 

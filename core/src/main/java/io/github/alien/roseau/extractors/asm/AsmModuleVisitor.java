@@ -19,9 +19,9 @@ final class AsmModuleVisitor extends ClassVisitor {
 		Set<String> exports = new HashSet<>();
 		return new ModuleVisitor(api) {
 			@Override
-			public void visitExport(String pkg, int access, String... modules) {
+			public void visitExport(String packaze, int access, String... modules) {
 				if (modules == null || modules.length == 0) {
-					exports.add(pkg.replace('/', '.'));
+					exports.add(packaze.replace('/', '.'));
 				}
 			}
 

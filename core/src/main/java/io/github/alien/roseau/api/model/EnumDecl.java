@@ -32,7 +32,7 @@ public final class EnumDecl extends ClassDecl {
 	}
 
 	public List<EnumValueDecl> getValues() {
-		return Collections.unmodifiableList(values);
+		return values;
 	}
 
 	@Override
