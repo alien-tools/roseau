@@ -32,7 +32,7 @@ public class MavenClasspathBuilder {
 	 * @return the retrieved classpath or an empty list if something went wrong
 	 */
 	public List<Path> buildClasspath(Path pom) {
-		Preconditions.checkArgument(pom != null && Files.exists(pom));
+		Preconditions.checkArgument(pom != null && Files.isRegularFile(pom));
 		Path classpathFile = pom.toFile().isDirectory()
 			? pom.toAbsolutePath().resolve(".classpath.tmp")
 			: pom.toAbsolutePath().getParent().resolve(".classpath.tmp");
@@ -42,7 +42,7 @@ public class MavenClasspathBuilder {
 			Invoker invoker = new DefaultInvoker();
 			InvocationResult result = invoker.execute(request);
 
-			if (result.getExitCode() == 0 && Files.exists(classpathFile)) {
+			if (result.getExitCode() == 0 && Files.isRegularFile(classpathFile)) {
 				String cpString = Files.readString(classpathFile);
 				return Arrays.stream(cpString.split(File.pathSeparator))
 					.map(Path::of)

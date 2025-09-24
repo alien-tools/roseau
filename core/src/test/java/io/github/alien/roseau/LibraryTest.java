@@ -97,9 +97,27 @@ class LibraryTest {
 			.build();
 
 		assertThat(lib.getLocation()).isEqualTo(validJar.toAbsolutePath());
-		assertThat(lib.getClasspath()).isEqualTo(cp);
+		assertThat(lib.getCustomClasspath()).isEqualTo(cp);
 		assertThat(lib.getPom()).isEqualTo(pom);
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
+	}
+
+	@Test
+	void classpath_merges_custom_and_pom() {
+		var pom = Path.of("pom.xml"); // Roseau's pom.xml
+		var cp = List.of(Path.of("cp"));
+
+		var lib = Library.builder()
+			.location(validJar)
+			.classpath(cp)
+			.pom(pom)
+			.build();
+
+		assertThat(lib.getLocation()).isEqualTo(validJar.toAbsolutePath());
+		assertThat(lib.getCustomClasspath()).isEqualTo(cp);
+		assertThat(lib.getPom()).isEqualTo(pom);
+		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
+		assertThat(lib.getClasspath()).hasSizeGreaterThan(10);
 	}
 
 	@Test

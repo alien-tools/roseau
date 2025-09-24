@@ -1,6 +1,8 @@
 package io.github.alien.roseau;
 
+import com.google.common.base.Suppliers;
 import io.github.alien.roseau.extractors.ExtractorType;
+import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -8,6 +10,7 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
+import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
@@ -29,18 +32,27 @@ import java.util.zip.ZipFile;
  */
 public final class Library {
 	private final Path location;
-	private final List<Path> classpath;
+	private final List<Path> customClasspath;
 	private final Path pom;
 	private final ExtractorType extractorType;
+	private final Supplier<List<Path>> classpath;
 
 	/**
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
 	 */
 	private Library(Path location, List<Path> classpath, Path pom, ExtractorType extractorType) {
 		this.location = location.toAbsolutePath();
-		this.classpath = List.copyOf(classpath);
+		this.customClasspath = List.copyOf(classpath);
 		this.pom = pom;
 		this.extractorType = extractorType;
+		this.classpath = Suppliers.memoize(() -> {
+			if (pom != null && Files.isRegularFile(pom)) {
+				MavenClasspathBuilder builder = new MavenClasspathBuilder();
+				return Stream.concat(builder.buildClasspath(pom).stream(), classpath.stream()).toList();
+			} else {
+				return customClasspath;
+			}
+		});
 	}
 
 	/**
@@ -65,8 +77,18 @@ public final class Library {
 		return location;
 	}
 
+	/**
+	 * @return the user-defined classpath
+	 */
+	public List<Path> getCustomClasspath() {
+		return customClasspath;
+	}
+
+	/**
+	 * @return the resolved classpath, including custom classpath and pom-inferred classpath
+	 */
 	public List<Path> getClasspath() {
-		return classpath;
+		return classpath.get();
 	}
 
 	public Path getPom() {
@@ -112,14 +134,14 @@ public final class Library {
 		}
 		Library other = (Library) obj;
 		return Objects.equals(location, other.location) &&
-			Objects.equals(classpath, other.classpath) &&
+			Objects.equals(customClasspath, other.customClasspath) &&
 			Objects.equals(pom, other.pom) &&
 			extractorType == other.extractorType;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(location, classpath, pom, extractorType);
+		return Objects.hash(location, customClasspath, pom, extractorType);
 	}
 
 	/**

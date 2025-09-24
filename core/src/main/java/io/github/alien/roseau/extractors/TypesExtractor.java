@@ -7,7 +7,7 @@ import io.github.alien.roseau.api.model.LibraryTypes;
 /**
  * A {@link TypesExtractor} is responsible for extracting {@link LibraryTypes} from a given {@link Library}. Types
  * extractors must keep track of <strong>all</strong> types in a library, including non-exported/accessible ones. This
- * is necessary for type resolution later and to handle potentially-leaked internal types.
+ * is necessary for type resolution later and to handle potentially leaked internal types.
  */
 public interface TypesExtractor {
 	/**
