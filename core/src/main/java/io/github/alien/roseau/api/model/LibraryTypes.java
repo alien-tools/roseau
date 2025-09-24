@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -38,6 +39,11 @@ public final class LibraryTypes implements TypeProvider {
 	private final Library library;
 
 	/**
+	 * The module corresponding to the library.
+	 */
+	private final ModuleDecl module;
+
+	/**
 	 * An immutable map that stores all types within the library, including both exported and non-exported
 	 * {@link TypeDecl} instances. Allows for efficient lookup of type declarations by their qualified names.
 	 */
@@ -46,14 +52,19 @@ public final class LibraryTypes implements TypeProvider {
 	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
 
 	/**
-	 * Initializes from the given list of {@link TypeDecl}.
+	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}.
 	 *
-	 * @param types Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 * @param library The analyzed library
+	 * @param module  The module corresponding to the library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(Library library, @JsonProperty("allTypes") List<TypeDecl> types) {
+	@JsonCreator
+	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") List<TypeDecl> types) {
 		Preconditions.checkNotNull(library);
+		Preconditions.checkNotNull(module);
 		Preconditions.checkNotNull(types);
 		this.library = library;
+		this.module = module;
 		this.allTypes = types.stream()
 			.collect(ImmutableMap.toImmutableMap(
 				Symbol::getQualifiedName,
@@ -62,6 +73,16 @@ public final class LibraryTypes implements TypeProvider {
 					throw new IllegalArgumentException("Duplicated types " + fqn);
 				}
 			));
+	}
+
+	/**
+	 * Initializes from the given list of {@link TypeDecl}.
+	 *
+	 * @param library The analyzed library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 */
+	public LibraryTypes(Library library, List<TypeDecl> types) {
+		this(library, ModuleDecl.UNNAMED_MODULE, types);
 	}
 
 	/**
@@ -102,6 +123,16 @@ public final class LibraryTypes implements TypeProvider {
 	@JsonProperty("library")
 	public Library getLibrary() {
 		return library;
+	}
+
+	/**
+	 * The module corresponding to the library.
+	 *
+	 * @return the module
+	 */
+	@JsonProperty("module")
+	public ModuleDecl getModule() {
+		return module;
 	}
 
 	/**

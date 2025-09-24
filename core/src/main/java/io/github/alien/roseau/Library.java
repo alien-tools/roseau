@@ -2,15 +2,30 @@ package io.github.alien.roseau;
 
 import io.github.alien.roseau.extractors.ExtractorType;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
+import java.util.stream.Stream;
+import java.util.zip.ZipFile;
 
 /**
- * A library, in source or compiled form, provided for analysis. The library points to a physical location and can be
- * complemented with a custom classpath or {@code pom.xml} file for dependency resolution. The extractor used to parse
- * and infer types can be customized. Use {@link #of(Path)} or {@link #builder()} to create new instances.
+ * A library, in source or compiled form, provided for analysis.
+ * <p>
+ * The granularity of a library is that of a module, i.e., it should contain at most one module declaration
+ * ({@code module-info.java}). If no module declaration is present, it is assumed that all packages within this library
+ * are implicitly exported. If a module declaration is present, the API accounts for unqualified {@code exports}
+ * directives. The library points to a physical location that is either:
+ * <ul>
+ *   <li>A source directory containing nested packages and source files and one module declaration at most</li>
+ *   <li>A {@code module-info.java} file. In this case, the directory containing the module is used as root directory</li>
+ *   <li>A JAR file containing at most one {@code module-info.java} file</li>
+ * </ul>
+ * A library can be complemented with a custom classpath or a {@code pom.xml} file for dependency resolution. The
+ * extractor used to parse and infer types can be customized. Use {@link #of(Path)} or {@link #builder()} to create new
+ * instances.
  */
 public final class Library {
 	private final Path location;
@@ -38,7 +53,8 @@ public final class Library {
 	/**
 	 * Constructs a new library instance from the given physical location.
 	 *
-	 * @param location the physical location of the library's sources or JAR
+	 * @param location the physical location of the library, either a source directory, a JAR file, or a
+	 *                 {@code module-info.java} file
 	 * @return a new library instance
 	 */
 	public static Library of(Path location) {
@@ -62,32 +78,43 @@ public final class Library {
 	}
 
 	public boolean isJar() {
-		return isJar(this.location);
+		return isJar(location);
 	}
 
 	public boolean isSources() {
-		return isSources(this.location);
+		return isSources(location);
 	}
 
 	private static boolean isJar(Path file) {
-		// Can't do much more, except listing all extensions (jar, war, ear, jmod, etc.)
-		return file != null && Files.exists(file) && Files.isRegularFile(file);
+		if (file == null || !Files.isRegularFile(file)) {
+			return false;
+		}
+
+		// Just read the entries; even on stupidly huge JARs, this is fine
+		try (ZipFile zf = new ZipFile(file.toFile())) {
+			return true;
+		} catch (IOException e) {
+			return false;
+		}
 	}
 
 	private static boolean isSources(Path file) {
-		return file != null && Files.exists(file) && Files.isDirectory(file);
+		return file != null && Files.isDirectory(file);
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (o == null || getClass() != o.getClass()) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		Library library = (Library) o;
-		return Objects.equals(location, library.location) &&
-			Objects.equals(classpath, library.classpath) &&
-			Objects.equals(pom, library.pom) &&
-			extractorType == library.extractorType;
+		Library other = (Library) obj;
+		return Objects.equals(location, other.location) &&
+			Objects.equals(classpath, other.classpath) &&
+			Objects.equals(pom, other.pom) &&
+			extractorType == other.extractorType;
 	}
 
 	@Override
@@ -111,7 +138,7 @@ public final class Library {
 		}
 
 		/**
-		 * Sets the library's physical location, either a JAR file or sources directory.
+		 * Sets the library's physical location, either a source directory, a JAR file, or a {@code module-info.java} file
 		 *
 		 * @param location the physical location
 		 * @return this builder
@@ -154,8 +181,24 @@ public final class Library {
 			return this;
 		}
 
-		private static boolean isValidSource(Path location) {
-			return isJar(location) || isSources(location);
+		private static boolean isValidLocation(Path location) {
+			return isModuleInfo(location) || isSources(location) || isJar(location);
+		}
+
+		private static boolean isModuleInfo(Path file) {
+			return file != null && "module-info.java".equals(file.getFileName().toString()) && Files.isRegularFile(file);
+		}
+
+		private static boolean hasMultipleModuleInfo(Path location) {
+			try (Stream<Path> s = Files.find(
+				location,
+				Integer.MAX_VALUE,
+				(Path p, BasicFileAttributes a) -> isModuleInfo(p)
+			)) {
+				return s.limit(2).count() > 1;  // short-circuits after the 2nd match
+			} catch (IOException e) {
+				return false;
+			}
 		}
 
 		private static boolean isValidPom(Path pom) {
@@ -170,24 +213,33 @@ public final class Library {
 		 *                                  specified extractor type is incompatible with the library's type
 		 */
 		public Library build() {
-			if (!isValidSource(location)) {
+			if (!isValidLocation(location)) {
 				throw new IllegalArgumentException("Invalid path to library; directory or JAR expected: " + location);
+			}
+
+			if (isModuleInfo(location)) {
+				location = location.getParent();
 			}
 
 			if (pom != null && !isValidPom(pom)) {
 				throw new IllegalArgumentException("Invalid path to POM file: " + pom);
 			}
 
+			if (isSources(location) && hasMultipleModuleInfo(location)) {
+				throw new IllegalArgumentException("A library cannot contain multiple module-info.java");
+			}
+
+			// Default extractors
 			if (extractorType == null) {
-				if (isJar(location)) {
-					extractorType = ExtractorType.ASM;
-				} else {
+				if (isSources(location)) {
 					extractorType = ExtractorType.JDT;
+				} else {
+					extractorType = ExtractorType.ASM;
 				}
 			}
 
 			if (extractorType == ExtractorType.ASM && isSources(location)) {
-				throw new IllegalArgumentException("ASM extractor cannot be used on source directories");
+				throw new IllegalArgumentException("ASM extractor cannot be used on source directories and module-info.java");
 			}
 
 			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(location)) {

@@ -8,11 +8,11 @@ Whether you're a library maintainer or a developer worrying about upgrading your
   - Detects both binary-level and source-level breaking changes
   - Indifferently analyzes Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon)) and compiled JARs (using [ASM](https://asm.ow2.io/))
   - Excellent accuracy and performance
-  - Supports Java up to version 21 (including records, sealed classes, etc.)
+  - Supports Java up to version 21 (including records, sealed types, modules, etc.)
   - CLI-first and scriptable
 
 Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
-But unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
+Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
 
 ## In a nutshell
 
@@ -21,10 +21,10 @@ But unlike others, Roseau can also analyze source code directly, making it ideal
 
 Roseau builds lightweight, technology-agnostic API models that list all the exported symbols in a library—including types, methods, and fields—along with their properties. These models can be easily serialized and stored (e.g., as JSON) for further analysis or archival.
 Roseau relies on either [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon) to extract API models from source code, and on [ASM](https://asm.ow2.io/) to extract API models from bytecode.
-The breaking change inference algorithm is completely agnostic of the underlying parsing technology.
+The breaking change detection algorithm is completely agnostic of the underlying parsing technology.
 
 The list of breaking changes considered in Roseau is specified [here](core/src/main/java/io/github/alien/roseau/diff/changes/BreakingChangeKind.java) and drawn from various sources, including the [Java Language Specification](https://docs.oracle.com/javase/specs/), [japicmp's implementation](https://github.com/siom79/japicmp/blob/68425b08dd7835a4e9c0e64c6f6eaf3bd7281069/japicmp/src/main/java/japicmp/model/JApiCompatibilityChange.java), [Revapi's list of API Differences](https://revapi.org/revapi-java/0.28.1/differences.html), the [API evolution benchmark](https://github.com/kjezek/api-evolution-data-corpus) and [our own extensive tests](core/src/test/java/io/github/alien/roseau/diff).
-We consider both source-level and binary-level compatibility changes.
+Roseau considers both source-level and binary-level compatibility changes.
 
 ## Usage
 
@@ -75,31 +75,8 @@ Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
   --verbose           Print debug information
 ```
 
-### Git Integration
-
-Roseau can easily be integrated with Git to compare arbitrary commits, refs, branches, etc.
-The following minimal `.gitconfig` registers Roseau as a difftool aliased to `bc`:
-
-```
-[difftool "roseau"]
-  cmd = /path/to/roseau --diff --v1 "$LOCAL" --v2 "$REMOTE"
-[alias]
-  bc = difftool -d -t roseau
-```
-
-Then, Roseau can be invoked on Git objects using the usual syntax, for example:
-
-```bash
-$ git bc                   # BCs in unstaged changes
-$ git bc HEAD              # BCs in uncommitted changes (including staged ones)
-$ git bc --staged          # BCs in staged changes
-$ git bc path/to/File.java # BCs in specific file
-$ git bc main..feature     # BCs between two branches
-$ git bc HEAD~2 HEAD       # BCs between two commits
-```
-
 ## Citing Roseau
-If you use Roseau for academic purposes, please cite: "[Roseau: Fast, Accurate, Source-based Breaking Change Analysis in Java](https://hal.science/hal-05176866/document)". Corentin Latappy, Thomas Degueule, Jean-Rémy Falleri, Romain Robbes, Lina Ochoa. In _IEEE International Conference on Software Maintenance and Evolution_ (ICSME 2025).
+If you use Roseau for academic purposes, please cite: [Roseau: Fast, Accurate, Source-based Breaking Change Analysis in Java](https://hal.science/hal-05176866/document). Corentin Latappy, Thomas Degueule, Jean-Rémy Falleri, Romain Robbes, Lina Ochoa. In _IEEE International Conference on Software Maintenance and Evolution_ (ICSME 2025).
 
 ```bibtex
 @inproceedings{latappy25roseau,

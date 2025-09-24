@@ -227,24 +227,64 @@ public class TestUtils {
 	}
 
 	public static Map<String, String> buildSourcesMap(String sources) {
-		Pattern typePattern = Pattern.compile(
-			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
-				"(class|interface|@interface|enum|record)\\s+(\\w+)");
-		Matcher matcher = typePattern.matcher(sources);
+		Map<String, String> sourcesMap = new HashMap<>();
 
-		List<Integer> typeStartIndices = new ArrayList<>();
-		List<String> typeNames = new ArrayList<>();
-		while (matcher.find()) {
-			typeStartIndices.add(matcher.start());
-			typeNames.add(matcher.group(2));
+		// Find package declarations
+		Pattern pkgPattern = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_][\\w.]*)\\s*;\\s*");
+		Matcher pkgMatcher = pkgPattern.matcher(sources);
+		List<Integer> pkgIndices = new ArrayList<>();
+		List<String> pkgNames = new ArrayList<>();
+		while (pkgMatcher.find()) {
+			pkgIndices.add(pkgMatcher.start());
+			pkgNames.add(pkgMatcher.group(1));
 		}
 
-		Map<String, String> sourcesMap = new HashMap<>();
+		// Find module descriptor
+		Pattern modulePattern = Pattern.compile("(?s)^\\s*module\\s+[^\\{]+\\{.*?\\}");
+		Matcher moduleMatcher = modulePattern.matcher(sources);
+		if (moduleMatcher.find()) {
+			sourcesMap.put("module-info", moduleMatcher.group());
+		}
+
+		// Find top-level type declarations
+		Pattern typePattern = Pattern.compile(
+			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*" +
+				"(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\\s+)*" +
+				"(class|interface|@interface|enum|record)\\s+(\\w+)");
+		Matcher typeMatcher = typePattern.matcher(sources);
+		List<Integer> typeStartIndices = new ArrayList<>();
+		List<String> typeNames = new ArrayList<>();
+		while (typeMatcher.find()) {
+			typeStartIndices.add(typeMatcher.start());
+			typeNames.add(typeMatcher.group(2));
+		}
+
 		for (int i = 0; i < typeStartIndices.size(); i++) {
-			var startPos = typeStartIndices.get(i);
-			var endPos = i < typeStartIndices.size() - 1 ? typeStartIndices.get(i + 1) : sources.length();
-			var typeName = typeNames.get(i);
-			sourcesMap.put(typeName, sources.substring(startPos, endPos));
+			int startPos = typeStartIndices.get(i);
+			String typeName = typeNames.get(i);
+
+			// Find the active package declaration for this type
+			String currentPkg = null;
+			int nextPkgPos = sources.length();
+			for (int p = 0; p < pkgIndices.size(); p++) {
+				if (pkgIndices.get(p) < startPos) {
+					currentPkg = pkgNames.get(p);
+				} else {
+					nextPkgPos = pkgIndices.get(p);
+					break;
+				}
+			}
+
+			int endPos = i < typeStartIndices.size() - 1
+				? Integer.min(typeStartIndices.get(i + 1), nextPkgPos)
+				: sources.length();
+			String fileKey = currentPkg == null ? typeName : currentPkg + "." + typeName;
+			StringBuilder fileContent = new StringBuilder();
+			if (currentPkg != null) {
+				fileContent.append("package ").append(currentPkg).append(";\n\n");
+			}
+			fileContent.append(sources, startPos, endPos);
+			sourcesMap.put(fileKey, fileContent.toString());
 		}
 
 		return sourcesMap;
@@ -292,7 +332,17 @@ public class TestUtils {
 	public static Path writeSources(Map<String, String> sourcesMap) throws IOException {
 		Path tempDir = Files.createTempDirectory("sources");
 		for (Map.Entry<String, String> entry : sourcesMap.entrySet()) {
-			Files.writeString(tempDir.resolve(entry.getKey() + ".java"), entry.getValue());
+			String key = entry.getKey();
+			String content = entry.getValue();
+			Path filePath;
+			if ("module-info".equals(key)) {
+				filePath = tempDir.resolve("module-info.java");
+			} else {
+				String relPath = key.replace('.', '/') + ".java";
+				filePath = tempDir.resolve(relPath);
+				Files.createDirectories(filePath.getParent());
+			}
+			Files.writeString(filePath, content);
 		}
 		return tempDir;
 	}

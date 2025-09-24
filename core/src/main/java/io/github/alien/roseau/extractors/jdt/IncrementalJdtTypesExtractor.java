@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
@@ -31,7 +32,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 	@Override
 	public LibraryTypes incrementalUpdate(LibraryTypes previousTypes, Library newVersion, ChangedFiles changedFiles) {
 		Preconditions.checkNotNull(previousTypes);
-		Preconditions.checkArgument(newVersion != null && newVersion.isSources());
+		Preconditions.checkArgument(canExtract(newVersion));
 		Preconditions.checkNotNull(changedFiles);
 
 		// If nothing's changed, just return the old one
@@ -57,10 +58,11 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			previousTypes.getAllTypes().stream()
 				.filter(t -> !discarded.contains(t.getLocation().file())),
 			// New re-parsed types
-			parseTypes(newVersion, filesToParse, typeRefFactory).stream()
+			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
 		).toList();
 
-		return new LibraryTypes(newVersion, newTypeDecls);
+		// FIXME: the module declaration might have changed between the two versions
+		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
 	}
 
 	private Set<Path> resolve(Path root, Set<Path> files) {

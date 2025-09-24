@@ -73,7 +73,8 @@ class LibraryTypesTest {
 	void duplicate_types() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PACKAGE_PRIVATE);
-		assertThatIllegalArgumentException().isThrownBy(() -> new LibraryTypes(mockLibrary, List.of(t1, t2)));
+		assertThatIllegalArgumentException().isThrownBy(() ->
+			new LibraryTypes(mockLibrary, List.of(t1, t2)));
 	}
 
 	@Test

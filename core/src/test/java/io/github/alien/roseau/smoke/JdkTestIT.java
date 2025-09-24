@@ -5,7 +5,6 @@ import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonUtils;
 import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
@@ -15,8 +14,6 @@ import org.junit.jupiter.params.provider.MethodSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
-import java.util.List;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 

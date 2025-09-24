@@ -22,6 +22,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class TypesExtractionTest {
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
+	void package_qualified_class(ApiBuilder builder) {
+		var api = builder.build("""
+			package pkg;
+			public class A {}""");
+
+		var a = assertClass(api, "pkg.A");
+
+		assertTrue(api.isExported(a));
+		assertTrue(a.isPublic());
+		assertThat(a.getQualifiedName()).isEqualTo("pkg.A");
+		assertThat(a.getSimpleName()).isEqualTo("A");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
 	void package_private_class(ApiBuilder builder) {
 		var api = builder.build("class A {}");
 

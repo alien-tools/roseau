@@ -98,6 +98,12 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return Optional.ofNullable(enclosingType);
 	}
 
+	public String getPackageName() {
+		return qualifiedName.contains(".")
+			? qualifiedName.substring(0, qualifiedName.lastIndexOf('.'))
+			: qualifiedName;
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		if (!super.equals(obj)) {
