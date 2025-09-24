@@ -120,8 +120,10 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			writeReport(apiV1, report);
 			return report;
-		} catch (InterruptedException | ExecutionException e) {
+		} catch (InterruptedException e) {
 			Thread.currentThread().interrupt();
+			LOGGER.error("Couldn't compute diff", e);
+		} catch (ExecutionException e) {
 			LOGGER.error("Couldn't compute diff", e);
 		}
 
