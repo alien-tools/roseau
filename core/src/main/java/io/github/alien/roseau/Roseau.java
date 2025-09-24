@@ -70,8 +70,8 @@ public final class Roseau {
 	/**
 	 * Builds both APIs in parallel using the provided {@link Executor} and computes their diff.
 	 *
-	 * @param v1 the baseline library (must not be null)
-	 * @param v2 the target library (must not be null)
+	 * @param v1       the baseline library (must not be null)
+	 * @param v2       the target library (must not be null)
 	 * @param executor the executor to use
 	 * @return a {@link RoseauReport} containing the list of breaking changes
 	 */
