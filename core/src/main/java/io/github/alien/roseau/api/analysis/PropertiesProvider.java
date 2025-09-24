@@ -19,6 +19,12 @@ public interface PropertiesProvider {
 	SubtypingResolver subtyping();
 	TypeParameterResolver typeParameter();
 
+	/**
+	 * Checks whether this symbol is exported.
+	 *
+	 * @param symbol the symbol to check
+	 * @return true if this symbol is exported
+	 */
 	default boolean isExported(Symbol symbol) {
 		Preconditions.checkNotNull(symbol);
 		return switch (symbol) {

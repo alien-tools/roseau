@@ -1,13 +1,11 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
-import static io.github.alien.roseau.utils.TestUtils.assertClass;
-import static io.github.alien.roseau.utils.TestUtils.assertInterface;
-import static io.github.alien.roseau.utils.TestUtils.assertNoType;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class ModulesExtractionTest {
@@ -33,10 +31,8 @@ class ModulesExtractionTest {
 		assertThat(module.isExporting("pkg1")).isTrue();
 		assertThat(module.isExporting("pkg2")).isFalse();
 
-		assertClass(api, "pkg1.C");
-		assertInterface(api, "pkg1.I");
-		assertNoType(api, "pkg2.C");
-		assertNoType(api, "pkg2.I");
+		assertThat(api.getExportedTypes().stream().map(TypeDecl::getQualifiedName))
+			.containsExactlyInAnyOrder("pkg1.C", "pkg1.I");
 	}
 
 	@ParameterizedTest
@@ -61,10 +57,7 @@ class ModulesExtractionTest {
 		assertThat(module.isExporting("pkg1")).isFalse();
 		assertThat(module.isExporting("pkg2")).isFalse();
 
-		assertNoType(api, "pkg1.C");
-		assertNoType(api, "pkg1.I");
-		assertNoType(api, "pkg2.C");
-		assertNoType(api, "pkg2.I");
+		assertThat(api.getExportedTypes()).isEmpty();
 	}
 
 	@ParameterizedTest
@@ -89,10 +82,7 @@ class ModulesExtractionTest {
 		assertThat(module.isExporting("pkg1")).isFalse();
 		assertThat(module.isExporting("pkg2")).isFalse();
 
-		assertNoType(api, "pkg1.C");
-		assertNoType(api, "pkg1.I");
-		assertNoType(api, "pkg2.C");
-		assertNoType(api, "pkg2.I");
+		assertThat(api.getExportedTypes()).isEmpty();
 	}
 
 	@ParameterizedTest
@@ -113,9 +103,30 @@ class ModulesExtractionTest {
 		assertThat(module.isExporting("pkg1")).isTrue();
 		assertThat(module.isExporting("pkg2")).isTrue();
 
-		assertClass(api, "pkg1.C");
-		assertInterface(api, "pkg1.I");
-		assertClass(api, "pkg2.C");
-		assertInterface(api, "pkg2.I");
+		assertThat(api.getExportedTypes().stream().map(TypeDecl::getQualifiedName))
+			.containsExactlyInAnyOrder("pkg1.C", "pkg1.I", "pkg2.C", "pkg2.I");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void qualified_module(ApiBuilder builder) {
+		var api = builder.build("""
+			module my.module {
+				exports pkg1;
+			}
+			
+			package pkg1;
+			public class C {}
+			
+			package pkg2;
+			public class C {}""");
+
+		var module = api.getLibraryTypes().getModule();
+		assertThat(module.getQualifiedName()).isEqualTo("my.module");
+		assertThat(module.isUnnamed()).isFalse();
+		assertThat(module.isExporting("pkg1")).isTrue();
+
+		assertThat(api.getExportedTypes().stream().map(TypeDecl::getQualifiedName))
+			.containsExactlyInAnyOrder("pkg1.C");
 	}
 }

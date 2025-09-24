@@ -27,8 +27,14 @@ public class API extends CachingAPIAnalyzer {
 		return libraryTypes;
 	}
 
+	@Override
+	public boolean isExported(TypeDecl type) {
+		boolean isModuleExported = libraryTypes.getModule().isExporting(type.getPackageName());
+		return isModuleExported && super.isExported(type);
+	}
+
 	/**
-	 * Type declaration that are exported by the API.
+	 * Type declarations that are exported by the API.
 	 *
 	 * @return The list of exported {@link TypeDecl}
 	 */

@@ -48,7 +48,7 @@ public sealed class ModuleDecl {
 		}
 	}
 
-	public static final ModuleDecl UNNAMED_MODULE = new UnnamedModule("<unnamed module>", Set.of(""));
+	public static final ModuleDecl UNNAMED_MODULE = new UnnamedModule("<unnamed module>", Set.of());
 
 	@Override
 	public String toString() {
