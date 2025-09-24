@@ -35,16 +35,16 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ mvn package
-$ ls cli/target/roseau-cli-0.2.0-jar-with-dependencies.jar 
+$ ls cli/target/roseau-cli-0.3.0-jar-with-dependencies.jar 
 ```
 
 Identify breaking changes between two versions, either from source trees or compiled JARs:
 
 ```
-$ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -52,24 +52,21 @@ $ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --diff --v1 /path/to/sour
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.2.0-jar-with-dependencies.jar --help
+$ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --help
 Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
-          [--classpath=<classpathString>] [--extractor=<extractorFactory>]
+          [--classpath=<list>] [--extractor=<type>]
           [--format=<format>] [--json=<apiPath>] [--pom=<pom>]
-          [--report=<reportPath>] --v1=<v1> [--v2=<v2>]
+          [--report=<report>] --v1=<v1> [--v2=<v2>]
   --api               Serialize the API model of --v1; see --json
-  --classpath=<classpathString>
-                      A colon-separated list of elements to include in the classpath
+  --classpath=<list>  A list of elements to include in the classpath; OS-specific separator (':'or ';')
   --diff              Compute breaking changes between versions --v1 and --v2
-  --extractor=<extractorFactory>
-                      API extractor to use: JDT or SPOON (from sources), ASM (from JARs)
+  --extractor=<type>  API extractor to use: SPOON, ASM, JDT
   --fail              Return a non-zero code if breaking changes are detected
   --format=<format>   Format of the report; possible values: CSV, HTML, JSON
   --json=<apiPath>    Where to serialize the JSON API model of --v1; defaults to api.json
   --plain             Disable ANSI colors, output plain text
   --pom=<pom>         A pom.xml file to build a classpath from
-  --report=<reportPath>
-                      Where to write the breaking changes report
+  --report=<report>   Where to write the breaking changes report
   --v1=<v1>           Path to the first version of the library; either a source directory or a JAR
   --v2=<v2>           Path to the second version of the library; either a source directory or a JAR
   --verbose           Print debug information
