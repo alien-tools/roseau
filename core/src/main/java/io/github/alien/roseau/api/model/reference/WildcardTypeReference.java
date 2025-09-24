@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.model.reference;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.api.utils.StringUtils;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,11 +36,6 @@ public record WildcardTypeReference(
 	@Override
 	public String getQualifiedName() {
 		return toString();
-	}
-
-	@Override
-	public String getPrettyQualifiedName() {
-		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
 	public boolean isUnbounded() {

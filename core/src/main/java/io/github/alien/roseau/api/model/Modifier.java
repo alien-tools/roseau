@@ -1,7 +1,5 @@
 package io.github.alien.roseau.api.model;
 
-import io.github.alien.roseau.api.utils.StringUtils;
-
 import java.util.Locale;
 
 /**
@@ -23,9 +21,5 @@ public enum Modifier {
 	@Override
 	public String toString() {
 		return name().toLowerCase(Locale.ROOT);
-	}
-
-	public String toCapitalize() {
-		return StringUtils.splitSpecialCharsAndCapitalize(toString());
 	}
 }

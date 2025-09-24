@@ -3,9 +3,9 @@ package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
-import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
 import io.github.alien.roseau.combinatorial.builder.ParameterBuilder;
+import io.github.alien.roseau.combinatorial.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
@@ -14,11 +14,11 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 
 	public AddParameterMethodStrategy(ITypeReference type, boolean isVarargs, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "AddParameter%s%sToMethod%sIn%s".formatted(
-				type.getPrettyQualifiedName(),
+				StringUtils.getPrettyQualifiedName(type),
 				isVarargs ? "Varargs" : "",
 				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
-				mtd.getContainingType().getPrettyQualifiedName()),
-				api
+				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
+			api
 		);
 
 		this.parameterType = type;
@@ -27,7 +27,7 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 
 	@Override
 	protected void applyBreakToMutableApi(ApiBuilder mutableApi) {
-		LOGGER.info("Adding parameter {} to method {}", parameterType.getPrettyQualifiedName(), tpMbr.getQualifiedName());
+		LOGGER.info("Adding parameter {} to method {}", StringUtils.getPrettyQualifiedName(parameterType), tpMbr.getQualifiedName());
 
 		var paramBuilder = new ParameterBuilder();
 		paramBuilder.name = "newParamAdded";

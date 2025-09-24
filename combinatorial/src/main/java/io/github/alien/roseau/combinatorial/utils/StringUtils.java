@@ -1,5 +1,6 @@
-package io.github.alien.roseau.api.utils;
+package io.github.alien.roseau.combinatorial.utils;
 
+import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 
@@ -32,6 +33,14 @@ public final class StringUtils {
 
 	public static String capitalizeFirstLetter(String s) {
 		return s.substring(0, 1).toUpperCase() + s.substring(1);
+	}
+
+	public static String getPrettyQualifiedName(ITypeReference typeReference) {
+		return splitSpecialCharsAndCapitalize(typeReference.getQualifiedName());
+	}
+
+	public static String getPrettyQualifiedName(Symbol symbol) {
+		return splitSpecialCharsAndCapitalize(symbol.getQualifiedName());
 	}
 
 	private static String cleanQualifiedName(String qualifiedName) {

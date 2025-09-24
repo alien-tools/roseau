@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.model.reference;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.api.utils.StringUtils;
 
 /**
  * A reference to a primitive type (e.g., {@code int}, {@code byte}).
@@ -28,11 +27,6 @@ public record PrimitiveTypeReference(
 	@Override
 	public String getQualifiedName() {
 		return name;
-	}
-
-	@Override
-	public String getPrettyQualifiedName() {
-		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
 	@Override

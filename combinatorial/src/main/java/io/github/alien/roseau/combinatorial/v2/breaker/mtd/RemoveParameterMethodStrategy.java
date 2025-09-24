@@ -2,8 +2,8 @@ package io.github.alien.roseau.combinatorial.v2.breaker.mtd;
 
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.builder.ApiBuilder;
+import io.github.alien.roseau.combinatorial.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 
 public final class RemoveParameterMethodStrategy extends AbstractMtdStrategy {
@@ -13,8 +13,8 @@ public final class RemoveParameterMethodStrategy extends AbstractMtdStrategy {
 		super(mtd, queue, "RemoveParameter%dFromMethod%sIn%s".formatted(
 				parameterIndex,
 				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
-				mtd.getContainingType().getPrettyQualifiedName()),
-				api
+				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
+			api
 		);
 
 		this.parameterIndex = parameterIndex;

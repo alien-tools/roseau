@@ -2,10 +2,11 @@ package io.github.alien.roseau.combinatorial.writer;
 
 import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
-import io.github.alien.roseau.api.utils.StringUtils;
 import io.github.alien.roseau.combinatorial.Constants;
+import io.github.alien.roseau.combinatorial.utils.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import static io.github.alien.roseau.combinatorial.utils.StringUtils.getPrettyQualifiedName;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -35,15 +36,15 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeClassInheritance(ClassDecl classDecl) {
 		var necessaryMethods = implementNecessaryMethods(classDecl);
 
-		var inheritanceClassName = "%sMinimal".formatted(classDecl.getPrettyQualifiedName());
+		var inheritanceClassName = "%sMinimal".formatted(getPrettyQualifiedName(classDecl));
 		var inheritanceConstructorRequired = implementRequiredConstructor(classDecl, inheritanceClassName);
 		insertDeclarationsToInnerClass(classDecl, inheritanceClassName, inheritanceConstructorRequired, necessaryMethods);
 
-		var fullClassName = "%sFull".formatted(classDecl.getPrettyQualifiedName());
+		var fullClassName = "%sFull".formatted(getPrettyQualifiedName(classDecl));
 		var fullConstructorRequired = implementRequiredConstructor(classDecl, fullClassName);
 		insertDeclarationsToInnerClass(classDecl, fullClassName, fullConstructorRequired, necessaryMethods);
 
-		var overrideClassName = "%sOverride".formatted(classDecl.getPrettyQualifiedName());
+		var overrideClassName = "%sOverride".formatted(getPrettyQualifiedName(classDecl));
 		var overrideConstructorRequired = implementRequiredConstructor(classDecl, overrideClassName);
 		insertDeclarationsToInnerClass(classDecl, overrideClassName, overrideConstructorRequired, necessaryMethods);
 
@@ -67,7 +68,7 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeConstructorInheritanceInvocation(ConstructorDecl constructorDecl, ClassDecl containingClass) {
 		if (containingClass.isNested()) return;
 
-		var innerTypeName = "%sFull".formatted(containingClass.getPrettyQualifiedName());
+		var innerTypeName = "%sFull".formatted(getPrettyQualifiedName(containingClass));
 
 		var exceptions = getExceptionsForExecutableInvocation(constructorDecl);
 		var formattedExceptions = formatExceptionNames(exceptions);
@@ -115,7 +116,7 @@ public final class ClientWriter extends AbstractWriter {
 
 	public void writeEnumValueRead(EnumValueDecl enumValueDecl, EnumDecl containingEnum) {
 		var caller = getContainingTypeAccessForTypeMember(containingEnum, enumValueDecl);
-		var enumValueReadCode = "%s %sVal = %s.%s;".formatted(StringUtils.cleanQualifiedNameForType(containingEnum), enumValueDecl.getPrettyQualifiedName(), caller, enumValueDecl.getSimpleName());
+		var enumValueReadCode = "%s %sVal = %s.%s;".formatted(StringUtils.cleanQualifiedNameForType(containingEnum), getPrettyQualifiedName(enumValueDecl), caller, enumValueDecl.getSimpleName());
 
 		addInstructionToClientMain(enumValueReadCode);
 	}
@@ -123,13 +124,13 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeReadFieldThroughContainingType(FieldDecl fieldDecl, TypeDecl containingType) {
 		var type = StringUtils.cleanQualifiedNameForType(fieldDecl.getType());
 		var caller = getContainingTypeAccessForTypeMember(containingType, fieldDecl);
-		var fieldReadCode = "%s %sVal = %s.%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), caller, fieldDecl.getSimpleName());
+		var fieldReadCode = "%s %sVal = %s.%s;".formatted(type, getPrettyQualifiedName(fieldDecl), caller, fieldDecl.getSimpleName());
 
 		addInstructionToClientMain(fieldReadCode);
 	}
 
 	public void writeReadFieldThroughMethodCall(FieldDecl fieldDecl, TypeDecl containingType) {
-		var readFieldMethodName = "%sFieldRead".formatted(fieldDecl.getPrettyQualifiedName());
+		var readFieldMethodName = "%sFieldRead".formatted(getPrettyQualifiedName(fieldDecl));
 
 		var type = StringUtils.cleanQualifiedNameForType(fieldDecl.getType());
 		var caller = fieldDecl.isStatic() ? StringUtils.cleanQualifiedNameForType(containingType) : "this";
@@ -141,7 +142,7 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeReadFieldThroughSubType(FieldDecl fieldDecl, TypeDecl containingType) {
 		var type = StringUtils.cleanQualifiedNameForType(fieldDecl.getType());
 		var inheritedCaller = generateConstructorDirectInvocationFromInheritance(containingType, "Full");
-		var fieldReadCode = "%s %sInhVal = %s.%s;".formatted(type, fieldDecl.getPrettyQualifiedName(), inheritedCaller, fieldDecl.getSimpleName());
+		var fieldReadCode = "%s %sInhVal = %s.%s;".formatted(type, getPrettyQualifiedName(fieldDecl), inheritedCaller, fieldDecl.getSimpleName());
 		addInstructionToClientMain(fieldReadCode);
 	}
 
@@ -154,7 +155,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeWriteFieldThroughMethodCall(FieldDecl fieldDecl, TypeDecl containingType) {
-		var writeFieldMethodName = "%sFieldWrite".formatted(fieldDecl.getPrettyQualifiedName());
+		var writeFieldMethodName = "%sFieldWrite".formatted(getPrettyQualifiedName(fieldDecl));
 
 		var caller = fieldDecl.isStatic() ? StringUtils.cleanQualifiedNameForType(containingType) : "this";
 		var value = getDefaultValueForType(StringUtils.cleanQualifiedNameForType(fieldDecl.getType()));
@@ -174,13 +175,13 @@ public final class ClientWriter extends AbstractWriter {
 		var name = StringUtils.cleanQualifiedNameForType(recordComponentDecl.getType());
 		var type = recordComponentDecl.isVarargs() ? "%s[]".formatted(name) : name;
 		var caller = getContainingTypeAccessForTypeMember(containingRecord, recordComponentDecl);
-		var recordComponentReadCode = "%s %sVal = %s.%s();".formatted(type, recordComponentDecl.getPrettyQualifiedName(), caller, recordComponentDecl.getSimpleName());
+		var recordComponentReadCode = "%s %sVal = %s.%s();".formatted(type, getPrettyQualifiedName(recordComponentDecl), caller, recordComponentDecl.getSimpleName());
 
 		addInstructionToClientMain(recordComponentReadCode);
 	}
 
 	public void writeInterfaceExtension(InterfaceDecl interfaceDecl) {
-		var interfaceName = "%sExtension".formatted(interfaceDecl.getPrettyQualifiedName());
+		var interfaceName = "%sExtension".formatted(getPrettyQualifiedName(interfaceDecl));
 
 		insertDeclarationsToInnerInterface(interfaceDecl, interfaceName);
 	}
@@ -188,14 +189,14 @@ public final class ClientWriter extends AbstractWriter {
 	public void writeInterfaceImplementation(InterfaceDecl interfaceDecl) {
 		var necessaryMethods = implementNecessaryMethods(interfaceDecl);
 
-		var interfaceName = "%sMinimal".formatted(interfaceDecl.getPrettyQualifiedName());
+		var interfaceName = "%sMinimal".formatted(getPrettyQualifiedName(interfaceDecl));
 		insertDeclarationsToInnerClass(interfaceDecl, interfaceName, "", necessaryMethods);
 		addInstructionToClientMain("new %s();".formatted(interfaceName));
 
-		var fullInterfaceName = "%sFull".formatted(interfaceDecl.getPrettyQualifiedName());
+		var fullInterfaceName = "%sFull".formatted(getPrettyQualifiedName(interfaceDecl));
 		insertDeclarationsToInnerClass(interfaceDecl, fullInterfaceName, "", necessaryMethods);
 
-		var overrideInterfaceName = "%sOverride".formatted(interfaceDecl.getPrettyQualifiedName());
+		var overrideInterfaceName = "%sOverride".formatted(getPrettyQualifiedName(interfaceDecl));
 		insertDeclarationsToInnerClass(interfaceDecl, overrideInterfaceName, "", necessaryMethods);
 	}
 
@@ -265,19 +266,19 @@ public final class ClientWriter extends AbstractWriter {
 		}
 
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var invokeMethodName = "%s%sInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
+		var invokeMethodName = "%s%sInvoke".formatted(getPrettyQualifiedName(methodDecl), paramTypes);
 		var exceptions = getExceptionsForExecutableInvocation(methodDecl);
 		addNewMethodToInnerType(containingType, invokeMethodName, methodBody, exceptions);
 
 		if (exceptions.isEmpty()) return;
 
-		var tryCatchMethodName = "%s%sTryInvoke".formatted(methodDecl.getPrettyQualifiedName(), paramTypes);
+		var tryCatchMethodName = "%s%sTryInvoke".formatted(getPrettyQualifiedName(methodDecl), paramTypes);
 		var tryCatchMethodBody = "try { %s } catch (%s ignored) {}".formatted(methodBody, formatExceptionNames(exceptions, " | "));
 		addNewMethodToInnerType(containingType, tryCatchMethodName, tryCatchMethodBody);
 	}
 
 	public void writeMethodOverride(MethodDecl methodDecl, TypeDecl containingType) {
-		var innerTypeName = "%sOverride".formatted(containingType.getPrettyQualifiedName());
+		var innerTypeName = "%sOverride".formatted(getPrettyQualifiedName(containingType));
 		var overrideMethod = methodDecl.isStatic() ? implementMethod(methodDecl) : overrideMethod(methodDecl);
 
 		insertDeclarationsToInnerClass(containingType, innerTypeName, "", overrideMethod);
@@ -298,11 +299,11 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	public void writeTypeReference(TypeDecl typeDecl) {
-		var referenceVarName = "%sRef".formatted(typeDecl.getPrettyQualifiedName());
+		var referenceVarName = "%sRef".formatted(getPrettyQualifiedName(typeDecl));
 		var code = new StringBuilder("%s %s = null;".formatted(StringUtils.cleanQualifiedNameForType(typeDecl), referenceVarName));
 
 		api.getAllSuperTypes(typeDecl).forEach(superType ->
-				code.append("\n\t\t%s %sUpcastTo%s = %s;".formatted(StringUtils.cleanQualifiedNameForType(superType), typeDecl.getPrettyQualifiedName(), superType.getPrettyQualifiedName(), referenceVarName))
+				code.append("\n\t\t%s %sUpcastTo%s = %s;".formatted(StringUtils.cleanQualifiedNameForType(superType), getPrettyQualifiedName(typeDecl), getPrettyQualifiedName(superType), referenceVarName))
 		);
 
 		addInstructionToClientMain(code.toString());
@@ -421,7 +422,7 @@ public final class ClientWriter extends AbstractWriter {
 
 	private void addNewMethodToInnerType(TypeDecl typeDecl, String methodName, String methodBody, List<String> exceptions) {
 		var suffix = "Full";
-		var className = "%s%s".formatted(typeDecl.getPrettyQualifiedName(), suffix);
+		var className = "%s%s".formatted(getPrettyQualifiedName(typeDecl), suffix);
 
 		var newMethod = generateMethodDeclaration(methodName, methodBody, exceptions);
 		insertDeclarationsToInnerClass(typeDecl, className, "", newMethod);
@@ -595,7 +596,7 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	private String generateConstructorDirectInvocationFromInheritance(TypeDecl typeDecl, String suffix, boolean withUpCast) {
-		var constructorName = "%s%s".formatted(typeDecl.getPrettyQualifiedName(), suffix);
+		var constructorName = "%s%s".formatted(getPrettyQualifiedName(typeDecl), suffix);
 		var constructorInvocation = "new %s()".formatted(constructorName);
 
 		if (!typeDecl.isStatic()) {
@@ -695,7 +696,7 @@ public final class ClientWriter extends AbstractWriter {
 
 		var varType = StringUtils.cleanQualifiedNameForType(methodDecl.getType());
 		var paramTypes = formatParamTypeNames(methodDecl.getParameters());
-		var varName = "%s%s%sVal".formatted(methodDecl.getPrettyQualifiedName(), paramTypes, suffix);
+		var varName = "%s%s%sVal".formatted(getPrettyQualifiedName(methodDecl), paramTypes, suffix);
 		return "%s %s = ".formatted(varType, varName);
 	}
 
@@ -749,7 +750,7 @@ public final class ClientWriter extends AbstractWriter {
 	private static String formatParamTypeNames(List<ParameterDecl> params) {
 		return params.stream()
 				.map(p -> {
-					var typeName = p.type().getPrettyQualifiedName();
+					var typeName = getPrettyQualifiedName(p.type());
 					return p.isVarargs() ? "%sVarArgs".formatted(typeName) : typeName;
 				})
 				.collect(Collectors.joining());

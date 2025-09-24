@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.utils.StringUtils;
 
 import java.io.IOException;
 import java.util.List;
@@ -96,11 +95,6 @@ public record TypeReference<T extends TypeDecl>(
 	@Override
 	public String getQualifiedName() {
 		return qualifiedName;
-	}
-
-	@Override
-	public String getPrettyQualifiedName() {
-		return StringUtils.splitSpecialCharsAndCapitalize(getQualifiedName());
 	}
 
 	@Override
