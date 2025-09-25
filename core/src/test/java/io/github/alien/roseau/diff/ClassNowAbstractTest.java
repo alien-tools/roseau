@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -8,6 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ClassNowAbstractTest {
+	@Client("A a = new A();")
 	@Test
 	void class_now_abstract() {
 		var v1 = "public class A {}";
