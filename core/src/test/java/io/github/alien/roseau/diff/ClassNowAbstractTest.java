@@ -9,7 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ClassNowAbstractTest {
-	@Client("A a = new A();")
+	@Client("new A();")
 	@Test
 	void class_now_abstract() {
 		var v1 = "public class A {}";
@@ -18,6 +18,7 @@ class ClassNowAbstractTest {
 		assertBC("A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1, buildDiff(v1, v2));
 	}
 
+	@Client("new I(){};")
 	@Test
 	void interface_now_abstract() {
 		var v1 = "public interface I {}";
@@ -26,6 +27,7 @@ class ClassNowAbstractTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("new A(){};")
 	@Test
 	void implicitly_abstract_class_now_explicitly_abstract() {
 		var v1 = """

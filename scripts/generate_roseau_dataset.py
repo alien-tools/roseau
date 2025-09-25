@@ -106,9 +106,10 @@ def _iter_test_methods(content: str) -> Iterable[Tuple[str, str, str]]:
         pre_start = max(0, m.start() - 500)
         header_window = content[pre_start:m.start()]
         client_code = ''
-        mc = CLIENT_PATTERN.search(header_window)
-        if mc:
-            raw = mc.group(1).strip()
+        # Find the closest (last) @Client before this @Test to avoid picking one from a previous method
+        mc_iter = list(CLIENT_PATTERN.finditer(header_window))
+        if mc_iter:
+            raw = mc_iter[-1].group(1).strip()
             client_code = _unindent_java_text_block(raw)
         yield name, content[start:end], client_code
 

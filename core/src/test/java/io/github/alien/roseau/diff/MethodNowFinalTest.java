@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -8,6 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodNowFinalTest {
+	@Client("new A() { @Override public void m() {} };")
 	@Test
 	void method_now_final() {
 		var v1 = """
@@ -22,6 +24,7 @@ class MethodNowFinalTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A();")
 	@Test
 	void method_now_final_in_final_class() {
 		var v1 = """
@@ -36,6 +39,7 @@ class MethodNowFinalTest {
 		assertNoBC(BreakingChangeKind.METHOD_NOW_FINAL, buildDiff(v1, v2));
 	}
 
+	@Client("new A();")
 	@Test
 	void method_now_final_in_effectively_final_class() {
 		var v1 = """
@@ -52,6 +56,7 @@ class MethodNowFinalTest {
 		assertNoBC(BreakingChangeKind.METHOD_NOW_FINAL, buildDiff(v1, v2));
 	}
 
+	@Client("new B() { @Override public void m() {} };")
 	@Test
 	void method_now_final_in_subclass() {
 		var v1 = """
