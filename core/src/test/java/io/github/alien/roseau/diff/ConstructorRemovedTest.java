@@ -82,11 +82,73 @@ class ConstructorRemovedTest {
 	}
 
 	@Test
-	void record_constructor_changed() {
+	void record_implicit_constructor_changed() {
 		var v1 = "public record A(int i) {}";
 		var v2 = "public record A(float f) {}";
 
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void record_implicit_constructor_changed_add() {
+		var v1 = "public record A(int i) {}";
+		var v2 = "public record A(int i, float f) {}";
+
+		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void record_implicit_constructor_changed_remove() {
+		var v1 = "public record A(int i, float f) {}";
+		var v2 = "public record A(int i) {}";
+
+		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
+	}
+
+	@Test
+	void record_explicit_constructor_removed() {
+		var v1 = """
+			public record A(int i) {
+				public A() {
+					this(0);
+				}
+			}""";
+		var v2 = """
+			public record A(int i) {
+			}""";
+
+		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void record_explicit_constructor_changed() {
+		var v1 = """
+			public record A(int i) {
+				public A(float f) {
+					this(0);
+				}
+			}""";
+		var v2 = """
+			public record A(int i) {
+				public A(String s) {
+					this(0);
+				}
+			}""";
+
+		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void record_default_constructor_removed() {
+		var v1 = """
+			public record A(int i) {
+				public A {}
+			}""";
+		var v2 = """
+			public record A(int i) {
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test

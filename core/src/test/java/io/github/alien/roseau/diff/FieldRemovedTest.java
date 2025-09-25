@@ -171,4 +171,12 @@ class FieldRemovedTest {
 
 		assertBC("A$E.Y", BreakingChangeKind.FIELD_REMOVED, 3, buildDiff(v1, v2));
 	}
+
+	@Test
+	void record_field_removed() {
+		var v1 = "public record A(int i) {}";
+		var v2 = "public record A() {}";
+
+		assertNoBC(BreakingChangeKind.FIELD_REMOVED, buildDiff(v1, v2));
+	}
 }

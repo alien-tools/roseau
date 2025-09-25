@@ -196,4 +196,25 @@ class MethodRemovedTest {
 
 		assertBC("A.value", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
+
+	@Test
+	void record_method_removed() {
+		var v1 = """
+			public record A(int i) {
+			    public void m() {}
+			}""";
+		var v2 = """
+			public record A(int i) {
+			}""";
+
+		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void record_getter_removed() {
+		var v1 = "public record A(int i, float f) {}";
+		var v2 = "public record A(int i) {}";
+
+		assertBC("A.f", BreakingChangeKind.METHOD_REMOVED, -1, buildDiff(v1, v2));
+	}
 }
