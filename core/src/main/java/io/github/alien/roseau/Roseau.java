@@ -23,7 +23,9 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 
@@ -83,12 +85,15 @@ public final class Roseau {
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1), executor);
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2), executor);
 
-		API api1 = futureV1.join();
-		API api2 = futureV2.join();
-		LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
-			sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
-
-		return diff(api1, api2);
+		try {
+			API api1 = futureV1.join();
+			API api2 = futureV2.join();
+			LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
+				sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
+			return diff(api1, api2);
+		} catch (CancellationException | CompletionException e) {
+			throw new RoseauException("Couldn't compute diff", e);
+		}
 	}
 
 	/**

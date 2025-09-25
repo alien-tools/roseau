@@ -90,9 +90,7 @@ public final class RoseauMojo extends AbstractMojo {
 			getLog().info("No breaking changes found.");
 			return;
 		} else {
-			bcs.forEach(bc -> {
-				getLog().warn(format(bc));
-			});
+			bcs.forEach(bc -> getLog().warn(format(bc)));
 		}
 
 		if (failOnBinaryIncompatibility && bcs.stream().anyMatch(bc -> bc.kind().isBinaryBreaking())) {
