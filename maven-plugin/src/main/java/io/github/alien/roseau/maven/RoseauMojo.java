@@ -27,31 +27,23 @@ import java.util.List;
 import java.util.Optional;
 
 @Mojo(name = "check", defaultPhase = LifecyclePhase.VERIFY)
-public class RoseauMojo extends AbstractMojo {
+public final class RoseauMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project}", required = true, readonly = true)
 	private MavenProject project;
-
 	@Parameter(property = "roseau.skip", defaultValue = "false")
 	private boolean skip;
-
 	@Parameter(property = "roseau.failOnBinaryIncompatibility", defaultValue = "false")
 	private boolean failOnBinaryIncompatibility;
-
 	@Parameter(property = "roseau.failOnSourceIncompatibility", defaultValue = "false")
 	private boolean failOnSourceIncompatibility;
-
-	@Parameter(property = "roseau.oldVersion")
-	private Dependency oldVersion;
-
-	@Parameter(property = "roseau.oldJar")
-	private Path oldJar;
-
+	@Parameter(property = "roseau.baselineVersion")
+	private Dependency baselineVersion;
+	@Parameter(property = "roseau.baselineJar")
+	private Path baselineJar;
 	@Inject
 	private RepositorySystem repositorySystem;
-
 	@Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
 	private RepositorySystemSession repositorySystemSession;
-
 	@Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
 	private List<RemoteRepository> remoteRepositories;
 
@@ -62,30 +54,33 @@ public class RoseauMojo extends AbstractMojo {
 			return;
 		}
 
-		if (oldVersion == null) {
-			getLog().warn("No oldVersion specified; skipping.");
+		if (baselineVersion.getArtifactId() == null && baselineJar == null) {
+			getLog().error("No baseline specified; skipping.");
 			return;
 		}
 
-		Path builtJar = getBuiltJar();
-		if (!Files.isRegularFile(builtJar)) {
-			getLog().warn("Built JAR file " + builtJar + " not found; skipping.");
+		Optional<Path> artifactJar = resolveArtifactJar();
+		if (artifactJar.isEmpty()) {
+			getLog().error("Current artifact " + artifactJar + " not found; skipping." +
+				" Make sure that the artifact was built in the 'package' phase.");
 			return;
 		}
 
-		if (oldVersion.getArtifactId() != null) {
-			Optional<Path> opt = resolveOldVersionJar();
+		if (baselineVersion.getArtifactId() != null) {
+			Optional<Path> opt = resolveBaselineVersion();
 			if (opt.isPresent()) {
-				getLog().info("Baseline version is " + opt.get());
-				check(opt.get(), builtJar);
+				check(opt.get(), artifactJar.get());
 			} else {
-				getLog().warn("Couldn't resolve the old version; skipping.");
+				getLog().error("Couldn't resolve the baseline version; skipping.");
 			}
-		} else if (Files.isRegularFile(oldJar)) {
-			getLog().info("Baseline version is " + oldJar);
-			check(oldJar, builtJar);
+		} else if (baselineJar != null) {
+			if (Files.isRegularFile(baselineJar)) {
+				check(baselineJar, artifactJar.get());
+			} else {
+				getLog().error("Invalid baseline JAR " + baselineJar);
+			}
 		} else {
-			getLog().warn("No baseline version specified; skipping.");
+			getLog().error("No baseline version specified; skipping.");
 		}
 	}
 
@@ -94,10 +89,11 @@ public class RoseauMojo extends AbstractMojo {
 		if (bcs.isEmpty()) {
 			getLog().info("No breaking changes found.");
 			return;
+		} else {
+			bcs.forEach(bc -> {
+				getLog().warn(format(bc));
+			});
 		}
-		bcs.forEach(bc -> {
-			getLog().warn(format(bc));
-		});
 
 		if (failOnBinaryIncompatibility && bcs.stream().anyMatch(bc -> bc.kind().isBinaryBreaking())) {
 			throw new MojoExecutionException("Binary incompatible changes found.");
@@ -115,19 +111,19 @@ public class RoseauMojo extends AbstractMojo {
 		return Roseau.diff(oldLibrary, newLibrary).breakingChanges();
 	}
 
-	private Path getBuiltJar() throws MojoExecutionException {
-		var artifact = project.getArtifact();
-		var jar = artifact.getFile();
-		if (jar == null) {
-			throw new MojoExecutionException(
-				"Project artifact is not packaged yet. Bind this goal to 'package' or a later phase.");
+	private Optional<Path> resolveArtifactJar() {
+		org.apache.maven.artifact.Artifact artifact = project.getArtifact();
+		File jar = artifact.getFile();
+		if (jar != null && Files.isRegularFile(jar.toPath())) {
+			return Optional.of(jar.toPath());
+		} else {
+			return Optional.empty();
 		}
-		return jar.toPath();
 	}
 
-	private Optional<Path> resolveOldVersionJar() {
+	private Optional<Path> resolveBaselineVersion() {
 		try {
-			String coords = "%s:%s:%s".formatted(oldVersion.getGroupId(), oldVersion.getArtifactId(), oldVersion.getVersion());
+			String coords = "%s:%s:%s".formatted(baselineVersion.getGroupId(), baselineVersion.getArtifactId(), baselineVersion.getVersion());
 			Artifact artifact = new DefaultArtifact(coords);
 			ArtifactRequest request = new ArtifactRequest()
 				.setArtifact(artifact)
@@ -136,10 +132,10 @@ public class RoseauMojo extends AbstractMojo {
 			ArtifactResult result = repositorySystem.resolveArtifact(repositorySystemSession, request);
 			File resolved = result.getArtifact().getFile();
 			if (resolved != null && Files.isRegularFile(resolved.toPath())) {
-				return Optional.empty();
+				return Optional.of(resolved.toPath());
 			}
 		} catch (ArtifactResolutionException e) {
-			// shh
+			getLog().debug(e);
 		}
 
 		return Optional.empty();

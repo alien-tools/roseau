@@ -17,19 +17,18 @@
                 <version>0.4.0-SNAPSHOT</version>
                 <executions>
                     <execution>
-                        <phase>verify</phase>
                         <goals>
                             <goal>check</goal>
                         </goals>
                     </execution>
                 </executions>
                 <configuration>
-                    <!--<oldVersion>
+                    <!--<baselineVersion>
                         <groupId>io.github.alien-tools</groupId>
                         <artifactId>roseau-core</artifactId>
                         <version>0.3.0</version>
-                    </oldVersion>-->
-                    <oldJar>old.jar</oldJar>
+                    </baselineVersion>-->
+                    <baselineJar>old.jar</baselineJar>
                 </configuration>
             </plugin>
         </plugins>
