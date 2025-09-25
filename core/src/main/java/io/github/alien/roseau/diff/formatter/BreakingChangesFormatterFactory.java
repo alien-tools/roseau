@@ -1,10 +1,13 @@
 package io.github.alien.roseau.diff.formatter;
 
+import javax.swing.text.html.HTML;
+
 /**
  * A factory of {@link BreakingChangesFormatter} given an expected output format. Currently, supports CSV, HTML, and
  * JSON.
  */
 public enum BreakingChangesFormatterFactory {
+	CLI,
 	CSV,
 	HTML,
 	JSON;
@@ -17,6 +20,7 @@ public enum BreakingChangesFormatterFactory {
 	 */
 	public static BreakingChangesFormatter newBreakingChangesFormatter(BreakingChangesFormatterFactory format) {
 		return switch (format) {
+			case CLI -> new CliFormatter();
 			case JSON -> new JsonFormatter();
 			case CSV -> new CsvFormatter();
 			case HTML -> new HtmlFormatter();

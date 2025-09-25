@@ -20,7 +20,7 @@ import java.util.Optional;
  */
 public class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
-	public String format(API api, RoseauReport report) {
+	public String format(RoseauReport report) {
 		StringBuilder sb = new StringBuilder();
 		HtmlFlow.doc(sb)
 			.html()
@@ -42,7 +42,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.div().addAttr("class", "container mt-5")
 			.h1().text("Breaking Changes Report").__()
 			.table().addAttr("class", "table")
-			.of(table -> getImpactedApiTree(api, report.breakingChanges()).forEach(node ->
+			.of(table -> getImpactedApiTree(report).forEach(node ->
 				table.tr().of(tr -> appendNode(tr, node)).__()
 					.of(theTable -> node.children.forEach(member -> theTable.tr().of(tr -> appendNode(tr, member)).__()))
 			))
@@ -68,9 +68,9 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.__();
 	}
 
-	private static List<TypeNode> getImpactedApiTree(API api, List<BreakingChange> changes) {
+	private static List<TypeNode> getImpactedApiTree(RoseauReport report) {
 		Map<Symbol, Node> nodes = new HashMap<>();
-		for (BreakingChange change : changes) {
+		for (BreakingChange change : report.breakingChanges()) {
 			Symbol sym = change.impactedSymbol();
 			switch (sym) {
 				case TypeDecl td:
@@ -78,7 +78,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 					nodes.get(sym).addBreakingChange(change);
 					break;
 				case TypeMemberDecl tmd:
-					Optional<TypeDecl> opt = api.resolver().resolve(tmd.getContainingType());
+					Optional<TypeDecl> opt = report.v1().resolver().resolve(tmd.getContainingType());
 					opt.ifPresent(container -> {
 						nodes.computeIfAbsent(container, k -> fromTypeDecl(container));
 						nodes.computeIfAbsent(sym, k -> fromTypeMemberDecl(tmd));

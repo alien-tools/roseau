@@ -13,5 +13,5 @@ public interface BreakingChangesFormatter {
 	 * @param report the report to format
 	 * @return the formatted list
 	 */
-	String format(API api, RoseauReport report);
+	String format(RoseauReport report);
 }
