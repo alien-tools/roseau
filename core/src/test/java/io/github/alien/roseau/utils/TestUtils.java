@@ -21,7 +21,19 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
+import japicmp.cmp.JApiCmpArchive;
+import japicmp.cmp.JarArchiveComparator;
+import japicmp.cmp.JarArchiveComparatorOptions;
+import japicmp.config.Options;
+import japicmp.model.JApiAnnotation;
+import japicmp.model.JApiClass;
 import japicmp.model.JApiCompatibilityChange;
+import japicmp.model.JApiConstructor;
+import japicmp.model.JApiField;
+import japicmp.model.JApiImplementedInterface;
+import japicmp.model.JApiMethod;
+import japicmp.model.JApiSuperclass;
+import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -44,6 +56,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -349,27 +362,44 @@ public class TestUtils {
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		APIDiff apiDiff = new APIDiff(buildSpoonAPI(sourcesV1), buildSpoonAPI(sourcesV2));
-		var roseauBCs = apiDiff.diff();
+		return apiDiff.diff().breakingChanges();
 
+		// Simple differential testing with japicmp
 		/*try {
 			var jApiBCs = buildJApiCmpDiff(sourcesV1, sourcesV2);
 
-			if (roseauBCs.size() != jApiBCs.size()) {
-				System.out.printf("Roseau  found %d BCs: %s%n", roseauBCs.size(), roseauBCs);
+			if (roseauBCs.breakingChanges().size() != jApiBCs.size()) {
+				String caller = StackWalker.getInstance()
+					.walk(frames -> frames
+						.skip(1)
+						.findFirst()
+						.map(StackWalker.StackFrame::getMethodName)
+						.orElse("unknown"));
+				System.out.println("#".repeat(caller.length() + 4));
+				System.out.printf("# %s #%n", caller);
+				System.out.println("#".repeat(caller.length() + 4));
+				System.out.printf("Roseau  found %d BCs: %s%n", roseauBCs.breakingChanges().size(), roseauBCs.breakingChanges());
 				System.out.printf("JApiCmp found %d BCs: %s%n", jApiBCs.size(), jApiBCs);
+				System.out.println("-- Version 1 --");
+				System.out.println(sourcesV1);
+				System.out.println("-- Version 2 --");
+				System.out.println(sourcesV2);
+				System.out.println();
 			}
 		} catch (Exception e) {
 			System.out.println("JApiCmp comparison failed: " + e.getMessage());
 		}*/
-
-		return roseauBCs.breakingChanges();
 	}
 
-	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) {
-		/*Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
+	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {
+		Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
 		Map<String, String> sourcesMap2 = buildSourcesMap(sourcesV2);
-		Path jar1 = Path.of(buildJar(sourcesMap1).getName());
-		Path jar2 = Path.of(buildJar(sourcesMap2).getName());
+		File tempJarFile1 = File.createTempFile("inMemory1.Jar", ".jar");
+		tempJarFile1.deleteOnExit();
+		File tempJarFile2 = File.createTempFile("inMemory2.Jar", ".jar");
+		tempJarFile2.deleteOnExit();
+		Path jar1 = Path.of(buildJar(sourcesMap1, tempJarFile1.toPath()).getName());
+		Path jar2 = Path.of(buildJar(sourcesMap2, tempJarFile2.toPath()).getName());
 
 		Options opts = Options.newDefault();
 		opts.setOutputOnlyModifications(true);
@@ -381,30 +411,42 @@ public class TestUtils {
 		List<JApiClass> jApiClasses = jarArchiveComparator.compare(v1Archive, v2Archive);
 		List<JApiCompatibilityChange> bcs = new ArrayList<>();
 		Filter.filter(jApiClasses, new Filter.FilterVisitor() {
-			@Override public void visit(Iterator<JApiClass> iterator, JApiClass jApiClass) {
+			@Override
+			public void visit(Iterator<JApiClass> iterator, JApiClass jApiClass) {
 				bcs.addAll(jApiClass.getCompatibilityChanges());
 			}
-			@Override public void visit(Iterator<JApiMethod> iterator, JApiMethod jApiMethod) {
+
+			@Override
+			public void visit(Iterator<JApiMethod> iterator, JApiMethod jApiMethod) {
 				bcs.addAll(jApiMethod.getCompatibilityChanges());
 			}
-			@Override public void visit(Iterator<JApiConstructor> iterator, JApiConstructor jApiConstructor) {
+
+			@Override
+			public void visit(Iterator<JApiConstructor> iterator, JApiConstructor jApiConstructor) {
 				bcs.addAll(jApiConstructor.getCompatibilityChanges());
 			}
-			@Override public void visit(Iterator<JApiImplementedInterface> iterator, JApiImplementedInterface jApiImplementedInterface) {
+
+			@Override
+			public void visit(Iterator<JApiImplementedInterface> iterator, JApiImplementedInterface jApiImplementedInterface) {
 				bcs.addAll(jApiImplementedInterface.getCompatibilityChanges());
 			}
-			@Override public void visit(Iterator<JApiField> iterator, JApiField jApiField) {
+
+			@Override
+			public void visit(Iterator<JApiField> iterator, JApiField jApiField) {
 				bcs.addAll(jApiField.getCompatibilityChanges());
 			}
-			@Override public void visit(Iterator<JApiAnnotation> iterator, JApiAnnotation jApiAnnotation) {
+
+			@Override
+			public void visit(Iterator<JApiAnnotation> iterator, JApiAnnotation jApiAnnotation) {
 				bcs.addAll(jApiAnnotation.getCompatibilityChanges());
 			}
-			@Override public void visit(JApiSuperclass jApiSuperclass) {
+
+			@Override
+			public void visit(JApiSuperclass jApiSuperclass) {
 				bcs.addAll(jApiSuperclass.getCompatibilityChanges());
 			}
 		});
-		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();*/
-		return List.of();
+		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
 	}
 
 	public static JarFile buildJar(Map<String, String> sourcesMap, Path jar) {
