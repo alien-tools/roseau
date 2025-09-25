@@ -16,6 +16,7 @@ import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
 import java.util.HashSet;
@@ -117,11 +118,11 @@ public class APIDiff {
 			.filter(m2 -> v1.getAllMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface()) {
-					newTypeMemberBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
+					newTypeMemberBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, t2, new BreakingChangeDetails.MethodAddedToInterface(m2));
 				}
 
 				if (t1.isClass()) {
-					newTypeMemberBC(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1, m2);
+					newTypeMemberBC(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1, t2, new BreakingChangeDetails.MethodAbstractAddedToClass(m2));
 				}
 			});
 	}
@@ -139,7 +140,7 @@ public class APIDiff {
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
 		if (v1.getAllSuperTypes(t1).stream().anyMatch(sup -> v1.isExported(sup) && !v2.isSubtypeOf(t2, sup))) {
-			typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2);
+			typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2, new SuperTypeRemovedDetails(""));
 		}
 
 		diffFields(t1, t2);
@@ -210,7 +211,7 @@ public class APIDiff {
 		a2.getAnnotationMethods().stream()
 			.filter(m2 -> !m2.hasDefault())
 			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
-			.forEach(m2 -> newTypeMemberBC(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, m2));
+			.forEach(m2 -> newTypeMemberBC(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, a2, m2));
 	}
 
 	private void diffField(TypeDecl t1, FieldDecl f1, FieldDecl f2) {
@@ -257,7 +258,8 @@ public class APIDiff {
 		}
 
 		if (!m1.getType().equals(m2.getType())) {
-			memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, t1, m1, m2);
+			memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2,
+				new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
 		}
 
 		diffThrownExceptions(t1, m1, m2);
@@ -372,12 +374,12 @@ public class APIDiff {
 	private void diffFormalTypeParameters(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
 		int paramsCount1 = e1.getFormalTypeParameters().size();
 		int paramsCount2 = e2.getFormalTypeParameters().size();
-		boolean finalExecutable = v1.isEffectivelyFinal(t1, e1);
+		boolean isFinalExecutable = v1.isEffectivelyFinal(t1, e1);
 
 		// Ok, well. Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
 		//  - it's a constructor and there was more than one
-		if (paramsCount1 > paramsCount2 && (!finalExecutable || paramsCount1 > 1)) {
+		if (paramsCount1 > paramsCount2 && (!isFinalExecutable || paramsCount1 > 1)) {
 			memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, t1, e1, e2);
 		}
 
@@ -392,7 +394,7 @@ public class APIDiff {
 			if (i < paramsCount2) {
 				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
 
-				if (!finalExecutable) { // Invariant
+				if (!isFinalExecutable) { // Invariant
 					if (!new HashSet<>(bounds1).equals(new HashSet<>(bounds2))) {
 						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2);
 					}
@@ -414,6 +416,12 @@ public class APIDiff {
 		breakingChanges.add(bc);
 	}
 
+	private void bc(BreakingChangeKind kind, Symbol impactedSymbol, Symbol newSymbol) {
+		bc(kind, impactedSymbol, newSymbol, new BreakingChangeDetails.None());
+	}
+
+	private void bc(BreakingChangeKind kind, Symbol impactedSymbol, Symbol newSymbol, BreakingChangeDetails details) {
+		BreakingChange bc = new BreakingChange(kind, impactedSymbol, newSymbol, details);
 	private void newTypeMemberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl newMember) {
 		BreakingChange bc = new BreakingChange(kind, impactedType, impactedType, newMember);
 		breakingChanges.add(bc);
