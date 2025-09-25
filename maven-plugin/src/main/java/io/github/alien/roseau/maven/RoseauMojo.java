@@ -55,7 +55,7 @@ public final class RoseauMojo extends AbstractMojo {
 		}
 
 		if (project.getPackaging().equals("pom")) {
-			getLog().info("Packaging of the project is 'pom'; skipping.")
+			getLog().info("Packaging of the project is 'pom'; skipping.");
 		}
 
 		if (baselineVersion.getArtifactId() == null && baselineJar == null) {
