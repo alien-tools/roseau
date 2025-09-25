@@ -16,6 +16,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
 import java.util.HashSet;
@@ -117,11 +118,11 @@ public class APIDiff {
 			.filter(m2 -> v1.getAllMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface()) {
-					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
+					bc(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, t2, new BreakingChangeDetails.MethodAddedToInterface(m2));
 				}
 
 				if (t1.isClass()) {
-					bc(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1, m2);
+					bc(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1, t2, new BreakingChangeDetails.MethodAbstractAddedToClass(m2));
 				}
 			});
 	}
@@ -209,7 +210,7 @@ public class APIDiff {
 		a2.getAnnotationMethods().stream()
 			.filter(m2 -> !m2.hasDefault())
 			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
-			.forEach(m2 -> bc(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, m2));
+			.forEach(m2 -> bc(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, a2));
 	}
 
 	private void diffField(FieldDecl f1, FieldDecl f2) {
@@ -256,7 +257,8 @@ public class APIDiff {
 		}
 
 		if (!m1.getType().equals(m2.getType())) {
-			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2);
+			bc(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, m1, m2,
+				new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
 		}
 
 		diffThrownExceptions(m1, m2);
@@ -393,7 +395,11 @@ public class APIDiff {
 	}
 
 	private void bc(BreakingChangeKind kind, Symbol impactedSymbol, Symbol newSymbol) {
-		BreakingChange bc = new BreakingChange(kind, impactedSymbol, newSymbol);
+		bc(kind, impactedSymbol, newSymbol, new BreakingChangeDetails.None());
+	}
+
+	private void bc(BreakingChangeKind kind, Symbol impactedSymbol, Symbol newSymbol, BreakingChangeDetails details) {
+		BreakingChange bc = new BreakingChange(kind, impactedSymbol, newSymbol, details);
 		breakingChanges.add(bc);
 	}
 

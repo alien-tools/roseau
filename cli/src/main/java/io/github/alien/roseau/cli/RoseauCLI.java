@@ -8,6 +8,7 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.extractors.ExtractorType;
@@ -169,13 +170,23 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private String format(BreakingChange bc) {
+		String details = switch(bc.details()) {
+			case BreakingChangeDetails.None d -> "";
+			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
+				"old: %s, new: %s".formatted(oldType, newType);
+			case BreakingChangeDetails.MethodAddedToInterface(var newMethod) -> "method: " + newMethod.getSignature();
+			case BreakingChangeDetails.MethodAbstractAddedToClass(var newMethod) -> "method: " + newMethod.getSignature();
+		};
+
 		if (plain) {
-			return String.format("%s %s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+			return String.format("%s %s%s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+				details.isEmpty() ? "" : " [%s]".formatted(details),
 				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
 		} else {
-			return String.format("%s %s%n\t%s:%s",
+			return String.format("%s %s%s%n\t%s:%s",
 				RED_TEXT + BOLD + bc.kind() + RESET,
 				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
+				details.isEmpty() ? "" : " [%s]".formatted(details),
 				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
 		}
 	}
