@@ -1,9 +1,8 @@
 package io.github.alien.roseau.maven;
 
-import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.extractors.asm.AsmAPIExtractor;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -12,6 +11,7 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.artifact.DefaultArtifact;
 import org.eclipse.aether.repository.RemoteRepository;
 import org.eclipse.aether.resolution.ArtifactRequest;
@@ -19,8 +19,10 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import javax.inject.Inject;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Optional;
 
 @Mojo(name = "check")
 public class RoseauMojo extends AbstractMojo {
@@ -61,60 +63,64 @@ public class RoseauMojo extends AbstractMojo {
 		}
 
 		Path builtJar = getBuiltJar();
-		if (!builtJar.toFile().exists()) {
+		if (!Files.isRegularFile(builtJar)) {
 			getLog().warn("Built JAR file " + builtJar + " not found; skipping.");
 			return;
 		}
 
-		Path oldVersionJar = resolveOldVersionJar();
-		if (!oldVersionJar.toFile().exists()) {
-			getLog().warn("Old version JAR file not found; skipping.");
-			return;
+		Optional<Path> opt = resolveOldVersionJar();
+		if (opt.isPresent()) {
+			getLog().info("Baseline version is " + opt.get());
+			check(opt.get(), builtJar);
+		} else {
+			getLog().warn("Couldn't resolve the old version; skipping.");
 		}
+	}
 
-		List<BreakingChange> bcs = compare(builtJar, oldVersionJar);
+	private void check(Path oldJar, Path newJar) throws MojoExecutionException {
+		List<BreakingChange> bcs = diff(oldJar, newJar);
 		bcs.forEach(bc -> {
 			getLog().warn(format(bc));
 		});
 
-		if (bcs.stream().anyMatch(bc -> bc.kind().isBinaryBreaking()) && failOnBinaryIncompatibility) {
+		if (failOnBinaryIncompatibility && bcs.stream().anyMatch(bc -> bc.kind().isBinaryBreaking())) {
 			throw new MojoExecutionException("Binary incompatible changes found.");
 		}
 
-		if (bcs.stream().anyMatch(bc -> bc.kind().isSourceBreaking()) && failOnSourceIncompatibility) {
+		if (failOnSourceIncompatibility && bcs.stream().anyMatch(bc -> bc.kind().isSourceBreaking())) {
 			throw new MojoExecutionException("Source incompatible changes found.");
 		}
 	}
 
-	private List<BreakingChange> compare(Path oldJar, Path newJar) {
-		API oldApi = buildAPI(oldJar);
-		API newApi = buildAPI(newJar);
+	private List<BreakingChange> diff(Path oldJar, Path newJar) {
+		Library oldLibrary = Library.of(oldJar);
+		Library newLibrary = Library.of(newJar);
 
-		return new APIDiff(oldApi, newApi).diff();
-	}
-
-	private API buildAPI(Path jar) {
-		AsmAPIExtractor extractor = new AsmAPIExtractor();
-		return extractor.extractAPI(jar);
+		return Roseau.diff(oldLibrary, newLibrary).breakingChanges();
 	}
 
 	private Path getBuiltJar() {
 		return Path.of(project.getBuild().getDirectory(), project.getBuild().getFinalName() + ".jar");
 	}
 
-	private Path resolveOldVersionJar() throws MojoExecutionException {
+	private Optional<Path> resolveOldVersionJar() {
 		try {
 			String coords = "%s:%s:%s".formatted(oldVersion.getGroupId(), oldVersion.getArtifactId(), oldVersion.getVersion());
-			DefaultArtifact artifact = new DefaultArtifact(coords);
+			Artifact artifact = new DefaultArtifact(coords);
 			ArtifactRequest request = new ArtifactRequest()
 				.setArtifact(artifact)
 				.setRepositories(remoteRepositories);
 
 			ArtifactResult result = repositorySystem.resolveArtifact(repositorySystemSession, request);
-			return result.getArtifact().getFile().toPath();
+			Path resolved = result.getArtifact().getPath();
+			if (Files.isRegularFile(resolved)) {
+				return Optional.empty();
+			}
 		} catch (ArtifactResolutionException e) {
-			throw new MojoExecutionException("Error resolving old version JAR", e);
+			// shh
 		}
+
+		return Optional.empty();
 	}
 
 	private String format(BreakingChange bc) {
