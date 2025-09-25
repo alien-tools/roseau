@@ -1,6 +1,6 @@
 package pkg;
 
 public interface I {
-	void foo();
+	// Will trigger METHOD_REMOVED & METHOD_ADDED_TO_INTERFACE
+	void bar();
 }
-

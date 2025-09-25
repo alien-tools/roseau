@@ -6,6 +6,7 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugins.annotations.LifecyclePhase;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
@@ -19,12 +20,13 @@ import org.eclipse.aether.resolution.ArtifactResolutionException;
 import org.eclipse.aether.resolution.ArtifactResult;
 
 import javax.inject.Inject;
+import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-@Mojo(name = "check")
+@Mojo(name = "check", defaultPhase = LifecyclePhase.VERIFY)
 public class RoseauMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project}", required = true, readonly = true)
 	private MavenProject project;
@@ -40,6 +42,9 @@ public class RoseauMojo extends AbstractMojo {
 
 	@Parameter(property = "roseau.oldVersion")
 	private Dependency oldVersion;
+
+	@Parameter(property = "roseau.oldJar")
+	private Path oldJar;
 
 	@Inject
 	private RepositorySystem repositorySystem;
@@ -68,17 +73,28 @@ public class RoseauMojo extends AbstractMojo {
 			return;
 		}
 
-		Optional<Path> opt = resolveOldVersionJar();
-		if (opt.isPresent()) {
-			getLog().info("Baseline version is " + opt.get());
-			check(opt.get(), builtJar);
+		if (oldVersion.getArtifactId() != null) {
+			Optional<Path> opt = resolveOldVersionJar();
+			if (opt.isPresent()) {
+				getLog().info("Baseline version is " + opt.get());
+				check(opt.get(), builtJar);
+			} else {
+				getLog().warn("Couldn't resolve the old version; skipping.");
+			}
+		} else if (Files.isRegularFile(oldJar)) {
+			getLog().info("Baseline version is " + oldJar);
+			check(oldJar, builtJar);
 		} else {
-			getLog().warn("Couldn't resolve the old version; skipping.");
+			getLog().warn("No baseline version specified; skipping.");
 		}
 	}
 
 	private void check(Path oldJar, Path newJar) throws MojoExecutionException {
 		List<BreakingChange> bcs = diff(oldJar, newJar);
+		if (bcs.isEmpty()) {
+			getLog().info("No breaking changes found.");
+			return;
+		}
 		bcs.forEach(bc -> {
 			getLog().warn(format(bc));
 		});
@@ -99,8 +115,14 @@ public class RoseauMojo extends AbstractMojo {
 		return Roseau.diff(oldLibrary, newLibrary).breakingChanges();
 	}
 
-	private Path getBuiltJar() {
-		return Path.of(project.getBuild().getDirectory(), project.getBuild().getFinalName() + ".jar");
+	private Path getBuiltJar() throws MojoExecutionException {
+		var artifact = project.getArtifact();
+		var jar = artifact.getFile();
+		if (jar == null) {
+			throw new MojoExecutionException(
+				"Project artifact is not packaged yet. Bind this goal to 'package' or a later phase.");
+		}
+		return jar.toPath();
 	}
 
 	private Optional<Path> resolveOldVersionJar() {
@@ -112,8 +134,8 @@ public class RoseauMojo extends AbstractMojo {
 				.setRepositories(remoteRepositories);
 
 			ArtifactResult result = repositorySystem.resolveArtifact(repositorySystemSession, request);
-			Path resolved = result.getArtifact().getPath();
-			if (Files.isRegularFile(resolved)) {
+			File resolved = result.getArtifact().getFile();
+			if (resolved != null && Files.isRegularFile(resolved.toPath())) {
 				return Optional.empty();
 			}
 		} catch (ArtifactResolutionException e) {
