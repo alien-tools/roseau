@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.jdt;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -11,6 +12,7 @@ import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -26,64 +28,112 @@ import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
+import org.eclipse.jdt.core.dom.ExportsDirective;
+import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
+import org.eclipse.jdt.core.dom.IMemberValuePairBinding;
 import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.MethodDeclaration;
+import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
-	private final List<TypeDecl> collectedTypeDecls = new ArrayList<>();
+	private final List<TypeDecl> collectedTypeDecls = new ArrayList<>(10);
+	private final List<ModuleDecl> collectedModuleDecls = new ArrayList<>(1);
 	private final CompilationUnit cu;
 	private final String packageName;
 	private final String filePath;
 	private final TypeReferenceFactory typeRefFactory;
+	private final Map<String, Integer> lineNumbersMapping = HashMap.newHashMap(10);
 
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIVisitor.class);
 
 	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
 		this.cu = cu;
-		this.packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
+		packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
 		this.filePath = filePath;
-		this.typeRefFactory = factory;
+		typeRefFactory = factory;
 	}
 
 	List<TypeDecl> getCollectedTypeDecls() {
 		return Collections.unmodifiableList(collectedTypeDecls);
 	}
 
+	List<ModuleDecl> getCollectedModuleDecls() {
+		return Collections.unmodifiableList(collectedModuleDecls);
+	}
+
 	@Override
-	public boolean visit(TypeDeclaration node) {
+	public void endVisit(TypeDeclaration node) {
 		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(RecordDeclaration node) {
+		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(EnumDeclaration node) {
+		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(AnnotationTypeDeclaration node) {
+		processAbstractTypeDeclaration(node);
+	}
+
+	@Override
+	public void endVisit(ModuleDeclaration node) {
+		Set<String> exports = new HashSet<>();
+		for (var stmt : node.moduleStatements()) {
+			if (stmt instanceof ExportsDirective export && export.modules().isEmpty()) {
+				exports.add(export.getName().getFullyQualifiedName());
+			}
+		}
+		collectedModuleDecls.add(new ModuleDecl(node.getName().getFullyQualifiedName(), exports));
+	}
+
+	@Override
+	public boolean visit(MethodDeclaration node) {
+		IMethodBinding binding = node.resolveBinding();
+		if (binding != null) {
+			// node.getStartPosition() includes leading comments/javadoc/annotations
+			// so we (arbitrarily) decide that the method's name is the relevant one
+			lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(node.getName().getStartPosition()));
+		}
 		return false;
 	}
 
 	@Override
-	public boolean visit(RecordDeclaration node) {
-		processAbstractTypeDeclaration(node);
-		return false;
-	}
-
-	@Override
-	public boolean visit(EnumDeclaration node) {
-		processAbstractTypeDeclaration(node);
-		return false;
-	}
-
-	@Override
-	public boolean visit(AnnotationTypeDeclaration node) {
-		processAbstractTypeDeclaration(node);
+	public boolean visit(FieldDeclaration node) {
+		node.fragments().forEach(fragment -> {
+			if (fragment instanceof VariableDeclarationFragment vdf) {
+				IVariableBinding binding = vdf.resolveBinding();
+				if (binding != null) {
+					lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(vdf.getName().getStartPosition()));
+				}
+			}
+		});
 		return false;
 	}
 
@@ -102,7 +152,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		List<Annotation> annotations = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getStartPosition()));
+		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 
 		// Not present in bindings: https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
@@ -117,7 +167,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		if (type instanceof EnumDeclaration enm &&
 			((List<?>) enm.enumConstants()).stream().anyMatch(cons ->
 				((EnumConstantDeclaration) cons).getAnonymousClassDeclaration() != null)) {
-				modifiers.add(Modifier.SEALED);
+			modifiers.add(Modifier.SEALED);
 		}
 
 		List<TypeReference<InterfaceDecl>> implementedInterfaces = Arrays.stream(binding.getInterfaces())
@@ -150,30 +200,31 @@ final class JdtAPIVisitor extends ASTVisitor {
 		TypeDecl typeDecl = switch (type) {
 			case TypeDeclaration c when !c.isInterface() ->
 				new ClassDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType, superClassRef, constructors);
+					typeParams, fields, methods, enclosingType, superClassRef, constructors, List.of());
 			case TypeDeclaration i when i.isInterface() -> {
-				// FIXME: interfaces should be implicitly abstract
 				modifiers.add(Modifier.ABSTRACT);
 				yield new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType);
+					typeParams, fields, methods, enclosingType, List.of());
 			}
 			case EnumDeclaration e ->
 				new EnumDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					fields, methods, enclosingType, constructors);
+					fields, methods, enclosingType, constructors, List.of());
 			case RecordDeclaration r ->
 				new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType, constructors);
+					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
-				// FIXME: annotations should be implicitly abstract
 				modifiers.add(Modifier.ABSTRACT);
+				List<AnnotationMethodDecl> annotationMethodDecls = Arrays.stream(binding.getDeclaredMethods())
+					.map(method -> convertAnnotationMethod(method, binding))
+					.toList();
+				Set<ElementType> targets = convertAnnotationTargets(binding);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
-					fields, methods, enclosingType);
+					fields, annotationMethodDecls, enclosingType, targets);
 			}
 			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
 		};
 
 		collectedTypeDecls.add(typeDecl);
-		getInnerTypes(type).forEach(this::processAbstractTypeDeclaration);
 	}
 
 	private FieldDecl convertField(IVariableBinding binding, ITypeBinding enclosingType) {
@@ -181,8 +232,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		// FIXME
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1);
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 
 		return new FieldDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods,
@@ -193,8 +244,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		// FIXME
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1);
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -222,7 +273,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), -1); // FIXME
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -232,6 +284,18 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 		return new MethodDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods, anns, location,
 			enclosingTypeRef, returnType, params, typeParams, thrownExceptions);
+	}
+
+	private AnnotationMethodDecl convertAnnotationMethod(IMethodBinding binding, ITypeBinding enclosingType) {
+		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
+		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
+		ITypeReference returnType = makeTypeReference(binding.getReturnType());
+		boolean hasDefault = binding.getDefaultValue() != null;
+
+		return new AnnotationMethodDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), anns, location,
+			enclosingTypeRef, returnType, hasDefault);
 	}
 
 	private List<ParameterDecl> convertParameters(String[] names, ITypeBinding[] types, boolean isVarargs) {
@@ -316,16 +380,16 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private boolean isEnumMethod(IMethodBinding binding) {
 		if (binding.getDeclaringClass().isEnum()) {
-			if (binding.getName().equals("valueOf") && binding.getParameterTypes().length == 1 &&
-				binding.getParameterTypes()[0].getQualifiedName().equals("java.lang.String")) {
+			if ("valueOf".equals(binding.getName()) && binding.getParameterTypes().length == 1 &&
+				"java.lang.String".equals(binding.getParameterTypes()[0].getQualifiedName())) {
 				return true;
 			}
-			return binding.getName().equals("values") && binding.getParameterTypes().length == 0;
+			return "values".equals(binding.getName()) && binding.getParameterTypes().length == 0;
 		}
 		return false;
 	}
 
-	// We want the accessors, not the equals/hashCode/toString unless explicitly overriden...
+	// We want the accessors, not the equals/hashCode/toString unless explicitly overridden...
 	private boolean isSyntheticRecordMethod(IMethodBinding binding) {
 		return binding.isSyntheticRecordMethod() &&
 			Set.of("toString", "equals", "hashCode").contains(binding.getName());
@@ -334,10 +398,31 @@ final class JdtAPIVisitor extends ASTVisitor {
 	// Available on TypeDeclaration, but not Enum/Record/Annotation, even though they can contain inner types
 	// The original implementation only returns inner Class/Interface, not Enum/Record/Annotation
 	// ITypeBinding properly implements inner types, but we need to visit ASTs (currently...)
-	private List<AbstractTypeDeclaration> getInnerTypes(AbstractTypeDeclaration type) {
-		return type.bodyDeclarations().stream()
-			.filter(AbstractTypeDeclaration.class::isInstance)
-			.toList();
+	// private List<AbstractTypeDeclaration> getInnerTypes(AbstractTypeDeclaration type) {
+	//   return type.bodyDeclarations().stream()
+	//   .filter(AbstractTypeDeclaration.class::isInstance)
+	//   .toList();
+	// }
+
+	private Set<ElementType> convertAnnotationTargets(ITypeBinding binding) {
+		Set<ElementType> targets = new HashSet<>();
+		for (IAnnotationBinding ab : binding.getAnnotations()) {
+			ITypeBinding annType = ab.getAnnotationType();
+			if (annType != null && Target.class.getCanonicalName().equals(annType.getQualifiedName())) {
+				IMemberValuePairBinding[] pairs = ab.getAllMemberValuePairs();
+				for (IMemberValuePairBinding pair : pairs) {
+					if ("value".equals(pair.getName())) {
+						Object[] vals = (Object[]) pair.getValue();
+						for (Object v : vals) {
+							IVariableBinding enumConst = (IVariableBinding) v;
+							String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
+							targets.add(ElementType.valueOf(elemTypeName));
+						}
+					}
+				}
+			}
+		}
+		return targets;
 	}
 
 	private AccessModifier convertVisibility(int modifiers) {
@@ -391,19 +476,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private String lookupUnresolvedName(String simpleName) {
 		List<?> imports = cu.imports();
 		for (Object imp : imports) {
-			if (imp instanceof ImportDeclaration id) {
-				// Only consider single type imports.
-				if (!id.isOnDemand()) {
-					String fqn = id.getName().getFullyQualifiedName();
-					// If the fully qualified name ends with '.' + simpleName, we assume a match.
-					if (fqn.endsWith("." + simpleName)) {
-						return fqn;
-					}
+			// Only consider single type imports.
+			if (imp instanceof ImportDeclaration id && !id.isOnDemand()) {
+				String fqn = id.getName().getFullyQualifiedName();
+				// If the fully qualified name ends with '.' + simpleName, we assume a match.
+				if (fqn.endsWith("." + simpleName)) {
+					return fqn;
 				}
 			}
 		}
 		// Otherwise, assume it's a same-package type
-		return packageName + "." + simpleName;
+		return packageName.isEmpty() ? simpleName : (packageName + "." + simpleName);
 	}
 
 	private ITypeReference makeTypeReference(ITypeBinding binding) {
@@ -431,10 +514,22 @@ final class JdtAPIVisitor extends ASTVisitor {
 			return typeRefFactory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true);
 		}
 		// JDT attempts to recover the FQN of missing bindings; if it fails, the unresolved type
-		// is assumed to be in the current package. Try to fallback to imported types, or the current package.
+		// is assumed to be in the current package. Try to fall back to imported types, or the current package.
 		if (binding.isRecovered() && binding.getQualifiedName().startsWith(packageName)) {
 			return typeRefFactory.createTypeReference(lookupUnresolvedName(binding.getName()));
 		}
 		return typeRefFactory.createTypeReference(toRoseauFqn(binding));
+	}
+
+	private String getFullyQualifiedName(IMethodBinding method) {
+		return "%s#%s(%s)".formatted(
+			method.getDeclaringClass().getQualifiedName(),
+			method.getName(),
+			Arrays.stream(method.getParameterTypes()).map(Object::toString).toList()
+		);
+	}
+
+	private String getFullyQualifiedName(IVariableBinding field) {
+		return field.getDeclaringClass().getQualifiedName() + '#' + field.getName();
 	}
 }

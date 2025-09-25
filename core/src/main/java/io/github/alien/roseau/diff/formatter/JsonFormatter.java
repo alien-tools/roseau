@@ -1,24 +1,24 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import org.json.JSONArray;
 import org.json.JSONObject;
 
-import java.util.List;
-
 /**
- * A formatter for {@link BreakingChange} instances that produces a JSON output.
+ * A formatter of {@link RoseauReport} that produces a JSON output.
  */
 public class JsonFormatter implements BreakingChangesFormatter {
 	/**
 	 * Formats the list of breaking changes in JSON format
 	 */
 	@Override
-	public String format(List<BreakingChange> changes) {
+	public String format(API api, RoseauReport report) {
 		JSONArray jsonArray = new JSONArray();
 
-		for (BreakingChange bc : changes) {
+		for (BreakingChange bc : report.breakingChanges()) {
 			JSONObject jsonObject = new JSONObject();
 			jsonObject.put("element", bc.impactedSymbol().getQualifiedName());
 

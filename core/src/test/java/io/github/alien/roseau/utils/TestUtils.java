@@ -1,36 +1,27 @@
 package io.github.alien.roseau.utils;
 
+import com.google.common.io.MoreFiles;
+import com.google.common.io.RecursiveDeleteOption;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.asm.AsmAPIExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtAPIExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIExtractor;
-import com.google.common.io.MoreFiles;
-import com.google.common.io.RecursiveDeleteOption;
-import japicmp.cmp.JApiCmpArchive;
-import japicmp.cmp.JarArchiveComparator;
-import japicmp.cmp.JarArchiveComparatorOptions;
-import japicmp.config.Options;
-import japicmp.model.JApiAnnotation;
-import japicmp.model.JApiClass;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
 import japicmp.model.JApiCompatibilityChange;
-import japicmp.model.JApiConstructor;
-import japicmp.model.JApiField;
-import japicmp.model.JApiImplementedInterface;
-import japicmp.model.JApiMethod;
-import japicmp.model.JApiSuperclass;
-import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
 import spoon.Launcher;
 import spoon.reflect.CtModel;
@@ -53,7 +44,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -71,9 +61,9 @@ public class TestUtils {
 	public static void assertBC(String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
 		List<BreakingChange> matches = bcs.stream()
 			.filter(bc ->
-				   kind == bc.kind()
-				&& line == bc.impactedSymbol().getLocation().line()
-				&& symbol.equals(bc.impactedSymbol().getQualifiedName())
+				kind == bc.kind()
+					&& line == bc.impactedSymbol().getLocation().line()
+					&& symbol.equals(bc.impactedSymbol().getQualifiedName())
 			).toList();
 
 		if (matches.size() != 1) {
@@ -115,7 +105,7 @@ public class TestUtils {
 	}
 
 	public static TypeDecl assertType(API api, String name, String kind) {
-		Optional<TypeDecl> findType = api.findType(name);
+		Optional<TypeDecl> findType = api.getLibraryTypes().findType(name);
 
 		if (findType.isEmpty())
 			throw new AssertionFailedError("No such type", kind + " " + name, "No such type");
@@ -138,14 +128,14 @@ public class TestUtils {
 	}
 
 	public static void assertNoType(API api, String name) {
-		Optional<TypeDecl> findType = api.findType(name);
+		Optional<TypeDecl> findType = api.getLibraryTypes().findType(name);
 
 		if (findType.isPresent())
 			throw new AssertionFailedError("Unexpected type", "No such type", findType.get().getQualifiedName());
 	}
 
-	public static FieldDecl assertField(TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = decl.findField(name);
+	public static FieldDecl assertField(API api, TypeDecl decl, String name) {
+		Optional<FieldDecl> findField = api.findField(decl, name);
 
 		if (findField.isEmpty())
 			throw new AssertionFailedError("No such field", name, "No such field");
@@ -153,30 +143,30 @@ public class TestUtils {
 			return findField.get();
 	}
 
-	public static void assertNoField(TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = decl.findField(name);
+	public static void assertNoField(API api, TypeDecl decl, String name) {
+		Optional<FieldDecl> findField = api.findField(decl, name);
 
 		if (findField.isPresent())
 			throw new AssertionFailedError("Unexpected field", "No such field", findField.get().getQualifiedName());
 	}
 
-	public static void assertNoMethod(TypeDecl decl, String erasure) {
-		Optional<MethodDecl> findMethod = decl.findMethod(erasure);
+	public static void assertNoMethod(API api, TypeDecl decl, String erasure) {
+		Optional<MethodDecl> findMethod = api.findMethod(decl, erasure);
 
 		if (findMethod.isPresent())
-			throw new AssertionFailedError("Unexpected method", "No such method", findMethod.get().getErasure());
+			throw new AssertionFailedError("Unexpected method", "No such method", api.getErasure(findMethod.get()));
 	}
 
-	public static void assertNoConstructor(ClassDecl decl, String erasure) {
-		Optional<ConstructorDecl> findCons = decl.findConstructor(erasure);
+	public static void assertNoConstructor(API api, ClassDecl decl, String erasure) {
+		Optional<ConstructorDecl> findCons = api.findConstructor(decl, erasure);
 
 		if (findCons.isPresent())
-			throw new AssertionFailedError("Unexpected constructor", "No such constructor", findCons.get().getErasure());
+			throw new AssertionFailedError("Unexpected constructor", "No such constructor", api.getErasure(findCons.get()));
 	}
 
-	public static MethodDecl assertMethod(TypeDecl decl, String erasure) {
+	public static MethodDecl assertMethod(API api, TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
-			.filter(m -> m.getErasure().equals(erasure))
+			.filter(m -> api.getErasure(m).equals(erasure))
 			.toList();
 
 		if (findMethod.isEmpty())
@@ -184,9 +174,19 @@ public class TestUtils {
 		return findMethod.getFirst();
 	}
 
-	public static ConstructorDecl assertConstructor(ClassDecl decl, String erasure) {
+	public static AnnotationMethodDecl assertAnnotationMethod(API api, AnnotationDecl decl, String erasure) {
+		List<AnnotationMethodDecl> findMethod = decl.getAnnotationMethods().stream()
+			.filter(m -> api.getErasure(m).equals(erasure))
+			.toList();
+
+		if (findMethod.isEmpty())
+			throw new AssertionFailedError("No such method", erasure, "No such method");
+		return findMethod.getFirst();
+	}
+
+	public static ConstructorDecl assertConstructor(API api, ClassDecl decl, String erasure) {
 		List<ConstructorDecl> findCons = decl.getDeclaredConstructors().stream()
-			.filter(m -> m.getErasure().equals(erasure))
+			.filter(m -> api.getErasure(m).equals(erasure))
 			.toList();
 
 		if (findCons.isEmpty())
@@ -227,58 +227,122 @@ public class TestUtils {
 	}
 
 	public static Map<String, String> buildSourcesMap(String sources) {
-		Pattern typePattern = Pattern.compile(
-			"(?m)^(?!\\s)(?:@\\w+(?:\\([^)]*\\))?\\s+)*(?:(?:public|protected|private|static|final|abstract|sealed)\\s+)*" +
-				"(class|interface|@interface|enum|record)\\s+(\\w+)");
-		Matcher matcher = typePattern.matcher(sources);
+		Map<String, String> sourcesMap = new HashMap<>();
 
-		List<Integer> typeStartIndices = new ArrayList<>();
-		List<String> typeNames = new ArrayList<>();
-		while (matcher.find()) {
-			typeStartIndices.add(matcher.start());
-			typeNames.add(matcher.group(2));
+		// Find package declarations
+		Pattern pkgPattern = Pattern.compile("(?m)^\\s*package\\s+([a-zA-Z_][\\w.]*)\\s*;\\s*");
+		Matcher pkgMatcher = pkgPattern.matcher(sources);
+		List<Integer> pkgIndices = new ArrayList<>();
+		List<String> pkgNames = new ArrayList<>();
+		while (pkgMatcher.find()) {
+			pkgIndices.add(pkgMatcher.start());
+			pkgNames.add(pkgMatcher.group(1));
 		}
 
-		Map<String, String> sourcesMap = new HashMap<>();
+		// Find module descriptor
+		Pattern modulePattern = Pattern.compile("(?s)^\\s*module\\s+[^\\{]+\\{.*?\\}");
+		Matcher moduleMatcher = modulePattern.matcher(sources);
+		if (moduleMatcher.find()) {
+			sourcesMap.put("module-info", moduleMatcher.group());
+		}
+
+		// Find top-level type declarations
+		Pattern typePattern = Pattern.compile(
+			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*" +
+				"(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\\s+)*" +
+				"(class|interface|@interface|enum|record)\\s+(\\w+)");
+		Matcher typeMatcher = typePattern.matcher(sources);
+		List<Integer> typeStartIndices = new ArrayList<>();
+		List<String> typeNames = new ArrayList<>();
+		while (typeMatcher.find()) {
+			typeStartIndices.add(typeMatcher.start());
+			typeNames.add(typeMatcher.group(2));
+		}
+
 		for (int i = 0; i < typeStartIndices.size(); i++) {
-			var startPos = typeStartIndices.get(i);
-			var endPos = i < typeStartIndices.size() - 1 ? typeStartIndices.get(i + 1) : sources.length();
-			var typeName = typeNames.get(i);
-			sourcesMap.put(typeName, sources.substring(startPos, endPos));
+			int startPos = typeStartIndices.get(i);
+			String typeName = typeNames.get(i);
+
+			// Find the active package declaration for this type
+			String currentPkg = null;
+			int nextPkgPos = sources.length();
+			for (int p = 0; p < pkgIndices.size(); p++) {
+				if (pkgIndices.get(p) < startPos) {
+					currentPkg = pkgNames.get(p);
+				} else {
+					nextPkgPos = pkgIndices.get(p);
+					break;
+				}
+			}
+
+			int endPos = i < typeStartIndices.size() - 1
+				? Integer.min(typeStartIndices.get(i + 1), nextPkgPos)
+				: sources.length();
+			String fileKey = currentPkg == null ? typeName : currentPkg + "." + typeName;
+			StringBuilder fileContent = new StringBuilder();
+			if (currentPkg != null) {
+				fileContent.append("package ").append(currentPkg).append(";\n\n");
+			}
+			fileContent.append(sources, startPos, endPos);
+			sourcesMap.put(fileKey, fileContent.toString());
 		}
 
 		return sourcesMap;
 	}
 
 	public static API buildSpoonAPI(String sources) {
-		Map<String, String> sourcesMap = buildSourcesMap(sources);
-		CtModel m = buildModel(sourcesMap);
-		return new SpoonAPIExtractor().extractAPI(m);
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			Path sourcesPath = writeSources(sourcesMap);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
+			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
+			return api.toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static API buildAsmAPI(String sources) {
-		Map<String, String> sourcesMap = buildSourcesMap(sources);
-		JarFile jar = buildJar(sourcesMap);
-		return new AsmAPIExtractor().extractAPI(jar);
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
+			tempJarFile.deleteOnExit();
+			buildJar(sourcesMap, tempJarFile.toPath());
+			Library library = Library.of(tempJarFile.toPath());
+			return new AsmTypesExtractor().extractTypes(library).toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
 	}
 
 	public static API buildJdtAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			API api = new JdtAPIExtractor().extractAPI(sourcesPath);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api;
+			return api.toAPI();
 		} catch (IOException e) {
-			e.printStackTrace();
-			return null;
+			throw new RuntimeException(e);
 		}
 	}
 
 	public static Path writeSources(Map<String, String> sourcesMap) throws IOException {
 		Path tempDir = Files.createTempDirectory("sources");
 		for (Map.Entry<String, String> entry : sourcesMap.entrySet()) {
-			Files.writeString(tempDir.resolve(entry.getKey() + ".java"), entry.getValue());
+			String key = entry.getKey();
+			String content = entry.getValue();
+			Path filePath;
+			if ("module-info".equals(key)) {
+				filePath = tempDir.resolve("module-info.java");
+			} else {
+				String relPath = key.replace('.', '/') + ".java";
+				filePath = tempDir.resolve(relPath);
+				Files.createDirectories(filePath.getParent());
+			}
+			Files.writeString(filePath, content);
 		}
 		return tempDir;
 	}
@@ -298,11 +362,11 @@ public class TestUtils {
 			System.out.println("JApiCmp comparison failed: " + e.getMessage());
 		}*/
 
-		return roseauBCs;
+		return roseauBCs.breakingChanges();
 	}
 
 	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) {
-		Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
+		/*Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
 		Map<String, String> sourcesMap2 = buildSourcesMap(sourcesV2);
 		Path jar1 = Path.of(buildJar(sourcesMap1).getName());
 		Path jar2 = Path.of(buildJar(sourcesMap2).getName());
@@ -339,10 +403,11 @@ public class TestUtils {
 				bcs.addAll(jApiSuperclass.getCompatibilityChanges());
 			}
 		});
-		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
+		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();*/
+		return List.of();
 	}
 
-	public static JarFile buildJar(Map<String, String> sourcesMap) {
+	public static JarFile buildJar(Map<String, String> sourcesMap, Path jar) {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();
 		StandardJavaFileManager stdFileManager = compiler.getStandardFileManager(null, null, null);
 		MemoryJavaFileManager fileManager = new MemoryJavaFileManager(stdFileManager);
@@ -380,12 +445,10 @@ public class TestUtils {
 		}
 
 		try {
-			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
-			tempJarFile.deleteOnExit();
-			try (FileOutputStream fos = new FileOutputStream(tempJarFile)) {
+			try (FileOutputStream fos = new FileOutputStream(jar.toFile())) {
 				fos.write(jarByteStream.toByteArray());
 			}
-			return new JarFile(tempJarFile);
+			return new JarFile(jar.toFile());
 		} catch (IOException e) {
 			throw new RuntimeException("Error while creating temporary JarFile", e);
 		}

@@ -1,5 +1,9 @@
 package io.github.alien.roseau.smoke;
 
+import com.google.common.base.Stopwatch;
+import com.google.common.collect.ArrayListMultimap;
+import com.google.common.collect.Multimap;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
@@ -10,13 +14,9 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
-import io.github.alien.roseau.extractors.asm.AsmAPIExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtAPIExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonUtils;
-import com.google.common.base.Stopwatch;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
@@ -26,7 +26,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import spoon.reflect.CtModel;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -37,7 +36,6 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.time.Duration;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -64,7 +62,7 @@ class PopularLibrariesTestIT {
 			"org.apache.commons:commons-lang3:3.17.0",
 			"commons-io:commons-io:2.18.0",
 			"org.eclipse.collections:eclipse-collections-api:11.1.0",
-			//"org.springframework:spring-core:6.1.5",
+			"org.springframework:spring-core:6.1.5",
 			"io.dropwizard:dropwizard-core:4.0.1",
 			"io.projectreactor:reactor-core:3.6.3",
 			"org.reactivestreams:reactive-streams:1.0.4",
@@ -77,25 +75,25 @@ class PopularLibrariesTestIT {
 			"com.google.auto.service:auto-service:1.1.1",
 			"com.google.dagger:dagger:2.55",
 			"ch.qos.logback:logback-core:1.5.16",
-			//"ch.qos.logback:logback-classic:1.5.16",
-			//"org.apache.logging.log4j:log4j-core:2.24.3", // external libs
+			"ch.qos.logback:logback-classic:1.5.16",
+			"org.apache.logging.log4j:log4j-core:2.24.3", // external libs
 			"org.apache.logging.log4j:log4j-api:2.24.3",
 			"org.slf4j:slf4j-simple:2.0.16",
 			"org.slf4j:slf4j-api:2.0.16",
-			//"com.fasterxml.jackson.core:jackson-core:2.18.2", // shaded
+			"com.fasterxml.jackson.core:jackson-core:2.18.2", // shaded
 			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
-			//"fr.inria.gforge.spoon:spoon-core:11.2.0",
+			"fr.inria.gforge.spoon:spoon-core:11.2.0",
 			"commons-logging:commons-logging:1.3.5",
-			//"org.springframework:spring-web:6.2.2",
+			"org.springframework:spring-web:6.2.2",
 			"com.h2database:h2:2.3.232",
 			"org.hamcrest:hamcrest:3.0",
-			//"org.springframework:spring-beans:6.2.2",
+			"org.springframework:spring-beans:6.2.2",
 			"org.osgi:org.osgi.core:6.0.0",
 			"com.alibaba:fastjson:2.0.54",
 			"commons-collections:commons-collections:3.2.2",
 			"org.json:json:20250107",
-			"commons-beanutils:commons-beanutils:1.10.0"
-			//"com.squareup.retrofit2:retrofit:2.11.0"
+			"commons-beanutils:commons-beanutils:1.10.0",
+			"com.squareup.retrofit2:retrofit:2.11.0"
 		);
 	}
 
@@ -106,60 +104,55 @@ class PopularLibrariesTestIT {
 		Stopwatch sw = Stopwatch.createUnstarted();
 		Path binaryJar = binaryJars.get(libraryGAV);
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
+		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
+		Library binaryLibrary = Library.builder().location(binaryJar).classpath(classpath).build();
+		Library sourcesLibrary = Library.builder().location(sourcesDir).classpath(classpath).build();
 
 		// ASM API
-		AsmAPIExtractor asmExtractor = new AsmAPIExtractor();
+		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
 		sw.reset().start();
-		API asmApi = asmExtractor.extractAPI(binaryJar);
+		API asmApi = asmExtractor.extractTypes(binaryLibrary).toAPI();
 		long asmApiTime = sw.elapsed().toMillis();
 
 		// JDT API
-		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
+		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
 		sw.reset().start();
-		API jdtApi = jdtExtractor.extractAPI(sourcesDir, classpath);
+		API jdtApi = jdtExtractor.extractTypes(sourcesLibrary).toAPI();
 		long jdtApiTime = sw.elapsed().toMillis();
 
-		// Spoon parsing
-		sw.reset().start();
-		CtModel spoonModel = SpoonUtils.buildModel(sourcesDir, Duration.ofMinutes(1));
-		long spoonParsingTime = sw.elapsed().toMillis();
-
 		// Spoon API
-		SpoonAPIExtractor spoonExtractor = new SpoonAPIExtractor();
+		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
 		sw.reset().start();
-		API spoonApi = spoonExtractor.extractAPI(spoonModel);
+		API spoonApi = spoonExtractor.extractTypes(sourcesLibrary).toAPI();
 		long spoonApiTime = sw.elapsed().toMillis();
 
 		// Diffs
-		List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff();
-		List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff();
-		List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff();
-		List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff();
-		List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff();
+		List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff().breakingChanges();
+		List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff().breakingChanges();
+		List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff().breakingChanges();
+		List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff().breakingChanges();
+		List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff().breakingChanges();
 		sw.reset().start();
-		List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff();
+		List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff().breakingChanges();
 		long diffTime = sw.elapsed().toMillis();
 
 		// Stats
 		long loc = countLinesOfCode(sourcesDir);
-		long numTypes = spoonApi.getAllTypes().count();
-		int numMethods = spoonApi.getAllTypes()
+		int numTypes = spoonApi.getLibraryTypes().getAllTypes().size();
+		int numMethods = spoonApi.getLibraryTypes().getAllTypes().stream()
 			.mapToInt(type -> type.getDeclaredMethods().size())
 			.sum();
-		int numFields = spoonApi.getAllTypes()
+		int numFields = spoonApi.getLibraryTypes().getAllTypes().stream()
 			.mapToInt(type -> type.getDeclaredFields().size())
 			.sum();
 
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
-				"\tSpoon: %dms parsing; %dms API; %dms diff%n" +
+				"\tSpoon: %dms; %dms diff%n" +
 				"\tASM: %dms%n" +
 				"\tJDT: %dms%n" +
 				"\tBCs: %s %s %s %s %s %s%n",
 			libraryGAV, loc, numTypes, numMethods, numFields,
-			spoonParsingTime, spoonApiTime, diffTime,
-			asmApiTime,
-			jdtApiTime,
+			spoonApiTime, diffTime, asmApiTime, jdtApiTime,
 			asmToSpoonBCs, asmToJdtBCs, jdtToSpoonBCs, jdtToAsmBCs, spoonToAsmBCs, spoonToJdtBCs);
 
 		System.out.println("### JDT to Sources API diff:");
@@ -177,9 +170,9 @@ class PopularLibrariesTestIT {
 		}
 
 		// Check everything went well
-		assertFalse(spoonApi.getAllTypes().findAny().isEmpty());
-		assertFalse(asmApi.getAllTypes().findAny().isEmpty());
-		assertFalse(jdtApi.getAllTypes().findAny().isEmpty());
+		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
+		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		// assertEquals(0, asmToSpoonBCs.size() + asmToJdtBCs.size() + jdtToSpoonBCs.size() +
 		// 	jdtToAsmBCs.size() + spoonToAsmBCs.size() + spoonToJdtBCs.size());
 	}
@@ -190,16 +183,18 @@ class PopularLibrariesTestIT {
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibrarySpoon(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
+		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
+		Library library = Library.builder().location(sourcesDir).classpath(classpath).build();
 
 		// Spoon API
-		SpoonAPIExtractor spoonExtractor = new SpoonAPIExtractor();
-		API spoonApi = spoonExtractor.extractAPI(sourcesDir);
+		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
+		API spoonApi = spoonExtractor.extractTypes(library).toAPI();
 
 		// Diff
-		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff();
+		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff().breakingChanges();
 
 		// Check everything went well
-		assertFalse(spoonApi.getAllTypes().findAny().isEmpty());
+		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertEquals(0, bcs.size());
 	}
 
@@ -210,16 +205,17 @@ class PopularLibrariesTestIT {
 	void analyzeLibraryJdt(String libraryGAV) {
 		Path sourcesDir = sourcesDirs.get(libraryGAV);
 		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
+		Library library = Library.builder().location(sourcesDir).classpath(classpath).build();
 
 		// JDT API
-		JdtAPIExtractor jdtExtractor = new JdtAPIExtractor();
-		API jdtApi = jdtExtractor.extractAPI(sourcesDir, classpath);
+		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
+		API jdtApi = jdtExtractor.extractTypes(library).toAPI();
 
 		// Diff
-		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff();
+		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff().breakingChanges();
 
 		// Check everything went well
-		assertFalse(jdtApi.getAllTypes().findAny().isEmpty());
+		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertEquals(0, bcs.size());
 	}
 
@@ -229,16 +225,17 @@ class PopularLibrariesTestIT {
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibraryAsm(String libraryGAV) {
 		Path binaryJar = binaryJars.get(libraryGAV);
+		Library library = Library.builder().location(binaryJar).build();
 
 		// ASM API
-		AsmAPIExtractor asmExtractor = new AsmAPIExtractor();
-		API asmApi = asmExtractor.extractAPI(binaryJar);
+		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
+		API asmApi = asmExtractor.extractTypes(library).toAPI();
 
 		// Diff
-		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff();
+		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff().breakingChanges();
 
 		// Check everything went well
-		assertFalse(asmApi.getAllTypes().findAny().isEmpty());
+		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertEquals(0, bcs.size());
 	}
 
@@ -380,27 +377,29 @@ class PopularLibrariesTestIT {
 		binaryJars.values().forEach(path -> {
 			try {
 				cleanup(path);
-			} catch (Exception ignored) {}
+			} catch (Exception ignored) {
+			}
 		});
 		sourcesDirs.values().forEach(path -> {
 			try {
 				cleanup(path);
-			} catch (Exception ignored) {}
+			} catch (Exception ignored) {
+			}
 		});
 	}
 
 	private static boolean diffAPIs(API api1, API api2) {
 		boolean equal = true;
 
-		for (TypeDecl type1 : api1.getAllTypes().toList()) {
-			Optional<TypeDecl> type2 = api2.findType(type1.getQualifiedName());
+		for (TypeDecl type1 : api1.getLibraryTypes().getAllTypes()) {
+			Optional<TypeDecl> type2 = api2.getLibraryTypes().findType(type1.getQualifiedName());
 
 			if (type2.isEmpty()) {
 				System.out.printf("%s %s is missing in the second API%n",
 					type1.getClass().getSimpleName(), type1.getQualifiedName());
 				equal = false;
 			} else {
-				if (!diffTypeDecl(type1, type2.get())) {
+				if (!diffTypeDecl(api1, api2, type1, type2.get())) {
 					equal = false;
 				}
 			}
@@ -413,7 +412,7 @@ class PopularLibrariesTestIT {
 		return new HashSet<>(list1).equals(new HashSet<>(list2));
 	}
 
-	private static boolean diffTypeDecl(TypeDecl type1, TypeDecl type2) {
+	private static boolean diffTypeDecl(API api1, API api2, TypeDecl type1, TypeDecl type2) {
 		boolean equal = true;
 		String typeName = type1.getClass().getSimpleName() + " " + type1.getQualifiedName();
 
@@ -446,7 +445,7 @@ class PopularLibrariesTestIT {
 			equal = false;
 		}
 
-		if (!diffMethods(type1.getDeclaredMethods(), type2.getDeclaredMethods())) {
+		if (!diffMethods(api1, api2, type1.getDeclaredMethods(), type2.getDeclaredMethods())) {
 			equal = false;
 		}
 
@@ -461,7 +460,7 @@ class PopularLibrariesTestIT {
 		}
 
 		if (type1 instanceof ClassDecl class1 && type2 instanceof ClassDecl class2) {
-			if (!diffConstructors(class1.getDeclaredConstructors(), class2.getDeclaredConstructors())) {
+			if (!diffConstructors(api1, api2, class1.getDeclaredConstructors(), class2.getDeclaredConstructors())) {
 				equal = false;
 			}
 
@@ -509,10 +508,10 @@ class PopularLibrariesTestIT {
 		return equal;
 	}
 
-	private static boolean diffMethods(List<MethodDecl> methods1, List<MethodDecl> methods2) {
+	private static boolean diffMethods(API api1, API api2, List<MethodDecl> methods1, List<MethodDecl> methods2) {
 		boolean equal = true;
-		Map<String, MethodDecl> methodMap1 = methods1.stream().collect(Collectors.toMap(MethodDecl::getErasure, m -> m));
-		Map<String, MethodDecl> methodMap2 = methods2.stream().collect(Collectors.toMap(MethodDecl::getErasure, m -> m));
+		Map<String, MethodDecl> methodMap1 = methods1.stream().collect(Collectors.toMap(m -> api1.getErasure(m), m -> m));
+		Map<String, MethodDecl> methodMap2 = methods2.stream().collect(Collectors.toMap(m -> api1.getErasure(m), m -> m));
 
 		for (String methodErasure : methodMap1.keySet()) {
 			MethodDecl method1 = methodMap1.get(methodErasure);
@@ -559,10 +558,10 @@ class PopularLibrariesTestIT {
 		return equal;
 	}
 
-	private static boolean diffConstructors(List<ConstructorDecl> constructors1, List<ConstructorDecl> constructors2) {
+	private static boolean diffConstructors(API api1, API api2, List<ConstructorDecl> constructors1, List<ConstructorDecl> constructors2) {
 		boolean equal = true;
-		Map<String, ConstructorDecl> constructorMap1 = constructors1.stream().collect(Collectors.toMap(ConstructorDecl::getErasure, c -> c));
-		Map<String, ConstructorDecl> constructorMap2 = constructors2.stream().collect(Collectors.toMap(ConstructorDecl::getErasure, c -> c));
+		Map<String, ConstructorDecl> constructorMap1 = constructors1.stream().collect(Collectors.toMap(c -> api1.getErasure(c), c -> c));
+		Map<String, ConstructorDecl> constructorMap2 = constructors2.stream().collect(Collectors.toMap(c -> api1.getErasure(c), c -> c));
 
 		for (String constructorErasure : constructorMap1.keySet()) {
 			ConstructorDecl constructor1 = constructorMap1.get(constructorErasure);

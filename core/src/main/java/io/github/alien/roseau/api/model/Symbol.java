@@ -1,23 +1,26 @@
 package io.github.alien.roseau.api.model;
 
-import com.google.common.collect.Sets;
+import com.google.common.base.Preconditions;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
+import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}. Symbols
- * are part of an {@link API}, can be referenced in client code, and are subject to breaking changes. Symbols have a
- * fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
- * immutable, except for lazily-resolved type references.
+ * are part of an {@link LibraryTypes}, can be referenced in client code, and are subject to breaking changes. Symbols
+ * have a fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
+ * immutable.
  */
-public abstract sealed class Symbol implements DeepCopyable<Symbol> permits TypeDecl, TypeMemberDecl {
+public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
-	 * Fully qualified name of the symbol, unique within an {@link API}'s scope. Types and fields are uniquely identified
-	 * by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure of their
-	 * fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
+	 * Fully qualified name of the symbol, unique within an {@link LibraryTypes}'s scope. Types and fields are uniquely
+	 * identified by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure
+	 * of their fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
 	 */
 	protected final String qualifiedName;
 
@@ -48,20 +51,22 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 
 	protected Symbol(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location) {
-		this.qualifiedName = Objects.requireNonNull(qualifiedName);
-		this.visibility = Objects.requireNonNull(visibility);
-		this.modifiers = Objects.requireNonNull(modifiers);
-		this.annotations = Objects.requireNonNull(annotations);
-		this.location = Objects.requireNonNull(location);
-		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
+		Preconditions.checkNotNull(qualifiedName);
+		Preconditions.checkNotNull(visibility);
+		Preconditions.checkNotNull(modifiers);
+		Preconditions.checkNotNull(annotations);
+		Preconditions.checkNotNull(location);
+		this.qualifiedName = qualifiedName;
+		this.visibility = visibility;
+		// Yup, there's no simpler way to get an EnumSet implementation that's immutable
+		this.modifiers = Collections.unmodifiableSet(
+			modifiers.isEmpty()
+				? EnumSet.noneOf(Modifier.class)
+				: EnumSet.copyOf(modifiers));
+		this.annotations = List.copyOf(annotations);
+		this.location = location;
+		simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
-
-	/**
-	 * Checks whether the symbol is exported/accessible from outside the API.
-	 *
-	 * @return true if this symbol can be accessed from outside the API
-	 */
-	public abstract boolean isExported();
 
 	public String getQualifiedName() {
 		return qualifiedName;
@@ -72,11 +77,21 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	}
 
 	public Set<Modifier> getModifiers() {
-		return Sets.immutableEnumSet(modifiers);
+		return modifiers;
 	}
 
 	public List<Annotation> getAnnotations() {
-		return Collections.unmodifiableList(annotations);
+		return annotations;
+	}
+
+	public Optional<Annotation> getAnnotation(TypeReference<AnnotationDecl> annotation) {
+		return annotations.stream()
+			.filter(ann -> Objects.equals(ann.actualAnnotation(), annotation))
+			.findFirst();
+	}
+
+	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation) {
+		return getAnnotation(annotation).isPresent();
 	}
 
 	public SourceLocation getLocation() {
@@ -112,19 +127,19 @@ public abstract sealed class Symbol implements DeepCopyable<Symbol> permits Type
 	}
 
 	@Override
-	public boolean equals(Object o) {
-		if (this == o) {
+	public boolean equals(Object obj) {
+		if (this == obj) {
 			return true;
 		}
-		if (o == null || getClass() != o.getClass()) {
+		if (obj == null || getClass() != obj.getClass()) {
 			return false;
 		}
-		Symbol symbol = (Symbol) o;
-		return Objects.equals(qualifiedName, symbol.qualifiedName)
-			&& Objects.equals(visibility, symbol.visibility)
-			&& Objects.equals(modifiers, symbol.modifiers)
-			&& Objects.equals(annotations, symbol.annotations)
-			&& Objects.equals(location, symbol.location);
+		Symbol other = (Symbol) obj;
+		return Objects.equals(qualifiedName, other.qualifiedName)
+			&& visibility == other.visibility
+			&& Objects.equals(modifiers, other.modifiers)
+			&& Objects.equals(annotations, other.annotations)
+			&& Objects.equals(location, other.location);
 	}
 
 	@Override

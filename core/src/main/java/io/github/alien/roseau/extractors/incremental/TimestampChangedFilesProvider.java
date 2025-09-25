@@ -14,9 +14,8 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A simple provider of {@link ChangedFiles} that
- * uses timestamp-based modification times of files to infer files that have been created, updated, and deleted between
- * two instants.
+ * A simple provider of {@link ChangedFiles} that uses timestamp-based modification times of files to infer files that
+ * have been created, updated, and deleted between two instants.
  */
 public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 	private final Path sources;
@@ -26,7 +25,7 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 	/**
 	 * Creates a new provider for a given source, set of previous files, and a timestamp
 	 *
-	 * @throws NullPointerException if sources or previousFiles is null
+	 * @throws NullPointerException     if sources or previousFiles is null
 	 * @throws IllegalArgumentException if {@code sources} does not exist
 	 */
 	public TimestampChangedFilesProvider(Path sources, Set<Path> previousFiles, long timestamp) {

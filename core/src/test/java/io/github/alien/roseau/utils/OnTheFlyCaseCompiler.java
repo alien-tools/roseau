@@ -1,11 +1,12 @@
 package io.github.alien.roseau.utils;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.APIExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIExtractor;
+import io.github.alien.roseau.extractors.TypesExtractor;
+import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import org.opentest4j.AssertionFailedError;
@@ -205,10 +206,10 @@ public class OnTheFlyCaseCompiler {
 				}""".formatted(clientSnippet));
 
 			// --- Extract APIs and compute diff ---
-			APIExtractor extractor = new SpoonAPIExtractor();
-			API v1 = extractor.extractAPI(srcDir1);
-			API v2 = extractor.extractAPI(srcDir2);
-			List<BreakingChange> bcs = new APIDiff(v1, v2).diff();
+			TypesExtractor extractor = new SpoonTypesExtractor();
+			API v1 = extractor.extractTypes(Library.of(srcDir1)).toAPI();
+			API v2 = extractor.extractTypes(Library.of(srcDir2)).toAPI();
+			List<BreakingChange> bcs = new APIDiff(v1, v2).diff().breakingChanges();
 
 			// --- Compile client against API v1 (sanity check) ---
 			List<Diagnostic<? extends JavaFileObject>> compilationErrors1 = otf.compileClient(clientFile, clsDir1);

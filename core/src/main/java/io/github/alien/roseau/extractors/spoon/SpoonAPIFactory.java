@@ -3,15 +3,19 @@ package io.github.alien.roseau.extractors.spoon;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
+import io.github.alien.roseau.api.model.EnumValueDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
+import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -21,31 +25,48 @@ import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
+import spoon.reflect.code.CtExpression;
+import spoon.reflect.code.CtFieldRead;
+import spoon.reflect.code.CtNewArray;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
+import spoon.reflect.declaration.CtAnnotationMethod;
 import spoon.reflect.declaration.CtAnnotationType;
 import spoon.reflect.declaration.CtClass;
 import spoon.reflect.declaration.CtConstructor;
+import spoon.reflect.declaration.CtElement;
 import spoon.reflect.declaration.CtEnum;
+import spoon.reflect.declaration.CtEnumValue;
 import spoon.reflect.declaration.CtExecutable;
 import spoon.reflect.declaration.CtField;
 import spoon.reflect.declaration.CtFormalTypeDeclarer;
 import spoon.reflect.declaration.CtInterface;
 import spoon.reflect.declaration.CtMethod;
 import spoon.reflect.declaration.CtModifiable;
+import spoon.reflect.declaration.CtModule;
+import spoon.reflect.declaration.CtNamedElement;
+import spoon.reflect.declaration.CtPackageExport;
 import spoon.reflect.declaration.CtParameter;
 import spoon.reflect.declaration.CtRecord;
+import spoon.reflect.declaration.CtRecordComponent;
+import spoon.reflect.declaration.CtSealable;
 import spoon.reflect.declaration.CtType;
 import spoon.reflect.declaration.CtTypeMember;
 import spoon.reflect.declaration.CtTypeParameter;
 import spoon.reflect.declaration.ModifierKind;
+import spoon.reflect.factory.Factory;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtArrayTypeReference;
 import spoon.reflect.reference.CtIntersectionTypeReference;
+import spoon.reflect.reference.CtPackageReference;
 import spoon.reflect.reference.CtTypeParameterReference;
 import spoon.reflect.reference.CtTypeReference;
 import spoon.reflect.reference.CtWildcardReference;
 
+import java.io.File;
+import java.lang.annotation.ElementType;
+import java.lang.annotation.Target;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -65,9 +86,24 @@ public class SpoonAPIFactory {
 
 	private static final Logger LOGGER = LogManager.getLogger(SpoonAPIFactory.class);
 
-	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory) {
-		this.typeFactory = new Launcher().createFactory().Type();
+	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
+		Factory spoonFactory = new Launcher().createFactory();
+		spoonFactory.getEnvironment().setSourceClasspath(
+			sanitizeClasspath(classpath).stream()
+				.map(p -> p.toAbsolutePath().toString())
+				.toArray(String[]::new));
+		typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
+	}
+
+	// Avoid having Spoon throwing at us due to "invalid" classpath
+	private List<Path> sanitizeClasspath(List<Path> classpath) {
+		return classpath.stream()
+			.map(Path::toFile)
+			.filter(File::exists)
+			.filter(f -> f.isDirectory() || !f.getName().endsWith(".class"))
+			.map(File::toPath)
+			.toList();
 	}
 
 	private ITypeReference createITypeReference(CtTypeReference<?> typeRef) {
@@ -89,7 +125,7 @@ public class SpoonAPIFactory {
 	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtTypeReference<?> typeRef) {
 		return typeRef != null
 			? typeReferenceFactory.createTypeReference(typeRef.getQualifiedName(),
-					createITypeReferences(typeRef.getActualTypeArguments()))
+			createITypeReferences(typeRef.getActualTypeArguments()))
 			: null;
 	}
 
@@ -111,6 +147,17 @@ public class SpoonAPIFactory {
 			.toList();
 	}
 
+	public ModuleDecl convertCtModule(CtModule module) {
+		return new ModuleDecl(
+			module.getSimpleName(),
+			module.getExportedPackages().stream()
+				// qualified exports (`exports pkg to m`) are not considered exported
+				.filter(pkg -> pkg.getTargetExport().isEmpty())
+				.map(CtPackageExport::getPackageReference)
+				.map(CtPackageReference::getQualifiedName)
+				.collect(Collectors.toSet()));
+	}
+
 	public TypeDecl convertCtType(CtType<?> type) {
 		return switch (type) {
 			case CtAnnotationType<?> a -> convertCtAnnotationType(a);
@@ -128,7 +175,7 @@ public class SpoonAPIFactory {
 		try {
 			return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
 		} catch (Exception e) {
-			LOGGER.warn("Couldn't convert {}", qualifiedName, e);
+			LOGGER.warn("Couldn't convert {}", qualifiedName);
 			return null;
 		}
 	}
@@ -139,14 +186,15 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cls.getVisibility()),
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonAnnotations(cls.getAnnotations()),
-			convertSpoonPosition(cls.getPosition()),
+			convertSpoonPosition(cls.getPosition(), cls),
 			createTypeReferences(cls.getSuperInterfaces()),
 			convertCtFormalTypeParameters(cls),
 			convertCtFields(cls),
 			convertCtMethods(cls),
 			createTypeReference(cls.getDeclaringType()),
 			createTypeReference(cls.getSuperclass()),
-			convertCtConstructors(cls)
+			convertCtConstructors(cls),
+			convertCtSealable(cls)
 		);
 	}
 
@@ -156,12 +204,13 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(intf.getVisibility()),
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonAnnotations(intf.getAnnotations()),
-			convertSpoonPosition(intf.getPosition()),
+			convertSpoonPosition(intf.getPosition(), intf),
 			createTypeReferences(intf.getSuperInterfaces()),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
 			convertCtMethods(intf),
-			createTypeReference(intf.getDeclaringType())
+			createTypeReference(intf.getDeclaringType()),
+			convertCtSealable(intf)
 		);
 	}
 
@@ -171,10 +220,11 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(annotation.getVisibility()),
 			convertSpoonNonAccessModifiers(annotation.getModifiers()),
 			convertSpoonAnnotations(annotation.getAnnotations()),
-			convertSpoonPosition(annotation.getPosition()),
+			convertSpoonPosition(annotation.getPosition(), annotation),
 			convertCtFields(annotation),
-			convertCtMethods(annotation),
-			createTypeReference(annotation.getDeclaringType())
+			convertCtAnnotationMethods(annotation),
+			createTypeReference(annotation.getDeclaringType()),
+			convertAnnotationTargets(annotation)
 		);
 	}
 
@@ -184,12 +234,13 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(enm.getVisibility()),
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonAnnotations(enm.getAnnotations()),
-			convertSpoonPosition(enm.getPosition()),
+			convertSpoonPosition(enm.getPosition(), enm),
 			createTypeReferences(enm.getSuperInterfaces()),
 			convertCtFields(enm),
 			convertCtMethods(enm),
 			createTypeReference(enm.getDeclaringType()),
-			convertCtConstructors(enm)
+			convertCtConstructors(enm),
+			convertCtEnumValues(enm)
 		);
 	}
 
@@ -199,13 +250,14 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(rcrd.getVisibility()),
 			convertSpoonNonAccessModifiers(rcrd.getModifiers()),
 			convertSpoonAnnotations(rcrd.getAnnotations()),
-			convertSpoonPosition(rcrd.getPosition()),
+			convertSpoonPosition(rcrd.getPosition(), rcrd),
 			createTypeReferences(rcrd.getSuperInterfaces()),
 			convertCtFormalTypeParameters(rcrd),
 			convertCtFields(rcrd),
 			convertCtMethods(rcrd),
 			createTypeReference(rcrd.getDeclaringType()),
-			convertCtConstructors(rcrd)
+			convertCtConstructors(rcrd),
+			convertCtRecordComponents(rcrd)
 		);
 	}
 
@@ -215,7 +267,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(field.getVisibility()),
 			convertSpoonNonAccessModifiers(field.getModifiers()),
 			convertSpoonAnnotations(field.getAnnotations()),
-			convertSpoonPosition(field.getPosition()),
+			convertSpoonPosition(field.getPosition(), field.getDeclaringType()),
 			createTypeReference(field.getDeclaringType()),
 			createITypeReference(field.getType())
 		);
@@ -233,12 +285,23 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(method.getVisibility()),
 			modifiers,
 			convertSpoonAnnotations(method.getAnnotations()),
-			convertSpoonPosition(method.getPosition()),
+			convertSpoonPosition(method.getPosition(), method.getDeclaringType()),
 			createTypeReference(method.getDeclaringType()),
 			createITypeReference(method.getType()),
 			convertCtParameters(method),
 			convertCtFormalTypeParameters(method),
 			createITypeReferences(new ArrayList<>(method.getThrownTypes()))
+		);
+	}
+
+	private AnnotationMethodDecl convertCtAnnotationMethod(CtAnnotationMethod<?> method) {
+		return new AnnotationMethodDecl(
+			makeQualifiedName(method),
+			convertSpoonAnnotations(method.getAnnotations()),
+			convertSpoonPosition(method.getPosition(), method.getDeclaringType()),
+			createTypeReference(method.getDeclaringType()),
+			createITypeReference(method.getType()),
+			method.getDefaultExpression() != null
 		);
 	}
 
@@ -248,7 +311,7 @@ public class SpoonAPIFactory {
 			convertSpoonVisibility(cons.getVisibility()),
 			convertSpoonNonAccessModifiers(cons.getModifiers()),
 			convertSpoonAnnotations(cons.getAnnotations()),
-			convertSpoonPosition(cons.getPosition()),
+			convertSpoonPosition(cons.getPosition(), cons.getDeclaringType()),
 			createTypeReference(cons.getDeclaringType()),
 			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
@@ -268,6 +331,12 @@ public class SpoonAPIFactory {
 		return type.getMethods().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtMethod)
+			.toList();
+	}
+
+	private List<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
+		return type.getAnnotationMethods().stream()
+			.map(this::convertCtAnnotationMethod)
 			.toList();
 	}
 
@@ -320,7 +389,46 @@ public class SpoonAPIFactory {
 			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
 	}
 
-	private static AccessModifier convertSpoonVisibility(ModifierKind visibility) {
+	private List<String> convertCtSealable(CtSealable sealable) {
+		return sealable.getPermittedTypes().stream()
+			.map(CtTypeReference::getSimpleName)
+			.toList();
+	}
+
+	private List<RecordComponentDecl> convertCtRecordComponents(CtRecord rcrd) {
+		return rcrd.getRecordComponents().stream()
+			.map(rcrdCpt -> convertCtRecordComponent(rcrdCpt, rcrd))
+			.toList();
+	}
+
+	private RecordComponentDecl convertCtRecordComponent(CtRecordComponent rcrdCpt, CtRecord rcrd) {
+		return new RecordComponentDecl(
+			makeQualifiedName(rcrdCpt, rcrd),
+			convertSpoonAnnotations(rcrdCpt.getAnnotations()),
+			convertSpoonPosition(rcrdCpt.getPosition(), rcrd),
+			createTypeReference(rcrd),
+			createITypeReference(rcrdCpt.getType()),
+			false
+		);
+	}
+
+	private List<EnumValueDecl> convertCtEnumValues(CtEnum<?> enm) {
+		return enm.getEnumValues().stream()
+			.map(this::convertCtEnumValue)
+			.toList();
+	}
+
+	private EnumValueDecl convertCtEnumValue(CtEnumValue<?> enmVal) {
+		return new EnumValueDecl(
+			makeQualifiedName(enmVal),
+			convertSpoonAnnotations(enmVal.getAnnotations()),
+			convertSpoonPosition(enmVal.getPosition(), enmVal.getDeclaringType()),
+			createTypeReference(enmVal.getDeclaringType()),
+			createITypeReference(enmVal.getType())
+		);
+	}
+
+	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {
 		return switch (visibility) {
 			case PUBLIC -> AccessModifier.PUBLIC;
 			case PRIVATE -> AccessModifier.PRIVATE;
@@ -363,12 +471,43 @@ public class SpoonAPIFactory {
 		return new Annotation(createTypeReference(annotation.getAnnotationType()));
 	}
 
-	private static SourceLocation convertSpoonPosition(SourcePosition position) {
-		return position.isValidPosition()
-			? new SourceLocation(
+	private Set<ElementType> convertAnnotationTargets(CtAnnotationType<?> annotation) {
+		CtAnnotation<Target> target = annotation.getAnnotation(typeFactory.createReference(Target.class));
+
+		if (target != null) {
+			Object value = target.getValue("value");
+
+			if (value instanceof CtNewArray<?> array) {
+				List<CtExpression<?>> elems = array.getElements();
+				return elems.stream()
+					.map(CtFieldRead.class::cast)
+					.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
+					.collect(Collectors.toSet());
+			} else if (value instanceof CtFieldRead<?> fieldRead) {
+				return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
+			}
+		}
+
+		return Collections.emptySet();
+	}
+
+	/**
+	 * If the provided position isn't valid, fallback to the other element's file. e.g., an implicit constructor will
+	 * point to the file it's contained in.
+	 */
+	private static SourceLocation convertSpoonPosition(SourcePosition position, CtElement fallback) {
+		if (position.isValidPosition()) {
+			return new SourceLocation(
 				position.getFile() != null ? position.getFile().toPath() : null,
-				position.getLine())
-			: SourceLocation.NO_LOCATION;
+				position.getLine());
+		} else if (fallback != null && fallback.getPosition() != null) {
+			SourcePosition fallbackPosition = fallback.getPosition();
+			if (fallbackPosition.isValidPosition() && fallbackPosition.getFile() != null) {
+				return new SourceLocation(fallback.getPosition().getFile().toPath(), -1);
+			}
+		}
+
+		return SourceLocation.NO_LOCATION;
 	}
 
 	private static boolean isExported(CtTypeMember member) {
@@ -380,7 +519,7 @@ public class SpoonAPIFactory {
 		 * So we have to keep A's potentially-leaked declarations to mark them later as part of B's API.
 		 * It's possible to re-open and leak a type within the API if:
 		 *   - It has a non-private constructor (package-private can be re-opened within the same package)
-		 *   - It is not explicitly 'final' or 'sealed' (sealed subclasses can attempt to leak but they're final
+		 *   - It is not explicitly 'final' or 'sealed' (sealed subclasses can attempt to leak, but they're final
 		 *    themselves so they won't leak to clients)
 		 *
 		 * class A { // package 'pkg'
@@ -394,7 +533,7 @@ public class SpoonAPIFactory {
 
 	/**
 	 * Checks whether the given type is effectively final _within the API_. While package-private constructors cannot be
-	 * accessed from client code, they can be from the API itself, and sub-classes can leak internals.
+	 * accessed from client code, they can be from the API itself, and subclasses can leak internals.
 	 */
 	private static boolean isEffectivelyFinal(CtType<?> type) {
 		if (type instanceof CtClass<?> cls &&
@@ -409,5 +548,9 @@ public class SpoonAPIFactory {
 
 	private static String makeQualifiedName(CtTypeMember member) {
 		return member.getDeclaringType().getQualifiedName() + "." + member.getSimpleName();
+	}
+
+	private static String makeQualifiedName(CtNamedElement member, CtType<?> declaringType) {
+		return String.format("%s.%s", declaringType.getQualifiedName(), member.getSimpleName());
 	}
 }

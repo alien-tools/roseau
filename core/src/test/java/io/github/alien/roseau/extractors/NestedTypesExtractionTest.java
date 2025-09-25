@@ -24,10 +24,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPackagePrivate());
 		assertFalse(b.isStatic());
 	}
@@ -41,10 +41,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPackagePrivate());
 		assertTrue(b.isStatic());
 	}
@@ -58,10 +58,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isProtected());
 		assertFalse(b.isStatic());
 	}
@@ -75,10 +75,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isProtected());
 		assertTrue(b.isStatic());
 	}
@@ -92,10 +92,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertFalse(b.isStatic());
 	}
@@ -109,10 +109,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertTrue(b.isStatic());
 	}
@@ -126,10 +126,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPrivate());
 		assertFalse(b.isStatic());
 	}
@@ -143,10 +143,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPrivate());
 		assertTrue(b.isStatic());
 	}
@@ -160,10 +160,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPackagePrivate());
 		assertFalse(b.isStatic());
 	}
@@ -177,10 +177,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPackagePrivate());
 		assertTrue(b.isStatic());
 	}
@@ -194,10 +194,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isProtected());
 		assertFalse(b.isStatic());
 	}
@@ -211,10 +211,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isProtected());
 		assertTrue(b.isStatic());
 	}
@@ -228,10 +228,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertFalse(b.isStatic());
 	}
@@ -245,10 +245,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertTrue(b.isStatic());
 	}
@@ -262,10 +262,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPrivate());
 		assertFalse(b.isStatic());
 	}
@@ -279,10 +279,10 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPrivate());
 		assertTrue(b.isStatic());
 	}
@@ -297,14 +297,14 @@ class NestedTypesExtractionTest {
 		var c = assertClass(api, "A$B$C");
 
 		assertFalse(a.isNested());
-		assertFalse(a.isExported());
+		assertFalse(api.isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertTrue(b.isNested());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertFalse(b.isStatic());
 		assertTrue(c.isNested());
-		assertFalse(c.isExported());
+		assertFalse(api.isExported(c));
 		assertTrue(c.isPackagePrivate());
 		assertFalse(c.isStatic());
 	}
@@ -319,14 +319,14 @@ class NestedTypesExtractionTest {
 		var c = assertClass(api, "A$B$C");
 
 		assertFalse(a.isNested());
-		assertTrue(a.isExported());
+		assertTrue(api.isExported(a));
 		assertTrue(a.isPublic());
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isProtected());
 		assertFalse(b.isStatic());
 		assertTrue(c.isNested());
-		assertTrue(c.isExported());
+		assertTrue(api.isExported(c));
 		assertTrue(c.isProtected());
 		assertTrue(c.isStatic());
 	}
@@ -338,7 +338,7 @@ class NestedTypesExtractionTest {
 		assertInterface(api, "A");
 		var b = assertClass(api, "A$B");
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertTrue(b.isStatic());
 	}
@@ -351,7 +351,7 @@ class NestedTypesExtractionTest {
 		var b = assertInterface(api, "A$B");
 		assertTrue(b.isNested());
 		// Without an explicit modifier, the nested interface remains package-private.
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		// Member interfaces are implicitly static.
 		assertTrue(b.isStatic());
 	}
@@ -363,7 +363,7 @@ class NestedTypesExtractionTest {
 		assertClass(api, "A");
 		var b = assertInterface(api, "A$B");
 		assertTrue(b.isNested());
-		assertTrue(b.isExported());
+		assertTrue(api.isExported(b));
 		assertTrue(b.isPublic());
 		assertTrue(b.isStatic());
 	}
@@ -378,12 +378,11 @@ class NestedTypesExtractionTest {
 		// Enums declared in a class are implicitly static.
 		assertTrue(b.isStatic());
 		// Without an explicit modifier, the nested enum is package-private.
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 	}
 
 	@ParameterizedTest
-	// FIXME: ASM sees the inner type as a class?
-	@EnumSource(value = ApiBuilderType.class, names = {"ASM"}, mode = EnumSource.Mode.EXCLUDE)
+	@EnumSource(value = ApiBuilderType.class)
 	void nested_record_in_class(ApiBuilder builder) {
 		var api = builder.build("public class A { record B() {} }");
 		assertClass(api, "A");
@@ -391,7 +390,7 @@ class NestedTypesExtractionTest {
 		assertTrue(b.isNested());
 		// Member records are implicitly static.
 		assertTrue(b.isStatic());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 	}
 
 	@ParameterizedTest
@@ -404,7 +403,7 @@ class NestedTypesExtractionTest {
 		// Nested annotation types are implicitly static.
 		assertTrue(b.isStatic());
 		// Without an explicit modifier, they are package-private.
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 	}
 
 	@ParameterizedTest
@@ -426,16 +425,16 @@ class NestedTypesExtractionTest {
 		var e = assertAnnotation(api, "A$E");
 		assertTrue(b.isNested());
 		assertFalse(b.isStatic());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 		assertTrue(c.isNested());
 		assertTrue(c.isStatic());
-		assertFalse(c.isExported());
+		assertFalse(api.isExported(c));
 		assertTrue(d.isNested());
 		assertTrue(d.isStatic());
-		assertFalse(d.isExported());
+		assertFalse(api.isExported(d));
 		assertTrue(e.isNested());
 		assertTrue(e.isStatic());
-		assertFalse(e.isExported());
+		assertFalse(api.isExported(e));
 	}
 
 	@ParameterizedTest
@@ -447,7 +446,7 @@ class NestedTypesExtractionTest {
 		assertTrue(b.isNested());
 		// Nested interfaces in records are implicitly static.
 		assertTrue(b.isStatic());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 	}
 
 	@ParameterizedTest
@@ -458,7 +457,7 @@ class NestedTypesExtractionTest {
 		var b = assertAnnotation(api, "A$B");
 		assertTrue(b.isNested());
 		assertTrue(b.isStatic());
-		assertFalse(b.isExported());
+		assertFalse(api.isExported(b));
 	}
 
 	@ParameterizedTest
@@ -510,7 +509,7 @@ class NestedTypesExtractionTest {
 		var b = assertClass(api, "A$B");
 		var c = assertClass(api, "A$C");
 
-		assertConstructor(b, "<init>()");
-		assertConstructor(c, "<init>()");
+		assertConstructor(api, b, "<init>()");
+		assertConstructor(api, c, "<init>()");
 	}
 }

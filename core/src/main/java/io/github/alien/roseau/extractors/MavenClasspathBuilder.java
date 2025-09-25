@@ -9,12 +9,12 @@ import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -25,23 +25,26 @@ public class MavenClasspathBuilder {
 	private static final Logger LOGGER = LogManager.getLogger(MavenClasspathBuilder.class);
 
 	/**
-	 * Returns the classpath of the supplied {@code pom.xml} file using {@code mvn dependency:build-classpath}.
+	 * Returns the classpath of the supplied {@code pom.xml} file or pom-containing directory using
+	 * {@code mvn dependency:build-classpath}.
 	 *
-	 * @param pom the {@code pom.xml} file to analyze
+	 * @param pom the {@code pom.xml} file or pom-containing directory to analyze
 	 * @return the retrieved classpath or an empty list if something went wrong
 	 */
 	public List<Path> buildClasspath(Path pom) {
-		Preconditions.checkArgument(Files.exists(Objects.requireNonNull(pom)));
+		Preconditions.checkArgument(pom != null && Files.isRegularFile(pom));
+		Path classpathFile = pom.toFile().isDirectory()
+			? pom.toAbsolutePath().resolve(".classpath.tmp")
+			: pom.toAbsolutePath().getParent().resolve(".classpath.tmp");
 
-		Path classpathFile = pom.toAbsolutePath().getParent().resolve(".classpath.tmp");
 		try {
 			InvocationRequest request = makeClasspathRequest(pom, classpathFile);
 			Invoker invoker = new DefaultInvoker();
 			InvocationResult result = invoker.execute(request);
 
-			if (result.getExitCode() == 0 && Files.exists(classpathFile)) {
+			if (result.getExitCode() == 0 && Files.isRegularFile(classpathFile)) {
 				String cpString = Files.readString(classpathFile);
-				return Arrays.stream(cpString.split(":"))
+				return Arrays.stream(cpString.split(File.pathSeparator))
 					.map(Path::of)
 					.toList();
 			} else {

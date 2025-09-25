@@ -1,7 +1,7 @@
 package io.github.alien.roseau.diff.formatter;
 
 /**
- * A factory of {@link BreakingChangesFormatter} given an expected output format. Currently supports CSV, HTML, and
+ * A factory of {@link BreakingChangesFormatter} given an expected output format. Currently, supports CSV, HTML, and
  * JSON.
  */
 public enum BreakingChangesFormatterFactory {

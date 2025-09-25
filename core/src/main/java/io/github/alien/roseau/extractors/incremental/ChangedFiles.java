@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 
 import java.nio.file.Path;
-import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -30,11 +29,15 @@ public record ChangedFiles(
 	 * @throws IllegalArgumentException if any set is null or if a given file belongs to two sets
 	 */
 	public ChangedFiles {
-		Preconditions.checkArgument(
-			Sets.union(Objects.requireNonNull(updatedFiles),
-				Sets.union(Objects.requireNonNull(deletedFiles), Objects.requireNonNull(createdFiles))).size() ==
+		Preconditions.checkNotNull(updatedFiles);
+		Preconditions.checkNotNull(deletedFiles);
+		Preconditions.checkNotNull(createdFiles);
+		Preconditions.checkArgument(Sets.union(updatedFiles, Sets.union(deletedFiles, createdFiles)).size() ==
 				updatedFiles.size() + deletedFiles.size() + createdFiles.size(),
 			"A file cannot be in two states");
+		updatedFiles = Set.copyOf(updatedFiles);
+		deletedFiles = Set.copyOf(deletedFiles);
+		createdFiles = Set.copyOf(createdFiles);
 	}
 
 	public boolean hasNoChanges() {

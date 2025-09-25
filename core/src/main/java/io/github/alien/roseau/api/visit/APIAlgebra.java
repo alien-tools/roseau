@@ -1,16 +1,19 @@
 package io.github.alien.roseau.api.visit;
 
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
+import io.github.alien.roseau.api.model.EnumValueDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
+import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -22,7 +25,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
 /**
- * An {@link API} visitor.
+ * An {@link LibraryTypes} visitor.
  * <br>
  * Eating our own dog food with <a href="https://dx.doi.org/10.1109/MODELS.2017.23">Revisitors</a> ;)
  *
@@ -30,6 +33,7 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
  */
 public interface APIAlgebra<T> {
 	T api(API it);
+	T libraryTypes(LibraryTypes it);
 	T classDecl(ClassDecl it);
 	T interfaceDecl(InterfaceDecl it);
 	T enumDecl(EnumDecl it);
@@ -46,9 +50,15 @@ public interface APIAlgebra<T> {
 	T wildcardTypeReference(WildcardTypeReference it);
 	T annotation(Annotation it);
 	T formalTypeParameter(FormalTypeParameter it);
+	T enumValueDecl(EnumValueDecl it);
+	T recordComponentDecl(RecordComponentDecl it);
 
 	default T $(API it) {
 		return api(it);
+	}
+
+	default T $(LibraryTypes it) {
+		return libraryTypes(it);
 	}
 
 	default T $(Symbol it) {
@@ -60,6 +70,8 @@ public interface APIAlgebra<T> {
 			case AnnotationDecl a  -> annotationDecl(a);
 			case MethodDecl m      -> methodDecl(m);
 			case ConstructorDecl c -> constructorDecl(c);
+			case EnumValueDecl eV -> enumValueDecl(eV);
+			case RecordComponentDecl rC -> recordComponentDecl(rC);
 			case FieldDecl f       -> fieldDecl(f);
 		};
 	}

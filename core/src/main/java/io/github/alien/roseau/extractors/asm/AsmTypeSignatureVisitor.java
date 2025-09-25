@@ -116,7 +116,9 @@ final class AsmTypeSignatureVisitor<T extends ITypeReference> extends SignatureV
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	public T getType() {
-		return (T) (type != null ? type : visitors.getFirst().get()); // prayge
+		// prayge
+		return (T) (type != null ? type : visitors.getFirst().get());
 	}
 }

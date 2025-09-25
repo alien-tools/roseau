@@ -1,0 +1,25 @@
+cff-version: 1.2.0
+preferred-citation:
+  title: "Roseau: Fast, Accurate, Source-based Breaking Change Analysis in Java"
+  authors:
+    - given-names: Corentin
+      family-names: Latappy
+      orcid: https://orcid.org/0000-0003-1512-0980
+    - given-names: Thomas
+      family-names: Degueule
+      orcid: https://orcid.org/0000-0002-5961-7940
+    - given-names: Jean-Rémy
+      family-names: Falleri
+      orcid: https://orcid.org/0000-0002-8284-7218
+    - given-names: Romain
+      family-names: Robbes
+      orcid: https://orcid.org/0000-0003-4569-6868
+    - given-names: Lina
+      family-names: Ochoa
+      orcid: https://orcid.org/0000-0002-8767-036X
+  type: conference-paper
+  conference:
+    name: IEEE International Conference on Software Maintenance and Evolution (ICSME)
+    location: Auckland, New Zealand
+  publisher: IEEE
+  year: 2025
