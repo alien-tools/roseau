@@ -27,7 +27,7 @@ class ClassNowAbstractTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new A(){};")
+	@Client("// No uses")
 	@Test
 	void implicitly_abstract_class_now_explicitly_abstract() {
 		var v1 = """

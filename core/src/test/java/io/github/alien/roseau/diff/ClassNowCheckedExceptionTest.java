@@ -48,7 +48,13 @@ class ClassNowCheckedExceptionTest {
 		assertBC("A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
 	}
 
-	@Client("throw new A();")
+	@Client("""
+		try {
+			throw new A();
+		} catch (A e) {}
+		try {
+			throw new A();
+		} catch (Exception e) {}""")
 	@Test
 	void checked_exception_becomes_specific() {
 		var v1 = "public class A extends Exception {}";
@@ -60,7 +66,7 @@ class ClassNowCheckedExceptionTest {
 	@Client("""
 		try {
 			throw new A();
-		} catch (IOException e) {}""")
+		} catch (java.io.IOException e) {}""")
 	@Test
 	void specific_exception_becomes_generic() {
 		var v1 = "public class A extends java.io.IOException {}";

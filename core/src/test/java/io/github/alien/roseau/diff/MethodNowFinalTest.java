@@ -39,7 +39,7 @@ class MethodNowFinalTest {
 		assertNoBC(BreakingChangeKind.METHOD_NOW_FINAL, buildDiff(v1, v2));
 	}
 
-	@Client("new A();")
+	@Client("// No uses")
 	@Test
 	void method_now_final_in_effectively_final_class() {
 		var v1 = """
