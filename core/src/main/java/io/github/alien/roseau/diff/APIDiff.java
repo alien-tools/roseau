@@ -311,12 +311,14 @@ public class APIDiff {
 				v2.isSubtypeOf(exc1, exc2) || v1.isEffectivelyFinal(t1, e1)
 			))
 			.forEach(exc1 ->
-				memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, t1, e1, e2));
+				memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, t1, e1, e2,
+					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
 		thrown2.stream()
 			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))
 			.forEach(exc1 ->
-				memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, t1, e1, e2));
+				memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, t1, e1, e2,
+					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc1)));
 	}
 
 	private void diffParameters(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
