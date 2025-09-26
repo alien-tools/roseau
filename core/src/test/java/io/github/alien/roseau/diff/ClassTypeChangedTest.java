@@ -47,7 +47,7 @@ class ClassTypeChangedTest {
 
 	@Client("""
 		class C implements A {};
-		A a = new A(); // Trigger the linker""")
+		C c = new C(); // Trigger the linker""")
 	@Test
 	void interface_to_class() {
 		var v1 = "public interface A {}";
@@ -58,7 +58,7 @@ class ClassTypeChangedTest {
 
 	@Client("""
 		class C implements A {};
-		A a = new A(); // Trigger the linker""")
+		C c = new C(); // Trigger the linker""")
 	@Test
 	void interface_to_record() {
 		var v1 = "public interface A {}";
@@ -69,7 +69,7 @@ class ClassTypeChangedTest {
 
 	@Client("""
 		class C implements A {};
-		A a = new A(); // Trigger the linker""")
+		C c = new C(); // Trigger the linker""")
 	@Test
 	void interface_to_enum() {
 		var v1 = "public interface A {}";
