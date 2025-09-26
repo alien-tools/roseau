@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -11,6 +12,7 @@ import static io.github.alien.roseau.utils.TestUtils.buildDiff;
  * To be refined once we distinguish binary vs source compatibility
  */
 class FieldTypeChangedTest {
+	@Client("int i = new A().f;")
 	@Test
 	void boxing() {
 		var v1 = """
@@ -25,6 +27,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("Integer i = new A().f;")
 	@Test
 	void unboxing() {
 		var v1 = """
@@ -39,6 +42,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("int i = new A().f;")
 	@Test
 	void widening() {
 		var v1 = """
@@ -53,6 +57,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("long l = new A().f;")
 	@Test
 	void narrowing() {
 		var v1 = """
@@ -67,6 +72,12 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		new A().f = new java.io.InputStream() {
+			@Override public int read() {
+				return 0;
+			}
+		};""")
 	@Test
 	void subtype_jdk() {
 		var v1 = """
@@ -81,6 +92,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.FileInputStream fis = new A().f;")
 	@Test
 	void supertype_jdk() {
 		var v1 = """
@@ -95,6 +107,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A().f = new I() {};")
 	@Test
 	void subtype_api() {
 		var v1 = """
@@ -113,6 +126,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("J j = new A().f;")
 	@Test
 	void supertype_api() {
 		var v1 = """
@@ -131,6 +145,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("I i = new A().f;")
 	@Test
 	void incompatible_api() {
 		var v1 = """
@@ -149,6 +164,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("Integer i = new A<Integer, String>().f;")
 	@Test
 	void incompatible_type_parameter() {
 		var v1 = """
@@ -163,6 +179,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A<java.util.HashMap, java.util.LinkedHashMap>().f = new java.util.HashMap<>();")
 	@Test
 	void subtype_type_parameter() {
 		var v1 = """
@@ -177,6 +194,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.LinkedHashMap m = new A<java.util.HashMap, java.util.LinkedHashMap>().f;")
 	@Test
 	void supertype_type_parameter() {
 		var v1 = """
@@ -191,6 +209,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<Integer> l = new A().f;")
 	@Test
 	void incompatible_generic() {
 		var v1 = """
@@ -205,6 +224,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<I> l = new A().f;")
 	@Test
 	void subtype_generic() {
 		var v1 = """
@@ -223,6 +243,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<J> l = new A().f;")
 	@Test
 	void supertype_generic() {
 		var v1 = """
@@ -241,6 +262,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("int[] a = new A().f;")
 	@Test
 	void incompatible_array() {
 		var v1 = """
@@ -255,6 +277,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.InputStream[] a = new A().f;")
 	@Test
 	void subtype_array() {
 		var v1 = """
@@ -269,6 +292,7 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.FileInputStream[] a = new A().f;")
 	@Test
 	void supertype_array() {
 		var v1 = """
@@ -311,6 +335,10 @@ class FieldTypeChangedTest {
 		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		int i = I.f;
+		Object o = new C().f;
+		String s = new X().f;""")
 	@Test
 	void subtype_shadowing() {
 		var v1 = """
