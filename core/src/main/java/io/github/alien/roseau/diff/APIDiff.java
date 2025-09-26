@@ -289,16 +289,17 @@ public class APIDiff {
 	}
 
 	private void diffThrownExceptions(ExecutableDecl e1, ExecutableDecl e2) {
-		v1.getThrownCheckedExceptions(e1).stream()
-			.filter(exc1 -> v2.getThrownCheckedExceptions(e2).stream()
-				.noneMatch(exc2 -> v2.isSubtypeOf(exc2, exc1)))
+		List<ITypeReference> thrown1 = v1.getThrownCheckedExceptions(e1);
+		List<ITypeReference> thrown2 = v2.getThrownCheckedExceptions(e2);
+
+		thrown1.stream()
+			.filter(exc1 -> thrown2.stream().noneMatch(exc2 -> v2.isSubtypeOf(exc2, exc1)))
 			.forEach(exc1 ->
 				bc(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, e1, e2,
 					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
-		v2.getThrownCheckedExceptions(e2).stream()
-			.filter(exc2 -> v1.getThrownCheckedExceptions(e1).stream()
-				.noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))
+		thrown2.stream()
+			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))
 			.forEach(exc2 ->
 				bc(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, e1, e2,
 					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc2)));
