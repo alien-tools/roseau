@@ -12,34 +12,6 @@ import static io.github.alien.roseau.utils.TestUtils.buildDiff;
  * To be refined once we distinguish binary vs source compatibility
  */
 class FieldTypeChangedTest {
-	@Test
-	void to_unknown() {
-		var v1 = """
-			public class A {
-				public A f;
-			}""";
-		var v2 = """
-			public class A {
-				public Unknown f;
-			}""";
-
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
-	}
-
-	@Test
-	void from_unknown() {
-		var v1 = """
-			public class A {
-				public Unknown f;
-			}""";
-		var v2 = """
-			public class A {
-				public A f;
-			}""";
-
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
-	}
-
 	@Client("int i = new A().f;")
 	@Test
 	void boxing() {
@@ -363,5 +335,33 @@ class FieldTypeChangedTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void to_unknown() {
+		var v1 = """
+			public class A {
+				public A f;
+			}""";
+		var v2 = """
+			public class A {
+				public Unknown f;
+			}""";
+
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Test
+	void from_unknown() {
+		var v1 = """
+			public class A {
+				public Unknown f;
+			}""";
+		var v2 = """
+			public class A {
+				public A f;
+			}""";
+
+		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 }
