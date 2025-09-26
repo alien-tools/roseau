@@ -430,7 +430,8 @@ public class APIDiff {
 
 				if (!isFinalExecutable) { // Invariant
 					if (!new HashSet<>(bounds1).equals(new HashSet<>(bounds2))) {
-						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2);
+						bc(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, e1, e2,
+							new BreakingChangeDetails.MethodFormalTypeParametersChanged(ftp1, ftp2));
 					}
 				} else { // Variance
 					// Any new bound that's not a supertype of an existing bound is breaking

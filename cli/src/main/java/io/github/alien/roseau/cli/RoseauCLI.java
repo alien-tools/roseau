@@ -5,13 +5,9 @@ import com.google.common.base.Strings;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.SourceLocation;
-import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
@@ -30,7 +26,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -168,28 +163,6 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	/*private String format(BreakingChange bc) {
-		String details = switch (bc.details()) {
-			case BreakingChangeDetails.None d -> "";
-			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
-				"old: %s, new: %s".formatted(oldType, newType);
-			case BreakingChangeDetails.MethodAddedToInterface(var newMethod) -> "method: " + newMethod.getSignature();
-			case BreakingChangeDetails.MethodAbstractAddedToClass(var newMethod) -> "method: " + newMethod.getSignature();
-		};
-
-		if (plain) {
-			return String.format("%s %s%s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
-				details.isEmpty() ? "" : " [%s]".formatted(details),
-				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
-		} else {
-			return String.format("%s %s%n\t%s:%s",
-				RED_TEXT + BOLD + bc.kind() + RESET,
-				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-				details.isEmpty() ? "" : " [%s]".formatted(details),
-				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
-		}
-	}*/
-
 	private void checkArguments() {
 		if (v1 == null || !Files.exists(v1)) {
 			throw new IllegalArgumentException("--v1 does not exist");
@@ -241,7 +214,7 @@ public final class RoseauCLI implements Callable<Integer> {
 				if (bcs.isEmpty()) {
 					System.out.println("No breaking changes found.");
 				} else {
-					System.out.println(new CliFormatter().format(report));
+					System.out.println(new CliFormatter(plain).format(report));
 				}
 
 				if (failMode && !bcs.isEmpty()) {
