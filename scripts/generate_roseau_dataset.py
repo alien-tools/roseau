@@ -118,14 +118,19 @@ def _write_case(test_class: str, test_name: str, code1: str, code2: str, client_
     # Use underscore between class and test names for all outputs (client, v1, v2)
     case_dir_us = f"{_sanitize(test_class)}_{_sanitize(test_name)}"
 
-    # client: match v1/v2 directory naming and include package declaration
-    client_dir = OUTPUT_ROOT / "client" / "src" / case_dir_us
-    client_dir.mkdir(parents=True, exist_ok=True)
-    package_line = f"package {case_dir_us};\n"
-    main_path = client_dir / "Main.java"
     if client_code.strip():
+        # client: now placed under roseau-dataset/client/src/client/{testClass_testName}
+        client_dir = OUTPUT_ROOT / "client" / "src" / "client" / case_dir_us
+        client_dir.mkdir(parents=True, exist_ok=True)
+        package_line = f"package {case_dir_us};\n"
+        client_package_line = f"package client.{case_dir_us};\n"
+        import_line = f"import {case_dir_us}.*;\n"
+        main_path = client_dir / "Main.java"
+
         main_src = (
-            package_line
+            client_package_line
+            + "\n"
+            + import_line
             + "\n"
             + "public class Main {\n"
             + "    public static void main(String[] args) {\n"
@@ -134,20 +139,18 @@ def _write_case(test_class: str, test_name: str, code1: str, code2: str, client_
             + "}\n"
         )
         main_path.write_text(main_src, encoding="utf-8")
+
+        # v1 (drop 'pkg' directory level)
+        v1_dir = OUTPUT_ROOT / "v1" / "src" / case_dir_us
+        v1_dir.mkdir(parents=True, exist_ok=True)
+        _write_java_files_for_code(v1_dir, package_line, test_name, code1)
+
+        # v2 (drop 'pkg' directory level)
+        v2_dir = OUTPUT_ROOT / "v2" / "src" / case_dir_us
+        v2_dir.mkdir(parents=True, exist_ok=True)
+        _write_java_files_for_code(v2_dir, package_line, test_name, code2)
     else:
-        # Keep minimal file with just package declaration if no @Client provided
-        main_path.write_text(package_line, encoding="utf-8")
-
-    # v1 (drop 'pkg' directory level)
-    v1_dir = OUTPUT_ROOT / "v1" / "src" / case_dir_us
-    v1_dir.mkdir(parents=True, exist_ok=True)
-    _write_java_files_for_code(v1_dir, package_line, test_name, code1)
-
-    # v2 (drop 'pkg' directory level)
-    v2_dir = OUTPUT_ROOT / "v2" / "src" / case_dir_us
-    v2_dir.mkdir(parents=True, exist_ok=True)
-    _write_java_files_for_code(v2_dir, package_line, test_name, code2)
-
+        print(f"No client. Skipping case {case_dir_us}")
 
 # -------- Helpers for extracting top-level type declarations and writing files --------
 TYPE_DECL_PATTERN = re.compile(r"(class|interface|enum|record|@interface)\s+([A-Za-z_][A-Za-z0-9_]*)", re.MULTILINE)

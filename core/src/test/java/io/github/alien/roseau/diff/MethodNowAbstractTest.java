@@ -57,7 +57,7 @@ class MethodNowAbstractTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new B(){};")
+	@Client("new A(){};")
 	@Test
 	void method_becomes_abstract_in_superclass_affecting_subclass() {
 		var v1 = """
