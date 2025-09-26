@@ -24,6 +24,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 						"old: %s, new: %s".formatted(oldType, newType);
 					case BreakingChangeDetails.MethodAddedToInterface(var newMethod) -> "method: " + newMethod.getSignature();
 					case BreakingChangeDetails.MethodAbstractAddedToClass(var newMethod) -> "method: " + newMethod.getSignature();
+					default -> "";
 				};
 
 				if (false) { // plaoin

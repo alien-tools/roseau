@@ -11,6 +11,7 @@ import io.github.alien.roseau.api.model.Symbol;
  * @param kind           The kind of breaking change
  * @param impactedSymbol The API symbol impacted by the breaking change
  * @param newSymbol      If applicable, the corresponding symbol in the new version
+ * @param details        Additional details about the breaking change
  * @see BreakingChangeKind
  */
 public record BreakingChange(

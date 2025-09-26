@@ -4,6 +4,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
@@ -106,7 +107,7 @@ class AnnotationTargetRemovedTest {
 				String value();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 1, buildDiff(v1, v2));
+		assertBCs("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
