@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.builder;
 
 import io.github.alien.roseau.api.model.ClassDecl;
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.ArrayList;
@@ -9,7 +10,7 @@ import java.util.List;
 public sealed class ClassBuilder extends TypeBuilder permits EnumBuilder, RecordBuilder {
 	public TypeReference<ClassDecl> superClass;
 	public List<ConstructorBuilder> constructors = new ArrayList<>();
-	public List<String> permittedTypes = new ArrayList<>();
+	public List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
 
 	public ClassDecl make() {
 		var fields = this.fields.stream().map(FieldBuilder::make).toList();

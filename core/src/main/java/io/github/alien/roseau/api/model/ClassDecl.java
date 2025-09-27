@@ -9,19 +9,19 @@ import java.util.Set;
 
 /**
  * A class declaration is a {@link TypeDecl} with an optional superclass and a list of {@link ConstructorDecl}.
- * {@link ClassDecl} instantiated without superclass implicitly extend {@link java.lang.Object}.
+ * {@link ClassDecl} instantiated without a superclass implicitly extend {@link java.lang.Object}.
  */
-public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl permits RecordDecl, EnumDecl {
+public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
 	protected final List<ConstructorDecl> constructors;
-	private final List<String> permittedTypes;
+	private final List<TypeReference<TypeDecl>> permittedTypes;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location,
 	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
 	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
-	                 List<ConstructorDecl> constructors, List<String> permittedTypes) {
+	                 List<ConstructorDecl> constructors, List<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		Preconditions.checkNotNull(constructors);
@@ -54,8 +54,7 @@ public sealed class ClassDecl extends TypeDecl implements ISealableTypeDecl perm
 		return constructors;
 	}
 
-	@Override
-	public List<String> getPermittedTypes() {
+	public List<TypeReference<TypeDecl>> getPermittedTypes() {
 		return permittedTypes;
 	}
 
