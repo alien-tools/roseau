@@ -1,7 +1,7 @@
 package io.github.alien.roseau.combinatorial.writer;
 
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.visit.APIPrettyPrinter;
+import io.github.alien.roseau.combinatorial.api.APIPrettyPrinter;
 import io.github.alien.roseau.combinatorial.Constants;
 
 import java.nio.file.Files;
