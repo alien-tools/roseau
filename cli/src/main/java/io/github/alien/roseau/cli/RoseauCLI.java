@@ -157,7 +157,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		try {
 			Files.writeString(reportPath, fmt.format(report));
-			LOGGER.info("Wrote report to {}", reportPath);
+			System.out.println("Wrote report to " + reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
 		}
