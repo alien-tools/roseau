@@ -1,12 +1,16 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
+// §13.4.10
 class FieldNoLongerStaticTest {
+	@Client("int i = A.f;")
 	@Test
 	void field_no_longer_static() {
 		var v1 = """
@@ -19,5 +23,20 @@ class FieldNoLongerStaticTest {
 			}""";
 
 		assertBC("A.f", BreakingChangeKind.FIELD_NO_LONGER_STATIC, 2, buildDiff(v1, v2));
+	}
+
+	@Client("A a = new A();")
+	@Test
+	void private_field_no_longer_static() {
+		var v1 = """
+			public class A {
+				private static int f;
+			}""";
+		var v2 = """
+			public class A {
+				private int f = 0;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 }
