@@ -14,7 +14,7 @@ import java.util.Set;
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
 	protected final List<ConstructorDecl> constructors;
-	private final List<TypeReference<TypeDecl>> permittedTypes;
+	protected final List<TypeReference<TypeDecl>> permittedTypes;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location,

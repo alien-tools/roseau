@@ -11,7 +11,7 @@ import java.util.Set;
  * An interface declaration in an {@link LibraryTypes}.
  */
 public final class InterfaceDecl extends TypeDecl {
-	private final List<TypeReference<TypeDecl>> permittedTypes;
+	protected final List<TypeReference<TypeDecl>> permittedTypes;
 
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                     List<Annotation> annotations, SourceLocation location,

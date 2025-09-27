@@ -272,27 +272,31 @@ class TypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void sealed_classes(ApiBuilder builder) {
 		var api = builder.build("""
-			class A {}
-			sealed class B permits C, D, E {}
-			sealed class C extends B permits F {}
-			final class D extends B {}
-			non-sealed class E extends B {}
-			final class F extends C {}""");
+			public class A {}
+			public sealed class B permits C, D, E {}
+			public sealed class C extends B permits F {}
+			public final class D extends B {}
+			public non-sealed class E extends B {}
+			public final class F extends C {}""");
 
 		var a = assertClass(api, "A");
 		assertFalse(a.isFinal());
 		assertFalse(a.isSealed());
-		assertTrue(api.isEffectivelyFinal(a));
+		assertFalse(api.isEffectivelyFinal(a));
 
 		var b = assertClass(api, "B");
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
 		assertTrue(api.isEffectivelyFinal(b));
+		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("C", "D", "E");
 
 		var c = assertClass(api, "C");
 		assertFalse(c.isFinal());
 		assertTrue(c.isSealed());
 		assertTrue(api.isEffectivelyFinal(c));
+		assertThat(c.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("F");
 
 		var d = assertClass(api, "D");
 		assertTrue(d.isFinal());
@@ -302,10 +306,11 @@ class TypesExtractionTest {
 		var e = assertClass(api, "E");
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
-		assertTrue(api.isEffectivelyFinal(e));
-		// FIXME
-		//assertTrue(e.isNonSealed());
-		//assertFalse(api.isEffectivelyFinal(e));
+		assertFalse(api.isEffectivelyFinal(e));
+		// FIXME: No support for NON_SEALED in ASM yet
+		if (builder != ApiBuilderType.ASM) {
+			assertTrue(e.isNonSealed());
+		}
 
 		var f = assertClass(api, "F");
 		assertTrue(f.isFinal());
@@ -317,11 +322,11 @@ class TypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void sealed_interfaces(ApiBuilder builder) {
 		var api = builder.build("""
-			interface A {}
-			sealed interface B permits C, D {}
-			sealed interface C extends B permits E {}
-			non-sealed interface D extends B {}
-			final class E implements C {}""");
+			public interface A {}
+			public sealed interface B permits C, D {}
+			public sealed interface C extends B permits E {}
+			public non-sealed interface D extends B {}
+			public final class E implements C {}""");
 
 		var a = assertInterface(api, "A");
 		assertFalse(a.isFinal());
@@ -332,11 +337,15 @@ class TypesExtractionTest {
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
 		assertTrue(api.isEffectivelyFinal(b));
+		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("C", "D");
 
 		var c = assertInterface(api, "C");
 		assertFalse(c.isFinal());
 		assertTrue(c.isSealed());
 		assertTrue(api.isEffectivelyFinal(c));
+		assertThat(c.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("E");
 
 		var d = assertInterface(api, "D");
 		assertFalse(d.isFinal());
@@ -347,6 +356,23 @@ class TypesExtractionTest {
 		assertTrue(e.isFinal());
 		assertFalse(e.isSealed());
 		assertTrue(api.isEffectivelyFinal(e));
+	}
+
+	@ParameterizedTest
+	@EnumSource(value = ApiBuilderType.class, names = {"JDT"}, mode = EnumSource.Mode.EXCLUDE)
+	void implicit_permits(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed interface I {
+				record R1() implements I {}
+				record R2() implements I {}
+			}""");
+
+		var i = assertInterface(api, "I");
+		assertFalse(i.isFinal());
+		assertTrue(i.isSealed());
+		assertTrue(api.isEffectivelyFinal(i));
+		assertThat(i.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("I$R1", "I$R2");
 	}
 
 	@ParameterizedTest
@@ -429,6 +455,8 @@ class TypesExtractionTest {
 		var a = assertClass(api, "A");
 		assertTrue(a.isAbstract());
 		assertTrue(a.isSealed());
+		assertThat(a.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("B");
 
 		var b = assertClass(api, "B");
 		assertTrue(b.isFinal());

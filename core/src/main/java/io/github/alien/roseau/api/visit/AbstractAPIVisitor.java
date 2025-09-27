@@ -24,7 +24,6 @@ import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
-import org.xmlet.htmlapifaster.U;
 
 /**
  * A default abstract implementation of {@link APIAlgebra} using {@link Visit} as the lambda type that produces no
