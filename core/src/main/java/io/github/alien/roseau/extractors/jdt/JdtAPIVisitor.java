@@ -200,11 +200,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 		TypeDecl typeDecl = switch (type) {
 			case TypeDeclaration c when !c.isInterface() ->
 				new ClassDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType, superClassRef, constructors, List.of());
+					typeParams, fields, methods, enclosingType, superClassRef, constructors, convertPermittedTypes(c));
 			case TypeDeclaration i when i.isInterface() -> {
 				modifiers.add(Modifier.ABSTRACT);
 				yield new InterfaceDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					typeParams, fields, methods, enclosingType, List.of());
+					typeParams, fields, methods, enclosingType, convertPermittedTypes(i));
 			}
 			case EnumDeclaration e ->
 				new EnumDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
@@ -326,6 +326,12 @@ final class JdtAPIVisitor extends ASTVisitor {
 		return Arrays.stream(typeParameters)
 			.map(tp -> new FormalTypeParameter(tp.getName(),
 				Arrays.stream(tp.getTypeBounds()).map(this::makeTypeReference).toList()))
+			.toList();
+	}
+
+	private List<TypeReference<TypeDecl>> convertPermittedTypes(TypeDeclaration type) {
+		return ((List<org.eclipse.jdt.core.dom.Type>) type.permittedTypes()).stream()
+			.map(t -> typeRefFactory.createTypeReference(t.resolveBinding().getQualifiedName()))
 			.toList();
 	}
 

@@ -10,14 +10,14 @@ import java.util.Set;
 /**
  * An interface declaration in an {@link LibraryTypes}.
  */
-public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
-	private final List<String> permittedTypes;
+public final class InterfaceDecl extends TypeDecl {
+	protected final List<TypeReference<TypeDecl>> permittedTypes;
 
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                     List<Annotation> annotations, SourceLocation location,
 	                     List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                     List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                     TypeReference<TypeDecl> enclosingType, List<String> permittedTypes) {
+	                     TypeReference<TypeDecl> enclosingType, List<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType);
 		Preconditions.checkNotNull(permittedTypes);
@@ -29,8 +29,7 @@ public final class InterfaceDecl extends TypeDecl implements ISealableTypeDecl {
 		return true;
 	}
 
-	@Override
-	public List<String> getPermittedTypes() {
+	public List<TypeReference<TypeDecl>> getPermittedTypes() {
 		return permittedTypes;
 	}
 

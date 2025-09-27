@@ -389,9 +389,9 @@ public class SpoonAPIFactory {
 			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
 	}
 
-	private List<String> convertCtSealable(CtSealable sealable) {
+	private List<TypeReference<TypeDecl>> convertCtSealable(CtSealable sealable) {
 		return sealable.getPermittedTypes().stream()
-			.map(CtTypeReference::getSimpleName)
+			.map(this::createTypeReference)
 			.toList();
 	}
 

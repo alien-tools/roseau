@@ -396,7 +396,7 @@ public final class CombinatorialApi {
 						addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
 
 						if (superCls.isSealed()) {
-							superClsBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+							superClsBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(clsBuilder.qualifiedName));
 						}
 
 						if (isHidingAndOverriding) {
@@ -435,7 +435,7 @@ public final class CombinatorialApi {
 							}
 
 							if (implementingIntf.isSealed()) {
-								implementingIntfBuilder.permittedTypes.add(clsBuilder.qualifiedName);
+								implementingIntfBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(clsBuilder.qualifiedName));
 							}
 						});
 
@@ -580,7 +580,7 @@ public final class CombinatorialApi {
 			}
 
 			if (implementingIntf.isSealed()) {
-				implementingIntfBuilder.permittedTypes.add(builder.qualifiedName);
+				implementingIntfBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(builder.qualifiedName));
 			}
 		});
 	}

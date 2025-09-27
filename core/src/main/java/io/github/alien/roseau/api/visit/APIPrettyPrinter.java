@@ -70,7 +70,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getPermittedTypes().isEmpty()
 				? ""
-				: "permits " + String.join(", ", it.getPermittedTypes()),
+				: "permits " + it.getPermittedTypes().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
@@ -96,7 +96,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				: "extends " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getPermittedTypes().isEmpty()
 				? ""
-				: "permits " + String.join(", ", it.getPermittedTypes()),
+				: "permits " + it.getPermittedTypes().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
 		);

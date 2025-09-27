@@ -1,12 +1,14 @@
 package io.github.alien.roseau.combinatorial.builder;
 
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.ArrayList;
 import java.util.List;
 
 public final class InterfaceBuilder extends TypeBuilder {
-	public List<String> permittedTypes = new ArrayList<>();
+	public List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
 
 	public InterfaceDecl make() {
 		var fields = this.fields.stream().map(FieldBuilder::make).toList();

@@ -58,8 +58,8 @@ final class AsmClassVisitor extends ClassVisitor {
 	private final Set<ElementType> targets = new HashSet<>();
 	private final List<ConstructorDecl> constructors = new ArrayList<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
+	private final List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
 	private final List<String> annotations = new ArrayList<>();
-	private boolean isSealed;
 	private boolean hasNonPrivateConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
@@ -229,9 +229,8 @@ final class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitPermittedSubclass(String permittedSubclass) {
 		if (!shouldSkip) {
-			// Roseau's current API model does not care about the list of permitted subclasses,
-			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
-			isSealed = true;
+			// FIXME: no support for NON_SEALED in ASM yet
+			permittedTypes.add(typeRefFactory.createTypeReference(permittedSubclass));
 		}
 	}
 
@@ -294,7 +293,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		// No bullet-proof line information for types
 		SourceLocation location = new SourceLocation(sourceFile, -1);
 
-		if (isSealed) {
+		if (!permittedTypes.isEmpty()) {
 			modifiers.add(Modifier.SEALED);
 		}
 
@@ -316,7 +315,7 @@ final class AsmClassVisitor extends ClassVisitor {
 				fields, annotationMethods, enclosingType, targets);
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, List.of());
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
 		} else if (isEnum(classAccess)) {
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, fields, methods, enclosingType, constructors, List.of());
@@ -325,7 +324,8 @@ final class AsmClassVisitor extends ClassVisitor {
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors, List.of());
 		} else {
 			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors, List.of());
+				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType,
+				superClass, constructors, permittedTypes);
 		}
 	}
 
@@ -508,7 +508,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	private boolean isEffectivelyFinal(int access) {
 		// FIXME: non-sealed
-		return isFinal(access) || isSealed || (isClass(classAccess) && !hasNonPrivateConstructor);
+		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasNonPrivateConstructor);
 	}
 
 	private static EnumSet<Modifier> convertClassModifiers(int access) {
