@@ -11,16 +11,17 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
-import java.time.ZonedDateTime;
 import java.time.ZoneId;
+import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.TreeMap;
 
 /**
- * A beautiful HTML formatter for Roseau reports.
- *
- * It produces a self-contained HTML page with some inline CSS, summarizing
- * the compared libraries and listing the breaking changes grouped by type and member.
+ * An HTML formatter for Roseau reports.
  */
 public final class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
@@ -31,11 +32,10 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		API apiV2 = report.v2();
 		List<BreakingChange> changes = report.breakingChanges();
 
-		// Build a tree of changes grouped by type then member (using v1 resolver)
-		Map<String, TypeGroup> groups = buildGroups(apiV1, changes);
+		List<TypeDecl> impactedTypes = report.impactedTypes();
 
 		ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
-		DateTimeFormatter human = DateTimeFormatter.ofPattern("EEEE, MMMM d, uuuu 'at' h:mm a z", Locale.ENGLISH);
+		DateTimeFormatter human = DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' h:mm a", Locale.ENGLISH);
 		String generatedAt = now.format(human);
 
 		sb.append("<!DOCTYPE html>\n");
@@ -46,14 +46,14 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		sb.append(baseCss());
 		sb.append("</style>\n");
 		// Theme initialization script
-		sb.append("<script>(function(){try{var k='roseau_theme';var pref=localStorage.getItem(k);var sysLight=window.matchMedia && window.matchMedia('(prefers-color-scheme: light)').matches;var t=pref?pref:(sysLight?'light':'dark');document.documentElement.setAttribute('data-theme',t);}catch(e){}})();</script>\n");
+		sb.append("<script>!function(){const e=matchMedia(\"(prefers-color-scheme: light)\"),t=s=>document.documentElement.setAttribute(\"data-theme\",s.matches?\"light\":\"dark\");t(e);e.addEventListener(\"change\",t)}();</script>\n\n");
 		sb.append("</head>\n<body>\n");
 
 		// Header
 		sb.append("<header class=\"header\">\n");
 		sb.append("<div class=\"page\">");
-		sb.append("<div class=\"titles\"><h1>Breaking Changes Report</h1>\n");
-		sb.append("<div class=\"subtitle\">Generated ").append(escape(generatedAt)).append(" with Roseau</div></div>\n");
+		sb.append("<div class=\"titles\"><h1>Roseau Report</h1>\n");
+		sb.append("<div class=\"subtitle\">Generated ").append(escape(generatedAt)).append("</div></div>\n");
 		sb.append("<button id=\"theme-toggle\" class=\"theme-toggle\" title=\"Toggle theme\">🌙</button>");
 		sb.append("</div>");
 		sb.append("</header>\n");
@@ -69,75 +69,66 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		sb.append("</div>\n</div>\n");
 		// Metrics
 		sb.append("<div class=\"card metrics\">\n<h2>Summary</h2>\n<div class=\"metrics-grid\">\n");
-		boolean anySourceBreaking = changes.stream().anyMatch(c -> c.kind().isSourceBreaking());
-		boolean anyBinaryBreaking = changes.stream().anyMatch(c -> c.kind().isBinaryBreaking());
 		sb.append(metric("Breaking changes", Integer.toString(changes.size()), changes.isEmpty() ? "ok" : "danger"));
-		sb.append(metric("Impacted types", Integer.toString(groups.size()), groups.isEmpty() ? "ok" : "warn"));
-		sb.append(metric("Source-compatible", anySourceBreaking ? "No" : "Yes", anySourceBreaking ? "danger" : "ok"));
-		sb.append(metric("Binary-compatible", anyBinaryBreaking ? "No" : "Yes", anyBinaryBreaking ? "danger" : "ok"));
+		sb.append(metric("Impacted types", Integer.toString(impactedTypes.size()), impactedTypes.isEmpty() ? "ok" : "warn"));
+		sb.append(metric("Source-compatible", report.isSourceBreaking() ? "No" : "Yes", report.isSourceBreaking() ? "danger" : "ok"));
+		sb.append(metric("Binary-compatible", report.isBinaryBreaking() ? "No" : "Yes", report.isBinaryBreaking() ? "danger" : "ok"));
 		sb.append("</div>\n</div>\n");
 		sb.append("</section>\n");
 
 		// Contents
 		sb.append("<section class=\"toc card\">\n<h2>Contents</h2>\n");
-		if (groups.isEmpty()) {
+		if (changes.isEmpty()) {
 			sb.append("<ul class=\"toc-list\"><li><em>No breaking changes detected.</em></li></ul>\n");
 		} else {
 			// Build package grouping
-			Map<String, List<TypeGroup>> byPkg = new TreeMap<>();
-			for (TypeGroup g : groups.values()) {
-				String pkg = g.packageName;
-				if (pkg == null || pkg.isEmpty()) {
-					int i = g.typeName.lastIndexOf('.');
-					pkg = (i > 0) ? g.typeName.substring(0, i) : "(default package)";
-				}
-				byPkg.computeIfAbsent(pkg, k -> new ArrayList<>()).add(g);
+			Map<String, List<TypeDecl>> byPkg = new TreeMap<>();
+			for (TypeDecl type : impactedTypes) {
+				byPkg.computeIfAbsent(type.getPackageName(), k -> new ArrayList<>()).add(type);
 			}
-			for (Map.Entry<String, List<TypeGroup>> e : byPkg.entrySet()) {
-				String pkg = e.getKey();
+			byPkg.forEach((pkg, types) -> {
 				sb.append("<h3 class=\"pkg-name\">").append(escape(pkg)).append("</h3>\n<ul class=\"toc-list\">\n");
-				e.getValue().stream()
-					.sorted(Comparator.comparing(g -> {
-						int i = g.typeName.lastIndexOf('.');
-						return (i >= 0 ? g.typeName.substring(i + 1) : g.typeName);
-					}))
-					.forEach(g -> {
-						int i = g.typeName.lastIndexOf('.');
-						String simple = (i >= 0 ? g.typeName.substring(i + 1) : g.typeName);
-						sb.append("<li>")
-							.append("<a href=\"").append("#").append(anchor(g.typeName)).append("\">")
-							.append(escape(simple)).append("</a> ")
-							.append("<span class=\"pill\">").append(g.totalChanges()).append("</span>");
-						if (g.anySourceBreaking) sb.append(" <span class=\"compat compat-source\" title=\"Source-incompatible\">Src</span>");
-						if (g.anyBinaryBreaking) sb.append(" <span class=\"compat compat-binary\" title=\"Binary-incompatible\">Bin</span>");
-						sb.append("</li>\n");
-					});
+				types.forEach(type -> {
+					int totalBCs = report.breakingChangesOnTypeAndMembers(type).size();
+					sb.append("<li>")
+						.append("<a href=\"").append("#").append(anchor(type)).append("\">")
+						.append(escape(type.getSimpleName())).append("</a> ")
+						.append("<span class=\"pill\">").append(totalBCs).append("</span>");
+					if (report.isSourceBreakingType(type))
+						sb.append(" <span class=\"compat compat-source\" title=\"Source-incompatible\">Src</span>");
+					if (report.isBinaryBreakingType(type))
+						sb.append(" <span class=\"compat compat-binary\" title=\"Binary-incompatible\">Bin</span>");
+					sb.append("</li>\n");
+				});
 				sb.append("</ul>\n");
-			}
+			});
 		}
 		sb.append("</section>\n");
 
 		// Detailed changes
 		sb.append("<section class=\"details\">\n");
-		for (TypeGroup g : groups.values().stream().sorted(Comparator.comparing(x -> x.typeName)).toList()) {
-				sb.append("<article class=\"card type\" id=\"").append(anchor(g.typeName)).append("\">\n");
-				sb.append("<h2>").append(escape(g.typeName)).append(" <span class=\"badge\">").append(g.totalChanges()).append("</span>");
-				String typeLoc = locationBadge(g.typeLocation);
-				if (!typeLoc.isEmpty()) sb.append(" ").append(typeLoc);
-				sb.append("</h2>\n");
-			boolean typeRemoved = g.typeLevelChanges.stream().anyMatch(bc -> bc.kind() == BreakingChangeKind.TYPE_REMOVED);
+		for (TypeDecl type : impactedTypes) {
+			String typeName = type.getQualifiedName();
+			sb.append("<article class=\"card type\" id=\"").append(anchor(type)).append("\">\n");
+			int totalBCs = report.breakingChangesOnTypeAndMembers(type).size();
+			sb.append("<h2>").append(escape(typeName)).append(" <span class=\"badge\">").append(totalBCs).append("</span>");
+			String typeLoc = locationBadge(report.typeLocation(typeName));
+			if (!typeLoc.isEmpty()) sb.append(" ").append(typeLoc);
+			sb.append("</h2>\n");
+			List<BreakingChange> typeLevel = report.breakingChangesOnType(type);
+			boolean typeRemoved = typeLevel.stream().anyMatch(bc -> bc.kind() == BreakingChangeKind.TYPE_REMOVED);
 			if (typeRemoved) {
 				sb.append("<div class=\"danger-banner\">This type was removed in the new version.</div>\n");
 			} else {
-				if (!g.typeLevelChanges.isEmpty()) {
+				if (!typeLevel.isEmpty()) {
 					sb.append("<div class=\"type-level\">\n<h3>Type-level changes</h3>\n<ul class=\"changes\">\n");
-					for (BreakingChange bc : g.typeLevelChanges) {
+					for (BreakingChange bc : typeLevel) {
 						sb.append("<li>")
 							.append("<span class=\"kind kind-").append(cssKind(bc)).append("\">")
 							.append(escape(bc.kind().toString())).append("</span>");
 						String newSym = printSymbol(bc.newSymbol());
 						if (!newSym.isEmpty()) {
-				 	sb.append(" <span class=\"arrow\">→</span> <code>").append(escape(newSym)).append("</code>");
+							sb.append(" <span class=\"arrow\">→</span> <code>").append(escape(newSym)).append("</code>");
 						}
 						String det = detailHtml(bc);
 						if (!det.isEmpty()) {
@@ -147,15 +138,21 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 					}
 					sb.append("</ul>\n</div>\n");
 				}
-				for (MemberGroup m : g.members.values().stream().sorted(Comparator.comparing(x -> x.memberName)).toList()) {
+				Map<String, List<BreakingChange>> members = report.memberChanges(typeName);
+				for (Map.Entry<String, List<BreakingChange>> me : members.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
+					String memberName = me.getKey();
+					List<BreakingChange> mchanges = me.getValue();
+					Symbol ms = mchanges.get(0).impactedSymbol();
+					String memberKind = (ms instanceof TypeMemberDecl tmd) ? tmd.getClass().getSimpleName() : "Member";
+					SourceLocation mloc = (ms instanceof TypeMemberDecl tmd) ? tmd.getLocation() : null;
 					sb.append("<div class=\"member\">\n");
-					sb.append("<h3>").append(escape(m.memberName)).append(" <small class=\"muted\">")
-						.append(escape(m.memberKind)).append("</small>");
-					String memLoc = locationBadge(m.location);
+					sb.append("<h3>").append(escape(memberName)).append(" <small class=\"muted\">")
+						.append(escape(memberKind)).append("</small>");
+					String memLoc = locationBadge(mloc);
 					if (!memLoc.isEmpty()) sb.append(" ").append(memLoc);
 					sb.append("</h3>\n");
 					sb.append("<ul class=\"changes\">\n");
-					for (BreakingChange bc : m.changes) {
+					for (BreakingChange bc : mchanges) {
 						sb.append("<li>")
 							.append("<span class=\"kind kind-")
 							.append(cssKind(bc))
@@ -194,53 +191,6 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		return sb.toString();
 	}
 
- private static Map<String, TypeGroup> buildGroups(API api, List<BreakingChange> changes) {
-		Map<String, TypeGroup> groups = new HashMap<>();
-		for (BreakingChange bc : changes) {
-			Symbol sym = bc.impactedSymbol();
-			boolean src = bc.kind().isSourceBreaking();
-			boolean bin = bc.kind().isBinaryBreaking();
-			if (sym instanceof TypeDecl td) {
-				TypeGroup g = groups.computeIfAbsent(td.getQualifiedName(), TypeGroup::new);
-				g.ensureTypeLocation(td.getLocation());
-				g.packageName = td.getPackageName();
-				g.anySourceBreaking |= src;
-				g.anyBinaryBreaking |= bin;
-				g.addChangeToType(bc);
-			} else if (sym instanceof TypeMemberDecl tmd) {
-				String typeName = api.resolver().resolve(tmd.getContainingType())
-					.map(td -> {
-						TypeGroup g = groups.computeIfAbsent(td.getQualifiedName(), TypeGroup::new);
-						g.ensureTypeLocation(td.getLocation());
-						g.packageName = td.getPackageName();
-						g.anySourceBreaking |= src;
-						g.anyBinaryBreaking |= bin;
-						return td.getQualifiedName();
-					})
-					.orElseGet(() -> tmd.getContainingType().getQualifiedName());
-				TypeGroup g = groups.computeIfAbsent(typeName, TypeGroup::new);
-				String memberName = memberDisplayName(tmd);
-				g.anySourceBreaking |= src;
-				g.anyBinaryBreaking |= bin;
-				g.addChangeToMember(memberName, tmd.getClass().getSimpleName(), tmd.getLocation(), bc);
-			}
-		}
-		// Fallback package names derived from qualified name if missing
-		for (TypeGroup g : groups.values()) {
-			if (g.packageName == null || g.packageName.isEmpty()) {
-				int i = g.typeName.lastIndexOf('.');
-				g.packageName = (i > 0) ? g.typeName.substring(0, i) : "(default package)";
-			}
-		}
-		return groups;
-	}
-
-	private static String memberDisplayName(TypeMemberDecl m) {
-		if (m instanceof ExecutableDecl e) {
-			return e.getSignature();
-		}
-		return m.getSimpleName();
-	}
 
 	private static String printSymbol(Symbol s) {
 		if (s == null) return "";
@@ -272,8 +222,11 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 			.toString();
 	}
 
-	private static String anchor(String s) {
-		return s.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]+", "-").replaceAll("(^-|-$)", "");
+	private static String anchor(TypeDecl type) {
+		return type.getQualifiedName()
+			.toLowerCase(Locale.ROOT)
+			.replaceAll("[^a-z0-9]+", "-")
+			.replaceAll("(^-|-$)", "");
 	}
 
 	private static String cssKind(BreakingChange bc) {
@@ -316,8 +269,8 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 			+ ".compat{font-size:11px;border-radius:999px;padding:2px 6px;border:1px solid transparent} .compat-source{background:var(--compat-src-bg);color:var(--compat-src-text);border-color:var(--compat-src-border)} .compat-binary{background:var(--compat-bin-bg);color:var(--compat-bin-text);border-color:var(--compat-bin-border)}"
 			+ ".loc{font-size:11px;color:var(--loc-text);background:var(--loc-bg);border:1px solid var(--loc-border);border-radius:999px;padding:2px 6px;vertical-align:middle}"
 			+ ".arrow{color:var(--arrow);margin:0 6px} code{background:var(--code-bg);border:1px solid var(--code-border);border-radius:6px;padding:2px 4px}"
-   + ".footer{color:var(--footer);text-align:center;padding:24px} .heart{color:#ff6b9a}";
-  }
+			+ ".footer{color:var(--footer);text-align:center;padding:24px} .heart{color:#ff6b9a}";
+	}
 
 	private static String detailHtml(BreakingChange bc) {
 		BreakingChangeDetails d = bc.details();
@@ -366,31 +319,6 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		if (src) b.append("<span class=\"compat compat-source\">Source</span>");
 		if (bin) b.append(src ? " " : "").append("<span class=\"compat compat-binary\">Binary</span>");
 		return b.toString();
-	}
-
- private static final class TypeGroup {
-		final String typeName;
-		final Map<String, MemberGroup> members = new HashMap<>();
-		final List<BreakingChange> typeLevelChanges = new ArrayList<>();
-		SourceLocation typeLocation;
-		String packageName;
-		boolean anySourceBreaking;
-		boolean anyBinaryBreaking;
-		TypeGroup(String typeName) { this.typeName = typeName; }
-		void ensureTypeLocation(SourceLocation loc) { if (this.typeLocation == null && loc != null) this.typeLocation = loc; }
-		void addChangeToType(BreakingChange bc) { typeLevelChanges.add(bc); }
-		void addChangeToMember(String memberName, String memberKind, SourceLocation loc, BreakingChange bc) {
-			members.computeIfAbsent(memberName, n -> new MemberGroup(memberName, memberKind, loc)).changes.add(bc);
-		}
-		int totalChanges() { return typeLevelChanges.size() + members.values().stream().mapToInt(m -> m.changes.size()).sum(); }
-	}
-
-	private static final class MemberGroup {
-		final String memberName;
-		final String memberKind;
-		final List<BreakingChange> changes = new ArrayList<>();
-		final SourceLocation location;
-		MemberGroup(String memberName, String memberKind, SourceLocation location) { this.memberName = memberName; this.memberKind = memberKind; this.location = location; }
 	}
 
 	private static String locationBadge(SourceLocation loc) {
