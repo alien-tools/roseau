@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -8,6 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodRemovedTest {
+	@Client("new B().m1();")
 	@Test
 	void leaked_public_method_now_private() {
 		var v1 = """
@@ -28,6 +30,7 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new B().m1();")
 	@Test
 	void leaked_public_method_no_longer_leaked() {
 		var v1 = """
@@ -48,6 +51,7 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A().m1();")
 	@Test
 	void public_method_removed() {
 		var v1 = """
@@ -59,6 +63,7 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A().m1(0);")
 	@Test
 	void overloaded_method_removed() {
 		var v1 = """
@@ -74,6 +79,7 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 3, buildDiff(v1, v2));
 	}
 
+	@Client("A.m1();")
 	@Test
 	void static_method_removed() {
 		var v1 = """
@@ -85,6 +91,7 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new I(){}.m1();")
 	@Test
 	void default_method_removed_in_interface() {
 		var v1 = """
@@ -96,6 +103,7 @@ class MethodRemovedTest {
 		assertBC("I.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A().m1();")
 	@Test
 	void method_visibility_reduced_from_public_to_package_private() {
 		var v1 = """
@@ -110,6 +118,7 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new B().m1();")
 	@Test
 	void overridden_method_removed_from_subclass() {
 		var v1 = """
@@ -128,6 +137,7 @@ class MethodRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("new A().m1();")
 	@Test
 	void interface_method_removed_affecting_implementer() {
 		var v1 = """
@@ -144,11 +154,12 @@ class MethodRemovedTest {
 		assertBC("I.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A().m1(0, null);")
 	@Test
 	void method_parameters_changed() {
 		var v1 = """
 			public class A {
-			    public void m1(int x, String y) {}
+			    public void m1(int x, Object y) {}
 			}""";
 		var v2 = """
 			public class A {
@@ -158,6 +169,10 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		new A() {
+			@Override protected void m1() {}
+		};""")
 	@Test
 	void method_visibility_protected_to_private() {
 		var v1 = """
@@ -172,31 +187,34 @@ class MethodRemovedTest {
 		assertBC("A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A().m(null, 1);")
 	@Test
 	void method_now_varargs() {
 		var v1 = """
 			public class A {
-			    public void m(String s, int i) {}
+			    public void m(Object o, int i) {}
 			}""";
 		var v2 = """
 			public class A {
-			    public void m(String s, int... i) {}
+			    public void m(Object o, int... i) {}
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("@A(0) int i;")
 	@Test
 	void annotation_method_removed() {
 		var v1 = """
 			public @interface A {
-				String value();
+				int value();
 			}""";
 		var v2 = "public @interface A {}";
 
 		assertBC("A.value", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A(0).m();")
 	@Test
 	void record_method_removed() {
 		var v1 = """
@@ -210,6 +228,7 @@ class MethodRemovedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("new A(0, 0f); // Can't really test f()")
 	@Test
 	void record_getter_removed() {
 		var v1 = "public record A(int i, float f) {}";

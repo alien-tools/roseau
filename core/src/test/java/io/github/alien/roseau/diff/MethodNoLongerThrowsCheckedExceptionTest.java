@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -8,11 +9,15 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodNoLongerThrowsCheckedExceptionTest {
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
 	@Test
 	void method_no_longer_throws() {
 		var v1 = """
 			public class A {
-				public void m() throws Exception {}
+				public void m() throws java.io.IOException {}
 			}""";
 		var v2 = """
 			public class A {
@@ -22,11 +27,15 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		try {
+			new B().m();
+		} catch (java.io.IOException e) {}""")
 	@Test
 	void method_no_longer_throws_indirect() {
 		var v1 = """
 			public class A {
-				public void m() throws Exception {}
+				public void m() throws java.io.IOException {}
 			}
 			public class B extends A {}""";
 		var v2 = """
@@ -38,11 +47,15 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
 	@Test
 	void method_no_longer_throws_indirect_with_override_without_throws() {
 		var v1 = """
 			public class A {
-				public void m() throws Exception {}
+				public void m() throws java.io.IOException {}
 			}
 			public class B extends A {
 				@Override public void m() {}
@@ -56,8 +69,13 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertNoBC(5, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		try {
+			new A().m();
+		} catch (RuntimeException e) {}""")
 	@Test
 	void method_no_longer_throws_unchecked() {
 		var v1 = """
@@ -72,46 +90,75 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 		assertNoBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
 	@Test
 	void method_now_throws_subtype() {
 		var v1 = """
 			public class A {
-				public void m() throws Exception {}
+				public void m() throws java.io.IOException {}
 			}""";
 		var v2 = """
 			public class A {
-				public void m() throws java.io.IOException {}
+				public void m() throws java.io.ObjectStreamException {}
 			}""";
 
 		assertNoBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.ObjectStreamException e) {}""")
 	@Test
 	void method_now_throws_supertype() {
 		var v1 = """
 			public class A {
-				public void m() throws java.io.IOException {}
+				public void m() throws java.io.ObjectStreamException {}
 			}""";
 		var v2 = """
 			public class A {
-				public void m() throws Exception {}
+				public void m() throws java.io.IOException {}
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		try {
+			new A<java.io.ObjectStreamException>().m();
+		} catch (java.io.ObjectStreamException e) {}""")
 	@Test
 	void method_no_longer_throws_type_parameter() {
 		var v1 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws T {}
+			}""";
+		var v2 = """
+			public class A<T extends java.io.IOException> {
+				public void m() {}
+			}""";
+
+		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().<java.io.ObjectStreamException>m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void method_no_longer_throws_type_parameter_method() {
+		var v1 = """
 			public class A {
-				public <T extends Exception> void m() throws T {}
+				public <T extends java.io.IOException> void m() throws T {}
 			}""";
 		var v2 = """
 			public class A {
-				public <T extends Exception> void m() {}
+				public <T extends java.io.IOException> void m() {}
 			}""";
 
-		// FIXME
-		// assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 }

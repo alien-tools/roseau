@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -11,6 +12,7 @@ import static io.github.alien.roseau.utils.TestUtils.buildDiff;
  * they all map to a simple METHOD_RETURN_TYPE_CHANGED.
  */
 class MethodReturnTypeChangedTest {
+	@Client("new A().m();")
 	@Test
 	void void_to_non_void() {
 		var v1 = """
@@ -25,20 +27,22 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("int i = new A().m();")
 	@Test
 	void non_void_to_void() {
 		var v1 = """
 			public class A {
-				public void m() {}
+				public int m() { return 0; }
 			}""";
 		var v2 = """
 			public class A {
-				public int m() { return 0; }
+				public void m() {}
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("int i = new A().m();")
 	@Test
 	void boxing() {
 		var v1 = """
@@ -53,6 +57,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("Integer i = new A().m();")
 	@Test
 	void unboxing() {
 		var v1 = """
@@ -67,6 +72,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("int i = new A().m();")
 	@Test
 	void widening() {
 		var v1 = """
@@ -81,6 +87,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("long l = new A().m();")
 	@Test
 	void narrowing() {
 		var v1 = """
@@ -95,6 +102,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.InputStream is = new A().m();")
 	@Test
 	void subtype_jdk() {
 		var v1 = """
@@ -109,6 +117,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.FileInputStream fis = new A().m();")
 	@Test
 	void supertype_jdk() {
 		var v1 = """
@@ -123,6 +132,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("I i = new A().m();")
 	@Test
 	void subtype_api() {
 		var v1 = """
@@ -141,6 +151,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("J j = new A().m();")
 	@Test
 	void supertype_api() {
 		var v1 = """
@@ -159,6 +170,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("I i = new A().m();")
 	@Test
 	void incompatible_api() {
 		var v1 = """
@@ -177,6 +189,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("Integer i = new A<Integer, String>().m();")
 	@Test
 	void incompatible_type_parameter() {
 		var v1 = """
@@ -191,6 +204,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("CharSequence cs = new A<CharSequence, String>().m();")
 	@Test
 	void subtype_type_parameter() {
 		var v1 = """
@@ -205,6 +219,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("String s = new A<CharSequence, String>().m();")
 	@Test
 	void supertype_type_parameter() {
 		var v1 = """
@@ -219,6 +234,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<Integer> l = new A().m();")
 	@Test
 	void incompatible_generic() {
 		var v1 = """
@@ -233,6 +249,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<I> l = new A().m();")
 	@Test
 	void subtype_generic() {
 		var v1 = """
@@ -251,6 +268,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<J> l = new A().m();")
 	@Test
 	void supertype_generic() {
 		var v1 = """
@@ -269,6 +287,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("int[] a = new A().m();")
 	@Test
 	void incompatible_array() {
 		var v1 = """
@@ -283,6 +302,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.InputStream[] a = new A().m();")
 	@Test
 	void subtype_array() {
 		var v1 = """
@@ -297,6 +317,7 @@ class MethodReturnTypeChangedTest {
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("java.io.FileInputStream[] a = new A().m();")
 	@Test
 	void supertype_array() {
 		var v1 = """
@@ -309,6 +330,21 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("@A(0) class X {}")
+	@Test
+	void annotation_interface_method() {
+		var v1 = """
+			public @interface A {
+				int value();
+			}""";
+		var v2 = """
+			public @interface A {
+				String value();
+			}""";
+
+		assertBC("A.value", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -337,19 +373,5 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBC("A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
-	}
-
-	@Test
-	void annotation_interface_method() {
-		var v1 = """
-			public @interface A {
-				int value();
-			}""";
-		var v2 = """
-			public @interface A {
-				String value();
-			}""";
-
-		assertBC("A.value", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 }

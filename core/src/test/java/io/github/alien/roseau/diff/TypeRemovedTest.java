@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.diff.changes.BreakingChangeKind.TYPE_REMOVED;
@@ -8,6 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class TypeRemovedTest {
+	@Client("// Cannot write client code")
 	@Test
 	void class_private_removed() {
 		var v1 = "class A {}";
@@ -16,14 +18,16 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("A a;")
 	@Test
 	void class_public_removed() {
 		var v1 = "public class A {}";
-		var v2 = "public class B {}";
+		var v2 = "";
 
 		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
+	@Client("A a;")
 	@Test
 	void class_public_kept() {
 		var v1 = "public class A {}";
@@ -32,6 +36,7 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("A a;")
 	@Test
 	void class_public_moved() {
 		var v1 = "public class A {}";
@@ -40,6 +45,7 @@ class TypeRemovedTest {
 		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
+	@Client("A a;")
 	@Test
 	void class_now_package_private() {
 		var v1 = "public class A {}";
@@ -48,6 +54,7 @@ class TypeRemovedTest {
 		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
+	@Client("A a; // Cannot access A.I")
 	@Test
 	void class_inner_private_in_class_public_removed() {
 		var v1 = """
@@ -62,6 +69,10 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("""
+		new A() {
+			I i;
+		};""")
 	@Test
 	void class_inner_protected_in_class_public_removed() {
 		var v1 = """
@@ -76,6 +87,7 @@ class TypeRemovedTest {
 		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("A.I i;")
 	@Test
 	void class_inner_public_in_class_public_removed() {
 		var v1 = """
@@ -90,6 +102,7 @@ class TypeRemovedTest {
 		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("// Cannot access A")
 	@Test
 	void class_inner_static_public_in_class_private_removed() {
 		var v1 = """
@@ -104,6 +117,10 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("""
+		new A() {
+			I i;
+		};""")
 	@Test
 	void class_inner_static_protected_in_class_public_removed() {
 		var v1 = """
@@ -118,6 +135,7 @@ class TypeRemovedTest {
 		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("A.I i;")
 	@Test
 	void class_inner_static_public_in_class_public_removed() {
 		var v1 = """
@@ -132,6 +150,7 @@ class TypeRemovedTest {
 		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("// Cannot access A")
 	@Test
 	void class_inner_public_static_in_class_private_removed() {
 		var v1 = """
@@ -146,6 +165,7 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("@A int a;")
 	@Test
 	void annotation_interface_removed() {
 		var v1 = "public @interface A {}";

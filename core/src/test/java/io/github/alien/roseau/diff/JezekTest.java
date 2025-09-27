@@ -7,6 +7,9 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
+/**
+ * Should check for overlaps and merge them with "regular" tests
+ */
 class JezekTest {
 	@Test
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd() {

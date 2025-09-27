@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -8,6 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ConstructorRemovedTest {
+	@Client("A a = new A();")
 	@Test
 	void class_default_constructor_removed() {
 		var v1 = "public class A {}";
@@ -19,6 +21,7 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A();")
 	@Test
 	void class_default_constructor_now_explicit() {
 		var v1 = "public class A {}";
@@ -30,6 +33,7 @@ class ConstructorRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A();")
 	@Test
 	void class_explicit_constructor_now_default() {
 		var v1 = """
@@ -41,6 +45,7 @@ class ConstructorRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A();")
 	@Test
 	void class_constructor_now_private() {
 		var v1 = "public class A {}";
@@ -52,6 +57,7 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(0);")
 	@Test
 	void class_constructor_now_protected() {
 		var v1 = """
@@ -68,6 +74,7 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, 2, diff);
 	}
 
+	@Client("A a = new A();")
 	@Test
 	void class_constructor_now_protected_default() {
 		var v1 = "public class A {}";
@@ -81,14 +88,16 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, -1, diff);
 	}
 
+	@Client("A a = new A(0);")
 	@Test
 	void record_implicit_constructor_changed() {
 		var v1 = "public record A(int i) {}";
-		var v2 = "public record A(float f) {}";
+		var v2 = "public record A(String s) {}";
 
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(0);")
 	@Test
 	void record_implicit_constructor_changed_add() {
 		var v1 = "public record A(int i) {}";
@@ -97,6 +106,7 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(0, 0f);")
 	@Test
 	void record_implicit_constructor_changed_remove() {
 		var v1 = "public record A(int i, float f) {}";
@@ -105,6 +115,7 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A();")
 	@Test
 	void record_explicit_constructor_removed() {
 		var v1 = """
@@ -120,11 +131,12 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(true);")
 	@Test
 	void record_explicit_constructor_changed() {
 		var v1 = """
 			public record A(int i) {
-				public A(float f) {
+				public A(boolean f) {
 					this(0);
 				}
 			}""";
@@ -138,6 +150,7 @@ class ConstructorRemovedTest {
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(0);")
 	@Test
 	void record_default_constructor_removed() {
 		var v1 = """
@@ -151,6 +164,7 @@ class ConstructorRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(0);")
 	@Test
 	void class_constructor_changed() {
 		var v1 = """
@@ -159,18 +173,19 @@ class ConstructorRemovedTest {
 			}""";
 		var v2 = """
 			public class A {
-				public A(float f) {}
+				public A(String s) {}
 			}""";
 
 		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("A a = new A(true);")
 	@Test
 	void overloaded_constructor_removed() {
 		var v1 = """
 			public class A {
 				public A(int i) {}
-				public A(float f) {}
+				public A(boolean b) {}
 			}""";
 		var v2 = """
 			public class A {
