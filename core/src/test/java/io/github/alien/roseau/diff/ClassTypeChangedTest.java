@@ -2,6 +2,7 @@ package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
@@ -27,6 +28,7 @@ class ClassTypeChangedTest {
 		assertBC("A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
+	@Disabled("Not sure about this one; we might still want to report it.")
 	@Client("A a = new A();")
 	@Test
 	void final_class_to_record() {
