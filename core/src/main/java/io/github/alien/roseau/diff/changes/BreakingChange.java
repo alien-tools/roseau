@@ -1,10 +1,9 @@
 package io.github.alien.roseau.diff.changes;
 
-import io.github.alien.roseau.api.model.LibraryTypes;
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Symbol;
-
-import java.util.Objects;
 
 /**
  * A breaking change identified when comparing two {@link LibraryTypes} instances.
@@ -12,16 +11,21 @@ import java.util.Objects;
  * @param kind           The kind of breaking change
  * @param impactedSymbol The API symbol impacted by the breaking change
  * @param newSymbol      If applicable, the corresponding symbol in the new version
+ * @param details        Additional details about the breaking change
  * @see BreakingChangeKind
  */
 public record BreakingChange(
 	BreakingChangeKind kind,
 	Symbol impactedSymbol,
-	Symbol newSymbol
+	Symbol newSymbol,
+	BreakingChangeDetails details
 ) {
 	public BreakingChange {
-		Objects.requireNonNull(kind);
-		Objects.requireNonNull(impactedSymbol);
+		Preconditions.checkNotNull(kind);
+		Preconditions.checkNotNull(impactedSymbol);
+		if (details == null) {
+			details = new BreakingChangeDetails.None();
+		}
 	}
 
 	private static String printSymbol(Symbol s) {
