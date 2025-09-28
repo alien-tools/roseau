@@ -2,10 +2,12 @@ package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
+import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
@@ -206,7 +208,10 @@ class MethodReturnTypeChangedTest {
 		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("CharSequence cs = new A<CharSequence, String>().m();")
+	@Client("""
+		new A<CharSequence, String>() {
+			@Override public CharSequence m() { return null; }
+		};""")
 	@Test
 	void subtype_type_parameter() {
 		var v1 = """
@@ -219,6 +224,26 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Disabled("Not even binary-breaking cause of erasure")
+	@Client("""
+		new A<CharSequence, String>() {
+			// Cannot @Override
+		};
+		CharSequence cs = new A<CharSequence, String>().m();""")
+	@Test
+	void subtype_type_parameter_final() {
+		var v1 = """
+			public class A<T, U extends T> {
+				public final T m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T, U extends T> {
+				public final U m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Client("String s = new A<CharSequence, String>().m();")

@@ -18,7 +18,7 @@ class ClassNowAbstractTest {
 		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1, buildDiff(v1, v2));
 	}
 
-	@Client("new A(){};")
+	@Client("new B();")
 	@Test
 	void subclass_now_abstract() {
 		var v1 = """

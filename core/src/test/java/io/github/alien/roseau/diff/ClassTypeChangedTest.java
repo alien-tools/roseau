@@ -6,9 +6,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
-import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
-import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ClassTypeChangedTest {
@@ -103,7 +101,7 @@ class ClassTypeChangedTest {
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("A a = A.INSTANCE;")
+	@Client("A[] as = A.values();")
 	@Test
 	void enum_to_class() {
 		var v1 = "public enum A {}";
@@ -112,7 +110,7 @@ class ClassTypeChangedTest {
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("A a = A.INSTANCE;")
+	@Client("A[] as = A.values();")
 	@Test
 	void enum_to_interface() {
 		var v1 = "public enum A {}";

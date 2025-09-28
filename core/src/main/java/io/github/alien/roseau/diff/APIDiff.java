@@ -327,12 +327,14 @@ public class APIDiff {
 			return;
 		}
 
-		// Should be invariant, but they're not equal
-		if (e1.isMethod() && !pt1.equals(pt2)) {
+		boolean finalExecutable = v1.isEffectivelyFinal(t1, e1);
+		// Can be overridden = invariant
+		if (!finalExecutable && !pt1.equals(pt2)) {
 			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2);
 		}
 
-		if (e1.isConstructor() && !v1.isSubtypeOf(pt1, pt2)) {
+		// Can't = variance
+		if (finalExecutable && !v1.isSubtypeOf(pt1, pt2)) {
 			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2);
 		}
 	}
@@ -370,11 +372,12 @@ public class APIDiff {
 	private void diffFormalTypeParameters(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
 		int paramsCount1 = e1.getFormalTypeParameters().size();
 		int paramsCount2 = e2.getFormalTypeParameters().size();
+		boolean finalExecutable = v1.isEffectivelyFinal(t1, e1);
 
 		// Ok, well. Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
 		//  - it's a constructor and there was more than one
-		if (paramsCount1 > paramsCount2 && (e1.isMethod() || paramsCount1 > 1)) {
+		if (paramsCount1 > paramsCount2 && (!finalExecutable || paramsCount1 > 1)) {
 			memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, t1, e1, e2);
 		}
 
@@ -389,7 +392,7 @@ public class APIDiff {
 			if (i < paramsCount2) {
 				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
 
-				if (e1.isMethod()) { // Invariant
+				if (!finalExecutable) { // Invariant
 					if (!new HashSet<>(bounds1).equals(new HashSet<>(bounds2))) {
 						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2);
 					}

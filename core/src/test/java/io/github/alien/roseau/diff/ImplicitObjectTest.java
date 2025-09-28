@@ -116,7 +116,7 @@ class ImplicitObjectTest {
 	}
 
 	@Client("""
-		I i = new I();
+		I i = new I(){};
 		int j = i.hashCode();
 		String s = i.toString();
 		boolean b = i.equals(i);""")

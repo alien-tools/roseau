@@ -96,7 +96,7 @@ class MethodNowFinalTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new B().m()")
+	@Client("new B().m();")
 	@Test
 	void method_now_in_final_context_interface() {
 		var v1 = """
