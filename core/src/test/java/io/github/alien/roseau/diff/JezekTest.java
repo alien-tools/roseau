@@ -148,7 +148,7 @@ class JezekTest {
 				public void m() throws java.io.FileNotFoundException {}
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -192,9 +192,7 @@ class JezekTest {
 				void m();
 			}""";
 
-		var bcs = buildDiff(v1, v2);
-		assertBC("S", "S.m", BreakingChangeKind.METHOD_REMOVED, 2, bcs);
-		assertNoBC(4, bcs);
+		assertBC("S", "S.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -210,9 +208,7 @@ class JezekTest {
 			}
 			public interface I extends S {}""";
 
-		var bcs = buildDiff(v1, v2);
-		assertBC("S", "S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, bcs);
-		assertNoBC(3, bcs);
+		assertBC("S", "S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -228,9 +224,7 @@ class JezekTest {
 				public int f;
 			}""";
 
-		var bcs = buildDiff(v1, v2);
-		assertBC("S", "S.f", BreakingChangeKind.FIELD_REMOVED, 2, bcs);
-		assertNoBC(4, bcs);
+		assertBC("S", "S.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

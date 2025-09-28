@@ -4,8 +4,9 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
-import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ImplicitObjectTest {
@@ -43,10 +44,10 @@ class ImplicitObjectTest {
 				@Override public abstract String toString();
 			}""";
 
-		var diff = buildDiff(v1, v2);
-		assertBC("A", "A.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, diff);
-		assertBC("A", "A.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3, diff);
-		assertBC("A", "A.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4, diff);
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2),
+			bc("A", "A.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3),
+			bc("A", "A.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4));
 	}
 
 	@Client("A a = new A() {};")
@@ -60,10 +61,10 @@ class ImplicitObjectTest {
 				@Override public abstract String toString();
 			}""";
 
-		var diff = buildDiff(v1, v2);
-		assertBC("A", "java.lang.Object.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
-		assertBC("A", "java.lang.Object.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
-		assertBC("A", "java.lang.Object.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "java.lang.Object.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1),
+			bc("A", "java.lang.Object.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1),
+			bc("A", "java.lang.Object.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1));
 	}
 
 	@Client("A a = new A() {};")

@@ -5,7 +5,9 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodRemovedTest {
@@ -83,7 +85,9 @@ class MethodRemovedTest {
 				public void m3() {}
 			}""";
 
-		assertBC("B", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2),
+			bc("B", "A.m2", BreakingChangeKind.METHOD_REMOVED, 3));
 	}
 
 	@Client("new A().m1();")
@@ -186,7 +190,9 @@ class MethodRemovedTest {
 			public interface I {}
 			public class A implements I {}""";
 
-		assertBC("I", "I.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("I", "I.m1", BreakingChangeKind.METHOD_REMOVED, 2),
+			bc("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2));
 	}
 
 	@Client("new A().m1(0, null);")
@@ -269,6 +275,8 @@ class MethodRemovedTest {
 		var v1 = "public record A(int i, float f) {}";
 		var v2 = "public record A(int i) {}";
 
-		assertBC("A", "A.f", BreakingChangeKind.METHOD_REMOVED, -1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1),
+			bc("A", "A.f", BreakingChangeKind.METHOD_REMOVED, -1));
 	}
 }

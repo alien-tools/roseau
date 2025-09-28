@@ -55,6 +55,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
@@ -71,22 +72,30 @@ public class TestUtils {
 	private TestUtils() {
 	}
 
-	public static void assertBC(String type, String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
-		List<BreakingChange> matches = bcs.stream()
-			.filter(bc ->
-				kind == bc.kind()
-					&& line == bc.impactedSymbol().getLocation().line()
-					&& type.equals(bc.impactedType().getQualifiedName())
-					&& symbol.equals(bc.impactedSymbol().getQualifiedName())
-			).toList();
+	public record BC(String type, String symbol, BreakingChangeKind kind, int line) {
+	}
 
-		if (matches.size() != 1) {
-			String desc = "[%s, %s, %s, %d]".formatted(type, symbol, kind, line);
-			String found = bcs.stream()
-				.map(bc -> "[%s, %s, %s, %s]".formatted(bc.impactedType().getQualifiedName(), bc.impactedSymbol().getQualifiedName(),
-					bc.kind(), bc.impactedSymbol().getLocation()))
+	public static BC bc(String type, String symbol, BreakingChangeKind kind, int line) {
+		return new BC(type, symbol, kind, line);
+	}
+
+	public static void assertBC(String type, String symbol, BreakingChangeKind kind, int line, List<BreakingChange> bcs) {
+		assertBCs(bcs, bc(type, symbol, kind, line));
+	}
+
+	public static void assertBCs(List<BreakingChange> actualBCs, BC... expectedVar) {
+		var expected = Arrays.asList(expectedVar);
+		var actual = actualBCs.stream().map(bc -> bc(bc.impactedType().getQualifiedName(),
+				bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))
+			.toList();
+		if (expected.size() != actual.size() || !actual.containsAll(expected) || !expected.containsAll(actual)) {
+			String desc = expected.stream().map(expectedBC ->
+					"[%s, %s, %s, %d]".formatted(expectedBC.type(), expectedBC.symbol(), expectedBC.kind(), expectedBC.line()))
 				.collect(Collectors.joining(", "));
-			throw new AssertionFailedError("No breaking change", desc, found);
+			String found = actual.stream().map(actualBC ->
+					"[%s, %s, %s, %s]".formatted(actualBC.type(), actualBC.symbol(), actualBC.kind(), actualBC.line()))
+				.collect(Collectors.joining(", "));
+			throw new AssertionFailedError("Breaking changes do not match", desc, found);
 		}
 	}
 
@@ -98,28 +107,6 @@ public class TestUtils {
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 		}
-	}
-
-	public static void assertNoBC(BreakingChangeKind kind, List<BreakingChange> bcs) {
-		String found = bcs.stream()
-			.filter(bc -> bc.kind() == kind)
-			.map(bc -> "[%s, %s, %s, %s]".formatted(bc.impactedSymbol().getQualifiedName(), bc.impactedType().getQualifiedName(),
-				bc.kind(), bc.impactedSymbol().getLocation()))
-			.collect(Collectors.joining(", "));
-
-		if (!found.isEmpty())
-			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
-	}
-
-	public static void assertNoBC(int line, List<BreakingChange> bcs) {
-		String found = bcs.stream()
-			.filter(bc -> bc.impactedSymbol().getLocation().line() == line)
-			.map(bc -> "[%s, %s, %s, %s]".formatted(bc.impactedSymbol().getQualifiedName(), bc.impactedType().getQualifiedName(),
-				bc.kind(), bc.impactedSymbol().getLocation()))
-			.collect(Collectors.joining(", "));
-
-		if (!found.isEmpty())
-			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 	}
 
 	public static TypeDecl assertType(API api, String name, String kind) {

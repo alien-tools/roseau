@@ -5,6 +5,8 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 /**
@@ -361,7 +363,9 @@ class MethodReturnTypeChangedTest {
 			}
 			public class B extends A {}""";
 
-		assertBC("B", "A.m",  BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2),
+			bc("B", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2));
 	}
 
 	@Test

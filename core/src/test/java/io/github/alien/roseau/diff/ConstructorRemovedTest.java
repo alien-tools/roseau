@@ -5,7 +5,9 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ConstructorRemovedTest {
@@ -69,9 +71,7 @@ class ConstructorRemovedTest {
 				protected A(int i) {}
 			}""";
 
-		var diff = buildDiff(v1, v2);
-		assertNoBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, diff);
-		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, 2, diff);
+		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")
@@ -83,9 +83,7 @@ class ConstructorRemovedTest {
 				protected A() {}
 			}""";
 
-		var diff = buildDiff(v1, v2);
-		assertNoBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, diff);
-		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, -1, diff);
+		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, -1, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A(0);")
@@ -94,7 +92,9 @@ class ConstructorRemovedTest {
 		var v1 = "public record A(int i) {}";
 		var v2 = "public record A(String s) {}";
 
-		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1),
+			bc("A", "A.i", BreakingChangeKind.METHOD_REMOVED, -1));
 	}
 
 	@Client("A a = new A(0);")
@@ -112,7 +112,9 @@ class ConstructorRemovedTest {
 		var v1 = "public record A(int i, float f) {}";
 		var v2 = "public record A(int i) {}";
 
-		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1),
+			bc("A", "A.f", BreakingChangeKind.METHOD_REMOVED, -1));
 	}
 
 	@Client("A a = new A();")

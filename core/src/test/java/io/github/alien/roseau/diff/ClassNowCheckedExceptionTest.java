@@ -3,12 +3,11 @@ package io.github.alien.roseau.diff;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
-import org.xmlet.htmlapifaster.A;
-
-import java.io.IOException;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ClassNowCheckedExceptionTest {
@@ -36,7 +35,9 @@ class ClassNowCheckedExceptionTest {
 		var v1 = "public class A extends RuntimeException {}";
 		var v2 = "public class A extends Exception {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1),
+			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1));
 	}
 
 	@Client("throw new A();")
@@ -45,7 +46,9 @@ class ClassNowCheckedExceptionTest {
 		var v1 = "public class A extends IllegalArgumentException {}";
 		var v2 = "public class A extends java.io.IOException {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1),
+			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1));
 	}
 
 	@Client("""
@@ -72,7 +75,7 @@ class ClassNowCheckedExceptionTest {
 		var v1 = "public class A extends java.io.IOException {}";
 		var v2 = "public class A extends Exception {}";
 
-		assertNoBC(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A();")

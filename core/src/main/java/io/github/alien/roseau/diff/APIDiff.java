@@ -274,20 +274,32 @@ public class APIDiff {
 		diffParameters(t1, cons1, cons2);
 	}
 
+	/**
+	 * Always binary-compatible.
+	 * <ul>
+	 *   <li>Throwing a new checked exception breaks invokers only</li>
+	 *   <li>No longer throwing a checked exception breaks invokers and overriders</li>
+	 *   <li>Throwing a subtype of an existing checked exception (less) breaks overriders</li>
+	 *   <li>Throwing a supertype of an existing checked exception (more) breaks invokers</li>
+	 *   <li>The only safe case is replacing with a subtype exception when the executable is final</li>
+	 * </ul>
+	 */
 	private void diffThrownExceptions(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
-		if (v1.getThrownCheckedExceptions(e1)
-			.stream()
-			.anyMatch(exc1 -> v2.getThrownCheckedExceptions(e2).stream()
-				.noneMatch(exc2 -> v2.isSubtypeOf(exc2, exc1)))) {
-			memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, t1, e1, e2);
-		}
+		List<ITypeReference> thrown1 = v1.getThrownCheckedExceptions(e1);
+		List<ITypeReference> thrown2 = v2.getThrownCheckedExceptions(e2);
 
-		if (v2.getThrownCheckedExceptions(e2)
-			.stream()
-			.anyMatch(exc2 -> v1.getThrownCheckedExceptions(e1).stream()
-				.noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))) {
-			memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, t1, e1, e2);
-		}
+		thrown1.stream()
+			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
+				// FIXME: correct, but meh
+				v2.isSubtypeOf(exc1, exc2) || v1.isEffectivelyFinal(t1, e1)
+			))
+			.forEach(exc1 ->
+				memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, t1, e1, e2));
+
+		thrown2.stream()
+			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))
+			.forEach(exc1 ->
+				memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, t1, e1, e2));
 	}
 
 	private void diffParameters(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {

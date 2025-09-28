@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ClassDecl;
+import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Symbol;
@@ -96,17 +97,17 @@ public interface PropertiesProvider {
 	}
 
 	/**
-	 * Checks whether this method is effectively final. A method is effectively final if it is {@code final} or if it is
-	 * declared in a type that is itself effectively final.
+	 * Checks whether this executable is effectively final. An executable is effectively final if it is a constructor,
+	 * {@code final}, or if it is declared in a type that is itself effectively final.
 	 *
-	 * @param type   the containing type
-	 * @param method the method to check
+	 * @param type       the containing type
+	 * @param executable the method to check
 	 * @return true if this method is effectively final
 	 */
-	default boolean isEffectivelyFinal(TypeDecl type, MethodDecl method) {
+	default boolean isEffectivelyFinal(TypeDecl type, ExecutableDecl executable) {
 		Preconditions.checkNotNull(type);
-		Preconditions.checkNotNull(method);
-		return method.isFinal() || isEffectivelyFinal(type);
+		Preconditions.checkNotNull(executable);
+		return executable.isFinal() || isEffectivelyFinal(type) || executable instanceof ConstructorDecl;
 	}
 
 	/**
