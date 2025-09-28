@@ -133,6 +133,7 @@ public class APIDiff {
 
 		if (!t1.getClass().equals(t2.getClass())) {
 			typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, t1, t2);
+			return; // Avoid all cascading changes
 		}
 
 		// If a supertype that was exported has been removed,
@@ -417,6 +418,11 @@ public class APIDiff {
 
 	private void memberBC(BreakingChangeKind kind, TypeDecl impactedType,
 	                      TypeMemberDecl impactedMember, TypeMemberDecl newMember) {
+		// java.lang.Object methods are an absolute pain to handle. Many rules
+		// do not apply to them as they're implicitly provided to any class.
+		if (impactedMember.getContainingType().equals(TypeReference.OBJECT)) {
+			return;
+		}
 		BreakingChange bc = new BreakingChange(kind, impactedType, impactedMember, newMember);
 		breakingChanges.add(bc);
 	}

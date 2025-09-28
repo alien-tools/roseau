@@ -3,10 +3,11 @@ package io.github.alien.roseau.diff;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
-import org.xmlet.htmlapifaster.A;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ClassNowFinalTest {
@@ -17,6 +18,25 @@ class ClassNowFinalTest {
 		var v2 = "public final class A {}";
 
 		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+	}
+
+	@Client("new B(){};")
+	@Test
+	void subclass_now_final() {
+		var v1 = """
+			public class A {
+				public void m() {}
+			}
+			public class B extends A {}""";
+		var v2 = """
+			public class A {
+				public void m() {}
+			}
+			public final class B extends A {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "B", BreakingChangeKind.CLASS_NOW_FINAL, 1),
+			bc("B", "A.m", BreakingChangeKind.METHOD_NOW_FINAL, 2));
 	}
 
 	@Client("new A(){};")
@@ -36,7 +56,7 @@ class ClassNowFinalTest {
 		var v1 = "public class A {}";
 		var v2 = "public record A() {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A();")
@@ -57,7 +77,10 @@ class ClassNowFinalTest {
 				private A() {}
 			}""";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1),
+			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1));
 	}
 
 	@Client("new A.B(){};")

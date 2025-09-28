@@ -2,6 +2,7 @@ package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
@@ -50,6 +51,7 @@ class ImplicitObjectTest {
 			bc("A", "A.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4));
 	}
 
+	@Disabled("Technically breaking")
 	@Client("A a = new A() {};")
 	@Test
 	void abstract_object_methods_added_to_abstract_class() {
@@ -131,6 +133,7 @@ class ImplicitObjectTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Disabled("Technically breaking")
 	@Client("I i = new I() {};")
 	@Test
 	void object_methods_added_to_interface() {

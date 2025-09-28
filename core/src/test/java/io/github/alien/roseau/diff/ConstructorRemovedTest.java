@@ -56,7 +56,10 @@ class ConstructorRemovedTest {
 				private A() {}
 			}""";
 
-		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1));
 	}
 
 	@Client("A a = new A(0);")

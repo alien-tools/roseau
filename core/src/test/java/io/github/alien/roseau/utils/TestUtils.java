@@ -93,7 +93,7 @@ public class TestUtils {
 					"[%s, %s, %s, %d]".formatted(expectedBC.type(), expectedBC.symbol(), expectedBC.kind(), expectedBC.line()))
 				.collect(Collectors.joining(", "));
 			String found = actual.stream().map(actualBC ->
-					"[%s, %s, %s, %s]".formatted(actualBC.type(), actualBC.symbol(), actualBC.kind(), actualBC.line()))
+					"[%s, %s, %s, %d]".formatted(actualBC.type(), actualBC.symbol(), actualBC.kind(), actualBC.line()))
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Breaking changes do not match", desc, found);
 		}
@@ -102,8 +102,8 @@ public class TestUtils {
 	public static void assertNoBC(List<BreakingChange> bcs) {
 		if (!bcs.isEmpty()) {
 			String found = bcs.stream()
-				.map(bc -> "[%s, %s, %s, %s]".formatted(bc.impactedSymbol().getQualifiedName(), bc.impactedType().getQualifiedName(),
-					bc.kind(), bc.impactedSymbol().getLocation()))
+				.map(bc -> "[%s, %s, %s, %d]".formatted(bc.impactedType().getQualifiedName(), bc.impactedSymbol().getQualifiedName(),
+					bc.kind(), bc.impactedSymbol().getLocation().line()))
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 		}

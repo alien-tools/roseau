@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
@@ -19,6 +18,13 @@ public interface PropertiesProvider {
 	TypeResolver resolver();
 	SubtypingResolver subtyping();
 	TypeParameterResolver typeParameter();
+
+	default boolean isExported(Symbol symbol) {
+		return switch (symbol) {
+			case TypeDecl type -> isExported(type);
+			case TypeMemberDecl member -> isExported(member);
+		};
+	}
 
 	/**
 	 * Checks whether the type pointed by this reference is exported.
@@ -48,7 +54,19 @@ public interface PropertiesProvider {
 	}
 
 	/**
-	 * Checks whether this field or executable is exported.
+	 * Checks whether this field or executable is exported by its containing type.
+	 *
+	 * @param member the field or executable to check
+	 * @return true if this type member is exported
+	 */
+	default boolean isExported(TypeMemberDecl member) {
+		Preconditions.checkNotNull(member);
+		return isExported(member.getContainingType()) &&
+			(member.isPublic() || (member.isProtected() && !isEffectivelyFinal(member.getContainingType())));
+	}
+
+	/**
+	 * Checks whether this field or executable is exported in the context of this type.
 	 *
 	 * @param type   the containing type
 	 * @param member the field or executable to check
@@ -97,8 +115,8 @@ public interface PropertiesProvider {
 	}
 
 	/**
-	 * Checks whether this executable is effectively final. An executable is effectively final if it is a constructor,
-	 * {@code final}, or if it is declared in a type that is itself effectively final.
+	 * Checks whether this executable is effectively final in the context of this type. An executable is effectively final
+	 * if it is a constructor, {@code final}, or if it is declared in a type that is itself effectively final.
 	 *
 	 * @param type       the containing type
 	 * @param executable the method to check
@@ -107,7 +125,20 @@ public interface PropertiesProvider {
 	default boolean isEffectivelyFinal(TypeDecl type, ExecutableDecl executable) {
 		Preconditions.checkNotNull(type);
 		Preconditions.checkNotNull(executable);
-		return executable.isFinal() || isEffectivelyFinal(type) || executable instanceof ConstructorDecl;
+		return executable.isFinal() || executable instanceof ConstructorDecl || isEffectivelyFinal(type);
+	}
+
+	/**
+	 * Checks whether this executable is effectively final in the context of its containing type. An executable is
+	 * effectively final if it is a constructor, {@code final}, or if it is declared in a type that is itself effectively
+	 * final.
+	 *
+	 * @param executable the method to check
+	 * @return true if this method is effectively final
+	 */
+	default boolean isEffectivelyFinal(ExecutableDecl executable) {
+		Preconditions.checkNotNull(executable);
+		return executable.isFinal() || executable.isConstructor() || isEffectivelyFinal(executable.getContainingType());
 	}
 
 	/**

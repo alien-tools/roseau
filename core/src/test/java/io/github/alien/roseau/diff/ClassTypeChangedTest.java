@@ -44,7 +44,7 @@ class ClassTypeChangedTest {
 	@Test
 	void class_to_enum() {
 		var v1 = "public class A {}";
-		var v2 = "public enum A { INSTANCE; }";
+		var v2 = "public enum A {}";
 
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
@@ -77,7 +77,7 @@ class ClassTypeChangedTest {
 	@Test
 	void interface_to_enum() {
 		var v1 = "public interface A {}";
-		var v2 = "public enum A { INSTANCE; }";
+		var v2 = "public enum A {}";
 
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
@@ -91,9 +91,7 @@ class ClassTypeChangedTest {
 		var v1 = "public record A() {}";
 		var v2 = "public class A {}";
 
-		assertBCs(buildDiff(v1, v2),
-			bc("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1),
-			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1)); // java.lang.Record
+		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")
@@ -102,15 +100,13 @@ class ClassTypeChangedTest {
 		var v1 = "public record A() {}";
 		var v2 = "public interface A {}";
 
-		assertBCs(buildDiff(v1, v2),
-			bc("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1),
-			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1)); // java.lang.Record
+		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a = A.INSTANCE;")
 	@Test
 	void enum_to_class() {
-		var v1 = "public enum A { INSTANCE; }";
+		var v1 = "public enum A {}";
 		var v2 = "public class A {}";
 
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
@@ -119,7 +115,7 @@ class ClassTypeChangedTest {
 	@Client("A a = A.INSTANCE;")
 	@Test
 	void enum_to_interface() {
-		var v1 = "public enum A { INSTANCE; }";
+		var v1 = "public enum A {}";
 		var v2 = "public interface A {}";
 
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
