@@ -27,6 +27,8 @@ public interface HierarchyProvider {
 
 	SubtypingResolver subtyping();
 
+	PropertiesProvider properties();
+
 	/**
 	 * Finds a {@link FieldDecl} by simple name, declared (or inherited) by this type.
 	 *
@@ -176,15 +178,16 @@ public interface HierarchyProvider {
 	default List<MethodDecl> getAllMethods(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
-			type.getDeclaredMethods().stream(),
-			getAllSuperTypes(type).stream()
-				.map(resolver()::resolve)
-				.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
-		).collect(Collectors.toMap(
-			erasure()::getErasure,
-			Function.identity(),
-			(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
-		)).values().stream().toList();
+				type.getDeclaredMethods().stream(),
+				getAllSuperTypes(type).stream()
+					.map(resolver()::resolve)
+					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream()))
+			.filter(m -> properties().isExported(type, m))
+			.collect(Collectors.toMap(
+				erasure()::getErasure,
+				Function.identity(),
+				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
+			)).values().stream().toList();
 	}
 
 	/**

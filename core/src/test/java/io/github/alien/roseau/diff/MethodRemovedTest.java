@@ -9,43 +9,78 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodRemovedTest {
-	@Client("new B().m1();")
+	@Client("new B().m();")
 	@Test
 	void leaked_public_method_now_private() {
 		var v1 = """
 			class A {
-				public void m1() {}
+				public void m() {}
 			}
-			public class B extends A {
-				public void m2() {}
-			}""";
+			public class B extends A {}""";
 		var v2 = """
 			class A {
-				void m1() {}
+				private void m() {}
 			}
-			public class B extends A {
-				public void m2() {}
-			}""";
+			public class B extends A {}""";
 
-		assertBC("B", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new B() {
+			@Override protected void m() {}
+		};""")
+	@Test
+	void leaked_protected_method_now_private() {
+		var v1 = """
+			class A {
+				protected void m() {}
+			}
+			public class B extends A {}""";
+		var v2 = """
+			class A {
+				private void m() {}
+			}
+			public class B extends A {}""";
+
+		assertBC("B", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("// Can't extend or use")
+	@Test
+	void leaked_protected_method_now_private_in_final() {
+		var v1 = """
+			class A {
+				protected void m() {}
+			}
+			public final class B extends A {}""";
+		var v2 = """
+			class A {
+				private void m() {}
+			}
+			public final class B extends A {}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Client("new B().m1();")
 	@Test
-	void leaked_public_method_no_longer_leaked() {
+	void leaked_methods_no_longer_leaked() {
 		var v1 = """
 			class A {
 				public void m1() {}
+				protected void m2() {}
 			}
 			public class B extends A {
-				public void m2() {}
+				public void m3() {}
 			}""";
 		var v2 = """
 			class A {
-				public void m1() {}
+				void m1() {}
+				void m2() {}
 			}
 			public class B {
-				public void m2() {}
+				public void m3() {}
 			}""";
 
 		assertBC("B", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));

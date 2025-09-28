@@ -20,20 +20,6 @@ public interface PropertiesProvider {
 	TypeParameterResolver typeParameter();
 
 	/**
-	 * Checks whether this symbol is exported.
-	 *
-	 * @param symbol the symbol to check
-	 * @return true if this symbol is exported
-	 */
-	default boolean isExported(Symbol symbol) {
-		Preconditions.checkNotNull(symbol);
-		return switch (symbol) {
-			case TypeDecl type -> isExported(type);
-			case TypeMemberDecl member -> isExported(member);
-		};
-	}
-
-	/**
 	 * Checks whether the type pointed by this reference is exported.
 	 *
 	 * @param reference the reference to check
@@ -63,13 +49,15 @@ public interface PropertiesProvider {
 	/**
 	 * Checks whether this field or executable is exported.
 	 *
-	 * @param typeMember the field or executable to check
+	 * @param type   the containing type
+	 * @param member the field or executable to check
 	 * @return true if this type member is exported
 	 */
-	default boolean isExported(TypeMemberDecl typeMember) {
-		Preconditions.checkNotNull(typeMember);
-		return isExported(typeMember.getContainingType()) &&
-			(typeMember.isPublic() || (typeMember.isProtected() && !isEffectivelyFinal(typeMember.getContainingType())));
+	default boolean isExported(TypeDecl type, TypeMemberDecl member) {
+		Preconditions.checkNotNull(type);
+		Preconditions.checkNotNull(member);
+		return isExported(type) &&
+			(member.isPublic() || (member.isProtected() && !isEffectivelyFinal(type)));
 	}
 
 	/**

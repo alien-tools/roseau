@@ -36,4 +36,9 @@ public class APIAnalyzer
 	public TypeParameterResolver typeParameter() {
 		return this;
 	}
+
+	@Override
+	public PropertiesProvider properties() {
+		return this;
+	}
 }
