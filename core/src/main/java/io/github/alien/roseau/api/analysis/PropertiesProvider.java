@@ -111,15 +111,14 @@ public interface PropertiesProvider {
 	 * Checks whether this method is effectively final. A method is effectively final if it is {@code final} or if it is
 	 * declared in a type that is itself effectively final.
 	 *
+	 * @param type   the containing type
 	 * @param method the method to check
 	 * @return true if this method is effectively final
 	 */
-	default boolean isEffectivelyFinal(MethodDecl method) {
+	default boolean isEffectivelyFinal(TypeDecl type, MethodDecl method) {
+		Preconditions.checkNotNull(type);
 		Preconditions.checkNotNull(method);
-		return method.isFinal() ||
-			resolver().resolve(method.getContainingType())
-				.map(this::isEffectivelyFinal)
-				.orElse(false);
+		return method.isFinal() || isEffectivelyFinal(type);
 	}
 
 	/**

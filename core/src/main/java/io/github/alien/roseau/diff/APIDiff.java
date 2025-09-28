@@ -93,7 +93,7 @@ public class APIDiff {
 		v1.getAllMethods(t1).forEach(m1 ->
 			v2.findMethod(t2, v2.getErasure(m1)).ifPresentOrElse(
 				// There is a matching method
-				m2 -> diffMethod(t1, m1, m2),
+				m2 -> diffMethod(t1, t2, m1, m2),
 				// The method has been removed
 				() -> memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1, null)
 			)
@@ -234,8 +234,8 @@ public class APIDiff {
 		}
 	}
 
-	private void diffMethod(TypeDecl t1, MethodDecl m1, MethodDecl m2) {
-		if (!v1.isEffectivelyFinal(m1) && v2.isEffectivelyFinal(m2)) {
+	private void diffMethod(TypeDecl t1, TypeDecl t2, MethodDecl m1, MethodDecl m2) {
+		if (!v1.isEffectivelyFinal(t1, m1) && v2.isEffectivelyFinal(t2, m2)) {
 			memberBC(BreakingChangeKind.METHOD_NOW_FINAL, t1, m1, m2);
 		}
 
