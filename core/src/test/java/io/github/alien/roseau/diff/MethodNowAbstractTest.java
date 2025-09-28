@@ -98,4 +98,44 @@ class MethodNowAbstractTest {
 
 		assertBC("A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
+
+	@Client("B b = new B() {};")
+	@Test
+	void super_concrete_method_becomes_abstract_explicit() {
+		var v1 = """
+			public class A {
+				public void m() {}
+			}
+			public abstract class B extends A {
+				@Override public void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() {}
+			}
+			public abstract class B extends A {
+				@Override abstract public void m();
+			}""";
+
+		assertBC("B.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+	}
+
+	@Client("B b = new B() {};")
+	@Test
+	void super_concrete_method_becomes_abstract_implicit() {
+		var v1 = """
+			public class A {
+				public void m() {}
+			}
+			public abstract class B extends A {}""";
+		var v2 = """
+			public class A {
+				public void m() {}
+			}
+			public abstract class B extends A {
+				@Override abstract public void m();
+			}""";
+
+		assertBC("A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+	}
 }

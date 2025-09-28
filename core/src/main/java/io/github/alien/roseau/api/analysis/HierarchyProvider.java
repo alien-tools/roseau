@@ -141,7 +141,9 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getImplementedInterfaces().stream(),
-				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.empty()
+				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
+				// since there will be a concrete java.lang.Object on which the methods are invoked anyway
+				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT)
 			)
 			.map(ref -> (TypeReference<TypeDecl>) (TypeReference<?>) ref)
 			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
