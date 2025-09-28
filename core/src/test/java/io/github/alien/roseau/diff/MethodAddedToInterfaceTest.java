@@ -17,7 +17,7 @@ class MethodAddedToInterfaceTest {
 				void m();
 			}""";
 
-		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
+		assertBC("I", "I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
 	}
 
 	@Client("J j = new J() {};")
@@ -31,7 +31,7 @@ class MethodAddedToInterfaceTest {
 			public interface J extends I {}""";
 
 		var diff = buildDiff(v1, v2);
-		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, diff);
-		assertBC("J", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, diff);
+		assertBC("I", "I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, diff);
+		assertBC("J", "J", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, diff);
 	}
 }

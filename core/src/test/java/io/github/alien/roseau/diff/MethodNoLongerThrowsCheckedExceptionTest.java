@@ -24,7 +24,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 				public void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -44,7 +44,8 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 			}
 			public class B extends A {}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("B", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -68,7 +69,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 				@Override public void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 		assertNoBC(5, buildDiff(v1, v2));
 	}
 
@@ -123,7 +124,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 				public void m() throws java.io.IOException {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -141,7 +142,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 				public void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -159,6 +160,6 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 				public <T extends java.io.IOException> void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 }

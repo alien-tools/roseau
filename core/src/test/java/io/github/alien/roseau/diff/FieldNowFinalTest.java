@@ -20,6 +20,6 @@ class FieldNowFinalTest {
 				public final int f = 0;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_NOW_FINAL, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 }

@@ -14,6 +14,6 @@ class TypeNowProtectedTest {
 		var v1 = "public class A { public class B {} }";
 		var v2 = "public class A { protected class B {} }";
 
-		assertBC("A$B", TYPE_NOW_PROTECTED, 1, buildDiff(v1, v2));
+		assertBC("A$B", "A$B", TYPE_NOW_PROTECTED, 1, buildDiff(v1, v2));
 	}
 }

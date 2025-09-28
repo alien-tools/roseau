@@ -16,7 +16,7 @@ class ClassNowFinalTest {
 		var v1 = "public class A {}";
 		var v2 = "public final class A {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A(){};")
@@ -27,7 +27,7 @@ class ClassNowFinalTest {
 			public sealed class A permits B {}
 			final class B extends A {}""";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A(){};")
@@ -36,7 +36,7 @@ class ClassNowFinalTest {
 		var v1 = "public class A {}";
 		var v2 = "public record A() {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A();")
@@ -57,7 +57,7 @@ class ClassNowFinalTest {
 				private A() {}
 			}""";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A.B(){};")
@@ -72,7 +72,7 @@ class ClassNowFinalTest {
 				static public final class B {}
 			}""";
 
-		assertBC("A$B", BreakingChangeKind.CLASS_NOW_FINAL, 2, buildDiff(v1, v2));
+		assertBC("A$B", "A$B", BreakingChangeKind.CLASS_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 
 	@Client("E a = E.A;")

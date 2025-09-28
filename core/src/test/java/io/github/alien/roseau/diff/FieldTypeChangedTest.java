@@ -24,7 +24,7 @@ class FieldTypeChangedTest {
 				public Integer f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("Integer i = new A().f;")
@@ -39,7 +39,7 @@ class FieldTypeChangedTest {
 				public int f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().f;")
@@ -54,7 +54,7 @@ class FieldTypeChangedTest {
 				public long f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("long l = new A().f;")
@@ -69,7 +69,7 @@ class FieldTypeChangedTest {
 				public int f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -89,7 +89,7 @@ class FieldTypeChangedTest {
 				public java.io.FileInputStream f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.FileInputStream fis = new A().f;")
@@ -104,7 +104,7 @@ class FieldTypeChangedTest {
 				public java.io.InputStream f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().f = new I() {};")
@@ -123,7 +123,7 @@ class FieldTypeChangedTest {
 				public J f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("J j = new A().f;")
@@ -142,7 +142,7 @@ class FieldTypeChangedTest {
 				public I f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("I i = new A().f;")
@@ -161,7 +161,7 @@ class FieldTypeChangedTest {
 				public J f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("Integer i = new A<Integer, String>().f;")
@@ -176,7 +176,7 @@ class FieldTypeChangedTest {
 				public U f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A<java.util.HashMap, java.util.LinkedHashMap>().f = new java.util.HashMap<>();")
@@ -191,7 +191,7 @@ class FieldTypeChangedTest {
 				public U f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.LinkedHashMap m = new A<java.util.HashMap, java.util.LinkedHashMap>().f;")
@@ -206,7 +206,7 @@ class FieldTypeChangedTest {
 				public T f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.List<Integer> l = new A().f;")
@@ -221,7 +221,7 @@ class FieldTypeChangedTest {
 				public java.util.List<String> f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.List<I> l = new A().f;")
@@ -240,7 +240,7 @@ class FieldTypeChangedTest {
 				public java.util.List<J> f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.List<J> l = new A().f;")
@@ -259,7 +259,7 @@ class FieldTypeChangedTest {
 				public java.util.List<I> f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int[] a = new A().f;")
@@ -274,7 +274,7 @@ class FieldTypeChangedTest {
 				public String[] f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.InputStream[] a = new A().f;")
@@ -289,7 +289,7 @@ class FieldTypeChangedTest {
 				public java.io.FileInputStream[] f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.FileInputStream[] a = new A().f;")
@@ -304,7 +304,7 @@ class FieldTypeChangedTest {
 				public java.io.InputStream[] f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -348,7 +348,7 @@ class FieldTypeChangedTest {
 				public Unknown f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -362,6 +362,6 @@ class FieldTypeChangedTest {
 				public A f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 }

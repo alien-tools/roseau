@@ -21,7 +21,7 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws Exception {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new B().m();")
@@ -38,7 +38,8 @@ class MethodNowThrowsCheckedExceptionTest {
 			}
 			public class B extends A {}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("B", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new B().m();")
@@ -59,7 +60,7 @@ class MethodNowThrowsCheckedExceptionTest {
 				@Override public void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -77,7 +78,7 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws IllegalArgumentException {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 		assertNoBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, buildDiff(v1, v2));
 	}
 
@@ -114,6 +115,6 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws java.io.IOException {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 }

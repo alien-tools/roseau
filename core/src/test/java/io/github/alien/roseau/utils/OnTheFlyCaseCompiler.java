@@ -40,11 +40,11 @@ public class OnTheFlyCaseCompiler {
 	}
 
 	public static void assertBC(String snippet1, String snippet2, String clientSnippet,
-	                            String symbol, BreakingChangeKind kind, int line) {
+	                            String type, String symbol, BreakingChangeKind kind, int line) {
 		CaseResult res = roseauCase(snippet1, snippet2, clientSnippet);
 		if (!res.isBinaryBreaking() && !res.isSourceBreaking())
 			throw new AssertionFailedError("No breaking change detected");
-		TestUtils.assertBC(symbol, kind, line, res.bcs());
+		TestUtils.assertBC(type, symbol, kind, line, res.bcs());
 	}
 
 	public static void assertNoBC(String snippet1, String snippet2, String clientSnippet) {

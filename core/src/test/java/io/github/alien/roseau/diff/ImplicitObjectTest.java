@@ -44,9 +44,9 @@ class ImplicitObjectTest {
 			}""";
 
 		var diff = buildDiff(v1, v2);
-		assertBC("A.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, diff);
-		assertBC("A.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3, diff);
-		assertBC("A.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4, diff);
+		assertBC("A", "A.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, diff);
+		assertBC("A", "A.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3, diff);
+		assertBC("A", "A.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4, diff);
 	}
 
 	@Client("A a = new A() {};")
@@ -61,9 +61,9 @@ class ImplicitObjectTest {
 			}""";
 
 		var diff = buildDiff(v1, v2);
-		assertBC("java.lang.Object.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
-		assertBC("java.lang.Object.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
-		assertBC("java.lang.Object.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
+		assertBC("A", "java.lang.Object.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
+		assertBC("A", "java.lang.Object.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
+		assertBC("A", "java.lang.Object.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1, diff);
 	}
 
 	@Client("A a = new A() {};")

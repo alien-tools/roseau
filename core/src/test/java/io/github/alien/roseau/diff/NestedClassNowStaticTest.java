@@ -15,7 +15,7 @@ class NestedClassNowStaticTest {
 		var v1 = "public class A { public class B {} }";
 		var v2 = "public class A { public static class B {} }";
 
-		assertBC("A$B", BreakingChangeKind.NESTED_CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
+		assertBC("A$B", "A$B", BreakingChangeKind.NESTED_CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A().new B().new C();")
@@ -24,7 +24,7 @@ class NestedClassNowStaticTest {
 		var v1 = "public class A { public class B { public class C {} } }";
 		var v2 = "public class A { public class B { public static class C {} } }";
 
-		assertBC("A$B$C", BreakingChangeKind.NESTED_CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
+		assertBC("A$B$C", "A$B$C", BreakingChangeKind.NESTED_CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A.B b;")

@@ -15,7 +15,7 @@ class ClassNowAbstractTest {
 		var v1 = "public class A {}";
 		var v2 = "public abstract class A {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new I(){};")

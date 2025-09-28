@@ -27,7 +27,7 @@ class FieldRemovedTest {
 				public int f2;
 			}""";
 
-		assertBC("A.f1", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", "A.f1", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new B().f1;")
@@ -48,7 +48,7 @@ class FieldRemovedTest {
 				public int f2;
 			}""";
 
-		assertBC("A.f1", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", "A.f1", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().f;")
@@ -60,7 +60,7 @@ class FieldRemovedTest {
 			}""";
 		var v2 = "public class A {}";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = A.f;")
@@ -72,7 +72,7 @@ class FieldRemovedTest {
 			}""";
 		var v2 = "public class A {}";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().f;")
@@ -87,7 +87,7 @@ class FieldRemovedTest {
 			    int f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().f;")
@@ -122,7 +122,7 @@ class FieldRemovedTest {
 			    private int f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("// Can't test this one and, technically, is a BC")
@@ -154,7 +154,7 @@ class FieldRemovedTest {
 
 		var diff = buildDiff(v1, v2);
 		assertNoBC(BreakingChangeKind.FIELD_REMOVED, diff);
-		assertBC("A.f", BreakingChangeKind.FIELD_NOW_PROTECTED, 2, diff);
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_NOW_PROTECTED, 2, diff);
 	}
 
 	@Client("E e = E.Y;")
@@ -169,7 +169,7 @@ class FieldRemovedTest {
 			    X;
 			}""";
 
-		assertBC("E.Y", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("E", "E.Y", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("@A(A.E.Y) int i;")
@@ -186,7 +186,7 @@ class FieldRemovedTest {
 				enum E { X; }
 			}""";
 
-		assertBC("A$E.Y", BreakingChangeKind.FIELD_REMOVED, 3, buildDiff(v1, v2));
+		assertBC("A$E", "A$E.Y", BreakingChangeKind.FIELD_REMOVED, 3, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A(0); // Can't test the field removed part specifically")

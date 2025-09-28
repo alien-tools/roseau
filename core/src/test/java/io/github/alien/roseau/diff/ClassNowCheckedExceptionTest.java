@@ -36,7 +36,7 @@ class ClassNowCheckedExceptionTest {
 		var v1 = "public class A extends RuntimeException {}";
 		var v2 = "public class A extends Exception {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
 	}
 
 	@Client("throw new A();")
@@ -45,7 +45,7 @@ class ClassNowCheckedExceptionTest {
 		var v1 = "public class A extends IllegalArgumentException {}";
 		var v2 = "public class A extends java.io.IOException {}";
 
-		assertBC("A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1, buildDiff(v1, v2));
 	}
 
 	@Client("""

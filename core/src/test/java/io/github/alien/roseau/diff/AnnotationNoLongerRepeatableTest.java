@@ -23,6 +23,6 @@ class AnnotationNoLongerRepeatableTest {
 				A[] value();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_NO_LONGER_REPEATABLE, 2, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_NO_LONGER_REPEATABLE, 2, buildDiff(v1, v2));
 	}
 }

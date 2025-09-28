@@ -17,7 +17,7 @@ class MethodAbstractAddedToClassTest {
 				public abstract void m();
 			}""";
 
-		assertBC("A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, buildDiff(v1, v2));
 	}
 
 	@Client("B b = new B() {};")
@@ -33,7 +33,7 @@ class MethodAbstractAddedToClassTest {
 			public abstract class B extends A {}""";
 
 		var diff = buildDiff(v1, v2);
-		assertBC("A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
-		assertBC("B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
+		assertBC("A", "A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
+		assertBC("B", "B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
 	}
 }

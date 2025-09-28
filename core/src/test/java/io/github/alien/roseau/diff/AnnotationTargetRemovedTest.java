@@ -23,7 +23,7 @@ class AnnotationTargetRemovedTest {
 				int value();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("@A(0) int a;")
@@ -47,7 +47,7 @@ class AnnotationTargetRemovedTest {
 				int value();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 6, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 6, buildDiff(v1, v2));
 	}
 
 	@Client("@A(0) int a;")
@@ -112,7 +112,7 @@ class AnnotationTargetRemovedTest {
 				int value();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("// No uses")
@@ -148,6 +148,6 @@ class AnnotationTargetRemovedTest {
 				int value();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_TARGET_REMOVED, 2, buildDiff(v1, v2));
 	}
 }
