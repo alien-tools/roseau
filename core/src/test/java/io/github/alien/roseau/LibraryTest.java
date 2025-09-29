@@ -51,14 +51,14 @@ class LibraryTest {
 	@Test
 	void of_unknown_throws() {
 		assertThatThrownBy(() -> Library.of(Path.of("unknown/path")))
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
 	}
 
 	@Test
 	void of_invalid_jar_throws() {
 		assertThatThrownBy(() -> Library.of(Path.of("src/test/resources/invalid.jar")))
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
 	}
 
@@ -72,14 +72,14 @@ class LibraryTest {
 		Files.createFile(pkg2.resolve("module-info.java"));
 
 		assertThatThrownBy(() -> Library.of(tempDir))
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("A library cannot contain multiple module-info.java");
 	}
 
 	@Test
 	void builder_without_location_throws() {
 		assertThatThrownBy(() -> Library.builder().build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
 	}
 
@@ -140,7 +140,7 @@ class LibraryTest {
 	void builder_invalid_location_throws() {
 		var nonExisting = Path.of("unknown/path");
 		assertThatThrownBy(() -> Library.builder().location(nonExisting).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
 	}
 
@@ -152,7 +152,7 @@ class LibraryTest {
 		Files.createFile(invalidPom);
 
 		assertThatThrownBy(() -> Library.builder().location(dir).pom(invalidPom).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to POM file");
 	}
 
@@ -163,7 +163,7 @@ class LibraryTest {
 		var invalidPom = tempDir.resolve("pom.xml");
 
 		assertThatThrownBy(() -> Library.builder().location(dir).pom(invalidPom).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to POM file");
 	}
 
@@ -173,15 +173,15 @@ class LibraryTest {
 		Files.createDirectories(sources);
 
 		assertThatThrownBy(() -> Library.builder().location(sources).extractorType(ExtractorType.ASM).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("ASM extractor cannot be used on source directories");
 
 		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.JDT).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Source extractors cannot be used on JARs");
 
 		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.SPOON).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Source extractors cannot be used on JARs");
 	}
 }
