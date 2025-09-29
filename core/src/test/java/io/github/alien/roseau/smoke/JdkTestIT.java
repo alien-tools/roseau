@@ -1,11 +1,11 @@
 package io.github.alien.roseau.smoke;
 
+import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
-import com.google.common.base.Stopwatch;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -17,8 +17,8 @@ import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
 import java.util.stream.Stream;
 
-import static org.jsoup.helper.Validate.fail;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @Disabled("Not sure how to share/download JDK's sources and binaries; set JDK_BIN_PATH & JDK_SRC_PATH")
 class JdkTestIT {
