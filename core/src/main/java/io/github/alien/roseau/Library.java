@@ -238,7 +238,7 @@ public final class Library {
 		 */
 		public Library build() {
 			if (!isValidLocation(location)) {
-				throw new IllegalArgumentException("Invalid path to library; directory or JAR expected: " + location);
+				throw new RoseauException("Invalid path to library; directory or JAR expected: " + location);
 			}
 
 			if (isModuleInfo(location)) {
@@ -246,11 +246,11 @@ public final class Library {
 			}
 
 			if (pom != null && !isValidPom(pom)) {
-				throw new IllegalArgumentException("Invalid path to POM file: " + pom);
+				throw new RoseauException("Invalid path to POM file: " + pom);
 			}
 
 			if (isSources(location) && hasMultipleModuleInfo(location)) {
-				throw new IllegalArgumentException("A library cannot contain multiple module-info.java");
+				throw new RoseauException("A library cannot contain multiple module-info.java");
 			}
 
 			// Default extractors
@@ -263,11 +263,11 @@ public final class Library {
 			}
 
 			if (extractorType == ExtractorType.ASM && isSources(location)) {
-				throw new IllegalArgumentException("ASM extractor cannot be used on source directories and module-info.java");
+				throw new RoseauException("ASM extractor cannot be used on source directories and module-info.java");
 			}
 
 			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(location)) {
-				throw new IllegalArgumentException("Source extractors cannot be used on JARs");
+				throw new RoseauException("Source extractors cannot be used on JARs");
 			}
 
 			return new Library(location, classpath, pom, extractorType);

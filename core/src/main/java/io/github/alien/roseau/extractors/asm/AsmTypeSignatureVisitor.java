@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.asm;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -59,7 +60,7 @@ final class AsmTypeSignatureVisitor<T extends ITypeReference> extends SignatureV
 			case INSTANCEOF -> wrapped;
 			case SUPER -> factory.createWildcardTypeReference(List.of(wrapped), false);
 			case EXTENDS -> factory.createWildcardTypeReference(List.of(wrapped), true);
-			default -> throw new IllegalStateException("ASM is drunk");
+			default -> throw new RoseauException("Unexpected wildcard " + wildcard);
 		};
 	}
 

@@ -35,7 +35,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 		try (JarFile jar = new JarFile(library.getLocation().toFile())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
-			throw new RoseauException("Error processing JAR file", e);
+			throw new RoseauException("Failed to process JAR file", e);
 		}
 	}
 
@@ -68,7 +68,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 		} else if (moduleDecls.size() == 1) {
 			return new LibraryTypes(library, moduleDecls.getFirst(), typeDecls);
 		} else {
-			throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, moduleDecls));
+			throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, moduleDecls));
 		}
 	}
 

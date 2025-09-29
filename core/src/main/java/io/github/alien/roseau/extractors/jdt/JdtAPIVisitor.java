@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -221,7 +222,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
 					fields, annotationMethodDecls, enclosingType, targets);
 			}
-			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
+			default -> throw new RoseauException("Unexpected type kind: " + type.getClass());
 		};
 
 		collectedTypeDecls.add(typeDecl);
