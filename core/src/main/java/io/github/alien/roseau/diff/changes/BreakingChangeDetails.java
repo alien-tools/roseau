@@ -2,14 +2,11 @@ package io.github.alien.roseau.diff.changes;
 
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.lang.annotation.ElementType;
-import java.util.List;
-import java.util.Set;
 
 public sealed interface BreakingChangeDetails {
 	record None() implements BreakingChangeDetails {}
@@ -31,8 +28,7 @@ public sealed interface BreakingChangeDetails {
 		implements BreakingChangeDetails {}
 	record MethodNowThrowsCheckedException(ITypeReference exception)
 		implements BreakingChangeDetails {}
-	record MethodParameterGenericsChanged(ParameterDecl parameter,
-	                                      ITypeReference oldType,
+	record MethodParameterGenericsChanged(ITypeReference oldType,
 	                                      ITypeReference newType)
 		implements BreakingChangeDetails {}
 	record TypeFormalTypeParametersRemoved(FormalTypeParameter ftp)
@@ -48,5 +44,7 @@ public sealed interface BreakingChangeDetails {
 		implements BreakingChangeDetails {}
 	record MethodFormalTypeParametersChanged(FormalTypeParameter oldFtp,
 	                                       FormalTypeParameter newFtp)
+		implements BreakingChangeDetails {}
+	record AnnotationMethodAddedWithoutDefault(MethodDecl newMethod)
 		implements BreakingChangeDetails {}
 }

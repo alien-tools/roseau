@@ -26,31 +26,26 @@ public class CliFormatter implements BreakingChangesFormatter {
 			.map(bc -> {
 				String details = switch (bc.details()) {
 					case BreakingChangeDetails.None d -> "";
-
 					case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
 						"old: %s, new: %s".formatted(oldType, newType);
 					case BreakingChangeDetails.FieldTypeChanged(var oldType, var newType) ->
 						"old: %s, new: %s".formatted(oldType, newType);
-
 					case BreakingChangeDetails.MethodAddedToInterface(var newMethod) ->
 						"method: " + newMethod.getSignature();
 					case BreakingChangeDetails.MethodAbstractAddedToClass(var newMethod) ->
 						"method: " + newMethod.getSignature();
-
 					case BreakingChangeDetails.SuperTypeRemoved(var type) ->
 						"type: " + type;
-
 					case BreakingChangeDetails.AnnotationTargetRemoved(var target) ->
 						"target: " + target;
-
+					case BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(var newMethod) ->
+						"method: " + newMethod.getSignature();
 					case BreakingChangeDetails.ClassTypeChanged(var oldType, var newType) ->
 						"old: %s, new: %s".formatted(oldType.getSimpleName(), newType.getSimpleName());
-
 					case BreakingChangeDetails.MethodNoLongerThrowsCheckedException(var exc) ->
 						"exception: " + exc;
 					case BreakingChangeDetails.MethodNowThrowsCheckedException(var exc) ->
 						"exception: " + exc;
-
 					case BreakingChangeDetails.MethodFormalTypeParametersAdded(var ftp) ->
 						"type parameter: " + ftp;
 					case BreakingChangeDetails.MethodFormalTypeParametersRemoved(var ftp) ->
@@ -59,14 +54,12 @@ public class CliFormatter implements BreakingChangesFormatter {
 						"type parameter: " + ftp;
 					case BreakingChangeDetails.TypeFormalTypeParametersRemoved(var ftp) ->
 						"type parameter: " + ftp;
-
 					case BreakingChangeDetails.MethodFormalTypeParametersChanged(var oldFtp, var newFtp) ->
 						"type parameter: " + oldFtp + " -> " + newFtp;
 					case BreakingChangeDetails.TypeFormalTypeParametersChanged(var oldFtp, var newFtp) ->
 						"type parameter: " + oldFtp + " -> " + newFtp;
-
-					case BreakingChangeDetails.MethodParameterGenericsChanged(var param, var oldFtp, var newFtp) ->
-						"param: " + param.name() + ", type: " + oldFtp + " -> " + newFtp;
+					case BreakingChangeDetails.MethodParameterGenericsChanged(var oldFtp, var newFtp) ->
+						"type: " + oldFtp + " -> " + newFtp;
 				};
 
 				if (plain) {

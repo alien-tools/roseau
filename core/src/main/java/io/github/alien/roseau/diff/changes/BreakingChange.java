@@ -44,7 +44,7 @@ public record BreakingChange(
 
 	@Override
 	public String toString() {
-		return "BC[kind=%s, impactedType=%s, impactedSymbol=%s, newSymbol=%s]".formatted(kind,
-			printSymbol(impactedType), printSymbol(impactedSymbol), printSymbol(newSymbol));
+		return "BC[kind=%s, impactedType=%s, impactedSymbol=%s, newSymbol=%s, details=%s]".formatted(kind,
+			printSymbol(impactedType), printSymbol(impactedSymbol), printSymbol(newSymbol), details);
 	}
 }

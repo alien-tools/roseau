@@ -290,12 +290,14 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 				"removed supertype: <code>" + escape(String.valueOf(superType)) + "</code>";
 			case BreakingChangeDetails.AnnotationTargetRemoved(var target) ->
 				"annotation target removed: <code>" + escape(String.valueOf(target)) + "</code>";
+			case BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(var newMethod) ->
+				"new annotation method without default value: <code>" + escape(newMethod.getSignature()) + "</code>";
 			case BreakingChangeDetails.MethodNoLongerThrowsCheckedException(var exception) ->
 				"no longer throws: <code>" + escape(String.valueOf(exception)) + "</code>";
 			case BreakingChangeDetails.MethodNowThrowsCheckedException(var exception) ->
 				"now throws: <code>" + escape(String.valueOf(exception)) + "</code>";
-			case BreakingChangeDetails.MethodParameterGenericsChanged(var parameter, var oldType, var newType) ->
-				"parameter '<code>" + escape(parameter.name()) + "</code>' generic type: <code>" + escape(String.valueOf(oldType)) + "</code> → <code>" + escape(String.valueOf(newType)) + "</code>";
+			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
+				"parameter generic type: <code>" + escape(String.valueOf(oldType)) + "</code> → <code>" + escape(String.valueOf(newType)) + "</code>";
 			case BreakingChangeDetails.TypeFormalTypeParametersRemoved(var ftp) ->
 				"type parameter removed: <code>" + escape(String.valueOf(ftp)) + "</code>";
 			case BreakingChangeDetails.TypeFormalTypeParametersAdded(var ftp) ->
