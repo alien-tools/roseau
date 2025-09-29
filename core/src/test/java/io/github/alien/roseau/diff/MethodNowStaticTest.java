@@ -22,7 +22,7 @@ class MethodNowStaticTest {
 				public static void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_STATIC, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_STATIC, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")

@@ -21,7 +21,7 @@ class MethodLessAccessibleTest {
 				protected void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_PROTECTED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_PROTECTED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -39,7 +39,7 @@ class MethodLessAccessibleTest {
 				void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")

@@ -21,7 +21,7 @@ class MethodNoLongerVarargsTest {
 				public void m(int i) {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().m(null, 1, 2);")
@@ -36,7 +36,7 @@ class MethodNoLongerVarargsTest {
 				public void m(Object o, int i) {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -70,7 +70,7 @@ class MethodNoLongerVarargsTest {
 				public A(int i) {}
 			}""";
 
-		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A(null, 1, 2);")
@@ -85,7 +85,7 @@ class MethodNoLongerVarargsTest {
 				public A(Object o, int i) {}
 			}""";
 
-		assertBC("A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""

@@ -27,6 +27,8 @@ public interface HierarchyProvider {
 
 	SubtypingResolver subtyping();
 
+	PropertiesProvider properties();
+
 	/**
 	 * Finds a {@link FieldDecl} by simple name, declared (or inherited) by this type.
 	 *
@@ -141,7 +143,9 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getImplementedInterfaces().stream(),
-				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.empty()
+				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
+				// since there will be a concrete java.lang.Object on which the methods are invoked anyway
+				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT)
 			)
 			.map(ref -> (TypeReference<TypeDecl>) (TypeReference<?>) ref)
 			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
@@ -174,15 +178,16 @@ public interface HierarchyProvider {
 	default List<MethodDecl> getAllMethods(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
-			type.getDeclaredMethods().stream(),
-			getAllSuperTypes(type).stream()
-				.map(resolver()::resolve)
-				.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
-		).collect(Collectors.toMap(
-			erasure()::getErasure,
-			Function.identity(),
-			(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
-		)).values().stream().toList();
+				type.getDeclaredMethods().stream(),
+				getAllSuperTypes(type).stream()
+					.map(resolver()::resolve)
+					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream()))
+			.filter(m -> properties().isExported(type, m))
+			.collect(Collectors.toMap(
+				erasure()::getErasure,
+				Function.identity(),
+				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
+			)).values().stream().toList();
 	}
 
 	/**

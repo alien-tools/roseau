@@ -5,6 +5,9 @@ import com.google.common.base.Strings;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.SourceLocation;
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
@@ -169,14 +172,24 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private String format(BreakingChange bc) {
+		SourceLocation location = bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+			? bc.impactedType().getLocation()
+			: bc.impactedSymbol().getLocation();
+		boolean symbolInType = bc.impactedSymbol() instanceof TypeDecl ||
+			bc.impactedSymbol() instanceof TypeMemberDecl member &&
+				member.getContainingType().getQualifiedName().equals(bc.impactedType().getQualifiedName());
+
 		if (plain) {
-			return String.format("%s %s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
-				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+			return String.format("%s %s%s%n\t%s:%s", bc.kind(),
+				bc.impactedSymbol().getQualifiedName(),
+				symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
+				location.file(), location.line());
 		} else {
-			return String.format("%s %s%n\t%s:%s",
+			return String.format("%s %s%s%n\t%s:%s",
 				RED_TEXT + BOLD + bc.kind() + RESET,
 				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-				bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+				symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
+				location.file(), location.line());
 		}
 	}
 

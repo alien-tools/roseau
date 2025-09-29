@@ -24,7 +24,7 @@ class TypeRemovedTest {
 		var v1 = "public class A {}";
 		var v2 = "";
 
-		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a;")
@@ -42,7 +42,7 @@ class TypeRemovedTest {
 		var v1 = "public class A {}";
 		var v2 = "public class B {}";
 
-		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a;")
@@ -51,7 +51,7 @@ class TypeRemovedTest {
 		var v1 = "public class A {}";
 		var v2 = "class A {}";
 
-		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a; // Cannot access A.I")
@@ -84,7 +84,7 @@ class TypeRemovedTest {
 			  protected class J {}
 			}""";
 
-		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", "A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A.I i;")
@@ -99,7 +99,7 @@ class TypeRemovedTest {
 			  public class J {}
 			}""";
 
-		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", "A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("// Cannot access A")
@@ -132,7 +132,7 @@ class TypeRemovedTest {
 			  static protected class J {}
 			}""";
 
-		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", "A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A.I i;")
@@ -147,7 +147,7 @@ class TypeRemovedTest {
 			  public static class J {}
 			}""";
 
-		assertBC("A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A$I", "A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("// Cannot access A")
@@ -171,6 +171,6 @@ class TypeRemovedTest {
 		var v1 = "public @interface A {}";
 		var v2 = "@interface A {}";
 
-		assertBC("A", TYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 }

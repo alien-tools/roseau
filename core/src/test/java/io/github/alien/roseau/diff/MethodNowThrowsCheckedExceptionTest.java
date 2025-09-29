@@ -5,7 +5,9 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodNowThrowsCheckedExceptionTest {
@@ -21,7 +23,22 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws Exception {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A();")
+	@Test
+	void constructor_now_throws() {
+		var v1 = """
+			public class A {
+				public A() {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() throws Exception {}
+			}""";
+
+		assertBC("A", "A.<init>", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new B().m();")
@@ -38,7 +55,9 @@ class MethodNowThrowsCheckedExceptionTest {
 			}
 			public class B extends A {}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2),
+			bc("B", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2));
 	}
 
 	@Client("new B().m();")
@@ -59,7 +78,7 @@ class MethodNowThrowsCheckedExceptionTest {
 				@Override public void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -77,14 +96,13 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws IllegalArgumentException {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
-		assertNoBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
-		try {
-			new A().m();
-		} catch (java.io.IOException e) {}""")
+		new A() {
+			@Override public void m() throws java.io.IOException {}
+		};""")
 	@Test
 	void method_now_throws_subtype() {
 		var v1 = """
@@ -96,7 +114,46 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws java.io.ObjectStreamException {}
 			}""";
 
-		assertNoBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new A() {
+			// Cannot override
+		};
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void final_method_now_throws_subtype() {
+		var v1 = """
+			public class A {
+				public final void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m() throws java.io.ObjectStreamException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void constructor_now_throws_subtype() {
+		var v1 = """
+			public class A {
+				public A() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() throws java.io.ObjectStreamException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -114,6 +171,42 @@ class MethodNowThrowsCheckedExceptionTest {
 				public void m() throws java.io.IOException {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void final_method_now_throws_supertype() {
+		var v1 = """
+			public class A {
+				public final void m() throws java.io.ObjectStreamException {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void constructor_now_throws_supertype() {
+		var v1 = """
+			public class A {
+				public A() throws java.io.ObjectStreamException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.<init>", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 }

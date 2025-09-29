@@ -22,7 +22,7 @@ class AnnotationMethodAddedWithoutDefaultTest {
 				String s();
 			}""";
 
-		assertBC("A", BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, 1, buildDiff(v1, v2));
 	}
 
 	@Client("@A(i=0) int a;")

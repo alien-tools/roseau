@@ -5,6 +5,8 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodAbstractAddedToClassTest {
@@ -17,7 +19,7 @@ class MethodAbstractAddedToClassTest {
 				public abstract void m();
 			}""";
 
-		assertBC("A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, buildDiff(v1, v2));
 	}
 
 	@Client("B b = new B() {};")
@@ -32,8 +34,8 @@ class MethodAbstractAddedToClassTest {
 			}
 			public abstract class B extends A {}""";
 
-		var diff = buildDiff(v1, v2);
-		assertBC("A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
-		assertBC("B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, diff);
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1),
+			bc("B", "B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1));
 	}
 }

@@ -22,7 +22,7 @@ class FieldNowStaticTest {
 				public static int f = 0;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_NOW_STATIC, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_NOW_STATIC, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")

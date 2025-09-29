@@ -14,7 +14,7 @@ class TypeFormalTypeParameterRemovedTest {
 		var v1 = "public class A<T> {}";
 		var v2 = "public class A {}";
 
-		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<String, String> a;")
@@ -23,6 +23,6 @@ class TypeFormalTypeParameterRemovedTest {
 		var v1 = "public class A<T, U> {}";
 		var v2 = "public class A<T> {}";
 
-		assertBC("A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, 1, buildDiff(v1, v2));
 	}
 }

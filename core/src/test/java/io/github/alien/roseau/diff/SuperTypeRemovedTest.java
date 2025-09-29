@@ -32,7 +32,7 @@ class SuperTypeRemovedTest {
 			public class A {}
 			public class B {}""";
 
-		assertBC("B", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("B", "B", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("B c = new C(); // Can't upcast (A)")
@@ -62,7 +62,7 @@ class SuperTypeRemovedTest {
 			class B {}
 			public class C extends B {}""";
 
-		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("C", "C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("B b = new B(); // Can't upcast (A)")
@@ -88,7 +88,7 @@ class SuperTypeRemovedTest {
 			public interface A {}
 			public class B {}""";
 
-		assertBC("B", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("B", "B", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("B c = new C(); // Can't upcast (A)")
@@ -118,7 +118,7 @@ class SuperTypeRemovedTest {
 			class B {}
 			public class C extends B {}""";
 
-		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("C", "C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A c = new C(){};")
@@ -133,6 +133,6 @@ class SuperTypeRemovedTest {
 			interface B {}
 			public interface C extends B {}""";
 
-		assertBC("C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("C", "C", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 }

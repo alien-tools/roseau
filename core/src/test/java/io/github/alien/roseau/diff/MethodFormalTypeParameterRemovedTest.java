@@ -20,7 +20,7 @@ class MethodFormalTypeParameterRemovedTest {
 				public void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().<String, Integer>m();")
@@ -35,6 +35,6 @@ class MethodFormalTypeParameterRemovedTest {
 				public <T> void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
 	}
 }
