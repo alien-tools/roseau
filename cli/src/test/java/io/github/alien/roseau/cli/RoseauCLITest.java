@@ -29,50 +29,55 @@ class RoseauCLITest {
 	// --- Diffs --- //
 	@Test
 	void simple_source_diff() throws Exception {
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--plain");
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
 	}
 
 	@Test
 	void simple_jar_diff() throws Exception {
-		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--plain");
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
 	}
 
 	@Test
 	void heterogeneous_diff_1() throws Exception {
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--plain");
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
 	}
 
 	@Test
 	void heterogeneous_diff_2() throws Exception {
-		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v1/src",
 			"--diff",
 			"--plain");
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("No breaking changes found.");
 	}
 
 	@Test
 	void no_breaking_changes() throws Exception {
-		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--diff");
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("No breaking changes found.");
 	}
 
@@ -82,7 +87,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/test-project-v1.jar",
 			"--diff");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -90,7 +95,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--diff");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -116,10 +121,11 @@ class RoseauCLITest {
 	@Test
 	void write_api_default_sources() throws Exception {
 		var json = new File("api.json");
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
 			"--verbose");
 
+		assertThat(exitCode).isZero();
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using JDT")
@@ -131,10 +137,11 @@ class RoseauCLITest {
 	@Test
 	void write_api_default_jar() throws Exception {
 		var json = new File("api.json");
-		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--api",
 			"--verbose");
 
+		assertThat(exitCode).isZero();
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using ASM")
@@ -146,10 +153,11 @@ class RoseauCLITest {
 	@Test
 	void write_api_custom_file() throws Exception {
 		var json = new File("out.json");
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
 			"--json=" + json);
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("API has been written to out.json");
 		assertThat(json).isFile().isNotEmpty();
 
@@ -163,18 +171,19 @@ class RoseauCLITest {
 			"--api",
 			"--extractor=ASM");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 		assertThat(json).doesNotExist();
 	}
 
 	@Test
 	void write_api_asm() throws Exception {
 		var json = new File("api.json");
-		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--extractor=ASM",
 			"--api",
 			"--verbose");
 
+		assertThat(exitCode).isZero();
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using ASM")
@@ -186,11 +195,12 @@ class RoseauCLITest {
 	@Test
 	void write_api_spoon() throws Exception {
 		var json = new File("api.json");
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--extractor=SPOON",
 			"--api",
 			"--verbose");
 
+		assertThat(exitCode).isZero();
 		assertThat(json).isFile().isNotEmpty();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using SPOON")
@@ -205,15 +215,16 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
 	void missing_classpath() throws Exception {
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("Warning: no classpath provided, results may be inaccurate");
 	}
 
@@ -223,7 +234,7 @@ class RoseauCLITest {
 			"--api",
 			"--pom=src/test/resources/none.xml");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -232,7 +243,7 @@ class RoseauCLITest {
 			"--extractor=UNKNOWN",
 			"--api");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -242,18 +253,19 @@ class RoseauCLITest {
 			"--formatter=UNKNOWN",
 			"--diff");
 
-		assertThat(exitCode).isNotZero();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	// --- Reports --- //
 	@Test
 	void write_report() throws Exception {
 		var reportFile = new File("out.csv");
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--report=" + reportFile.getPath());
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("Report has been written to out.csv");
 		assertThat(reportFile).isFile().isNotEmpty();
 
@@ -263,12 +275,13 @@ class RoseauCLITest {
 	@Test
 	void write_report_html() throws Exception {
 		var reportFile = new File("report.html");
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--format=HTML",
 			"--report=" + reportFile.getPath());
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("Report has been written to report.html");
 		assertThat(reportFile).isFile().isNotEmpty();
 
@@ -278,12 +291,13 @@ class RoseauCLITest {
 	@Test
 	void write_report_json() throws Exception {
 		var reportFile = new File("report.json");
-		cmd.execute("--v1=src/test/resources/test-project-v1/src",
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--format=JSON",
 			"--report=" + reportFile.getPath());
 
+		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("Report has been written to report.json");
 		assertThat(reportFile).isFile().isNotEmpty();
 

@@ -265,7 +265,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			} else {
 				printErr(e.getMessage());
 			}
-			return 1;
+			return 2;
 		}
 	}
 
