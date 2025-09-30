@@ -5,7 +5,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -224,13 +223,28 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void missing_classpath() throws Exception {
+	void missing_classpath() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
 		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("Warning: no classpath provided, results may be inaccurate");
+	}
+
+	@Test
+	void custom_classpath_deduplicated() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--classpath=src/test/resources/test-project-v1/test-project-v1.jar" +
+				":src/test/resources/test-project-v2/test-project-v2.jar" +
+				":src/test/resources/test-project-v1/test-project-v1.jar",
+			"--verbose");
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).contains("Classpath: [src/test/resources/test-project-v2/test-project-v2.jar, " +
+			"src/test/resources/test-project-v1/test-project-v1.jar]");
 	}
 
 	@Test

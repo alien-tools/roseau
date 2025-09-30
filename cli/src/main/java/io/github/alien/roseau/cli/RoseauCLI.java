@@ -14,6 +14,8 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CsvFormatter;
+import io.github.alien.roseau.diff.formatter.HtmlFormatter;
+import io.github.alien.roseau.diff.formatter.MdFormatter;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import org.apache.logging.log4j.Level;
@@ -22,13 +24,14 @@ import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -82,9 +85,9 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--pom", paramLabel = "<path>",
 		description = "A pom.xml file to build a classpath from")
 	private Path pom;
-	@Option(names = "--classpath", split = ":", paramLabel = "<path>",
-		description = "A colon-separated list of JARs to include in the classpath")
-	private Set<Path> userClasspath = Set.of();
+	@Option(names = "--classpath", paramLabel = "<path>",
+		description = "A colon-separated list of JARs to include in the classpath (Windows: semi-colon)")
+	private String userClasspath;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"the CSV file share the same structure as the one produced by --format CSV (symbol;kind;nature)")
@@ -130,7 +133,11 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private Set<Path> buildClasspath() {
-		Set<Path> classpath = new HashSet<>(userClasspath);
+		Set<Path> classpath = userClasspath != null
+			? Arrays.stream(userClasspath.split(File.pathSeparator))
+			.map(Path::of)
+			.collect(Collectors.toCollection(HashSet::new))
+			: new HashSet<>();
 
 		if (pom != null && Files.isRegularFile(pom)) {
 			Stopwatch sw = Stopwatch.createStarted();
@@ -155,7 +162,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			return;
 		}
 
-		if (reportPath == null)
+		if (reportPath == null) {
 			return;
 		}
 
@@ -186,9 +193,8 @@ public final class RoseauCLI implements Callable<Integer> {
 			Files.writeString(Path.of("report.csv"), new CsvFormatter().format(api, report));
 			Files.writeString(Path.of("report.html"), new HtmlFormatter().format(api, report));
 			Files.writeString(Path.of("report.md"), new MdFormatter().format(api, report));
-			LOGGER.info("Wrote reports for github action");
 		} catch (IOException e) {
-			LOGGER.error("Couldn't write reports for github action", e);
+			printErr("Couldn't write reports for github action: " + e.getMessage());
 		}
 	}
 
@@ -240,8 +246,8 @@ public final class RoseauCLI implements Callable<Integer> {
 			return report.breakingChanges().stream()
 				.filter(bc -> ignored.stream().noneMatch(ign ->
 					bc.impactedType().getQualifiedName().equals(ign.type()) &&
-					bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
-					bc.kind() == ign.kind()))
+						bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
+						bc.kind() == ign.kind()))
 				.toList();
 		} catch (IOException e) {
 			throw new RoseauException("Couldn't read CSV file %s".formatted(ignoredCsv), e);
