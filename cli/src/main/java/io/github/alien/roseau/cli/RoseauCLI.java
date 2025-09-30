@@ -11,8 +11,7 @@ import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
-import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.diff.formatter.*;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.TypesExtractor;
@@ -82,6 +81,8 @@ public final class RoseauCLI implements Callable<Integer> {
 	@CommandLine.Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
 	private boolean plain;
+	@CommandLine.Option(names = "--github-action", hidden = true)
+	private boolean githubActionMode;
 
 	private static final Logger LOGGER = LogManager.getLogger(RoseauCLI.class);
 	private static final String RED_TEXT = "\u001B[31m";
@@ -158,6 +159,11 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private void writeReport(API api, RoseauReport report) {
+		if (githubActionMode) {
+			writeGithubActionReport(api, report);
+			return;
+		}
+
 		if (reportPath == null)
 			return;
 
@@ -168,6 +174,17 @@ public final class RoseauCLI implements Callable<Integer> {
 			LOGGER.info("Wrote report to {}", reportPath);
 		} catch (IOException e) {
 			LOGGER.error("Couldn't write report to {}", reportPath, e);
+		}
+	}
+
+	private void writeGithubActionReport(API api, RoseauReport report) {
+		try {
+			Files.writeString(Path.of("report.csv"), new CsvFormatter().format(api, report));
+			Files.writeString(Path.of("report.html"), new HtmlFormatter().format(api, report));
+			Files.writeString(Path.of("report.md"), new MdFormatter().format(api, report));
+			LOGGER.info("Wrote reports for github action");
+		} catch (IOException e) {
+			LOGGER.error("Couldn't write reports for github action", e);
 		}
 	}
 

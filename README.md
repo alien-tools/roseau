@@ -62,7 +62,7 @@ Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
   --diff              Compute breaking changes between versions --v1 and --v2
   --extractor=<type>  API extractor to use: SPOON, ASM, JDT
   --fail              Return a non-zero code if breaking changes are detected
-  --format=<format>   Format of the report; possible values: CSV, HTML, JSON
+  --format=<format>   Format of the report; possible values: CSV, HTML, JSON, MD
   --json=<apiPath>    Where to serialize the JSON API model of --v1; defaults to api.json
   --plain             Disable ANSI colors, output plain text
   --pom=<pom>         A pom.xml file to build a classpath from

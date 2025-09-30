@@ -7,7 +7,8 @@ package io.github.alien.roseau.diff.formatter;
 public enum BreakingChangesFormatterFactory {
 	CSV,
 	HTML,
-	JSON;
+	JSON,
+	MD;
 
 	/**
 	 * Returns a {@link BreakingChangesFormatter} for the supplied format.
@@ -20,6 +21,7 @@ public enum BreakingChangesFormatterFactory {
 			case JSON -> new JsonFormatter();
 			case CSV -> new CsvFormatter();
 			case HTML -> new HtmlFormatter();
+			case MD -> new MdFormatter();
 		};
 	}
 }
