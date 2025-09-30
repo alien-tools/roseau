@@ -20,10 +20,13 @@ import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
@@ -45,9 +48,8 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--diff",
 		description = "Compute breaking changes between versions --v1 and --v2")
 	private boolean diffMode;
-	@Option(names = "--v1",
-		description = "Path to the first version of the library; either a source directory or a JAR",
-		required = true)
+	@Option(names = "--v1", required = true,
+		description = "Path to the first version of the library; either a source directory or a JAR")
 	private Path v1;
 	@Option(names = "--v2",
 		description = "Path to the second version of the library; either a source directory or a JAR")
@@ -62,12 +64,6 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--report",
 		description = "Where to write the breaking changes report")
 	private Path reportPath;
-	@Option(names = "--verbose",
-		description = "Print debug information")
-	private boolean verbose;
-	@Option(names = "--fail-on-bc",
-		description = "Return a non-zero code if breaking changes are detected")
-	private boolean failMode;
 	@Option(names = "--format",
 		description = "Format of the report; possible values: ${COMPLETION-CANDIDATES}",
 		defaultValue = "CSV")
@@ -77,10 +73,16 @@ public final class RoseauCLI implements Callable<Integer> {
 	private Path pom;
 	@Option(names = "--classpath", split = ":", paramLabel = "<jar>",
 		description = "A colon-separated list of JARs to include in the classpath")
-	private List<Path> userClasspath = List.of();
+	private Set<Path> userClasspath = Set.of();
+	@Option(names = "--fail-on-bc",
+		description = "Return a non-zero code if breaking changes are detected")
+	private boolean failMode;
 	@Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
 	private boolean plain;
+	@Option(names = "--verbose",
+		description = "Print debug information")
+	private boolean verbose;
 	@CommandLine.Option(names = "--github-action", hidden = true)
 	private boolean githubActionMode;
 
@@ -113,14 +115,15 @@ public final class RoseauCLI implements Callable<Integer> {
 		return report;
 	}
 
-	private List<Path> buildClasspath() {
-		List<Path> classpath = new ArrayList<>(userClasspath);
+	private Set<Path> buildClasspath() {
+		Set<Path> classpath = new HashSet<>(userClasspath);
 
 		if (pom != null && Files.isRegularFile(pom)) {
 			Stopwatch sw = Stopwatch.createStarted();
 			MavenClasspathBuilder classpathBuilder = new MavenClasspathBuilder();
 			classpath.addAll(classpathBuilder.buildClasspath(pom));
-			printVerbose("Extracting classpath from %s took %dms".formatted(pom, sw.elapsed().toMillis()));
+			printVerbose("Extracting classpath from %s took %dms".formatted(
+				pom, sw.elapsed().toMillis()));
 		}
 
 		if (classpath.isEmpty()) {
@@ -144,7 +147,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		try {
 			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
-			Files.writeString(reportPath, fmt.format(api, report));
+			Files.writeString(reportPath, fmt.format(api, report), StandardCharsets.UTF_8);
 			print("Report has been written to %s".formatted(reportPath));
 		} catch (IOException e) {
 			printErr("Error writing report to %s: %s".formatted(reportPath, e.getMessage()));
@@ -223,7 +226,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			}
 
 			checkArguments();
-			List<Path> classpath = buildClasspath();
+			List<Path> classpath = buildClasspath().stream().toList();
 			Library.Builder builder1 = Library.builder()
 				.location(v1)
 				.classpath(classpath);
