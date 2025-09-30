@@ -196,7 +196,7 @@ class FieldRemovedTest {
 		var v2 = "public record A() {}";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.i", BreakingChangeKind.METHOD_REMOVED, -1),
-			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1));
+			bc("A", "A.i()", BreakingChangeKind.METHOD_REMOVED, -1),
+			bc("A", "A.<init>(int)", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1));
 	}
 }

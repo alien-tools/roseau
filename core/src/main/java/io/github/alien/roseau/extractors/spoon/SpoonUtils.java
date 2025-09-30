@@ -70,11 +70,11 @@ public final class SpoonUtils {
 	 * @param location  The path to the source code
 	 * @param classpath The classpath used to resolve references
 	 * @return The created Spoon Launcher, either regular or Maven-specific
-	 * @throws IllegalArgumentException if the specified location does not exist
+	 * @throws RoseauException if the specified location does not exist
 	 */
 	public static Launcher launcherFor(Path location, Collection<Path> classpath) {
 		if (!location.toFile().exists()) {
-			throw new IllegalArgumentException(location + " does not exist");
+			throw new RoseauException(location + " does not exist");
 		}
 
 		Launcher launcher = new Launcher();

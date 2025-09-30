@@ -1,14 +1,14 @@
 package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.Library;
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
 import java.util.List;
 
 public record RoseauReport(
-	Library v1,
-	Library v2,
+	API v1,
+	API v2,
 	List<BreakingChange> breakingChanges
 ) {
 	public RoseauReport {

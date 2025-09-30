@@ -28,7 +28,7 @@ class MethodReturnTypeChangedTest {
 				public int m() { return 0; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().m();")
@@ -43,7 +43,7 @@ class MethodReturnTypeChangedTest {
 				public void m() {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().m();")
@@ -58,7 +58,7 @@ class MethodReturnTypeChangedTest {
 				public Integer m() { return 0; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("Integer i = new A().m();")
@@ -73,7 +73,7 @@ class MethodReturnTypeChangedTest {
 				public int m() { return 0; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new A().m();")
@@ -88,7 +88,7 @@ class MethodReturnTypeChangedTest {
 				public long m() { return 0L; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("long l = new A().m();")
@@ -103,7 +103,7 @@ class MethodReturnTypeChangedTest {
 				public int m() { return 0; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.InputStream is = new A().m();")
@@ -118,7 +118,7 @@ class MethodReturnTypeChangedTest {
 				public java.io.FileInputStream m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.FileInputStream fis = new A().m();")
@@ -133,7 +133,7 @@ class MethodReturnTypeChangedTest {
 				public java.io.InputStream m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("I i = new A().m();")
@@ -152,7 +152,7 @@ class MethodReturnTypeChangedTest {
 				public J m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("J j = new A().m();")
@@ -171,7 +171,7 @@ class MethodReturnTypeChangedTest {
 				public I m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("I i = new A().m();")
@@ -190,7 +190,7 @@ class MethodReturnTypeChangedTest {
 				public J m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("Integer i = new A<Integer, String>().m();")
@@ -205,7 +205,7 @@ class MethodReturnTypeChangedTest {
 				public U m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -223,7 +223,7 @@ class MethodReturnTypeChangedTest {
 				public U m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Disabled("Not even binary-breaking cause of erasure")
@@ -258,7 +258,7 @@ class MethodReturnTypeChangedTest {
 				public T m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.List<Integer> l = new A().m();")
@@ -273,7 +273,7 @@ class MethodReturnTypeChangedTest {
 				public java.util.List<String> m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.List<I> l = new A().m();")
@@ -292,7 +292,7 @@ class MethodReturnTypeChangedTest {
 				public java.util.List<J> m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.util.List<J> l = new A().m();")
@@ -311,7 +311,7 @@ class MethodReturnTypeChangedTest {
 				public java.util.List<I> m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int[] a = new A().m();")
@@ -326,7 +326,7 @@ class MethodReturnTypeChangedTest {
 				public String[] m() { return new String[] { "" }; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.InputStream[] a = new A().m();")
@@ -341,7 +341,7 @@ class MethodReturnTypeChangedTest {
 				public java.io.FileInputStream[] m() { return new java.io.FileInputStream[] { null }; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("java.io.FileInputStream[] a = new A().m();")
@@ -356,7 +356,7 @@ class MethodReturnTypeChangedTest {
 				public java.io.InputStream[] m() { return new java.io.InputStream[] { null }; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("@A(0) class X {}")
@@ -371,7 +371,7 @@ class MethodReturnTypeChangedTest {
 				String value();
 			}""";
 
-		assertBC("A", "A.value", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.value()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int i = new B().m();")
@@ -389,8 +389,8 @@ class MethodReturnTypeChangedTest {
 			public class B extends A {}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2),
-			bc("B", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2));
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2));
 	}
 
 	@Test
@@ -404,7 +404,7 @@ class MethodReturnTypeChangedTest {
 				public Unknown m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -418,6 +418,6 @@ class MethodReturnTypeChangedTest {
 				public A m() { return null; }
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 }

@@ -75,7 +75,7 @@ public class APIDiff {
 			)
 		);
 
-		return new RoseauReport(v1.getLibraryTypes().getLibrary(), v2.getLibraryTypes().getLibrary(), getBreakingChanges());
+		return new RoseauReport(v1, v2, getBreakingChanges());
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {

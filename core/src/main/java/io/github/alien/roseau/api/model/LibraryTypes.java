@@ -10,6 +10,7 @@ import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
@@ -71,7 +72,7 @@ public final class LibraryTypes implements TypeProvider {
 				Symbol::getQualifiedName,
 				Function.identity(),
 				(fqn, duplicate) -> {
-					throw new IllegalArgumentException("Duplicated types " + fqn);
+					throw new RoseauException("Duplicated type in %s: %s".formatted(library, fqn));
 				}
 			));
 	}

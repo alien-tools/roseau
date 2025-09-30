@@ -21,7 +21,7 @@ class MethodNowFinalTest {
 				public final void m() {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_FINAL, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A();")
@@ -74,7 +74,7 @@ class MethodNowFinalTest {
 				public final void m() {}
 			}""";
 
-		assertBC("B", "B.m", BreakingChangeKind.METHOD_NOW_FINAL, 2, buildDiff(v1, v2));
+		assertBC("B", "B.m()", BreakingChangeKind.METHOD_NOW_FINAL, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new B().m();")

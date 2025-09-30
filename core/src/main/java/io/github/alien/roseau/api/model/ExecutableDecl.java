@@ -33,6 +33,11 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		this.thrownExceptions = List.copyOf(thrownExceptions);
 	}
 
+	@Override
+	public String getQualifiedName() {
+		return String.format("%s.%s", getContainingType().getQualifiedName(), getSignature());
+	}
+
 	/**
 	 * Checks whether this executable is a method.
 	 *

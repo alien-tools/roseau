@@ -42,37 +42,37 @@ class MethodsOverridingTest {
 		assertThat(api.getAllMethods(i))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("I.m");
+			.contains("I.m()");
 
 		assertThat(api.getAllMethods(j))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("J.m");
+			.contains("J.m()");
 
 		assertThat(api.getAllMethods(k))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("K.m");
+			.contains("K.m()");
 
 		assertThat(api.getAllMethods(a))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("A.m");
+			.contains("A.m()");
 
 		assertThat(api.getAllMethods(b))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("A.m");
+			.contains("A.m()");
 
 		assertThat(api.getAllMethods(c))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("C.m");
+			.contains("C.m()");
 
 		assertThat(api.getAllMethods(d))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("K.m");
+			.contains("K.m()");
 	}
 
 	@ParameterizedTest

@@ -83,12 +83,15 @@ public final class Roseau {
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1), executor);
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(v2), executor);
 
-		API api1 = futureV1.join();
-		API api2 = futureV2.join();
-		LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
-			sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
-
-		return diff(api1, api2);
+		try {
+			API api1 = futureV1.join();
+			API api2 = futureV2.join();
+			LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
+				sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
+			return diff(api1, api2);
+		} catch (RuntimeException e) {
+			throw new RoseauException("Failed to build diff", e);
+		}
 	}
 
 	/**
@@ -126,12 +129,15 @@ public final class Roseau {
 			return toAPI(v2, extractor.incrementalUpdate(api.getLibraryTypes(), v2, changes));
 		});
 
-		API api1 = futureV1.join();
-		API api2 = futureV2.join();
-		LOGGER.debug("Building APIs incrementally took {}ms ({} vs {} types)",
-			sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
-
-		return diff(api1, api2);
+		try {
+			API api1 = futureV1.join();
+			API api2 = futureV2.join();
+			LOGGER.debug("Building APIs incrementally took {}ms ({} vs {} types)",
+				sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
+			return diff(api1, api2);
+		} catch (RuntimeException e) {
+			throw new RoseauException("Failed to incrementally update APIs", e);
+		}
 	}
 
 	private static LibraryTypes extractTypes(Library library) {

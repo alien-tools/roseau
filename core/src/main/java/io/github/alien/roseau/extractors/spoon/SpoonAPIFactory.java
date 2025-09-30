@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -165,7 +166,7 @@ public class SpoonAPIFactory {
 			case CtRecord r -> convertCtRecord(r);
 			case CtEnum<?> e -> convertCtEnum(e);
 			case CtClass<?> c -> convertCtClass(c);
-			default -> throw new IllegalArgumentException("Unknown type kind: " + type);
+			default -> throw new RoseauException("Unexpected type kind: " + type);
 		};
 	}
 
@@ -434,7 +435,7 @@ public class SpoonAPIFactory {
 			case PRIVATE -> AccessModifier.PRIVATE;
 			case PROTECTED -> AccessModifier.PROTECTED;
 			case null -> AccessModifier.PACKAGE_PRIVATE;
-			default -> throw new IllegalArgumentException("Unknown visibility " + visibility);
+			default -> throw new RoseauException("Unexpected visibility " + visibility);
 		};
 	}
 
@@ -450,7 +451,7 @@ public class SpoonAPIFactory {
 			case NON_SEALED -> Modifier.NON_SEALED;
 			case NATIVE -> Modifier.NATIVE;
 			case STRICTFP -> Modifier.STRICTFP;
-			default -> throw new IllegalArgumentException("Unknown modifier " + modifier);
+			default -> throw new RoseauException("Unexpected modifier " + modifier);
 		};
 	}
 
