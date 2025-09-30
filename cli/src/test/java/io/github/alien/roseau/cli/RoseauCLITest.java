@@ -31,7 +31,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src");
 
 		assertThat(exitCode).isEqualTo(2);
-		assertThat(err.toString()).contains("No mode selected: see --api or --diff");
+		assertThat(err.toString()).contains("Missing required argument (specify one of these): (--api | --diff)");
 	}
 
 	// --- Diffs --- //

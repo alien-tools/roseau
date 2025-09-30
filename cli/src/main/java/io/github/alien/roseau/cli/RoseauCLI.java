@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -31,6 +30,7 @@ import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
 import static picocli.CommandLine.Option;
 import static picocli.CommandLine.Spec;
@@ -38,40 +38,46 @@ import static picocli.CommandLine.Spec;
 /**
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
-@Command(name = "roseau")
+@Command(name = "roseau", sortOptions = false,
+	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a module or library. " +
+		"--v1 and --v2 can point to either JAR files or source code directories. " +
+		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
 public final class RoseauCLI implements Callable<Integer> {
 	@Spec
 	CommandSpec spec;
-	@Option(names = "--api",
-		description = "Serialize the API model of --v1; see --json")
-	private boolean apiMode;
-	@Option(names = "--diff",
-		description = "Compute breaking changes between versions --v1 and --v2")
-	private boolean diffMode;
-	@Option(names = "--v1", required = true,
+	@ArgGroup(exclusive = true, multiplicity = "1")
+	RoseauCLI.Mode mode;
+	private static class Mode {
+		@Option(names = "--api", required = true,
+			description = "Serialize the API model of --v1; see --json")
+		boolean api;
+		@Option(names = "--diff", required = true,
+			description = "Compute breaking changes between versions --v1 and --v2")
+		boolean diff;
+	}
+	@Option(names = "--v1", paramLabel = "<path>",
 		description = "Path to the first version of the library; either a source directory or a JAR")
 	private Path v1;
-	@Option(names = "--v2",
+	@Option(names = "--v2", paramLabel = "<path>",
 		description = "Path to the second version of the library; either a source directory or a JAR")
 	private Path v2;
-	@Option(names = "--extractor",
+	@Option(names = "--extractor", paramLabel = "<extractor>",
 		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
 	private ExtractorType extractorType;
-	@Option(names = "--json",
-		description = "Where to serialize the JSON API model of --v1; defaults to api.json",
-		defaultValue = "api.json")
+	@Option(names = "--json", defaultValue = "api.json", paramLabel = "<path>",
+		description = "Where to serialize the JSON API model of --v1; defaults to api.json")
 	private Path apiPath;
-	@Option(names = "--report",
+	@Option(names = "--report", paramLabel = "<path>",
 		description = "Where to write the breaking changes report")
 	private Path reportPath;
 	@Option(names = "--format",
-		description = "Format of the report; possible values: ${COMPLETION-CANDIDATES}",
+		description = "Format of the report: ${COMPLETION-CANDIDATES}",
 		defaultValue = "CSV")
 	private BreakingChangesFormatterFactory format;
-	@Option(names = "--pom",
+	@Option(names = "--pom", paramLabel = "<path>",
 		description = "A pom.xml file to build a classpath from")
 	private Path pom;
-	@Option(names = "--classpath", split = ":", paramLabel = "<jar>",
+	@Option(names = "--classpath", split = ":", paramLabel = "<path>",
 		description = "A colon-separated list of JARs to include in the classpath")
 	private Set<Path> userClasspath = Set.of();
 	@Option(names = "--fail-on-bc",
@@ -201,15 +207,11 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private void checkArguments() {
-		if (!apiMode && !diffMode) {
-			throw new IllegalArgumentException("No mode selected: see --api or --diff");
-		}
-
 		if (v1 == null || !Files.exists(v1)) {
 			throw new IllegalArgumentException("Cannot find v1: %s".formatted(v1));
 		}
 
-		if (diffMode && (v2 == null || !Files.exists(v2))) {
+		if (mode.diff && (v2 == null || !Files.exists(v2))) {
 			throw new IllegalArgumentException("Cannot find v2: %s".formatted(v2));
 		}
 
@@ -235,12 +237,12 @@ public final class RoseauCLI implements Callable<Integer> {
 			}
 			Library libraryV1 = builder1.build();
 
-			if (apiMode) {
+			if (mode.api) {
 				API api = buildAPI(libraryV1);
 				writeApiReport(api);
 			}
 
-			if (diffMode) {
+			if (mode.diff) {
 				Library.Builder builder2 = Library.builder()
 					.location(v2)
 					.classpath(classpath);
