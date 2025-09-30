@@ -27,7 +27,7 @@ class MethodsExtractionTest {
 		var i = assertInterface(api, "pkg.I");
 		var m = assertMethod(api, i, "m()");
 
-		assertThat(m.getQualifiedName()).isEqualTo("pkg.I.m");
+		assertThat(m.getQualifiedName()).isEqualTo("pkg.I.m()");
 		assertThat(m.getSimpleName()).isEqualTo("m");
 	}
 

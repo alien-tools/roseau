@@ -3,14 +3,17 @@ package io.github.alien.roseau.cli;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.diff.formatter.CsvFormatter;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import org.apache.logging.log4j.Level;
@@ -25,6 +28,8 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -80,6 +85,10 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--classpath", split = ":", paramLabel = "<path>",
 		description = "A colon-separated list of JARs to include in the classpath")
 	private Set<Path> userClasspath = Set.of();
+	@Option(names = "--ignored", paramLabel = "<path>",
+		description = "Do not report the breaking changes listed in the given CSV file; " +
+			"the CSV file share the same structure as the one produced by --format CSV (symbol;kind;nature)")
+	private Path ignoredCsv;
 	@Option(names = "--fail-on-bc",
 		description = "Return a non-zero code if breaking changes are detected")
 	private boolean failMode;
@@ -117,7 +126,6 @@ public final class RoseauCLI implements Callable<Integer> {
 		printVerbose("Diffing APIs took %dms (%d breaking changes)".formatted(
 			sw.elapsed().toMillis(), report.breakingChanges().size()));
 
-		writeReport(apiV1, report);
 		return report;
 	}
 
@@ -206,6 +214,39 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
+	private List<BreakingChange> filterIgnoredBCs(RoseauReport report) {
+		if (ignoredCsv == null) {
+			return report.breakingChanges();
+		}
+
+		try {
+			record Ignored(String type, String symbol, BreakingChangeKind kind) {}
+			List<String> lines = Files.readAllLines(ignoredCsv);
+			List<Ignored> ignored = lines.stream()
+				.filter(line -> !line.equals(CsvFormatter.HEADER))
+				.map(line -> {
+					String[] fields = line.split(";");
+					if (fields.length < 3) {
+						printErr("Malformed line %s ignored in %s".formatted(line, ignoredCsv));
+						return null;
+					} else {
+						return new Ignored(fields[0], fields[1], BreakingChangeKind.valueOf(fields[2].toUpperCase(Locale.ROOT)));
+					}
+				})
+				.filter(Objects::nonNull)
+				.toList();
+
+			return report.breakingChanges().stream()
+				.filter(bc -> ignored.stream().noneMatch(ign ->
+					bc.impactedType().getQualifiedName().equals(ign.type()) &&
+					bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
+					bc.kind() == ign.kind()))
+				.toList();
+		} catch (IOException e) {
+			throw new RoseauException("Couldn't read CSV file %s".formatted(ignoredCsv), e);
+		}
+	}
+
 	private void checkArguments() {
 		if (v1 == null || !Files.exists(v1)) {
 			throw new IllegalArgumentException("Cannot find v1: %s".formatted(v1));
@@ -215,8 +256,12 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new IllegalArgumentException("Cannot find v2: %s".formatted(v2));
 		}
 
-		if (pom != null && !Files.exists(pom)) {
+		if (pom != null && !Files.isRegularFile(pom)) {
 			throw new IllegalArgumentException("Cannot find pom: %s".formatted(pom));
+		}
+
+		if (ignoredCsv != null && !Files.isRegularFile(ignoredCsv)) {
+			throw new IllegalArgumentException("Cannot find ignored CSV: %s".formatted(pom));
 		}
 	}
 
@@ -250,7 +295,8 @@ public final class RoseauCLI implements Callable<Integer> {
 					builder2.extractorType(extractorType);
 				}
 				Library libraryV2 = builder2.build();
-				List<BreakingChange> bcs = diff(libraryV1, libraryV2).breakingChanges();
+				RoseauReport report = diff(libraryV1, libraryV2);
+				List<BreakingChange> bcs = filterIgnoredBCs(report);
 
 				if (bcs.isEmpty()) {
 					print("No breaking changes found.");
@@ -260,6 +306,7 @@ public final class RoseauCLI implements Callable<Integer> {
 							.map(this::format)
 							.collect(Collectors.joining(System.lineSeparator()))
 					);
+					writeReport(report.v1(), report);
 
 					if (failMode) {
 						return 1;

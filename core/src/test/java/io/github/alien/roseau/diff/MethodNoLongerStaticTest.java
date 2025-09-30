@@ -22,7 +22,7 @@ class MethodNoLongerStaticTest {
 				public void m() {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_STATIC, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_STATIC, 2, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")

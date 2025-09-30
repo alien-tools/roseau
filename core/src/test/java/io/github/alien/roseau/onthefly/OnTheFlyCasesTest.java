@@ -45,7 +45,7 @@ class OnTheFlyCasesTest {
 				A a = new A();
 				int i = 2;
 				a.boxing(i);""",
-			"A", "A.boxing", BreakingChangeKind.METHOD_REMOVED, 2);
+			"A", "A.boxing(int)", BreakingChangeKind.METHOD_REMOVED, 2);
 	}
 
 	// Source-compatible, binary-compatible

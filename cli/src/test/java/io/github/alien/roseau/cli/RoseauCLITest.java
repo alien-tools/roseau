@@ -2,13 +2,16 @@ package io.github.alien.roseau.cli;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
+import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -127,54 +130,50 @@ class RoseauCLITest {
 
 	// --- APIs --- //
 	@Test
-	void write_api_default_sources() throws Exception {
-		var json = new File("api.json");
+	void write_api_default_sources(@TempDir Path tempDir) throws Exception {
+		var jsonFile = tempDir.resolve("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
+			"--json=" + jsonFile,
 			"--verbose");
 
 		assertThat(exitCode).isZero();
-		assertThat(json).isFile().isNotEmpty();
+		assertThat(jsonFile).isNotEmptyFile();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using JDT")
-			.contains("API has been written to api.json");
-
-		Files.deleteIfExists(json.toPath());
+			.contains("API has been written to " + jsonFile);
 	}
 
 	@Test
-	void write_api_default_jar() throws Exception {
-		var json = new File("api.json");
+	void write_api_default_jar(@TempDir Path tempDir) throws Exception {
+		var jsonFile = tempDir.resolve("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--api",
+			"--json=" + jsonFile,
 			"--verbose");
 
 		assertThat(exitCode).isZero();
-		assertThat(json).isFile().isNotEmpty();
+		assertThat(jsonFile).isNotEmptyFile();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using ASM")
-			.contains("API has been written to api.json");
-
-		Files.deleteIfExists(json.toPath());
+			.contains("API has been written to " + jsonFile);
 	}
 
 	@Test
-	void write_api_custom_file() throws Exception {
-		var json = new File("out.json");
+	void write_api_custom_file(@TempDir Path tempDir) throws Exception {
+		var jsonFile = tempDir.resolve("out.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
-			"--json=" + json);
+			"--json=" + jsonFile);
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("API has been written to out.json");
-		assertThat(json).isFile().isNotEmpty();
-
-		Files.deleteIfExists(json.toPath());
+		assertThat(out.toString()).contains("API has been written to " + jsonFile);
+		assertThat(jsonFile).isNotEmptyFile();
 	}
 
 	@Test
-	void write_api_incorrect_extractor_asm() {
-		var json = new File("api.json");
+	void write_api_incorrect_extractor_asm(@TempDir Path tempDir) {
+		var json = tempDir.resolve("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
 			"--extractor=ASM");
@@ -184,37 +183,35 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void write_api_asm() throws Exception {
-		var json = new File("api.json");
+	void write_api_asm(@TempDir Path tempDir) throws Exception {
+		var jsonFile = tempDir.resolve("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--extractor=ASM",
 			"--api",
+			"--json=" + jsonFile,
 			"--verbose");
 
 		assertThat(exitCode).isZero();
-		assertThat(json).isFile().isNotEmpty();
+		assertThat(jsonFile).isNotEmptyFile();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using ASM")
-			.contains("API has been written to api.json");
-
-		Files.deleteIfExists(json.toPath());
+			.contains("API has been written to " + jsonFile);
 	}
 
 	@Test
-	void write_api_spoon() throws Exception {
-		var json = new File("api.json");
+	void write_api_spoon(@TempDir Path tempDir) throws Exception {
+		var jsonFile = tempDir.resolve("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--extractor=SPOON",
 			"--api",
+			"--json=" + jsonFile,
 			"--verbose");
 
 		assertThat(exitCode).isZero();
-		assertThat(json).isFile().isNotEmpty();
+		assertThat(jsonFile).isNotEmptyFile();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using SPOON")
-			.contains("API has been written to api.json");
-
-		Files.deleteIfExists(json.toPath());
+			.contains("API has been written to " + jsonFile);
 	}
 
 	// --- Options --- //
@@ -266,49 +263,78 @@ class RoseauCLITest {
 
 	// --- Reports --- //
 	@Test
-	void write_report() throws Exception {
-		var reportFile = new File("out.csv");
+	void write_report(@TempDir Path tempDir) throws Exception {
+		var reportFile = tempDir.resolve("out.csv");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--report=" + reportFile.getPath());
+			"--report=" + reportFile);
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to out.csv");
-		assertThat(reportFile).isFile().isNotEmpty();
-
-		Files.deleteIfExists(reportFile.toPath());
+		assertThat(out.toString()).contains("Report has been written to " + reportFile);
+		assertThat(reportFile).isNotEmptyFile();
 	}
 
 	@Test
-	void write_report_html() throws Exception {
-		var reportFile = new File("report.html");
+	void write_report_html(@TempDir Path tempDir) throws Exception {
+		var reportFile = tempDir.resolve("report.html");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--format=HTML",
-			"--report=" + reportFile.getPath());
+			"--report=" + reportFile);
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to report.html");
-		assertThat(reportFile).isFile().isNotEmpty();
-
-		Files.deleteIfExists(reportFile.toPath());
+		assertThat(out.toString()).contains("Report has been written to " + reportFile);
+		assertThat(reportFile).isNotEmptyFile();
 	}
 
 	@Test
-	void write_report_json() throws Exception {
-		var reportFile = new File("report.json");
+	void write_report_json(@TempDir Path tempDir) throws Exception {
+		var reportFile = tempDir.resolve("report.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--format=JSON",
-			"--report=" + reportFile.getPath());
+			"--report=" + reportFile);
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to report.json");
-		assertThat(reportFile).isFile().isNotEmpty();
+		assertThat(out.toString()).contains("Report has been written to " + reportFile);
+		assertThat(reportFile).isNotEmptyFile();
+	}
 
-		Files.deleteIfExists(reportFile.toPath());
+	// --- Ignored --- //
+	@Test
+	void ignore_simple_bc(@TempDir Path tempDir) throws IOException {
+		var ignored = tempDir.resolve("ignored.csv");
+		Files.writeString(ignored, """
+			type;symbol;kind;nature
+			pkg.T;pkg.T.m();METHOD_REMOVED;DELETION""");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--ignored=" + ignored,
+			"--plain");
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
+	}
+
+	@Test
+	void ignore_all_bcs_in_report(@TempDir Path tempDir) {
+		var ignored = tempDir.resolve("ignored.csv");
+		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--report=" + ignored);
+
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--ignored=" + ignored,
+			"--plain");
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
 	}
 }

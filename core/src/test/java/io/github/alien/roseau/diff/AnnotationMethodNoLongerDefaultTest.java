@@ -21,7 +21,7 @@ class AnnotationMethodNoLongerDefaultTest {
 				String value();
 			}""";
 
-		assertBC("A", "A.value", BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, 2, buildDiff(v1, v2));
+		assertBC("A", "A.value()", BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, 2, buildDiff(v1, v2));
 	}
 
 	@Client("@A(0) int a;")

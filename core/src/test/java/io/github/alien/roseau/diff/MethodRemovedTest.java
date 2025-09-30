@@ -25,7 +25,7 @@ class MethodRemovedTest {
 			}
 			public class B extends A {}""";
 
-		assertBC("B", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", "A.m()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -45,7 +45,7 @@ class MethodRemovedTest {
 			}
 			public class B extends A {}""";
 
-		assertBC("B", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("B", "A.m()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("// Can't extend or use")
@@ -86,8 +86,8 @@ class MethodRemovedTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("B", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2),
-			bc("B", "A.m2", BreakingChangeKind.METHOD_REMOVED, 3));
+			bc("B", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2),
+			bc("B", "A.m2()", BreakingChangeKind.METHOD_REMOVED, 3));
 	}
 
 	@Client("new A().m1();")
@@ -99,7 +99,7 @@ class MethodRemovedTest {
 			}""";
 		var v2 = "public class A {}";
 
-		assertBC("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().m1(0);")
@@ -115,7 +115,7 @@ class MethodRemovedTest {
 			    public void m1() {}
 			}""";
 
-		assertBC("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 3, buildDiff(v1, v2));
+		assertBC("A", "A.m1(int)", BreakingChangeKind.METHOD_REMOVED, 3, buildDiff(v1, v2));
 	}
 
 	@Client("A.m1();")
@@ -127,7 +127,7 @@ class MethodRemovedTest {
 			}""";
 		var v2 = "public class A {}";
 
-		assertBC("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new I(){}.m1();")
@@ -139,7 +139,7 @@ class MethodRemovedTest {
 			}""";
 		var v2 = "public interface I {}";
 
-		assertBC("I", "I.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("I", "I.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().m1();")
@@ -154,7 +154,7 @@ class MethodRemovedTest {
 			    void m1() {}
 			}""";
 
-		assertBC("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new B().m1();")
@@ -191,8 +191,8 @@ class MethodRemovedTest {
 			public class A implements I {}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("I", "I.m1", BreakingChangeKind.METHOD_REMOVED, 2),
-			bc("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2));
+			bc("I", "I.m1()", BreakingChangeKind.METHOD_REMOVED, 2),
+			bc("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2));
 	}
 
 	@Client("new A().m1(0, null);")
@@ -207,7 +207,7 @@ class MethodRemovedTest {
 			  public void m1(int x) {}
 			}""";
 
-		assertBC("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m1(int,java.lang.Object)", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -225,7 +225,7 @@ class MethodRemovedTest {
 			    private void m1() {}
 			}""";
 
-		assertBC("A", "A.m1", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().m(null, 1);")
@@ -240,7 +240,7 @@ class MethodRemovedTest {
 			    public void m(Object o, int... i) {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m(java.lang.Object,int)", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("@A(0) int i;")
@@ -252,7 +252,7 @@ class MethodRemovedTest {
 			}""";
 		var v2 = "public @interface A {}";
 
-		assertBC("A", "A.value", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.value()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A(0).m();")
@@ -266,7 +266,7 @@ class MethodRemovedTest {
 			public record A(int i) {
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A(0, 0f); // Can't really test f()")
@@ -276,7 +276,7 @@ class MethodRemovedTest {
 		var v2 = "public record A(int i) {}";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.<init>", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1),
-			bc("A", "A.f", BreakingChangeKind.METHOD_REMOVED, -1));
+			bc("A", "A.<init>(int,float)", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1),
+			bc("A", "A.f()", BreakingChangeKind.METHOD_REMOVED, -1));
 	}
 }

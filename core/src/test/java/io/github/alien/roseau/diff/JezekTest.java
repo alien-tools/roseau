@@ -22,7 +22,7 @@ class JezekTest {
 			  public A(java.util.List<A> l) {}
 			}""";
 
-		assertBC("A", "A.<init>", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.<init>(java.util.List<? extends java.lang.Object>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -36,7 +36,7 @@ class JezekTest {
 			  public <T extends Number & java.util.List<T>> void m() {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -134,7 +134,7 @@ class JezekTest {
 				public void m() throws Exception {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -148,7 +148,7 @@ class JezekTest {
 				public void m() throws java.io.FileNotFoundException {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -192,7 +192,7 @@ class JezekTest {
 				void m();
 			}""";
 
-		assertBC("S", "S.m", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("S", "S.m()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -312,7 +312,7 @@ class JezekTest {
 				public void m(java.util.ArrayList<? extends Number> al) {}
 			}""";
 
-		assertBC("C", "C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m(java.util.ArrayList<? extends java.lang.Object>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -405,7 +405,7 @@ class JezekTest {
 				public void m(java.util.List<?> l) {}
 			}""";
 
-		assertBC("C", "C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m(java.util.List<java.lang.String>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -447,7 +447,7 @@ class JezekTest {
 				public void m() {}
 			}""";
 
-		assertBC("C", "C.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

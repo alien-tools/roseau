@@ -36,6 +36,6 @@ class MethodFormalTypeParameterAddedTest {
 				public <T, U> void m() {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, 2, buildDiff(v1, v2));
 	}
 }

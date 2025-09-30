@@ -46,9 +46,9 @@ class ImplicitObjectTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2),
-			bc("A", "A.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3),
-			bc("A", "A.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4));
+			bc("A", "A.equals(java.lang.Object)", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2),
+			bc("A", "A.hashCode()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3),
+			bc("A", "A.toString()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 4));
 	}
 
 	@Disabled("Technically breaking")
@@ -64,9 +64,9 @@ class ImplicitObjectTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "java.lang.Object.equals", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1),
-			bc("A", "java.lang.Object.hashCode", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1),
-			bc("A", "java.lang.Object.toString", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1));
+			bc("A", "java.lang.Object.equals(java.lang.Object)", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1),
+			bc("A", "java.lang.Object.hashCode()", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1),
+			bc("A", "java.lang.Object.toString()", BreakingChangeKind.METHOD_NOW_ABSTRACT, -1));
 	}
 
 	@Client("A a = new A() {};")
