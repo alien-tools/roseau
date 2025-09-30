@@ -226,11 +226,12 @@ public final class RoseauCLI implements Callable<Integer> {
 				.filter(line -> !line.equals(CsvFormatter.HEADER))
 				.map(line -> {
 					String[] fields = line.split(";");
-					if (fields.length < 3) {
+					if (fields.length < 3 ||
+						Arrays.stream(BreakingChangeKind.values()).map(Enum::name).noneMatch(name -> name.equals(fields[2]))) {
 						printErr("Malformed line %s ignored in %s".formatted(line, ignoredCsv));
 						return null;
 					} else {
-						return new Ignored(fields[0], fields[1], BreakingChangeKind.valueOf(fields[2].toUpperCase(Locale.ROOT)));
+						return new Ignored(fields[0], fields[1], BreakingChangeKind.valueOf(fields[2]));
 					}
 				})
 				.filter(Objects::nonNull)
