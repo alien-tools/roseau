@@ -57,7 +57,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	RoseauCLI.Mode mode;
 	private static class Mode {
 		@Option(names = "--api", required = true,
-			description = "Serialize the API model of --v1; see --json")
+			description = "Serialize the API model of --v1; see --api-json")
 		boolean api;
 		@Option(names = "--diff", required = true,
 			description = "Compute breaking changes between versions --v1 and --v2")
@@ -72,15 +72,14 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--extractor", paramLabel = "<extractor>",
 		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
 	private ExtractorType extractorType;
-	@Option(names = "--json", defaultValue = "api.json", paramLabel = "<path>",
-		description = "Where to serialize the JSON API model of --v1; defaults to api.json")
-	private Path apiPath;
+	@Option(names = "--api-json", paramLabel = "<path>",
+		description = "Where to serialize the JSON API model of --v1 in --api mode")
+	private Path apiJson;
 	@Option(names = "--report", paramLabel = "<path>",
-		description = "Where to write the breaking changes report")
+		description = "Where to write the breaking changes report in --diff mode")
 	private Path reportPath;
-	@Option(names = "--format",
-		description = "Format of the report: ${COMPLETION-CANDIDATES}",
-		defaultValue = "CSV")
+	@Option(names = "--format", defaultValue = "CSV",
+		description = "Format of the report: ${COMPLETION-CANDIDATES}")
 	private BreakingChangesFormatterFactory format;
 	@Option(names = "--pom", paramLabel = "<path>",
 		description = "A pom.xml file to build a classpath from")
@@ -157,6 +156,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private void writeReport(API api, RoseauReport report) {
+		// FIXME once we can write multiple reports at once
 		if (githubActionMode) {
 			writeGithubActionReport(api, report);
 			return;
@@ -171,20 +171,16 @@ public final class RoseauCLI implements Callable<Integer> {
 			Files.writeString(reportPath, fmt.format(api, report), StandardCharsets.UTF_8);
 			print("Report has been written to %s".formatted(reportPath));
 		} catch (IOException e) {
-			printErr("Error writing report to %s: %s".formatted(reportPath, e.getMessage()));
+			throw new RoseauException("Error writing report to %s".formatted(reportPath), e);
 		}
 	}
 
 	private void writeApiReport(API api) {
-		if (apiPath == null) {
-			return;
-		}
-
 		try {
-			api.getLibraryTypes().writeJson(apiPath);
-			print("API has been written to %s".formatted(apiPath));
+			api.getLibraryTypes().writeJson(apiJson);
+			print("API has been written to %s".formatted(apiJson));
 		} catch (IOException e) {
-			printErr("Error writing report to %s: %s".formatted(apiPath, e.getMessage()));
+			throw new RoseauException("Error writing API to %s".formatted(apiJson), e);
 		}
 	}
 
@@ -194,7 +190,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			Files.writeString(Path.of("report.html"), new HtmlFormatter().format(api, report));
 			Files.writeString(Path.of("report.md"), new MdFormatter().format(api, report));
 		} catch (IOException e) {
-			printErr("Couldn't write reports for github action: " + e.getMessage());
+			throw new RoseauException("Error writing GHA reports", e);
 		}
 	}
 
@@ -256,19 +252,23 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private void checkArguments() {
 		if (v1 == null || !Files.exists(v1)) {
-			throw new IllegalArgumentException("Cannot find v1: %s".formatted(v1));
+			throw new RoseauException("Cannot find v1: %s".formatted(v1));
+		}
+
+		if (mode.api && apiJson == null) {
+			throw new RoseauException("--api-json required in --api mode");
 		}
 
 		if (mode.diff && (v2 == null || !Files.exists(v2))) {
-			throw new IllegalArgumentException("Cannot find v2: %s".formatted(v2));
+			throw new RoseauException("Cannot find v2: %s".formatted(v2));
 		}
 
 		if (pom != null && !Files.isRegularFile(pom)) {
-			throw new IllegalArgumentException("Cannot find pom: %s".formatted(pom));
+			throw new RoseauException("Cannot find pom: %s".formatted(pom));
 		}
 
 		if (ignoredCsv != null && !Files.isRegularFile(ignoredCsv)) {
-			throw new IllegalArgumentException("Cannot find ignored CSV: %s".formatted(pom));
+			throw new RoseauException("Cannot find ignored CSV: %s".formatted(ignoredCsv));
 		}
 	}
 

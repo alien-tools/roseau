@@ -53,11 +53,11 @@ Roseau supports different modes, output formats, and options:
 
 ```
 $ java -jar roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --help
-Usage: roseau [-hV] [--fail-on-bc] [--plain] [--verbose] [--classpath=<path>[,
-              <path>...]] [--extractor=<extractor>] [--format=<format>]
-              [--ignored=<path>] [--json=<path>] [--pom=<path>]
+Usage: roseau [-hV] [--fail-on-bc] [--plain] [--verbose] [--api-json=<path>]
+              [--classpath=<path>[,<path>...]] [--extractor=<extractor>]
+              [--format=<format>] [--ignored=<path>] [--pom=<path>]
               [--report=<path>] [--v1=<path>] [--v2=<path>] (--api | --diff)
-      --api               Serialize the API model of --v1; see --json
+      --api               Serialize the API model of --v1; see --api-json
       --diff              Compute breaking changes between versions --v1 and
                             --v2
       --v1=<path>         Path to the first version of the library; either a
@@ -66,9 +66,10 @@ Usage: roseau [-hV] [--fail-on-bc] [--plain] [--verbose] [--classpath=<path>[,
                             source directory or a JAR
       --extractor=<extractor>
                           API extractor to use: SPOON, ASM, JDT
-      --json=<path>       Where to serialize the JSON API model of --v1;
-                            defaults to api.json
-      --report=<path>     Where to write the breaking changes report
+      --api-json=<path>   Where to serialize the JSON API model of --v1 in
+                            --api mode
+      --report=<path>     Where to write the breaking changes report in --diff
+                            mode
       --format=<format>   Format of the report: CSV, HTML, JSON, MD
       --pom=<path>        A pom.xml file to build a classpath from
       --classpath=<path>[,<path>...]

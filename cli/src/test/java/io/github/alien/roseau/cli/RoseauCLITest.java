@@ -38,7 +38,7 @@ class RoseauCLITest {
 
 	// --- Diffs --- //
 	@Test
-	void simple_source_diff() throws Exception {
+	void simple_source_diff() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
@@ -49,7 +49,7 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void simple_jar_diff() throws Exception {
+	void simple_jar_diff() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
@@ -60,7 +60,7 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void heterogeneous_diff_1() throws Exception {
+	void heterogeneous_diff_1() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
@@ -71,18 +71,18 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void heterogeneous_diff_2() throws Exception {
+	void heterogeneous_diff_2() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
-			"--v2=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--plain");
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
 	}
 
 	@Test
-	void no_breaking_changes() throws Exception {
+	void no_breaking_changes() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--diff");
@@ -98,6 +98,15 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Cannot find v1:");
+	}
+
+	@Test
+	void missing_v1() {
+		var exitCode = cmd.execute("--api");
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Cannot find v1:");
 	}
 
 	@Test
@@ -106,6 +115,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Cannot find v2:");
 	}
 
 	@Test
@@ -129,41 +139,21 @@ class RoseauCLITest {
 
 	// --- APIs --- //
 	@Test
-	void write_api_default_sources(@TempDir Path tempDir) throws Exception {
-		var jsonFile = tempDir.resolve("api.json");
+	void write_api_no_file() {
+		var defaultFile = Path.of("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--api",
-			"--json=" + jsonFile,
-			"--verbose");
+			"--api");
 
-		assertThat(exitCode).isZero();
-		assertThat(jsonFile).isNotEmptyFile();
-		assertThat(out.toString())
-			.contains("Extracting API from", "using JDT")
-			.contains("API has been written to " + jsonFile);
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("--api-json required in --api mode");
 	}
 
 	@Test
-	void write_api_default_jar(@TempDir Path tempDir) throws Exception {
-		var jsonFile = tempDir.resolve("api.json");
+	void write_api_custom_file(@TempDir Path tempDir) {
+		var jsonFile = tempDir.resolve("custom.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--api",
-			"--json=" + jsonFile,
-			"--verbose");
-
-		assertThat(exitCode).isZero();
-		assertThat(jsonFile).isNotEmptyFile();
-		assertThat(out.toString())
-			.contains("Extracting API from", "using ASM")
-			.contains("API has been written to " + jsonFile);
-	}
-
-	@Test
-	void write_api_custom_file(@TempDir Path tempDir) throws Exception {
-		var jsonFile = tempDir.resolve("out.json");
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--api",
-			"--json=" + jsonFile);
+			"--api-json=" + jsonFile);
 
 		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("API has been written to " + jsonFile);
@@ -171,39 +161,12 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void write_api_incorrect_extractor_asm(@TempDir Path tempDir) {
-		var json = tempDir.resolve("api.json");
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--api",
-			"--extractor=ASM");
-
-		assertThat(exitCode).isEqualTo(2);
-		assertThat(json).doesNotExist();
-	}
-
-	@Test
-	void write_api_asm(@TempDir Path tempDir) throws Exception {
-		var jsonFile = tempDir.resolve("api.json");
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
-			"--extractor=ASM",
-			"--api",
-			"--json=" + jsonFile,
-			"--verbose");
-
-		assertThat(exitCode).isZero();
-		assertThat(jsonFile).isNotEmptyFile();
-		assertThat(out.toString())
-			.contains("Extracting API from", "using ASM")
-			.contains("API has been written to " + jsonFile);
-	}
-
-	@Test
-	void write_api_spoon(@TempDir Path tempDir) throws Exception {
-		var jsonFile = tempDir.resolve("api.json");
+	void write_api_spoon(@TempDir Path tempDir) {
+		var jsonFile = tempDir.resolve("spoon.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--extractor=SPOON",
 			"--api",
-			"--json=" + jsonFile,
+			"--api-json=" + jsonFile,
 			"--verbose");
 
 		assertThat(exitCode).isZero();
@@ -213,15 +176,23 @@ class RoseauCLITest {
 			.contains("API has been written to " + jsonFile);
 	}
 
-	// --- Options --- //
 	@Test
-	void missing_v1() {
-		var exitCode = cmd.execute("--v2=src/test/resources/test-project-v2/src",
-			"--diff");
+	void write_api_io_error(@TempDir Path tempDir) throws IOException {
+		var readOnlyDir = tempDir.resolve("readonly");
+		Files.createDirectory(readOnlyDir);
+		readOnlyDir.toFile().setReadOnly();
+		var apiFile = readOnlyDir.resolve("api.json");
 
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--api",
+			"--api-json=" + apiFile);
+
+		// Should succeed despite I/O error - CLI continues execution
 		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Error writing API to " + apiFile);
 	}
 
+	// --- Options --- //
 	@Test
 	void missing_classpath() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
@@ -248,12 +219,43 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void invalid_pom() {
+	void valid_pom(@TempDir Path tempDir) {
+		var api = tempDir.resolve("api.json");
+		var pom = Path.of("pom.xml");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v1/src",
+			"--api",
+			"--pom=" + pom,
+			"--api-json=" + api,
+			"--verbose");
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).contains("Extracting classpath from " + pom);
+	}
+
+	@Test
+	void corrupt_pom(@TempDir Path tempDir) {
+		var api = tempDir.resolve("api.json");
+		var pom = Path.of("src/test/resources/corrupt-pom.xml");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v1/src",
+			"--api",
+			"--pom=" + pom,
+			"--api-json=" + api);
+
+		assertThat(exitCode).isZero();
+	}
+
+	@Test
+	void missing_pom(@TempDir Path tempDir) {
+		var api = tempDir.resolve("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
-			"--pom=src/test/resources/none.xml");
+			"--pom=src/test/resources/none.xml",
+			"--api-json=" + api);
 
 		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Cannot find pom:");
 	}
 
 	@Test
@@ -263,6 +265,18 @@ class RoseauCLITest {
 			"--api");
 
 		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Invalid value for option '--extractor'");
+	}
+
+	@Test
+	void incompatible_extractor() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--extractor=ASM",
+			"--diff");
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("ASM extractor cannot be used");
 	}
 
 	@Test
@@ -273,12 +287,23 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Unknown option: '--formatter=UNKNOWN'");
 	}
 
 	// --- Reports --- //
 	@Test
-	void write_report(@TempDir Path tempDir) throws Exception {
-		var reportFile = tempDir.resolve("out.csv");
+	void diff_without_report() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff");
+
+		assertThat(exitCode).isZero();
+		assertThat(Path.of("report.csv")).doesNotExist();
+	}
+
+	@Test
+	void write_report_custom(@TempDir Path tempDir) {
+		var reportFile = tempDir.resolve("custom.csv");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
@@ -290,7 +315,7 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void write_report_html(@TempDir Path tempDir) throws Exception {
+	void write_report_html(@TempDir Path tempDir) {
 		var reportFile = tempDir.resolve("report.html");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
@@ -304,7 +329,7 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void write_report_json(@TempDir Path tempDir) throws Exception {
+	void write_report_json(@TempDir Path tempDir) {
 		var reportFile = tempDir.resolve("report.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
@@ -315,6 +340,36 @@ class RoseauCLITest {
 		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
+	}
+
+	@Test
+	void write_report_markdown(@TempDir Path tempDir) {
+		var reportFile = tempDir.resolve("report.md");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--format=MD",
+			"--report=" + reportFile);
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).contains("Report has been written to " + reportFile);
+		assertThat(reportFile).isNotEmptyFile();
+	}
+
+	@Test
+	void write_report_io_error(@TempDir Path tempDir) throws IOException {
+		var readOnlyDir = tempDir.resolve("readonly");
+		Files.createDirectory(readOnlyDir);
+		readOnlyDir.toFile().setReadOnly();
+		var reportFile = readOnlyDir.resolve("report.csv");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--report=" + reportFile);
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Error writing report to " + reportFile);
 	}
 
 	// --- Ignored --- //
@@ -349,6 +404,78 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("No breaking changes found.");
+	}
+
+	@Test
+	void invalid_ignored_csv(@TempDir Path tempDir) {
+		var invalidCsv = tempDir.resolve("nonexistent.csv");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--ignored=" + invalidCsv);
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Cannot find ignored CSV: " + invalidCsv);
+	}
+
+	@Test
+	void malformed_ignored_csv(@TempDir Path tempDir) throws IOException {
+		var malformedCsv = tempDir.resolve("malformed.csv");
+		Files.writeString(malformedCsv, """
+			type;symbol;kind;nature
+			one_field;a_second_field""");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--ignored=" + malformedCsv,
+			"--plain");
+
+		assertThat(exitCode).isZero();
+		assertThat(err.toString()).contains("Malformed line");
+	}
+
+	@Test
+	void verbose_mode_with_exception() {
+		var exitCode = cmd.execute("--v1=src/test/resources/invalid-path",
+			"--api",
+			"--verbose");
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString())
+			.contains("Cannot find v1:")
+			.contains("io.github.alien.roseau.RoseauException");
+	}
+
+	@Test
+	void plain_mode_formatting() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--plain");
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).doesNotContain("\u001B[");
+	}
+
+	@Test
+	void colored_output_formatting() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff");
+
+		assertThat(exitCode).isZero();
+		assertThat(out.toString()).contains("\u001B[");
+	}
+
+	@Test
+	void corrupt_jar() {
+		var exitCode = cmd.execute("--v1=src/test/resources/corrupt.jar",
+			"--v2=src/test/resources/corrupt.jar",
+			"--diff");
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("Invalid path to library");
 	}
 }
