@@ -65,7 +65,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--verbose",
 		description = "Print debug information")
 	private boolean verbose;
-	@Option(names = "--fail",
+	@Option(names = "--fail-on-bc",
 		description = "Return a non-zero code if breaking changes are detected")
 	private boolean failMode;
 	@Option(names = "--format",

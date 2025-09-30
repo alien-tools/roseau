@@ -98,7 +98,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--fail");
+			"--fail-on-bc");
 
 		assertThat(exitCode).isOne();
 	}
