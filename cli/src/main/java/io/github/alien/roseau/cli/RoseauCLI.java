@@ -198,6 +198,10 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private void checkArguments() {
+		if (!apiMode && !diffMode) {
+			throw new IllegalArgumentException("No mode selected: see --api or --diff");
+		}
+
 		if (v1 == null || !Files.exists(v1)) {
 			throw new IllegalArgumentException("Cannot find v1: %s".formatted(v1));
 		}

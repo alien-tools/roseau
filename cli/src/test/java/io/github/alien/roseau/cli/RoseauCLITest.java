@@ -26,6 +26,14 @@ class RoseauCLITest {
 		cmd.setErr(new PrintWriter(err));
 	}
 
+	@Test
+	void no_mode() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src");
+
+		assertThat(exitCode).isEqualTo(2);
+		assertThat(err.toString()).contains("No mode selected: see --api or --diff");
+	}
+
 	// --- Diffs --- //
 	@Test
 	void simple_source_diff() throws Exception {
