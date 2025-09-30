@@ -35,16 +35,16 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ mvn package
-$ ls cli/target/roseau-cli-0.3.0-jar-with-dependencies.jar 
+$ java -jar cli/target/roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --help 
 ```
 
 Identify breaking changes between two versions, either from source trees or compiled JARs:
 
 ```
-$ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ java -jar roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ java -jar roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -52,24 +52,36 @@ $ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --diff --v1 /path/to/sour
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.3.0-jar-with-dependencies.jar --help
-Usage: roseau [--api] [--diff] [--fail] [--plain] [--verbose]
-          [--classpath=<list>] [--extractor=<type>]
-          [--format=<format>] [--json=<apiPath>] [--pom=<pom>]
-          [--report=<report>] --v1=<v1> [--v2=<v2>]
-  --api               Serialize the API model of --v1; see --json
-  --classpath=<list>  A list of elements to include in the classpath; OS-specific separator (':'or ';')
-  --diff              Compute breaking changes between versions --v1 and --v2
-  --extractor=<type>  API extractor to use: SPOON, ASM, JDT
-  --fail              Return a non-zero code if breaking changes are detected
-  --format=<format>   Format of the report; possible values: CSV, HTML, JSON, MD
-  --json=<apiPath>    Where to serialize the JSON API model of --v1; defaults to api.json
-  --plain             Disable ANSI colors, output plain text
-  --pom=<pom>         A pom.xml file to build a classpath from
-  --report=<report>   Where to write the breaking changes report
-  --v1=<v1>           Path to the first version of the library; either a source directory or a JAR
-  --v2=<v2>           Path to the second version of the library; either a source directory or a JAR
-  --verbose           Print debug information
+$ java -jar roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --help
+Usage: roseau [-hV] [--fail-on-bc] [--plain] [--verbose] [--classpath=<path>[,
+              <path>...]] [--extractor=<extractor>] [--format=<format>]
+              [--ignored=<path>] [--json=<path>] [--pom=<path>]
+              [--report=<path>] [--v1=<path>] [--v2=<path>] (--api | --diff)
+      --api               Serialize the API model of --v1; see --json
+      --diff              Compute breaking changes between versions --v1 and
+                            --v2
+      --v1=<path>         Path to the first version of the library; either a
+                            source directory or a JAR
+      --v2=<path>         Path to the second version of the library; either a
+                            source directory or a JAR
+      --extractor=<extractor>
+                          API extractor to use: SPOON, ASM, JDT
+      --json=<path>       Where to serialize the JSON API model of --v1;
+                            defaults to api.json
+      --report=<path>     Where to write the breaking changes report
+      --format=<format>   Format of the report: CSV, HTML, JSON, MD
+      --pom=<path>        A pom.xml file to build a classpath from
+      --classpath=<path>[,<path>...]
+                          A colon-separated list of JARs to include in the
+                            classpath (Windows: semi-colon)
+      --ignored=<path>    Do not report the breaking changes listed in the
+                            given CSV file; this CSV file shares the same
+                            structure as the one produced by --format CSV
+      --fail-on-bc        Return 1 if breaking changes are detected
+      --plain             Disable ANSI colors, output plain text
+      --verbose           Print debug information
+  -h, --help              Show this help message and exit.
+  -V, --version           Print version information and exit.
 ```
 
 ## Citing Roseau

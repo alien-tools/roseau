@@ -46,8 +46,8 @@ import static picocli.CommandLine.Spec;
 /**
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
-@Command(name = "roseau", sortOptions = false,
-	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a module or library. " +
+@Command(name = "roseau", version = "Roseau 0.4.0-SNAPSHOT", sortOptions = false, mixinStandardHelpOptions = true,
+	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
 		"--v1 and --v2 can point to either JAR files or source code directories. " +
 		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
 public final class RoseauCLI implements Callable<Integer> {
@@ -85,15 +85,15 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--pom", paramLabel = "<path>",
 		description = "A pom.xml file to build a classpath from")
 	private Path pom;
-	@Option(names = "--classpath", paramLabel = "<path>",
+	@Option(names = "--classpath", paramLabel = "<path>[,<path>...]",
 		description = "A colon-separated list of JARs to include in the classpath (Windows: semi-colon)")
 	private String userClasspath;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
-			"the CSV file share the same structure as the one produced by --format CSV (symbol;kind;nature)")
+			"this CSV file shares the same structure as the one produced by --format CSV")
 	private Path ignoredCsv;
 	@Option(names = "--fail-on-bc",
-		description = "Return a non-zero code if breaking changes are detected")
+		description = "Return 1 if breaking changes are detected")
 	private boolean failMode;
 	@Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
@@ -101,7 +101,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--verbose",
 		description = "Print debug information")
 	private boolean verbose;
-	@CommandLine.Option(names = "--github-action", hidden = true)
+	@Option(names = "--github-action", hidden = true)
 	private boolean githubActionMode;
 
 	private static final String RED_TEXT = "\u001B[31m";
