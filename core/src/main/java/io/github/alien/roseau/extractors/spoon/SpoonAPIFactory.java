@@ -504,7 +504,7 @@ public class SpoonAPIFactory {
 		} else if (fallback != null && fallback.getPosition() != null) {
 			SourcePosition fallbackPosition = fallback.getPosition();
 			if (fallbackPosition.isValidPosition() && fallbackPosition.getFile() != null) {
-				return new SourceLocation(fallback.getPosition().getFile().toPath(), -1);
+				return new SourceLocation(fallbackPosition.getFile().toPath(), -1);
 			}
 		}
 
