@@ -46,7 +46,7 @@ import java.util.stream.IntStream;
 final class AsmClassVisitor extends ClassVisitor {
 	private final TypeReferenceFactory typeRefFactory;
 	private String className;
-	private Path sourceFile = Path.of("<unknown>");
+	private Path sourceFile;
 	private int classAccess;
 	private TypeDecl typeDecl;
 	private TypeReference<TypeDecl> enclosingType;

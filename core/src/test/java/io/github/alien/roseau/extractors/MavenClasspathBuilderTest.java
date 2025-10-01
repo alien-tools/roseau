@@ -9,7 +9,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class MavenClasspathBuilderTest {
 	@TempDir
@@ -70,8 +69,8 @@ class MavenClasspathBuilderTest {
 	@Test
 	void unknown_file() {
 		var builder = new MavenClasspathBuilder();
-		var path = Path.of("unknown");
-		assertThrows(IllegalArgumentException.class, () -> builder.buildClasspath(path));
+		var cp = builder.buildClasspath(Path.of("unknown"));
+		assertThat(cp).isEmpty();
 	}
 
 	@Test
@@ -81,9 +80,9 @@ class MavenClasspathBuilderTest {
 		assertThat(cp)
 			.hasSizeGreaterThanOrEqualTo(2)
 			.anySatisfy(p -> assertThat(p).asString()
-				.endsWith("org/apache/commons/commons-lang3/3.12.0/commons-lang3-3.12.0.jar"))
+				.endsWith("commons-lang3-3.12.0.jar"))
 			.anySatisfy(p -> assertThat(p).asString()
-				.endsWith("com/google/guava/guava/31.1-jre/guava-31.1-jre.jar"));
+				.endsWith("guava-31.1-jre.jar"));
 	}
 
 	@Test

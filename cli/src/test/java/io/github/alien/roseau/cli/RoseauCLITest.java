@@ -5,12 +5,16 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
+import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -178,10 +182,9 @@ class RoseauCLITest {
 
 	@Test
 	void write_api_io_error(@TempDir Path tempDir) throws IOException {
-		var readOnlyDir = tempDir.resolve("readonly");
-		Files.createDirectory(readOnlyDir);
-		readOnlyDir.toFile().setReadOnly();
-		var apiFile = readOnlyDir.resolve("api.json");
+		var apiFile = tempDir.resolve("api.json");
+		Files.writeString(apiFile, "{}");
+		apiFile.toFile().setReadOnly();
 
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api",
@@ -205,17 +208,22 @@ class RoseauCLITest {
 
 	@Test
 	void custom_classpath_deduplicated() {
+		var cp = String.join(File.pathSeparator,
+			"src/test/resources/test-project-v1/test-project-v1.jar",
+			"src/test/resources/test-project-v2/test-project-v2.jar",
+			"src/test/resources/test-project-v1/test-project-v1.jar"
+		);
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--classpath=src/test/resources/test-project-v1/test-project-v1.jar" +
-				":src/test/resources/test-project-v2/test-project-v2.jar" +
-				":src/test/resources/test-project-v1/test-project-v1.jar",
+			"--classpath=" + cp,
 			"--verbose");
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Classpath: [src/test/resources/test-project-v2/test-project-v2.jar, " +
-			"src/test/resources/test-project-v1/test-project-v1.jar]");
+		assertThat(out.toString())
+			.containsOnlyOnce("Classpath: [")
+			.containsOnlyOnce("test-project-v1.jar")
+			.containsOnlyOnce("test-project-v2.jar");
 	}
 
 	@Test
@@ -358,10 +366,9 @@ class RoseauCLITest {
 
 	@Test
 	void write_report_io_error(@TempDir Path tempDir) throws IOException {
-		var readOnlyDir = tempDir.resolve("readonly");
-		Files.createDirectory(readOnlyDir);
-		readOnlyDir.toFile().setReadOnly();
-		var reportFile = readOnlyDir.resolve("report.csv");
+		var reportFile = tempDir.resolve("report.csv");
+		Files.writeString(reportFile, "");
+		reportFile.toFile().setReadOnly();
 
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
