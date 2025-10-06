@@ -38,8 +38,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.IntStream;
 
@@ -59,10 +61,16 @@ final class AsmClassVisitor extends ClassVisitor {
 	private final List<ConstructorDecl> constructors = new ArrayList<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	private final List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
-	private final List<String> annotations = new ArrayList<>();
+	private final List<AnnotationData> annotations = new ArrayList<>();
 	private boolean hasNonPrivateConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
+
+	record AnnotationData(String descriptor, Map<String, String> values) {
+		AnnotationData(String descriptor) {
+			this(descriptor, new HashMap<>());
+		}
+	}
 
 	private static final Logger LOGGER = LogManager.getLogger(AsmClassVisitor.class);
 
@@ -139,12 +147,23 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new FieldVisitor(api) {
-			private final List<String> annotations = new ArrayList<>();
+			private final List<AnnotationData> annotations = new ArrayList<>();
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-				annotations.add(descriptor);
-				return null;
+				AnnotationData annotationData = new AnnotationData(descriptor);
+				annotations.add(annotationData);
+				return new AnnotationVisitor(api) {
+					@Override
+					public void visit(String name, Object value) {
+						annotationData.values().put(name, formatAnnotationValue(value));
+					}
+
+					@Override
+					public void visitEnum(String name, String descriptor, String value) {
+						annotationData.values().put(name, descriptorToFqn(descriptor) + "." + value);
+					}
+				};
 			}
 
 			@Override
@@ -192,13 +211,24 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		return new MethodVisitor(api) {
 			private boolean hasDefault;
-			private final List<String> annotations = new ArrayList<>();
+			private final List<AnnotationData> annotations = new ArrayList<>();
 			private int firstLine = -1;
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-				annotations.add(descriptor);
-				return null;
+				AnnotationData annotationData = new AnnotationData(descriptor);
+				annotations.add(annotationData);
+				return new AnnotationVisitor(api) {
+					@Override
+					public void visit(String name, Object value) {
+						annotationData.values().put(name, formatAnnotationValue(value));
+					}
+
+					@Override
+					public void visitEnum(String name, String descriptor, String value) {
+						annotationData.values().put(name, descriptorToFqn(descriptor) + "." + value);
+					}
+				};
 			}
 
 			@Override
@@ -260,12 +290,26 @@ final class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
 		if (!shouldSkip) {
-			annotations.add(descriptor);
-			if ("Ljava/lang/annotation/Target;".equals(descriptor)) {
-				return new AnnotationVisitor(api) {
-					@Override
-					public AnnotationVisitor visitArray(String name) {
-						if (!"value".equals(name)) return super.visitArray(name);
+			AnnotationData annotationData = new AnnotationData(descriptor);
+			annotations.add(annotationData);
+
+			return new AnnotationVisitor(api) {
+				@Override
+				public void visit(String name, Object value) {
+					annotationData.values().put(name, formatAnnotationValue(value));
+				}
+
+				@Override
+				public void visitEnum(String name, String descriptor, String value) {
+					annotationData.values().put(name, descriptorToFqn(descriptor) + "." + value);
+					if ("Ljava/lang/annotation/ElementType;".equals(descriptor)) {
+						targets.add(ElementType.valueOf(value));
+					}
+				}
+
+				@Override
+				public AnnotationVisitor visitArray(String name) {
+					if ("value".equals(name) && "Ljava/lang/annotation/Target;".equals(descriptor)) {
 						return new AnnotationVisitor(super.api) {
 							@Override
 							public void visitEnum(String name, String descriptor, String value) {
@@ -275,8 +319,9 @@ final class AsmClassVisitor extends ClassVisitor {
 							}
 						};
 					}
-				};
-			}
+					return super.visitArray(name);
+				}
+			};
 		}
 		return null;
 	}
@@ -330,7 +375,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private FieldDecl convertField(int access, String name, String descriptor, String signature,
-	                               List<String> annotations) {
+	                               List<AnnotationData> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
 			AsmTypeSignatureVisitor<ITypeReference> visitor =
@@ -349,7 +394,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
-	                                           List<String> annotations, int line) {
+	                                           List<AnnotationData> annotations, int line) {
 		List<ParameterDecl> parameters;
 		List<ITypeReference> thrownExceptions;
 		List<FormalTypeParameter> typeParameters;
@@ -385,7 +430,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
-	                                 List<String> annotations, int line) {
+	                                 List<AnnotationData> annotations, int line) {
 		ITypeReference returnType;
 		List<ParameterDecl> parameters;
 		List<FormalTypeParameter> typeParameters;
@@ -419,7 +464,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private AnnotationMethodDecl convertAnnotationMethod(String name, String descriptor, String signature,
-	                                 List<String> annotations, int line, boolean hasDefault) {
+	                                                     List<AnnotationData> annotations, int line, boolean hasDefault) {
 		ITypeReference returnType;
 
 		if (signature != null) {
@@ -453,10 +498,16 @@ final class AsmClassVisitor extends ClassVisitor {
 		return params;
 	}
 
-	private List<Annotation> convertAnnotations(List<String> descriptors) {
-		return descriptors.stream()
-			.map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann))))
+	private List<Annotation> convertAnnotations(List<AnnotationData> annotationDataList) {
+		return annotationDataList.stream()
+			.map(data -> new Annotation(
+				typeRefFactory.createTypeReference(descriptorToFqn(data.descriptor())),
+				data.values()))
 			.toList();
+	}
+
+	private static String formatAnnotationValue(Object value) {
+		return value.toString();
 	}
 
 	private List<ITypeReference> convertThrownExceptions(String[] exceptions) {

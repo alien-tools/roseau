@@ -28,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtFieldRead;
+import spoon.reflect.code.CtLiteral;
 import spoon.reflect.code.CtNewArray;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
@@ -73,6 +74,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -469,7 +471,26 @@ public class SpoonAPIFactory {
 	}
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
-		return new Annotation(createTypeReference(annotation.getAnnotationType()));
+		Map<String, String> values = annotation.getValues().entrySet().stream()
+			.filter(e -> e.getValue() != null)
+			.collect(Collectors.toMap(
+				Map.Entry::getKey, e -> extractAnnotationValue(e.getValue())
+			));
+		return new Annotation(createTypeReference(annotation.getAnnotationType()), values);
+	}
+
+	private String extractAnnotationValue(Object value) {
+		return switch (value) {
+			case CtLiteral<?> literal -> {
+				var lit = literal.getValue();
+				yield lit != null ? lit.toString() : "null";
+			}
+			case CtFieldRead<?> field -> {
+				var variable = field.getVariable();
+				yield variable.getDeclaringType().getQualifiedName() + "." + field.getVariable().getSimpleName();
+			}
+			default -> value.toString();
+		};
 	}
 
 	private Set<ElementType> convertAnnotationTargets(CtAnnotationType<?> annotation) {

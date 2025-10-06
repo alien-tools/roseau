@@ -41,6 +41,7 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
@@ -56,6 +57,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
@@ -320,8 +322,36 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private List<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
 		return Arrays.stream(annotations)
-			.map(ann -> new Annotation((TypeReference<AnnotationDecl>) makeTypeReference(ann.getAnnotationType())))
+			.map(ann -> {
+				Map<String, String> values = new HashMap<>();
+				for (IMemberValuePairBinding pair : ann.getAllMemberValuePairs()) {
+					String key = pair.getName();
+					Object value = pair.getValue();
+					if (value != null) {
+						values.put(key, formatAnnotationValue(value));
+					}
+				}
+				return new Annotation((TypeReference<AnnotationDecl>) makeTypeReference(ann.getAnnotationType()), values);
+			})
 			.toList();
+	}
+
+	private String formatAnnotationValue(Object value) {
+		return switch (value) {
+			case Object[] array ->
+				Arrays.stream(array)
+					.map(this::formatAnnotationValue)
+					.toList()
+					.toString();
+			case IVariableBinding varBinding ->
+				// Enum constant
+				varBinding.getDeclaringClass().getQualifiedName() + "." + varBinding.getName();
+			case ITypeBinding typeBinding ->
+				// Class literal
+				typeBinding.getQualifiedName();
+			default ->
+				value.toString();
+		};
 	}
 
 	private List<FormalTypeParameter> convertTypeParameters(ITypeBinding[] typeParameters) {
@@ -333,7 +363,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private List<TypeReference<TypeDecl>> convertPermittedTypes(TypeDeclaration type) {
 		return ((List<org.eclipse.jdt.core.dom.Type>) type.permittedTypes()).stream()
-			.map(t -> typeRefFactory.createTypeReference(t.resolveBinding().getQualifiedName()))
+			.map(Type::resolveBinding)
+			.filter(Objects::nonNull)
+			.map(t -> typeRefFactory.createTypeReference(t.getQualifiedName()))
 			.toList();
 	}
 
@@ -422,9 +454,10 @@ final class JdtAPIVisitor extends ASTVisitor {
 					if ("value".equals(pair.getName())) {
 						Object[] vals = (Object[]) pair.getValue();
 						for (Object v : vals) {
-							IVariableBinding enumConst = (IVariableBinding) v;
-							String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
-							targets.add(ElementType.valueOf(elemTypeName));
+							if (v instanceof IVariableBinding enumConst) {
+								String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
+								targets.add(ElementType.valueOf(elemTypeName));
+							}
 						}
 					}
 				}
