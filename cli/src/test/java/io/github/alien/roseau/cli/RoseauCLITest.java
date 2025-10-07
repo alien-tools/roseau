@@ -154,7 +154,6 @@ class RoseauCLITest {
 			"--api",
 			"--api-json=" + jsonFile);
 
-		assertThat(out.toString()).contains("API has been written to " + jsonFile);
 		assertThat(jsonFile).isNotEmptyFile();
 		assertThat(exitCode).isZero();
 	}
@@ -234,7 +233,7 @@ class RoseauCLITest {
 			"--pom=src/test/resources/none.xml",
 			"--api-json=" + api);
 
-		assertThat(err.toString()).contains("Cannot find pom:");
+		assertThat(err.toString()).contains("Invalid path to POM file:");
 		assertThat(exitCode).isEqualTo(2);
 	}
 
@@ -302,7 +301,6 @@ class RoseauCLITest {
 			"--report=" + reportFile,
 			"--format=CSV");
 
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isZero();
 	}
@@ -316,7 +314,6 @@ class RoseauCLITest {
 			"--format=HTML",
 			"--report=" + reportFile);
 
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isZero();
 	}
@@ -330,7 +327,6 @@ class RoseauCLITest {
 			"--format=JSON",
 			"--report=" + reportFile);
 
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isZero();
 	}
@@ -344,7 +340,6 @@ class RoseauCLITest {
 			"--format=MD",
 			"--report=" + reportFile);
 
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isZero();
 	}

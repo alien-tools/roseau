@@ -277,7 +277,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
 			v1, v1ExtractorType, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
-			noExclusions, null
+			noExclusions, apiJson
 		);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
 			v2, v2ExtractorType, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
