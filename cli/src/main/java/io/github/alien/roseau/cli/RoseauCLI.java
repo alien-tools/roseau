@@ -29,9 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Locale;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -99,6 +97,12 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--v2-pom", paramLabel = "<path>",
 		description = "A --pom for --v2")
 	private Path v2Pom;
+	@Option(names = "--v1-extractor", paramLabel = "<extractor>",
+		description = "An --extractor for --v1")
+	private ExtractorType v1ExtractorType;
+	@Option(names = "--v2-extractor", paramLabel = "<extractor>",
+		description = "An --extractor for --v2")
+	private ExtractorType v2ExtractorType;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as the one produced by --format CSV")
@@ -160,7 +164,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			Files.createDirectories(path.getParent());
 			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 			Files.writeString(path, fmt.format(report), StandardCharsets.UTF_8);
-			print("Report has been written to %s".formatted(path));
+			printVerbose("Report has been written to %s".formatted(path));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing report to %s".formatted(path), e);
 		}
@@ -170,7 +174,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		try {
 			Files.createDirectories(apiPath.getParent());
 			api.getLibraryTypes().writeJson(apiPath);
-			print("API has been written to %s".formatted(apiPath));
+			printVerbose("API has been written to %s".formatted(apiPath));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing API to %s".formatted(apiPath), e);
 		}
@@ -229,16 +233,16 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private void checkOptions(RoseauOptions options) {
-		Path v1Path = options.diff().v1().location();
+		Path v1Path = options.v1().location();
 		if (v1Path == null || !Files.exists(v1Path)) {
 			throw new RoseauException("Cannot find v1: %s".formatted(v1Path));
 		}
 
-		if (mode.api && options.diff().v1().apiReport() == null) {
+		if (mode.api && options.v1().apiReport() == null) {
 			throw new RoseauException("Path to a JSON file required in --api mode");
 		}
 
-		Path v2Path = options.diff().v2().location();
+		Path v2Path = options.v2().location();
 		if (mode.diff && (v2Path == null || !Files.exists(v2Path))) {
 			throw new RoseauException("Cannot find v2: %s".formatted(v2Path));
 		}
@@ -247,55 +251,42 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("--format required with --report");
 		}
 
-		Path v1PomPath = options.diff().v1().classpath().pom();
+		Path v1PomPath = options.v1().classpath().pom();
 		if (v1PomPath != null && !Files.isRegularFile(v1PomPath)) {
 			throw new RoseauException("Cannot find pom: %s".formatted(v1PomPath));
 		}
 
-		Path v2PomPath = options.diff().v2().classpath().pom();
+		Path v2PomPath = options.v2().classpath().pom();
 		if (v2PomPath != null && !Files.isRegularFile(v2PomPath)) {
 			throw new RoseauException("Cannot find pom: %s".formatted(v2PomPath));
 		}
 
-		Path ignoredPath = options.diff().ignore();
+		Path ignoredPath = options.ignore();
 		if (ignoredPath != null && !Files.isRegularFile(ignoredPath)) {
 			throw new RoseauException("Cannot find ignored CSV: %s".formatted(ignoredPath));
 		}
 	}
 
 	private RoseauOptions makeCliOptions() {
+		// No CLI option (yet?) for API exclusions
+		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
+		RoseauOptions.Common commonCli = new RoseauOptions.Common(
+			extractorType,
+			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)),
+			noExclusions
+		);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, extractorType,
-			new RoseauOptions.Classpath(
-				Optional.ofNullable(v1Pom).orElse(pom),
-				buildClasspathFromString(Optional.ofNullable(v1Classpath).orElse(classpath))
-			),
-			new RoseauOptions.Exclude(List.of(), List.of()), // FIXME
-			apiJson
+			v1, v1ExtractorType, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
+			noExclusions, null
 		);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, extractorType,
-			new RoseauOptions.Classpath(
-				Optional.ofNullable(v2Pom).orElse(pom),
-				buildClasspathFromString(Optional.ofNullable(v2Classpath).orElse(classpath))
-			),
-			new RoseauOptions.Exclude(List.of(), List.of()), // FIXME
-			apiJson
+			v2, v2ExtractorType, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
+			noExclusions, null
 		);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))
 			: List.of();
-		return new RoseauOptions(new RoseauOptions.Diff(v1Cli, v2Cli, ignoredCsv, reportsCli));
-	}
-
-	private Library makeLibrary(RoseauOptions.Library library) {
-		return Library.builder()
-			.location(library.location())
-			.classpath(library.classpath().jars())
-			.pom(library.classpath().pom())
-			.extractorType(library.extractor())
-			.exclusions(library.excludes())
-			.build();
+		return new RoseauOptions(commonCli, v1Cli, v2Cli, ignoredCsv, reportsCli);
 	}
 
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
@@ -308,7 +299,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private boolean doDiff(Library v1, Library v2, RoseauOptions.Diff diffOptions) {
+	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
 		if (v1.getClasspath().isEmpty()) {
 			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v1.getLocation()));
 		}
@@ -316,7 +307,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v2.getLocation()));
 		}
 		RoseauReport report = diff(v1, v2);
-		Path ignoreFile = diffOptions.ignore();
+		Path ignoreFile = options.ignore();
 		List<BreakingChange> bcs = ignoreFile != null && Files.isRegularFile(ignoreFile)
 			? filterIgnoredBCs(report, ignoreFile)
 			: report.breakingChanges();
@@ -331,13 +322,13 @@ public final class RoseauCLI implements Callable<Integer> {
 			);
 		}
 
-		if (diffOptions.v1().apiReport() != null) {
-			writeApiReport(report.v1(), diffOptions.v1().apiReport());
+		if (options.v1().apiReport() != null) {
+			writeApiReport(report.v1(), options.v1().apiReport());
 		}
-		if (diffOptions.v2().apiReport() != null) {
-			writeApiReport(report.v2(), diffOptions.v2().apiReport());
+		if (options.v2().apiReport() != null) {
+			writeApiReport(report.v2(), options.v2().apiReport());
 		}
-		diffOptions.reports().forEach(reportOption ->
+		options.reports().forEach(reportOption ->
 			writeReport(report, reportOption.format(), reportOption.file())
 		);
 
@@ -367,17 +358,17 @@ public final class RoseauCLI implements Callable<Integer> {
 			printDebug("Options are " + options);
 
 			if (mode.api) {
-				Library libraryV1 = makeLibrary(options.diff().v1());
+				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
 				printDebug("v1 = " + libraryV1);
-				doApi(libraryV1, options.diff().v1());
+				doApi(libraryV1, options.v1());
 			}
 
 			if (mode.diff) {
-				Library libraryV1 = makeLibrary(options.diff().v1());
-				Library libraryV2 = makeLibrary(options.diff().v2());
+				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
+				Library libraryV2 = options.v2().mergeWith(options.common()).toLibrary();
 				printDebug("v1 = " + libraryV1);
 				printDebug("v2 = " + libraryV2);
-				boolean breaking = doDiff(libraryV1, libraryV2, options.diff());
+				boolean breaking = doDiff(libraryV1, libraryV2, options);
 
 				if (breaking && failMode) {
 					return 1;
