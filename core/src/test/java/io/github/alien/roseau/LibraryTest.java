@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -86,7 +87,7 @@ class LibraryTest {
 	@Test
 	void builder_with_all_parameters_set(@TempDir Path tempDir) throws IOException {
 		var pom = tempDir.resolve("pom.xml");
-		var cp = List.of(tempDir.resolve("cp"));
+		var cp = Set.of(tempDir.resolve("cp"));
 		Files.createFile(pom);
 
 		var lib = Library.builder()
@@ -105,7 +106,7 @@ class LibraryTest {
 	@Test
 	void classpath_merges_custom_and_pom() {
 		var pom = Path.of("pom.xml"); // Roseau's pom.xml
-		var cp = List.of(Path.of("cp"));
+		var cp = Set.of(Path.of("cp"));
 
 		var lib = Library.builder()
 			.location(validJar)

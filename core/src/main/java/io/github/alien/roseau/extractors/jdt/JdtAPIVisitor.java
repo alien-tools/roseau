@@ -58,6 +58,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
@@ -73,8 +74,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
 		this.cu = cu;
-		this.packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
-		this.filePath = filePath != null ? Paths.get(filePath) : null;
+		this.packageName = Optional.ofNullable(cu.getPackage()).map(p -> p.getName().getFullyQualifiedName()).orElse("");
+		this.filePath = Optional.ofNullable(filePath).map(Paths::get).orElse(null);
 		this.typeRefFactory = factory;
 	}
 
@@ -338,19 +339,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private String formatAnnotationValue(Object value) {
 		return switch (value) {
-			case Object[] array ->
-				Arrays.stream(array)
-					.map(this::formatAnnotationValue)
-					.toList()
-					.toString();
+			case Object[] array -> Arrays.stream(array)
+				.map(this::formatAnnotationValue)
+				.toList()
+				.toString();
 			case IVariableBinding varBinding ->
 				// Enum constant
 				varBinding.getDeclaringClass().getQualifiedName() + "." + varBinding.getName();
 			case ITypeBinding typeBinding ->
 				// Class literal
 				typeBinding.getQualifiedName();
-			default ->
-				value.toString();
+			default -> value.toString();
 		};
 	}
 

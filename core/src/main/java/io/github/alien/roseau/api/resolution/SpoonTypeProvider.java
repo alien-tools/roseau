@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A type provider implementation that creates new type declarations reflectively to represent and navigate types
@@ -27,7 +28,7 @@ public class SpoonTypeProvider implements TypeProvider {
 	 * @param typeReferenceFactory the {@link TypeReferenceFactory} to create new type references with
 	 * @param classpath            the classpath used to find the requested types
 	 */
-	public SpoonTypeProvider(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
+	public SpoonTypeProvider(TypeReferenceFactory typeReferenceFactory, Set<Path> classpath) {
 		Preconditions.checkNotNull(typeReferenceFactory);
 		Preconditions.checkNotNull(classpath);
 		spoonFactory = new SpoonAPIFactory(typeReferenceFactory, classpath);
