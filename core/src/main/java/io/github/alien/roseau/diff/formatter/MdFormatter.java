@@ -1,6 +1,5 @@
 package io.github.alien.roseau.diff.formatter;
 
-import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
@@ -12,7 +11,7 @@ public class MdFormatter implements BreakingChangesFormatter {
 	 * Formats the list of breaking changes in Markdown format
 	 */
 	@Override
-	public String format(API api, RoseauReport report) {
+	public String format(RoseauReport report) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("## Roseau - Breaking Changes Report\n");
 
@@ -26,8 +25,8 @@ public class MdFormatter implements BreakingChangesFormatter {
 			sb.append("|---------|--------------|--------------|------|--------|\n");
 			for (BreakingChange bc : report.breakingChanges()) {
 				sb.append("| ")
-						.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
-						.append(bc.impactedSymbol().getLocation().file()).append(":").append(bc.impactedSymbol().getLocation().line()).append(" | ");
+					.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
+					.append(bc.impactedSymbol().getLocation().file()).append(":").append(bc.impactedSymbol().getLocation().line()).append(" | ");
 
 				if (bc.newSymbol() != null) {
 					sb.append(bc.newSymbol().getLocation().file()).append(":").append(bc.newSymbol().getLocation().line());
@@ -36,8 +35,8 @@ public class MdFormatter implements BreakingChangesFormatter {
 				}
 
 				sb.append(" | ")
-						.append(bc.kind()).append(" | ")
-						.append(bc.kind().getNature()).append(" |\n");
+					.append(bc.kind()).append(" | ")
+					.append(bc.kind().getNature()).append(" |\n");
 			}
 		}
 

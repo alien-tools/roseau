@@ -28,7 +28,7 @@ class ClassTypeChangedTest {
 		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
 	}
 
-	@Disabled("Not sure about this one; we might still want to report it.")
+	@Disabled("Not sure about this one; we might still want to apiReport it.")
 	@Client("A a = new A();")
 	@Test
 	void final_class_to_record() {

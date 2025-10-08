@@ -13,6 +13,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
@@ -83,7 +84,7 @@ class LibraryTypesTest {
 	void json_round_trip() throws IOException {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
-		List<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
+		Set<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
 		Library library = Library.builder().location(sources).classpath(classpath).build();
 		TypesExtractor extractor = new JdtTypesExtractor();
 		LibraryTypes orig = extractor.extractTypes(library);

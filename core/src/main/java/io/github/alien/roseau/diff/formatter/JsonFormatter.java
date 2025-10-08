@@ -1,6 +1,5 @@
 package io.github.alien.roseau.diff.formatter;
 
-import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
@@ -15,7 +14,7 @@ public class JsonFormatter implements BreakingChangesFormatter {
 	 * Formats the list of breaking changes in JSON format
 	 */
 	@Override
-	public String format(API api, RoseauReport report) {
+	public String format(RoseauReport report) {
 		JSONArray jsonArray = new JSONArray();
 
 		for (BreakingChange bc : report.breakingChanges()) {

@@ -63,7 +63,7 @@ public class APIDiff {
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return the report built for the two APIs
+	 * @return the apiReport built for the two APIs
 	 */
 	public RoseauReport diff() {
 		v1.getExportedTypes().stream().parallel().forEach(t1 ->

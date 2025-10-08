@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import java.nio.file.Path;
+import java.util.Optional;
 
 /**
  * A physical source location that points to a specific line in a file.
@@ -14,7 +15,7 @@ public record SourceLocation(
 	int line
 ) {
 	public SourceLocation(Path file, int line) {
-		this.file = file != null ? file.toAbsolutePath() : null;
+		this.file = Optional.ofNullable(file).map(Path::toAbsolutePath).orElse(null);
 		this.line = line;
 	}
 

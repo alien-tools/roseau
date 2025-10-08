@@ -40,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -101,7 +102,7 @@ class PopularLibrariesTestIT {
 		var sw = Stopwatch.createUnstarted();
 		var binaryJar = binaryJars.get(libraryGAV);
 		var sourcesDir = sourcesDirs.get(libraryGAV);
-		var classpath = classpaths.get(libraryGAV).stream().toList();
+		var classpath = classpaths.get(libraryGAV).stream().collect(Collectors.toSet());
 		var asmLibrary = Library.builder()
 			.location(binaryJar)
 			.classpath(classpath)
@@ -302,7 +303,7 @@ class PopularLibrariesTestIT {
 				Path sourcesDir = extractSourcesJar(sourcesJar);
 
 				try {
-					List<Path> classpath = new MavenClasspathBuilder().buildClasspath(pom);
+					Set<Path> classpath = new MavenClasspathBuilder().buildClasspath(pom);
 					classpaths.putAll(libraryGAV, classpath);
 				} catch (Exception e) {
 					e.printStackTrace();

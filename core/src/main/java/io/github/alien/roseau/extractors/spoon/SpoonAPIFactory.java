@@ -76,6 +76,7 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -89,7 +90,7 @@ public class SpoonAPIFactory {
 
 	private static final Logger LOGGER = LogManager.getLogger(SpoonAPIFactory.class);
 
-	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
+	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, Set<Path> classpath) {
 		Factory spoonFactory = new Launcher().createFactory();
 		spoonFactory.getEnvironment().setSourceClasspath(
 			sanitizeClasspath(classpath).stream()
@@ -100,7 +101,7 @@ public class SpoonAPIFactory {
 	}
 
 	// Avoid having Spoon throwing at us due to "invalid" classpath
-	private List<Path> sanitizeClasspath(List<Path> classpath) {
+	private List<Path> sanitizeClasspath(Set<Path> classpath) {
 		return classpath.stream()
 			.map(Path::toFile)
 			.filter(File::exists)
@@ -483,7 +484,7 @@ public class SpoonAPIFactory {
 		return switch (value) {
 			case CtLiteral<?> literal -> {
 				var lit = literal.getValue();
-				yield lit != null ? lit.toString() : "null";
+				yield Optional.ofNullable(lit).map(Object::toString).orElse("null");
 			}
 			case CtFieldRead<?> field -> {
 				var variable = field.getVariable();

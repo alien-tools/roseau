@@ -100,7 +100,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 					// Actual parsing errors are just warnings for us
 					Arrays.stream(problems)
 						.filter(IProblem::isError)
-						.forEach(p -> LOGGER.warn("{} [{}:{}]: {}", p.isError() ? "error" : "warning",
+						.forEach(p -> LOGGER.warn("JDT {} [{}:{}]: {}", p.isError() ? "error" : "warning",
 							sourceFilePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 

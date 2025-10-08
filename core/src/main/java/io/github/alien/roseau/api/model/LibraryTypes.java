@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -103,7 +104,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param classpath the classpath used for type resolution
 	 * @return the new resolved API
 	 */
-	public API toAPI(List<Path> classpath) {
+	public API toAPI(Set<Path> classpath) {
 		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
 		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
 	}
@@ -114,7 +115,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		return toAPI(List.of());
+		return toAPI(Set.of());
 	}
 
 	/**

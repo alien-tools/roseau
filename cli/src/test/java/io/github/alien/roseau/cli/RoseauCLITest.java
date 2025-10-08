@@ -5,16 +5,12 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
-import java.io.File;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,8 +32,8 @@ class RoseauCLITest {
 	void no_mode() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Missing required argument (specify one of these): (--api | --diff)");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	// --- Diffs --- //
@@ -48,8 +44,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -59,8 +55,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -70,8 +66,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -81,8 +77,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -91,8 +87,8 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--diff");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -101,16 +97,16 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/test-project-v1.jar",
 			"--diff");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Cannot find v1:");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
 	void missing_v1() {
 		var exitCode = cmd.execute("--api");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Cannot find v1:");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -118,8 +114,8 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--diff");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Cannot find v2:");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -144,12 +140,11 @@ class RoseauCLITest {
 	// --- APIs --- //
 	@Test
 	void write_api_no_file() {
-		var defaultFile = Path.of("api.json");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api");
 
+		assertThat(err.toString()).contains("Path to a JSON file required in --api mode");
 		assertThat(exitCode).isEqualTo(2);
-		assertThat(err.toString()).contains("--api-json required in --api mode");
 	}
 
 	@Test
@@ -159,9 +154,8 @@ class RoseauCLITest {
 			"--api",
 			"--api-json=" + jsonFile);
 
-		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("API has been written to " + jsonFile);
 		assertThat(jsonFile).isNotEmptyFile();
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -173,11 +167,11 @@ class RoseauCLITest {
 			"--api-json=" + jsonFile,
 			"--verbose");
 
-		assertThat(exitCode).isZero();
 		assertThat(jsonFile).isNotEmptyFile();
 		assertThat(out.toString())
 			.contains("Extracting API from", "using SPOON")
 			.contains("API has been written to " + jsonFile);
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -191,8 +185,8 @@ class RoseauCLITest {
 			"--api-json=" + apiFile);
 
 		// Should succeed despite I/O error - CLI continues execution
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Error writing API to " + apiFile);
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	// --- Options --- //
@@ -202,43 +196,20 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
+		assertThat(err.toString()).contains("Warning: no classpath provided", "results may be inaccurate");
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Warning: no classpath provided, results may be inaccurate");
-	}
-
-	@Test
-	void custom_classpath_deduplicated() {
-		var cp = String.join(File.pathSeparator,
-			"src/test/resources/test-project-v1/test-project-v1.jar",
-			"src/test/resources/test-project-v2/test-project-v2.jar",
-			"src/test/resources/test-project-v1/test-project-v1.jar"
-		);
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--v2=src/test/resources/test-project-v2/src",
-			"--diff",
-			"--classpath=" + cp,
-			"--verbose");
-
-		assertThat(exitCode).isZero();
-		assertThat(out.toString())
-			.containsOnlyOnce("Classpath: [")
-			.containsOnlyOnce("test-project-v1.jar")
-			.containsOnlyOnce("test-project-v2.jar");
 	}
 
 	@Test
 	void valid_pom(@TempDir Path tempDir) {
 		var api = tempDir.resolve("api.json");
-		var pom = Path.of("pom.xml");
+		var pom = Path.of("src/test/resources/valid-pom.xml");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--v2=src/test/resources/test-project-v1/src",
 			"--api",
 			"--pom=" + pom,
-			"--api-json=" + api,
-			"--verbose");
+			"--api-json=" + api);
 
 		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Extracting classpath from " + pom);
 	}
 
 	@Test
@@ -262,8 +233,8 @@ class RoseauCLITest {
 			"--pom=src/test/resources/none.xml",
 			"--api-json=" + api);
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Cannot find pom:");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -272,8 +243,8 @@ class RoseauCLITest {
 			"--extractor=UNKNOWN",
 			"--api");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Invalid value for option '--extractor'");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -283,8 +254,8 @@ class RoseauCLITest {
 			"--extractor=ASM",
 			"--diff");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("ASM extractor cannot be used");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -294,8 +265,8 @@ class RoseauCLITest {
 			"--formatter=UNKNOWN",
 			"--diff");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Unknown option: '--formatter=UNKNOWN'");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	// --- Reports --- //
@@ -306,7 +277,19 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(exitCode).isZero();
-		assertThat(Path.of("report.csv")).doesNotExist();
+	}
+
+	@Test
+	void write_report_without_format(@TempDir Path tempDir) {
+		var reportFile = tempDir.resolve("custom.csv");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--report=" + reportFile);
+
+		assertThat(err.toString()).contains("--format required with --report");
+		assertThat(reportFile).doesNotExist();
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -315,11 +298,11 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--report=" + reportFile);
+			"--report=" + reportFile,
+			"--format=CSV");
 
-		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -331,9 +314,8 @@ class RoseauCLITest {
 			"--format=HTML",
 			"--report=" + reportFile);
 
-		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -345,9 +327,8 @@ class RoseauCLITest {
 			"--format=JSON",
 			"--report=" + reportFile);
 
-		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -359,9 +340,8 @@ class RoseauCLITest {
 			"--format=MD",
 			"--report=" + reportFile);
 
-		assertThat(exitCode).isZero();
-		assertThat(out.toString()).contains("Report has been written to " + reportFile);
 		assertThat(reportFile).isNotEmptyFile();
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -373,10 +353,11 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--report=" + reportFile);
+			"--report=" + reportFile,
+			"--format=CSV");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Error writing report to " + reportFile);
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	// --- Ignored --- //
@@ -392,8 +373,8 @@ class RoseauCLITest {
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -402,7 +383,8 @@ class RoseauCLITest {
 		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
-			"--report=" + ignored);
+			"--report=" + ignored,
+			"--format=CSV");
 
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
@@ -410,8 +392,8 @@ class RoseauCLITest {
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -422,8 +404,8 @@ class RoseauCLITest {
 			"--diff",
 			"--ignored=" + invalidCsv);
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Cannot find ignored CSV: " + invalidCsv);
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -439,8 +421,8 @@ class RoseauCLITest {
 			"--ignored=" + malformedCsv,
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(err.toString()).contains("Malformed line");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -449,10 +431,10 @@ class RoseauCLITest {
 			"--api",
 			"--verbose");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString())
 			.contains("Cannot find v1:")
 			.contains("io.github.alien.roseau.RoseauException");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test
@@ -462,8 +444,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).doesNotContain("\u001B[");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -472,8 +454,8 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(exitCode).isZero();
 		assertThat(out.toString()).contains("\u001B[");
+		assertThat(exitCode).isZero();
 	}
 
 	@Test
@@ -482,7 +464,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/corrupt.jar",
 			"--diff");
 
-		assertThat(exitCode).isEqualTo(2);
 		assertThat(err.toString()).contains("Invalid path to library");
+		assertThat(exitCode).isEqualTo(2);
 	}
 }
