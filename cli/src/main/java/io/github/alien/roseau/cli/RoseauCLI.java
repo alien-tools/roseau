@@ -161,7 +161,9 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private void writeReport(RoseauReport report, BreakingChangesFormatterFactory format, Path path) {
 		try {
-			Files.createDirectories(path.getParent());
+			if (path.getParent() != null) {
+				Files.createDirectories(path.getParent());
+			}
 			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 			Files.writeString(path, fmt.format(report), StandardCharsets.UTF_8);
 			printVerbose("Report has been written to %s".formatted(path));
@@ -172,7 +174,9 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private void writeApiReport(API api, Path apiPath) {
 		try {
-			Files.createDirectories(apiPath.getParent());
+			if (apiPath.getParent() != null) {
+				Files.createDirectories(apiPath.getParent());
+			}
 			api.getLibraryTypes().writeJson(apiPath);
 			printVerbose("API has been written to %s".formatted(apiPath));
 		} catch (IOException e) {
@@ -189,12 +193,13 @@ public final class RoseauCLI implements Callable<Integer> {
 				member.getContainingType().getQualifiedName().equals(bc.impactedType().getQualifiedName());
 
 		if (plain) {
-			return String.format("%s %s%s%n\t%s:%s", bc.kind(),
+			return "%s %s%s%n\t%s:%s".formatted(
+				bc.kind(),
 				bc.impactedSymbol().getQualifiedName(),
 				symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
 				location.file(), location.line());
 		} else {
-			return String.format("%s %s%s%n\t%s:%s",
+			return "%s %s%s%n\t%s:%s".formatted(
 				RED_TEXT + BOLD + bc.kind() + RESET,
 				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
 				symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
@@ -259,6 +264,11 @@ public final class RoseauCLI implements Callable<Integer> {
 		Path v2PomPath = options.v2().classpath().pom();
 		if (v2PomPath != null && !Files.isRegularFile(v2PomPath)) {
 			throw new RoseauException("Cannot find pom: %s".formatted(v2PomPath));
+		}
+
+		Path pomPath = options.common().classpath().pom();
+		if (pomPath != null && !Files.isRegularFile(pomPath)) {
+			throw new RoseauException("Cannot find pom: %s".formatted(pomPath));
 		}
 
 		Path ignoredPath = options.ignore();

@@ -233,7 +233,7 @@ class RoseauCLITest {
 			"--pom=src/test/resources/none.xml",
 			"--api-json=" + api);
 
-		assertThat(err.toString()).contains("Invalid path to POM file:");
+		assertThat(err.toString()).contains("Cannot find pom:");
 		assertThat(exitCode).isEqualTo(2);
 	}
 

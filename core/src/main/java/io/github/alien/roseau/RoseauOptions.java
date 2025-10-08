@@ -7,6 +7,7 @@ import io.github.alien.roseau.extractors.ExtractorType;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -169,11 +170,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 		return first != null ? first : second;
 	}
 
-	private static <T> List<T> either(List<T> first, List<T> second) {
-		return first != null && !first.isEmpty() ? first : second;
-	}
-
-	private static <T> Set<T> either(Set<T> first, Set<T> second) {
+	private static <T, C extends Collection<T>> C either(C first, C second) {
 		return first != null && !first.isEmpty() ? first : second;
 	}
 }
