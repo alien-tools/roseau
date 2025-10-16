@@ -33,7 +33,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		API apiV2 = report.v2();
 		List<BreakingChange> changes = report.getBreakingChanges();
 
-		List<TypeDecl> impactedTypes = report.impactedTypes();
+		List<TypeDecl> impactedTypes = report.getImpactedTypes();
 
 		ZonedDateTime now = ZonedDateTime.now(ZoneId.systemDefault());
 		DateTimeFormatter human = DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' h:mm a", Locale.ENGLISH);
@@ -90,7 +90,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 			byPkg.forEach((pkg, types) -> {
 				sb.append("<h3 class=\"pkg-name\">").append(escape(pkg)).append("</h3>\n<ul class=\"toc-list\">\n");
 				types.forEach(type -> {
-					int totalBCs = report.breakingChangesOnTypeAndMembers(type).size();
+					int totalBCs = report.getBreakingChanges(type).size();
 					sb.append("<li>")
 						.append("<a href=\"").append("#").append(anchor(type)).append("\">")
 						.append(escape(type.getSimpleName())).append("</a> ")
@@ -111,12 +111,12 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		for (TypeDecl type : impactedTypes) {
 			String typeName = type.getQualifiedName();
 			sb.append("<article class=\"card type\" id=\"").append(anchor(type)).append("\">\n");
-			int totalBCs = report.breakingChangesOnTypeAndMembers(type).size();
+			int totalBCs = report.getBreakingChanges(type).size();
 			sb.append("<h2>").append(escape(typeName)).append(" <span class=\"badge\">").append(totalBCs).append("</span>");
-			String typeLoc = locationBadge(report.typeLocation(typeName));
+			String typeLoc = locationBadge(type.getLocation());
 			if (!typeLoc.isEmpty()) sb.append(" ").append(typeLoc);
 			sb.append("</h2>\n");
-			List<BreakingChange> typeLevel = report.breakingChangesOnType(type);
+			List<BreakingChange> typeLevel = report.getTypeBreakingChanges(type);
 			boolean typeRemoved = typeLevel.stream().anyMatch(bc -> bc.kind() == BreakingChangeKind.TYPE_REMOVED);
 			if (typeRemoved) {
 				sb.append("<div class=\"danger-banner\">This type was removed in the new version.</div>\n");
@@ -139,7 +139,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 					}
 					sb.append("</ul>\n</div>\n");
 				}
-				Map<TypeMemberDecl, List<BreakingChange>> members = report.breakingChangesPerMember(type);
+				Map<TypeMemberDecl, List<BreakingChange>> members = report.getBreakingChangesPerMember(type);
 				for (Map.Entry<TypeMemberDecl, List<BreakingChange>> me : members.entrySet()) {
 					String memberName = me.getKey().getQualifiedName();
 					List<BreakingChange> mchanges = me.getValue();
