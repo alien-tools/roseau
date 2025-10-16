@@ -1,5 +1,7 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 
@@ -62,14 +64,19 @@ public class CliFormatter implements BreakingChangesFormatter {
 						"type: " + oldFtp + " -> " + newFtp;
 				};
 
+				boolean symbolInType = bc.impactedSymbol() instanceof TypeDecl ||
+					bc.impactedSymbol() instanceof TypeMemberDecl member &&
+						member.getContainingType().getQualifiedName().equals(bc.impactedType().getQualifiedName());
 				if (plain) {
-					return String.format("%s %s%s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+					return String.format("%s %s%s%s%n\t%s:%s", bc.kind(), bc.impactedSymbol().getQualifiedName(),
+						symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
 						details.isEmpty() ? "" : " [%s]".formatted(details),
 						bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
 				} else {
-					return String.format("%s %s%s%n\t%s:%s",
+					return String.format("%s %s%s%s%n\t%s:%s",
 						RED_TEXT + BOLD + bc.kind() + RESET,
 						UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
+						symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
 						details.isEmpty() ? "" : " [%s]".formatted(details),
 						bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
 				}
