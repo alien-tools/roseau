@@ -393,6 +393,23 @@ class MethodReturnTypeChangedTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2));
 	}
 
+	@Client("B.m();")
+	@Test
+	void inherited_static_method_changed() {
+		var v1 = """
+			class A {
+				public static int m() { return 0; }
+			}
+			public class B extends A {}""";
+		var v2 = """
+			class A {
+				public static String m() { return null; }
+			}
+			public class B extends A {}""";
+
+		assertBC("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
 	@Test
 	void to_unknown() {
 		var v1 = """

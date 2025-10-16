@@ -130,6 +130,21 @@ class MethodRemovedTest {
 		assertBC("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("B.m();")
+	@Test
+	void inherited_static_method_removed() {
+		var v1 = """
+			class A {
+			    public static void m() {}
+			}
+			public class B extends A {}""";
+		var v2 = """
+			class A {}
+			public class B extends A {}""";
+
+		assertBC("B", "A.m()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
 	@Client("new I(){}.m1();")
 	@Test
 	void default_method_removed_in_interface() {
