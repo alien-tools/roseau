@@ -79,7 +79,7 @@ public class APIDiff {
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
-		v1.getAllFields(t1).forEach(f1 ->
+		v1.getExportedFields(t1).forEach(f1 ->
 			v2.findField(t2, f1.getSimpleName()).ifPresentOrElse(
 				// There is a matching field
 				f2 -> diffField(t1, f1, f2),
@@ -90,7 +90,7 @@ public class APIDiff {
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
-		v1.getAllMethods(t1).forEach(m1 ->
+		v1.getExportedMethods(t1).forEach(m1 ->
 			v2.findMethod(t2, v2.getErasure(m1)).ifPresentOrElse(
 				// There is a matching method
 				m2 -> diffMethod(t1, t2, m1, m2),
@@ -112,9 +112,9 @@ public class APIDiff {
 	}
 
 	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
-		v2.getAllMethods(t2).stream()
+		v2.getExportedMethods(t2).stream()
 			.filter(MethodDecl::isAbstract)
-			.filter(m2 -> v1.getAllMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
+			.filter(m2 -> v1.getExportedMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface()) {
 					newTypeMemberBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);

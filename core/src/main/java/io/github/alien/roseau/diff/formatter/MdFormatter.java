@@ -15,15 +15,15 @@ public class MdFormatter implements BreakingChangesFormatter {
 		StringBuilder sb = new StringBuilder();
 		sb.append("## Roseau - Breaking Changes Report\n");
 
-		if (report.breakingChanges().isEmpty()) {
+		if (report.getBreakingChanges().isEmpty()) {
 			sb.append("No breaking changes detected.");
 		} else {
-			sb.append(report.breakingChanges().size()).append(" breaking changes detected!\n");
+			sb.append(report.getBreakingChanges().size()).append(" breaking changes detected!\n");
 
 			sb.append("### Details\n");
 			sb.append("| Element | Old Location | New Location | Kind | Nature |\n");
 			sb.append("|---------|--------------|--------------|------|--------|\n");
-			for (BreakingChange bc : report.breakingChanges()) {
+			for (BreakingChange bc : report.getBreakingChanges()) {
 				sb.append("| ")
 					.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
 					.append(bc.impactedSymbol().getLocation().file()).append(":").append(bc.impactedSymbol().getLocation().line()).append(" | ");

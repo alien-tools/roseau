@@ -9,6 +9,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -106,6 +107,10 @@ public final class Library {
 		return extractorType;
 	}
 
+	public RoseauOptions.Exclude getExclusions() {
+		return exclusions;
+	}
+
 	public boolean isJar() {
 		return isJar(location);
 	}
@@ -143,12 +148,13 @@ public final class Library {
 		return Objects.equals(location, other.location) &&
 			Objects.equals(customClasspath, other.customClasspath) &&
 			Objects.equals(pom, other.pom) &&
+			Objects.equals(exclusions, other.exclusions) &&
 			extractorType == other.extractorType;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(location, customClasspath, pom, extractorType);
+		return Objects.hash(location, customClasspath, pom, exclusions, extractorType);
 	}
 
 	@Override
@@ -167,7 +173,7 @@ public final class Library {
 		private Set<Path> classpath = Set.of();
 		private Path pom;
 		private ExtractorType extractorType;
-		private RoseauOptions.Exclude exclusions;
+		private RoseauOptions.Exclude exclusions = new RoseauOptions.Exclude(List.of(), List.of());
 
 		private Builder() {
 

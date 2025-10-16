@@ -27,4 +27,8 @@ public record Annotation(
 	public Annotation(TypeReference<AnnotationDecl> actualAnnotation) {
 		this(actualAnnotation, Map.of());
 	}
+
+	public boolean hasValues(Map<String, String> expectedValues) {
+		return values.entrySet().containsAll(expectedValues.entrySet());
+	}
 }

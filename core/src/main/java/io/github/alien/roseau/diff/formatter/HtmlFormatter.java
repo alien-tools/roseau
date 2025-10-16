@@ -42,7 +42,7 @@ public class HtmlFormatter implements BreakingChangesFormatter {
 			.div().addAttr("class", "container mt-5")
 			.h1().text("Breaking Changes Report").__()
 			.table().addAttr("class", "table")
-			.of(table -> getImpactedApiTree(report.v1(), report.breakingChanges()).forEach(node ->
+			.of(table -> getImpactedApiTree(report.v1(), report.getBreakingChanges()).forEach(node ->
 				table.tr().of(tr -> appendNode(tr, node)).__()
 					.of(theTable -> node.children.forEach(member -> theTable.tr().of(tr -> appendNode(tr, member)).__()))
 			))

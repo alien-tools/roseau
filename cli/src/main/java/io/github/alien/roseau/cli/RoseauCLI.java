@@ -145,7 +145,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		Stopwatch sw = Stopwatch.createStarted();
 		RoseauReport report = Roseau.diff(apiV1, apiV2);
 		printVerbose("Diffing APIs took %dms (%d breaking changes)".formatted(
-			sw.elapsed().toMillis(), report.breakingChanges().size()));
+			sw.elapsed().toMillis(), report.getBreakingChanges().size()));
 
 		return report;
 	}
@@ -226,7 +226,7 @@ public final class RoseauCLI implements Callable<Integer> {
 				.filter(Objects::nonNull)
 				.toList();
 
-			return report.breakingChanges().stream()
+			return report.getBreakingChanges().stream()
 				.filter(bc -> ignored.stream().noneMatch(ign ->
 					bc.impactedType().getQualifiedName().equals(ign.type()) &&
 						bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
@@ -320,7 +320,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		Path ignoreFile = options.ignore();
 		List<BreakingChange> bcs = ignoreFile != null && Files.isRegularFile(ignoreFile)
 			? filterIgnoredBCs(report, ignoreFile)
-			: report.breakingChanges();
+			: report.getBreakingChanges();
 
 		if (bcs.isEmpty()) {
 			print("No breaking changes found.");

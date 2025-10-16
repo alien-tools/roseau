@@ -3,6 +3,7 @@ package io.github.alien.roseau.utils;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauOptions.Exclude;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
@@ -60,6 +61,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -140,12 +142,14 @@ public class TestUtils {
 	}
 
 	public static FieldDecl assertField(API api, TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = api.findField(decl, name);
+		List<FieldDecl> findField = decl.getDeclaredFields().stream()
+			.filter(f -> Objects.equals(f.getSimpleName(), name))
+			.toList();
 
 		if (findField.isEmpty())
 			throw new AssertionFailedError("No such field", name, "No such field");
 		else
-			return findField.get();
+			return findField.getFirst();
 	}
 
 	public static void assertNoField(API api, TypeDecl decl, String name) {
@@ -308,6 +312,19 @@ public class TestUtils {
 		}
 	}
 
+	public static API buildSpoonAPI(String sources, Exclude exclusions) {
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			Path sourcesPath = writeSources(sourcesMap);
+			Library library = Library.builder().location(sourcesPath).exclusions(exclusions).build();
+			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
+			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
+			return api.toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
 	public static API buildAsmAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
@@ -354,13 +371,13 @@ public class TestUtils {
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		APIDiff apiDiff = new APIDiff(buildSpoonAPI(sourcesV1), buildSpoonAPI(sourcesV2));
-		return apiDiff.diff().breakingChanges();
+		return apiDiff.diff().getBreakingChanges();
 
 		// Simple differential testing with japicmp
 		/*try {
 			var jApiBCs = buildJApiCmpDiff(sourcesV1, sourcesV2);
 
-			if (roseauBCs.breakingChanges().size() != jApiBCs.size()) {
+			if (roseauBCs.allBreakingChanges().size() != jApiBCs.size()) {
 				String caller = StackWalker.getInstance()
 					.walk(frames -> frames
 						.skip(1)
@@ -370,7 +387,7 @@ public class TestUtils {
 				System.out.println("#".repeat(caller.length() + 4));
 				System.out.printf("# %s #%n", caller);
 				System.out.println("#".repeat(caller.length() + 4));
-				System.out.printf("Roseau  found %d BCs: %s%n", roseauBCs.breakingChanges().size(), roseauBCs.breakingChanges());
+				System.out.printf("Roseau  found %d BCs: %s%n", roseauBCs.allBreakingChanges().size(), roseauBCs.allBreakingChanges());
 				System.out.printf("JApiCmp found %d BCs: %s%n", jApiBCs.size(), jApiBCs);
 				System.out.println("-- Version 1 --");
 				System.out.println(sourcesV1);
