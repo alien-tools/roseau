@@ -310,7 +310,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 				"method type parameter added: <code>" + escape(String.valueOf(ftp)) + "</code>";
 			case BreakingChangeDetails.MethodFormalTypeParametersChanged(var oldFtp, var newFtp) ->
 				"method type parameter changed: <code>" + escape(String.valueOf(oldFtp)) + "</code> → <code>" + escape(String.valueOf(newFtp)) + "</code>";
-			case BreakingChangeDetails.None none -> "";
+			case BreakingChangeDetails.None() -> "";
 		};
 	}
 
