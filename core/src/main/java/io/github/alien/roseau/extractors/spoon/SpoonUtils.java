@@ -10,7 +10,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
-import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -50,11 +49,11 @@ public final class SpoonUtils {
 	 * @throws RoseauException If there is an error in building the Spoon model
 	 */
 	public static CtModel buildModel(Launcher launcher, Path location, Duration timeout) {
-		long timeoutSeconds = Optional.ofNullable(timeout).map(Duration::getSeconds).orElse(Long.MAX_VALUE);
+		long timeoutSeconds = timeout.getSeconds();
 		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(launcher::buildModel);
 
 		try {
-			return future.get(timeoutSeconds, TimeUnit.SECONDS);
+			return future.get(timeout.getSeconds(), TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
 			throw new RoseauException("Couldn't build Spoon model for %s in < %ds".formatted(location, timeoutSeconds), e);
 		} catch (ExecutionException e) {
