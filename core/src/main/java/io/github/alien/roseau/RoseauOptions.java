@@ -1,5 +1,7 @@
 package io.github.alien.roseau;
 
+import com.fasterxml.jackson.annotation.JsonSetter;
+import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
@@ -89,7 +91,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	}
 
 	/**
-	 * Exclusion options to apply to API inference.
+	 * Exclusion options when reporting breaking changes
 	 *
 	 * @param names       the list of regex-based names to be excluded
 	 * @param annotations the list of {@link AnnotationExclusion} to consider
@@ -103,7 +105,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	}
 
 	/**
-	 * A particular code annotation that excludes the symbols it's applied to from the API
+	 * A particular code annotation that ignores breaking changes on annotated symbols
 	 *
 	 * @param name the fully qualified name of the annotation
 	 * @param args the argument values, if any
@@ -122,6 +124,13 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	}
 
 	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory()).findAndRegisterModules();
+
+	static {
+		// Force Jackson to initialize absent values as empty collections, not null
+		MAPPER.configOverride(List.class).setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY));
+		MAPPER.configOverride(Set.class).setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY));
+		MAPPER.configOverride(Map.class).setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY));
+	}
 
 	/**
 	 * Creates a new instance from the given YAML file.

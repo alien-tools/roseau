@@ -137,12 +137,12 @@ class PopularLibrariesTestIT {
 		long spoonApiTime = sw.elapsed().toMillis();
 
 		// Diffs
-		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).breakingChanges();
-		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).breakingChanges();
-		var spoonToSpoonBCs = Roseau.diff(spoonApi, spoonApi).breakingChanges();
-		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).breakingChanges();
+		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
+		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
+		var spoonToSpoonBCs = Roseau.diff(spoonApi, spoonApi).getAllBreakingChanges();
+		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
 		sw.reset().start();
-		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).breakingChanges();
+		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
 		long diffTime = sw.elapsed().toMillis();
 
 		// Stats

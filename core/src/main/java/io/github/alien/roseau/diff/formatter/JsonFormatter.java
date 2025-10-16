@@ -17,7 +17,7 @@ public class JsonFormatter implements BreakingChangesFormatter {
 	public String format(RoseauReport report) {
 		JSONArray jsonArray = new JSONArray();
 
-		for (BreakingChange bc : report.breakingChanges()) {
+		for (BreakingChange bc : report.getBreakingChanges()) {
 			JSONObject jsonObject = new JSONObject();
 			jsonObject.put("element", bc.impactedSymbol().getQualifiedName());
 

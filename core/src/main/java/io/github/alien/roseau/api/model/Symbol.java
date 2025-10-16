@@ -6,6 +6,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -92,6 +93,10 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation) {
 		return getAnnotation(annotation).isPresent();
+	}
+
+	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation, Map<String, String> annotationValues) {
+		return getAnnotation(annotation).map(ann -> ann.hasValues(annotationValues)).orElse(false);
 	}
 
 	public SourceLocation getLocation() {

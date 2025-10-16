@@ -69,8 +69,8 @@ final class ApiStats {
 	}
 
 	private static void countEntities(TypeDecl type, API api) {
-		methodsCount += api.getAllMethods(type).size();
-		fieldsCount += api.getAllFields(type).size();
+		methodsCount += api.getExportedMethods(type).size();
+		fieldsCount += api.getExportedFields(type).size();
 
 		if (type instanceof EnumDecl enumDecl) {
 			enumValuesCount += enumDecl.getValues().size();

@@ -62,7 +62,7 @@ public final class Roseau {
 		Stopwatch sw = Stopwatch.createStarted();
 		RoseauReport report = new APIDiff(v1, v2).diff();
 		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
-			sw.elapsed().toMillis(), report.breakingChanges().size());
+			sw.elapsed().toMillis(), report.getBreakingChanges().size());
 
 		return report;
 	}

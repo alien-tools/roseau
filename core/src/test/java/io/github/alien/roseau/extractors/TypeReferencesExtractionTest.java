@@ -94,7 +94,7 @@ class TypeReferencesExtractionTest {
 		var b = assertClass(api, "B");
 
 		assertThat(b.getDeclaredMethods()).hasSize(1);
-		assertThat(api.getAllMethods(b)).hasSize(2 + 11);  // java.lang.Object's default
+		assertThat(api.getExportedMethods(b)).hasSize(2 + 11);  // java.lang.Object's default
 		assertThat(b.getSuperClass()).isEqualTo(new TypeReference<>("A"));
 	}
 
@@ -111,7 +111,7 @@ class TypeReferencesExtractionTest {
 		var b = assertClass(api, "B");
 
 		assertThat(b.getDeclaredMethods()).hasSize(1);
-		assertThat(api.getAllMethods(b)).hasSize(2 + 11);  // java.lang.Object's default
+		assertThat(api.getExportedMethods(b)).hasSize(2 + 11);  // java.lang.Object's default
 		assertThat(b.getSuperClass()).isEqualTo(new TypeReference<>("A"));
 	}
 
@@ -125,7 +125,7 @@ class TypeReferencesExtractionTest {
 		var b = assertClass(api, "B");
 
 		assertThat(b.getDeclaredMethods()).hasSize(1);
-		assertThat(api.getAllMethods(b)).hasSize(1);  // java.lang.Object's default
+		assertThat(api.getExportedMethods(b)).hasSize(1);  // java.lang.Object's default
 		assertThat(b.getSuperClass()).isEqualTo(new TypeReference<>("Unknown"));
 	}
 

@@ -13,7 +13,7 @@ public class CsvFormatter implements BreakingChangesFormatter {
 	@Override
 	public String format(RoseauReport report) {
 		return HEADER + System.lineSeparator() +
-			report.breakingChanges().stream().map(bc -> "%s;%s;%s;%s".formatted(
+			report.getBreakingChanges().stream().map(bc -> "%s;%s;%s;%s".formatted(
 				bc.impactedType().getQualifiedName(),
 				bc.impactedSymbol().getQualifiedName(),
 				bc.kind(),

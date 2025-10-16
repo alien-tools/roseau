@@ -59,9 +59,9 @@ class JdkTestIT {
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.breakingChanges().size());
+		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
 
-		assertThat(report.breakingChanges()).isEmpty();
+		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
 
 	@ParameterizedTest(name = "{0}")
@@ -91,9 +91,9 @@ class JdkTestIT {
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.breakingChanges().size());
+		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
 
-		assertThat(report.breakingChanges()).isEmpty();
+		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
 
 	@ParameterizedTest(name = "{0}")
@@ -117,8 +117,8 @@ class JdkTestIT {
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.breakingChanges().size());
+		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
 
-		assertThat(report.breakingChanges()).isEmpty();
+		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
 }
