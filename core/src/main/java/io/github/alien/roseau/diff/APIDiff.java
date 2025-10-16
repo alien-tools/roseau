@@ -65,7 +65,7 @@ public class APIDiff {
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return the apiReport built for the two APIs
+	 * @return the report built for the two APIs
 	 */
 	public RoseauReport diff() {
 		v1.getExportedTypes().stream().parallel().forEach(t1 ->
@@ -143,12 +143,14 @@ public class APIDiff {
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		List<TypeReference<TypeDecl>> superTypes = v1.getAllSuperTypes(t1);
-		superTypes.stream()
-			.filter(sup -> v1.isExported(sup) && !v2.isSubtypeOf(t2, sup))
-			// Only return the closest super type
-			.filter(sup -> superTypes.stream()
-				.noneMatch(other -> !other.equals(sup) && v1.isSubtypeOf(other, sup)))
+		List<TypeReference<TypeDecl>> candidates = v1.getAllSuperTypes(t1).stream()
+			.filter(v1::isExported)
+			.filter(sup -> !v2.isSubtypeOf(t2, sup))
+			.toList();
+
+		// Only report on the closest super type
+		candidates.stream()
+			.filter(sup -> candidates.stream().noneMatch(other -> !other.equals(sup) && v1.isSubtypeOf(other, sup)))
 			.forEach(sup ->
 				typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, t1,
 					new BreakingChangeDetails.SuperTypeRemoved(sup)));

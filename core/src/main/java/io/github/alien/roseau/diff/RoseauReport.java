@@ -53,11 +53,11 @@ public final class RoseauReport {
 	}
 
 	public boolean isBinaryBreaking() {
-		return breakingChanges.stream().anyMatch(bc -> bc.kind().isBinaryBreaking());
+		return getBreakingChanges().stream().anyMatch(bc -> bc.kind().isBinaryBreaking());
 	}
 
 	public boolean isSourceBreaking() {
-		return breakingChanges.stream().anyMatch(bc -> bc.kind().isSourceBreaking());
+		return getBreakingChanges().stream().anyMatch(bc -> bc.kind().isSourceBreaking());
 	}
 
 	public List<TypeDecl> impactedTypes() {
@@ -65,9 +65,9 @@ public final class RoseauReport {
 	}
 
 	public List<TypeDecl> impactedTypes(String pkg) {
-		return breakingChanges.stream()
+		return getBreakingChanges().stream()
 			.map(BreakingChange::impactedSymbol)
-			.filter(symbol -> pkg == null || pkg.startsWith(symbol.getQualifiedName()))
+			.filter(symbol -> pkg == null || symbol.getQualifiedName().startsWith(pkg))
 			.map(symbol -> switch (symbol) {
 				case TypeDecl type -> type;
 				case TypeMemberDecl member ->
@@ -80,13 +80,13 @@ public final class RoseauReport {
 	}
 
 	public List<BreakingChange> breakingChangesOnType(TypeDecl type) {
-		return breakingChanges.stream()
+		return getBreakingChanges().stream()
 			.filter(bc -> bc.impactedSymbol().equals(type))
 			.toList();
 	}
 
 	public List<BreakingChange> breakingChangesOnTypeAndMembers(TypeDecl type) {
-		return breakingChanges.stream()
+		return getBreakingChanges().stream()
 			.filter(bc -> switch (bc.impactedSymbol()) {
 				case TypeDecl typeDecl -> type.getQualifiedName().equals(typeDecl.getQualifiedName());
 				case TypeMemberDecl member -> type.getQualifiedName().equals(member.getContainingType().getQualifiedName());
@@ -108,7 +108,7 @@ public final class RoseauReport {
 	 */
 	public Map<String, List<BreakingChange>> memberChanges(String typeQualifiedName) {
 		Map<String, List<BreakingChange>> grouped = new LinkedHashMap<>();
-		for (BreakingChange bc : breakingChanges) {
+		for (BreakingChange bc : getBreakingChanges()) {
 			if (bc.impactedSymbol() instanceof TypeMemberDecl tmd) {
 				String owner = v1.resolver().resolve(tmd.getContainingType())
 					.map(TypeDecl::getQualifiedName)
