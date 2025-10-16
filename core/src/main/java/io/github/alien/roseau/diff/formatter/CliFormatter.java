@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.RoseauReport;
@@ -38,21 +39,23 @@ public class CliFormatter implements BreakingChangesFormatter {
 					member.getContainingType().getQualifiedName().equals(bc.impactedType().getQualifiedName()));
 
 		if (plain) {
-			return String.format("%s %s%s%s%n\t%s:%s",
+			return "%s %s%s%s%n\t%s".formatted(
 				bc.kind(),
 				bc.impactedSymbol().getQualifiedName(),
 				isLocalSymbol ? "" : " in " + bc.impactedType().getQualifiedName(),
 				details.isEmpty() ? "" : " [%s]".formatted(details),
-				bc.impactedSymbol().getLocation().file(),
-				bc.impactedSymbol().getLocation().line());
+				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+					? "No source location"
+					: "%s:%d".formatted(bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line()));
 		} else {
-			return String.format("%s %s%s%s%n\t%s:%s",
+			return "%s %s%s%s%n\t%s".formatted(
 				RED_TEXT + BOLD + bc.kind() + RESET,
 				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
 				isLocalSymbol ? "" : " in " + bc.impactedType().getQualifiedName(),
 				details.isEmpty() ? "" : " [%s]".formatted(details),
-				bc.impactedSymbol().getLocation().file(),
-				bc.impactedSymbol().getLocation().line());
+				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+					? "No source location"
+					: "%s:%d".formatted(bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line()));
 		}
 	}
 
