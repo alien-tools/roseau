@@ -26,6 +26,7 @@ import java.util.TreeMap;
 public final class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
 	public String format(RoseauReport report) {
+		// FIXME: M constant + N * |BCs|
 		StringBuilder sb = new StringBuilder(16_384);
 
 		API apiV1 = report.v1();
@@ -138,9 +139,9 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 					}
 					sb.append("</ul>\n</div>\n");
 				}
-				Map<String, List<BreakingChange>> members = report.memberChanges(typeName);
-				for (Map.Entry<String, List<BreakingChange>> me : members.entrySet().stream().sorted(Map.Entry.comparingByKey()).toList()) {
-					String memberName = me.getKey();
+				Map<TypeMemberDecl, List<BreakingChange>> members = report.breakingChangesPerMember(type);
+				for (Map.Entry<TypeMemberDecl, List<BreakingChange>> me : members.entrySet()) {
+					String memberName = me.getKey().getQualifiedName();
 					List<BreakingChange> mchanges = me.getValue();
 					Symbol ms = mchanges.get(0).impactedSymbol();
 					String memberKind = (ms instanceof TypeMemberDecl tmd) ? tmd.getClass().getSimpleName() : "Member";

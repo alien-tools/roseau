@@ -1,7 +1,6 @@
 package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -9,13 +8,11 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
-import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.TreeMap;
+import java.util.stream.Collectors;
 
 public final class RoseauReport {
 	private final API v1;
@@ -66,14 +63,8 @@ public final class RoseauReport {
 
 	public List<TypeDecl> impactedTypes(String pkg) {
 		return getBreakingChanges().stream()
-			.map(BreakingChange::impactedSymbol)
-			.filter(symbol -> pkg == null || symbol.getQualifiedName().startsWith(pkg))
-			.map(symbol -> switch (symbol) {
-				case TypeDecl type -> type;
-				case TypeMemberDecl member ->
-					// This one should be safe
-					v1.resolver().resolve(member.getContainingType()).orElseThrow();
-			})
+			.map(BreakingChange::impactedType)
+			.filter(type -> pkg == null || type.getPackageName().equals(pkg))
 			.distinct()
 			.sorted(Comparator.comparing(TypeDecl::getQualifiedName))
 			.toList();
@@ -87,11 +78,19 @@ public final class RoseauReport {
 
 	public List<BreakingChange> breakingChangesOnTypeAndMembers(TypeDecl type) {
 		return getBreakingChanges().stream()
-			.filter(bc -> switch (bc.impactedSymbol()) {
-				case TypeDecl typeDecl -> type.getQualifiedName().equals(typeDecl.getQualifiedName());
-				case TypeMemberDecl member -> type.getQualifiedName().equals(member.getContainingType().getQualifiedName());
-			})
+			.filter(bc -> bc.impactedType().equals(type))
 			.toList();
+	}
+
+	public Map<TypeMemberDecl, List<BreakingChange>> breakingChangesPerMember(TypeDecl type) {
+		return getBreakingChanges().stream()
+			.filter(bc -> type.equals(bc.impactedType()))
+			.filter(bc -> bc.impactedSymbol() instanceof TypeMemberDecl)
+			.collect(Collectors.groupingBy(
+				bc -> (TypeMemberDecl) bc.impactedSymbol(),
+				() -> new TreeMap<>(Comparator.comparing(TypeMemberDecl::getQualifiedName)),
+				Collectors.toList()
+			));
 	}
 
 	public boolean isBinaryBreakingType(TypeDecl type) {
@@ -100,29 +99,6 @@ public final class RoseauReport {
 
 	public boolean isSourceBreakingType(TypeDecl type) {
 		return breakingChangesOnTypeAndMembers(type).stream().anyMatch(bc -> bc.kind().isSourceBreaking());
-	}
-
-	/**
-	 * Returns member-level breaking changes grouped by member display name for the given type. The display name is the
-	 * signature for methods/constructors and simple name for fields.
-	 */
-	public Map<String, List<BreakingChange>> memberChanges(String typeQualifiedName) {
-		Map<String, List<BreakingChange>> grouped = new LinkedHashMap<>();
-		for (BreakingChange bc : getBreakingChanges()) {
-			if (bc.impactedSymbol() instanceof TypeMemberDecl tmd) {
-				String owner = v1.resolver().resolve(tmd.getContainingType())
-					.map(TypeDecl::getQualifiedName)
-					.orElseGet(() -> tmd.getContainingType().getQualifiedName());
-				if (Objects.equals(owner, typeQualifiedName)) {
-					String key = memberDisplayName(tmd);
-					grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(bc);
-				}
-			}
-		}
-		// preserve insertion but present keys sorted for determinism
-		Map<String, List<BreakingChange>> sorted = new TreeMap<>(grouped);
-		sorted.putAll(grouped);
-		return sorted;
 	}
 
 	/**
