@@ -5,8 +5,35 @@ on:
     types: [ released, published ]
 
 jobs:
+  verify:
+    name: Verify on ${{ matrix.os }}
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ ubuntu-latest, windows-latest ]
+    timeout-minutes: 30
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v5
+      - name: Set up Java
+        uses: actions/setup-java@v5
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Verify build
+        run: mvn --batch-mode verify
+        env:
+          # Ensure UTF-8 (Windows might not)
+          MAVEN_OPTS: -Dfile.encoding=UTF-8
+
   publish:
+    name: Publish new version on Sonatype Central
     runs-on: ubuntu-latest
+    needs: verify
+    if: ${{ needs.verify.result == 'success' }}
     timeout-minutes: 30
     permissions:
       contents: read

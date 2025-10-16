@@ -1,10 +1,14 @@
 ## Release checklist
 
 ### Remove -SNAPSHOT qualifier and commit
-```bash
-$ mvn versions:set -DnewVersion=<x.y.z>
-$ mvn versions:commit
-```
+
+- In `pom.xml`:
+  ```bash
+  $ mvn versions:set -DnewVersion=<x.y.z>
+  $ mvn versions:commit
+  ```
+- In CLI:
+  `@Command(version = <x.y.z>)`
 
 ### Confirm we're all good
 
@@ -34,9 +38,15 @@ $ git push origin v<x.y.z>
 
 ### Prepare next development iteration
 
-```
-$ mvn versions:set -DnewVersion=<x.y.z>-SNAPSHOT
-$ mvn versions:commit
+1. In `pom.xml`:
+  ```
+  $ mvn versions:set -DnewVersion=<x.y.z>-SNAPSHOT
+  $ mvn versions:commit
+  ```
+2. In CLI:
+  `@Command(version = <x.y.z>-SNAPSHOT)`
+3. Commit
+```bash
 $ git add <...>
 $ git commit -m "Prepare next iteration v<x.y.z>"
 $ git push

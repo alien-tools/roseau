@@ -30,7 +30,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 
 		API apiV1 = report.v1();
 		API apiV2 = report.v2();
-		List<BreakingChange> changes = report.breakingChanges();
+		List<BreakingChange> changes = report.getBreakingChanges();
 
 		List<TypeDecl> impactedTypes = report.impactedTypes();
 

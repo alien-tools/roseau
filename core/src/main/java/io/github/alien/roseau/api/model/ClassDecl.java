@@ -5,6 +5,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -26,7 +27,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		Preconditions.checkNotNull(constructors);
 		Preconditions.checkNotNull(permittedTypes);
-		this.superClass = superClass != null ? superClass : TypeReference.OBJECT;
+		this.superClass = Optional.ofNullable(superClass).orElse(TypeReference.OBJECT);
 		this.constructors = List.copyOf(constructors);
 		this.permittedTypes = List.copyOf(permittedTypes);
 	}

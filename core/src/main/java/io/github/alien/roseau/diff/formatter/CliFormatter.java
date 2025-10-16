@@ -22,7 +22,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 
 	@Override
 	public String format(RoseauReport report) {
-		return report.breakingChanges().stream()
+		return report.getBreakingChanges().stream()
 			.map(bc -> {
 				String details = switch (bc.details()) {
 					case BreakingChangeDetails.None d -> "";

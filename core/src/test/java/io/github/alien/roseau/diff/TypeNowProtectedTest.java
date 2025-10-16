@@ -18,6 +18,6 @@ class TypeNowProtectedTest {
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A$B", "A$B", TYPE_NOW_PROTECTED, 1),
-			bc("A$B", "A$B.<init>", CONSTRUCTOR_NOW_PROTECTED, -1));
+			bc("A$B", "A$B.<init>()", CONSTRUCTOR_NOW_PROTECTED, -1));
 	}
 }

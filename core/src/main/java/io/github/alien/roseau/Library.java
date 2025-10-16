@@ -11,7 +11,9 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
@@ -19,12 +21,12 @@ import java.util.zip.ZipFile;
  * A library, in source or compiled form, provided for analysis.
  * <p>
  * The granularity of a library is that of a module, i.e., it should contain at most one module declaration
- * ({@code module-info.java}). If no module declaration is present, it is assumed that all packages within this library
+ * ({@code module-info.java}). If no module declaration is present, it is assumed that all names within this library
  * are implicitly exported. If a module declaration is present, the API accounts for unqualified {@code exports}
  * directives. The library points to a physical location that is either:
  * <ul>
- *   <li>A source directory containing nested packages and source files and one module declaration at most</li>
- *   <li>A {@code module-info.java} file. In this case, the directory containing the module is used as root directory</li>
+ *   <li>A source directory containing nested names and source files and one module declaration at most</li>
+ *   <li>A {@code module-info.java}. In this case, the directory containing the module is used as root directory</li>
  *   <li>A JAR file containing at most one {@code module-info.java} file</li>
  * </ul>
  * A library can be complemented with a custom classpath or a {@code pom.xml} file for dependency resolution. The
@@ -33,24 +35,28 @@ import java.util.zip.ZipFile;
  */
 public final class Library {
 	private final Path location;
-	private final List<Path> customClasspath;
+	private final Set<Path> customClasspath;
 	private final Path pom;
 	private final ExtractorType extractorType;
+	private final RoseauOptions.Exclude exclusions;
 	@JsonIgnore
-	private final Supplier<List<Path>> classpath;
+	private final Supplier<Set<Path>> classpath;
 
 	/**
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
 	 */
-	private Library(Path location, List<Path> customClasspath, Path pom, ExtractorType extractorType) {
+	private Library(Path location, Set<Path> customClasspath, Path pom, ExtractorType extractorType,
+	                RoseauOptions.Exclude exclusions) {
 		this.location = location.toAbsolutePath();
-		this.customClasspath = List.copyOf(customClasspath);
+		this.customClasspath = Set.copyOf(customClasspath);
 		this.pom = pom;
 		this.extractorType = extractorType;
+		this.exclusions = exclusions;
 		this.classpath = Suppliers.memoize(() -> {
 			if (pom != null && Files.isRegularFile(pom)) {
 				MavenClasspathBuilder builder = new MavenClasspathBuilder();
-				return Stream.concat(builder.buildClasspath(pom).stream(), customClasspath.stream()).toList();
+				return Stream.concat(builder.buildClasspath(pom).stream(), this.customClasspath.stream())
+					.collect(Collectors.toSet());
 			} else {
 				return this.customClasspath;
 			}
@@ -82,14 +88,14 @@ public final class Library {
 	/**
 	 * @return the user-defined classpath
 	 */
-	public List<Path> getCustomClasspath() {
+	public Set<Path> getCustomClasspath() {
 		return customClasspath;
 	}
 
 	/**
 	 * @return the resolved classpath, including custom classpath and pom-inferred classpath
 	 */
-	public List<Path> getClasspath() {
+	public Set<Path> getClasspath() {
 		return classpath.get();
 	}
 
@@ -99,6 +105,10 @@ public final class Library {
 
 	public ExtractorType getExtractorType() {
 		return extractorType;
+	}
+
+	public RoseauOptions.Exclude getExclusions() {
+		return exclusions;
 	}
 
 	public boolean isJar() {
@@ -138,12 +148,19 @@ public final class Library {
 		return Objects.equals(location, other.location) &&
 			Objects.equals(customClasspath, other.customClasspath) &&
 			Objects.equals(pom, other.pom) &&
+			Objects.equals(exclusions, other.exclusions) &&
 			extractorType == other.extractorType;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(location, customClasspath, pom, extractorType);
+		return Objects.hash(location, customClasspath, pom, exclusions, extractorType);
+	}
+
+	@Override
+	public String toString() {
+		return "Library[location=%s, extractor=%s, classpath=%s, pom=%s, excludes=%s]".formatted(
+			location, extractorType, customClasspath, pom, exclusions);
 	}
 
 	/**
@@ -153,9 +170,10 @@ public final class Library {
 	 */
 	public static final class Builder {
 		private Path location;
-		private List<Path> classpath = List.of();
+		private Set<Path> classpath = Set.of();
 		private Path pom;
 		private ExtractorType extractorType;
+		private RoseauOptions.Exclude exclusions = new RoseauOptions.Exclude(List.of(), List.of());
 
 		private Builder() {
 
@@ -178,7 +196,7 @@ public final class Library {
 		 * @param classpath the classpath
 		 * @return this builder
 		 */
-		public Builder classpath(List<Path> classpath) {
+		public Builder classpath(Set<Path> classpath) {
 			this.classpath = classpath;
 			return this;
 		}
@@ -205,6 +223,17 @@ public final class Library {
 			return this;
 		}
 
+		/**
+		 * Sets the names/types and annotations to exclude from the API.
+		 *
+		 * @param exclusions the excludes
+		 * @return this builder
+		 */
+		public Builder exclusions(RoseauOptions.Exclude exclusions) {
+			this.exclusions = exclusions;
+			return this;
+		}
+
 		private static boolean isValidLocation(Path location) {
 			return isModuleInfo(location) || isSources(location) || isJar(location);
 		}
@@ -219,14 +248,15 @@ public final class Library {
 				Integer.MAX_VALUE,
 				(Path p, BasicFileAttributes a) -> isModuleInfo(p)
 			)) {
-				return s.limit(2L).count() > 1L;  // short-circuits after the 2nd match
+				// short-circuits after the 2nd match
+				return s.limit(2L).count() > 1L;
 			} catch (IOException e) {
 				return false;
 			}
 		}
 
 		private static boolean isValidPom(Path pom) {
-			return Files.exists(pom) && Files.isRegularFile(pom) && pom.toString().endsWith(".xml");
+			return pom != null && Files.isRegularFile(pom) && pom.toString().endsWith(".xml");
 		}
 
 		/**
@@ -238,7 +268,7 @@ public final class Library {
 		 */
 		public Library build() {
 			if (!isValidLocation(location)) {
-				throw new IllegalArgumentException("Invalid path to library; directory or JAR expected: " + location);
+				throw new RoseauException("Invalid path to library; directory or JAR expected: " + location);
 			}
 
 			if (isModuleInfo(location)) {
@@ -246,11 +276,11 @@ public final class Library {
 			}
 
 			if (pom != null && !isValidPom(pom)) {
-				throw new IllegalArgumentException("Invalid path to POM file: " + pom);
+				throw new RoseauException("Invalid path to POM file: " + pom);
 			}
 
 			if (isSources(location) && hasMultipleModuleInfo(location)) {
-				throw new IllegalArgumentException("A library cannot contain multiple module-info.java");
+				throw new RoseauException("A library cannot contain multiple module-info.java");
 			}
 
 			// Default extractors
@@ -263,14 +293,14 @@ public final class Library {
 			}
 
 			if (extractorType == ExtractorType.ASM && isSources(location)) {
-				throw new IllegalArgumentException("ASM extractor cannot be used on source directories and module-info.java");
+				throw new RoseauException("ASM extractor cannot be used on source directories and module-info.java");
 			}
 
 			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(location)) {
-				throw new IllegalArgumentException("Source extractors cannot be used on JARs");
+				throw new RoseauException("Source extractors cannot be used on JARs");
 			}
 
-			return new Library(location, classpath, pom, extractorType);
+			return new Library(location, classpath, pom, extractorType, exclusions);
 		}
 	}
 }

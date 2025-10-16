@@ -2,10 +2,8 @@ package io.github.alien.roseau.smoke;
 
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.diff.APIDiff;
-import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
+import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.extractors.ExtractorType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -15,61 +13,112 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Disabled("Not sure how to share/download JDK's sources and binaries; set JDK_BIN_PATH & JDK_SRC_PATH")
 class JdkTestIT {
-	static final String JDK_BIN_PATH = "jdk21/bin";
-	static final String JDK_SRC_PATH = "jdk21/sources";
+	static final String JDK_BIN_PATH = "/data/jdk21/bin";
+	static final String JDK_SRC_PATH = "/data/jdk21/sources";
 
-	static Stream<Path> jmods() throws IOException {
-		return Files.list(Path.of(JDK_BIN_PATH, "jmods"));
+	static Stream<Path> jmods() {
+		try {
+			return Files.list(Path.of(JDK_BIN_PATH, "jmods"));
+		} catch (IOException e) {
+			throw new RuntimeException("Couldn't list jmods");
+		}
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("jmods")
 	@Timeout(value = 1, unit = TimeUnit.MINUTES)
-	void jdk21(Path jmod) {
+	void jdk21Spoon(Path jmod) {
 		var moduleName = jmod.getFileName().toString().replace(".jmod", "");
 		var src = Path.of(String.format("%s/src/%s/share/classes", JDK_SRC_PATH, moduleName));
-		var sw = Stopwatch.createUnstarted();
-		var jmodLibrary = Library.of(jmod);
-		var srcLibrary = Library.of(src);
-		var spoonExtractor = new SpoonTypesExtractor();
-		var asmExtractor = new AsmTypesExtractor();
-		var jdtExtractor = new JdtTypesExtractor();
 
 		if (!src.toFile().exists())
 			fail("No sources for " + jmod);
 
-		sw.reset().start();
-		var jarApi = asmExtractor.extractTypes(jmodLibrary);
-		var jarApiTime = sw.elapsed().toMillis();
-		System.out.printf("ASM API took %dms (%d types)%n", jarApiTime, jarApi.getAllTypes().size());
+		var sw = Stopwatch.createUnstarted();
+		var classpath = jmods().filter(mod -> !mod.equals(jmod)).collect(Collectors.toSet());
+		var srcLibrary = Library.builder()
+			.location(src)
+			.classpath(classpath)
+			.extractorType(ExtractorType.SPOON)
+			.build();
 
 		sw.reset().start();
-		var jdtApi = jdtExtractor.extractTypes(srcLibrary);
-		var jdtApiTime = sw.elapsed().toMillis();
-		System.out.printf("JDT API took %dms (%d types)%n", jdtApiTime, jdtApi.getAllTypes().size());
-
-		sw.reset().start();
-		var srcApi = spoonExtractor.extractTypes(srcLibrary).toAPI();
+		var api = Roseau.buildAPI(srcLibrary);
 		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("Spoon API took %dms (%d types)%n", apiTime, srcApi.getLibraryTypes().getAllTypes().size());
+		System.out.printf("API took %dms (%d types, %d exported)%n", apiTime,
+			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
 
 		sw.reset().start();
-		var bcs = new APIDiff(srcApi, srcApi).diff().breakingChanges();
+		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, bcs.size());
+		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
 
-		//System.out.println("JAR to Sources API diff:");
-		//diffAPIs(jarApi, srcApi);
-		//System.out.println("Sources to JAR API diff:");
-		//diffAPIs(srcApi, jarApi);
+		assertThat(report.getAllBreakingChanges()).isEmpty();
+	}
 
-		assertTrue(bcs.isEmpty());
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("jmods")
+	@Timeout(value = 1, unit = TimeUnit.MINUTES)
+	void jdk21Jdt(Path jmod) {
+		var moduleName = jmod.getFileName().toString().replace(".jmod", "");
+		var src = Path.of(String.format("%s/src/%s/share/classes", JDK_SRC_PATH, moduleName));
+
+		if (!src.toFile().exists())
+			fail("No sources for " + jmod);
+
+		var sw = Stopwatch.createUnstarted();
+		var classpath = jmods().filter(mod -> !mod.equals(jmod)).collect(Collectors.toSet());
+		var srcLibrary = Library.builder()
+			.location(src)
+			.classpath(classpath)
+			.extractorType(ExtractorType.JDT)
+			.build();
+
+		sw.reset().start();
+		var api = Roseau.buildAPI(srcLibrary);
+		var apiTime = sw.elapsed().toMillis();
+		System.out.printf("API took %dms (%d types, %d exported)%n", apiTime,
+			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
+
+		sw.reset().start();
+		var report = Roseau.diff(api, api);
+		var diffTime = sw.elapsed().toMillis();
+		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
+
+		assertThat(report.getAllBreakingChanges()).isEmpty();
+	}
+
+	@ParameterizedTest(name = "{0}")
+	@MethodSource("jmods")
+	@Timeout(value = 1, unit = TimeUnit.MINUTES)
+	void jdk21Asm(Path jmod) {
+		var sw = Stopwatch.createUnstarted();
+		var classpath = jmods().filter(mod -> !mod.equals(jmod)).collect(Collectors.toSet());
+		var jarLibrary = Library.builder()
+			.location(jmod)
+			.classpath(classpath)
+			.extractorType(ExtractorType.ASM)
+			.build();
+
+		sw.reset().start();
+		var api = Roseau.buildAPI(jarLibrary);
+		var apiTime = sw.elapsed().toMillis();
+		System.out.printf("API took %dms (%d types, %d exported)%n", apiTime,
+			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
+
+		sw.reset().start();
+		var report = Roseau.diff(api, api);
+		var diffTime = sw.elapsed().toMillis();
+		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
+
+		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
 }

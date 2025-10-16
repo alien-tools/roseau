@@ -49,10 +49,10 @@ public class JdtTypesExtractor implements TypesExtractor {
 			} else if (result.modules().size() == 1) {
 				return new LibraryTypes(library, result.modules().getFirst(), result.types());
 			} else {
-				throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, result.modules()));
+				throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, result.modules()));
 			}
 		} catch (IOException e) {
-			throw new RoseauException("Failed to retrieve sources at " + library.getLocation(), e);
+			throw new RoseauException("Failed to parse sources", e);
 		}
 	}
 
@@ -100,7 +100,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 					// Actual parsing errors are just warnings for us
 					Arrays.stream(problems)
 						.filter(IProblem::isError)
-						.forEach(p -> LOGGER.warn("{} [{}:{}]: {}", p.isError() ? "error" : "warning",
+						.forEach(p -> LOGGER.warn("JDT {} [{}:{}]: {}", p.isError() ? "error" : "warning",
 							sourceFilePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 

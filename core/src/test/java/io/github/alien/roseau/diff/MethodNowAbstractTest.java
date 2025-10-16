@@ -21,7 +21,7 @@ class MethodNowAbstractTest {
 				public abstract void m();
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new I(){};")
@@ -36,7 +36,7 @@ class MethodNowAbstractTest {
 				void m();
 			}""";
 
-		assertBC("I", "I.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+		assertBC("I", "I.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -74,7 +74,7 @@ class MethodNowAbstractTest {
 			  public void m() {}
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A(){};")
@@ -96,7 +96,7 @@ class MethodNowAbstractTest {
 			  public abstract void m();
 			}""";
 
-		assertBC("A", "A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
 	@Client("B b = new B() {};")
@@ -117,7 +117,7 @@ class MethodNowAbstractTest {
 				@Override abstract public void m();
 			}""";
 
-		assertBC("B", "B.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+		assertBC("B", "B.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
 	@Client("B b = new B() {};")
@@ -136,6 +136,6 @@ class MethodNowAbstractTest {
 				@Override abstract public void m();
 			}""";
 
-		assertBC("B", "A.m", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
+		assertBC("B", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 }

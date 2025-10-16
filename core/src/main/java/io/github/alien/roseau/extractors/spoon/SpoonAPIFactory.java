@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -27,6 +28,7 @@ import org.apache.logging.log4j.Logger;
 import spoon.Launcher;
 import spoon.reflect.code.CtExpression;
 import spoon.reflect.code.CtFieldRead;
+import spoon.reflect.code.CtLiteral;
 import spoon.reflect.code.CtNewArray;
 import spoon.reflect.cu.SourcePosition;
 import spoon.reflect.declaration.CtAnnotation;
@@ -72,7 +74,9 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -86,7 +90,7 @@ public class SpoonAPIFactory {
 
 	private static final Logger LOGGER = LogManager.getLogger(SpoonAPIFactory.class);
 
-	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, List<Path> classpath) {
+	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, Set<Path> classpath) {
 		Factory spoonFactory = new Launcher().createFactory();
 		spoonFactory.getEnvironment().setSourceClasspath(
 			sanitizeClasspath(classpath).stream()
@@ -97,7 +101,7 @@ public class SpoonAPIFactory {
 	}
 
 	// Avoid having Spoon throwing at us due to "invalid" classpath
-	private List<Path> sanitizeClasspath(List<Path> classpath) {
+	private List<Path> sanitizeClasspath(Set<Path> classpath) {
 		return classpath.stream()
 			.map(Path::toFile)
 			.filter(File::exists)
@@ -165,7 +169,7 @@ public class SpoonAPIFactory {
 			case CtRecord r -> convertCtRecord(r);
 			case CtEnum<?> e -> convertCtEnum(e);
 			case CtClass<?> c -> convertCtClass(c);
-			default -> throw new IllegalArgumentException("Unknown type kind: " + type);
+			default -> throw new RoseauException("Unexpected type kind: " + type);
 		};
 	}
 
@@ -434,7 +438,7 @@ public class SpoonAPIFactory {
 			case PRIVATE -> AccessModifier.PRIVATE;
 			case PROTECTED -> AccessModifier.PROTECTED;
 			case null -> AccessModifier.PACKAGE_PRIVATE;
-			default -> throw new IllegalArgumentException("Unknown visibility " + visibility);
+			default -> throw new RoseauException("Unexpected visibility " + visibility);
 		};
 	}
 
@@ -450,7 +454,7 @@ public class SpoonAPIFactory {
 			case NON_SEALED -> Modifier.NON_SEALED;
 			case NATIVE -> Modifier.NATIVE;
 			case STRICTFP -> Modifier.STRICTFP;
-			default -> throw new IllegalArgumentException("Unknown modifier " + modifier);
+			default -> throw new RoseauException("Unexpected modifier " + modifier);
 		};
 	}
 
@@ -468,7 +472,26 @@ public class SpoonAPIFactory {
 	}
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
-		return new Annotation(createTypeReference(annotation.getAnnotationType()));
+		Map<String, String> values = annotation.getValues().entrySet().stream()
+			.filter(e -> e.getValue() != null)
+			.collect(Collectors.toMap(
+				Map.Entry::getKey, e -> extractAnnotationValue(e.getValue())
+			));
+		return new Annotation(createTypeReference(annotation.getAnnotationType()), values);
+	}
+
+	private String extractAnnotationValue(Object value) {
+		return switch (value) {
+			case CtLiteral<?> literal -> {
+				var lit = literal.getValue();
+				yield Optional.ofNullable(lit).map(Object::toString).orElse("null");
+			}
+			case CtFieldRead<?> field -> {
+				var variable = field.getVariable();
+				yield variable.getDeclaringType().getQualifiedName() + "." + field.getVariable().getSimpleName();
+			}
+			default -> value.toString();
+		};
 	}
 
 	private Set<ElementType> convertAnnotationTargets(CtAnnotationType<?> annotation) {
@@ -503,7 +526,7 @@ public class SpoonAPIFactory {
 		} else if (fallback != null && fallback.getPosition() != null) {
 			SourcePosition fallbackPosition = fallback.getPosition();
 			if (fallbackPosition.isValidPosition() && fallbackPosition.getFile() != null) {
-				return new SourceLocation(fallback.getPosition().getFile().toPath(), -1);
+				return new SourceLocation(fallbackPosition.getFile().toPath(), -1);
 			}
 		}
 

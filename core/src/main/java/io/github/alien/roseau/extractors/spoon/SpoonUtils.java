@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Duration;
 import java.util.Collection;
+import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -49,7 +50,7 @@ public final class SpoonUtils {
 	 * @throws RoseauException If there is an error in building the Spoon model
 	 */
 	public static CtModel buildModel(Launcher launcher, Path location, Duration timeout) {
-		long timeoutSeconds = timeout != null ? timeout.getSeconds() : Long.MAX_VALUE;
+		long timeoutSeconds = Optional.ofNullable(timeout).map(Duration::getSeconds).orElse(Long.MAX_VALUE);
 		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(launcher::buildModel);
 
 		try {
@@ -70,11 +71,11 @@ public final class SpoonUtils {
 	 * @param location  The path to the source code
 	 * @param classpath The classpath used to resolve references
 	 * @return The created Spoon Launcher, either regular or Maven-specific
-	 * @throws IllegalArgumentException if the specified location does not exist
+	 * @throws RoseauException if the specified location does not exist
 	 */
 	public static Launcher launcherFor(Path location, Collection<Path> classpath) {
 		if (!location.toFile().exists()) {
-			throw new IllegalArgumentException(location + " does not exist");
+			throw new RoseauException(location + " does not exist");
 		}
 
 		Launcher launcher = new Launcher();

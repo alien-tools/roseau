@@ -183,15 +183,15 @@ class TypesExtractionTest {
 		var e = assertEnum(api, "E");
 
 		assertThat(i.getDeclaredMethods()).isEmpty();
-		assertThat(api.getAllMethods(i)).hasSize(11); // java.lang.Object's methods
+		assertThat(api.getExportedMethods(i)).hasSize(11); // java.lang.Object's methods
 		assertThat(c.getDeclaredMethods()).isEmpty();
-		assertThat(api.getAllMethods(c)).hasSize(11); // java.lang.Object's methods
+		assertThat(api.getExportedMethods(c)).hasSize(11); // java.lang.Object's methods
 		assertThat(r.getDeclaredMethods()).isEmpty();
-		assertThat(api.getAllMethods(r)).hasSize(9); // java.lang.Record's methods
+		assertThat(api.getExportedMethods(r)).hasSize(9); // java.lang.Record's methods
 		assertThat(a.getDeclaredMethods()).isEmpty();
-		assertThat(api.getAllMethods(a)).hasSize(11); // java.lang.Object's methods
+		assertThat(api.getExportedMethods(a)).hasSize(11); // java.lang.Object's methods
 		assertThat(e.getDeclaredMethods()).isEmpty();
-		assertThat(api.getAllMethods(e)).hasSize(16); // java.lang.Enum's methods
+		assertThat(api.getExportedMethods(e)).hasSize(16); // java.lang.Enum's methods
 	}
 
 	@ParameterizedTest

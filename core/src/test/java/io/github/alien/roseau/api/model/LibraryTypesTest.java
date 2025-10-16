@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
@@ -12,9 +13,11 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
 class LibraryTypesTest {
@@ -73,15 +76,15 @@ class LibraryTypesTest {
 	void duplicate_types() {
 		var t1 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PUBLIC);
 		var t2 = ApiTestFactory.newInterface("test.pkg.I1", AccessModifier.PACKAGE_PRIVATE);
-		assertThatIllegalArgumentException().isThrownBy(() ->
-			new LibraryTypes(mockLibrary, List.of(t1, t2)));
+		assertThatThrownBy(() -> new LibraryTypes(mockLibrary, List.of(t1, t2)))
+			.isInstanceOf(RoseauException.class);
 	}
 
 	@Test
 	void json_round_trip() throws IOException {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
-		List<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
+		Set<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
 		Library library = Library.builder().location(sources).classpath(classpath).build();
 		TypesExtractor extractor = new JdtTypesExtractor();
 		LibraryTypes orig = extractor.extractTypes(library);

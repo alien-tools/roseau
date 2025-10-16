@@ -2,6 +2,7 @@ package io.github.alien.roseau.extractors.spoon;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -51,7 +52,7 @@ public class SpoonTypesExtractor implements TypesExtractor {
 		} else if (modules.size() == 1) {
 			return new LibraryTypes(library, factory.convertCtModule(modules.getFirst()), allTypes);
 		} else {
-			throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, modules));
+			throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
 		}
 	}
 

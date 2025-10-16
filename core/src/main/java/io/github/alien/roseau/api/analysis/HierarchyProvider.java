@@ -39,7 +39,7 @@ public interface HierarchyProvider {
 	default Optional<FieldDecl> findField(TypeDecl type, String name) {
 		Preconditions.checkNotNull(type);
 		Preconditions.checkNotNull(name);
-		return getAllFields(type).stream()
+		return getExportedFields(type).stream()
 			.filter(f -> Objects.equals(f.getSimpleName(), name))
 			.findFirst();
 	}
@@ -54,7 +54,7 @@ public interface HierarchyProvider {
 	default Optional<MethodDecl> findMethod(TypeDecl typeDecl, String erasure) {
 		Preconditions.checkNotNull(typeDecl);
 		Preconditions.checkNotNull(erasure);
-		return getAllMethods(typeDecl).stream()
+		return getExportedMethods(typeDecl).stream()
 			.filter(m -> Objects.equals(erasure().getErasure(m), erasure))
 			.findFirst();
 	}
@@ -175,7 +175,7 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type
 	 */
-	default List<MethodDecl> getAllMethods(TypeDecl type) {
+	default List<MethodDecl> getExportedMethods(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredMethods().stream(),
@@ -197,7 +197,7 @@ public interface HierarchyProvider {
 	 * @return each {@link MethodDecl} that must be implemented on this type
 	 */
 	default List<MethodDecl> getAllMethodsToImplement(TypeDecl type) {
-		return getAllMethods(type).stream().filter(m -> {
+		return getExportedMethods(type).stream().filter(m -> {
 			if (resolver().resolve(m.getContainingType()).map(TypeDecl::isInterface).orElse(false)) {
 				return !m.isDefault() && !m.isStatic();
 			}
@@ -213,18 +213,19 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return all {@link FieldDecl} that can be accessed on this type
 	 */
-	default List<FieldDecl> getAllFields(TypeDecl type) {
+	default List<FieldDecl> getExportedFields(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
-			type.getDeclaredFields().stream(),
-			getAllSuperTypes(type).stream()
-				.map(resolver()::resolve)
-				.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
-		).collect(Collectors.toMap(
-			FieldDecl::getSimpleName,
-			Function.identity(),
-			(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
-		)).values().stream().toList();
+				type.getDeclaredFields().stream(),
+				getAllSuperTypes(type).stream()
+					.map(resolver()::resolve)
+					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream()))
+			.filter(f -> properties().isExported(type, f))
+			.collect(Collectors.toMap(
+				FieldDecl::getSimpleName,
+				Function.identity(),
+				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
+			)).values().stream().toList();
 	}
 
 	/**

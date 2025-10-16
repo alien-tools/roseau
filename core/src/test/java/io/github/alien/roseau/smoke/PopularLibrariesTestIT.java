@@ -4,6 +4,7 @@ import com.google.common.base.Stopwatch;
 import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
@@ -11,17 +12,13 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
-import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.core.config.Configurator;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,6 +40,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
@@ -101,39 +99,50 @@ class PopularLibrariesTestIT {
 	@MethodSource("libraries")
 	@Timeout(value = 2, unit = TimeUnit.MINUTES)
 	void analyzeLibrary(String libraryGAV) {
-		Stopwatch sw = Stopwatch.createUnstarted();
-		Path binaryJar = binaryJars.get(libraryGAV);
-		Path sourcesDir = sourcesDirs.get(libraryGAV);
-		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		Library binaryLibrary = Library.builder().location(binaryJar).classpath(classpath).build();
-		Library sourcesLibrary = Library.builder().location(sourcesDir).classpath(classpath).build();
+		var sw = Stopwatch.createUnstarted();
+		var binaryJar = binaryJars.get(libraryGAV);
+		var sourcesDir = sourcesDirs.get(libraryGAV);
+		var classpath = classpaths.get(libraryGAV).stream().collect(Collectors.toSet());
+		var asmLibrary = Library.builder()
+			.location(binaryJar)
+			.classpath(classpath)
+			.extractorType(ExtractorType.ASM)
+			.build();
+		var spoonLibrary = Library
+			.builder()
+			.location(sourcesDir)
+			.classpath(classpath)
+			.extractorType(ExtractorType.SPOON)
+			.build();
+		var jdtLibrary = Library
+			.builder()
+			.location(sourcesDir)
+			.classpath(classpath)
+			.extractorType(ExtractorType.JDT)
+			.build();
 
 		// ASM API
-		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
 		sw.reset().start();
-		API asmApi = asmExtractor.extractTypes(binaryLibrary).toAPI();
+		var asmApi = Roseau.buildAPI(asmLibrary);
 		long asmApiTime = sw.elapsed().toMillis();
 
 		// JDT API
-		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
 		sw.reset().start();
-		API jdtApi = jdtExtractor.extractTypes(sourcesLibrary).toAPI();
+		var jdtApi = Roseau.buildAPI(jdtLibrary);
 		long jdtApiTime = sw.elapsed().toMillis();
 
 		// Spoon API
-		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
 		sw.reset().start();
-		API spoonApi = spoonExtractor.extractTypes(sourcesLibrary).toAPI();
+		var spoonApi = Roseau.buildAPI(spoonLibrary);
 		long spoonApiTime = sw.elapsed().toMillis();
 
 		// Diffs
-		List<BreakingChange> asmToSpoonBCs = new APIDiff(asmApi, spoonApi).diff().breakingChanges();
-		List<BreakingChange> asmToJdtBCs = new APIDiff(asmApi, jdtApi).diff().breakingChanges();
-		List<BreakingChange> jdtToSpoonBCs = new APIDiff(jdtApi, spoonApi).diff().breakingChanges();
-		List<BreakingChange> jdtToAsmBCs = new APIDiff(jdtApi, asmApi).diff().breakingChanges();
-		List<BreakingChange> spoonToAsmBCs = new APIDiff(spoonApi, asmApi).diff().breakingChanges();
+		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
+		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
+		var spoonToSpoonBCs = Roseau.diff(spoonApi, spoonApi).getAllBreakingChanges();
+		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
 		sw.reset().start();
-		List<BreakingChange> spoonToJdtBCs = new APIDiff(spoonApi, jdtApi).diff().breakingChanges();
+		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
 		long diffTime = sw.elapsed().toMillis();
 
 		// Stats
@@ -147,25 +156,25 @@ class PopularLibrariesTestIT {
 			.sum();
 
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
-				"\tSpoon: %dms; %dms diff%n" +
-				"\tASM: %dms%n" +
+				"\tSpoon: %dms%n" +
+				"\tASM: %dms; %dms diff%n" +
 				"\tJDT: %dms%n" +
-				"\tBCs: %s %s %s %s %s %s%n",
+				"\tBCs: %s%n",
 			libraryGAV, loc, numTypes, numMethods, numFields,
-			spoonApiTime, diffTime, asmApiTime, jdtApiTime,
-			asmToSpoonBCs, asmToJdtBCs, jdtToSpoonBCs, jdtToAsmBCs, spoonToAsmBCs, spoonToJdtBCs);
+			spoonApiTime, asmApiTime, diffTime, jdtApiTime,
+			asmToAsmBCs.size());
 
-		System.out.println("### JDT to Sources API diff:");
-		diffAPIs(jdtApi, spoonApi);
-		System.out.println("### Sources to JDT API diff:");
-		diffAPIs(spoonApi, jdtApi);
+		System.out.println("### JDT to ASM API diff:");
+		diffAPIs(jdtApi, asmApi);
+		System.out.println("### ASM to JDT API diff:");
+		diffAPIs(asmApi, jdtApi);
 
-		if (!asmToSpoonBCs.isEmpty() || !spoonToAsmBCs.isEmpty()) {
-			System.out.println("JAR to Sources BCs:");
-			System.out.println(asmToSpoonBCs.stream()
+		if (!jdtToAsmBCs.isEmpty() || !asmToJdtBCs.isEmpty()) {
+			System.out.println("JDT to ASM BCs:");
+			System.out.println(jdtToAsmBCs.stream()
 				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
-			System.out.println("Sources to JAR BCs:");
-			System.out.println(spoonToAsmBCs.stream()
+			System.out.println("ASM to JDT BCs:");
+			System.out.println(asmToJdtBCs.stream()
 				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
 		}
 
@@ -173,70 +182,9 @@ class PopularLibrariesTestIT {
 		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		// assertEquals(0, asmToSpoonBCs.size() + asmToJdtBCs.size() + jdtToSpoonBCs.size() +
-		// 	jdtToAsmBCs.size() + spoonToAsmBCs.size() + spoonToJdtBCs.size());
-	}
-
-	@Disabled("Benchmark only")
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("libraries")
-	@Timeout(value = 2, unit = TimeUnit.MINUTES)
-	void analyzeLibrarySpoon(String libraryGAV) {
-		Path sourcesDir = sourcesDirs.get(libraryGAV);
-		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		Library library = Library.builder().location(sourcesDir).classpath(classpath).build();
-
-		// Spoon API
-		SpoonTypesExtractor spoonExtractor = new SpoonTypesExtractor();
-		API spoonApi = spoonExtractor.extractTypes(library).toAPI();
-
-		// Diff
-		List<BreakingChange> bcs = new APIDiff(spoonApi, spoonApi).diff().breakingChanges();
-
-		// Check everything went well
-		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertEquals(0, bcs.size());
-	}
-
-	@Disabled("Benchmark only")
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("libraries")
-	@Timeout(value = 2, unit = TimeUnit.MINUTES)
-	void analyzeLibraryJdt(String libraryGAV) {
-		Path sourcesDir = sourcesDirs.get(libraryGAV);
-		List<Path> classpath = classpaths.get(libraryGAV).stream().toList();
-		Library library = Library.builder().location(sourcesDir).classpath(classpath).build();
-
-		// JDT API
-		JdtTypesExtractor jdtExtractor = new JdtTypesExtractor();
-		API jdtApi = jdtExtractor.extractTypes(library).toAPI();
-
-		// Diff
-		List<BreakingChange> bcs = new APIDiff(jdtApi, jdtApi).diff().breakingChanges();
-
-		// Check everything went well
-		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertEquals(0, bcs.size());
-	}
-
-	@Disabled("Benchmark only")
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("libraries")
-	@Timeout(value = 2, unit = TimeUnit.MINUTES)
-	void analyzeLibraryAsm(String libraryGAV) {
-		Path binaryJar = binaryJars.get(libraryGAV);
-		Library library = Library.builder().location(binaryJar).build();
-
-		// ASM API
-		AsmTypesExtractor asmExtractor = new AsmTypesExtractor();
-		API asmApi = asmExtractor.extractTypes(library).toAPI();
-
-		// Diff
-		List<BreakingChange> bcs = new APIDiff(asmApi, asmApi).diff().breakingChanges();
-
-		// Check everything went well
-		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertEquals(0, bcs.size());
+		assertEquals(0, spoonToSpoonBCs.size());
+		assertEquals(0, jdtToJdtBCs.size());
+		assertEquals(0, asmToAsmBCs.size());
 	}
 
 	private static Path downloadSourcesJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
@@ -355,7 +303,7 @@ class PopularLibrariesTestIT {
 				Path sourcesDir = extractSourcesJar(sourcesJar);
 
 				try {
-					List<Path> classpath = new MavenClasspathBuilder().buildClasspath(pom);
+					Set<Path> classpath = new MavenClasspathBuilder().buildClasspath(pom);
 					classpaths.putAll(libraryGAV, classpath);
 				} catch (Exception e) {
 					e.printStackTrace();

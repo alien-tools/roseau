@@ -10,6 +10,7 @@ import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
@@ -24,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -71,7 +73,7 @@ public final class LibraryTypes implements TypeProvider {
 				Symbol::getQualifiedName,
 				Function.identity(),
 				(fqn, duplicate) -> {
-					throw new IllegalArgumentException("Duplicated types " + fqn);
+					throw new RoseauException("Duplicated type in %s: %s".formatted(library, fqn));
 				}
 			));
 	}
@@ -102,7 +104,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param classpath the classpath used for type resolution
 	 * @return the new resolved API
 	 */
-	public API toAPI(List<Path> classpath) {
+	public API toAPI(Set<Path> classpath) {
 		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
 		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
 	}
@@ -113,7 +115,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		return toAPI(List.of());
+		return toAPI(Set.of());
 	}
 
 	/**

@@ -209,7 +209,7 @@ public class OnTheFlyCaseCompiler {
 			TypesExtractor extractor = new SpoonTypesExtractor();
 			API v1 = extractor.extractTypes(Library.of(srcDir1)).toAPI();
 			API v2 = extractor.extractTypes(Library.of(srcDir2)).toAPI();
-			List<BreakingChange> bcs = new APIDiff(v1, v2).diff().breakingChanges();
+			List<BreakingChange> bcs = new APIDiff(v1, v2).diff().getAllBreakingChanges();
 
 			// --- Compile client against API v1 (sanity check) ---
 			List<Diagnostic<? extends JavaFileObject>> compilationErrors1 = otf.compileClient(clientFile, clsDir1);

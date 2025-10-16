@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -40,11 +41,13 @@ import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
+import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -54,6 +57,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 final class JdtAPIVisitor extends ASTVisitor {
@@ -61,7 +66,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private final List<ModuleDecl> collectedModuleDecls = new ArrayList<>(1);
 	private final CompilationUnit cu;
 	private final String packageName;
-	private final String filePath;
+	private final Path filePath;
 	private final TypeReferenceFactory typeRefFactory;
 	private final Map<String, Integer> lineNumbersMapping = HashMap.newHashMap(10);
 
@@ -69,9 +74,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
 		this.cu = cu;
-		packageName = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() : "";
-		this.filePath = filePath;
-		typeRefFactory = factory;
+		this.packageName = Optional.ofNullable(cu.getPackage()).map(p -> p.getName().getFullyQualifiedName()).orElse("");
+		this.filePath = Optional.ofNullable(filePath).map(Paths::get).orElse(null);
+		this.typeRefFactory = factory;
 	}
 
 	List<TypeDecl> getCollectedTypeDecls() {
@@ -152,7 +157,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		List<Annotation> annotations = convertAnnotations(binding.getAnnotations());
-		SourceLocation location = new SourceLocation(Paths.get(filePath), cu.getLineNumber(type.getName().getStartPosition()));
+		SourceLocation location = new SourceLocation(filePath, cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 
 		// Not present in bindings: https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
@@ -221,7 +226,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
 					fields, annotationMethodDecls, enclosingType, targets);
 			}
-			default -> throw new IllegalStateException("Unexpected type kind: " + type.getClass());
+			default -> throw new RoseauException("Unexpected type kind: " + type.getClass());
 		};
 
 		collectedTypeDecls.add(typeDecl);
@@ -233,7 +238,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		SourceLocation location = new SourceLocation(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 
 		return new FieldDecl(toRoseauFqn(enclosingType) + "." + binding.getName(), visibility, mods,
@@ -245,7 +250,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		SourceLocation location = new SourceLocation(filePath, line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -274,7 +279,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		SourceLocation location = new SourceLocation(filePath, line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -289,7 +294,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private AnnotationMethodDecl convertAnnotationMethod(IMethodBinding binding, ITypeBinding enclosingType) {
 		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
-		SourceLocation location = new SourceLocation(Paths.get(filePath), line);
+		SourceLocation location = new SourceLocation(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 		ITypeReference returnType = makeTypeReference(binding.getReturnType());
 		boolean hasDefault = binding.getDefaultValue() != null;
@@ -318,8 +323,34 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private List<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
 		return Arrays.stream(annotations)
-			.map(ann -> new Annotation((TypeReference<AnnotationDecl>) makeTypeReference(ann.getAnnotationType())))
+			.map(ann -> {
+				Map<String, String> values = new HashMap<>();
+				for (IMemberValuePairBinding pair : ann.getAllMemberValuePairs()) {
+					String key = pair.getName();
+					Object value = pair.getValue();
+					if (value != null) {
+						values.put(key, formatAnnotationValue(value));
+					}
+				}
+				return new Annotation((TypeReference<AnnotationDecl>) makeTypeReference(ann.getAnnotationType()), values);
+			})
 			.toList();
+	}
+
+	private String formatAnnotationValue(Object value) {
+		return switch (value) {
+			case Object[] array -> Arrays.stream(array)
+				.map(this::formatAnnotationValue)
+				.toList()
+				.toString();
+			case IVariableBinding varBinding ->
+				// Enum constant
+				varBinding.getDeclaringClass().getQualifiedName() + "." + varBinding.getName();
+			case ITypeBinding typeBinding ->
+				// Class literal
+				typeBinding.getQualifiedName();
+			default -> value.toString();
+		};
 	}
 
 	private List<FormalTypeParameter> convertTypeParameters(ITypeBinding[] typeParameters) {
@@ -331,7 +362,9 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private List<TypeReference<TypeDecl>> convertPermittedTypes(TypeDeclaration type) {
 		return ((List<org.eclipse.jdt.core.dom.Type>) type.permittedTypes()).stream()
-			.map(t -> typeRefFactory.createTypeReference(t.resolveBinding().getQualifiedName()))
+			.map(Type::resolveBinding)
+			.filter(Objects::nonNull)
+			.map(t -> typeRefFactory.createTypeReference(t.getQualifiedName()))
 			.toList();
 	}
 
@@ -420,9 +453,10 @@ final class JdtAPIVisitor extends ASTVisitor {
 					if ("value".equals(pair.getName())) {
 						Object[] vals = (Object[]) pair.getValue();
 						for (Object v : vals) {
-							IVariableBinding enumConst = (IVariableBinding) v;
-							String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
-							targets.add(ElementType.valueOf(elemTypeName));
+							if (v instanceof IVariableBinding enumConst) {
+								String elemTypeName = enumConst.getName(); // e.g. "METHOD", "TYPE"
+								targets.add(ElementType.valueOf(elemTypeName));
+							}
 						}
 					}
 				}

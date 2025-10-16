@@ -6,6 +6,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -18,9 +19,9 @@ import java.util.Set;
  */
 public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
-	 * Fully qualified name of the symbol, unique within an {@link LibraryTypes}'s scope. Types and fields are uniquely
-	 * identified by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure
-	 * of their fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
+	 * Fully qualified name of the symbol, unique within a {@link LibraryTypes}'s scope. Types and fields are uniquely
+	 * identified by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by their fully
+	 * qualified signature (e.g., {@code pkg.sub.T.m(int)})
 	 */
 	protected final String qualifiedName;
 
@@ -92,6 +93,10 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation) {
 		return getAnnotation(annotation).isPresent();
+	}
+
+	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation, Map<String, String> annotationValues) {
+		return getAnnotation(annotation).map(ann -> ann.hasValues(annotationValues)).orElse(false);
 	}
 
 	public SourceLocation getLocation() {
