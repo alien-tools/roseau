@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff;
 
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
@@ -16,6 +17,7 @@ import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
 import java.util.HashSet;
@@ -63,7 +65,7 @@ public class APIDiff {
 	/**
 	 * Diff the two APIs to detect breaking changes.
 	 *
-	 * @return the apiReport built for the two APIs
+	 * @return the report built for the two APIs
 	 */
 	public RoseauReport diff() {
 		v1.getExportedTypes().stream().parallel().forEach(t1 ->
@@ -117,30 +119,41 @@ public class APIDiff {
 			.filter(m2 -> v1.getExportedMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
 			.forEach(m2 -> {
 				if (t1.isInterface()) {
-					newTypeMemberBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1, m2);
+					typeBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1,
+						new BreakingChangeDetails.MethodAddedToInterface(m2));
 				}
 
 				if (t1.isClass()) {
-					newTypeMemberBC(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1, m2);
+					typeBC(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1,
+						new BreakingChangeDetails.MethodAbstractAddedToClass(m2));
 				}
 			});
 	}
 
 	private void diffType(TypeDecl t1, TypeDecl t2) {
 		if (t1.isPublic() && t2.isProtected()) {
-			typeBC(BreakingChangeKind.TYPE_NOW_PROTECTED, t1, t2);
+			typeBC(BreakingChangeKind.TYPE_NOW_PROTECTED, t1);
 		}
 
 		if (!t1.getClass().equals(t2.getClass())) {
-			typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, t1, t2);
+			typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, t1,
+				new BreakingChangeDetails.ClassTypeChanged(t1.getClass(), t2.getClass()));
 			return; // Avoid all cascading changes
 		}
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		if (v1.getAllSuperTypes(t1).stream().anyMatch(sup -> v1.isExported(sup) && !v2.isSubtypeOf(t2, sup))) {
-			typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, t1, t2);
-		}
+		List<TypeReference<TypeDecl>> candidates = v1.getAllSuperTypes(t1).stream()
+			.filter(v1::isExported)
+			.filter(sup -> !v2.isSubtypeOf(t2, sup))
+			.toList();
+
+		// Only report on the closest super type
+		candidates.stream()
+			.filter(sup -> candidates.stream().noneMatch(other -> !other.equals(sup) && v1.isSubtypeOf(other, sup)))
+			.forEach(sup ->
+				typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, t1,
+					new BreakingChangeDetails.SuperTypeRemoved(sup)));
 
 		diffFields(t1, t2);
 		diffMethods(t1, t2);
@@ -158,35 +171,39 @@ public class APIDiff {
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
 		if (!v1.isEffectivelyFinal(c1) && v2.isEffectivelyFinal(c2)) {
-			typeBC(BreakingChangeKind.CLASS_NOW_FINAL, c1, c2);
+			typeBC(BreakingChangeKind.CLASS_NOW_FINAL, c1);
 		}
 
 		if (!c1.isEffectivelyAbstract() && c2.isEffectivelyAbstract()) {
-			typeBC(BreakingChangeKind.CLASS_NOW_ABSTRACT, c1, c2);
+			typeBC(BreakingChangeKind.CLASS_NOW_ABSTRACT, c1);
 		}
 
-		if (!c1.isStatic() && c2.isStatic() && c1.isNested() && c2.isNested()) {
-			typeBC(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, c1, c2);
-		}
+		if (c1.isNested() && c2.isNested()) {
+			if (!c1.isStatic() && c2.isStatic()) {
+				typeBC(BreakingChangeKind.NESTED_CLASS_NOW_STATIC, c1);
+			}
 
-		if (c1.isStatic() && !c2.isStatic() && c1.isNested() && c2.isNested()) {
-			typeBC(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, c1, c2);
+			if (c1.isStatic() && !c2.isStatic()) {
+				typeBC(BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, c1);
+			}
 		}
 
 		if (v1.isUncheckedException(c1) && v2.isCheckedException(c2)) {
-			typeBC(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, c1, c2);
+			typeBC(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, c1);
 		}
 
 		diffConstructors(c1, c2);
 	}
 
 	private void diffAnnotationInterface(AnnotationDecl a1, AnnotationDecl a2) {
-		if (!a2.getTargets().containsAll(a1.getTargets())) {
-			typeBC(BreakingChangeKind.ANNOTATION_TARGET_REMOVED, a1, a2);
-		}
+		Sets.difference(a1.getTargets(), a2.getTargets())
+			.forEach(target ->
+				typeBC(BreakingChangeKind.ANNOTATION_TARGET_REMOVED, a1,
+					new BreakingChangeDetails.AnnotationTargetRemoved(target))
+			);
 
 		if (a1.isRepeatable() && !a2.isRepeatable()) {
-			typeBC(BreakingChangeKind.ANNOTATION_NO_LONGER_REPEATABLE, a1, a2);
+			typeBC(BreakingChangeKind.ANNOTATION_NO_LONGER_REPEATABLE, a1);
 		}
 
 		a1.getAnnotationMethods().forEach(m1 -> {
@@ -202,15 +219,19 @@ public class APIDiff {
 				}
 
 				if (!m1.getType().equals(m2.getType())) {
-					memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, a1, m1, m2);
+					memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, a1, m1, m2,
+						new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
 				}
 			}, () -> memberBC(BreakingChangeKind.METHOD_REMOVED, a1, m1, null));
 		});
 
 		a2.getAnnotationMethods().stream()
 			.filter(m2 -> !m2.hasDefault())
-			.filter(m2 -> a1.getAnnotationMethods().stream().noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
-			.forEach(m2 -> newTypeMemberBC(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1, m2));
+			.filter(m2 -> a1.getAnnotationMethods().stream()
+				.noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
+			.forEach(m2 ->
+				typeBC(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1,
+					new BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(m2)));
 	}
 
 	private void diffField(TypeDecl t1, FieldDecl f1, FieldDecl f2) {
@@ -227,7 +248,8 @@ public class APIDiff {
 		}
 
 		if (!f1.getType().equals(f2.getType())) {
-			memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED, t1, f1, f2);
+			memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED, t1, f1, f2,
+				new BreakingChangeDetails.FieldTypeChanged(f1.getType(), f2.getType()));
 		}
 
 		if (f1.isPublic() && f2.isProtected()) {
@@ -257,7 +279,8 @@ public class APIDiff {
 		}
 
 		if (!m1.getType().equals(m2.getType())) {
-			memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, t1, m1, m2);
+			memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, t1, m1, m2,
+				new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
 		}
 
 		diffThrownExceptions(t1, m1, m2);
@@ -295,12 +318,14 @@ public class APIDiff {
 				v2.isSubtypeOf(exc1, exc2) || v1.isEffectivelyFinal(t1, e1)
 			))
 			.forEach(exc1 ->
-				memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, t1, e1, e2));
+				memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, t1, e1, e2,
+					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
 		thrown2.stream()
 			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> v2.isSubtypeOf(exc2, exc1)))
-			.forEach(exc1 ->
-				memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, t1, e1, e2));
+			.forEach(exc2 ->
+				memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, t1, e1, e2,
+					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc2)));
 	}
 
 	private void diffParameters(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
@@ -318,24 +343,27 @@ public class APIDiff {
 	/**
 	 * In general, we need to distinguish how formal type parameters and parameter generics are handled between methods
 	 * and constructors: the former can be overridden (thus parameters are immutable so that signatures in
-	 * sub/super-classes match) and the latter cannot (thus parameters can follow variance rules).
+	 * sub/super-classes match), and the latter cannot (thus parameters can follow variance rules).
 	 */
 	private void diffParameterGenerics(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2,
 	                                   TypeReference<?> pt1, TypeReference<?> pt2) {
+		BreakingChangeDetails details =
+			new BreakingChangeDetails.MethodParameterGenericsChanged(pt1, pt2);
+
 		if (pt1.typeArguments().size() != pt2.typeArguments().size()) {
-			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2);
+			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2, details);
 			return;
 		}
 
-		boolean finalExecutable = v1.isEffectivelyFinal(t1, e1);
+		boolean isFinalExecutable = v1.isEffectivelyFinal(t1, e1);
 		// Can be overridden = invariant
-		if (!finalExecutable && !pt1.equals(pt2)) {
-			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2);
+		if (!isFinalExecutable && !pt1.equals(pt2)) {
+			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2, details);
 		}
 
 		// Can't = variance
-		if (finalExecutable && !v1.isSubtypeOf(pt1, pt2)) {
-			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2);
+		if (isFinalExecutable && !v1.isSubtypeOf(pt1, pt2)) {
+			memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, t1, e1, e2, details);
 		}
 	}
 
@@ -345,13 +373,19 @@ public class APIDiff {
 
 		// Removing formal type parameters always breaks
 		if (paramsCount1 > paramsCount2) {
-			typeBC(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1, t2);
+			t1.getFormalTypeParameters().subList(paramsCount2, paramsCount1)
+				.forEach(ftp ->
+					typeBC(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_REMOVED, t1,
+						new BreakingChangeDetails.TypeFormalTypeParametersRemoved(ftp)));
 			return;
 		}
 
 		// Adding formal type parameters breaks unless it's the first
 		if (paramsCount2 > paramsCount1 && paramsCount1 > 0) {
-			typeBC(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, t1, t2);
+			t2.getFormalTypeParameters().subList(paramsCount1, paramsCount2)
+				.forEach(ftp ->
+					typeBC(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_ADDED, t1,
+						new BreakingChangeDetails.TypeFormalTypeParametersAdded(ftp)));
 			return;
 		}
 
@@ -359,12 +393,13 @@ public class APIDiff {
 			FormalTypeParameter p1 = t1.getFormalTypeParameters().get(i);
 			FormalTypeParameter p2 = t2.getFormalTypeParameters().get(i);
 
-			// Each bound in the new version should be a supertype of an existing one (or the same)
+			// Each bound in the new version should be a supertype (inclusive) of an existing one
 			// so that the type constraints imposed by p1 are stricter than those imposed by p2
 			if (p2.bounds().stream()
 				.anyMatch(b2 -> !b2.equals(TypeReference.OBJECT) &&
 					p1.bounds().stream().noneMatch(b1 -> v2.isSubtypeOf(b1, b2)))) {
-				typeBC(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1, t2);
+				typeBC(BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, t1,
+					new BreakingChangeDetails.TypeFormalTypeParametersChanged(p1, p2));
 			}
 		}
 	}
@@ -372,29 +407,40 @@ public class APIDiff {
 	private void diffFormalTypeParameters(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
 		int paramsCount1 = e1.getFormalTypeParameters().size();
 		int paramsCount2 = e2.getFormalTypeParameters().size();
-		boolean finalExecutable = v1.isEffectivelyFinal(t1, e1);
+		boolean isOverridable = !v1.isEffectivelyFinal(t1, e1);
 
-		// Ok, well. Removing a type parameter is breaking if:
+		// Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
 		//  - it's a constructor and there was more than one
-		if (paramsCount1 > paramsCount2 && (!finalExecutable || paramsCount1 > 1)) {
-			memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, t1, e1, e2);
+		if (paramsCount1 > paramsCount2 && (isOverridable || paramsCount1 > 1)) {
+			e1.getFormalTypeParameters().subList(paramsCount2, paramsCount1)
+				.forEach(ftp ->
+					memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, t1, e1, e2,
+						new BreakingChangeDetails.MethodFormalTypeParametersRemoved(ftp)));
+			return;
 		}
 
 		// Adding a type parameter is only breaking if there was already some
 		if (paramsCount1 > 0 && paramsCount1 < paramsCount2) {
-			memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, t1, e1, e2);
+			e2.getFormalTypeParameters().subList(paramsCount1, paramsCount2)
+				.forEach(ftp ->
+					memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_ADDED, t1, e1, e2,
+						new BreakingChangeDetails.MethodFormalTypeParametersAdded(ftp)));
+			return;
 		}
 
 		for (int i = 0; i < paramsCount1; i++) {
-			List<ITypeReference> bounds1 = e1.getFormalTypeParameters().get(i).bounds();
+			FormalTypeParameter ftp1 = e1.getFormalTypeParameters().get(i);
+			List<ITypeReference> bounds1 = ftp1.bounds();
 
 			if (i < paramsCount2) {
-				List<ITypeReference> bounds2 = e2.getFormalTypeParameters().get(i).bounds();
+				FormalTypeParameter ftp2 = e2.getFormalTypeParameters().get(i);
+				List<ITypeReference> bounds2 = ftp2.bounds();
 
-				if (!finalExecutable) { // Invariant
+				if (isOverridable) { // Invariant
 					if (!new HashSet<>(bounds1).equals(new HashSet<>(bounds2))) {
-						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2);
+						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2,
+							new BreakingChangeDetails.MethodFormalTypeParametersChanged(ftp1, ftp2));
 					}
 				} else { // Variance
 					// Any new bound that's not a supertype of an existing bound is breaking
@@ -402,31 +448,36 @@ public class APIDiff {
 						// We can safely ignore this bound
 						.filter(b2 -> !b2.equals(TypeReference.OBJECT))
 						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> v1.isSubtypeOf(b1, b2)))) {
-						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2);
+						memberBC(BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, t1, e1, e2,
+							new BreakingChangeDetails.MethodFormalTypeParametersChanged(ftp1, ftp2));
 					}
 				}
 			}
 		}
 	}
 
-	private void typeBC(BreakingChangeKind kind, TypeDecl impactedType, TypeDecl newType) {
-		BreakingChange bc = new BreakingChange(kind, impactedType, impactedType, newType);
+	private void typeBC(BreakingChangeKind kind, TypeDecl impactedType) {
+		typeBC(kind, impactedType, new BreakingChangeDetails.None());
+	}
+
+	private void typeBC(BreakingChangeKind kind, TypeDecl impactedType, BreakingChangeDetails details) {
+		BreakingChange bc = new BreakingChange(kind, impactedType, impactedType, null, details);
 		breakingChanges.add(bc);
 	}
 
-	private void newTypeMemberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl newMember) {
-		BreakingChange bc = new BreakingChange(kind, impactedType, impactedType, newMember);
-		breakingChanges.add(bc);
+	private void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
+	                      TypeMemberDecl newMember) {
+		memberBC(kind, impactedType, impactedMember, newMember, new BreakingChangeDetails.None());
 	}
 
-	private void memberBC(BreakingChangeKind kind, TypeDecl impactedType,
-	                      TypeMemberDecl impactedMember, TypeMemberDecl newMember) {
+	private void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
+	                      TypeMemberDecl newMember, BreakingChangeDetails details) {
 		// java.lang.Object methods are an absolute pain to handle. Many rules
 		// do not apply to them as they're implicitly provided to any class.
 		if (impactedMember.getContainingType().equals(TypeReference.OBJECT)) {
 			return;
 		}
-		BreakingChange bc = new BreakingChange(kind, impactedType, impactedMember, newMember);
+		BreakingChange bc = new BreakingChange(kind, impactedType, impactedMember, newMember, details);
 		breakingChanges.add(bc);
 	}
 

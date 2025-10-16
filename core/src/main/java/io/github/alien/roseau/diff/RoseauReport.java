@@ -1,10 +1,21 @@
 package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.SourceLocation;
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
+import java.util.ArrayList;
+import java.util.Comparator;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Objects;
+import java.util.TreeMap;
 
 public final class RoseauReport {
 	private final API v1;
@@ -17,7 +28,10 @@ public final class RoseauReport {
 		Preconditions.checkNotNull(breakingChanges);
 		this.v1 = v1;
 		this.v2 = v2;
-		this.breakingChanges = List.copyOf(breakingChanges);
+		this.breakingChanges = List.copyOf(
+			breakingChanges.stream()
+				.sorted(Comparator.comparing(bc -> bc.impactedSymbol().getQualifiedName()))
+				.toList());
 	}
 
 	public API v1() {
@@ -36,5 +50,92 @@ public final class RoseauReport {
 
 	public List<BreakingChange> getAllBreakingChanges() {
 		return breakingChanges;
+	}
+
+	public boolean isBinaryBreaking() {
+		return getBreakingChanges().stream().anyMatch(bc -> bc.kind().isBinaryBreaking());
+	}
+
+	public boolean isSourceBreaking() {
+		return getBreakingChanges().stream().anyMatch(bc -> bc.kind().isSourceBreaking());
+	}
+
+	public List<TypeDecl> impactedTypes() {
+		return impactedTypes(null);
+	}
+
+	public List<TypeDecl> impactedTypes(String pkg) {
+		return getBreakingChanges().stream()
+			.map(BreakingChange::impactedSymbol)
+			.filter(symbol -> pkg == null || symbol.getQualifiedName().startsWith(pkg))
+			.map(symbol -> switch (symbol) {
+				case TypeDecl type -> type;
+				case TypeMemberDecl member ->
+					// This one should be safe
+					v1.resolver().resolve(member.getContainingType()).orElseThrow();
+			})
+			.distinct()
+			.sorted(Comparator.comparing(TypeDecl::getQualifiedName))
+			.toList();
+	}
+
+	public List<BreakingChange> breakingChangesOnType(TypeDecl type) {
+		return getBreakingChanges().stream()
+			.filter(bc -> bc.impactedSymbol().equals(type))
+			.toList();
+	}
+
+	public List<BreakingChange> breakingChangesOnTypeAndMembers(TypeDecl type) {
+		return getBreakingChanges().stream()
+			.filter(bc -> switch (bc.impactedSymbol()) {
+				case TypeDecl typeDecl -> type.getQualifiedName().equals(typeDecl.getQualifiedName());
+				case TypeMemberDecl member -> type.getQualifiedName().equals(member.getContainingType().getQualifiedName());
+			})
+			.toList();
+	}
+
+	public boolean isBinaryBreakingType(TypeDecl type) {
+		return breakingChangesOnTypeAndMembers(type).stream().anyMatch(bc -> bc.kind().isBinaryBreaking());
+	}
+
+	public boolean isSourceBreakingType(TypeDecl type) {
+		return breakingChangesOnTypeAndMembers(type).stream().anyMatch(bc -> bc.kind().isSourceBreaking());
+	}
+
+	/**
+	 * Returns member-level breaking changes grouped by member display name for the given type. The display name is the
+	 * signature for methods/constructors and simple name for fields.
+	 */
+	public Map<String, List<BreakingChange>> memberChanges(String typeQualifiedName) {
+		Map<String, List<BreakingChange>> grouped = new LinkedHashMap<>();
+		for (BreakingChange bc : getBreakingChanges()) {
+			if (bc.impactedSymbol() instanceof TypeMemberDecl tmd) {
+				String owner = v1.resolver().resolve(tmd.getContainingType())
+					.map(TypeDecl::getQualifiedName)
+					.orElseGet(() -> tmd.getContainingType().getQualifiedName());
+				if (Objects.equals(owner, typeQualifiedName)) {
+					String key = memberDisplayName(tmd);
+					grouped.computeIfAbsent(key, k -> new ArrayList<>()).add(bc);
+				}
+			}
+		}
+		// preserve insertion but present keys sorted for determinism
+		Map<String, List<BreakingChange>> sorted = new TreeMap<>(grouped);
+		sorted.putAll(grouped);
+		return sorted;
+	}
+
+	/**
+	 * Best-effort location of the type in the baseline API (if available).
+	 */
+	public SourceLocation typeLocation(String typeQualifiedName) {
+		return v1.findExportedType(typeQualifiedName)
+			.map(TypeDecl::getLocation)
+			.orElse(null);
+	}
+
+	private static String memberDisplayName(TypeMemberDecl m) {
+		if (m instanceof ExecutableDecl e) return e.getSignature();
+		return m.getSimpleName();
 	}
 }

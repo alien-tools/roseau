@@ -32,7 +32,7 @@ $ git push origin v<x.y.z>
   2. Publish the release and wait for `release.yml` to finish
   3. For whatever reason, `release.yml` doesn't trigger if the release is created with attachments.
      Publish first, then add them:
-     - Attach `v<x.y.z>-v<x.y.z>-breaking-changes.csv`
+     - Attach `v<x.y.z>-v<x.y.z>-breaking-changes-report.html`
      - Attach `roseau-cli-<x.y.z>.jar`
   4. Manually publish the release on https://central.sonatype.com/publishing 
 

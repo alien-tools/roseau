@@ -6,14 +6,12 @@ import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.SourceLocation;
-import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.diff.formatter.CsvFormatter;
 import io.github.alien.roseau.extractors.ExtractorType;
 import org.apache.logging.log4j.Level;
@@ -122,11 +120,6 @@ public final class RoseauCLI implements Callable<Integer> {
 	private boolean verbose;
 	private boolean debug;
 
-	private static final String RED_TEXT = "\u001B[31m";
-	private static final String BOLD = "\u001B[1m";
-	private static final String UNDERLINE = "\u001B[4m";
-	private static final String RESET = "\u001B[0m";
-
 	private API buildAPI(Library library) {
 		Stopwatch sw = Stopwatch.createStarted();
 		API api = Roseau.buildAPI(library);
@@ -181,29 +174,6 @@ public final class RoseauCLI implements Callable<Integer> {
 			printVerbose("API has been written to %s".formatted(apiPath));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing API to %s".formatted(apiPath), e);
-		}
-	}
-
-	private String format(BreakingChange bc) {
-		SourceLocation location = bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-			? bc.impactedType().getLocation()
-			: bc.impactedSymbol().getLocation();
-		boolean symbolInType = bc.impactedSymbol() instanceof TypeDecl ||
-			bc.impactedSymbol() instanceof TypeMemberDecl member &&
-				member.getContainingType().getQualifiedName().equals(bc.impactedType().getQualifiedName());
-
-		if (plain) {
-			return "%s %s%s%n\t%s:%s".formatted(
-				bc.kind(),
-				bc.impactedSymbol().getQualifiedName(),
-				symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
-				location.file(), location.line());
-		} else {
-			return "%s %s%s%n\t%s:%s".formatted(
-				RED_TEXT + BOLD + bc.kind() + RESET,
-				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-				symbolInType ? "" : " in " + bc.impactedType().getQualifiedName(),
-				location.file(), location.line());
 		}
 	}
 
@@ -325,11 +295,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		if (bcs.isEmpty()) {
 			print("No breaking changes found.");
 		} else {
-			print(
-				bcs.stream()
-					.map(this::format)
-					.collect(Collectors.joining(System.lineSeparator()))
-			);
+			print(new CliFormatter(plain).format(report));
 		}
 
 		if (options.v1().apiReport() != null) {

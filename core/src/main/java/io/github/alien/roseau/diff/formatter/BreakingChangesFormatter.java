@@ -7,9 +7,9 @@ import io.github.alien.roseau.diff.RoseauReport;
  */
 public interface BreakingChangesFormatter {
 	/**
-	 * Returns a string representation of the supplied apiReport
+	 * Returns a string representation of the supplied report
 	 *
-	 * @param report the apiReport to format
+	 * @param report the report to format
 	 * @return the formatted list
 	 */
 	String format(RoseauReport report);
