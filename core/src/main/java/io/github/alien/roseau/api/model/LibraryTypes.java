@@ -9,7 +9,6 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -22,6 +21,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -145,8 +145,8 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return The list of <strong>all</strong> {@link TypeDecl}
 	 */
 	@JsonProperty("allTypes")
-	public Set<TypeDecl> getAllTypes() {
-		return allTypes.values().stream().collect(ImmutableSet.toImmutableSet());
+	public Collection<TypeDecl> getAllTypes() {
+		return allTypes.values();
 	}
 
 	/**

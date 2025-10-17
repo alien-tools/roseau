@@ -53,13 +53,14 @@ class JdkTestIT {
 		sw.reset().start();
 		var api = Roseau.buildAPI(srcLibrary);
 		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("API took %dms (%d types, %d exported)%n", apiTime,
+		System.out.printf("[%s] API took %dms (%d types, %d exported)%n", jmod.getFileName(), apiTime,
 			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
 
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
+		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime,
+			report.getAllBreakingChanges().size());
 
 		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
@@ -85,13 +86,14 @@ class JdkTestIT {
 		sw.reset().start();
 		var api = Roseau.buildAPI(srcLibrary);
 		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("API took %dms (%d types, %d exported)%n", apiTime,
+		System.out.printf("[%s] API took %dms (%d types, %d exported)%n", jmod.getFileName(), apiTime,
 			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
 
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
+		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime,
+			report.getAllBreakingChanges().size());
 
 		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
@@ -111,13 +113,13 @@ class JdkTestIT {
 		sw.reset().start();
 		var api = Roseau.buildAPI(jarLibrary);
 		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("API took %dms (%d types, %d exported)%n", apiTime,
+		System.out.printf("[%s] API took %dms (%d types, %d exported)%n", jmod.getFileName(), apiTime,
 			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
 
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("Diff took %dms (%d BCs)%n", diffTime, report.getAllBreakingChanges().size());
+		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime, report.getAllBreakingChanges().size());
 
 		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
