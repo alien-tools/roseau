@@ -422,7 +422,23 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(err.toString()).contains("Malformed line");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(2);
+	}
+
+	@Test
+	void malformed_ignored_csv_kind(@TempDir Path tempDir) throws IOException {
+		var ignored = tempDir.resolve("ignored.csv");
+		Files.writeString(ignored, """
+			type;symbol;kind;nature
+			pkg.T;pkg.T.m();UNKNOWN;UNKNOWN""");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--ignored=" + ignored,
+			"--plain");
+
+		assertThat(err.toString()).contains("Malformed kind");
+		assertThat(exitCode).isEqualTo(2);
 	}
 
 	@Test

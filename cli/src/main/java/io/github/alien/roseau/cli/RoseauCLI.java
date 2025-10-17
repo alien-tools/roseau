@@ -8,11 +8,9 @@ import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
-import io.github.alien.roseau.diff.formatter.CsvFormatter;
 import io.github.alien.roseau.extractors.ExtractorType;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -27,7 +25,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -178,33 +175,10 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private List<BreakingChange> filterIgnoredBCs(RoseauReport report, Path ignoredPath) {
-		try {
-			record Ignored(String type, String symbol, BreakingChangeKind kind) {}
-			List<String> lines = Files.readAllLines(ignoredPath);
-			List<Ignored> ignored = lines.stream()
-				.filter(line -> !line.equals(CsvFormatter.HEADER))
-				.map(line -> {
-					String[] fields = line.split(";");
-					if (fields.length < 3 ||
-						Arrays.stream(BreakingChangeKind.values()).map(Enum::name).noneMatch(name -> name.equals(fields[2]))) {
-						printErr("Malformed line %s ignored in %s".formatted(line, ignoredPath));
-						return null;
-					} else {
-						return new Ignored(fields[0], fields[1], BreakingChangeKind.valueOf(fields[2]));
-					}
-				})
-				.filter(Objects::nonNull)
-				.toList();
-
-			return report.getBreakingChanges().stream()
-				.filter(bc -> ignored.stream().noneMatch(ign ->
-					bc.impactedType().getQualifiedName().equals(ign.type()) &&
-						bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
-						bc.kind() == ign.kind()))
-				.toList();
-		} catch (IOException e) {
-			throw new RoseauException("Couldn't read CSV file %s".formatted(ignoredPath), e);
-		}
+		IgnoredFile ignored = new IgnoredFile(ignoredPath);
+		return report.getBreakingChanges().stream()
+			.filter(bc -> !ignored.isIgnored(bc))
+			.toList();
 	}
 
 	private void checkOptions(RoseauOptions options) {
