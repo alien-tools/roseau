@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
@@ -191,7 +192,7 @@ public class SpoonAPIFactory {
 			convertSpoonNonAccessModifiers(cls.getModifiers()),
 			convertSpoonAnnotations(cls.getAnnotations()),
 			convertSpoonPosition(cls.getPosition(), cls),
-			createTypeReferences(cls.getSuperInterfaces()),
+			ImmutableSet.copyOf(createTypeReferences(cls.getSuperInterfaces())),
 			convertCtFormalTypeParameters(cls),
 			convertCtFields(cls),
 			convertCtMethods(cls),
@@ -209,7 +210,7 @@ public class SpoonAPIFactory {
 			convertSpoonNonAccessModifiers(intf.getModifiers()),
 			convertSpoonAnnotations(intf.getAnnotations()),
 			convertSpoonPosition(intf.getPosition(), intf),
-			createTypeReferences(intf.getSuperInterfaces()),
+			ImmutableSet.copyOf(createTypeReferences(intf.getSuperInterfaces())),
 			convertCtFormalTypeParameters(intf),
 			convertCtFields(intf),
 			convertCtMethods(intf),
@@ -239,12 +240,12 @@ public class SpoonAPIFactory {
 			convertSpoonNonAccessModifiers(enm.getModifiers()),
 			convertSpoonAnnotations(enm.getAnnotations()),
 			convertSpoonPosition(enm.getPosition(), enm),
-			createTypeReferences(enm.getSuperInterfaces()),
+			ImmutableSet.copyOf(createTypeReferences(enm.getSuperInterfaces())),
 			convertCtFields(enm),
 			convertCtMethods(enm),
 			createTypeReference(enm.getDeclaringType()),
 			convertCtConstructors(enm),
-			convertCtEnumValues(enm)
+			Set.of()
 		);
 	}
 
@@ -255,7 +256,7 @@ public class SpoonAPIFactory {
 			convertSpoonNonAccessModifiers(rcrd.getModifiers()),
 			convertSpoonAnnotations(rcrd.getAnnotations()),
 			convertSpoonPosition(rcrd.getPosition(), rcrd),
-			createTypeReferences(rcrd.getSuperInterfaces()),
+			ImmutableSet.copyOf(createTypeReferences(rcrd.getSuperInterfaces())),
 			convertCtFormalTypeParameters(rcrd),
 			convertCtFields(rcrd),
 			convertCtMethods(rcrd),
@@ -294,7 +295,7 @@ public class SpoonAPIFactory {
 			createITypeReference(method.getType()),
 			convertCtParameters(method),
 			convertCtFormalTypeParameters(method),
-			createITypeReferences(new ArrayList<>(method.getThrownTypes()))
+			ImmutableSet.copyOf(createITypeReferences(new ArrayList<>(method.getThrownTypes())))
 		);
 	}
 
@@ -320,38 +321,38 @@ public class SpoonAPIFactory {
 			createITypeReference(cons.getType()),
 			convertCtParameters(cons),
 			convertCtFormalTypeParameters(cons),
-			createITypeReferences(new ArrayList<>(cons.getThrownTypes()))
+			ImmutableSet.copyOf(createITypeReferences(new ArrayList<>(cons.getThrownTypes())))
 		);
 	}
 
-	private List<FieldDecl> convertCtFields(CtType<?> type) {
+	private Set<FieldDecl> convertCtFields(CtType<?> type) {
 		return type.getFields().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtField)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<MethodDecl> convertCtMethods(CtType<?> type) {
+	private Set<MethodDecl> convertCtMethods(CtType<?> type) {
 		return type.getMethods().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtMethod)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
+	private Set<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
 		return type.getAnnotationMethods().stream()
 			.map(this::convertCtAnnotationMethod)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
+	private Set<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
 		// We need to keep track of default constructors in the API model.
 		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
 		return cls.getConstructors().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtConstructor)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private List<FormalTypeParameter> convertCtFormalTypeParameters(CtFormalTypeDeclarer declarer) {
@@ -393,10 +394,10 @@ public class SpoonAPIFactory {
 			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
 	}
 
-	private List<TypeReference<TypeDecl>> convertCtSealable(CtSealable sealable) {
+	private Set<TypeReference<TypeDecl>> convertCtSealable(CtSealable sealable) {
 		return sealable.getPermittedTypes().stream()
 			.map(this::createTypeReference)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private List<RecordComponentDecl> convertCtRecordComponents(CtRecord rcrd) {
@@ -416,10 +417,10 @@ public class SpoonAPIFactory {
 		);
 	}
 
-	private List<EnumValueDecl> convertCtEnumValues(CtEnum<?> enm) {
+	private Set<EnumValueDecl> convertCtEnumValues(CtEnum<?> enm) {
 		return enm.getEnumValues().stream()
 			.map(this::convertCtEnumValue)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private EnumValueDecl convertCtEnumValue(CtEnumValue<?> enmVal) {
@@ -465,10 +466,10 @@ public class SpoonAPIFactory {
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(Modifier.class)));
 	}
 
-	private List<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
+	private Set<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
 		return annotations.stream()
 			.map(this::convertSpoonAnnotation)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {

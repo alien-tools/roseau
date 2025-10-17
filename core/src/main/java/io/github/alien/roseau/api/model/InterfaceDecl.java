@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -11,17 +12,17 @@ import java.util.Set;
  * An interface declaration in an {@link LibraryTypes}.
  */
 public final class InterfaceDecl extends TypeDecl {
-	protected final List<TypeReference<TypeDecl>> permittedTypes;
+	protected final Set<TypeReference<TypeDecl>> permittedTypes;
 
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                     List<Annotation> annotations, SourceLocation location,
-	                     List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                     List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                     TypeReference<TypeDecl> enclosingType, List<TypeReference<TypeDecl>> permittedTypes) {
+	                     Set<Annotation> annotations, SourceLocation location,
+	                     Set<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                     List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
+	                     TypeReference<TypeDecl> enclosingType, Set<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType);
 		Preconditions.checkNotNull(permittedTypes);
-		this.permittedTypes = List.copyOf(permittedTypes);
+		this.permittedTypes = ImmutableSet.copyOf(permittedTypes);
 	}
 
 	@Override
@@ -29,7 +30,7 @@ public final class InterfaceDecl extends TypeDecl {
 		return true;
 	}
 
-	public List<TypeReference<TypeDecl>> getPermittedTypes() {
+	public Set<TypeReference<TypeDecl>> getPermittedTypes() {
 		return permittedTypes;
 	}
 

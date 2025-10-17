@@ -12,9 +12,9 @@ import java.util.stream.Collectors;
  */
 public sealed class MethodDecl extends ExecutableDecl permits AnnotationMethodDecl {
 	public MethodDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                  List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
+	                  Set<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                  ITypeReference type, List<ParameterDecl> parameters, List<FormalTypeParameter> formalTypeParameters,
-	                  List<ITypeReference> thrownExceptions) {
+	                  Set<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type, parameters,
 			formalTypeParameters, thrownExceptions);
 	}

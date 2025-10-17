@@ -19,6 +19,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.APIDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
@@ -303,7 +304,10 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.of(sourcesPath);
+			Library library = Library.builder()
+				.location(sourcesPath)
+				.extractorType(ExtractorType.SPOON)
+				.build();
 			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api.toAPI();
@@ -316,7 +320,11 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.builder().location(sourcesPath).exclusions(exclusions).build();
+			Library library = Library.builder()
+				.location(sourcesPath)
+				.extractorType(ExtractorType.SPOON)
+				.exclusions(exclusions)
+				.build();
 			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api.toAPI();
@@ -331,7 +339,10 @@ public class TestUtils {
 			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
 			tempJarFile.deleteOnExit();
 			buildJar(sourcesMap, tempJarFile.toPath());
-			Library library = Library.of(tempJarFile.toPath());
+			Library library = Library.builder()
+				.location(tempJarFile.toPath())
+				.extractorType(ExtractorType.ASM)
+				.build();
 			return new AsmTypesExtractor().extractTypes(library).toAPI();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -342,7 +353,10 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.of(sourcesPath);
+			Library library = Library.builder()
+				.location(sourcesPath)
+				.extractorType(ExtractorType.JDT)
+				.build();
 			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api.toAPI();

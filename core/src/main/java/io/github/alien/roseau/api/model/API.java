@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.analysis.CachingAPIAnalyzer;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
@@ -10,6 +11,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -23,7 +25,7 @@ public class API extends CachingAPIAnalyzer {
 	 */
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver typeResolver;
-	private final List<Pattern> namePatterns;
+	private final Set<Pattern> namePatterns;
 
 	private static final Logger LOGGER = LogManager.getLogger(API.class);
 
@@ -42,7 +44,7 @@ public class API extends CachingAPIAnalyzer {
 				}
 			})
 			.filter(Objects::nonNull)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	public LibraryTypes getLibraryTypes() {

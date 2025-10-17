@@ -1,5 +1,7 @@
 package io.github.alien.roseau.extractors.asm;
 
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -16,7 +18,6 @@ import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -53,15 +54,15 @@ final class AsmClassVisitor extends ClassVisitor {
 	private TypeDecl typeDecl;
 	private TypeReference<TypeDecl> enclosingType;
 	private TypeReference<ClassDecl> superClass;
-	private List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
-	private final List<FieldDecl> fields = new ArrayList<>();
-	private final List<MethodDecl> methods = new ArrayList<>();
-	private final List<AnnotationMethodDecl> annotationMethods = new ArrayList<>();
-	private final Set<ElementType> targets = new HashSet<>();
-	private final List<ConstructorDecl> constructors = new ArrayList<>();
-	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
-	private final List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
-	private final List<AnnotationData> annotations = new ArrayList<>();
+	private final ImmutableSet.Builder<TypeReference<InterfaceDecl>> implementedInterfaces = ImmutableSet.builder();
+	private final ImmutableSet.Builder<FieldDecl> fields = ImmutableSet.builder();
+	private final ImmutableSet.Builder<MethodDecl> methods = ImmutableSet.builder();
+	private final ImmutableSet.Builder<AnnotationMethodDecl> annotationMethods = ImmutableSet.builder();
+	private final ImmutableSet.Builder<ElementType> targets = ImmutableSet.builder();
+	private final ImmutableSet.Builder<ConstructorDecl> constructors = ImmutableSet.builder();
+	private ImmutableList.Builder<FormalTypeParameter> formalTypeParameters = ImmutableList.builder();
+	private final ImmutableSet.Builder<TypeReference<TypeDecl>> permittedTypes = ImmutableSet.builder();
+	private final ImmutableSet.Builder<AnnotationData> annotations = ImmutableSet.builder();
 	private boolean hasNonPrivateConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
@@ -116,17 +117,17 @@ final class AsmClassVisitor extends ClassVisitor {
 			SignatureReader reader = new SignatureReader(signature);
 			AsmSignatureVisitor signatureVisitor = new AsmSignatureVisitor(api, typeRefFactory);
 			reader.accept(signatureVisitor);
-			formalTypeParameters = signatureVisitor.getFormalTypeParameters();
+			formalTypeParameters.addAll(signatureVisitor.getFormalTypeParameters());
 			superClass = signatureVisitor.getSuperclass();
-			implementedInterfaces = signatureVisitor.getSuperInterfaces();
+			implementedInterfaces.addAll(signatureVisitor.getSuperInterfaces());
 		} else {
 			if (superName != null) {
 				superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
 			}
-			implementedInterfaces = Arrays.stream(interfaces)
+			implementedInterfaces.addAll(Arrays.stream(interfaces)
 				.map(AsmClassVisitor::bytecodeToFqn)
 				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
-				.toList();
+				.toList());
 		}
 	}
 
@@ -147,7 +148,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new FieldVisitor(api) {
-			private final List<AnnotationData> annotations = new ArrayList<>();
+			private final Set<AnnotationData> annotations = new HashSet<>();
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -211,7 +212,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		return new MethodVisitor(api) {
 			private boolean hasDefault;
-			private final List<AnnotationData> annotations = new ArrayList<>();
+			private final Set<AnnotationData> annotations = new HashSet<>();
 			private int firstLine = -1;
 
 			@Override
@@ -334,21 +335,25 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		AccessModifier visibility = convertVisibility(classAccess);
 		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
-		List<Annotation> anns = convertAnnotations(annotations);
+		Set<Annotation> anns = convertAnnotations(annotations.build());
 		// No bullet-proof line information for types
 		SourceLocation location = new SourceLocation(sourceFile, -1);
 
-		if (!permittedTypes.isEmpty()) {
+		if (!permittedTypes.build().isEmpty()) {
 			modifiers.add(Modifier.SEALED);
 		}
 
-		if (isEffectivelyFinal(classAccess)) {
-			// We initially included all PUBLIC/PROTECTED type members
-			// Now that we finally know whether the enclosing type is effectively final, we can filter
-			fields.removeIf(TypeMemberDecl::isProtected);
-			methods.removeIf(TypeMemberDecl::isProtected);
-			constructors.removeIf(TypeMemberDecl::isProtected);
-		}
+		// FIXME
+		var isEffectivelyFinal = isEffectivelyFinal(classAccess);
+		var allFields = fields.build().stream()
+			.filter(f -> !isEffectivelyFinal || f.isPublic())
+			.collect(ImmutableSet.toImmutableSet());
+		var allMethods = methods.build().stream()
+			.filter(m -> !isEffectivelyFinal || m.isPublic())
+			.collect(ImmutableSet.toImmutableSet());
+		var allConstructors = constructors.build().stream()
+			.filter(c -> !isEffectivelyFinal || c.isPublic())
+			.collect(ImmutableSet.toImmutableSet());
 
 		// Roughly §8.9
 		if (isEnum(classAccess) && hasEnumConstantBody && !isFinal(classAccess)) {
@@ -357,25 +362,27 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		if (isAnnotation(classAccess)) {
 			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
-				fields, annotationMethods, enclosingType, targets);
+				allFields, annotationMethods.build(), enclosingType, targets.build());
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
+				implementedInterfaces.build(), formalTypeParameters.build(), allFields, allMethods,
+				enclosingType, permittedTypes.build());
 		} else if (isEnum(classAccess)) {
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, fields, methods, enclosingType, constructors, List.of());
+				implementedInterfaces.build(), allFields, allMethods, enclosingType, allConstructors, Set.of());
 		} else if (isRecord(classAccess)) {
 			typeDecl = new RecordDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors, List.of());
+				implementedInterfaces.build(), formalTypeParameters.build(), allFields, allMethods,
+				enclosingType, allConstructors, List.of());
 		} else {
 			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType,
-				superClass, constructors, permittedTypes);
+				implementedInterfaces.build(), formalTypeParameters.build(), allFields, allMethods, enclosingType,
+				superClass, allConstructors, permittedTypes.build());
 		}
 	}
 
 	private FieldDecl convertField(int access, String name, String descriptor, String signature,
-	                               List<AnnotationData> annotations) {
+	                               Set<AnnotationData> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
 			AsmTypeSignatureVisitor<ITypeReference> visitor =
@@ -394,9 +401,9 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
-	                                           List<AnnotationData> annotations, int line) {
+	                                           Set<AnnotationData> annotations, int line) {
 		List<ParameterDecl> parameters;
-		List<ITypeReference> thrownExceptions;
+		Set<ITypeReference> thrownExceptions;
 		List<FormalTypeParameter> typeParameters;
 
 		if (signature != null) {
@@ -430,11 +437,11 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
-	                                 List<AnnotationData> annotations, int line) {
+	                                 Set<AnnotationData> annotations, int line) {
 		ITypeReference returnType;
 		List<ParameterDecl> parameters;
 		List<FormalTypeParameter> typeParameters;
-		List<ITypeReference> thrownExceptions;
+		Set<ITypeReference> thrownExceptions;
 
 		if (signature != null) {
 			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
@@ -464,7 +471,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private AnnotationMethodDecl convertAnnotationMethod(String name, String descriptor, String signature,
-	                                                     List<AnnotationData> annotations, int line, boolean hasDefault) {
+	                                                     Set<AnnotationData> annotations, int line, boolean hasDefault) {
 		ITypeReference returnType;
 
 		if (signature != null) {
@@ -498,27 +505,27 @@ final class AsmClassVisitor extends ClassVisitor {
 		return params;
 	}
 
-	private List<Annotation> convertAnnotations(List<AnnotationData> annotationDataList) {
+	private Set<Annotation> convertAnnotations(Set<AnnotationData> annotationDataList) {
 		return annotationDataList.stream()
 			.map(data -> new Annotation(
 				typeRefFactory.createTypeReference(descriptorToFqn(data.descriptor())),
 				data.values()))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private static String formatAnnotationValue(Object value) {
 		return value.toString();
 	}
 
-	private List<ITypeReference> convertThrownExceptions(String[] exceptions) {
+	private Set<ITypeReference> convertThrownExceptions(String[] exceptions) {
 		if (exceptions == null) {
-			return Collections.emptyList();
+			return Set.of();
 		}
 
 		return Arrays.stream(exceptions)
 			.map(e -> typeRefFactory.createTypeReference(bytecodeToFqn(e)))
 			.map(ITypeReference.class::cast)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private ITypeReference convertType(String descriptor) {
@@ -559,7 +566,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	private boolean isEffectivelyFinal(int access) {
 		// FIXME: non-sealed
-		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasNonPrivateConstructor);
+		return isFinal(access) || !permittedTypes.build().isEmpty() || (isClass(classAccess) && !hasNonPrivateConstructor);
 	}
 
 	private static EnumSet<Modifier> convertClassModifiers(int access) {

@@ -622,7 +622,7 @@ class GenericsExtractionTest {
 		// Constructor: public <S extends Map<? extends T, ? super U> & Cloneable> ComplexGenerics(S param)
 		var ctors = cg.getDeclaredConstructors();
 		assertThat(ctors).hasSize(1);
-		var ctor = ctors.getFirst();
+		var ctor = ctors.iterator().next();
 		assertThat(ctor.getFormalTypeParameters()).hasSize(1);
 		var sParamCtor = ctor.getFormalTypeParameters().getFirst();
 		assertThat(sParamCtor.name()).isEqualTo("S");
@@ -930,7 +930,7 @@ class GenericsExtractionTest {
 		var pBound = pParam.bounds().getFirst();
 		assertThat(pBound.getQualifiedName()).isEqualTo("java.lang.Exception");
 		assertThat(genericThrows.getThrownExceptions()).hasSize(1);
-		var thrownEx = genericThrows.getThrownExceptions().getFirst();
+		var thrownEx = genericThrows.getThrownExceptions().iterator().next();
 		assertThat(thrownEx).isInstanceOf(TypeParameterReference.class);
 		assertThat(((TypeParameterReference) thrownEx).getQualifiedName()).isEqualTo("P");
 

@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
@@ -17,20 +18,20 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	protected final List<FormalTypeParameter> formalTypeParameters;
 	// Thrown exceptions aren't necessarily TypeReference<ClassDecl>
 	// e.g.: <X extends Throwable> m() throws X
-	protected final List<ITypeReference> thrownExceptions;
+	protected final Set<ITypeReference> thrownExceptions;
 
 	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                         List<Annotation> annotations, SourceLocation location,
+	                         Set<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,
-	                         List<ITypeReference> thrownExceptions) {
+	                         Set<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		Preconditions.checkNotNull(parameters);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(thrownExceptions);
 		this.parameters = List.copyOf(parameters);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
-		this.thrownExceptions = List.copyOf(thrownExceptions);
+		this.thrownExceptions = ImmutableSet.copyOf(thrownExceptions);
 	}
 
 	@Override
@@ -96,7 +97,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return formalTypeParameters;
 	}
 
-	public List<ITypeReference> getThrownExceptions() {
+	public Set<ITypeReference> getThrownExceptions() {
 		return thrownExceptions;
 	}
 

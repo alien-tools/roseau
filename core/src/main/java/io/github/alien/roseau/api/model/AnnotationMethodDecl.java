@@ -4,8 +4,8 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Collections;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * An annotation method, possibly holding a default value expression.
@@ -16,10 +16,10 @@ public final class AnnotationMethodDecl extends MethodDecl {
 	 */
 	private final boolean hasDefault;
 
-	public AnnotationMethodDecl(String qualifiedName, List<Annotation> annotations, SourceLocation location,
+	public AnnotationMethodDecl(String qualifiedName, Set<Annotation> annotations, SourceLocation location,
 	                            TypeReference<TypeDecl> containingType, ITypeReference type, boolean hasDefault) {
-		super(qualifiedName, AccessModifier.PUBLIC, Collections.emptySet(), annotations, location, containingType,
-			type, Collections.emptyList(), Collections.emptyList(), Collections.emptyList());
+		super(qualifiedName, AccessModifier.PUBLIC, Set.of(), annotations, location, containingType,
+			type, Collections.emptyList(), Collections.emptyList(), Set.of());
 		this.hasDefault = hasDefault;
 	}
 

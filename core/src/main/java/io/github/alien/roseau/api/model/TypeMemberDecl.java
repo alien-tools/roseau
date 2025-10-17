@@ -18,7 +18,7 @@ public abstract sealed class TypeMemberDecl extends Symbol
 	protected final ITypeReference type;
 
 	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                         List<Annotation> annotations, SourceLocation location,
+	                         Set<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(containingType);

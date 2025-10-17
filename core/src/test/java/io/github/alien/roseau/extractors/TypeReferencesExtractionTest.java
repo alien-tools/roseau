@@ -153,8 +153,8 @@ class TypeReferencesExtractionTest {
 			public class B implements I {}""");
 		var a = assertClass(api, "A");
 		var b = assertClass(api, "B");
-		var implA = a.getImplementedInterfaces().getFirst();
-		var implB = b.getImplementedInterfaces().getFirst();
+		var implA = a.getImplementedInterfaces().iterator().next();
+		var implB = b.getImplementedInterfaces().iterator().next();
 
 		assertThat(implA).isSameAs(implB);
 	}

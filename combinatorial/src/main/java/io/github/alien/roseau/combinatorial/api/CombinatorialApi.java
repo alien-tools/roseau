@@ -651,7 +651,7 @@ public final class CombinatorialApi {
 		methodBuilder.qualifiedName = builder.qualifiedName + "." + method.getSimpleName();
 		methodBuilder.visibility = method.getVisibility();
 		methodBuilder.containingType = typeReferenceFactory.createTypeReference(typeDecl.getQualifiedName());
-		methodBuilder.thrownExceptions = method.getThrownExceptions();
+		methodBuilder.thrownExceptions = method.getThrownExceptions().stream().toList();
 		methodBuilder.parameters.addAll(new ArrayList<>(method.getParameters().stream().map(ParameterBuilder::from).toList()));
 		methodBuilder.type = method.getType();
 

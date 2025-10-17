@@ -11,7 +11,7 @@ import java.util.Set;
  */
 public final class FieldDecl extends TypeMemberDecl {
 	public FieldDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                 List<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
+	                 Set<Annotation> annotations, SourceLocation location, TypeReference<TypeDecl> containingType,
 	                 ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 	}

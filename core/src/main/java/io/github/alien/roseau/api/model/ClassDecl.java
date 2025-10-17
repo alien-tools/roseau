@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -14,22 +15,22 @@ import java.util.Set;
  */
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
-	protected final List<ConstructorDecl> constructors;
-	protected final List<TypeReference<TypeDecl>> permittedTypes;
+	protected final Set<ConstructorDecl> constructors;
+	protected final Set<TypeReference<TypeDecl>> permittedTypes;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                 List<Annotation> annotations, SourceLocation location,
-	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
+	                 Set<Annotation> annotations, SourceLocation location,
+	                 Set<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                 List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
-	                 List<ConstructorDecl> constructors, List<TypeReference<TypeDecl>> permittedTypes) {
+	                 Set<ConstructorDecl> constructors, Set<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
 		Preconditions.checkNotNull(constructors);
 		Preconditions.checkNotNull(permittedTypes);
 		this.superClass = Optional.ofNullable(superClass).orElse(TypeReference.OBJECT);
-		this.constructors = List.copyOf(constructors);
-		this.permittedTypes = List.copyOf(permittedTypes);
+		this.constructors = ImmutableSet.copyOf(constructors);
+		this.permittedTypes = ImmutableSet.copyOf(permittedTypes);
 	}
 
 	@Override
@@ -51,11 +52,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return superClass;
 	}
 
-	public List<ConstructorDecl> getDeclaredConstructors() {
+	public Set<ConstructorDecl> getDeclaredConstructors() {
 		return constructors;
 	}
 
-	public List<TypeReference<TypeDecl>> getPermittedTypes() {
+	public Set<TypeReference<TypeDecl>> getPermittedTypes() {
 		return permittedTypes;
 	}
 
