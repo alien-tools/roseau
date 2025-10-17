@@ -20,26 +20,26 @@ class EqualityTest {
 				public static class B {}
 				public int f1;
 				public int f2;
-				public E m1() { return E.A; }
+				public E m1(int i) { return E.A; }
 				public E m2() { return E.B; }
 			}
 			public enum E { A, B; }
 			package p2;
 			@FunctionalInterface
 			@Deprecated
-			public interface I { void m(); }
+			public interface I { void m(String s); }
 			public class C {}""";
 		var sources2 = """
 			package p2;
 			public class C {}
 			@FunctionalInterface
 			@Deprecated
-			public interface I { void m(); }
+			public interface I { void m(String s); }
 			package p1;
 			public enum E { B, A; }
 			public class C {
 				public E m2() { return E.A; }
-				public E m1() { return E.B; }
+				public E m1(int i) { return E.B; }
 				public int f2;
 				public int f1;
 				public static class B {}
@@ -56,8 +56,9 @@ class EqualityTest {
 			var baselineTypes = baseline.getLibraryTypes().getAllTypes();
 
 			var opts = new HashMap<String, Object>();
-			assertThat(DeepEquals.deepEquals(apiTypes, baselineTypes, opts)).isTrue();
-			assertThat(apiTypes).as(opts.toString()).isEqualTo(baselineTypes);
+			boolean equals = DeepEquals.deepEquals(apiTypes, baselineTypes, opts);
+			assertThat(equals).as(opts.toString()).isTrue();
+			assertThat(apiTypes).isEqualTo(baselineTypes);
 		});
 	}
 }

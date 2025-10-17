@@ -6,7 +6,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 import org.apache.logging.log4j.Level;
@@ -40,6 +39,7 @@ import java.util.stream.Stream;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopularLibrariesTestIT {
@@ -127,11 +127,6 @@ class PopularLibrariesTestIT {
 		var spoonApi = Roseau.buildAPI(spoonLibrary);
 		long spoonApiTime = sw.elapsed().toMillis();
 
-		// Diffs
-		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
-		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
-		var spoonToSpoonBCs = Roseau.diff(spoonApi, spoonApi).getAllBreakingChanges();
-		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
 		sw.reset().start();
 		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
 		long diffTime = sw.elapsed().toMillis();
@@ -155,26 +150,30 @@ class PopularLibrariesTestIT {
 			spoonApiTime, asmApiTime, diffTime, jdtApiTime,
 			asmToAsmBCs.size());
 
-		System.out.println("### JDT to ASM API diff:");
-		var opts = new HashMap<String, Object>();
-		DeepEquals.deepEquals(jdtApi, asmApi, opts);
-		System.out.println(opts);
+		if (!jdtApi.getLibraryTypes().getModule().equals(asmApi.getLibraryTypes().getModule())) {
+			fail("Module mismatch: " + jdtApi.getLibraryTypes().getModule() + " != " + asmApi.getLibraryTypes().getModule());
+		}
 
-		if (!jdtToAsmBCs.isEmpty() || !asmToJdtBCs.isEmpty()) {
-			System.out.println("JDT to ASM BCs:");
-			System.out.println(jdtToAsmBCs.stream()
-				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
-			System.out.println("ASM to JDT BCs:");
-			System.out.println(asmToJdtBCs.stream()
-				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
+		if (!jdtApi.getLibraryTypes().getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
+			var opts = new HashMap<String, Object>();
+			DeepEquals.deepEquals(jdtApi.getLibraryTypes().getAllTypes(), asmApi.getLibraryTypes().getAllTypes(), opts);
+			System.out.println(opts);
+
+			jdtApi.getExportedTypes().forEach(type -> {
+				var o = asmApi.findExportedType(type.getQualifiedName()).orElseThrow();
+				if (!o.equals(type)) {
+					System.out.println("jdt=" + type);
+					System.out.println("asm=" + o);
+				}
+			});
+
+			fail("Type mismatch");
 		}
 
 		// Check everything went well
 		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
 		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertEquals(0, spoonToSpoonBCs.size());
-		assertEquals(0, jdtToJdtBCs.size());
 		assertEquals(0, asmToAsmBCs.size());
 	}
 
