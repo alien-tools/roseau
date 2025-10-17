@@ -6,19 +6,19 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.CsvFormatter;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
-import java.util.Optional;
 import java.util.stream.Stream;
 
-class IgnoredFile {
+class IgnoredCsvFile {
 	private final List<Ignored> ignoredBCs;
 
 	private record Ignored(String type, String symbol, BreakingChangeKind kind) {}
 
-	IgnoredFile(Path csv) {
-		try (Stream<String> lines = Files.lines(csv)) {
+	IgnoredCsvFile(Path csv) {
+		try (Stream<String> lines = Files.lines(csv, StandardCharsets.UTF_8)) {
 			ignoredBCs = lines
 				.map(String::strip)
 				.filter(line -> !line.isEmpty())
@@ -27,18 +27,14 @@ class IgnoredFile {
 				.map(line -> line.split(";", -1))
 				.map(fields -> {
 					if (fields.length < 3) {
-						throw new RoseauException("Malformed line '%s' ignored in %s".formatted(String.join(";", fields), csv));
+						throw new RoseauException("Malformed line '%s' in %s".formatted(String.join(";", fields), csv));
 					}
-
 					try {
-						BreakingChangeKind kind = BreakingChangeKind.valueOf(fields[2].trim());
-						return Optional.of(new Ignored(fields[0].trim(), fields[1].trim(), kind));
+						return new Ignored(fields[0].trim(), fields[1].trim(), BreakingChangeKind.valueOf(fields[2].trim()));
 					} catch (IllegalArgumentException ignored) {
-						throw new RoseauException("Malformed kind in line '%s' ignored in %s".formatted(
-							String.join(";", fields), csv));
+						throw new RoseauException("Malformed kind '%s' in %s".formatted(fields[2], csv));
 					}
 				})
-				.flatMap(Optional::stream)
 				.toList();
 		} catch (IOException e) {
 			throw new RoseauException("Couldn't read CSV file %s".formatted(csv), e);

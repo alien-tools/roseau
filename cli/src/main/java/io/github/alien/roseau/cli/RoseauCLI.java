@@ -25,6 +25,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -174,11 +175,12 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private List<BreakingChange> filterIgnoredBCs(RoseauReport report, Path ignoredPath) {
-		IgnoredFile ignored = new IgnoredFile(ignoredPath);
-		return report.getBreakingChanges().stream()
+	private RoseauReport filterReport(RoseauReport report, Path ignoredPath) {
+		IgnoredCsvFile ignored = new IgnoredCsvFile(ignoredPath);
+		List<BreakingChange> filtered = report.getBreakingChanges().stream()
 			.filter(bc -> !ignored.isIgnored(bc))
 			.toList();
+		return new RoseauReport(report.v1(), report.v2(), filtered);
 	}
 
 	private void checkOptions(RoseauOptions options) {
@@ -260,29 +262,29 @@ public final class RoseauCLI implements Callable<Integer> {
 		if (v2.getClasspath().isEmpty()) {
 			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v2.getLocation()));
 		}
-		RoseauReport report = diff(v1, v2);
+		RoseauReport originalReport = diff(v1, v2);
 		Path ignoreFile = options.ignore();
-		List<BreakingChange> bcs = ignoreFile != null && Files.isRegularFile(ignoreFile)
-			? filterIgnoredBCs(report, ignoreFile)
-			: report.getBreakingChanges();
+		RoseauReport filteredReport = ignoreFile != null && Files.isRegularFile(ignoreFile)
+			? filterReport(originalReport, ignoreFile)
+			: originalReport;
 
-		if (bcs.isEmpty()) {
+		if (filteredReport.getBreakingChanges().isEmpty()) {
 			print("No breaking changes found.");
 		} else {
-			print(new CliFormatter(plain).format(report));
+			print(new CliFormatter(plain).format(filteredReport));
 		}
 
 		if (options.v1().apiReport() != null) {
-			writeApiReport(report.v1(), options.v1().apiReport());
+			writeApiReport(filteredReport.v1(), options.v1().apiReport());
 		}
 		if (options.v2().apiReport() != null) {
-			writeApiReport(report.v2(), options.v2().apiReport());
+			writeApiReport(filteredReport.v2(), options.v2().apiReport());
 		}
 		options.reports().forEach(reportOption ->
-			writeReport(report, reportOption.format(), reportOption.file())
+			writeReport(filteredReport, reportOption.format(), reportOption.file())
 		);
 
-		return !bcs.isEmpty();
+		return !filteredReport.getBreakingChanges().isEmpty();
 	}
 
 	@Override
@@ -321,18 +323,18 @@ public final class RoseauCLI implements Callable<Integer> {
 				boolean breaking = doDiff(libraryV1, libraryV2, options);
 
 				if (breaking && failMode) {
-					return 1;
+					return ExitCode.BREAKING.getCode();
 				}
 			}
 
-			return 0;
+			return ExitCode.SUCCESS.getCode();
 		} catch (RuntimeException e) {
 			if (verbose) {
 				e.printStackTrace(spec.commandLine().getErr());
 			} else {
-				printErr(e.getMessage());
+				printErr(Optional.ofNullable(e.getMessage()).orElse(e.getClass().getSimpleName()));
 			}
-			return 2;
+			return ExitCode.ERROR.getCode();
 		}
 	}
 
