@@ -56,8 +56,7 @@ class EqualityTest {
 			var baselineTypes = baseline.getLibraryTypes().getAllTypes();
 
 			var opts = new HashMap<String, Object>();
-			DeepEquals.deepEquals(apiTypes, baselineTypes, opts);
-
+			assertThat(DeepEquals.deepEquals(apiTypes, baselineTypes, opts)).isTrue();
 			assertThat(apiTypes).as(opts.toString()).isEqualTo(baselineTypes);
 		});
 	}

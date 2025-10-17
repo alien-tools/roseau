@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -22,6 +22,7 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -70,7 +71,8 @@ public final class LibraryTypes implements TypeProvider {
 		this.library = library;
 		this.module = module;
 		allTypes = types.stream()
-			.collect(ImmutableMap.toImmutableMap(
+			.collect(ImmutableSortedMap.toImmutableSortedMap(
+				Comparator.naturalOrder(),
 				Symbol::getQualifiedName,
 				Function.identity(),
 				(fqn, duplicate) -> {
@@ -209,7 +211,8 @@ public final class LibraryTypes implements TypeProvider {
 			return false;
 		}
 		LibraryTypes other = (LibraryTypes) obj;
-		return Objects.equals(library, other.library) && Objects.equals(allTypes, other.allTypes);
+		return Objects.equals(library, other.library) &&
+			Objects.equals(allTypes, other.allTypes);
 	}
 
 	@Override
