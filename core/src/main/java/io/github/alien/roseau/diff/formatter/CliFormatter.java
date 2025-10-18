@@ -60,9 +60,9 @@ public class CliFormatter implements BreakingChangesFormatter {
 	}
 
 	private String formatLocation(BreakingChange bc) {
-		return bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+		return bc.getLocation() == SourceLocation.NO_LOCATION
 			? "No source location"
-			: "%s:%d".formatted(bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+			: "%s:%d".formatted(bc.getLocation().file(), bc.getLocation().line());
 	}
 
 	private String formatDetails(BreakingChange bc) {

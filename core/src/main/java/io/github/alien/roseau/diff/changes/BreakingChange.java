@@ -2,6 +2,7 @@ package io.github.alien.roseau.diff.changes;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
@@ -42,6 +43,18 @@ public record BreakingChange(
 			return member.getContainingType().getQualifiedName().equals(impactedType.getQualifiedName());
 		}
 		return true;
+	}
+
+	/**
+	 * Returns the most accurate location for this breaking change, either the {@link #impactedSymbol()} or the
+	 * {@link #impactedType()}.
+	 *
+	 * @return the location
+	 */
+	public SourceLocation getLocation() {
+		return impactedSymbol.getLocation() == SourceLocation.NO_LOCATION
+			? impactedType.getLocation()
+			: impactedSymbol.getLocation();
 	}
 
 	private static String printSymbol(Symbol s) {

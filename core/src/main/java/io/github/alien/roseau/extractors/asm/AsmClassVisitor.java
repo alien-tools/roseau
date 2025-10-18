@@ -88,7 +88,11 @@ final class AsmClassVisitor extends ClassVisitor {
 		// Skipping our non-Java JVM friends
 		if (source != null) {
 			if (source.endsWith(".java")) {
-				sourceFile = Path.of(source);
+				if (className != null) {
+					sourceFile = Path.of(className.replace('.', '/')).resolveSibling(source);
+				} else {
+					sourceFile = Path.of(source);
+				}
 			} else {
 				shouldSkip = true;
 			}
