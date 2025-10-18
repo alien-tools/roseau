@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
@@ -26,10 +27,10 @@ public class MdFormatter implements BreakingChangesFormatter {
 			for (BreakingChange bc : report.getBreakingChanges()) {
 				sb.append("| ")
 					.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
-					.append(bc.impactedSymbol().getLocation().file()).append(":").append(bc.impactedSymbol().getLocation().line()).append(" | ");
+					.append(location(bc.impactedSymbol().getLocation())).append(" | ");
 
 				if (bc.newSymbol() != null) {
-					sb.append(bc.newSymbol().getLocation().file()).append(":").append(bc.newSymbol().getLocation().line());
+					sb.append(location(bc.newSymbol().getLocation()));
 				} else {
 					sb.append("N/A");
 				}
@@ -41,5 +42,11 @@ public class MdFormatter implements BreakingChangesFormatter {
 		}
 
 		return sb.toString();
+	}
+
+	private static String location(SourceLocation location) {
+		return location == SourceLocation.NO_LOCATION
+			? "No location"
+			: "%s:%d".formatted(location.file(), location.line());
 	}
 }

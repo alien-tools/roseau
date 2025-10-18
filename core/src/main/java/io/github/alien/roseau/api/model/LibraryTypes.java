@@ -52,7 +52,18 @@ public final class LibraryTypes implements TypeProvider {
 	 */
 	private final Map<String, TypeDecl> allTypes;
 
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
+
+	static {
+		MAPPER.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+		MAPPER.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+		MAPPER.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
+		// For Optional<>
+		MAPPER.registerModule(new Jdk8Module());
+		// For @JsonCreator
+		MAPPER.registerModule(new ParanamerModule());
+	}
 
 	/**
 	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}.
@@ -175,12 +186,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @throws IOException if serialization fails
 	 */
 	public void writeJson(Path jsonFile) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-		mapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
-		mapper.registerModule(new Jdk8Module());
-		mapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
+		MAPPER.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
 	}
 
 	/**
@@ -191,12 +197,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @throws IOException If the file cannot be parsed
 	 */
 	public static LibraryTypes fromJson(Path jsonFile) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		// For Optional<>
-		mapper.registerModule(new Jdk8Module());
-		// For @JsonCreator
-		mapper.registerModule(new ParanamerModule());
-		return mapper.readValue(jsonFile.toFile(), LibraryTypes.class);
+		return MAPPER.readValue(jsonFile.toFile(), LibraryTypes.class);
 	}
 
 	@Override
@@ -208,11 +209,13 @@ public final class LibraryTypes implements TypeProvider {
 			return false;
 		}
 		LibraryTypes other = (LibraryTypes) obj;
-		return Objects.equals(library, other.library) && Objects.equals(allTypes, other.allTypes);
+		return Objects.equals(library, other.library) &&
+			Objects.equals(module, other.module) &&
+			Objects.equals(allTypes, other.allTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(library, allTypes);
+		return Objects.hash(library, module, allTypes);
 	}
 }

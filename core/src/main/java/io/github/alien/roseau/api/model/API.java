@@ -37,7 +37,7 @@ public class API extends CachingAPIAnalyzer {
 				try {
 					return Pattern.compile(name);
 				} catch (PatternSyntaxException e) {
-					LOGGER.warn("Invalid exclusion pattern {}", name);
+					LOGGER.warn("Invalid exclusion pattern {}", name, e);
 					return null;
 				}
 			})

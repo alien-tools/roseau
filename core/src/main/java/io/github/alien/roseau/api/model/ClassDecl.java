@@ -15,7 +15,6 @@ import java.util.Set;
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
 	protected final List<ConstructorDecl> constructors;
-	protected final List<TypeReference<TypeDecl>> permittedTypes;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                 List<Annotation> annotations, SourceLocation location,
@@ -24,12 +23,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
 	                 List<ConstructorDecl> constructors, List<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
-			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
+			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
 		Preconditions.checkNotNull(constructors);
 		Preconditions.checkNotNull(permittedTypes);
 		this.superClass = Optional.ofNullable(superClass).orElse(TypeReference.OBJECT);
 		this.constructors = List.copyOf(constructors);
-		this.permittedTypes = List.copyOf(permittedTypes);
 	}
 
 	@Override
@@ -55,10 +53,6 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return constructors;
 	}
 
-	public List<TypeReference<TypeDecl>> getPermittedTypes() {
-		return permittedTypes;
-	}
-
 	@Override
 	public String toString() {
 		return """
@@ -76,12 +70,11 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		}
 		ClassDecl other = (ClassDecl) obj;
 		return Objects.equals(superClass, other.superClass) &&
-			Objects.equals(constructors, other.constructors) &&
-			Objects.equals(permittedTypes, other.permittedTypes);
+			Objects.equals(constructors, other.constructors);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), superClass, constructors, permittedTypes);
+		return Objects.hash(super.hashCode(), superClass, constructors);
 	}
 }

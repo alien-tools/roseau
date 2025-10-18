@@ -8,15 +8,14 @@ import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.utils.ApiTestFactory;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
-import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.assertj.core.api.Assertions.assertThatIllegalArgumentException;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.mock;
 
@@ -81,7 +80,7 @@ class LibraryTypesTest {
 	}
 
 	@Test
-	void json_round_trip() throws IOException {
+	void json_round_trip(@TempDir Path tempDir) throws IOException {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
 		Set<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
@@ -89,11 +88,9 @@ class LibraryTypesTest {
 		TypesExtractor extractor = new JdtTypesExtractor();
 		LibraryTypes orig = extractor.extractTypes(library);
 
-		Path json = Path.of("roundtrip.json");
+		Path json = tempDir.resolve("roundtrip.json");
 		orig.writeJson(json);
-
 		LibraryTypes res = LibraryTypes.fromJson(json);
-		Files.delete(json);
 
 		assertThat(res).isEqualTo(orig);
 	}

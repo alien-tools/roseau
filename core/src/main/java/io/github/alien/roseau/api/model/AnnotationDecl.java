@@ -28,7 +28,7 @@ public final class AnnotationDecl extends TypeDecl {
 	                      List<AnnotationMethodDecl> annotationMethods, TypeReference<TypeDecl> enclosingType,
 	                      Set<ElementType> targets) {
 		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),
-			Collections.emptyList(), fields, Collections.emptyList(), enclosingType);
+			Collections.emptyList(), fields, Collections.emptyList(), enclosingType, List.of());
 		Preconditions.checkNotNull(annotationMethods);
 		Preconditions.checkNotNull(targets);
 		this.annotationMethods = List.copyOf(annotationMethods);

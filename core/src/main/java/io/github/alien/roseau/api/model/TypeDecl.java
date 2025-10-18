@@ -21,12 +21,13 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	protected final List<FieldDecl> fields;
 	protected final List<MethodDecl> methods;
 	protected final TypeReference<TypeDecl> enclosingType;
+	protected final List<TypeReference<TypeDecl>> permittedTypes;
 
 	protected TypeDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
 	                   List<Annotation> annotations, SourceLocation location,
 	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                   TypeReference<TypeDecl> enclosingType) {
+	                   TypeReference<TypeDecl> enclosingType, List<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(implementedInterfaces);
 		Preconditions.checkNotNull(formalTypeParameters);
@@ -40,6 +41,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		this.fields = List.copyOf(fields);
 		this.methods = List.copyOf(methods);
 		this.enclosingType = enclosingType;
+		this.permittedTypes = List.copyOf(permittedTypes);
 	}
 
 	public boolean isNested() {
@@ -98,10 +100,14 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return Optional.ofNullable(enclosingType);
 	}
 
+	public List<TypeReference<TypeDecl>> getPermittedTypes() {
+		return permittedTypes;
+	}
+
 	public String getPackageName() {
 		return qualifiedName.contains(".")
 			? qualifiedName.substring(0, qualifiedName.lastIndexOf('.'))
-			: qualifiedName;
+			: "";
 	}
 
 	@Override

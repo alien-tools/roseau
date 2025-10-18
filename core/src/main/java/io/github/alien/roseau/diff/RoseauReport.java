@@ -25,7 +25,10 @@ public final class RoseauReport {
 		this.v2 = v2;
 		this.breakingChanges = List.copyOf(
 			breakingChanges.stream()
-				.sorted(Comparator.comparing(bc -> bc.impactedSymbol().getQualifiedName()))
+				.sorted(
+					Comparator.comparing((BreakingChange bc) -> bc.impactedType().getQualifiedName())
+						.thenComparing(bc -> bc.impactedSymbol().getQualifiedName())
+						.thenComparing(BreakingChange::kind))
 				.toList());
 	}
 
@@ -59,7 +62,6 @@ public final class RoseauReport {
 		return getBreakingChanges().stream()
 			.map(BreakingChange::impactedType)
 			.distinct()
-			.sorted(Comparator.comparing(TypeDecl::getQualifiedName))
 			.toList();
 	}
 

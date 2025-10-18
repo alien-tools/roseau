@@ -73,7 +73,7 @@ public class APIDiff {
 				// There is a matching type
 				t2 -> diffType(t1, t2),
 				// Type has been removed
-				() -> typeBC(BreakingChangeKind.TYPE_REMOVED, t1, null)
+				() -> typeBC(BreakingChangeKind.TYPE_REMOVED, t1)
 			)
 		);
 
@@ -86,7 +86,7 @@ public class APIDiff {
 				// There is a matching field
 				f2 -> diffField(t1, f1, f2),
 				// The field has been removed
-				() -> memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1, null)
+				() -> memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1)
 			)
 		);
 	}
@@ -97,7 +97,7 @@ public class APIDiff {
 				// There is a matching method
 				m2 -> diffMethod(t1, t2, m1, m2),
 				// The method has been removed
-				() -> memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1, null)
+				() -> memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1)
 			)
 		);
 	}
@@ -108,7 +108,7 @@ public class APIDiff {
 				// There is a matching constructor
 				cons2 -> diffConstructor(c1, cons1, cons2),
 				// The constructor has been removed
-				() -> memberBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, c1, cons1, null)
+				() -> memberBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, c1, cons1)
 			)
 		);
 	}
@@ -222,7 +222,7 @@ public class APIDiff {
 					memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, a1, m1, m2,
 						new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
 				}
-			}, () -> memberBC(BreakingChangeKind.METHOD_REMOVED, a1, m1, null));
+			}, () -> memberBC(BreakingChangeKind.METHOD_REMOVED, a1, m1));
 		});
 
 		a2.getAnnotationMethods().stream()
@@ -463,6 +463,10 @@ public class APIDiff {
 	private void typeBC(BreakingChangeKind kind, TypeDecl impactedType, BreakingChangeDetails details) {
 		BreakingChange bc = new BreakingChange(kind, impactedType, impactedType, null, details);
 		breakingChanges.add(bc);
+	}
+
+	private void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember) {
+		memberBC(kind, impactedType, impactedMember, null, new BreakingChangeDetails.None());
 	}
 
 	private void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,

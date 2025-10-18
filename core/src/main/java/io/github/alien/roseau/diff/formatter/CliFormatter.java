@@ -10,7 +10,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import java.util.stream.Collectors;
 
 /**
- * A formatter of {@link RoseauReport} that produces a CSV output.
+ * A formatter of {@link RoseauReport} that produces a CLI-friendly report.
  */
 public class CliFormatter implements BreakingChangesFormatter {
 	private final boolean plain;

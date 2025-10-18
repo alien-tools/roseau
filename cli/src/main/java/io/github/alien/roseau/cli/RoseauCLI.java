@@ -47,12 +47,12 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Spec
 	CommandSpec spec;
 	@ArgGroup(exclusive = true, multiplicity = "1")
-	RoseauCLI.Mode mode;
+	Mode mode;
 	private static class Mode {
-		@Option(names = "--api", required = true,
+		@Option(names = "--api",
 			description = "Serialize the API model of --v1; see --api-json")
 		boolean api;
-		@Option(names = "--diff", required = true,
+		@Option(names = "--diff",
 			description = "Compute breaking changes between versions --v1 and --v2")
 		boolean diff;
 	}

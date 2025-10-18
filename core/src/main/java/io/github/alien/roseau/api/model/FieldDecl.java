@@ -18,6 +18,6 @@ public final class FieldDecl extends TypeMemberDecl {
 
 	@Override
 	public String toString() {
-		return "%s %s %s".formatted(visibility, type, qualifiedName);
+		return "%s %s %s".formatted(visibility, type, simpleName);
 	}
 }
