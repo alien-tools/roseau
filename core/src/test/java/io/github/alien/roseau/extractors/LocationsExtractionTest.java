@@ -60,29 +60,29 @@ class LocationsExtractionTest {
 		var cs21 = assertConstructor(api, c2, "<init>()");
 		var cs22 = assertConstructor(api, c2, "<init>(int)");
 
-		assertThat(c1.getLocation().file()).hasFileName("C1.java");
+		assertThat(c1.getLocation().file()).hasToString("C1.java");
 		assertThat(c1.getLocation().line()).isEqualTo(1);
-		assertThat(f1.getLocation().file()).hasFileName("C1.java");
+		assertThat(f1.getLocation().file()).hasToString("C1.java");
 		assertThat(f1.getLocation().line()).isEqualTo(3);
-		assertThat(m11.getLocation().file()).hasFileName("C1.java");
+		assertThat(m11.getLocation().file()).hasToString("C1.java");
 		assertThat(m11.getLocation().line()).isEqualTo(5);
-		assertThat(m12.getLocation().file()).hasFileName("C1.java");
+		assertThat(m12.getLocation().file()).hasToString("C1.java");
 		assertThat(m12.getLocation().line()).isEqualTo(9);
-		assertThat(cs11.getLocation().file()).hasFileName("C1.java");
+		assertThat(cs11.getLocation().file()).hasToString("C1.java");
 		assertThat(cs11.getLocation().line()).isEqualTo(10);
-		assertThat(cs12.getLocation().file()).hasFileName("C1.java");
+		assertThat(cs12.getLocation().file()).hasToString("C1.java");
 		assertThat(cs12.getLocation().line()).isEqualTo(11);
-		assertThat(c2.getLocation().file()).hasFileName("C1.java");
+		assertThat(c2.getLocation().file()).hasToString("C1.java");
 		assertThat(c2.getLocation().line()).isEqualTo(12);
-		assertThat(f2.getLocation().file()).hasFileName("C1.java");
+		assertThat(f2.getLocation().file()).hasToString("C1.java");
 		assertThat(f2.getLocation().line()).isEqualTo(13);
-		assertThat(m21.getLocation().file()).hasFileName("C1.java");
+		assertThat(m21.getLocation().file()).hasToString("C1.java");
 		assertThat(m21.getLocation().line()).isEqualTo(14);
-		assertThat(m22.getLocation().file()).hasFileName("C1.java");
+		assertThat(m22.getLocation().file()).hasToString("C1.java");
 		assertThat(m22.getLocation().line()).isEqualTo(15);
-		assertThat(cs21.getLocation().file()).hasFileName("C1.java");
+		assertThat(cs21.getLocation().file()).hasToString("C1.java");
 		assertThat(cs21.getLocation().line()).isEqualTo(16);
-		assertThat(cs22.getLocation().file()).hasFileName("C1.java");
+		assertThat(cs22.getLocation().file()).hasToString("C1.java");
 		assertThat(cs22.getLocation().line()).isEqualTo(17);
 	}
 
@@ -96,9 +96,9 @@ class LocationsExtractionTest {
 		var r = assertRecord(api, "R");
 		var i = assertMethod(api, r, "i()");
 
-		assertThat(r.getLocation().file()).hasFileName("R.java");
+		assertThat(r.getLocation().file()).hasToString("R.java");
 		assertThat(r.getLocation().line()).isEqualTo(1);
-		assertThat(i.getLocation().file()).hasFileName("R.java");
+		assertThat(i.getLocation().file()).hasToString("R.java");
 		assertThat(i.getLocation().line()).isEqualTo(-1);
 	}
 
@@ -111,9 +111,9 @@ class LocationsExtractionTest {
 		var c = assertClass(api, "C");
 		var cons = assertConstructor(api, c, "<init>()");
 
-		assertThat(c.getLocation().file()).hasFileName("C.java");
+		assertThat(c.getLocation().file()).hasToString("C.java");
 		assertThat(c.getLocation().line()).isEqualTo(1);
-		assertThat(cons.getLocation().file()).hasFileName("C.java");
+		assertThat(cons.getLocation().file()).hasToString("C.java");
 		assertThat(cons.getLocation().line()).isEqualTo(-1);
 	}
 
@@ -123,16 +123,16 @@ class LocationsExtractionTest {
 		var api = new AsmTypesExtractor().extractTypes(Library.of(jar)).toAPI();
 
 		api.getLibraryTypes().getAllTypes().forEach(t -> {
-			assertThat(t.getLocation().file()).hasFileName("APIShowcase.java");
+			assertThat(t.getLocation().file()).hasToString("io/github/alien/roseau/APIShowcase.java");
 			assertThat(t.getLocation().line()).isEqualTo(-1);
 			assertThat(t.getDeclaredFields()).extracting(Symbol::getLocation).allSatisfy(loc -> {
-				assertThat(loc.file()).hasFileName("APIShowcase.java");
+				assertThat(loc.file()).hasToString("io/github/alien/roseau/APIShowcase.java");
 				assertThat(loc.line()).isEqualTo(-1);
 			});
 			assertThat(t.getDeclaredMethods().stream().filter(m -> !m.isAbstract() && !m.isNative()))
 				.extracting(Symbol::getLocation)
 				.allSatisfy(loc -> {
-					assertThat(loc.file()).hasFileName("APIShowcase.java");
+					assertThat(loc.file()).hasToString("io/github/alien/roseau/APIShowcase.java");
 					assertThat(loc.line()).isGreaterThan(0);
 				});
 		});

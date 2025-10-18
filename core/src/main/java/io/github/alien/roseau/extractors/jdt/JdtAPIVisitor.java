@@ -48,7 +48,6 @@ import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -72,10 +71,10 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private static final Logger LOGGER = LogManager.getLogger(JdtAPIVisitor.class);
 
-	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory) {
+	JdtAPIVisitor(CompilationUnit cu, String filePath, TypeReferenceFactory factory, Path basePath) {
 		this.cu = cu;
 		this.packageName = Optional.ofNullable(cu.getPackage()).map(p -> p.getName().getFullyQualifiedName()).orElse("");
-		this.filePath = Optional.ofNullable(filePath).map(Paths::get).orElse(null);
+		this.filePath = Optional.ofNullable(filePath).map(file -> basePath.relativize(Path.of(file))).orElse(null);
 		this.typeRefFactory = factory;
 	}
 

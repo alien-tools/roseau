@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
@@ -87,17 +88,19 @@ import java.util.stream.Stream;
 public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
 	private final TypeReferenceFactory typeReferenceFactory;
+	private final Path basePath;
 
 	private static final Logger LOGGER = LogManager.getLogger(SpoonAPIFactory.class);
 
-	public SpoonAPIFactory(TypeReferenceFactory typeReferenceFactory, Set<Path> classpath) {
+	public SpoonAPIFactory(Library library, TypeReferenceFactory typeReferenceFactory) {
 		Factory spoonFactory = new Launcher().createFactory();
 		spoonFactory.getEnvironment().setSourceClasspath(
-			sanitizeClasspath(classpath).stream()
+			sanitizeClasspath(library.getClasspath()).stream()
 				.map(p -> p.toAbsolutePath().toString())
 				.toArray(String[]::new));
-		typeFactory = spoonFactory.Type();
+		this.typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
+		this.basePath = library.getLocation();
 	}
 
 	// Avoid having Spoon throwing at us due to "invalid" classpath
@@ -518,15 +521,15 @@ public class SpoonAPIFactory {
 	 * If the provided position isn't valid, fallback to the other element's file. e.g., an implicit constructor will
 	 * point to the file it's contained in.
 	 */
-	private static SourceLocation convertSpoonPosition(SourcePosition position, CtElement fallback) {
+	private SourceLocation convertSpoonPosition(SourcePosition position, CtElement fallback) {
 		if (position.isValidPosition()) {
 			return new SourceLocation(
-				position.getFile() != null ? position.getFile().toPath() : null,
+				position.getFile() != null ? basePath.relativize(position.getFile().toPath()) : null,
 				position.getLine());
 		} else if (fallback != null && fallback.getPosition() != null) {
 			SourcePosition fallbackPosition = fallback.getPosition();
 			if (fallbackPosition.isValidPosition() && fallbackPosition.getFile() != null) {
-				return new SourceLocation(fallbackPosition.getFile().toPath(), -1);
+				return new SourceLocation(basePath.relativize(fallbackPosition.getFile().toPath()), -1);
 			}
 		}
 

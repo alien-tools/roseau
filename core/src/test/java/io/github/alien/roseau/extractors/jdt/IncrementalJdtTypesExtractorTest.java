@@ -31,7 +31,7 @@ class IncrementalJdtTypesExtractorTest {
 		var api1 = types1.toAPI();
 
 		Files.writeString(i, "public interface I { void m(); }");
-		var changedFiles = new ChangedFiles(Set.of(i), Set.of(), Set.of());
+		var changedFiles = new ChangedFiles(Set.of(wd.relativize(i)), Set.of(), Set.of());
 
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
@@ -82,7 +82,7 @@ class IncrementalJdtTypesExtractorTest {
 
 		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
 
-		var changedFiles = new ChangedFiles(Set.of(), Set.of(a), Set.of());
+		var changedFiles = new ChangedFiles(Set.of(), Set.of(wd.relativize(a)), Set.of());
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd),
 			changedFiles).toAPI();
@@ -107,7 +107,7 @@ class IncrementalJdtTypesExtractorTest {
 		var b = wd.resolve("B.java");
 		Files.writeString(b, "public class B {}");
 
-		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(b));
+		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(wd.relativize(b)));
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd), changedFiles).toAPI();
 
@@ -150,7 +150,7 @@ class IncrementalJdtTypesExtractorTest {
 			package pkg2;
 			class D {}""");
 
-		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
+		var api1 = new JdtTypesExtractor().extractTypes(Library.of(root)).toAPI();
 		assertThat(api1.getExportedTypes()).hasSize(3);
 
 		Files.writeString(b, """
@@ -161,7 +161,7 @@ class IncrementalJdtTypesExtractorTest {
 				public <U extends A> C<U> p(D p1, A p2) { return null; }
 			}""");
 
-		var changedFiles = new ChangedFiles(Set.of(b), Set.of(), Set.of());
+		var changedFiles = new ChangedFiles(Set.of(root.relativize(b)), Set.of(), Set.of());
 		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 
 		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(root), changedFiles).toAPI();

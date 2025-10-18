@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.resolution;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.spoon.SpoonAPIFactory;
@@ -31,7 +32,8 @@ public class SpoonTypeProvider implements TypeProvider {
 	public SpoonTypeProvider(TypeReferenceFactory typeReferenceFactory, Set<Path> classpath) {
 		Preconditions.checkNotNull(typeReferenceFactory);
 		Preconditions.checkNotNull(classpath);
-		spoonFactory = new SpoonAPIFactory(typeReferenceFactory, classpath);
+		Library virtual = Library.builder().location(Path.of("")).classpath(classpath).build();
+		spoonFactory = new SpoonAPIFactory(virtual, typeReferenceFactory);
 	}
 
 	@Override

@@ -1,5 +1,8 @@
 package io.github.alien.roseau.api.model;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
+import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
+
 import java.nio.file.Path;
 
 /**
@@ -10,6 +13,9 @@ import java.nio.file.Path;
  * @see SourceLocation#NO_LOCATION
  */
 public record SourceLocation(
+	// Annoying, but Jackson serializes Path as URIs (file:///absolute/path/to/File.java)
+	// and we want to keep relative paths instead
+	@JsonSerialize(using = ToStringSerializer.class)
 	Path file,
 	int line
 ) {

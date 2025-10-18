@@ -18,8 +18,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class TimestampChangedFilesProviderTest {
-	void touch(Path file) throws IOException {
+	static void touch(Path file) throws IOException {
 		Files.setLastModifiedTime(file, FileTime.fromMillis(Instant.now().toEpochMilli()));
+	}
+
+	static Set<Path> fileSet(String file) {
+		return Set.of(Path.of(file));
 	}
 
 	@Test
@@ -35,7 +39,7 @@ class TimestampChangedFilesProviderTest {
 		var changes = provider.getChangedFiles();
 		assertEquals(Set.of(), changes.updatedFiles());
 		assertEquals(Set.of(), changes.deletedFiles());
-		assertEquals(Set.of(a), changes.createdFiles());
+		assertEquals(fileSet("A.java"), changes.createdFiles());
 	}
 
 	@Test
@@ -45,7 +49,7 @@ class TimestampChangedFilesProviderTest {
 		Files.createFile(a);
 		Files.createFile(b);
 
-		var provider = new TimestampChangedFilesProvider(wd, Set.of(a));
+		var provider = new TimestampChangedFilesProvider(wd, fileSet("A.java"));
 		Thread.sleep(10);
 
 		var changes = provider.getChangedFiles();
@@ -59,14 +63,14 @@ class TimestampChangedFilesProviderTest {
 		Files.createFile(a);
 		Files.createFile(b);
 
-		var provider = new TimestampChangedFilesProvider(wd, Set.of(a));
+		var provider = new TimestampChangedFilesProvider(wd, fileSet("A.java"));
 		Thread.sleep(10);
 
 		touch(a);
 		touch(b);
 
 		var changes = provider.getChangedFiles();
-		assertEquals(Set.of(a), changes.updatedFiles());
+		assertEquals(fileSet("A.java"), changes.updatedFiles());
 		assertEquals(Set.of(), changes.deletedFiles());
 		assertEquals(Set.of(), changes.createdFiles());
 	}
@@ -78,7 +82,7 @@ class TimestampChangedFilesProviderTest {
 		Files.createFile(a);
 		Files.createFile(b);
 
-		var provider = new TimestampChangedFilesProvider(wd, Set.of(a));
+		var provider = new TimestampChangedFilesProvider(wd, fileSet("A.java"));
 		Thread.sleep(10);
 
 		Files.delete(a);
@@ -86,7 +90,7 @@ class TimestampChangedFilesProviderTest {
 
 		var changes = provider.getChangedFiles();
 		assertEquals(Set.of(), changes.updatedFiles());
-		assertEquals(Set.of(a), changes.deletedFiles());
+		assertEquals(fileSet("A.java"), changes.deletedFiles());
 		assertEquals(Set.of(), changes.createdFiles());
 	}
 
@@ -97,15 +101,15 @@ class TimestampChangedFilesProviderTest {
 		Files.createFile(a);
 		Files.createFile(b);
 
-		var provider = new TimestampChangedFilesProvider(wd, Set.of(a));
+		var provider = new TimestampChangedFilesProvider(wd, fileSet("A.java"));
 		Thread.sleep(10);
 
-		var c = Files.createFile(wd.resolve("B.java"));
+		Files.createFile(wd.resolve("B.java"));
 
 		var changes = provider.getChangedFiles();
 		assertEquals(Set.of(), changes.updatedFiles());
 		assertEquals(Set.of(), changes.deletedFiles());
-		assertEquals(Set.of(c), changes.createdFiles());
+		assertEquals(fileSet("B.java"), changes.createdFiles());
 	}
 
 	@Test

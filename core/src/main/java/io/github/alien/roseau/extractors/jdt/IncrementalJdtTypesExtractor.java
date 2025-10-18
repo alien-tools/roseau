@@ -13,7 +13,6 @@ import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -39,34 +38,27 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			return previousTypes;
 		}
 
-		Path oldRoot = previousTypes.getLibrary().getLocation();
-		Path newRoot = newVersion.getLocation();
-
 		// Collect types that should be discarded from the previous API
-		Set<Path> discarded = Sets.union(resolve(oldRoot, changedFiles.deletedFiles()),
-			resolve(oldRoot, changedFiles.updatedFiles()));
+		Set<Path> discarded = Sets.union(changedFiles.deletedFiles(),
+			changedFiles.updatedFiles());
 
 		// Collect files to be parsed
-		List<Path> filesToParse = Sets.union(resolve(newRoot, changedFiles.updatedFiles()),
-			resolve(newRoot, changedFiles.createdFiles())).stream().toList();
+		List<Path> filesToParse = Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()).stream()
+			.map(newVersion.getLocation()::resolve)
+			.toList();
+
+		List<TypeDecl> unchanged = previousTypes.getAllTypes().stream()
+			.filter(t -> !discarded.contains(t.getLocation().file()))
+			.toList();
 
 		// Parse, collect, and merge the updated files
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 		List<TypeDecl> newTypeDecls = Stream.concat(
-			// Previous unchanged types
-			previousTypes.getAllTypes().stream()
-				.filter(t -> !discarded.contains(t.getLocation().file())),
-			// New reparsed types
+			unchanged.stream(),
 			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
 		).toList();
 
 		// FIXME: the module declaration might have changed between the two versions
 		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
-	}
-
-	private Set<Path> resolve(Path root, Set<Path> files) {
-		return files.stream()
-			.map(root::resolve)
-			.collect(Collectors.toSet());
 	}
 }

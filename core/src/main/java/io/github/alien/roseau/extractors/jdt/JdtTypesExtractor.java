@@ -66,7 +66,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 
 	ParsingResult parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
 		String[] sourcesArray = sourcesToParse.stream()
-			.map(p -> p.toAbsolutePath().toString())
+			.map(Path::toString)
 			.toArray(String[]::new);
 
 		Map<String, String> options = JavaCore.getOptions();
@@ -104,7 +104,7 @@ public class JdtTypesExtractor implements TypesExtractor {
 							sourceFilePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 
-				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
+				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory, library.getLocation());
 				ast.accept(visitor);
 				moduleDecls.addAll(visitor.getCollectedModuleDecls());
 				typeDecls.addAll(visitor.getCollectedTypeDecls());

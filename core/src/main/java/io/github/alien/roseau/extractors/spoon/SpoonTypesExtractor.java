@@ -24,7 +24,8 @@ public class SpoonTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		CtModel model = SpoonUtils.buildModel(library.getLocation(), library.getClasspath(), Duration.ofSeconds(Long.MAX_VALUE));
+		CtModel model = SpoonUtils.buildModel(library.getLocation(), library.getClasspath(),
+			Duration.ofSeconds(Long.MAX_VALUE));
 		return extractTypes(library, model);
 	}
 
@@ -37,7 +38,7 @@ public class SpoonTypesExtractor implements TypesExtractor {
 		Preconditions.checkArgument(canExtract(library));
 		Preconditions.checkNotNull(model);
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-		SpoonAPIFactory factory = new SpoonAPIFactory(typeRefFactory, library.getClasspath());
+		SpoonAPIFactory factory = new SpoonAPIFactory(library, typeRefFactory);
 
 		List<TypeDecl> allTypes = model.getAllPackages().stream().parallel()
 			.flatMap(p -> getAllTypes(p).parallel().map(factory::convertCtType))

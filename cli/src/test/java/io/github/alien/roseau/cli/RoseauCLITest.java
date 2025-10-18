@@ -365,8 +365,8 @@ class RoseauCLITest {
 	void ignore_simple_bc(@TempDir Path tempDir) throws IOException {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
-			type;symbol;kind;nature
-			pkg.T;pkg.T.m();METHOD_REMOVED;DELETION""");
+			type;symbol;kind;nature;location
+			pkg.T;pkg.T.m();METHOD_REMOVED;DELETION;pkg/T.java:10""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
@@ -412,7 +412,7 @@ class RoseauCLITest {
 	void malformed_ignored_csv(@TempDir Path tempDir) throws IOException {
 		var malformedCsv = tempDir.resolve("malformed.csv");
 		Files.writeString(malformedCsv, """
-			type;symbol;kind;nature
+			type;symbol;kind;nature;location
 			one_field;a_second_field""");
 
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
@@ -429,8 +429,8 @@ class RoseauCLITest {
 	void malformed_ignored_csv_kind(@TempDir Path tempDir) throws IOException {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
-			type;symbol;kind;nature
-			pkg.T;pkg.T.m();UNKNOWN;UNKNOWN""");
+			type;symbol;kind;nature;location
+			pkg.T;pkg.T.m();UNKNOWN;UNKNOWN;UNKNOWN""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
