@@ -2,9 +2,9 @@ package io.github.alien.roseau.diff.changes;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ExecutableDecl;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 
 /**
  * A breaking change identified when comparing two {@link io.github.alien.roseau.api.model.API} instances.
@@ -30,6 +30,18 @@ public record BreakingChange(
 		if (details == null) {
 			details = new BreakingChangeDetails.None();
 		}
+	}
+
+	/**
+	 * Checks whether this breaking change is local to the type it impacts.
+	 *
+	 * @return true if this breaking change is local
+	 */
+	public boolean isLocal() {
+		if (impactedSymbol instanceof TypeMemberDecl member) {
+			return member.getContainingType().getQualifiedName().equals(impactedType.getQualifiedName());
+		}
+		return true;
 	}
 
 	private static String printSymbol(Symbol s) {

@@ -1,8 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
 import io.github.alien.roseau.api.model.SourceLocation;
-import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
@@ -13,15 +11,24 @@ import java.util.stream.Collectors;
  * A formatter of {@link RoseauReport} that produces a CLI-friendly report.
  */
 public class CliFormatter implements BreakingChangesFormatter {
-	private final boolean plain;
+	private final Mode mode;
 
 	private static final String RED_TEXT = "\u001B[31m";
 	private static final String BOLD = "\u001B[1m";
 	private static final String UNDERLINE = "\u001B[4m";
 	private static final String RESET = "\u001B[0m";
 
-	public CliFormatter(boolean plain) {
-		this.plain = plain;
+	public enum Mode {
+		PLAIN,
+		ANSI
+	}
+
+	public CliFormatter(Mode mode) {
+		this.mode = mode;
+	}
+
+	public CliFormatter() {
+		this(Mode.PLAIN);
 	}
 
 	@Override
@@ -32,35 +39,34 @@ public class CliFormatter implements BreakingChangesFormatter {
 	}
 
 	private String formatBC(BreakingChange bc) {
-		String details = formatDetails(bc.details());
-		boolean isLocalSymbol =
-			bc.impactedSymbol() instanceof TypeDecl ||
-				(bc.impactedSymbol() instanceof TypeMemberDecl member &&
-					member.getContainingType().getQualifiedName().equals(bc.impactedType().getQualifiedName()));
-
-		if (plain) {
-			return "%s %s%s%s%n\t%s".formatted(
-				bc.kind(),
-				bc.impactedSymbol().getQualifiedName(),
-				isLocalSymbol ? "" : " in " + bc.impactedType().getQualifiedName(),
-				details.isEmpty() ? "" : " [%s]".formatted(details),
-				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-					? "No source location"
-					: "%s:%d".formatted(bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line()));
-		} else {
-			return "%s %s%s%s%n\t%s".formatted(
-				RED_TEXT + BOLD + bc.kind() + RESET,
-				UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET,
-				isLocalSymbol ? "" : " in " + bc.impactedType().getQualifiedName(),
-				details.isEmpty() ? "" : " [%s]".formatted(details),
-				bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
-					? "No source location"
-					: "%s:%d".formatted(bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line()));
-		}
+		String details = formatDetails(bc);
+		return "%s %s%s%n\t%s".formatted(formatKind(bc), formatSymbol(bc),
+			details.isEmpty() ? details : (" [" + details + "]"), formatLocation(bc));
 	}
 
-	private static String formatDetails(BreakingChangeDetails details) {
-		return switch (details) {
+	private String formatKind(BreakingChange bc) {
+		return mode == Mode.ANSI
+			? (RED_TEXT + BOLD + bc.kind().name() + RESET)
+			: bc.kind().name();
+	}
+
+	private String formatSymbol(BreakingChange bc) {
+		return "%s%s".formatted(
+			mode == Mode.ANSI
+				? (UNDERLINE + bc.impactedSymbol().getQualifiedName() + RESET)
+				: bc.impactedSymbol().getQualifiedName(),
+			bc.isLocal() ? "" : (" in " + bc.impactedType().getQualifiedName())
+		);
+	}
+
+	private String formatLocation(BreakingChange bc) {
+		return bc.impactedSymbol().getLocation() == SourceLocation.NO_LOCATION
+			? "No source location"
+			: "%s:%d".formatted(bc.impactedSymbol().getLocation().file(), bc.impactedSymbol().getLocation().line());
+	}
+
+	private String formatDetails(BreakingChange bc) {
+		return switch (bc.details()) {
 			case BreakingChangeDetails.None() -> "";
 			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
 				"%s -> %s".formatted(oldType, newType);

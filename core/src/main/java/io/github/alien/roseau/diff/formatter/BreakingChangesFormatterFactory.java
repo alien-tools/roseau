@@ -19,7 +19,7 @@ public enum BreakingChangesFormatterFactory {
 	 */
 	public static BreakingChangesFormatter newBreakingChangesFormatter(BreakingChangesFormatterFactory format) {
 		return switch (format) {
-			case CLI -> new CliFormatter(true);
+			case CLI -> new CliFormatter();
 			case JSON -> new JsonFormatter();
 			case CSV -> new CsvFormatter();
 			case HTML -> new HtmlFormatter();
