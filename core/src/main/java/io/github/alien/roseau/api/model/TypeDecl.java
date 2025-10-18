@@ -120,11 +120,13 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 			&& Objects.equals(formalTypeParameters, other.formalTypeParameters)
 			&& Objects.equals(fields, other.fields)
 			&& Objects.equals(methods, other.methods)
-			&& Objects.equals(enclosingType, other.enclosingType);
+			&& Objects.equals(enclosingType, other.enclosingType)
+			&& Objects.equals(permittedTypes, other.permittedTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods, enclosingType);
+		return Objects.hash(super.hashCode(), implementedInterfaces, formalTypeParameters, fields, methods,
+			enclosingType, permittedTypes);
 	}
 }
