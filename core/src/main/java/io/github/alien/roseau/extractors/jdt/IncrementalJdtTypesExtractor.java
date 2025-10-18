@@ -30,7 +30,7 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 	@Override
 	public LibraryTypes incrementalUpdate(LibraryTypes previousTypes, Library newVersion, ChangedFiles changedFiles) {
 		Preconditions.checkNotNull(previousTypes);
-		Preconditions.checkArgument(canExtract(newVersion));
+		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
 
 		// If nothing's changed, just return the old one

@@ -33,6 +33,8 @@ import java.util.stream.Stream;
 public class JdtTypesExtractor implements TypesExtractor {
 	private static final Logger LOGGER = LogManager.getLogger(JdtTypesExtractor.class);
 
+	record ParsingResult(List<TypeDecl> types, List<ModuleDecl> modules) {}
+
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
@@ -54,14 +56,6 @@ public class JdtTypesExtractor implements TypesExtractor {
 		} catch (IOException e) {
 			throw new RoseauException("Failed to parse sources", e);
 		}
-	}
-
-	@Override
-	public boolean canExtract(Library library) {
-		return library != null && library.isSources();
-	}
-
-	record ParsingResult(List<TypeDecl> types, List<ModuleDecl> modules) {
 	}
 
 	ParsingResult parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
@@ -119,6 +113,10 @@ public class JdtTypesExtractor implements TypesExtractor {
 			// Catching JDT's internal messy errors
 			throw new RoseauException("Failed to parse code from " + library.getLocation(), e);
 		}
+	}
+
+	private static boolean canExtract(Library library) {
+		return library != null && library.isSources();
 	}
 
 	private static boolean isRegularJavaFile(Path file) {

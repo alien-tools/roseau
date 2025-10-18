@@ -20,6 +20,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.zip.ZipFile;
 
 /**
  * An ASM-based {@link TypesExtractor}.
@@ -32,14 +33,13 @@ public class AsmTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (JarFile jar = new JarFile(library.getLocation().toFile())) {
+		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Failed to process JAR file", e);
 		}
 	}
 
-	@Override
 	public boolean canExtract(Library library) {
 		return library != null && library.isJar();
 	}
@@ -53,12 +53,12 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private LibraryTypes extractTypes(Library library, JarFile jar) {
 		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
 
-		List<TypeDecl> typeDecls = jar.stream()
+		List<TypeDecl> typeDecls = jar.versionedStream()
 			.filter(this::isRegularClassFile)
 			.parallel()
 			.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
 			.toList();
-		List<ModuleDecl> moduleDecls = jar.stream()
+		List<ModuleDecl> moduleDecls = jar.versionedStream()
 			.filter(this::isModuleInfo)
 			.flatMap(entry -> extractModuleDecl(jar, entry).stream())
 			.toList();
@@ -104,8 +104,6 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private boolean isRegularClassFile(JarEntry entry) {
 		return !entry.isDirectory() &&
 			entry.getName().endsWith(".class") &&
-			// Multi-release JARs store version-specific class files there, so we could have duplicates
-			!entry.getName().startsWith("META-INF/") &&
 			!isModuleInfo(entry);
 	}
 }

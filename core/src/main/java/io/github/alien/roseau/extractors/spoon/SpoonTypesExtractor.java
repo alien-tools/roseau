@@ -29,11 +29,6 @@ public class SpoonTypesExtractor implements TypesExtractor {
 		return extractTypes(library, model);
 	}
 
-	@Override
-	public boolean canExtract(Library library) {
-		return library != null && library.isSources();
-	}
-
 	public LibraryTypes extractTypes(Library library, CtModel model) {
 		Preconditions.checkArgument(canExtract(library));
 		Preconditions.checkNotNull(model);
@@ -67,5 +62,9 @@ public class SpoonTypesExtractor implements TypesExtractor {
 	private static Stream<CtType<?>> getNestedTypes(CtType<?> type) {
 		return type.getNestedTypes().stream()
 			.flatMap(nestedType -> Stream.concat(Stream.of(nestedType), getNestedTypes(nestedType)));
+	}
+
+	private static boolean canExtract(Library library) {
+		return library != null && library.isSources();
 	}
 }
