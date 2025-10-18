@@ -26,7 +26,6 @@ import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 import io.github.alien.roseau.api.visit.APIAlgebra;
-import io.github.alien.roseau.api.visit.Print;
 
 import java.util.Arrays;
 import java.util.Set;
