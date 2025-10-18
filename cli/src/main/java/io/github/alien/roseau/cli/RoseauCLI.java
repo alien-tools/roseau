@@ -185,6 +185,11 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private void checkOptions(RoseauOptions options) {
 		Path v1Path = options.v1().location();
+
+		if (config != null && !Files.isRegularFile(config)) {
+			printErr("Warning: ignoring missing configuration file %s".formatted(config));
+		}
+
 		if (v1Path == null || !Files.exists(v1Path)) {
 			throw new RoseauException("Cannot find v1: %s".formatted(v1Path));
 		}

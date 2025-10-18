@@ -441,6 +441,18 @@ class RoseauCLITest {
 		assertThat(exitCode).isEqualTo(2);
 	}
 
+	// --- Config --- //
+	@Test
+	void warning_on_missing_config() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--config=nonexistent.yaml");
+
+		assertThat(err.toString()).contains("Warning: ignoring missing configuration file");
+		assertThat(exitCode).isZero();
+	}
+
 	@Test
 	void verbose_mode_with_exception() {
 		var exitCode = cmd.execute("--v1=src/test/resources/invalid-path",
