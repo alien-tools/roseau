@@ -39,7 +39,7 @@ import static picocli.CommandLine.Spec;
 /**
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
-@Command(name = "roseau", version = "Roseau 0.4.0-SNAPSHOT", sortOptions = false, mixinStandardHelpOptions = true,
+@Command(name = "roseau", versionProvider = RoseauCLI.VersionProvider.class, sortOptions = false, mixinStandardHelpOptions = true,
 	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
 		"--v1 and --v2 can point to either JAR files or source code directories. " +
 		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
@@ -366,5 +366,13 @@ public final class RoseauCLI implements Callable<Integer> {
 	public static void main(String[] args) {
 		int exitCode = new CommandLine(new RoseauCLI()).execute(args);
 		System.exit(exitCode);
+	}
+
+	static final class VersionProvider implements CommandLine.IVersionProvider {
+		@Override
+		public String[] getVersion() {
+			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.4.0-SNAPSHOT");
+			return new String[]{"Roseau " + impl};
+		}
 	}
 }
