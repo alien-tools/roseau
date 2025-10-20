@@ -378,6 +378,22 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void ignore_unknown_bc(@TempDir Path tempDir) throws IOException {
+		var ignored = tempDir.resolve("ignored.csv");
+		Files.writeString(ignored, """
+			type;symbol;kind;nature;location
+			pkg.T;pkg.T.m2();METHOD_REMOVED;DELETION;pkg/T.java:10""");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--ignored=" + ignored,
+			"--plain");
+
+		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(exitCode).isZero();
+	}
+
+	@Test
 	void ignore_all_bcs_in_report(@TempDir Path tempDir) {
 		var ignored = tempDir.resolve("ignored.csv");
 		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
@@ -386,6 +402,22 @@ class RoseauCLITest {
 			"--report=" + ignored,
 			"--format=CSV");
 
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--ignored=" + ignored,
+			"--plain");
+
+		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isZero();
+	}
+
+	@Test
+	void minimal_ignored_file(@TempDir Path tempDir) throws IOException {
+		var ignored = tempDir.resolve("ignored.csv");
+		Files.writeString(ignored, """
+			type;symbol;kind
+			pkg.T;pkg.T.m();METHOD_REMOVED""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",

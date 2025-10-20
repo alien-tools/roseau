@@ -23,11 +23,12 @@ class IgnoredCsvFile {
 				.map(String::strip)
 				.filter(line -> !line.isEmpty())
 				.filter(line -> line.charAt(0) != '#')
-				.filter(line -> !line.equals(CsvFormatter.HEADER))
+				.filter(line -> !line.startsWith("type;symbol;kind"))
 				.map(line -> line.split(";", -1))
 				.map(fields -> {
 					if (fields.length < 3) {
-						throw new RoseauException("Malformed line '%s' in %s".formatted(String.join(";", fields), csv));
+						throw new RoseauException("Malformed line '%s' in %s, expecting <type>;<symbol>;<kind>"
+							.formatted(String.join(";", fields), csv));
 					}
 					try {
 						return new Ignored(fields[0].trim(), fields[1].trim(), BreakingChangeKind.valueOf(fields[2].trim()));
