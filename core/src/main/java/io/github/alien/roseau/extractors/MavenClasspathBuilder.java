@@ -90,7 +90,7 @@ public class MavenClasspathBuilder {
 		// "An empty string indicates include all dependencies"
 		properties.setProperty("mdep.includeScope", "");
 		request.setProperties(properties);
-		request.setOutputHandler(LOGGER::debug);
+		request.setOutputHandler(LOGGER::trace);
 		request.setErrorHandler(LOGGER::warn);
 		return request;
 	}
