@@ -17,6 +17,7 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
@@ -370,8 +371,9 @@ public class TestUtils {
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		APIDiff apiDiff = new APIDiff(buildSpoonAPI(sourcesV1), buildSpoonAPI(sourcesV2));
-		return apiDiff.diff().getBreakingChanges();
+		APIDiff apiDiff = new APIDiff();
+		RoseauReport report = apiDiff.compare(buildSpoonAPI(sourcesV1), buildSpoonAPI(sourcesV2));
+		return report.getBreakingChanges();
 
 		// Simple differential testing with japicmp
 		/*try {
