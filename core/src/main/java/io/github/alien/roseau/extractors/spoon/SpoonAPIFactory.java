@@ -98,6 +98,7 @@ public class SpoonAPIFactory {
 			sanitizeClasspath(library.getClasspath()).stream()
 				.map(p -> p.toAbsolutePath().toString())
 				.toArray(String[]::new));
+		SpoonUtils.setupEnvironment(spoonFactory.getEnvironment());
 		this.typeFactory = spoonFactory.Type();
 		this.typeReferenceFactory = typeReferenceFactory;
 		this.basePath = library.getLocation();
