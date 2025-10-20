@@ -521,7 +521,7 @@ class NestedTypesExtractionTest {
 			public class C {
 			  public void m() {
 			    new Thread() {
-			      static class I {}
+			      public static class I {}
 			      @Override public void run() {}
 			    };
 			  }

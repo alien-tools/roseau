@@ -43,6 +43,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 final class AsmClassVisitor extends ClassVisitor {
@@ -65,6 +66,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	private boolean hasNonPrivateConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
+	private static final Pattern anonymousMatcher = Pattern.compile("\\$\\d+");
 
 	record AnnotationData(String descriptor, Map<String, String> values) {
 		AnnotationData(String descriptor) {
@@ -277,7 +279,7 @@ final class AsmClassVisitor extends ClassVisitor {
 			return;
 		}
 
-		if (outerName != null && innerName != null) {
+		if (outerName != null && innerName != null && !anonymousMatcher.matcher(outerName).find()) {
 			// Nested/inner types
 			// Merge the kind bits (class/interface/enum/annotation/record) from the class header with
 			// the visibility/modifier bits from the InnerClasses entry. Some compilers omit ACC_RECORD
