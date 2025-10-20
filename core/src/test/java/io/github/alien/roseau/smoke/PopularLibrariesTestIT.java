@@ -5,13 +5,6 @@ import com.google.common.collect.ArrayListMultimap;
 import com.google.common.collect.Multimap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.ParameterDecl;
-import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.MavenClasspathBuilder;
@@ -36,10 +29,7 @@ import java.nio.file.Path;
 import java.util.Comparator;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
@@ -163,11 +153,6 @@ class PopularLibrariesTestIT {
 			libraryGAV, loc, numTypes, numMethods, numFields,
 			spoonApiTime, asmApiTime, diffTime, jdtApiTime,
 			asmToAsmBCs.size());
-
-		System.out.println("### JDT to ASM API diff:");
-		diffAPIs(jdtApi, asmApi);
-		System.out.println("### ASM to JDT API diff:");
-		diffAPIs(asmApi, jdtApi);
 
 		if (!jdtToAsmBCs.isEmpty() || !asmToJdtBCs.isEmpty()) {
 			System.out.println("JDT to ASM BCs:");
@@ -334,240 +319,5 @@ class PopularLibrariesTestIT {
 			} catch (Exception ignored) {
 			}
 		});
-	}
-
-	private static boolean diffAPIs(API api1, API api2) {
-		boolean equal = true;
-
-		for (TypeDecl type1 : api1.getLibraryTypes().getAllTypes()) {
-			Optional<TypeDecl> type2 = api2.getLibraryTypes().findType(type1.getQualifiedName());
-
-			if (type2.isEmpty()) {
-				System.out.printf("%s %s is missing in the second API%n",
-					type1.getClass().getSimpleName(), type1.getQualifiedName());
-				equal = false;
-			} else {
-				if (!diffTypeDecl(api1, api2, type1, type2.get())) {
-					equal = false;
-				}
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean unsortedListsMatch(List<?> list1, List<?> list2) {
-		return new HashSet<>(list1).equals(new HashSet<>(list2));
-	}
-
-	private static boolean diffTypeDecl(API api1, API api2, TypeDecl type1, TypeDecl type2) {
-		boolean equal = true;
-		String typeName = type1.getClass().getSimpleName() + " " + type1.getQualifiedName();
-
-		if (!type1.getQualifiedName().equals(type2.getQualifiedName())) {
-			System.out.printf("Type name mismatch: %s vs %s%n", type1.getQualifiedName(), type2.getQualifiedName());
-			equal = false;
-		}
-
-		if (!type1.getSimpleName().equals(type2.getSimpleName())) {
-			System.out.printf("Type name mismatch: %s vs %s%n", type1.getSimpleName(), type2.getSimpleName());
-			equal = false;
-		}
-
-		if (type1.getVisibility() != type2.getVisibility()) {
-			System.out.printf("Visibility mismatch for %s: %s vs %s%n", typeName, type1.getVisibility(), type2.getVisibility());
-			equal = false;
-		}
-
-		if (!type1.getModifiers().equals(type2.getModifiers())) {
-			System.out.printf("Modifiers mismatch for %s: %s vs %s%n", typeName, type1.getModifiers(), type2.getModifiers());
-			equal = false;
-		}
-
-		if (!unsortedListsMatch(type1.getImplementedInterfaces(), type2.getImplementedInterfaces())) {
-			equal = false;
-			System.out.printf("Implemented interfaces mismatch for %s: %s vs %s%n", typeName, type1.getImplementedInterfaces(), type2.getImplementedInterfaces());
-		}
-
-		if (!diffFields(type1.getDeclaredFields(), type2.getDeclaredFields())) {
-			equal = false;
-		}
-
-		if (!diffMethods(api1, api2, type1.getDeclaredMethods(), type2.getDeclaredMethods())) {
-			equal = false;
-		}
-
-		if (!type1.getEnclosingType().equals(type2.getEnclosingType())) {
-			System.out.printf("Enclosing type mismatch for type %s%n", type1.getQualifiedName());
-			equal = false;
-		}
-
-		if (!type1.getFormalTypeParameters().equals(type2.getFormalTypeParameters())) {
-			System.out.printf("Formal type parameters mismatch for type %s: %s vs %s%n",
-				type1.getQualifiedName(), type1.getFormalTypeParameters(), type2.getFormalTypeParameters());
-		}
-
-		if (type1 instanceof ClassDecl class1 && type2 instanceof ClassDecl class2) {
-			if (!diffConstructors(api1, api2, class1.getDeclaredConstructors(), class2.getDeclaredConstructors())) {
-				equal = false;
-			}
-
-			if (!class1.getSuperClass().equals(class2.getSuperClass())) {
-				System.out.printf("Super class mismatch for %s: %s vs %s%n", type1.getQualifiedName(), class1.getSuperClass(), class2.getSuperClass());
-				equal = false;
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffFields(List<FieldDecl> fields1, List<FieldDecl> fields2) {
-		boolean equal = true;
-		Map<String, FieldDecl> fieldMap1 = fields1.stream().collect(Collectors.toMap(FieldDecl::getSimpleName, f -> f));
-		Map<String, FieldDecl> fieldMap2 = fields2.stream().collect(Collectors.toMap(FieldDecl::getSimpleName, f -> f));
-
-		for (String fieldName : fieldMap1.keySet()) {
-			FieldDecl field1 = fieldMap1.get(fieldName);
-
-			if (!fieldMap2.containsKey(fieldName)) {
-				System.out.printf("Field %s is missing in the second API%n", field1.getQualifiedName());
-				equal = false;
-				break;
-			}
-
-			FieldDecl field2 = fieldMap2.get(fieldName);
-
-			if (!field1.getType().equals(field2.getType())) {
-				System.out.printf("Field type mismatch for %s: %s vs %s%n", field1.getQualifiedName(), field1.getType().getQualifiedName(), field2.getType().getQualifiedName());
-				equal = false;
-			}
-
-			if (field1.getVisibility() != field2.getVisibility()) {
-				System.out.printf("Field visibility mismatch for %s: %s vs %s%n", field1.getQualifiedName(), field1.getVisibility(), field2.getVisibility());
-				equal = false;
-			}
-
-			if (!field1.getModifiers().equals(field2.getModifiers())) {
-				System.out.printf("Field modifiers mismatch for %s: %s vs %s%n", field1.getQualifiedName(), field1.getModifiers(), field2.getModifiers());
-				equal = false;
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffMethods(API api1, API api2, List<MethodDecl> methods1, List<MethodDecl> methods2) {
-		boolean equal = true;
-		Map<String, MethodDecl> methodMap1 = methods1.stream().collect(Collectors.toMap(m -> api1.getErasure(m), m -> m));
-		Map<String, MethodDecl> methodMap2 = methods2.stream().collect(Collectors.toMap(m -> api1.getErasure(m), m -> m));
-
-		for (String methodErasure : methodMap1.keySet()) {
-			MethodDecl method1 = methodMap1.get(methodErasure);
-			String methodFqn = method1.getContainingType().getQualifiedName() + "#" + method1.getSignature();
-
-			if (!methodMap2.containsKey(methodErasure)) {
-				System.out.printf("Method %s is missing in the second API%n", methodFqn);
-				equal = false;
-				break;
-			}
-
-			MethodDecl method2 = methodMap2.get(methodErasure);
-
-			if (!method1.getType().getQualifiedName().equals(method2.getType().getQualifiedName())) {
-				System.out.printf("Method return type mismatch for %s: %s vs %s%n", methodFqn, method1.getType().getQualifiedName(), method2.getType().getQualifiedName());
-				equal = false;
-			}
-
-			if (method1.getVisibility() != method2.getVisibility()) {
-				System.out.printf("Method visibility mismatch for %s: %s vs %s%n", methodFqn, method1.getVisibility(), method2.getVisibility());
-				equal = false;
-			}
-
-			if (!method1.getModifiers().equals(method2.getModifiers())) {
-				System.out.printf("Method modifiers mismatch for %s: %s vs %s%n", methodFqn, method1.getModifiers(), method2.getModifiers());
-				equal = false;
-			}
-
-			if (!diffParameters(method1.getParameters(), method2.getParameters())) {
-				equal = false;
-			}
-
-			if (!method1.getFormalTypeParameters().equals(method2.getFormalTypeParameters())) {
-				System.out.printf("Formal type parameters mismatch for method %s: %s vs %s%n",
-					method1.getQualifiedName(), method1.getFormalTypeParameters(), method2.getFormalTypeParameters());
-			}
-
-			if (!unsortedListsMatch(method1.getThrownExceptions(), method2.getThrownExceptions())) {
-				System.out.printf("Thrown exceptions mismatch for method %s: %s vs %s%n",
-					method1.getQualifiedName(), method1.getThrownExceptions(), method2.getThrownExceptions());
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffConstructors(API api1, API api2, List<ConstructorDecl> constructors1, List<ConstructorDecl> constructors2) {
-		boolean equal = true;
-		Map<String, ConstructorDecl> constructorMap1 = constructors1.stream().collect(Collectors.toMap(c -> api1.getErasure(c), c -> c));
-		Map<String, ConstructorDecl> constructorMap2 = constructors2.stream().collect(Collectors.toMap(c -> api1.getErasure(c), c -> c));
-
-		for (String constructorErasure : constructorMap1.keySet()) {
-			ConstructorDecl constructor1 = constructorMap1.get(constructorErasure);
-			String consFqn = constructor1.getContainingType().getQualifiedName() + "." + constructor1.getSignature();
-
-			if (!constructorMap2.containsKey(constructorErasure)) {
-				System.out.printf("Constructor %s is missing in the second API%n", consFqn);
-				equal = false;
-				break;
-			}
-
-			ConstructorDecl constructor2 = constructorMap2.get(constructorErasure);
-
-			if (constructor1.getVisibility() != constructor2.getVisibility()) {
-				System.out.printf("Constructor visibility mismatch for %s: %s vs %s%n", consFqn, constructor1.getVisibility(), constructor2.getVisibility());
-				equal = false;
-			}
-
-			if (!constructor1.getModifiers().equals(constructor2.getModifiers())) {
-				System.out.printf("Constructor modifiers mismatch for %s: %s vs %s%n", consFqn, constructor1.getModifiers(), constructor2.getModifiers());
-				equal = false;
-			}
-
-			if (!diffParameters(constructor1.getParameters(), constructor2.getParameters())) {
-				equal = false;
-			}
-
-			if (!constructor1.getFormalTypeParameters().equals(constructor2.getFormalTypeParameters())) {
-				System.out.printf("Formal type parameters mismatch for constructor %s: %s vs %s%n",
-					constructor1.getQualifiedName(), constructor1.getFormalTypeParameters(), constructor2.getFormalTypeParameters());
-			}
-
-			if (!unsortedListsMatch(constructor1.getThrownExceptions(), constructor2.getThrownExceptions())) {
-				System.out.printf("Thrown exceptions mismatch for method %s: %s vs %s%n",
-					constructor1.getQualifiedName(), constructor1.getThrownExceptions(), constructor2.getThrownExceptions());
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffParameters(List<ParameterDecl> parameters1, List<ParameterDecl> parameters2) {
-		boolean equal = true;
-		for (int i = 0; i < parameters1.size(); i++) {
-			ParameterDecl param1 = parameters1.get(i);
-			ParameterDecl param2 = parameters2.get(i);
-
-			if (!param1.type().equals(param2.type())) {
-				System.out.printf("Parameter type mismatch: %s vs %s%n", param1.type().getQualifiedName(), param2.type().getQualifiedName());
-				equal = false;
-			}
-
-			if (param1.isVarargs() != param2.isVarargs()) {
-				System.out.printf("Parameter varargs mismatch: %s vs %s%n", param1.isVarargs(), param2.isVarargs());
-				equal = false;
-			}
-		}
-
-		return equal;
 	}
 }
