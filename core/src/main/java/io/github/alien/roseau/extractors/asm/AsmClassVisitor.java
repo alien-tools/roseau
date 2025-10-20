@@ -264,7 +264,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	public void visitPermittedSubclass(String permittedSubclass) {
 		if (!shouldSkip) {
 			// FIXME: no support for NON_SEALED in ASM yet
-			permittedTypes.add(typeRefFactory.createTypeReference(permittedSubclass));
+			permittedTypes.add(typeRefFactory.createTypeReference(bytecodeToFqn(permittedSubclass)));
 		}
 	}
 
