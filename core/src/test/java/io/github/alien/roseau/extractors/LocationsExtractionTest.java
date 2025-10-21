@@ -1,6 +1,7 @@
 package io.github.alien.roseau.extractors;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -123,18 +124,26 @@ class LocationsExtractionTest {
 		var api = new AsmTypesExtractor().extractTypes(Library.of(jar)).toAPI();
 
 		api.getLibraryTypes().getAllTypes().forEach(t -> {
-			assertThat(t.getLocation().file()).hasToString("io/github/alien/roseau/APIShowcase.java");
+			assertThat(t.getLocation().file()).isEqualTo(Path.of("io", "github", "alien", "roseau", "APIShowcase.java"));
 			assertThat(t.getLocation().line()).isEqualTo(-1);
 			assertThat(t.getDeclaredFields()).extracting(Symbol::getLocation).allSatisfy(loc -> {
-				assertThat(loc.file()).hasToString("io/github/alien/roseau/APIShowcase.java");
+				assertThat(loc.file()).isEqualTo(Path.of("io", "github", "alien", "roseau", "APIShowcase.java"));
 				assertThat(loc.line()).isEqualTo(-1);
 			});
 			assertThat(t.getDeclaredMethods().stream().filter(m -> !m.isAbstract() && !m.isNative()))
 				.extracting(Symbol::getLocation)
 				.allSatisfy(loc -> {
-					assertThat(loc.file()).hasToString("io/github/alien/roseau/APIShowcase.java");
+					assertThat(loc.file()).isEqualTo(Path.of("io", "github", "alien", "roseau", "APIShowcase.java"));
 					assertThat(loc.line()).isGreaterThan(0);
 				});
+			if (t instanceof ClassDecl c) {
+				assertThat(c.getDeclaredConstructors().stream())
+					.extracting(Symbol::getLocation)
+					.allSatisfy(loc -> {
+						assertThat(loc.file()).isEqualTo(Path.of("io", "github", "alien", "roseau", "APIShowcase.java"));
+						assertThat(loc.line()).isGreaterThan(0);
+					});
+			}
 		});
 	}
 
