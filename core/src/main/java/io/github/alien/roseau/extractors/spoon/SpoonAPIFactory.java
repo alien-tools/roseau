@@ -60,6 +60,7 @@ import spoon.reflect.declaration.ModifierKind;
 import spoon.reflect.factory.Factory;
 import spoon.reflect.factory.TypeFactory;
 import spoon.reflect.reference.CtArrayTypeReference;
+import spoon.reflect.reference.CtFieldReference;
 import spoon.reflect.reference.CtIntersectionTypeReference;
 import spoon.reflect.reference.CtPackageReference;
 import spoon.reflect.reference.CtTypeParameterReference;
@@ -182,7 +183,7 @@ public class SpoonAPIFactory {
 		// Spoon's null newShadowClass thingy
 		try {
 			return ref.getTypeDeclaration() != null ? convertCtType(ref.getTypeDeclaration()) : null;
-		} catch (Exception e) {
+		} catch (RuntimeException e) {
 			LOGGER.warn("Couldn't convert {}", qualifiedName);
 			return null;
 		}
@@ -283,7 +284,7 @@ public class SpoonAPIFactory {
 
 	private MethodDecl convertCtMethod(CtMethod<?> method) {
 		// Spoon does not store 'default' information as modifier, but we do
-		EnumSet<Modifier> modifiers = Stream.concat(
+		Set<Modifier> modifiers = Stream.concat(
 			convertSpoonNonAccessModifiers(method.getModifiers()).stream(),
 			method.isDefaultMethod() ? Stream.of(Modifier.DEFAULT) : Stream.empty()
 		).collect(Collectors.toCollection(() -> EnumSet.noneOf(Modifier.class)));
@@ -462,7 +463,7 @@ public class SpoonAPIFactory {
 		};
 	}
 
-	private static EnumSet<Modifier> convertSpoonNonAccessModifiers(Collection<ModifierKind> modifiers) {
+	private static Set<Modifier> convertSpoonNonAccessModifiers(Collection<ModifierKind> modifiers) {
 		return modifiers.stream()
 			.filter(mod -> !Set.of(ModifierKind.PUBLIC, ModifierKind.PROTECTED, ModifierKind.PRIVATE).contains(mod))
 			.map(SpoonAPIFactory::convertSpoonModifier)
@@ -487,11 +488,11 @@ public class SpoonAPIFactory {
 	private String extractAnnotationValue(Object value) {
 		return switch (value) {
 			case CtLiteral<?> literal -> {
-				var lit = literal.getValue();
+				Object lit = literal.getValue();
 				yield Optional.ofNullable(lit).map(Object::toString).orElse("null");
 			}
 			case CtFieldRead<?> field -> {
-				var variable = field.getVariable();
+				CtFieldReference<?> variable = field.getVariable();
 				yield variable.getDeclaringType().getQualifiedName() + "." + field.getVariable().getSimpleName();
 			}
 			default -> value.toString();

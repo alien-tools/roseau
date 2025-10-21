@@ -1,4 +1,4 @@
-package io.github.alien.roseau.extractors;
+package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -60,7 +60,7 @@ public class MavenClasspathBuilder {
 						.map(Path::of)
 						.collect(Collectors.toSet());
 				} else {
-					LOGGER.warn("Failed to build Maven classpath from {}", pom, result.getExecutionException());
+					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
 				}
 			} else {
 				LOGGER.warn("Cannot find Maven executable; skipping classpath resolution for {}", pom);

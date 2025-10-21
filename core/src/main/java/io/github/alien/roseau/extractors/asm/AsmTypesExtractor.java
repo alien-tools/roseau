@@ -89,7 +89,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 			ClassReader reader = new ClassReader(is);
 			AsmModuleVisitor visitor = new AsmModuleVisitor(ASM_VERSION);
 			reader.accept(visitor, PARSING_OPTIONS);
-			return Optional.ofNullable(visitor.getModuleDecl());
+			return Optional.ofNullable(visitor.getModule());
 		} catch (IOException e) {
 			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
 			return Optional.empty();

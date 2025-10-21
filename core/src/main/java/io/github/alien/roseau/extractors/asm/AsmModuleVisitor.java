@@ -32,7 +32,7 @@ final class AsmModuleVisitor extends ClassVisitor {
 		};
 	}
 
-	ModuleDecl getModuleDecl() {
+	ModuleDecl getModule() {
 		return module;
 	}
 }

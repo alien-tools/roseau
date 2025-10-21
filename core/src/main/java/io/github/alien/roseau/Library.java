@@ -3,7 +3,6 @@ package io.github.alien.roseau;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
 import io.github.alien.roseau.extractors.ExtractorType;
-import io.github.alien.roseau.extractors.MavenClasspathBuilder;
 
 import java.io.IOException;
 import java.nio.file.Files;

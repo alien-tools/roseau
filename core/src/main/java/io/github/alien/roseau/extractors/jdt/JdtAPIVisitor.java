@@ -164,7 +164,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private void processAbstractTypeDeclaration(AbstractTypeDeclaration type) {
 		ITypeBinding binding = type.resolveBinding();
 		if (binding == null) {
-			LOGGER.warn("No binding for {}; skipping", type.getName().getFullyQualifiedName());
+			LOGGER.warn("No binding for {}; skipping", () -> type.getName().getFullyQualifiedName());
 			return;
 		}
 
@@ -380,7 +380,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	private List<TypeReference<TypeDecl>> convertPermittedTypes(TypeDeclaration type) {
-		return ((List<org.eclipse.jdt.core.dom.Type>) type.permittedTypes()).stream()
+		return ((List<Type>) type.permittedTypes()).stream()
 			.map(Type::resolveBinding)
 			.filter(Objects::nonNull)
 			.map(t -> typeRefFactory.createTypeReference(t.getQualifiedName()))
@@ -463,7 +463,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	// }
 
 	private Set<ElementType> convertAnnotationTargets(ITypeBinding binding) {
-		Set<ElementType> targets = new HashSet<>();
+		Set<ElementType> targets = EnumSet.noneOf(ElementType.class);
 		for (IAnnotationBinding ab : binding.getAnnotations()) {
 			ITypeBinding annType = ab.getAnnotationType();
 			if (annType != null && Target.class.getCanonicalName().equals(annType.getQualifiedName())) {
@@ -485,12 +485,15 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	private AccessModifier convertVisibility(int modifiers) {
-		if (org.eclipse.jdt.core.dom.Modifier.isPublic(modifiers))
+		if (org.eclipse.jdt.core.dom.Modifier.isPublic(modifiers)) {
 			return AccessModifier.PUBLIC;
-		if (org.eclipse.jdt.core.dom.Modifier.isProtected(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isProtected(modifiers)) {
 			return AccessModifier.PROTECTED;
-		if (org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers))
+		}
+		if (org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers)) {
 			return AccessModifier.PRIVATE;
+		}
 		return AccessModifier.PACKAGE_PRIVATE;
 	}
 

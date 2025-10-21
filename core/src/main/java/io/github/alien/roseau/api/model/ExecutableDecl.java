@@ -62,11 +62,11 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @return the executable's signature
 	 */
 	public String getSignature() {
-		var sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder();
 		sb.append(simpleName);
 		sb.append('(');
 		for (int i = 0; i < parameters.size(); i++) {
-			var p = parameters.get(i);
+			ParameterDecl p = parameters.get(i);
 			sb.append(p.type());
 			if (p.isVarargs()) {
 				sb.append("[]");

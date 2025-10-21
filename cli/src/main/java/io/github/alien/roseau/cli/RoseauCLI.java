@@ -39,15 +39,16 @@ import static picocli.CommandLine.Spec;
 /**
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
-@Command(name = "roseau", versionProvider = RoseauCLI.VersionProvider.class, sortOptions = false, mixinStandardHelpOptions = true,
+@Command(name = "roseau", sortOptions = false, mixinStandardHelpOptions = true,
+	versionProvider = RoseauCLI.VersionProvider.class,
 	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
 		"--v1 and --v2 can point to either JAR files or source code directories. " +
 		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
 public final class RoseauCLI implements Callable<Integer> {
 	@Spec
-	CommandSpec spec;
+	private CommandSpec spec;
 	@ArgGroup(exclusive = true, multiplicity = "1")
-	Mode mode;
+	private Mode mode;
 	private static class Mode {
 		@Option(names = "--api",
 			description = "Serialize the API model of --v1; see --api-json")
@@ -66,7 +67,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
 	private ExtractorType extractorType;
 	@Option(names = "--api-json", paramLabel = "<path>",
-		description = "Where to serialize the JSON API model of --v1 in --api mode")
+		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
 	@Option(names = "--report", paramLabel = "<path>",
 		description = "Where to write the breaking changes report in --diff mode")
@@ -79,7 +80,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			"shared by --v1 and --v2")
 	private String classpath;
 	@Option(names = "--pom", paramLabel = "<path>",
-		description = "A pom.xml file to build a classpath from, shared by --v1 and --v2")
+		description = "A pom.xml file to extract the classpath from, shared by --v1 and --v2")
 	private Path pom;
 	@Option(names = "--v1-classpath", paramLabel = "<path>[,<path>...]",
 		description = "A --classpath for --v1")
@@ -104,10 +105,10 @@ public final class RoseauCLI implements Callable<Integer> {
 			"this CSV file shares the same structure as the one produced by --format CSV")
 	private Path ignoredCsv;
 	@Option(names = "--config", paramLabel = "<path>",
-		description = "A roseau.yaml config file; overridden by CLI options")
+		description = "A roseau.yaml config file; CLI options take precedence over these options")
 	private Path config;
 	@Option(names = "--fail-on-bc",
-		description = "Return 1 if breaking changes are detected")
+		description = "Return with exit code 1 if breaking changes are detected")
 	private boolean failMode;
 	@Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")

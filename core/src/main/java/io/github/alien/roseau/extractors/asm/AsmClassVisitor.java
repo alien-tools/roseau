@@ -39,7 +39,6 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,7 +57,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	private final List<FieldDecl> fields = new ArrayList<>();
 	private final List<MethodDecl> methods = new ArrayList<>();
 	private final List<AnnotationMethodDecl> annotationMethods = new ArrayList<>();
-	private final Set<ElementType> targets = new HashSet<>();
+	private final Set<ElementType> targets = EnumSet.noneOf(ElementType.class);
 	private final List<ConstructorDecl> constructors = new ArrayList<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	private final List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
@@ -66,7 +65,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	private boolean hasNonPrivateConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
-	private static final Pattern anonymousMatcher = Pattern.compile("\\$\\d+");
+	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 
 	record AnnotationData(String descriptor, Map<String, String> values) {
 		AnnotationData(String descriptor) {
@@ -279,7 +278,7 @@ final class AsmClassVisitor extends ClassVisitor {
 			return;
 		}
 
-		if (outerName != null && innerName != null && !anonymousMatcher.matcher(outerName).find()) {
+		if (outerName != null && innerName != null && !ANONYMOUS_MATCHER.matcher(outerName).find()) {
 			// Nested/inner types
 			// Merge the kind bits (class/interface/enum/annotation/record) from the class header with
 			// the visibility/modifier bits from the InnerClasses entry. Some compilers omit ACC_RECORD
@@ -339,7 +338,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		AccessModifier visibility = convertVisibility(classAccess);
-		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
+		Set<Modifier> modifiers = convertClassModifiers(classAccess);
 		List<Annotation> anns = convertAnnotations(annotations);
 		// No bullet-proof line information for types
 		SourceLocation location = new SourceLocation(sourceFile, -1);
@@ -568,8 +567,8 @@ final class AsmClassVisitor extends ClassVisitor {
 		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasNonPrivateConstructor);
 	}
 
-	private static EnumSet<Modifier> convertClassModifiers(int access) {
-		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+	private static Set<Modifier> convertClassModifiers(int access) {
+		Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
 		if ((access & Opcodes.ACC_FINAL) != 0) {
 			modifiers.add(Modifier.FINAL);
 		}
@@ -583,8 +582,8 @@ final class AsmClassVisitor extends ClassVisitor {
 		return modifiers;
 	}
 
-	private static EnumSet<Modifier> convertFieldModifiers(int access) {
-		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+	private static Set<Modifier> convertFieldModifiers(int access) {
+		Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
 		if ((access & Opcodes.ACC_STATIC) != 0) {
 			modifiers.add(Modifier.STATIC);
 		}
@@ -600,8 +599,8 @@ final class AsmClassVisitor extends ClassVisitor {
 		return modifiers;
 	}
 
-	private EnumSet<Modifier> convertMethodModifiers(int access) {
-		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+	private Set<Modifier> convertMethodModifiers(int access) {
+		Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
 		if ((access & Opcodes.ACC_STATIC) != 0) {
 			modifiers.add(Modifier.STATIC);
 		}

@@ -2,7 +2,7 @@ package io.github.alien.roseau.api.model;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.extractors.MavenClasspathBuilder;
+import io.github.alien.roseau.MavenClasspathBuilder;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.utils.ApiTestFactory;

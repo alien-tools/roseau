@@ -1,30 +1,31 @@
 # Roseau: Breaking Change Analysis for Java Libraries
 
-Roseau is a **fast** and **accurate** tool for detecting breaking changes between two versions of a library, similar to other tools like [japicmp](https://github.com/siom79/japicmp/), [Revapi](https://github.com/revapi/revapi/) or [Clirr](https://github.com/ebourg/clirr).
+Roseau (/ʁozo/) is a **fast** and **accurate** tool for detecting breaking changes between two versions of a library, similar to other tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
 Whether you're a library maintainer or a developer worrying about upgrading your dependencies, Roseau helps ensure backward compatibility across versions.
 
 ## Key Features
 
   - Detects both binary-level and source-level breaking changes
-  - Indifferently analyzes Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon)) and compiled JARs (using [ASM](https://asm.ow2.io/))
+  - Indifferently analyzes JAR files (using [ASM](https://asm.ow2.io/)) or Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon))
   - Excellent accuracy and performance
   - Supports Java up to version 21 (including records, sealed types, modules, etc.)
-  - CLI-first and scriptable
+  - Outputs reports in CSV, HTML, JSON, and Markdown formats
+  - Highly configurable, CLI-first, and scriptable
 
 Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
 Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
 
 ## In a nutshell
 
-  1. Roseau infers an API model from each version of the library to analyze
-  2. It performs side-by-side comparison of the two API models to detect any breaking changes
+  1. Roseau infers the exact API of each version of the library to analyze
+  2. It performs side-by-side comparison of the two APIs to detect any breaking changes
 
-Roseau builds lightweight, technology-agnostic API models that list all the exported symbols in a library—including types, methods, and fields—along with their properties. These models can be easily serialized and stored (e.g., as JSON) for further analysis or archival.
+Roseau builds lightweight, technology-agnostic API models that list all the exported symbols in a library—including types, methods, and fields—along with their properties. These models can be easily serialized and stored as JSON for further analysis or archival.
 Roseau relies on either [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon) to extract API models from source code, and on [ASM](https://asm.ow2.io/) to extract API models from bytecode.
-The breaking change detection algorithm is completely agnostic of the underlying parsing technology.
 
-The list of breaking changes considered in Roseau is specified [here](core/src/main/java/io/github/alien/roseau/diff/changes/BreakingChangeKind.java) and drawn from various sources, including the [Java Language Specification](https://docs.oracle.com/javase/specs/), [japicmp's implementation](https://github.com/siom79/japicmp/blob/68425b08dd7835a4e9c0e64c6f6eaf3bd7281069/japicmp/src/main/java/japicmp/model/JApiCompatibilityChange.java), [Revapi's list of API Differences](https://revapi.org/revapi-java/0.28.1/differences.html), the [API evolution benchmark](https://github.com/kjezek/api-evolution-data-corpus) and [our own extensive tests](core/src/test/java/io/github/alien/roseau/diff).
-Roseau considers both source-level and binary-level compatibility changes.
+
+The breaking change detection algorithm is efficient, agnostic of the underlying parsing technology, and is [extensively tested](core/src/test/java/io/github/alien/roseau/diff).
+The list of source-level and binary-level breaking changes considered in Roseau is specified [here](core/src/main/java/io/github/alien/roseau/diff/changes/BreakingChangeKind.java) and matches the [Java Language Specification](https://docs.oracle.com/javase/specs/).
 
 ## Usage
 
@@ -38,7 +39,7 @@ $ mvn package
 $ java -jar cli/target/roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --help 
 ```
 
-Identify breaking changes between two versions, either from source trees or compiled JARs:
+Identify breaking changes between two versions, either from compiled JARs or source trees:
 
 ```
 $ java -jar roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
@@ -53,36 +54,76 @@ Roseau supports different modes, output formats, and options:
 
 ```
 $ java -jar roseau-cli-0.4.0-SNAPSHOT-jar-with-dependencies.jar --help
-Usage: roseau [-hV] [--fail-on-bc] [--plain] [--verbose] [--api-json=<path>]
-              [--classpath=<path>[,<path>...]] [--extractor=<extractor>]
-              [--format=<format>] [--ignored=<path>] [--pom=<path>]
-              [--report=<path>] [--v1=<path>] [--v2=<path>] (--api | --diff)
+Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
+              [--classpath=<path>[,<path>...]] [--config=<path>]
+              [--extractor=<extractor>] [--format=<format>] [--ignored=<path>]
+              [--pom=<path>] [--report=<path>] [--v1=<path>]
+              [--v1-classpath=<path>[,<path>...]] [--v1-extractor=<extractor>]
+              [--v1-pom=<path>] [--v2=<path>] [--v2-classpath=<path>[,
+              <path>...]] [--v2-extractor=<extractor>] [--v2-pom=<path>] (--api
+              | --diff)
       --api               Serialize the API model of --v1; see --api-json
-      --diff              Compute breaking changes between versions --v1 and
-                            --v2
-      --v1=<path>         Path to the first version of the library; either a
-                            source directory or a JAR
-      --v2=<path>         Path to the second version of the library; either a
-                            source directory or a JAR
-      --extractor=<extractor>
-                          API extractor to use: SPOON, ASM, JDT
-      --api-json=<path>   Where to serialize the JSON API model of --v1 in
-                            --api mode
-      --report=<path>     Where to write the breaking changes report in --diff
-                            mode
-      --format=<format>   Format of the report: CSV, HTML, JSON, MD
-      --pom=<path>        A pom.xml file to build a classpath from
-      --classpath=<path>[,<path>...]
-                          A colon-separated list of JARs to include in the
-                            classpath (Windows: semi-colon)
-      --ignored=<path>    Do not report the breaking changes listed in the
-                            given CSV file; this CSV file shares the same
-                            structure as the one produced by --format CSV
-      --fail-on-bc        Return 1 if breaking changes are detected
+      --diff              Compute breaking changes between versions --v1 and --v2
+      --v1=<path>         Path to the first version of the library; either a source directory or a JAR
+      --v2=<path>         Path to the second version of the library; either a source directory or a JAR
+      --extractor=<extractor> API extractor to use: SPOON, ASM, JDT
+      --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
+      --report=<path>     Where to write the breaking changes report in --diff mode
+      --format=<format>   Format of the report: CLI, CSV, HTML, JSON, MD
+      --classpath=<path>[,<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
+      --pom=<path>        A pom.xml file to extract the classpath from, shared by --v1 and --v2
+      --v1-classpath=<path>[,<path>...] A --classpath for --v1
+      --v2-classpath=<path>[,<path>...] A --classpath for --v2
+      --v1-pom=<path>     A --pom for --v1
+      --v2-pom=<path>     A --pom for --v2
+      --v1-extractor=<extractor> An --extractor for --v1
+      --v2-extractor=<extractor> An --extractor for --v2
+      --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as the one produced by --format CSV
+      --config=<path>     A roseau.yaml config file; CLI options take precedence over these options
+      --fail-on-bc        Return with exit code 1 if breaking changes are detected
       --plain             Disable ANSI colors, output plain text
-      --verbose           Print debug information
-  -h, --help              Show this help message and exit.
-  -V, --version           Print version information and exit.
+  -v, --verbose           Increase verbosity (-v, -vv).
+```
+
+### Configuration
+Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence.
+
+```yaml
+common:
+  classpath:
+    pom: /path/to/pom.xml
+    jars: [ /path/to/dependency.jar ]
+  extractor: JDT
+v1:
+  apiReport: ./reports/v1.json
+v2:
+  apiReport: ./reports/v2.json
+ignore: ignored-breaking-changes.csv
+reports:
+  - file: ./reports/guava.html
+    format: HTML
+  - file: ./reports/guava.csv
+    format: CSV
+```
+
+#### Ignoring breaking changes on specific types and symbols
+Roseau can be configured to ignore breaking changes on symbols matching a given regular expression or annotated with a specific annotation:
+
+```yaml
+common:
+  excludes:
+    annotations:
+      - name: com.google.common.annotations.Beta
+      - name: org.apiguardian.api.API
+        args: { status: org.apiguardian.api.API$Status.INTERNAL }
+```
+
+#### Ignoring specific breaking changes
+Breaking changes are sometimes necessary and intended. To avoid reporting the same breaking changes over and over against a given baseline, Roseau can be configured to ignore/accept specific breaking changes and stop reporting them using a dedicated CSV file supplied using the `--ignored` option:
+
+```csv
+type;symbol;kind
+pkg.T;pkg.T.m();METHOD_REMOVED
 ```
 
 ## Citing Roseau

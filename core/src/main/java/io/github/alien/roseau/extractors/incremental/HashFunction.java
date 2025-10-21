@@ -10,6 +10,7 @@ import java.nio.file.Path;
  * An interface for file hash functions. Implementations of this interface compute hash values for files, enabling the
  * identification of changes between different versions of files.
  */
+@FunctionalInterface
 public interface HashFunction {
 	/**
 	 * Computes the hash of the specified file. Implementers should return {@code -1L} if the hash cannot be computed.

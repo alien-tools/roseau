@@ -41,7 +41,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		sb.append("<meta name=\"viewport\" content=\"width=device-width, initial-scale=1\">\n");
 		sb.append("<title>Roseau Breaking Changes Report</title>\n");
 		sb.append("<style>\n");
-		sb.append(baseCss);
+		sb.append(BASE_CSS);
 		sb.append("</style>\n");
 		sb.append("""
 			<script>(function(){try{var s=localStorage.getItem('roseau_theme');if(s){document.documentElement.setAttribute
@@ -129,7 +129,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 			} else {
 				if (!typeLevel.isEmpty()) {
 					sb.append("<div class=\"type-level\">\n<ul class=\"changes\">\n");
-					typeLevel.stream().map(bc -> renderChangeItem(bc)).forEach(sb::append);
+					typeLevel.stream().map(HtmlFormatter::renderChangeItem).forEach(sb::append);
 					sb.append("</ul>\n</div>\n");
 				}
 				Map<TypeMemberDecl, List<BreakingChange>> members = report.getBreakingChangesPerMember(type);
@@ -145,7 +145,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 					}
 					sb.append("</h3>\n");
 					sb.append("<ul class=\"changes\">\n");
-					bcs.stream().map(bc -> renderChangeItem(bc)).forEach(sb::append);
+					bcs.stream().map(HtmlFormatter::renderChangeItem).forEach(sb::append);
 					sb.append("</ul>\n</div>\n");
 				}
 			}
@@ -188,15 +188,13 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		int all = api.getLibraryTypes().getAllTypes().size();
 		int methodCount = api.getExportedTypes().stream().mapToInt(t -> t.getDeclaredMethods().size()).sum();
 		int fieldCount = api.getExportedTypes().stream().mapToInt(t -> t.getDeclaredFields().size()).sum();
-		return new StringBuilder()
-			.append("<div class=\"lib\">")
-			.append("<div class=\"lib-label\">").append(escape(label)).append("</div>")
-			.append("<div class=\"lib-meta\"><span><span class=\"muted\">Exported types:</span> ")
-			.append(exported).append(" / ").append(all).append("</span>")
-			.append("<span><span class=\"muted\">Methods:</span> ").append(methodCount).append("</span>")
-			.append("<span><span class=\"muted\">Fields:</span> ").append(fieldCount).append("</span></div>")
-			.append("</div>")
-			.toString();
+		return "<div class=\"lib\">" +
+			"<div class=\"lib-label\">" + escape(label) + "</div>" +
+			"<div class=\"lib-meta\"><span><span class=\"muted\">Exported types:</span> " +
+			exported + " / " + all + "</span>" +
+			"<span><span class=\"muted\">Methods:</span> " + methodCount + "</span>" +
+			"<span><span class=\"muted\">Fields:</span> " + fieldCount + "</span></div>" +
+			"</div>";
 	}
 
 	private static String anchor(TypeDecl type) {
@@ -293,7 +291,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		return "<span class=\"loc\" title=\"" + escape(loc.file().toString()) + ":" + loc.line() + "\">📍 " + escape(loc.file().toString()) + ":" + loc.line() + "</span>";
 	}
 
-	private static final String baseCss = """
+	private static final String BASE_CSS = """
 		:root{--bg:#0b1020;--text:#e6e9f5;--muted:#9aa4d6;--header-start:#111736;--header-end:#0b1020;
 		--header-title:#ffffff;--subtitle:#9aa4d6;--card-bg:#0f1531;--card-border:#1b2452;--card-shadow:#1a2147;
 		--chip-bg:#0c1127;--chip-border:#1a2147;--link:#d7dbf2;--pill-bg:#202a61;--pill-text:#b8c1ff;--metric-bg:#0c1127;

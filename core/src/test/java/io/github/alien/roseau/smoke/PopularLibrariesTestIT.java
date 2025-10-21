@@ -10,7 +10,7 @@ import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.ExtractorType;
-import io.github.alien.roseau.extractors.MavenClasspathBuilder;
+import io.github.alien.roseau.MavenClasspathBuilder;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
