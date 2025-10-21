@@ -337,7 +337,14 @@ public final class RoseauCLI implements Callable<Integer> {
 			if (verbose) {
 				e.printStackTrace(spec.commandLine().getErr());
 			} else {
-				printErr(Optional.ofNullable(e.getMessage()).orElse(e.getClass().getSimpleName()));
+				if (e.getMessage() != null) {
+					printErr(e.getMessage());
+				} else if (e.getCause() != null) {
+					printErr(e.getCause().getMessage());
+				} else {
+					printErr(e.getClass().getCanonicalName());
+				}
+				printErr("Use -v/-vv for detailed error logs.");
 			}
 			return ExitCode.ERROR.getCode();
 		}
