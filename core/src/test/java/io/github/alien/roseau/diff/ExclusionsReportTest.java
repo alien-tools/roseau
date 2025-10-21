@@ -22,8 +22,8 @@ class ExclusionsReportTest {
 			public class C {}""";
 
 		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.C*"), List.of());
-		var v1 = TestUtils.buildSpoonAPI(v1src, exclude);
-		var v2 = TestUtils.buildSpoonAPI(v2src, exclude);
+		var v1 = TestUtils.buildJdtAPI(v1src, exclude);
+		var v2 = TestUtils.buildJdtAPI(v2src, exclude);
 		var report = new APIDiff(v1, v2).diff();
 
 		assertThat(report.getAllBreakingChanges()).hasSize(1);
@@ -47,8 +47,8 @@ class ExclusionsReportTest {
 
 		var exclude = new RoseauOptions.Exclude(List.of(),
 			List.of(new RoseauOptions.AnnotationExclusion("p.api.Internal", Map.of("value", "alpha"))));
-		var v1 = TestUtils.buildSpoonAPI(v1src, exclude);
-		var v2 = TestUtils.buildSpoonAPI(v2src, exclude);
+		var v1 = TestUtils.buildJdtAPI(v1src, exclude);
+		var v2 = TestUtils.buildJdtAPI(v2src, exclude);
 		var report = new APIDiff(v1, v2).diff();
 
 		assertThat(report.getAllBreakingChanges()).hasSize(2);
@@ -78,8 +78,8 @@ class ExclusionsReportTest {
 
 		var exclude = new RoseauOptions.Exclude(List.of(),
 			List.of(new RoseauOptions.AnnotationExclusion("java.lang.Deprecated", Map.of())));
-		var v1 = TestUtils.buildSpoonAPI(v1src, exclude);
-		var v2 = TestUtils.buildSpoonAPI(v2src, exclude);
+		var v1 = TestUtils.buildJdtAPI(v1src, exclude);
+		var v2 = TestUtils.buildJdtAPI(v2src, exclude);
 		var report = new APIDiff(v1, v2).diff();
 
 		assertThat(report.getAllBreakingChanges()).hasSize(1);

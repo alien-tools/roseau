@@ -312,12 +312,25 @@ public class TestUtils {
 		}
 	}
 
-	public static API buildSpoonAPI(String sources, Exclude exclusions) {
+	public static API buildJdtAPI(String sources, Exclude exclusions) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
 			Library library = Library.builder().location(sourcesPath).exclusions(exclusions).build();
-			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
+			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
+			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
+			return api.toAPI();
+		} catch (IOException e) {
+			throw new RuntimeException(e);
+		}
+	}
+
+	public static API buildJdtAPI(String sources) {
+		try {
+			Map<String, String> sourcesMap = buildSourcesMap(sources);
+			Path sourcesPath = writeSources(sourcesMap);
+			Library library = Library.of(sourcesPath);
+			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api.toAPI();
 		} catch (IOException e) {
@@ -333,19 +346,6 @@ public class TestUtils {
 			buildJar(sourcesMap, tempJarFile.toPath());
 			Library library = Library.of(tempJarFile.toPath());
 			return new AsmTypesExtractor().extractTypes(library).toAPI();
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
-	public static API buildJdtAPI(String sources) {
-		try {
-			Map<String, String> sourcesMap = buildSourcesMap(sources);
-			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.of(sourcesPath);
-			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
-			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api.toAPI();
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -370,7 +370,7 @@ public class TestUtils {
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		APIDiff apiDiff = new APIDiff(buildSpoonAPI(sourcesV1), buildSpoonAPI(sourcesV2));
+		APIDiff apiDiff = new APIDiff(buildJdtAPI(sourcesV1), buildJdtAPI(sourcesV2));
 		return apiDiff.diff().getBreakingChanges();
 
 		// Simple differential testing with japicmp

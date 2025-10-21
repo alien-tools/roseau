@@ -11,7 +11,7 @@ import java.util.Map;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
-import static io.github.alien.roseau.utils.TestUtils.buildSpoonAPI;
+import static io.github.alien.roseau.utils.TestUtils.buildJdtAPI;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class LibraryTest {
@@ -28,7 +28,7 @@ class LibraryTest {
 			}""";
 
 		var exclude = new RoseauOptions.Exclude(List.of("p\\.internal\\..*", "p\\.api\\.C\\.excluded\\(\\)"), List.of());
-		API api = buildSpoonAPI(sources, exclude);
+		API api = buildJdtAPI(sources, exclude);
 		TypeDecl c = assertClass(api, "p.api.C");
 		MethodDecl m = assertMethod(api, c, "m()");
 		MethodDecl excludedMethod = assertMethod(api, c, "excluded()");
@@ -51,7 +51,7 @@ class LibraryTest {
 			}""";
 
 		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.Excluded"), List.of());
-		var api = buildSpoonAPI(sources, exclude);
+		var api = buildJdtAPI(sources, exclude);
 		var excluded = assertClass(api, "p.api.Excluded");
 		var inner = assertClass(api, "p.api.Excluded$Inner");
 		var x = assertMethod(api, excluded, "x()");
@@ -79,7 +79,7 @@ class LibraryTest {
 			List.of(),
 			List.of(new RoseauOptions.AnnotationExclusion("p.annotations.Internal", Map.of())));
 
-		var api = buildSpoonAPI(sources, exclude);
+		var api = buildJdtAPI(sources, exclude);
 		var a = assertClass(api, "p.api.A");
 		var excluded = assertMethod(api, a, "excluded()");
 		var b = assertClass(api, "p.api.B");
@@ -108,7 +108,7 @@ class LibraryTest {
 			List.of(new RoseauOptions.AnnotationExclusion("p.api.Internal", Map.of("level", "alpha")))
 		);
 
-		var api = buildSpoonAPI(sources, excludes);
+		var api = buildJdtAPI(sources, excludes);
 
 		var c = assertClass(api, "p.api.C");
 		var alpha = assertMethod(api, c, "alpha()");
