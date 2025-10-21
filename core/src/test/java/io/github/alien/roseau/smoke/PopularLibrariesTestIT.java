@@ -56,6 +56,8 @@ class PopularLibrariesTestIT {
 			"com.google.code.gson:gson:2.10.1",
 			"org.junit.jupiter:junit-jupiter-api:5.14.0",
 			"org.junit.jupiter:junit-jupiter-engine:5.14.0",
+			"org.junit.jupiter:junit-jupiter-api:6.0.0",
+			"org.junit.jupiter:junit-jupiter-engine:6.0.0",
 			"com.squareup:javapoet:1.13.0",
 			"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
@@ -99,7 +101,6 @@ class PopularLibrariesTestIT {
 			//"org.springframework:spring-web:6.2.2", // Missing dependencies
 			//"io.projectreactor:reactor-core:3.6.3", // Missing dependencies
 			//"org.apache.kafka:kafka-clients:4.1.0", // Missing dependencies
-			//"org.junit.jupiter:junit-jupiter-api:6.0.0", // Java > 21
 		);
 	}
 
