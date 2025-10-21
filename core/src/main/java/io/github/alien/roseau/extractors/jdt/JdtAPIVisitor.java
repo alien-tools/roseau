@@ -26,6 +26,7 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
+import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
@@ -129,6 +130,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	@Override
+	public boolean visit(AnnotationTypeMemberDeclaration node) {
+		IMethodBinding binding = node.resolveBinding();
+		if (binding != null) {
+			// node.getStartPosition() includes leading comments/javadoc/annotations
+			// so we (arbitrarily) decide that the method's name is the relevant one
+			lineNumbersMapping.put(getFullyQualifiedName(binding), cu.getLineNumber(node.getName().getStartPosition()));
+		}
+		return false;
+	}
+
+	@Override
 	public boolean visit(FieldDeclaration node) {
 		node.fragments().forEach(fragment -> {
 			if (fragment instanceof VariableDeclarationFragment vdf) {
@@ -138,6 +150,14 @@ final class JdtAPIVisitor extends ASTVisitor {
 				}
 			}
 		});
+		return false;
+	}
+
+	@Override
+	public boolean visit(EnumConstantDeclaration node) {
+		if (node != null) {
+			lineNumbersMapping.put(getFullyQualifiedName(node.resolveVariable()), cu.getLineNumber(node.getStartPosition()));
+		}
 		return false;
 	}
 
@@ -218,12 +238,12 @@ final class JdtAPIVisitor extends ASTVisitor {
 					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
 				modifiers.add(Modifier.ABSTRACT);
-				List<AnnotationMethodDecl> annotationMethodDecls = Arrays.stream(binding.getDeclaredMethods())
+				List<AnnotationMethodDecl> annotationMethods = Arrays.stream(binding.getDeclaredMethods())
 					.map(method -> convertAnnotationMethod(method, binding))
 					.toList();
 				Set<ElementType> targets = convertAnnotationTargets(binding);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
-					fields, annotationMethodDecls, enclosingType, targets);
+					fields, annotationMethods, enclosingType, targets);
 			}
 			default -> throw new RoseauException("Unexpected type kind: " + type.getClass());
 		};
