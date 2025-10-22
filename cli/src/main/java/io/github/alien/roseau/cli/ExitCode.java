@@ -11,7 +11,7 @@ enum ExitCode {
 		this.code = code;
 	}
 
-	int getCode() {
+	int code() {
 		return code;
 	}
 }

@@ -33,7 +33,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src");
 
 		assertThat(err.toString()).contains("Missing required argument (specify one of these): (--api | --diff)");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	// --- Diffs --- //
@@ -45,7 +45,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -56,7 +56,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -67,7 +67,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -78,7 +78,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -88,7 +88,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(out.toString()).contains("No breaking changes found.");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -98,7 +98,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Cannot find v1:");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -106,7 +106,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--api");
 
 		assertThat(err.toString()).contains("Cannot find v1:");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -115,7 +115,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Cannot find v2:");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -125,7 +125,7 @@ class RoseauCLITest {
 			"--diff",
 			"--fail-on-bc");
 
-		assertThat(exitCode).isOne();
+		assertThat(exitCode).isEqualTo(ExitCode.BREAKING.code());
 	}
 
 	@Test
@@ -134,7 +134,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	// --- APIs --- //
@@ -144,7 +144,7 @@ class RoseauCLITest {
 			"--api");
 
 		assertThat(err.toString()).contains("Path to a JSON file required in --api mode");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -155,7 +155,7 @@ class RoseauCLITest {
 			"--api-json=" + jsonFile);
 
 		assertThat(jsonFile).isNotEmptyFile();
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -171,7 +171,7 @@ class RoseauCLITest {
 		assertThat(out.toString())
 			.contains("Extracting API from", "using SPOON")
 			.contains("API has been written to " + jsonFile);
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -186,7 +186,7 @@ class RoseauCLITest {
 
 		// Should succeed despite I/O error - CLI continues execution
 		assertThat(err.toString()).contains("Error writing API to " + apiFile);
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	// --- Options --- //
@@ -197,7 +197,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Warning: no classpath provided", "results may be inaccurate");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -209,7 +209,7 @@ class RoseauCLITest {
 			"--pom=" + pom,
 			"--api-json=" + api);
 
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -222,7 +222,7 @@ class RoseauCLITest {
 			"--pom=" + pom,
 			"--api-json=" + api);
 
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -234,7 +234,7 @@ class RoseauCLITest {
 			"--api-json=" + api);
 
 		assertThat(err.toString()).contains("Cannot find pom:");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -244,7 +244,7 @@ class RoseauCLITest {
 			"--api");
 
 		assertThat(err.toString()).contains("Invalid value for option '--extractor'");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -255,7 +255,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("ASM extractor cannot be used");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -266,7 +266,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Unknown option: '--formatter=UNKNOWN'");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	// --- Reports --- //
@@ -276,7 +276,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -289,7 +289,7 @@ class RoseauCLITest {
 
 		assertThat(err.toString()).contains("--format required with --report");
 		assertThat(reportFile).doesNotExist();
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -302,7 +302,7 @@ class RoseauCLITest {
 			"--format=CSV");
 
 		assertThat(reportFile).isNotEmptyFile();
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -315,7 +315,7 @@ class RoseauCLITest {
 			"--report=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -328,7 +328,7 @@ class RoseauCLITest {
 			"--report=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -341,7 +341,7 @@ class RoseauCLITest {
 			"--report=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -357,7 +357,7 @@ class RoseauCLITest {
 			"--format=CSV");
 
 		assertThat(err.toString()).contains("Error writing report to " + reportFile);
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	// --- Ignored --- //
@@ -374,7 +374,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -390,7 +390,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -409,7 +409,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("No breaking changes found.");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -425,7 +425,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("No breaking changes found.");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -437,7 +437,7 @@ class RoseauCLITest {
 			"--ignored=" + invalidCsv);
 
 		assertThat(err.toString()).contains("Cannot find ignored CSV: " + invalidCsv);
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -454,7 +454,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(err.toString()).contains("Malformed line");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -470,7 +470,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(err.toString()).contains("Malformed kind");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	// --- Config --- //
@@ -482,7 +482,7 @@ class RoseauCLITest {
 			"--config=nonexistent.yaml");
 
 		assertThat(err.toString()).contains("Warning: ignoring missing configuration file");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -494,7 +494,7 @@ class RoseauCLITest {
 		assertThat(err.toString())
 			.contains("Cannot find v1:")
 			.contains("io.github.alien.roseau.RoseauException");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -505,7 +505,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).doesNotContain("\u001B[");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -515,7 +515,7 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(out.toString()).contains("\u001B[");
-		assertThat(exitCode).isZero();
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -525,6 +525,6 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Invalid path to library");
-		assertThat(exitCode).isEqualTo(2);
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 }

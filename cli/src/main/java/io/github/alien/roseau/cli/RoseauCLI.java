@@ -143,12 +143,14 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private static Set<Path> buildClasspathFromString(String cp) {
-		return cp != null
-			? Arrays.stream(cp.split(File.pathSeparator))
+		if (cp == null) {
+			return Set.of();
+		}
+
+		return Arrays.stream(cp.split(File.pathSeparator))
 			.filter(p -> p.endsWith(".jar"))
 			.map(Path::of)
-			.collect(Collectors.toSet())
-			: Set.of();
+			.collect(Collectors.toSet());
 	}
 
 	private void writeReport(RoseauReport report, BreakingChangesFormatterFactory format, Path path) {
@@ -329,25 +331,22 @@ public final class RoseauCLI implements Callable<Integer> {
 				boolean breaking = doDiff(libraryV1, libraryV2, options);
 
 				if (breaking && failMode) {
-					return ExitCode.BREAKING.getCode();
+					return ExitCode.BREAKING.code();
 				}
 			}
 
-			return ExitCode.SUCCESS.getCode();
+			return ExitCode.SUCCESS.code();
 		} catch (RuntimeException e) {
 			if (verbose) {
 				e.printStackTrace(spec.commandLine().getErr());
 			} else {
-				if (e.getMessage() != null) {
-					printErr(e.getMessage());
-				} else if (e.getCause() != null) {
-					printErr(e.getCause().getMessage());
-				} else {
-					printErr(e.getClass().getCanonicalName());
-				}
+				String message = Optional.ofNullable(e.getMessage())
+					.or(() -> Optional.ofNullable(e.getCause()).map(Throwable::getMessage))
+					.orElseGet(() -> e.getClass().getCanonicalName());
+				printErr(message);
 				printErr("Use -v/-vv for detailed error logs.");
 			}
-			return ExitCode.ERROR.getCode();
+			return ExitCode.ERROR.code();
 		}
 	}
 
