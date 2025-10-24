@@ -31,7 +31,7 @@ The list of source-level and binary-level breaking changes considered in Roseau 
 
 ### As a standalone CLI tool
 
-Download the latest stable version of the CLI JAR from the [releases page](https://github.com/alien-tools/roseau/releases) or build the latest version it locally: 
+Download the latest stable version of the CLI JAR from the [releases page](https://github.com/alien-tools/roseau/releases) or build the latest version locally: 
 
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
