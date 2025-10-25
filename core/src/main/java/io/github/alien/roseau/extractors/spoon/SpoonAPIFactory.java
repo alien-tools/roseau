@@ -70,6 +70,7 @@ import spoon.reflect.reference.CtWildcardReference;
 
 import java.io.File;
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -274,7 +275,7 @@ public class SpoonAPIFactory {
 			convertCtMethods(rcrd),
 			createTypeReference(rcrd.getDeclaringType()),
 			convertCtConstructors(rcrd),
-			convertCtRecordComponents(rcrd)
+			List.of()
 		);
 	}
 
@@ -480,8 +481,25 @@ public class SpoonAPIFactory {
 
 	private Set<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
 		return annotations.stream()
+			.filter(ann -> !isSourceAnnotation(ann))
 			.map(this::convertSpoonAnnotation)
 			.collect(ImmutableSet.toImmutableSet());
+	}
+
+	private boolean isSourceAnnotation(CtAnnotation<?> annotation) {
+		CtType<?> type = annotation.getAnnotationType().getTypeDeclaration();
+		if (type != null) {
+			CtAnnotation<?> retention = type.getAnnotation(
+				typeFactory.createReference(Retention.class.getCanonicalName()));
+			if (retention != null) {
+				CtExpression<?> value = retention.getValue("value");
+				if (value instanceof CtFieldRead<?> fieldRead) {
+					return fieldRead.getVariable().getSimpleName().equals("SOURCE");
+				}
+			}
+		}
+
+		return false;
 	}
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
@@ -501,8 +519,12 @@ public class SpoonAPIFactory {
 			}
 			case CtFieldRead<?> field -> {
 				CtFieldReference<?> variable = field.getVariable();
-				yield variable.getDeclaringType().getQualifiedName() + "." + field.getVariable().getSimpleName();
+				if (Class.class.getCanonicalName().equals(variable.getType().getQualifiedName())) {
+					yield variable.getDeclaringType().getQualifiedName();
+				}
+				yield variable.getDeclaringType().getQualifiedName() + "." + variable.getSimpleName();
 			}
+			case CtNewArray<?> ignored -> "{}";
 			default -> value.toString();
 		};
 	}

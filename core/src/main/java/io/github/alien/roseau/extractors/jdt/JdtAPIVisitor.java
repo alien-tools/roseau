@@ -48,6 +48,8 @@ import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
 
 import java.lang.annotation.ElementType;
+import java.lang.annotation.Retention;
+import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -344,6 +346,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	private Set<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
 		return Arrays.stream(annotations)
+			.filter(ann -> !isSourceAnnotation(ann))
 			.map(ann -> {
 				Map<String, String> values = new HashMap<>();
 				for (IMemberValuePairBinding pair : ann.getDeclaredMemberValuePairs()) {
@@ -358,18 +361,34 @@ final class JdtAPIVisitor extends ASTVisitor {
 			.collect(ImmutableSet.toImmutableSet());
 	}
 
+	private boolean isSourceAnnotation(IAnnotationBinding ann) {
+		ITypeBinding binding = ann.getAnnotationType();
+		if (binding != null) {
+			Optional<IAnnotationBinding> find = Arrays.stream(binding.getAnnotations())
+				.filter(a -> Retention.class.getCanonicalName().equals(a.getAnnotationType().getQualifiedName()))
+				.findFirst();
+
+			if (find.isPresent()) {
+				for (IMemberValuePairBinding pair : find.get().getDeclaredMemberValuePairs()) {
+					if ("value".equals(pair.getName()) && pair.getValue() instanceof IVariableBinding vb) {
+						return RetentionPolicy.SOURCE.name().equals(vb.getName());
+					}
+				}
+			}
+		}
+
+		return false;
+	}
+
 	private String formatAnnotationValue(Object value) {
 		return switch (value) {
-			case Object[] array -> Arrays.stream(array)
-				.map(this::formatAnnotationValue)
-				.toList()
-				.toString();
+			case Object[] array -> "{}";
 			case IVariableBinding varBinding ->
 				// Enum constant
-				varBinding.getDeclaringClass().getQualifiedName() + "." + varBinding.getName();
+				toRoseauFqn(varBinding.getDeclaringClass()) + "." + varBinding.getName();
 			case ITypeBinding typeBinding ->
 				// Class literal
-				typeBinding.getQualifiedName();
+				toRoseauFqn(typeBinding);
 			default -> value.toString();
 		};
 	}

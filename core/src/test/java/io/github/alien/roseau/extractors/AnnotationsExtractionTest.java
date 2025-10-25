@@ -9,6 +9,7 @@ import org.junit.jupiter.params.provider.EnumSource;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 import java.util.Map;
 
 import static io.github.alien.roseau.utils.TestUtils.assertAnnotation;
@@ -44,9 +45,10 @@ class AnnotationsExtractionTest {
 			@interface A {}
 			@A public class C {}""");
 
-		assertAnnotation(api, "A");
+		var a = assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
 
+		assertThat(a.getTargets()).containsExactly(ElementType.TYPE);
 		assertThat(c.getAnnotations())
 			.singleElement()
 			.extracting(Annotation::actualAnnotation)
@@ -80,9 +82,11 @@ class AnnotationsExtractionTest {
 				@A public void m() {}
 			}""");
 
+		var a = assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
 		var m = assertMethod(api, c, "m()");
 
+		assertThat(a.getTargets()).containsExactly(ElementType.METHOD);
 		assertThat(m.getAnnotations())
 			.singleElement()
 			.extracting(Annotation::actualAnnotation)
@@ -116,9 +120,11 @@ class AnnotationsExtractionTest {
 				@A public int f;
 			}""");
 
+		var a = assertAnnotation(api, "A");
 		var c = assertClass(api, "C");
 		var f = assertField(api, c, "f");
 
+		assertThat(a.getTargets()).containsExactly(ElementType.FIELD);
 		assertThat(f.getAnnotations())
 			.singleElement()
 			.extracting(Annotation::actualAnnotation)
@@ -331,7 +337,7 @@ class AnnotationsExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void annotation_values_literals(ApiBuilder builder) {
 		var api = builder.build("""
-			@Deprecated(since = \"1.0.0\", forRemoval = true)
+			@Deprecated(since = "1.0.0", forRemoval = true)
 			public class A {}""");
 
 		var a = assertClass(api, "A");
@@ -348,7 +354,7 @@ class AnnotationsExtractionTest {
 		var api = builder.build("""
 			public @interface Ann { String value(); }
 			public class A {
-				@Deprecated(since = \"1.0.0\", forRemoval = true)
+				@Deprecated(since = "1.0.0", forRemoval = true)
 				@Ann("str")
 				public void m() {}
 			}""");
@@ -378,5 +384,97 @@ class AnnotationsExtractionTest {
 		assertThat(ann).isPresent();
 		assertThat(ann.get().values()).containsExactlyEntriesOf(
 			Map.of("value", "java.lang.annotation.RetentionPolicy.RUNTIME"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void annotation_value_enum_inner(ApiBuilder builder) {
+		var api = builder.build("""
+			public @interface A {
+				E value();
+				enum E { A, B; }
+			}
+			@A(A.E.A) public class C {}""");
+
+		var c = assertClass(api, "C");
+		var ann = c.getAnnotation(new TypeReference<>("A"));
+		assertThat(ann).isPresent();
+		assertThat(ann.get().values()).containsExactlyEntriesOf(
+			Map.of("value", "A$E.A"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void annotation_value_class(ApiBuilder builder) {
+		var api = builder.build("""
+			public @interface A {
+				Class<?> value();
+			}
+			@A(C.class) public class C {}
+			@A(java.lang.String.class) public class D {}""");
+
+		var c = assertClass(api, "C");
+		var d = assertClass(api, "D");
+		var ca = c.getAnnotation(new TypeReference<>("A"));
+		assertThat(ca).isPresent();
+		assertThat(ca.get().values()).containsExactlyEntriesOf(
+			Map.of("value", "C"));
+		var da = d.getAnnotation(new TypeReference<>("A"));
+		assertThat(da).isPresent();
+		assertThat(da.get().values()).containsExactlyEntriesOf(
+			Map.of("value", "java.lang.String"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void source_annotations_are_ignored(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.SOURCE)
+			public @interface A1 {}
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.CLASS)
+			public @interface A2 {}
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+			public @interface A3 {}
+			// RetentionPolicy.CLASS by default
+			public @interface A4 {}
+			@A1 @A2 @A3 @A4 public class C {}
+			""");
+
+		var c = assertClass(api, "C");
+		assertThat(c.getAnnotations())
+			.extracting(ann -> ann.actualAnnotation().getQualifiedName())
+			.containsExactlyInAnyOrder("A2", "A3", "A4");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void syntethic_annotations(ApiBuilder builder) {
+		var api = builder.build("""
+			public record R(@Deprecated int x) {}""");
+
+		var r = assertRecord(api, "R");
+		assertThat(r.getDeclaredMethods().iterator().next().getAnnotations()).hasSize(1);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void array_class_values(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.CLASS)
+			@java.lang.annotation.Target({
+				java.lang.annotation.ElementType.ANNOTATION_TYPE,
+				java.lang.annotation.ElementType.CONSTRUCTOR,
+				java.lang.annotation.ElementType.FIELD,
+				java.lang.annotation.ElementType.METHOD,
+				java.lang.annotation.ElementType.TYPE
+			})
+			@Deprecated
+			public @interface Beta {}""");
+
+		var beta = assertAnnotation(api, "Beta");
+		var ann = beta.getAnnotation(new TypeReference<>(Target.class.getCanonicalName())).orElseThrow();
+		assertThat(beta.getTargets()).containsExactlyInAnyOrder(ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR,
+			ElementType.FIELD, ElementType.METHOD, ElementType.TYPE);
+		assertThat(ann.values()).containsEntry("value", "{}"); // We ignore those
 	}
 }

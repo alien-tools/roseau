@@ -169,6 +169,12 @@ final class AsmClassVisitor extends ClassVisitor {
 					public void visitEnum(String name, String descriptor, String value) {
 						annotationData.values().put(name, descriptorToFqn(descriptor) + "." + value);
 					}
+
+					@Override
+					public AnnotationVisitor visitArray(String name) {
+						annotationData.values().put(name, "{}");
+						return null;
+					}
 				};
 			}
 
@@ -233,6 +239,12 @@ final class AsmClassVisitor extends ClassVisitor {
 					@Override
 					public void visitEnum(String name, String descriptor, String value) {
 						annotationData.values().put(name, descriptorToFqn(descriptor) + "." + value);
+					}
+
+					@Override
+					public AnnotationVisitor visitArray(String name) {
+						annotationData.values().put(name, "{}");
+						return null;
 					}
 				};
 			}
@@ -306,15 +318,16 @@ final class AsmClassVisitor extends ClassVisitor {
 				}
 
 				@Override
-				public void visitEnum(String name, String descriptor, String value) {
-					annotationData.values().put(name, descriptorToFqn(descriptor) + "." + value);
-					if ("Ljava/lang/annotation/ElementType;".equals(descriptor)) {
+				public void visitEnum(String name, String enumDescriptor, String value) {
+					annotationData.values().put(name, descriptorToFqn(enumDescriptor) + "." + value);
+					if ("Ljava/lang/annotation/ElementType;".equals(enumDescriptor)) {
 						targets.add(ElementType.valueOf(value));
 					}
 				}
 
 				@Override
 				public AnnotationVisitor visitArray(String name) {
+					annotationData.values().put(name, "{}");
 					if ("value".equals(name) && "Ljava/lang/annotation/Target;".equals(descriptor)) {
 						return new AnnotationVisitor(super.api) {
 							@Override
@@ -325,7 +338,7 @@ final class AsmClassVisitor extends ClassVisitor {
 							}
 						};
 					}
-					return super.visitArray(name);
+					return null;
 				}
 			};
 		}
@@ -515,6 +528,10 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private static String formatAnnotationValue(Object value) {
+		// Class<?> value
+		if (value instanceof Type type) {
+			return descriptorToFqn(type.toString());
+		}
 		return value.toString();
 	}
 

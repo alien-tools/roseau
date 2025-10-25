@@ -141,13 +141,12 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		Symbol other = (Symbol) obj;
 		return Objects.equals(qualifiedName, other.qualifiedName)
 			&& visibility == other.visibility
-			&& Objects.equals(modifiers, other.modifiers);
-			// FIXME: temporary ASM vs JDT do not have same @Runtime @Annotations
-			//&& Objects.equals(annotations, other.annotations);
+			&& Objects.equals(modifiers, other.modifiers)
+			&& Objects.equals(annotations, other.annotations);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qualifiedName, visibility, modifiers);//, annotations);
+		return Objects.hash(qualifiedName, visibility, modifiers, annotations);
 	}
 }

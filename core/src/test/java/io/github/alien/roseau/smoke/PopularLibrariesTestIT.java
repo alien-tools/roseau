@@ -78,11 +78,11 @@ class PopularLibrariesTestIT {
 			"org.apache.maven:maven-plugin-api:3.9.11",
 			"org.ow2.asm:asm:9.9",
 			"com.google.auto.service:auto-service:1.1.1",
-			"org.mapstruct:mapstruct:1.6.3",
 			"io.reactivex.rxjava3:rxjava:3.1.12",
 			"org.openjdk.jmh:jmh-core:1.37",
 			"org.glassfish.jersey.core:jersey-server:3.1.11",
 			"org.glassfish.jersey.core:jersey-client:3.1.11"
+			//"org.mapstruct:mapstruct:1.6.3", // repeatable annotation difference between ASM and JDT
 			//"org.eclipse.collections:eclipse-collections-api:13.0.0", // interface diamond conflict
 			//"commons-collections:commons-collections:3.2.2", // interface diamond conflict
 			//"org.apache.commons:commons-collections4:4.5.0", // interface diamond conflict
