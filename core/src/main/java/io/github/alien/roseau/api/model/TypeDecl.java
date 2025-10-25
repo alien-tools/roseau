@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -16,18 +17,18 @@ import java.util.Set;
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "typeKind")
 public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl, AnnotationDecl {
-	protected final List<TypeReference<InterfaceDecl>> implementedInterfaces;
+	protected final Set<TypeReference<InterfaceDecl>> implementedInterfaces;
 	protected final List<FormalTypeParameter> formalTypeParameters;
-	protected final List<FieldDecl> fields;
-	protected final List<MethodDecl> methods;
+	protected final Set<FieldDecl> fields;
+	protected final Set<MethodDecl> methods;
 	protected final TypeReference<TypeDecl> enclosingType;
-	protected final List<TypeReference<TypeDecl>> permittedTypes;
+	protected final Set<TypeReference<TypeDecl>> permittedTypes;
 
 	protected TypeDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                   List<Annotation> annotations, SourceLocation location,
-	                   List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                   List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                   TypeReference<TypeDecl> enclosingType, List<TypeReference<TypeDecl>> permittedTypes) {
+	                   Set<Annotation> annotations, SourceLocation location,
+	                   Set<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                   List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
+	                   TypeReference<TypeDecl> enclosingType, Set<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(implementedInterfaces);
 		Preconditions.checkNotNull(formalTypeParameters);
@@ -36,12 +37,12 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		Preconditions.checkArgument(enclosingType != null ||
 				Set.of(AccessModifier.PUBLIC, AccessModifier.PACKAGE_PRIVATE).contains(visibility),
 			"Top-level type declarations are either PUBLIC or PACKAGE_PRIVATE");
-		this.implementedInterfaces = List.copyOf(implementedInterfaces);
+		this.implementedInterfaces = ImmutableSet.copyOf(implementedInterfaces);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
-		this.fields = List.copyOf(fields);
-		this.methods = List.copyOf(methods);
+		this.fields = ImmutableSet.copyOf(fields);
+		this.methods = ImmutableSet.copyOf(methods);
 		this.enclosingType = enclosingType;
-		this.permittedTypes = List.copyOf(permittedTypes);
+		this.permittedTypes = ImmutableSet.copyOf(permittedTypes);
 	}
 
 	public boolean isNested() {
@@ -80,7 +81,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return modifiers.contains(Modifier.ABSTRACT);
 	}
 
-	public List<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
+	public Set<TypeReference<InterfaceDecl>> getImplementedInterfaces() {
 		return implementedInterfaces;
 	}
 
@@ -88,11 +89,11 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return formalTypeParameters;
 	}
 
-	public List<FieldDecl> getDeclaredFields() {
+	public Set<FieldDecl> getDeclaredFields() {
 		return fields;
 	}
 
-	public List<MethodDecl> getDeclaredMethods() {
+	public Set<MethodDecl> getDeclaredMethods() {
 		return methods;
 	}
 
@@ -100,7 +101,7 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		return Optional.ofNullable(enclosingType);
 	}
 
-	public List<TypeReference<TypeDecl>> getPermittedTypes() {
+	public Set<TypeReference<TypeDecl>> getPermittedTypes() {
 		return permittedTypes;
 	}
 

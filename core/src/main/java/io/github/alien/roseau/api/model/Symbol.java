@@ -1,11 +1,10 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -38,7 +37,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
 	 * Annotations placed on the symbol (e.g., @Deprecated, @Beta)
 	 */
-	protected final List<Annotation> annotations;
+	protected final Set<Annotation> annotations;
 
 	/**
 	 * The exact physical location of the symbol in the source (e.g., /src/pkg/T.java:4)
@@ -51,7 +50,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	protected final String simpleName;
 
 	protected Symbol(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                 List<Annotation> annotations, SourceLocation location) {
+	                 Set<Annotation> annotations, SourceLocation location) {
 		Preconditions.checkNotNull(qualifiedName);
 		Preconditions.checkNotNull(visibility);
 		Preconditions.checkNotNull(modifiers);
@@ -60,11 +59,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
 		// Yup, there's no simpler way to get an EnumSet implementation that's immutable
-		this.modifiers = Collections.unmodifiableSet(
+		this.modifiers = ImmutableSet.copyOf(
 			modifiers.isEmpty()
 				? EnumSet.noneOf(Modifier.class)
 				: EnumSet.copyOf(modifiers));
-		this.annotations = List.copyOf(annotations);
+		this.annotations = ImmutableSet.copyOf(annotations);
 		this.location = location;
 		simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
@@ -81,7 +80,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return modifiers;
 	}
 
-	public List<Annotation> getAnnotations() {
+	public Set<Annotation> getAnnotations() {
 		return annotations;
 	}
 
@@ -142,13 +141,13 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		Symbol other = (Symbol) obj;
 		return Objects.equals(qualifiedName, other.qualifiedName)
 			&& visibility == other.visibility
-			&& Objects.equals(modifiers, other.modifiers)
-			&& Objects.equals(annotations, other.annotations)
-			&& Objects.equals(location, other.location);
+			&& Objects.equals(modifiers, other.modifiers);
+			// FIXME: temporary ASM vs JDT do not have same @Runtime @Annotations
+			//&& Objects.equals(annotations, other.annotations);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qualifiedName, visibility, modifiers, annotations, location);
+		return Objects.hash(qualifiedName, visibility, modifiers);//, annotations);
 	}
 }

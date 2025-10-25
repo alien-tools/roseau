@@ -259,7 +259,7 @@ public class TestUtils {
 		Pattern typePattern = Pattern.compile(
 			"(?m)^(?!\\s)(?:@[\\w.]+(?:\\([^)]*\\))?\\s+)*" +
 				"(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\\s+)*" +
-				"(class|interface|@interface|enum|record)\\s+(\\w+)");
+				"(class|interface|@interface|enum|record)\\s+(\\w+).*");
 		Matcher typeMatcher = typePattern.matcher(sources);
 		List<Integer> typeStartIndices = new ArrayList<>();
 		List<String> typeNames = new ArrayList<>();

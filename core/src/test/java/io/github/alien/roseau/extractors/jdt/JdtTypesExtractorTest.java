@@ -88,11 +88,11 @@ class JdtTypesExtractorTest {
 
 		var cls = assertClass(types.toAPI(), "pkg.A");
 		assertThat(cls.getSuperClass()).isEqualTo(new TypeReference<>("unknown.A"));
-		assertThat(cls.getImplementedInterfaces().getFirst()).isEqualTo(new TypeReference<>("unknown.B"));
-		assertThat(cls.getDeclaredFields().getFirst().getType()).isEqualTo(
+		assertThat(cls.getImplementedInterfaces().iterator().next()).isEqualTo(new TypeReference<>("unknown.B"));
+		assertThat(cls.getDeclaredFields().iterator().next().getType()).isEqualTo(
 			new TypeReference<>("java.util.List", List.of(new TypeReference<>("unknown.C"))));
-		assertThat(cls.getDeclaredMethods().getFirst().getType()).isEqualTo(new TypeReference<>("unknown.D"));
-		assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().getFirst())).isEqualTo("m(unknown.E[],pkg.F)");
+		assertThat(cls.getDeclaredMethods().iterator().next().getType()).isEqualTo(new TypeReference<>("unknown.D"));
+		assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().iterator().next())).isEqualTo("m(unknown.E[],pkg.F)");
 
 		// JDT can't parse public <U> B<U> n(unknown.C<U> p1, B<T> p2)
 		assertThat(cls.getDeclaredMethods()).hasSize(1);
@@ -124,7 +124,7 @@ class JdtTypesExtractorTest {
 			import unknown.B;
 			import unknown.D;
 			import java.util.List;
-			public class A<T> extends unknown.A implements B {
+			public class A<T> extends unknown.A implements B<T> {
 				public List<unknown.C> f;
 				public D m(unknown.E[] p1, F p2) { return null; }
 				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
@@ -137,16 +137,19 @@ class JdtTypesExtractorTest {
 
 		var cls = assertClass(types.toAPI(), "pkg.A");
 		assertThat(cls.getSuperClass()).isEqualTo(new TypeReference<>("unknown.A"));
-		assertThat(cls.getImplementedInterfaces().getFirst()).isEqualTo(new TypeReference<>("unknown.B"));
-		assertThat(cls.getDeclaredFields().getFirst().getType()).isEqualTo(
+		assertThat(cls.getImplementedInterfaces().iterator().next()).isEqualTo(
+			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("T"))));
+		assertThat(cls.getDeclaredFields().iterator().next().getType()).isEqualTo(
 			new TypeReference<>("java.util.List", List.of(new TypeReference<>("unknown.C"))));
-		assertThat(cls.getDeclaredMethods().getFirst().getType()).isEqualTo(new TypeReference<>("unknown.D"));
-		assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().getFirst())).isEqualTo("m(unknown.E[],pkg.F)");
-		assertThat(cls.getDeclaredMethods().get(1).getType()).isEqualTo(
+		var m = cls.getDeclaredMethods().stream().filter(mt -> "m".equals(mt.getSimpleName())).findFirst().get();
+		var n = cls.getDeclaredMethods().stream().filter(mt -> "n".equals(mt.getSimpleName())).findFirst().get();
+		assertThat(m.getType()).isEqualTo(new TypeReference<>("unknown.D"));
+		assertThat(types.toAPI().getErasure(m)).isEqualTo("m(unknown.E[],pkg.F)");
+		assertThat(n.getType()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("U"))));
-		assertThat(cls.getDeclaredMethods().get(1).getParameters().getFirst().type()).isEqualTo(
+		assertThat(n.getParameters().getFirst().type()).isEqualTo(
 			new TypeReference<>("unknown.C", List.of(new TypeParameterReference("U"))));
-		assertThat(cls.getDeclaredMethods().get(1).getParameters().get(1).type()).isEqualTo(
+		assertThat(n.getParameters().get(1).type()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("T"))));
 	}
 }

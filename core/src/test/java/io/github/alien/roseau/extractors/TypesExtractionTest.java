@@ -494,7 +494,7 @@ class TypesExtractionTest {
 		// Even though ONE has its own class body, only the enum A should be extracted.
 		assertThat(api.getExportedTypes()).hasSize(1);
 		// §8.9: An enum class E is implicitly sealed if its declaration contains
-		// at least one enum constant that has a class bod
+		// at least one enum constant that has a class body
 		assertThat(a.isSealed()).isTrue();
 	}
 
@@ -512,6 +512,28 @@ class TypesExtractionTest {
 		var api = builder.build("public enum A { X; }");
 		var a = assertEnum(api, "A");
 		assertThat(a.getDeclaredMethods()).isEmpty();
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_abstract_methods(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum A {
+				ONE {
+					@Override public void m1() {}
+					@Override public void m2() {}
+				},
+				TWO {
+					@Override public void m1() {}
+					@Override public void m2() {}
+				};
+				public abstract void m1();
+				protected abstract void m2();
+				protected void m3() {}
+			}""");
+		var a = assertEnum(api, "A");
+		assertThat(api.getExportedTypes()).hasSize(1);
+		assertThat(a.getDeclaredMethods()).hasSize(1);
 	}
 
 	@ParameterizedTest

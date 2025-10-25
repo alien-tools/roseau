@@ -50,10 +50,10 @@ class IncrementalJdtTypesExtractorTest {
 
 		assertThat(c1.getImplementedInterfaces())
 			.singleElement()
-			.isSameAs(c2.getImplementedInterfaces().getFirst());
+			.isSameAs(c2.getImplementedInterfaces().iterator().next());
 
-		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().getFirst())).containsSame(i1);
-		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().getFirst())).containsSame(i2);
+		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().iterator().next())).containsSame(i1);
+		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().iterator().next())).containsSame(i2);
 
 		assertThat(api1.findMethod(c1, "m()")).isEmpty();
 		assertThat(api2.findMethod(c2, "m()")).isPresent();
@@ -174,15 +174,15 @@ class IncrementalJdtTypesExtractorTest {
 			.extracting(ftp -> ftp.bounds().getFirst())
 			.isEqualTo(new TypeReference<>("java.lang.CharSequence"));
 		assertThat(clsB.getDeclaredMethods()).hasSize(1);
-		assertThat(clsB.getDeclaredMethods().getFirst().getFormalTypeParameters())
+		assertThat(clsB.getDeclaredMethods().iterator().next().getFormalTypeParameters())
 			.singleElement()
 			.extracting(ftp -> ftp.bounds().getFirst())
 			.isEqualTo(new TypeReference<>("pkg1.A"));
-		assertThat(clsB.getDeclaredMethods().getFirst().getType()).isEqualTo(
+		assertThat(clsB.getDeclaredMethods().iterator().next().getType()).isEqualTo(
 			new TypeReference<>("pkg3.C", List.of(new TypeParameterReference("U"))));
-		assertThat(clsB.getDeclaredMethods().getFirst().getParameters().getFirst().type())
+		assertThat(clsB.getDeclaredMethods().iterator().next().getParameters().getFirst().type())
 			.isEqualTo(new TypeReference<>("pkg2.D"));
-		assertThat(clsB.getDeclaredMethods().getFirst().getParameters().get(1).type())
+		assertThat(clsB.getDeclaredMethods().iterator().next().getParameters().get(1).type())
 			.isEqualTo(new TypeReference<>("pkg1.A"));
 	}
 }

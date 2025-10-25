@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -14,13 +15,13 @@ public final class RecordDecl extends ClassDecl {
 	private final List<RecordComponentDecl> recordComponents;
 
 	public RecordDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                  List<Annotation> annotations, SourceLocation location,
-	                  List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                  List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                  TypeReference<TypeDecl> enclosingType, List<ConstructorDecl> constructors,
+	                  Set<Annotation> annotations, SourceLocation location,
+	                  Set<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                  List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
+	                  TypeReference<TypeDecl> enclosingType, Set<ConstructorDecl> constructors,
 	                  List<RecordComponentDecl> recordComponents) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
-			fields, methods, enclosingType, TypeReference.RECORD, constructors, List.of());
+			fields, methods, enclosingType, TypeReference.RECORD, constructors, Set.of());
 		Preconditions.checkNotNull(recordComponents);
 		this.recordComponents = List.copyOf(recordComponents);
 	}
@@ -35,8 +36,8 @@ public final class RecordDecl extends ClassDecl {
 	}
 
 	@Override
-	public List<FieldDecl> getDeclaredFields() {
-		return super.getDeclaredFields().stream().filter(FieldDecl::isStatic).toList();
+	public Set<FieldDecl> getDeclaredFields() {
+		return super.getDeclaredFields().stream().filter(FieldDecl::isStatic).collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override

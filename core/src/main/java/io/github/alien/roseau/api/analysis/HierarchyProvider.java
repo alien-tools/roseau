@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
@@ -11,10 +12,10 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
-import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -107,13 +108,13 @@ public interface HierarchyProvider {
 	default List<TypeReference<ClassDecl>> getAllSuperClasses(ClassDecl cls) {
 		Preconditions.checkNotNull(cls);
 		if (cls.getSuperClass().getQualifiedName().equals(cls.getQualifiedName())) {
-			return Collections.emptyList();
+			return List.of();
 		}
 		return Stream.concat(
 			Stream.of(cls.getSuperClass()),
 			resolver().resolve(cls.getSuperClass(), ClassDecl.class)
 				.map(this::getAllSuperClasses)
-				.orElseGet(Collections::emptyList)
+				.orElseGet(List::of)
 				.stream()
 		).toList();
 	}
@@ -165,7 +166,7 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(reference);
 		return resolver().resolve(reference)
 			.map(this::getAllSuperTypes)
-			.orElseGet(Collections::emptyList);
+			.orElseGet(List::of);
 	}
 
 	/**
@@ -175,19 +176,19 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type
 	 */
-	default List<MethodDecl> getExportedMethods(TypeDecl type) {
+	default Set<MethodDecl> getExportedMethods(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredMethods().stream(),
 				getAllSuperTypes(type).stream()
 					.map(resolver()::resolve)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream()))
+					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Set::of).stream()))
 			.filter(m -> properties().isExported(type, m))
 			.collect(Collectors.toMap(
 				erasure()::getErasure,
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
-			)).values().stream().toList();
+			)).values().stream().collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
@@ -196,14 +197,14 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return each {@link MethodDecl} that must be implemented on this type
 	 */
-	default List<MethodDecl> getAllMethodsToImplement(TypeDecl type) {
+	default Set<MethodDecl> getAllMethodsToImplement(TypeDecl type) {
 		return getExportedMethods(type).stream().filter(m -> {
 			if (resolver().resolve(m.getContainingType()).map(TypeDecl::isInterface).orElse(false)) {
 				return !m.isDefault() && !m.isStatic();
 			}
 
 			return m.isAbstract();
-		}).toList();
+		}).collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**
@@ -213,19 +214,19 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return all {@link FieldDecl} that can be accessed on this type
 	 */
-	default List<FieldDecl> getExportedFields(TypeDecl type) {
+	default Set<FieldDecl> getExportedFields(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredFields().stream(),
 				getAllSuperTypes(type).stream()
 					.map(resolver()::resolve)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream()))
+					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Set::of).stream()))
 			.filter(f -> properties().isExported(type, f))
 			.collect(Collectors.toMap(
 				FieldDecl::getSimpleName,
 				Function.identity(),
 				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
-			)).values().stream().toList();
+			)).values().stream().collect(ImmutableSet.toImmutableSet());
 	}
 
 	/**

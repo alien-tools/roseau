@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
@@ -11,7 +12,7 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
-import java.util.List;
+import java.util.Set;
 
 public interface PropertiesProvider {
 	// Dependencies
@@ -147,11 +148,11 @@ public interface PropertiesProvider {
 	 * @param executable the executable to check
 	 * @return the thrown checked exceptions
 	 */
-	default List<ITypeReference> getThrownCheckedExceptions(ExecutableDecl executable) {
+	default Set<ITypeReference> getThrownCheckedExceptions(ExecutableDecl executable) {
 		Preconditions.checkNotNull(executable);
 		return executable.getThrownExceptions().stream()
 			.map(exc -> typeParameter().resolveBound(executable, exc))
 			.filter(exc -> subtyping().isCheckedException(exc))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 }

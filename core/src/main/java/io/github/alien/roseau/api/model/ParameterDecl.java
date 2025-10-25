@@ -3,6 +3,8 @@ package io.github.alien.roseau.api.model;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 
+import java.util.Objects;
+
 /**
  * An {@link ExecutableDecl}'s parameter.
  *
@@ -23,5 +25,22 @@ public record ParameterDecl(
 	@Override
 	public String toString() {
 		return "%s%s %s".formatted(type, isVarargs ? "..." : "", name);
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		if (this == obj) {
+			return true;
+		}
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		ParameterDecl other = (ParameterDecl) obj;
+		return isVarargs == other.isVarargs && Objects.equals(type, other.type);
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(type, isVarargs);
 	}
 }

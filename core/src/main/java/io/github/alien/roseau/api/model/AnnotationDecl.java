@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.lang.annotation.ElementType;
@@ -17,21 +18,21 @@ public final class AnnotationDecl extends TypeDecl {
 	/**
 	 * The methods declared in this annotation, which correspond to annotation elements, possibly with a default value
 	 */
-	private final List<AnnotationMethodDecl> annotationMethods;
+	private final Set<AnnotationMethodDecl> annotationMethods;
 	/**
 	 * The {@link ElementType} this annotation can be used on
 	 */
 	private final Set<ElementType> targets;
 
 	public AnnotationDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                      List<Annotation> annotations, SourceLocation location, List<FieldDecl> fields,
-	                      List<AnnotationMethodDecl> annotationMethods, TypeReference<TypeDecl> enclosingType,
+	                      Set<Annotation> annotations, SourceLocation location, Set<FieldDecl> fields,
+	                      Set<AnnotationMethodDecl> annotationMethods, TypeReference<TypeDecl> enclosingType,
 	                      Set<ElementType> targets) {
-		super(qualifiedName, visibility, modifiers, annotations, location, Collections.emptyList(),
-			Collections.emptyList(), fields, Collections.emptyList(), enclosingType, List.of());
+		super(qualifiedName, visibility, modifiers, annotations, location, Set.of(),
+			List.of(), fields, Set.of(), enclosingType, Set.of());
 		Preconditions.checkNotNull(annotationMethods);
 		Preconditions.checkNotNull(targets);
-		this.annotationMethods = List.copyOf(annotationMethods);
+		this.annotationMethods = ImmutableSet.copyOf(annotationMethods);
 		if (hasAnnotation(TypeReference.ANNOTATION_TARGET)) {
 			this.targets = Collections.unmodifiableSet(targets.isEmpty()
 				// If @Target({}), the annotation cannot be placed on anything (cf. @Target's javadoc)
@@ -39,11 +40,11 @@ public final class AnnotationDecl extends TypeDecl {
 				: EnumSet.copyOf(targets));
 		} else {
 			// §9.6.4.1: if no explicit @Target annotation, defaults to everything but TYPE_USE
-			this.targets = Collections.unmodifiableSet(EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)));
+			this.targets = ImmutableSet.copyOf(EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)));
 		}
 	}
 
-	public List<AnnotationMethodDecl> getAnnotationMethods() {
+	public Set<AnnotationMethodDecl> getAnnotationMethods() {
 		return annotationMethods;
 	}
 

@@ -309,8 +309,8 @@ public class APIDiff {
 	 * </ul>
 	 */
 	private void diffThrownExceptions(TypeDecl t1, ExecutableDecl e1, ExecutableDecl e2) {
-		List<ITypeReference> thrown1 = v1.getThrownCheckedExceptions(e1);
-		List<ITypeReference> thrown2 = v2.getThrownCheckedExceptions(e2);
+		Set<ITypeReference> thrown1 = v1.getThrownCheckedExceptions(e1);
+		Set<ITypeReference> thrown2 = v2.getThrownCheckedExceptions(e2);
 
 		thrown1.stream()
 			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->

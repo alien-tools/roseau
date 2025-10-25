@@ -1,6 +1,7 @@
 package io.github.alien.roseau.extractors.incremental;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.RoseauException;
 
@@ -45,7 +46,7 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 			Set<Path> currentFiles = files
 				.filter(TimestampChangedFilesProvider::isRegularJavaFile)
 				.map(sources::relativize)
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 
 			if (previousFiles.isEmpty()) {
 				return new ChangedFiles(Set.of(), Set.of(), currentFiles);
@@ -55,7 +56,7 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 			Set<Path> createdFiles = Sets.difference(currentFiles, previousFiles);
 			Set<Path> updatedFiles = currentFiles.stream()
 				.filter(f -> previousFiles.contains(f) && sources.resolve(f).toFile().lastModified() > timestamp)
-				.collect(Collectors.toSet());
+				.collect(ImmutableSet.toImmutableSet());
 
 			return new ChangedFiles(updatedFiles, deletedFiles, createdFiles);
 		} catch (IOException e) {

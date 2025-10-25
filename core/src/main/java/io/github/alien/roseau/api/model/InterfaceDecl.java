@@ -10,10 +10,10 @@ import java.util.Set;
  */
 public final class InterfaceDecl extends TypeDecl {
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                     List<Annotation> annotations, SourceLocation location,
-	                     List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                     List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
-	                     TypeReference<TypeDecl> enclosingType, List<TypeReference<TypeDecl>> permittedTypes) {
+	                     Set<Annotation> annotations, SourceLocation location,
+	                     Set<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                     List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
+	                     TypeReference<TypeDecl> enclosingType, Set<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
 			fields, methods, enclosingType, permittedTypes);
 	}

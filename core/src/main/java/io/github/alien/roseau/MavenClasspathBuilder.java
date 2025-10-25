@@ -2,6 +2,7 @@ package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
+import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -58,7 +59,7 @@ public class MavenClasspathBuilder {
 					LOGGER.debug("Extracted classpath from {}", pom);
 					return Arrays.stream(cpString.split(File.pathSeparator))
 						.map(Path::of)
-						.collect(Collectors.toSet());
+						.collect(ImmutableSet.toImmutableSet());
 				} else {
 					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
 				}

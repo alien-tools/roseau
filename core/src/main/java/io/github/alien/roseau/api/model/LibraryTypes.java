@@ -8,7 +8,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -21,6 +21,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -80,7 +82,8 @@ public final class LibraryTypes implements TypeProvider {
 		this.library = library;
 		this.module = module;
 		allTypes = types.stream()
-			.collect(ImmutableMap.toImmutableMap(
+			.collect(ImmutableSortedMap.toImmutableSortedMap(
+				Comparator.naturalOrder(),
 				Symbol::getQualifiedName,
 				Function.identity(),
 				(fqn, duplicate) -> {
@@ -110,23 +113,13 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Creates a new resolved API using the given classpath and a default resolver.
-	 *
-	 * @param classpath the classpath used for type resolution
-	 * @return the new resolved API
-	 */
-	public API toAPI(Set<Path> classpath) {
-		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
-		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
-	}
-
-	/**
-	 * Convenience method to create a resolved API using a default resolver.
+	 * Creates a new resolved API using a default resolver.
 	 *
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		return toAPI(Set.of());
+		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), library.getClasspath());
+		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
 	}
 
 	/**
@@ -155,8 +148,8 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return The list of <strong>all</strong> {@link TypeDecl}
 	 */
 	@JsonProperty("allTypes")
-	public List<TypeDecl> getAllTypes() {
-		return allTypes.values().stream().toList();
+	public Collection<TypeDecl> getAllTypes() {
+		return allTypes.values();
 	}
 
 	/**

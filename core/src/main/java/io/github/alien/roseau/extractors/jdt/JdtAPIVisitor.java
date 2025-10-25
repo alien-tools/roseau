@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.jdt;
 
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
@@ -175,7 +176,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		String qualifiedName = toRoseauFqn(binding);
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
-		List<Annotation> annotations = convertAnnotations(binding.getAnnotations());
+		Set<Annotation> annotations = convertAnnotations(binding.getAnnotations());
 		SourceLocation location = new SourceLocation(filePath, cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 
@@ -194,28 +195,29 @@ final class JdtAPIVisitor extends ASTVisitor {
 			modifiers.add(Modifier.SEALED);
 		}
 
-		List<TypeReference<InterfaceDecl>> implementedInterfaces = Arrays.stream(binding.getInterfaces())
-			.map(intf -> (TypeReference<InterfaceDecl>) makeTypeReference(intf)).toList();
+		Set<TypeReference<InterfaceDecl>> implementedInterfaces = Arrays.stream(binding.getInterfaces())
+			.map(intf -> (TypeReference<InterfaceDecl>) makeTypeReference(intf))
+			.collect(ImmutableSet.toImmutableSet());
 
 		TypeReference<ClassDecl> superClassRef = binding.isClass() && binding.getSuperclass() != null
 			? (TypeReference<ClassDecl>) makeTypeReference(binding.getSuperclass())
 			: null;
 
-		List<FieldDecl> fields = Arrays.stream(binding.getDeclaredFields())
+		Set<FieldDecl> fields = Arrays.stream(binding.getDeclaredFields())
 			.filter(field -> isExported(field, type))
 			.map(field -> convertField(field, binding))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 
-		List<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
+		Set<MethodDecl> methods = Arrays.stream(binding.getDeclaredMethods())
 			.filter(method -> !method.isConstructor() && isExported(method, type) &&
 				!isEnumMethod(method) && !isSyntheticRecordMethod(method))
 			.map(method -> convertMethod(method, binding))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 
-		List<ConstructorDecl> constructors = Arrays.stream(binding.getDeclaredMethods())
+		Set<ConstructorDecl> constructors = Arrays.stream(binding.getDeclaredMethods())
 			.filter(method -> method.isConstructor() && isExported(method, type))
 			.map(cons -> convertConstructor(cons, binding))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 
 		var enclosingType = binding.getDeclaringClass() != null
 			? (TypeReference<TypeDecl>) makeTypeReference(binding.getDeclaringClass())
@@ -232,15 +234,15 @@ final class JdtAPIVisitor extends ASTVisitor {
 			}
 			case EnumDeclaration e ->
 				new EnumDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
-					fields, methods, enclosingType, constructors, List.of());
+					fields, methods, enclosingType, constructors, Set.of());
 			case RecordDeclaration r ->
 				new RecordDecl(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces,
 					typeParams, fields, methods, enclosingType, constructors, List.of());
 			case AnnotationTypeDeclaration a -> {
 				modifiers.add(Modifier.ABSTRACT);
-				List<AnnotationMethodDecl> annotationMethods = Arrays.stream(binding.getDeclaredMethods())
+				Set<AnnotationMethodDecl> annotationMethods = Arrays.stream(binding.getDeclaredMethods())
 					.map(method -> convertAnnotationMethod(method, binding))
-					.toList();
+					.collect(ImmutableSet.toImmutableSet());
 				Set<ElementType> targets = convertAnnotationTargets(binding);
 				yield new AnnotationDecl(qualifiedName, visibility, modifiers, annotations, location,
 					fields, annotationMethods, enclosingType, targets);
@@ -255,7 +257,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 		ITypeReference fieldType = makeTypeReference(binding.getType());
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
-		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		Set<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
 		SourceLocation location = new SourceLocation(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -267,11 +269,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private ConstructorDecl convertConstructor(IMethodBinding binding, ITypeBinding enclosingType) {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
-		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		Set<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
 		SourceLocation location = new SourceLocation(filePath, line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
-		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
+		Set<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 		List<ParameterDecl> params = convertParameters(binding.getParameterNames(), binding.getParameterTypes(),
 			binding.isVarargs());
@@ -296,11 +298,11 @@ final class JdtAPIVisitor extends ASTVisitor {
 	private MethodDecl convertMethod(IMethodBinding binding, ITypeBinding enclosingType) {
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> mods = convertModifiers(binding.getModifiers());
-		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		Set<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
 		SourceLocation location = new SourceLocation(filePath, line);
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
-		List<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
+		Set<ITypeReference> thrownExceptions = convertThrownExceptions(binding.getExceptionTypes());
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
 		ITypeReference returnType = makeTypeReference(binding.getReturnType());
 		List<ParameterDecl> params = convertParameters(binding.getParameterNames(), binding.getParameterTypes(),
@@ -311,7 +313,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 	}
 
 	private AnnotationMethodDecl convertAnnotationMethod(IMethodBinding binding, ITypeBinding enclosingType) {
-		List<Annotation> anns = convertAnnotations(binding.getAnnotations());
+		Set<Annotation> anns = convertAnnotations(binding.getAnnotations());
 		int line = lineNumbersMapping.getOrDefault(getFullyQualifiedName(binding), -1);
 		SourceLocation location = new SourceLocation(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = typeRefFactory.createTypeReference(toRoseauFqn(enclosingType));
@@ -334,17 +336,17 @@ final class JdtAPIVisitor extends ASTVisitor {
 		return params;
 	}
 
-	private List<ITypeReference> convertThrownExceptions(ITypeBinding[] exceptions) {
+	private Set<ITypeReference> convertThrownExceptions(ITypeBinding[] exceptions) {
 		return Arrays.stream(exceptions)
 			.map(this::makeTypeReference)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
+	private Set<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
 		return Arrays.stream(annotations)
 			.map(ann -> {
 				Map<String, String> values = new HashMap<>();
-				for (IMemberValuePairBinding pair : ann.getAllMemberValuePairs()) {
+				for (IMemberValuePairBinding pair : ann.getDeclaredMemberValuePairs()) {
 					String key = pair.getName();
 					Object value = pair.getValue();
 					if (value != null) {
@@ -353,7 +355,7 @@ final class JdtAPIVisitor extends ASTVisitor {
 				}
 				return new Annotation((TypeReference<AnnotationDecl>) makeTypeReference(ann.getAnnotationType()), values);
 			})
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private String formatAnnotationValue(Object value) {
@@ -379,12 +381,27 @@ final class JdtAPIVisitor extends ASTVisitor {
 			.toList();
 	}
 
-	private List<TypeReference<TypeDecl>> convertPermittedTypes(TypeDeclaration type) {
+	private Set<TypeReference<TypeDecl>> convertPermittedTypes(TypeDeclaration type) {
+		if (!org.eclipse.jdt.core.dom.Modifier.isSealed(type.getModifiers())) {
+			return Set.of();
+		}
+
+		// Workaround: JDT does not include implicit permitted types list (nested types) in permittedTypes()
+		// and I can't find an equivalent utility in the binding.
+		// We assume every nested type implementing the containing type is permitted.
+		if (type.permittedTypes().isEmpty()) {
+			ITypeBinding binding = type.resolveBinding();
+			return Arrays.stream(binding.getDeclaredTypes())
+				.filter(t -> t.isSubTypeCompatible(binding))
+				.map(t -> typeRefFactory.createTypeReference(toRoseauFqn(t)))
+				.collect(ImmutableSet.toImmutableSet());
+		}
+
 		return ((List<Type>) type.permittedTypes()).stream()
 			.map(Type::resolveBinding)
 			.filter(Objects::nonNull)
 			.map(t -> typeRefFactory.createTypeReference(t.getQualifiedName()))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	// Convert JDT-style Outer.Inner to Roseau-style Outer$Inner
@@ -449,7 +466,8 @@ final class JdtAPIVisitor extends ASTVisitor {
 
 	// We want the accessors, not the equals/hashCode/toString unless explicitly overridden...
 	private boolean isSyntheticRecordMethod(IMethodBinding binding) {
-		return binding.isSyntheticRecordMethod() &&
+		// FIXME: temporary, this is incorrect
+		return binding.getDeclaringClass().isRecord() &&
 			Set.of("toString", "equals", "hashCode").contains(binding.getName());
 	}
 

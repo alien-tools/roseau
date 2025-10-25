@@ -2,6 +2,7 @@ package io.github.alien.roseau;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.extractors.ExtractorType;
 
 import java.io.IOException;
@@ -55,7 +56,7 @@ public final class Library {
 			if (pom != null && Files.isRegularFile(pom)) {
 				MavenClasspathBuilder builder = new MavenClasspathBuilder();
 				return Stream.concat(builder.buildClasspath(pom).stream(), this.customClasspath.stream())
-					.collect(Collectors.toSet());
+					.collect(ImmutableSet.toImmutableSet());
 			} else {
 				return this.customClasspath;
 			}

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.asm;
 
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
@@ -13,6 +14,7 @@ import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.SequencedMap;
+import java.util.Set;
 import java.util.stream.IntStream;
 
 final class AsmSignatureVisitor extends SignatureVisitor {
@@ -53,16 +55,16 @@ final class AsmSignatureVisitor extends SignatureVisitor {
 		return superClassVisitor.getType();
 	}
 
-	List<TypeReference<InterfaceDecl>> getSuperInterfaces() {
+	Set<TypeReference<InterfaceDecl>> getSuperInterfaces() {
 		return interfaceVisitors.stream()
 			.map(AsmTypeSignatureVisitor::getType)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	List<ITypeReference> getThrownExceptions() {
+	Set<ITypeReference> getThrownExceptions() {
 		return thrownVisitors.stream()
 			.map(AsmTypeSignatureVisitor::getType)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	@Override

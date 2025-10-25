@@ -4,13 +4,13 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.EnumSet;
-import java.util.List;
 import java.util.Objects;
+import java.util.Set;
 
 public final class RecordComponentDecl extends TypeMemberDecl {
 	private final boolean isVarargs;
 
-	public RecordComponentDecl(String qualifiedName, List<Annotation> annotations, SourceLocation location,
+	public RecordComponentDecl(String qualifiedName, Set<Annotation> annotations, SourceLocation location,
 	                           TypeReference<TypeDecl> containingType, ITypeReference type, boolean isVarargs) {
 		super(qualifiedName, AccessModifier.PRIVATE, EnumSet.of(Modifier.FINAL), annotations, location, containingType, type);
 

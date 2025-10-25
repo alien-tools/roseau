@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.spoon;
 
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
@@ -84,7 +85,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * A factory of {@link TypeDecl} and {@link TypeReference} instances using Spoon. For internal use only.
+ * A factory of {@link TypeDecl} and {@link TypeReference} instances using Spoon.
  */
 public class SpoonAPIFactory {
 	private final TypeFactory typeFactory;
@@ -134,7 +135,7 @@ public class SpoonAPIFactory {
 	private <T extends TypeDecl> TypeReference<T> createTypeReference(CtTypeReference<?> typeRef) {
 		return typeRef != null
 			? typeReferenceFactory.createTypeReference(typeRef.getQualifiedName(),
-			createITypeReferences(typeRef.getActualTypeArguments()))
+			createITypeReferencesList(typeRef.getActualTypeArguments()))
 			: null;
 	}
 
@@ -142,18 +143,25 @@ public class SpoonAPIFactory {
 		return type != null ? createTypeReference(type.getReference()) : null;
 	}
 
-	private List<ITypeReference> createITypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+	private Set<ITypeReference> createITypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+		return typeRefs.stream()
+			.map(this::createITypeReference)
+			.filter(Objects::nonNull)
+			.collect(ImmutableSet.toImmutableSet());
+	}
+
+	private List<ITypeReference> createITypeReferencesList(Collection<CtTypeReference<?>> typeRefs) {
 		return typeRefs.stream()
 			.map(this::createITypeReference)
 			.filter(Objects::nonNull)
 			.toList();
 	}
 
-	private <T extends TypeDecl> List<TypeReference<T>> createTypeReferences(Collection<CtTypeReference<?>> typeRefs) {
+	private <T extends TypeDecl> Set<TypeReference<T>> createTypeReferences(Collection<CtTypeReference<?>> typeRefs) {
 		return typeRefs.stream()
 			.map(this::<T>createTypeReference)
 			.filter(Objects::nonNull)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	public ModuleDecl convertCtModule(CtModule module) {
@@ -164,7 +172,7 @@ public class SpoonAPIFactory {
 				.filter(pkg -> pkg.getTargetExport().isEmpty())
 				.map(CtPackageExport::getPackageReference)
 				.map(CtPackageReference::getQualifiedName)
-				.collect(Collectors.toSet()));
+				.collect(ImmutableSet.toImmutableSet()));
 	}
 
 	public TypeDecl convertCtType(CtType<?> type) {
@@ -249,7 +257,7 @@ public class SpoonAPIFactory {
 			convertCtMethods(enm),
 			createTypeReference(enm.getDeclaringType()),
 			convertCtConstructors(enm),
-			convertCtEnumValues(enm)
+			Set.of()
 		);
 	}
 
@@ -329,34 +337,34 @@ public class SpoonAPIFactory {
 		);
 	}
 
-	private List<FieldDecl> convertCtFields(CtType<?> type) {
+	private Set<FieldDecl> convertCtFields(CtType<?> type) {
 		return type.getFields().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtField)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<MethodDecl> convertCtMethods(CtType<?> type) {
+	private Set<MethodDecl> convertCtMethods(CtType<?> type) {
 		return type.getMethods().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtMethod)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
+	private Set<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
 		return type.getAnnotationMethods().stream()
 			.map(this::convertCtAnnotationMethod)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
-	private List<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
+	private Set<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
 		// We need to keep track of default constructors in the API model.
 		// In such case, Spoon indeed returns an (implicit) constructor, but its visibility is null,
 		// so we need to handle it separately.
 		return cls.getConstructors().stream()
 			.filter(SpoonAPIFactory::isExported)
 			.map(this::convertCtConstructor)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private List<FormalTypeParameter> convertCtFormalTypeParameters(CtFormalTypeDeclarer declarer) {
@@ -381,7 +389,7 @@ public class SpoonAPIFactory {
 			case CtIntersectionTypeReference<?> intersection ->
 				intersection.getBounds().stream().map(this::createITypeReference).toList();
 			case CtTypeReference<?> reference -> List.of(createITypeReference(reference));
-			case null -> Collections.emptyList();
+			case null -> List.of();
 		};
 	}
 
@@ -398,10 +406,10 @@ public class SpoonAPIFactory {
 			: new ParameterDecl(parameter.getSimpleName(), createITypeReference(parameter.getType()), false);
 	}
 
-	private List<TypeReference<TypeDecl>> convertCtSealable(CtSealable sealable) {
+	private Set<TypeReference<TypeDecl>> convertCtSealable(CtSealable sealable) {
 		return sealable.getPermittedTypes().stream()
 			.map(this::createTypeReference)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private List<RecordComponentDecl> convertCtRecordComponents(CtRecord rcrd) {
@@ -421,10 +429,10 @@ public class SpoonAPIFactory {
 		);
 	}
 
-	private List<EnumValueDecl> convertCtEnumValues(CtEnum<?> enm) {
+	private Set<EnumValueDecl> convertCtEnumValues(CtEnum<?> enm) {
 		return enm.getEnumValues().stream()
 			.map(this::convertCtEnumValue)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private EnumValueDecl convertCtEnumValue(CtEnumValue<?> enmVal) {
@@ -470,10 +478,10 @@ public class SpoonAPIFactory {
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(Modifier.class)));
 	}
 
-	private List<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
+	private Set<Annotation> convertSpoonAnnotations(List<CtAnnotation<?>> annotations) {
 		return annotations.stream()
 			.map(this::convertSpoonAnnotation)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private Annotation convertSpoonAnnotation(CtAnnotation<?> annotation) {
@@ -510,7 +518,7 @@ public class SpoonAPIFactory {
 				return elems.stream()
 					.map(CtFieldRead.class::cast)
 					.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
-					.collect(Collectors.toSet());
+					.collect(ImmutableSet.toImmutableSet());
 			} else if (value instanceof CtFieldRead<?> fieldRead) {
 				return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
 			}

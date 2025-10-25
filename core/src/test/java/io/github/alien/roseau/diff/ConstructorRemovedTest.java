@@ -89,6 +89,40 @@ class ConstructorRemovedTest {
 		assertBC("A", "A.<init>()", BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, -1, buildDiff(v1, v2));
 	}
 
+	@Client("""
+		class B extends A {
+			B() {
+				super();
+			}
+		};""")
+	@Test
+	void default_protected_constructor_removed() {
+		var v1 = """
+			public class A {
+				protected A() {}
+			}""";
+		var v2 = "public class A {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		class B extends A {
+			B(int i) {
+				super(i);
+			}
+		};""")
+	@Test
+	void protected_constructor_removed() {
+		var v1 = """
+			public class A {
+				protected A(int i) {}
+			}""";
+		var v2 = "public class A {}";
+
+		assertBC("A", "A.<init>(int)", BreakingChangeKind.CONSTRUCTOR_REMOVED, 2, buildDiff(v1, v2));
+	}
+
 	@Client("A a = new A(0);")
 	@Test
 	void record_implicit_constructor_changed() {

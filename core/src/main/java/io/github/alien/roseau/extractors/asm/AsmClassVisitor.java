@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors.asm;
 
+import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -36,9 +37,9 @@ import java.lang.annotation.ElementType;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -53,15 +54,15 @@ final class AsmClassVisitor extends ClassVisitor {
 	private TypeDecl typeDecl;
 	private TypeReference<TypeDecl> enclosingType;
 	private TypeReference<ClassDecl> superClass;
-	private List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
-	private final List<FieldDecl> fields = new ArrayList<>();
-	private final List<MethodDecl> methods = new ArrayList<>();
-	private final List<AnnotationMethodDecl> annotationMethods = new ArrayList<>();
-	private final Set<ElementType> targets = EnumSet.noneOf(ElementType.class);
-	private final List<ConstructorDecl> constructors = new ArrayList<>();
+	private final Set<TypeReference<InterfaceDecl>> implementedInterfaces = new HashSet<>();
+	private final Set<FieldDecl> fields = new HashSet<>();
+	private final Set<MethodDecl> methods = new HashSet<>();
+	private final Set<AnnotationMethodDecl> annotationMethods = new HashSet<>();
+	private final Set<ElementType> targets = new HashSet<>();
+	private final Set<ConstructorDecl> constructors = new HashSet<>();
 	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
-	private final List<TypeReference<TypeDecl>> permittedTypes = new ArrayList<>();
-	private final List<AnnotationData> annotations = new ArrayList<>();
+	private final Set<TypeReference<TypeDecl>> permittedTypes = new HashSet<>();
+	private final Set<AnnotationData> annotations = new HashSet<>();
 	private boolean hasNonPrivateConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
@@ -121,17 +122,17 @@ final class AsmClassVisitor extends ClassVisitor {
 			SignatureReader reader = new SignatureReader(signature);
 			AsmSignatureVisitor signatureVisitor = new AsmSignatureVisitor(api, typeRefFactory);
 			reader.accept(signatureVisitor);
-			formalTypeParameters = signatureVisitor.getFormalTypeParameters();
+			formalTypeParameters.addAll(signatureVisitor.getFormalTypeParameters());
 			superClass = signatureVisitor.getSuperclass();
-			implementedInterfaces = signatureVisitor.getSuperInterfaces();
+			implementedInterfaces.addAll(signatureVisitor.getSuperInterfaces());
 		} else {
 			if (superName != null) {
 				superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
 			}
-			implementedInterfaces = Arrays.stream(interfaces)
+			implementedInterfaces.addAll(Arrays.stream(interfaces)
 				.map(AsmClassVisitor::bytecodeToFqn)
 				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
-				.toList();
+				.toList());
 		}
 	}
 
@@ -152,7 +153,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		return new FieldVisitor(api) {
-			private final List<AnnotationData> annotations = new ArrayList<>();
+			private final Set<AnnotationData> annotations = new HashSet<>();
 
 			@Override
 			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
@@ -216,7 +217,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		return new MethodVisitor(api) {
 			private boolean hasDefault;
-			private final List<AnnotationData> annotations = new ArrayList<>();
+			private final Set<AnnotationData> annotations = new HashSet<>();
 			private int firstLine = -1;
 
 			@Override
@@ -339,7 +340,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 		AccessModifier visibility = convertVisibility(classAccess);
 		Set<Modifier> modifiers = convertClassModifiers(classAccess);
-		List<Annotation> anns = convertAnnotations(annotations);
+		Set<Annotation> anns = convertAnnotations(annotations);
 		// No bullet-proof line information for types
 		SourceLocation location = new SourceLocation(sourceFile, -1);
 
@@ -365,13 +366,15 @@ final class AsmClassVisitor extends ClassVisitor {
 				fields, annotationMethods, enclosingType, targets);
 		} else if (isInterface(classAccess)) {
 			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
+				implementedInterfaces, formalTypeParameters, fields, methods,
+				enclosingType, permittedTypes);
 		} else if (isEnum(classAccess)) {
 			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, fields, methods, enclosingType, constructors, List.of());
+				implementedInterfaces, fields, methods, enclosingType, constructors, Set.of());
 		} else if (isRecord(classAccess)) {
 			typeDecl = new RecordDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors, List.of());
+				implementedInterfaces, formalTypeParameters, fields, methods,
+				enclosingType, constructors, List.of());
 		} else {
 			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
 				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType,
@@ -380,7 +383,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private FieldDecl convertField(int access, String name, String descriptor, String signature,
-	                               List<AnnotationData> annotations) {
+	                               Set<AnnotationData> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
 			AsmTypeSignatureVisitor<ITypeReference> visitor =
@@ -399,9 +402,9 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
-	                                           List<AnnotationData> annotations, int line) {
+	                                           Set<AnnotationData> annotations, int line) {
 		List<ParameterDecl> parameters;
-		List<ITypeReference> thrownExceptions;
+		Set<ITypeReference> thrownExceptions;
 		List<FormalTypeParameter> typeParameters;
 
 		if (signature != null) {
@@ -418,7 +421,7 @@ final class AsmClassVisitor extends ClassVisitor {
 			parameters = (enclosingType != null && !isStatic(classAccess) && originalParams.length >= 1)
 				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
 				: convertParameters(originalParams);
-			typeParameters = Collections.emptyList();
+			typeParameters = List.of();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
 
@@ -435,11 +438,11 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
-	                                 List<AnnotationData> annotations, int line) {
+	                                 Set<AnnotationData> annotations, int line) {
 		ITypeReference returnType;
 		List<ParameterDecl> parameters;
 		List<FormalTypeParameter> typeParameters;
-		List<ITypeReference> thrownExceptions;
+		Set<ITypeReference> thrownExceptions;
 
 		if (signature != null) {
 			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
@@ -453,7 +456,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		} else {
 			returnType = convertType(Type.getReturnType(descriptor).getDescriptor());
 			parameters = convertParameters(Type.getArgumentTypes(descriptor));
-			typeParameters = Collections.emptyList();
+			typeParameters = List.of();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
 
@@ -469,7 +472,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private AnnotationMethodDecl convertAnnotationMethod(String name, String descriptor, String signature,
-	                                                     List<AnnotationData> annotations, int line, boolean hasDefault) {
+	                                                     Set<AnnotationData> annotations, int line, boolean hasDefault) {
 		ITypeReference returnType;
 
 		if (signature != null) {
@@ -486,7 +489,7 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	private List<ParameterDecl> convertVarargParameter(List<ParameterDecl> parameters) {
 		if (parameters.isEmpty()) {
-			return Collections.emptyList();
+			return List.of();
 		}
 
 		List<ParameterDecl> params = new ArrayList<>(parameters);
@@ -503,27 +506,27 @@ final class AsmClassVisitor extends ClassVisitor {
 		return params;
 	}
 
-	private List<Annotation> convertAnnotations(List<AnnotationData> annotationDataList) {
+	private Set<Annotation> convertAnnotations(Set<AnnotationData> annotationDataList) {
 		return annotationDataList.stream()
 			.map(data -> new Annotation(
 				typeRefFactory.createTypeReference(descriptorToFqn(data.descriptor())),
 				data.values()))
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private static String formatAnnotationValue(Object value) {
 		return value.toString();
 	}
 
-	private List<ITypeReference> convertThrownExceptions(String[] exceptions) {
+	private Set<ITypeReference> convertThrownExceptions(String[] exceptions) {
 		if (exceptions == null) {
-			return Collections.emptyList();
+			return Set.of();
 		}
 
 		return Arrays.stream(exceptions)
 			.map(e -> typeRefFactory.createTypeReference(bytecodeToFqn(e)))
 			.map(ITypeReference.class::cast)
-			.toList();
+			.collect(ImmutableSet.toImmutableSet());
 	}
 
 	private ITypeReference convertType(String descriptor) {

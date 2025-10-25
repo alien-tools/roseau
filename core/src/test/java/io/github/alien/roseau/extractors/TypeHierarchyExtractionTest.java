@@ -90,7 +90,7 @@ class TypeHierarchyExtractionTest {
 
 		var a = assertInterface(api, "A");
 		assertThat(a.getImplementedInterfaces())
-			.containsExactly(new TypeReference<>("I"), new TypeReference<>("J"));
+			.containsExactlyInAnyOrder(new TypeReference<>("I"), new TypeReference<>("J"));
 	}
 
 	// Surprisingly allowed
