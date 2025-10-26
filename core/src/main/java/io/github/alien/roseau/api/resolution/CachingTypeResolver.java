@@ -1,14 +1,15 @@
 package io.github.alien.roseau.api.resolution;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Map;
 import java.util.Optional;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 
 /**
  * A type resolver implementation that caches the result of attempting to resolve a type reference. If a reference
@@ -25,7 +26,10 @@ public class CachingTypeResolver implements TypeResolver {
 	/**
 	 * Stores the resolution results.
 	 */
-	private final Map<String, ResolvedType> typeCache = new ConcurrentHashMap<>();
+	private final Cache<String, ResolvedType> typeCache =
+		CacheBuilder.newBuilder()
+			.maximumSize(5_000L)
+			.build();
 
 	private static final Logger LOGGER = LogManager.getLogger(CachingTypeResolver.class);
 
@@ -46,8 +50,13 @@ public class CachingTypeResolver implements TypeResolver {
 
 	@Override
 	public <T extends TypeDecl> Optional<T> resolve(TypeReference<T> reference, Class<T> type) {
-		ResolvedType cached = typeCache.computeIfAbsent(reference.getQualifiedName(), fqn -> resolveType(fqn, type));
-		return Optional.ofNullable(cached.typeDecl()).filter(type::isInstance).map(type::cast);
+		try {
+			String fqn = reference.getQualifiedName();
+			ResolvedType cached = typeCache.get(fqn, () -> resolveType(fqn, type));
+			return Optional.ofNullable(cached.typeDecl()).filter(type::isInstance).map(type::cast);
+		} catch (ExecutionException ignored) {
+			return Optional.empty();
+		}
 	}
 
 	private <T extends TypeDecl> ResolvedType resolveType(String qualifiedName, Class<T> type) {
