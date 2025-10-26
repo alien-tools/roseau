@@ -142,16 +142,21 @@ public interface HierarchyProvider {
 	@SuppressWarnings("unchecked")
 	default List<TypeReference<TypeDecl>> getAllSuperTypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
+		return getSuperTypes(type).stream()
+			.flatMap(ref -> Stream.concat(Stream.of(ref), getAllSuperTypes(ref).stream()))
+			.distinct()
+			.toList();
+	}
+
+	default List<TypeReference<TypeDecl>> getSuperTypes(TypeDecl type) {
 		return Stream.concat(
-				type.getImplementedInterfaces().stream(),
 				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
 				// since there will be a concrete java.lang.Object on which the methods are invoked anyway
-				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT)
+				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT),
+				type.getImplementedInterfaces().stream()
 			)
 			.map(ref -> (TypeReference<TypeDecl>) (TypeReference<?>) ref)
 			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
-			.flatMap(ref -> Stream.concat(Stream.of(ref), getAllSuperTypes(ref).stream()))
-			.distinct()
 			.toList();
 	}
 
@@ -180,9 +185,9 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredMethods().stream(),
-				getAllSuperTypes(type).stream()
+				getSuperTypes(type).stream()
 					.map(resolver()::resolve)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Set::of).stream()))
+					.flatMap(t -> t.map(this::getExportedMethods).orElseGet(Set::of).stream()))
 			.filter(m -> properties().isExported(type, m))
 			.collect(Collectors.toMap(
 				erasure()::getErasure,
@@ -218,9 +223,9 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredFields().stream(),
-				getAllSuperTypes(type).stream()
+				getSuperTypes(type).stream()
 					.map(resolver()::resolve)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Set::of).stream()))
+					.flatMap(t -> t.map(this::getExportedFields).orElseGet(Set::of).stream()))
 			.filter(f -> properties().isExported(type, f))
 			.collect(Collectors.toMap(
 				FieldDecl::getSimpleName,
