@@ -21,7 +21,6 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Utility class to automatically infer the classpath of a Maven library. This implementation attempts to retrieve the
@@ -38,15 +37,15 @@ public class MavenClasspathBuilder {
 	 */
 	public Set<Path> buildClasspath(Path pom) {
 		Preconditions.checkNotNull(pom);
-		Path parent = pom.toAbsolutePath().getParent();
 
-		if (!Files.isRegularFile(pom) || !Files.isDirectory(parent)) {
+		if (!Files.isRegularFile(pom)) {
 			LOGGER.warn("Invalid pom.xml file {}", pom);
 		}
 
-		Path classpathFile = parent.resolve(".classpath.tmp");
+		String random = Long.toHexString(Double.doubleToLongBits(Math.random()));
+		Path classpathFile = pom.resolveSibling(".roseau-classpath-" + random + ".tmp");
 		try {
-			Optional<File> mvnExecutable = findMavenExecutable(parent);
+			Optional<File> mvnExecutable = findMavenExecutable(pom);
 
 			if (mvnExecutable.isPresent()) {
 				InvocationRequest request = makeClasspathRequest(pom, classpathFile);
@@ -99,10 +98,10 @@ public class MavenClasspathBuilder {
 	/**
 	 * Attempts to retrieve some mvn executable (local wrapper > MAVEN/M2_HOME > PATH)
 	 */
-	private static Optional<File> findMavenExecutable(Path projectDir) {
+	private static Optional<File> findMavenExecutable(Path pom) {
 		// Look for a potential wrapper
 		boolean isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
-		Path mvnw = projectDir.resolve(isWindows ? "mvnw.cmd" : "mvnw");
+		Path mvnw = pom.resolveSibling(isWindows ? "mvnw.cmd" : "mvnw");
 		if (Files.isExecutable(mvnw)) {
 			return Optional.of(mvnw.toFile());
 		}
