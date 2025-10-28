@@ -106,8 +106,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		if (!super.equals(obj)) {
 			return false;
 		}
-		ExecutableDecl other = (ExecutableDecl) obj;
-		return Objects.equals(parameters, other.parameters)
+		return obj instanceof ExecutableDecl other
+			&& Objects.equals(parameters, other.parameters)
 			&& Objects.equals(formalTypeParameters, other.formalTypeParameters)
 			&& Objects.equals(thrownExceptions, other.thrownExceptions);
 	}

@@ -26,8 +26,8 @@ public final class RecordComponentDecl extends TypeMemberDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		RecordComponentDecl other = (RecordComponentDecl) obj;
-		return isVarargs == other.isVarargs;
+		return obj instanceof RecordComponentDecl other
+			&& isVarargs == other.isVarargs;
 	}
 
 	@Override

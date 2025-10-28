@@ -116,8 +116,8 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		if (!super.equals(obj)) {
 			return false;
 		}
-		TypeDecl other = (TypeDecl) obj;
-		return Objects.equals(implementedInterfaces, other.implementedInterfaces)
+		return obj instanceof TypeDecl other
+			&& Objects.equals(implementedInterfaces, other.implementedInterfaces)
 			&& Objects.equals(formalTypeParameters, other.formalTypeParameters)
 			&& Objects.equals(fields, other.fields)
 			&& Objects.equals(methods, other.methods)

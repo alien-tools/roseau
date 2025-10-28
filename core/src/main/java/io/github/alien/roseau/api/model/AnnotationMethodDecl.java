@@ -32,8 +32,8 @@ public final class AnnotationMethodDecl extends MethodDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		AnnotationMethodDecl other = (AnnotationMethodDecl) obj;
-		return hasDefault == other.hasDefault;
+		return obj instanceof AnnotationMethodDecl other
+			&& hasDefault == other.hasDefault;
 	}
 
 	@Override

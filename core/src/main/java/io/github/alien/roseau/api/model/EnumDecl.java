@@ -50,8 +50,8 @@ public final class EnumDecl extends ClassDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		EnumDecl other = (EnumDecl) obj;
-		return Objects.equals(values, other.values);
+		return obj instanceof EnumDecl other
+			&& Objects.equals(values, other.values);
 	}
 
 	@Override

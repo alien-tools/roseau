@@ -43,8 +43,9 @@ public abstract sealed class TypeMemberDecl extends Symbol
 		if (!super.equals(obj)) {
 			return false;
 		}
-		TypeMemberDecl other = (TypeMemberDecl) obj;
-		return Objects.equals(type, other.type) && Objects.equals(containingType, other.containingType);
+		return obj instanceof TypeMemberDecl other
+			&& Objects.equals(type, other.type)
+			&& Objects.equals(containingType, other.containingType);
 	}
 
 	@Override

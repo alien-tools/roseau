@@ -54,8 +54,8 @@ public final class RecordDecl extends ClassDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		RecordDecl other = (RecordDecl) obj;
-		return Objects.equals(recordComponents, other.recordComponents);
+		return obj instanceof RecordDecl other
+			&& Objects.equals(recordComponents, other.recordComponents);
 	}
 
 	@Override

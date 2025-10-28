@@ -73,11 +73,9 @@ public sealed class ModuleDecl {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		ModuleDecl other = (ModuleDecl) obj;
-		return Objects.equals(qualifiedName, other.qualifiedName) && Objects.equals(exports, other.exports);
+		return obj instanceof ModuleDecl other
+			&& Objects.equals(qualifiedName, other.qualifiedName)
+			&& Objects.equals(exports, other.exports);
 	}
 
 	@Override

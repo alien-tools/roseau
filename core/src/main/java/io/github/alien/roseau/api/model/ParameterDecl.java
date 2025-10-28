@@ -32,11 +32,9 @@ public record ParameterDecl(
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		ParameterDecl other = (ParameterDecl) obj;
-		return isVarargs == other.isVarargs && Objects.equals(type, other.type);
+		return obj instanceof ParameterDecl other
+			&& isVarargs == other.isVarargs
+			&& Objects.equals(type, other.type);
 	}
 
 	@Override

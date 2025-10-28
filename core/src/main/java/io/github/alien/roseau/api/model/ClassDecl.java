@@ -69,9 +69,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		ClassDecl other = (ClassDecl) obj;
-		return Objects.equals(superClass, other.superClass) &&
-			Objects.equals(constructors, other.constructors);
+		return obj instanceof ClassDecl other
+			&& Objects.equals(superClass, other.superClass)
+			&& Objects.equals(constructors, other.constructors);
 	}
 
 	@Override

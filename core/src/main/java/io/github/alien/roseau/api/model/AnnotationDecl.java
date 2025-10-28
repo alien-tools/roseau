@@ -75,9 +75,9 @@ public final class AnnotationDecl extends TypeDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		AnnotationDecl other = (AnnotationDecl) obj;
-		return Objects.equals(annotationMethods, other.annotationMethods) &&
-			Objects.equals(targets, other.targets);
+		return obj instanceof AnnotationDecl other
+			&& Objects.equals(annotationMethods, other.annotationMethods)
+			&& Objects.equals(targets, other.targets);
 	}
 
 	@Override

@@ -198,13 +198,10 @@ public final class LibraryTypes implements TypeProvider {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		LibraryTypes other = (LibraryTypes) obj;
-		return Objects.equals(library, other.library) &&
-			Objects.equals(module, other.module) &&
-			Objects.equals(allTypes, other.allTypes);
+		return obj instanceof LibraryTypes other
+			&& Objects.equals(library, other.library)
+			&& Objects.equals(module, other.module)
+			&& Objects.equals(allTypes, other.allTypes);
 	}
 
 	@Override
