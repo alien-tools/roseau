@@ -54,7 +54,7 @@ public class CachingTypeResolver implements TypeResolver {
 			String fqn = reference.getQualifiedName();
 			ResolvedType cached = typeCache.get(fqn, () -> resolveType(fqn, type));
 			return Optional.ofNullable(cached.typeDecl()).filter(type::isInstance).map(type::cast);
-		} catch (ExecutionException ignored) {
+		} catch (ExecutionException _) {
 			return Optional.empty();
 		}
 	}

@@ -76,7 +76,7 @@ public final class PreviousFailuresFilter extends StrategyFilter {
 					.filter(line -> !line.isBlank())
 					.map(line -> line.split(",")[0].trim())
 					.collect(java.util.stream.Collectors.toSet());
-		} catch (Exception ignored) {
+		} catch (Exception _) {
 			return Set.of();
 		}
 	}

@@ -370,7 +370,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		spec.commandLine().getErr().println(message);
 	}
 
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		int exitCode = new CommandLine(new RoseauCLI()).execute(args);
 		System.exit(exitCode);
 	}

@@ -23,7 +23,7 @@ public abstract class CachingApiAnalyzer implements ApiAnalyzer {
 	public Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
 		try {
 			return methodsCache.get(type.getQualifiedName(), () -> ApiAnalyzer.super.getExportedMethodsByErasure(type));
-		} catch (ExecutionException ignored) {
+		} catch (ExecutionException _) {
 			return Map.of();
 		}
 	}
@@ -32,7 +32,7 @@ public abstract class CachingApiAnalyzer implements ApiAnalyzer {
 	public Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
 		try {
 			return fieldsCache.get(type.getQualifiedName(), () -> ApiAnalyzer.super.getExportedFieldsByName(type));
-		} catch (ExecutionException ignored) {
+		} catch (ExecutionException _) {
 			return Map.of();
 		}
 	}

@@ -484,7 +484,7 @@ public class SpoonApiFactory {
 				}
 				yield variable.getDeclaringType().getQualifiedName() + "." + variable.getSimpleName();
 			}
-			case CtNewArray<?> ignored -> "{}";
+			case CtNewArray<?> _ -> "{}";
 			default -> value.toString();
 		};
 	}

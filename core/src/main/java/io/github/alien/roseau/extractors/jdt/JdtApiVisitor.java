@@ -211,10 +211,10 @@ final class JdtApiVisitor extends ASTVisitor {
 				yield factory.createEnum(qualifiedName, visibility, modifiers, annotations, location, implemented,
 					fields, methods, enclosingType, constructors);
 			}
-			case RecordDeclaration r ->
+			case RecordDeclaration _ ->
 				factory.createRecord(qualifiedName, visibility, modifiers, annotations, location, implemented,
 					typeParams, fields, methods, enclosingType, constructors);
-			case AnnotationTypeDeclaration a -> {
+			case AnnotationTypeDeclaration _ -> {
 				Set<AnnotationMethodDecl> annotationMethods = convertAnnotationMethods(binding);
 				Set<ElementType> targets = convertAnnotationTargets(binding);
 				yield factory.createAnnotation(qualifiedName, visibility, modifiers, annotations, location,
@@ -500,7 +500,7 @@ final class JdtApiVisitor extends ASTVisitor {
 	private static String formatAnnotationValue(Object value) {
 		return switch (value) {
 			// We don't store those
-			case Object[] array -> "{}";
+			case Object[] _ -> "{}";
 			// Enum constant
 			case IVariableBinding varBinding -> makeMemberFqn(varBinding.getDeclaringClass(), varBinding);
 			// Class literal
