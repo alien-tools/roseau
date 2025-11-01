@@ -1,11 +1,12 @@
 package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -15,16 +16,20 @@ import java.util.List;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.fail;
 
 class JdtTypesExtractorTest {
+	JdtTypesExtractor extractor;
+
+	@BeforeEach
+	void setUp() {
+		extractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
+	}
+
 	@TempDir
 	Path wd;
 
 	@Test
 	void parse_empty_sources_empty_api() {
-		var extractor = new JdtTypesExtractor();
 		var api = extractor.extractTypes(Library.of(wd));
 
 		assertThat(api).isNotNull();
@@ -37,7 +42,6 @@ class JdtTypesExtractorTest {
 			package pkg;
 			public class A {}""");
 
-		var extractor = new JdtTypesExtractor();
 		var api = extractor.extractTypes(Library.of(wd));
 
 		assertThat(api.getAllTypes())
@@ -57,7 +61,6 @@ class JdtTypesExtractorTest {
 				public int float double f;
 			}""");
 
-		var extractor = new JdtTypesExtractor();
 		var api = extractor.extractTypes(Library.of(wd));
 
 		assertThat(api).isNotNull();
@@ -80,7 +83,6 @@ class JdtTypesExtractorTest {
 				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
 			}""");
 
-		var extractor = new JdtTypesExtractor();
 		var types = extractor.extractTypes(Library.of(wd));
 
 		assertThat(types).isNotNull();
@@ -130,7 +132,6 @@ class JdtTypesExtractorTest {
 				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
 			}""");
 
-		var extractor = new JdtTypesExtractor();
 		var types = extractor.extractTypes(Library.of(wd));
 
 		assertThat(types.getAllTypes()).hasSize(7);

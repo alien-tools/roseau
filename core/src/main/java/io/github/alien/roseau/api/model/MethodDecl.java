@@ -1,6 +1,8 @@
 package io.github.alien.roseau.api.model;
 
+import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -58,6 +60,38 @@ public sealed class MethodDecl extends ExecutableDecl permits AnnotationMethodDe
 	 */
 	public boolean isStrictFp() {
 		return modifiers.contains(Modifier.STRICTFP);
+	}
+
+	public boolean isEquals() {
+		return simpleName.equals("equals") &&
+			type.equals(PrimitiveTypeReference.BOOLEAN) &&
+			parameters.size() == 1 &&
+			parameters.getFirst().type().equals(TypeReference.OBJECT);
+	}
+
+	public boolean isHashCode() {
+		return simpleName.equals("hashCode") &&
+			type.equals(PrimitiveTypeReference.INT) &&
+			parameters.isEmpty();
+	}
+
+	public boolean isToString() {
+		return simpleName.equals("toString") &&
+			type.equals(TypeReference.STRING) &&
+			parameters.isEmpty();
+	}
+
+	public boolean isValueOf() {
+		return isStatic() &&
+			simpleName.equals("valueOf") &&
+			parameters.size() == 1 &&
+			parameters.getFirst().type().equals(TypeReference.STRING);
+	}
+
+	public boolean isValues() {
+		return simpleName.equals("values") &&
+			type instanceof ArrayTypeReference &&
+			parameters.isEmpty();
 	}
 
 	@Override

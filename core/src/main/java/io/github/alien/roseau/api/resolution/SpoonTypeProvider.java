@@ -3,8 +3,8 @@ package io.github.alien.roseau.api.resolution;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import io.github.alien.roseau.extractors.spoon.SpoonAPIFactory;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.extractors.spoon.SpoonApiFactory;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -17,22 +17,22 @@ import java.util.Set;
  * outside the API's scope. This implementation delegates the job to Spoon, configured with the provided classpath.
  */
 public class SpoonTypeProvider implements TypeProvider {
-	private final SpoonAPIFactory spoonFactory;
+	private final SpoonApiFactory spoonFactory;
 
 	private static final Logger LOGGER = LogManager.getLogger(SpoonTypeProvider.class);
 
 	/**
-	 * Creates a new reflective type provider using {@code typeReferenceFactory} to create new references if needed, and
+	 * Creates a new reflective type provider using {@code factory} to create new references if needed, and
 	 * using {@code classpath} to reflectively construct new types.
 	 *
-	 * @param typeReferenceFactory the {@link TypeReferenceFactory} to create new type references with
-	 * @param classpath            the classpath used to find the requested types
+	 * @param factory   the {@link ApiFactory} to create new type references with
+	 * @param classpath the classpath used to find the requested types
 	 */
-	public SpoonTypeProvider(TypeReferenceFactory typeReferenceFactory, Set<Path> classpath) {
-		Preconditions.checkNotNull(typeReferenceFactory);
+	public SpoonTypeProvider(ApiFactory factory, Set<Path> classpath) {
+		Preconditions.checkNotNull(factory);
 		Preconditions.checkNotNull(classpath);
 		Library virtual = Library.builder().location(Path.of("")).classpath(classpath).build();
-		spoonFactory = new SpoonAPIFactory(virtual, typeReferenceFactory);
+		spoonFactory = new SpoonApiFactory(virtual, factory);
 	}
 
 	@Override

@@ -2,7 +2,7 @@ package io.github.alien.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -16,7 +16,7 @@ import java.util.Set;
  * contain fields and methods, and be nested within other type declarations.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "typeKind")
-public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl, AnnotationDecl {
+public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl {
 	protected final Set<TypeReference<InterfaceDecl>> implementedInterfaces;
 	protected final List<FormalTypeParameter> formalTypeParameters;
 	protected final Set<FieldDecl> fields;
@@ -29,7 +29,9 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	                   Set<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                   TypeReference<TypeDecl> enclosingType, Set<TypeReference<TypeDecl>> permittedTypes) {
-		super(qualifiedName, visibility, modifiers, annotations, location);
+		// §8.1.6: permitted types implies sealed
+		super(qualifiedName, visibility,
+			Sets.union(modifiers, permittedTypes.isEmpty() ? Set.of() : Set.of(Modifier.SEALED)), annotations, location);
 		Preconditions.checkNotNull(implementedInterfaces);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(fields);
@@ -37,12 +39,22 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 		Preconditions.checkArgument(enclosingType != null ||
 				Set.of(AccessModifier.PUBLIC, AccessModifier.PACKAGE_PRIVATE).contains(visibility),
 			"Top-level type declarations are either PUBLIC or PACKAGE_PRIVATE");
-		this.implementedInterfaces = ImmutableSet.copyOf(implementedInterfaces);
+		this.implementedInterfaces = Set.copyOf(implementedInterfaces);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
-		this.fields = ImmutableSet.copyOf(fields);
-		this.methods = ImmutableSet.copyOf(methods);
+		this.fields = Set.copyOf(fields);
+		this.methods = Set.copyOf(methods.stream().filter(m -> !isSyntheticMethod(m)).toList());
 		this.enclosingType = enclosingType;
-		this.permittedTypes = ImmutableSet.copyOf(permittedTypes);
+		this.permittedTypes = Set.copyOf(permittedTypes);
+	}
+
+	private boolean isSyntheticMethod(MethodDecl method) {
+		if (isRecord()) {
+			return method.isEquals() || method.isHashCode() || method.isToString();
+		}
+		if (isEnum()) {
+			return method.isValueOf() || method.isValues();
+		}
+		return false;
 	}
 
 	public boolean isNested() {

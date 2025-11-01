@@ -6,8 +6,8 @@ import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,8 +16,7 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.zip.ZipFile;
@@ -26,9 +25,15 @@ import java.util.zip.ZipFile;
  * An ASM-based {@link TypesExtractor}.
  */
 public class AsmTypesExtractor implements TypesExtractor {
+	private final ApiFactory factory;
+
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
 	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
+
+	public AsmTypesExtractor(ApiFactory factory) {
+		this.factory = Preconditions.checkNotNull(factory);
+	}
 
 	@Override
 	public LibraryTypes extractTypes(Library library) {
@@ -51,59 +56,33 @@ public class AsmTypesExtractor implements TypesExtractor {
 	 * @return the extracted {@link LibraryTypes}
 	 */
 	private LibraryTypes extractTypes(Library library, JarFile jar) {
-		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-
-		List<TypeDecl> typeDecls = jar.versionedStream()
+		ExtractorSink sink = new ExtractorSink(jar.size() << 1);
+		jar.versionedStream().parallel()
 			.filter(this::isRegularClassFile)
-			.parallel()
-			.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
-			.toList();
-		List<ModuleDecl> moduleDecls = jar.versionedStream()
-			.filter(this::isModuleInfo)
-			.flatMap(entry -> extractModuleDecl(jar, entry).stream())
-			.toList();
+			.forEach(entry -> processEntry(jar, entry, sink));
 
+		Set<TypeDecl> typeDecls = sink.getTypes();
+		Set<ModuleDecl> moduleDecls = sink.getModules();
 		if (moduleDecls.isEmpty()) {
 			return new LibraryTypes(library, typeDecls);
 		} else if (moduleDecls.size() == 1) {
-			return new LibraryTypes(library, moduleDecls.getFirst(), typeDecls);
+			return new LibraryTypes(library, moduleDecls.iterator().next(), typeDecls);
 		} else {
 			throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, moduleDecls));
 		}
 	}
 
-	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {
+	private void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
 		try (InputStream is = jar.getInputStream(entry)) {
 			ClassReader reader = new ClassReader(is);
-			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, typeRefFactory);
+			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
 			reader.accept(visitor, PARSING_OPTIONS);
-			return Optional.ofNullable(visitor.getTypeDecl());
 		} catch (IOException e) {
 			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
-			return Optional.empty();
 		}
-	}
-
-	private static Optional<ModuleDecl> extractModuleDecl(JarFile jar, JarEntry entry) {
-		try (InputStream is = jar.getInputStream(entry)) {
-			ClassReader reader = new ClassReader(is);
-			AsmModuleVisitor visitor = new AsmModuleVisitor(ASM_VERSION);
-			reader.accept(visitor, PARSING_OPTIONS);
-			return Optional.ofNullable(visitor.getModule());
-		} catch (IOException e) {
-			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
-			return Optional.empty();
-		}
-	}
-
-	private boolean isModuleInfo(JarEntry entry) {
-		return !entry.isDirectory() &&
-			"module-info.class".equals(entry.getName());
 	}
 
 	private boolean isRegularClassFile(JarEntry entry) {
-		return !entry.isDirectory() &&
-			entry.getName().endsWith(".class") &&
-			!isModuleInfo(entry);
+		return !entry.isDirectory() && entry.getName().endsWith(".class");
 	}
 }

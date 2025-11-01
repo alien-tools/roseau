@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -23,7 +22,7 @@ public final class EnumDecl extends ClassDecl {
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, List.of(),
 			fields, methods, enclosingType, TypeReference.ENUM, constructors, Set.of());
 		Preconditions.checkNotNull(values);
-		this.values = ImmutableSet.copyOf(values);
+		this.values = Set.copyOf(values);
 	}
 
 	@Override

@@ -25,16 +25,16 @@ import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
-import io.github.alien.roseau.api.visit.APIAlgebra;
+import io.github.alien.roseau.api.visit.ApiAlgebra;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class APIPrettyPrinter implements APIAlgebra<Print> {
+public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 	private API api;
 
-	public APIPrettyPrinter(API api) {
+	public ApiPrettyPrinter(API api) {
 		this.api = api;
 	}
 

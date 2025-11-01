@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
@@ -31,7 +30,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		Preconditions.checkNotNull(thrownExceptions);
 		this.parameters = List.copyOf(parameters);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
-		this.thrownExceptions = ImmutableSet.copyOf(thrownExceptions);
+		this.thrownExceptions = Set.copyOf(thrownExceptions);
 	}
 
 	@Override

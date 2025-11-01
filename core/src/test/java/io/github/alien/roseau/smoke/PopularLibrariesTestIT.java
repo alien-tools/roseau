@@ -9,7 +9,7 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
-import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
+import io.github.alien.roseau.api.visit.AbstractApiVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.extractors.ExtractorType;
 import org.junit.jupiter.api.TestInstance;
@@ -159,7 +159,8 @@ class PopularLibrariesTestIT {
 		if (!jdtTypes.getModule().equals(asmTypes.getModule())) {
 			System.out.printf("Different modules: asm=%s, jdt=%s%n", asmTypes.getModule(), jdtTypes.getModule());
 			jdtApi = jdtApi.getLibraryTypes().getModule().isUnnamed()
-				? new LibraryTypes(jdtTypes.getLibrary(), asmTypes.getModule(), jdtTypes.getAllTypes().stream().toList()).toAPI()
+				? new LibraryTypes(jdtTypes.getLibrary(), asmTypes.getModule(),
+				new HashSet<>(jdtTypes.getAllTypes())).toAPI()
 				: jdtApi;
 		}
 
@@ -309,7 +310,7 @@ class PopularLibrariesTestIT {
 		}
 	}
 
-	static class ReferenceVisitor extends AbstractAPIVisitor {
+	static class ReferenceVisitor extends AbstractApiVisitor {
 		API api;
 		Set<TypeReference<?>> unresolved = new HashSet<>();
 

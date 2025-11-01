@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -28,7 +27,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		Preconditions.checkNotNull(constructors);
 		Preconditions.checkNotNull(permittedTypes);
 		this.superClass = Optional.ofNullable(superClass).orElse(TypeReference.OBJECT);
-		this.constructors = ImmutableSet.copyOf(constructors);
+		this.constructors = Set.copyOf(constructors);
 	}
 
 	@Override

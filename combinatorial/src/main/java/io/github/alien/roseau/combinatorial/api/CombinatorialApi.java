@@ -9,8 +9,23 @@ import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.*;
-import io.github.alien.roseau.combinatorial.builder.*;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
+import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
+import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
+import io.github.alien.roseau.combinatorial.builder.Builder;
+import io.github.alien.roseau.combinatorial.builder.ClassBuilder;
+import io.github.alien.roseau.combinatorial.builder.ConstructorBuilder;
+import io.github.alien.roseau.combinatorial.builder.EnumBuilder;
+import io.github.alien.roseau.combinatorial.builder.EnumValueBuilder;
+import io.github.alien.roseau.combinatorial.builder.FieldBuilder;
+import io.github.alien.roseau.combinatorial.builder.InterfaceBuilder;
+import io.github.alien.roseau.combinatorial.builder.MethodBuilder;
+import io.github.alien.roseau.combinatorial.builder.ParameterBuilder;
+import io.github.alien.roseau.combinatorial.builder.RecordBuilder;
+import io.github.alien.roseau.combinatorial.builder.RecordComponentBuilder;
+import io.github.alien.roseau.combinatorial.builder.TypeBuilder;
 
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -42,41 +57,41 @@ public final class CombinatorialApi {
 
 	// STATIC handled separately for nested types only
 	static final Set<Set<Modifier>> classModifiers = powerSet(FINAL, ABSTRACT, SEALED, NON_SEALED)
-			.stream()
-			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
-			.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
-			.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
-			.collect(Collectors.toCollection(LinkedHashSet::new));
+		.stream()
+		.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+		.filter(mods -> !mods.containsAll(Set.of(ABSTRACT, FINAL)))
+		.filter(mods -> !mods.contains(FINAL) || Sets.intersection(mods, Set.of(ABSTRACT, SEALED, NON_SEALED)).isEmpty())
+		.collect(Collectors.toCollection(LinkedHashSet::new));
 	static final Set<Set<Modifier>> interfaceModifiers = powerSet(ABSTRACT, SEALED, NON_SEALED)
-			.stream()
-			.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
-			.collect(Collectors.toCollection(LinkedHashSet::new));
+		.stream()
+		.filter(mods -> !mods.containsAll(Set.of(SEALED, NON_SEALED)))
+		.collect(Collectors.toCollection(LinkedHashSet::new));
 	static final Set<Set<Modifier>> recordModifiers = powerSet(FINAL);
 	static final Set<Set<Modifier>> enumModifiers = powerSet();
 
 	static final List<ITypeReference> fieldTypes = List.of(
-			typeReferenceFactory.createPrimitiveTypeReference("int"),
-			typeReferenceFactory.createTypeReference("java.lang.Long"),
-			typeReferenceFactory.createTypeReference("java.util.Random"),
-			typeReferenceFactory.createTypeReference("java.sql.Time"),
-			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("int"), 1),
-			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.lang.Long"), 1),
-			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.util.Random"), 1),
-			typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.sql.Time"), 1)
+		typeReferenceFactory.createPrimitiveTypeReference("int"),
+		typeReferenceFactory.createTypeReference("java.lang.Long"),
+		typeReferenceFactory.createTypeReference("java.util.Random"),
+		typeReferenceFactory.createTypeReference("java.sql.Time"),
+		typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createPrimitiveTypeReference("int"), 1),
+		typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.lang.Long"), 1),
+		typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.util.Random"), 1),
+		typeReferenceFactory.createArrayTypeReference(typeReferenceFactory.createTypeReference("java.sql.Time"), 1)
 	);
 
 	static final List<List<ITypeReference>> methodParamsTypes = powerSet(fieldTypes)
-			.stream()
-			.map(setTypes -> setTypes.stream().toList())
-			.toList();
+		.stream()
+		.map(setTypes -> setTypes.stream().toList())
+		.toList();
 	static final List<ITypeReference> methodReturnTypes = Stream
-			.concat(fieldTypes.stream(), Stream.of(new PrimitiveTypeReference("void")))
-			.toList();
+		.concat(fieldTypes.stream(), Stream.of(new PrimitiveTypeReference("void")))
+		.toList();
 
 	static final List<List<ITypeReference>> thrownExceptions = powerSet(TypeReference.IO_EXCEPTION /* No throws for unchecked: TypeReference.RUNTIME_EXCEPTION*/)
-			.stream()
-			.map(set -> set.stream().map(ITypeReference.class::cast).toList())
-			.toList();
+		.stream()
+		.map(set -> set.stream().map(ITypeReference.class::cast).toList())
+		.toList();
 
 	static final List<Boolean> isHidingAndOverridingValues = List.of(/*true, */false);
 
@@ -116,19 +131,19 @@ public final class CombinatorialApi {
 
 	private void weaveFields() {
 		typeStore.forEach((fqn, t) ->
-				fieldVisibilities(t).forEach(visibility ->
-						fieldModifiers(t).forEach(modifiers ->
-								fieldTypes.forEach(type -> {
-									var builder = new FieldBuilder();
-									builder.qualifiedName = t.qualifiedName + ".f" + ++symbolCounter;
-									builder.visibility = visibility;
-									builder.modifiers = toEnumSet(modifiers, Modifier.class);
-									builder.type = type;
-									builder.containingType = typeReferenceFactory.createTypeReference(t.qualifiedName);
-									t.fields.add(builder);
-								})
-						)
+			fieldVisibilities(t).forEach(visibility ->
+				fieldModifiers(t).forEach(modifiers ->
+					fieldTypes.forEach(type -> {
+						var builder = new FieldBuilder();
+						builder.qualifiedName = t.qualifiedName + ".f" + ++symbolCounter;
+						builder.visibility = visibility;
+						builder.modifiers = toEnumSet(modifiers, Modifier.class);
+						builder.type = type;
+						builder.containingType = typeReferenceFactory.createTypeReference(t.qualifiedName);
+						t.fields.add(builder);
+					})
 				)
+			)
 		);
 	}
 
@@ -136,60 +151,60 @@ public final class CombinatorialApi {
 		var paramsCountToMethodsParamsTypes = getParamsCountToParamsTypesMap();
 
 		typeStore.forEach((fqn, t) ->
-				methodVisibilities(t).forEach(visibility ->
-						methodModifiers(t).forEach(modifiers -> {
-							// Parameters different types and count
-							IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-								var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
-								if (methodParamsCount > 1) {
-									methodsParamsTypesForParamsCount = List.of(methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size()));
-								}
+			methodVisibilities(t).forEach(visibility ->
+				methodModifiers(t).forEach(modifiers -> {
+					// Parameters different types and count
+					IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+						var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
+						if (methodParamsCount > 1) {
+							methodsParamsTypesForParamsCount = List.of(methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size()));
+						}
 
-								methodsParamsTypesForParamsCount.forEach(methodParamsTypes -> {
-									var parameters = new ArrayList<ParameterBuilder>();
-									IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
-										var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
-										parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
-									});
-
-									createMethodAndAddToType(visibility, modifiers, parameters, t);
-								});
+						methodsParamsTypesForParamsCount.forEach(methodParamsTypes -> {
+							var parameters = new ArrayList<ParameterBuilder>();
+							IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
+								var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
+								parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
 							});
 
-							// Varargs
-							IntStream.range(1, paramsCount + 1).forEach(methodParamsCount ->
-									fieldTypes.forEach(varArgsParamType -> {
-										var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
-										var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
-										var parameters = new ArrayList<ParameterBuilder>();
+							createMethodAndAddToType(visibility, modifiers, parameters, t);
+						});
+					});
 
-										IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
-											var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
-											parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
-										});
+					// Varargs
+					IntStream.range(1, paramsCount + 1).forEach(methodParamsCount ->
+						fieldTypes.forEach(varArgsParamType -> {
+							var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount - 1);
+							var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
+							var parameters = new ArrayList<ParameterBuilder>();
 
-										parameters.add(generateParameterBuilder("p" + methodParamsCount, varArgsParamType, true));
-
-										createMethodAndAddToType(visibility, modifiers, parameters, t);
-									})
-							);
-
-							// Overloading
-							var overloadedQualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
-							IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
-								var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
-								var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
-								var parameters = new ArrayList<ParameterBuilder>();
-
-								IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
-									var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
-									parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
-								});
-
-								createMethodAndAddToType(overloadedQualifiedName, visibility, modifiers, parameters, t);
+							IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
+								var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
+								parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
 							});
+
+							parameters.add(generateParameterBuilder("p" + methodParamsCount, varArgsParamType, true));
+
+							createMethodAndAddToType(visibility, modifiers, parameters, t);
 						})
-				)
+					);
+
+					// Overloading
+					var overloadedQualifiedName = t.qualifiedName + ".m" + ++symbolCounter;
+					IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
+						var methodsParamsTypesForParamsCount = paramsCountToMethodsParamsTypes.get(methodParamsCount);
+						var methodParamsTypes = methodsParamsTypesForParamsCount.get(methodCounter % methodsParamsTypesForParamsCount.size());
+						var parameters = new ArrayList<ParameterBuilder>();
+
+						IntStream.range(0, methodParamsTypes.size()).forEach(paramIndex -> {
+							var param = methodParamsTypes.get(paramIndex % methodParamsTypes.size());
+							parameters.add(generateParameterBuilder("p" + paramIndex, param, false));
+						});
+
+						createMethodAndAddToType(overloadedQualifiedName, visibility, modifiers, parameters, t);
+					});
+				})
+			)
 		);
 	}
 
@@ -197,20 +212,20 @@ public final class CombinatorialApi {
 		var interfaceBuildersPowerSet = powerSet(interfaceBuilders);
 		var widthToInterfacesMap = new HashMap<Integer, List<List<InterfaceBuilder>>>();
 		IntStream.range(0, typeHierarchyWidth + 1).forEach(width ->
-				interfaceBuildersPowerSet.forEach(interfaceBuilderSet -> {
-					if (interfaceBuilderSet.size() == width) {
-						widthToInterfacesMap.putIfAbsent(width, new ArrayList<>());
-						widthToInterfacesMap.get(width).add(interfaceBuilderSet.stream().toList());
-					}
-				})
+			interfaceBuildersPowerSet.forEach(interfaceBuilderSet -> {
+				if (interfaceBuilderSet.size() == width) {
+					widthToInterfacesMap.putIfAbsent(width, new ArrayList<>());
+					widthToInterfacesMap.get(width).add(interfaceBuilderSet.stream().toList());
+				}
+			})
 		);
 
 		classBuilders.forEach(clsBuilder -> {
 			// Create C extends C hierarchy & C extends C implements I hierarchy
 			widthToInterfacesMap.forEach((width, allInterfaceBuildersForWidth) ->
-					allInterfaceBuildersForWidth.forEach(interfaceBuildersForWidth ->
-							createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, interfaceBuildersForWidth, typeHierarchyDepth - 1)
-					)
+				allInterfaceBuildersForWidth.forEach(interfaceBuildersForWidth ->
+					createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, interfaceBuildersForWidth, typeHierarchyDepth - 1)
+				)
 			);
 		});
 
@@ -228,26 +243,27 @@ public final class CombinatorialApi {
 	}
 
 	private API getAPI() {
-		var types = new LibraryTypes(Library.of(Path.of("v1")), typeStore.values().stream().map(TypeBuilder::make).toList());
+		var types = new LibraryTypes(Library.of(Path.of("v1")),
+			typeStore.values().stream().map(TypeBuilder::make).collect(Collectors.toSet()));
 		return types.toAPI();
 	}
 
 	private void createInterfaces() {
 		topLevelVisibilities.forEach(visibility ->
-				interfaceModifiers.forEach(modifiers -> {
-					// First level of hierarchy can't have non-sealed interfaces
-					if (modifiers.contains(NON_SEALED)) return;
-					// Interface can't be sealed if no hierarchy
-					if (modifiers.contains(SEALED) && typeHierarchyDepth == 0) return;
+			interfaceModifiers.forEach(modifiers -> {
+				// First level of hierarchy can't have non-sealed interfaces
+				if (modifiers.contains(NON_SEALED)) return;
+				// Interface can't be sealed if no hierarchy
+				if (modifiers.contains(SEALED) && typeHierarchyDepth == 0) return;
 
-					var interfaceBuilder = new InterfaceBuilder();
-					interfaceBuilder.qualifiedName = "%s.I%s".formatted(apiPackageName, ++symbolCounter);
-					interfaceBuilder.visibility = visibility;
-					interfaceBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				var interfaceBuilder = new InterfaceBuilder();
+				interfaceBuilder.qualifiedName = "%s.I%s".formatted(apiPackageName, ++symbolCounter);
+				interfaceBuilder.visibility = visibility;
+				interfaceBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-					store(interfaceBuilder);
-					interfaceBuilders.add(interfaceBuilder);
-				})
+				store(interfaceBuilder);
+				interfaceBuilders.add(interfaceBuilder);
+			})
 		);
 	}
 
@@ -255,57 +271,57 @@ public final class CombinatorialApi {
 		var paramsCountToConstructorsParamsTypes = getParamsCountToParamsTypesMap();
 
 		topLevelVisibilities.forEach(visibility ->
-				classModifiers.forEach(modifiers -> {
-					// First level of hierarchy can't have non-sealed classes
-					if (modifiers.contains(NON_SEALED)) return;
-					// Class can't be sealed if no hierarchy
-					if (modifiers.contains(SEALED) && typeHierarchyDepth == 0) return;
+			classModifiers.forEach(modifiers -> {
+				// First level of hierarchy can't have non-sealed classes
+				if (modifiers.contains(NON_SEALED)) return;
+				// Class can't be sealed if no hierarchy
+				if (modifiers.contains(SEALED) && typeHierarchyDepth == 0) return;
 
-					var classBuilder = new ClassBuilder();
-					classBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
-					classBuilder.visibility = visibility;
-					classBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				var classBuilder = new ClassBuilder();
+				classBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
+				classBuilder.visibility = visibility;
+				classBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
 
-					// Default empty public constructor
-					addConstructorToClassBuilder(classBuilder, PUBLIC, List.of(), List.of(), false);
+				// Default empty public constructor
+				addConstructorToClassBuilder(classBuilder, PUBLIC, List.of(), List.of(), false);
 
-					// Constructors different params types and count
-					IntStream.range(1, paramsCountToConstructorsParamsTypes.size()).forEach(paramsCount -> {
-						var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
+				// Constructors different params types and count
+				IntStream.range(1, paramsCountToConstructorsParamsTypes.size()).forEach(paramsCount -> {
+					var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
 
-						constructorsParamsTypesForParamsCount.forEach(constructorParamsTypes -> {
-							var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
-							var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
+					constructorsParamsTypesForParamsCount.forEach(constructorParamsTypes -> {
+						var constructorVisibility = constructorsVisibilities.get(constructorCounter % constructorsVisibilities.size());
+						var constructorExceptions = thrownExceptions.get(Math.ceilDiv(constructorCounter, constructorsVisibilities.size()) % thrownExceptions.size());
 
-							addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes, constructorExceptions, false);
-						});
+						addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypes, constructorExceptions, false);
 					});
+				});
 
-					// Constructors with Varargs
-					IntStream.range(0, paramsCountToConstructorsParamsTypes.size() - 1).forEach(paramsCount ->
-							fieldTypes.forEach(varArgsParamType -> {
-								var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
-								var constructorParamsTypes = constructorsParamsTypesForParamsCount.get(constructorCounter % constructorsParamsTypesForParamsCount.size());
+				// Constructors with Varargs
+				IntStream.range(0, paramsCountToConstructorsParamsTypes.size() - 1).forEach(paramsCount ->
+					fieldTypes.forEach(varArgsParamType -> {
+						var constructorsParamsTypesForParamsCount = paramsCountToConstructorsParamsTypes.get(paramsCount);
+						var constructorParamsTypes = constructorsParamsTypesForParamsCount.get(constructorCounter % constructorsParamsTypesForParamsCount.size());
 
-								if (!constructorParamsTypes.isEmpty()) {
-									var paramTypeBeforeVarargs = constructorParamsTypes.getLast();
-									if (varArgsParamType.getQualifiedName().equals(paramTypeBeforeVarargs.getQualifiedName())) {
-										return;
-									}
-								}
+						if (!constructorParamsTypes.isEmpty()) {
+							var paramTypeBeforeVarargs = constructorParamsTypes.getLast();
+							if (varArgsParamType.getQualifiedName().equals(paramTypeBeforeVarargs.getQualifiedName())) {
+								return;
+							}
+						}
 
-								var constructorVisibility = constructorsVisibilities.get(Math.ceilDiv(constructorCounter, thrownExceptions.size()) % constructorsVisibilities.size());
-								var constructorExceptions = thrownExceptions.get(constructorCounter % thrownExceptions.size());
-								var constructorParamsTypesWithVarargs = new ArrayList<>(constructorParamsTypes);
-								constructorParamsTypesWithVarargs.add(varArgsParamType);
+						var constructorVisibility = constructorsVisibilities.get(Math.ceilDiv(constructorCounter, thrownExceptions.size()) % constructorsVisibilities.size());
+						var constructorExceptions = thrownExceptions.get(constructorCounter % thrownExceptions.size());
+						var constructorParamsTypesWithVarargs = new ArrayList<>(constructorParamsTypes);
+						constructorParamsTypesWithVarargs.add(varArgsParamType);
 
-								addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypesWithVarargs, constructorExceptions, true);
-							})
-					);
+						addConstructorToClassBuilder(classBuilder, constructorVisibility, constructorParamsTypesWithVarargs, constructorExceptions, true);
+					})
+				);
 
-					store(classBuilder);
-					classBuilders.add(classBuilder);
-				})
+				store(classBuilder);
+				classBuilders.add(classBuilder);
+			})
 		);
 	}
 
@@ -313,59 +329,59 @@ public final class CombinatorialApi {
 		var paramsCountToRecordsComponentTypes = getParamsCountToParamsTypesMap();
 
 		topLevelVisibilities.forEach(visibility ->
-				recordModifiers.forEach(modifiers -> {
-					// Record components different types and count
-					IntStream.range(0, paramsCount + 1).forEach(recordComponentParamsCount -> {
-						var recordsComponentsTypesForParamsCount = paramsCountToRecordsComponentTypes.get(recordComponentParamsCount);
+			recordModifiers.forEach(modifiers -> {
+				// Record components different types and count
+				IntStream.range(0, paramsCount + 1).forEach(recordComponentParamsCount -> {
+					var recordsComponentsTypesForParamsCount = paramsCountToRecordsComponentTypes.get(recordComponentParamsCount);
 
-						recordsComponentsTypesForParamsCount.forEach(recordsParamsTypes -> {
-							var recordBuilder = new RecordBuilder();
-							recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
-							recordBuilder.visibility = visibility;
-							recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-							addRecordComponentsToRecordBuilder(recordBuilder, recordsParamsTypes);
+					recordsComponentsTypesForParamsCount.forEach(recordsParamsTypes -> {
+						var recordBuilder = new RecordBuilder();
+						recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
+						recordBuilder.visibility = visibility;
+						recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+						addRecordComponentsToRecordBuilder(recordBuilder, recordsParamsTypes);
 
-							store(recordBuilder);
-						});
+						store(recordBuilder);
 					});
+				});
 
-					// Varargs
-					IntStream.range(1, paramsCount + 1).forEach(recordComponentParamsCount ->
-							fieldTypes.forEach(varArgsParamType -> {
-								var recordsComponentsTypesForParamsCount = paramsCountToRecordsComponentTypes.get(recordComponentParamsCount - 1);
-								var recordsParamsTypes = recordsComponentsTypesForParamsCount.get(symbolCounter % recordsComponentsTypesForParamsCount.size());
+				// Varargs
+				IntStream.range(1, paramsCount + 1).forEach(recordComponentParamsCount ->
+					fieldTypes.forEach(varArgsParamType -> {
+						var recordsComponentsTypesForParamsCount = paramsCountToRecordsComponentTypes.get(recordComponentParamsCount - 1);
+						var recordsParamsTypes = recordsComponentsTypesForParamsCount.get(symbolCounter % recordsComponentsTypesForParamsCount.size());
 
-								var recordBuilder = new RecordBuilder();
-								recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
-								recordBuilder.visibility = visibility;
-								recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-								addRecordComponentsToRecordBuilder(recordBuilder, recordsParamsTypes);
+						var recordBuilder = new RecordBuilder();
+						recordBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
+						recordBuilder.visibility = visibility;
+						recordBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+						addRecordComponentsToRecordBuilder(recordBuilder, recordsParamsTypes);
 
-								var varArgsRecordComponentBuilder = new RecordComponentBuilder();
-								varArgsRecordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentParamsCount);
-								varArgsRecordComponentBuilder.type = varArgsParamType;
-								varArgsRecordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
-								varArgsRecordComponentBuilder.isVarargs = true;
-								recordBuilder.recordComponents.add(varArgsRecordComponentBuilder);
+						var varArgsRecordComponentBuilder = new RecordComponentBuilder();
+						varArgsRecordComponentBuilder.qualifiedName = "%s.c%s".formatted(recordBuilder.qualifiedName, recordComponentParamsCount);
+						varArgsRecordComponentBuilder.type = varArgsParamType;
+						varArgsRecordComponentBuilder.containingType = typeReferenceFactory.createTypeReference(recordBuilder.qualifiedName);
+						varArgsRecordComponentBuilder.isVarargs = true;
+						recordBuilder.recordComponents.add(varArgsRecordComponentBuilder);
 
-								store(recordBuilder);
-							})
-					);
-				})
+						store(recordBuilder);
+					})
+				);
+			})
 		);
 	}
 
 	private void createEnums() {
 		topLevelVisibilities.forEach(visibility ->
-				enumModifiers.forEach(modifiers -> {
-					var enumBuilder = new EnumBuilder();
-					enumBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
-					enumBuilder.visibility = visibility;
-					enumBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					addEnumValuesToEnumBuilder(enumBuilder);
+			enumModifiers.forEach(modifiers -> {
+				var enumBuilder = new EnumBuilder();
+				enumBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
+				enumBuilder.visibility = visibility;
+				enumBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				addEnumValuesToEnumBuilder(enumBuilder);
 
-					store(enumBuilder);
-				})
+				store(enumBuilder);
+			})
 		);
 	}
 
@@ -387,145 +403,145 @@ public final class CombinatorialApi {
 				return;
 
 			topLevelVisibilities.forEach(visibility ->
-					isHidingAndOverridingValues.forEach(isHidingAndOverriding -> {
-						var clsBuilder = new ClassBuilder();
-						clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
-						clsBuilder.visibility = visibility;
-						clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-						clsBuilder.superClass = typeReferenceFactory.createTypeReference(superCls.getQualifiedName());
-						addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
+				isHidingAndOverridingValues.forEach(isHidingAndOverriding -> {
+					var clsBuilder = new ClassBuilder();
+					clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
+					clsBuilder.visibility = visibility;
+					clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+					clsBuilder.superClass = typeReferenceFactory.createTypeReference(superCls.getQualifiedName());
+					addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
 
-						if (superCls.isSealed()) {
-							superClsBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(clsBuilder.qualifiedName));
+					if (superCls.isSealed()) {
+						superClsBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(clsBuilder.qualifiedName));
+					}
+
+					if (isHidingAndOverriding) {
+						superCls.getDeclaredFields()
+							.forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
+					}
+
+					var currentApi = getAPI();
+					var methodsToGenerate = new HashMap<String, MethodBuilder>();
+					if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
+						currentApi.getAllMethodsToImplement(superCls)
+							.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
+					}
+					if (isHidingAndOverriding) {
+						superCls.getDeclaredMethods().stream()
+							.filter(m -> !m.isFinal())
+							.forEach(m -> {
+								var methodSignature = m.getSignature();
+								if (!methodsToGenerate.containsKey(methodSignature)) {
+									methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
+								}
+							});
+					}
+
+					implementingIntfBuilders.forEach(implementingIntfBuilder -> {
+						var implementingIntf = implementingIntfBuilder.make();
+
+						clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
+						if (!clsBuilder.modifiers.contains(ABSTRACT)) {
+							currentApi.getAllMethodsToImplement(implementingIntf)
+								.forEach(m -> {
+									if (!methodsToGenerate.containsKey(m.getSignature())) {
+										methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
+									}
+								});
 						}
 
-						if (isHidingAndOverriding) {
-							superCls.getDeclaredFields()
-									.forEach(f -> clsBuilder.fields.add(generateFieldForTypeDeclBuilder(f, clsBuilder)));
+						if (implementingIntf.isSealed()) {
+							implementingIntfBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(clsBuilder.qualifiedName));
 						}
+					});
 
-						var currentApi = getAPI();
-						var methodsToGenerate = new HashMap<String, MethodBuilder>();
-						if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
-							currentApi.getAllMethodsToImplement(superCls)
-									.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
-						}
-						if (isHidingAndOverriding) {
-							superCls.getDeclaredMethods().stream()
-									.filter(m -> !m.isFinal())
-									.forEach(m -> {
-										var methodSignature = m.getSignature();
-										if (!methodsToGenerate.containsKey(methodSignature)) {
-											methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
-										}
-									});
-						}
+					clsBuilder.methods.addAll(methodsToGenerate.values());
 
-						implementingIntfBuilders.forEach(implementingIntfBuilder -> {
-							var implementingIntf = implementingIntfBuilder.make();
-
-							clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
-							if (!clsBuilder.modifiers.contains(ABSTRACT)) {
-								currentApi.getAllMethodsToImplement(implementingIntf)
-										.forEach(m -> {
-											if (!methodsToGenerate.containsKey(m.getSignature())) {
-												methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
-											}
-										});
-							}
-
-							if (implementingIntf.isSealed()) {
-								implementingIntfBuilder.permittedTypes.add(typeReferenceFactory.createTypeReference(clsBuilder.qualifiedName));
-							}
-						});
-
-						clsBuilder.methods.addAll(methodsToGenerate.values());
-
-						store(clsBuilder);
-						if (depth > 0)
-							createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, implementingIntfBuilders, depth - 1);
-					})
+					store(clsBuilder);
+					if (depth > 0)
+						createNewClassesExtendingClassAndImplementingInterfaces(clsBuilder, implementingIntfBuilders, depth - 1);
+				})
 			);
 		});
 	}
 
 	private void createNewInterfacesExtendingInterfaces(List<InterfaceBuilder> extendingIntfBuilders, int depth) {
 		topLevelVisibilities.forEach(visibility ->
-				interfaceModifiers.forEach(modifiers -> {
-					// Last level of hierarchy can't have sealed interfaces
-					if (depth == 0 && modifiers.contains(SEALED))
-						return;
-					// Interface extending at least one sealed interface must be sealed or non-sealed
-					if (extendingIntfBuilders.stream().anyMatch(p -> p.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
-						return;
-					// Interface extending non-sealed interfaces can't be non-sealed
-					if (extendingIntfBuilders.stream().noneMatch(p -> p.make().isSealed()) && modifiers.contains(NON_SEALED))
-						return;
+			interfaceModifiers.forEach(modifiers -> {
+				// Last level of hierarchy can't have sealed interfaces
+				if (depth == 0 && modifiers.contains(SEALED))
+					return;
+				// Interface extending at least one sealed interface must be sealed or non-sealed
+				if (extendingIntfBuilders.stream().anyMatch(p -> p.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED)).isEmpty())
+					return;
+				// Interface extending non-sealed interfaces can't be non-sealed
+				if (extendingIntfBuilders.stream().noneMatch(p -> p.make().isSealed()) && modifiers.contains(NON_SEALED))
+					return;
 
-					var intfBuilder = new InterfaceBuilder();
-					intfBuilder.qualifiedName = "%s.I%s".formatted(apiPackageName, ++symbolCounter);
-					intfBuilder.visibility = visibility;
-					intfBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					addImplementedInterfacesToTypeDeclBuilder(intfBuilder, extendingIntfBuilders);
+				var intfBuilder = new InterfaceBuilder();
+				intfBuilder.qualifiedName = "%s.I%s".formatted(apiPackageName, ++symbolCounter);
+				intfBuilder.visibility = visibility;
+				intfBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				addImplementedInterfacesToTypeDeclBuilder(intfBuilder, extendingIntfBuilders);
 
-					store(intfBuilder);
-					if (depth > 0)
-						createNewInterfacesExtendingInterfaces(List.of(intfBuilder), depth - 1);
-				})
+				store(intfBuilder);
+				if (depth > 0)
+					createNewInterfacesExtendingInterfaces(List.of(intfBuilder), depth - 1);
+			})
 		);
 	}
 
 	private void createNewClassesImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
 		topLevelVisibilities.forEach(visibility ->
-				classModifiers.forEach(modifiers -> {
-					// Last level of hierarchy can't have sealed classes
-					if (modifiers.contains(SEALED))
-						return;
-					// Class implementing at least one sealed interface must be sealed, non-sealed or final
-					if (implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
-						return;
-					// Class implementing non-sealed interfaces can't be non-sealed
-					if (implementingIntfBuilders.stream().noneMatch(iB -> iB.make().isSealed()) && modifiers.contains(NON_SEALED))
-						return;
+			classModifiers.forEach(modifiers -> {
+				// Last level of hierarchy can't have sealed classes
+				if (modifiers.contains(SEALED))
+					return;
+				// Class implementing at least one sealed interface must be sealed, non-sealed or final
+				if (implementingIntfBuilders.stream().anyMatch(iB -> iB.make().isSealed()) && Sets.intersection(modifiers, Set.of(SEALED, NON_SEALED, FINAL)).isEmpty())
+					return;
+				// Class implementing non-sealed interfaces can't be non-sealed
+				if (implementingIntfBuilders.stream().noneMatch(iB -> iB.make().isSealed()) && modifiers.contains(NON_SEALED))
+					return;
 
-					var clsBuilder = new ClassBuilder();
-					clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
-					clsBuilder.visibility = visibility;
-					clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
-					addImplementedInterfacesToTypeDeclBuilder(clsBuilder, implementingIntfBuilders);
+				var clsBuilder = new ClassBuilder();
+				clsBuilder.qualifiedName = "%s.C%s".formatted(apiPackageName, ++symbolCounter);
+				clsBuilder.visibility = visibility;
+				clsBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				addConstructorToClassBuilder(clsBuilder, PUBLIC, List.of(), List.of(), false);
+				addImplementedInterfacesToTypeDeclBuilder(clsBuilder, implementingIntfBuilders);
 
-					store(clsBuilder);
-				})
+				store(clsBuilder);
+			})
 		);
 	}
 
 	private void createNewRecordsImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
 		topLevelVisibilities.forEach(visibility ->
-				recordModifiers.forEach(modifiers -> {
-					var rcdBuilder = new RecordBuilder();
-					rcdBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
-					rcdBuilder.visibility = visibility;
-					rcdBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					addImplementedInterfacesToTypeDeclBuilder(rcdBuilder, implementingIntfBuilders);
+			recordModifiers.forEach(modifiers -> {
+				var rcdBuilder = new RecordBuilder();
+				rcdBuilder.qualifiedName = "%s.R%s".formatted(apiPackageName, ++symbolCounter);
+				rcdBuilder.visibility = visibility;
+				rcdBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				addImplementedInterfacesToTypeDeclBuilder(rcdBuilder, implementingIntfBuilders);
 
-					store(rcdBuilder);
-				})
+				store(rcdBuilder);
+			})
 		);
 	}
 
 	private void createNewEnumsImplementingInterfaces(List<InterfaceBuilder> implementingIntfBuilders) {
 		topLevelVisibilities.forEach(visibility ->
-				enumModifiers.forEach(modifiers -> {
-					var enumBuilder = new EnumBuilder();
-					enumBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
-					enumBuilder.visibility = visibility;
-					enumBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
-					addImplementedInterfacesToTypeDeclBuilder(enumBuilder, implementingIntfBuilders);
-					addEnumValuesToEnumBuilder(enumBuilder);
+			enumModifiers.forEach(modifiers -> {
+				var enumBuilder = new EnumBuilder();
+				enumBuilder.qualifiedName = "%s.E%s".formatted(apiPackageName, ++symbolCounter);
+				enumBuilder.visibility = visibility;
+				enumBuilder.modifiers = toEnumSet(modifiers, Modifier.class);
+				addImplementedInterfacesToTypeDeclBuilder(enumBuilder, implementingIntfBuilders);
+				addEnumValuesToEnumBuilder(enumBuilder);
 
-					store(enumBuilder);
-				})
+				store(enumBuilder);
+			})
 		);
 	}
 
@@ -534,7 +550,7 @@ public final class CombinatorialApi {
 	}
 
 	private void addConstructorToClassBuilder(ClassBuilder classBuilder, AccessModifier visibility, List<ITypeReference> params,
-													 List<ITypeReference> exceptions, boolean lastParamIsVarargs) {
+	                                          List<ITypeReference> exceptions, boolean lastParamIsVarargs) {
 		constructorCounter++;
 
 		var constructorBuilder = new ConstructorBuilder();
@@ -554,8 +570,8 @@ public final class CombinatorialApi {
 			var currentApi = getAPI();
 			var currentConstructor = constructorBuilder.make();
 			var constructorsWithSameErasure = classBuilder.constructors.stream()
-					.filter(c -> currentApi.haveSameErasure(c.make(), currentConstructor))
-					.toList();
+				.filter(c -> currentApi.haveSameErasure(c.make(), currentConstructor))
+				.toList();
 
 			if (!constructorsWithSameErasure.isEmpty()) {
 				if (constructorCounter % 4 == 0 || constructorCounter % 4 == 2) {
@@ -576,7 +592,7 @@ public final class CombinatorialApi {
 			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 			if (!builder.modifiers.contains(ABSTRACT)) {
 				getAPI().getAllMethodsToImplement(implementingIntf)
-						.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
+					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 			}
 
 			if (implementingIntf.isSealed()) {
@@ -678,8 +694,8 @@ public final class CombinatorialApi {
 		return switch (container) {
 			case InterfaceBuilder ignored -> List.of(PUBLIC);
 			case RecordBuilder record -> record.recordComponents.isEmpty()
-					? List.of(PUBLIC, PROTECTED)
-					: List.of();
+				? List.of(PUBLIC, PROTECTED)
+				: List.of();
 			default -> List.of(PUBLIC, PROTECTED);
 		};
 	}
@@ -687,8 +703,8 @@ public final class CombinatorialApi {
 	private static Set<Set<Modifier>> fieldModifiers(Builder<TypeDecl> container) {
 		return switch (container) {
 			case RecordBuilder ignored -> powerSet(STATIC, FINAL).stream()
-					.filter(mods -> mods.contains(STATIC))
-					.collect(Collectors.toCollection(LinkedHashSet::new));
+				.filter(mods -> mods.contains(STATIC))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 			default -> powerSet(STATIC, FINAL);
 		};
 	}
@@ -697,31 +713,31 @@ public final class CombinatorialApi {
 		return switch (container) {
 			case InterfaceBuilder ignored -> List.of(PUBLIC);
 			case RecordBuilder record -> record.recordComponents.isEmpty()
-					? List.of(PUBLIC, PROTECTED)
-					: List.of();
+				? List.of(PUBLIC, PROTECTED)
+				: List.of();
 			default -> List.of(PUBLIC, PROTECTED);
 		};
 	}
 
 	private static Set<Set<Modifier>> methodModifiers(Builder<TypeDecl> container) {
 		var modifiers = powerSet(STATIC, FINAL, ABSTRACT, DEFAULT, SYNCHRONIZED)
-				.stream()
-				.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
-				.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(STATIC, SYNCHRONIZED)).isEmpty())
-				.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
-				.collect(Collectors.toCollection(LinkedHashSet::new));
+			.stream()
+			.filter(mods -> !mods.containsAll(Set.of(FINAL, ABSTRACT)))
+			.filter(mods -> !mods.contains(ABSTRACT) || Sets.intersection(mods, Set.of(STATIC, SYNCHRONIZED)).isEmpty())
+			.filter(mods -> !mods.contains(DEFAULT) || Sets.intersection(mods, Set.of(STATIC, ABSTRACT)).isEmpty())
+			.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return switch (container) {
 			case InterfaceBuilder ignored -> modifiers.stream()
-					.filter(mods -> Sets.intersection(mods, Set.of(SYNCHRONIZED, FINAL)).isEmpty())
-					.collect(Collectors.toCollection(LinkedHashSet::new));
+				.filter(mods -> Sets.intersection(mods, Set.of(SYNCHRONIZED, FINAL)).isEmpty())
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 			case RecordBuilder ignored -> modifiers.stream()
-					.filter(mods -> Sets.intersection(mods, Set.of(ABSTRACT, DEFAULT)).isEmpty())
-					.collect(Collectors.toCollection(LinkedHashSet::new));
+				.filter(mods -> Sets.intersection(mods, Set.of(ABSTRACT, DEFAULT)).isEmpty())
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 			case ClassBuilder b -> modifiers.stream()
-					.filter(mods -> !mods.contains(DEFAULT))
-					.filter(mods -> b.make().isAbstract() || !mods.contains(ABSTRACT))
-					.collect(Collectors.toCollection(LinkedHashSet::new));
+				.filter(mods -> !mods.contains(DEFAULT))
+				.filter(mods -> b.make().isAbstract() || !mods.contains(ABSTRACT))
+				.collect(Collectors.toCollection(LinkedHashSet::new));
 			default -> modifiers;
 		};
 	}
@@ -731,8 +747,8 @@ public final class CombinatorialApi {
 
 		IntStream.range(0, paramsCount + 1).forEach(methodParamsCount -> {
 			var methodsArgsTypes = methodParamsTypes.stream()
-					.filter(types -> types.size() == methodParamsCount)
-					.toList();
+				.filter(types -> types.size() == methodParamsCount)
+				.toList();
 
 			paramsCountToConstructorsParamsTypes.put(methodParamsCount, methodsArgsTypes);
 		});
@@ -750,7 +766,7 @@ public final class CombinatorialApi {
 
 	private static <T extends Enum<T>> EnumSet<T> toEnumSet(Set<T> set, Class<T> cls) {
 		return set.isEmpty()
-				? EnumSet.noneOf(cls)
-				: EnumSet.copyOf(set);
+			? EnumSet.noneOf(cls)
+			: EnumSet.copyOf(set);
 	}
 }

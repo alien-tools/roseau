@@ -34,7 +34,7 @@ import java.util.stream.Collectors;
  * The compared APIs are visited deeply to match their symbols pairwise based on their unique name, and compare their
  * properties when their names match. This implementation visits all {@link TypeDecl} instances in parallel.
  */
-public class APIDiff {
+public class ApiDiff {
 	/**
 	 * The first version of the API to be compared.
 	 */
@@ -56,7 +56,7 @@ public class APIDiff {
 	 * @param v1 The first version of the API to compare.
 	 * @param v2 The second version of the API to compare.
 	 */
-	public APIDiff(API v1, API v2) {
+	public ApiDiff(API v1, API v2) {
 		this.v1 = Objects.requireNonNull(v1);
 		this.v2 = Objects.requireNonNull(v2);
 		breakingChanges = ConcurrentHashMap.newKeySet();

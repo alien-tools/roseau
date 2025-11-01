@@ -1,10 +1,9 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.EnumSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -58,12 +57,8 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		Preconditions.checkNotNull(location);
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
-		// Yup, there's no simpler way to get an EnumSet implementation that's immutable
-		this.modifiers = ImmutableSet.copyOf(
-			modifiers.isEmpty()
-				? EnumSet.noneOf(Modifier.class)
-				: EnumSet.copyOf(modifiers));
-		this.annotations = ImmutableSet.copyOf(annotations);
+		this.modifiers = Sets.immutableEnumSet(modifiers);
+		this.annotations = Set.copyOf(annotations);
 		this.location = location;
 		simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}

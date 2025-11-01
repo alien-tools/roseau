@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.resolution;
 
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
@@ -13,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class SpoonTypeProviderTest {
 	SpoonTypeProvider newProvider(Set<Path> classpath) {
-		CachingTypeReferenceFactory factory = new CachingTypeReferenceFactory();
+		var factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
 		return new SpoonTypeProvider(factory, classpath);
 	}
 

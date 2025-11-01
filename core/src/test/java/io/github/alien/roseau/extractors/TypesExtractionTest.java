@@ -350,6 +350,7 @@ class TypesExtractionTest {
 		var d = assertInterface(api, "D");
 		assertFalse(d.isFinal());
 		assertFalse(d.isSealed());
+		//assertTrue(d.isNonSealed()); // No such information in ASM yet
 		assertFalse(api.isEffectivelyFinal(d));
 
 		var e = assertClass(api, "E");

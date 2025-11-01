@@ -1,7 +1,7 @@
 package io.github.alien.roseau.combinatorial.writer;
 
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.combinatorial.api.APIPrettyPrinter;
+import io.github.alien.roseau.combinatorial.api.ApiPrettyPrinter;
 import io.github.alien.roseau.combinatorial.Constants;
 
 import java.nio.file.Files;
@@ -13,7 +13,7 @@ public final class ApiWriter extends AbstractWriter {
 	}
 
 	public void write(API api) {
-		var prettyPrinter = new APIPrettyPrinter(api);
+		var prettyPrinter = new ApiPrettyPrinter(api);
 
 		api.getLibraryTypes().getAllTypes().forEach(t -> {
 			try {

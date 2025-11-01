@@ -4,7 +4,10 @@ import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
+import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.extractors.TypesExtractor;
@@ -206,10 +209,11 @@ public class OnTheFlyCaseCompiler {
 				}""".formatted(clientSnippet));
 
 			// --- Extract APIs and compute diff ---
-			TypesExtractor extractor = new JdtTypesExtractor();
+			ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
+			TypesExtractor extractor = new JdtTypesExtractor(factory);
 			API v1 = extractor.extractTypes(Library.of(srcDir1)).toAPI();
 			API v2 = extractor.extractTypes(Library.of(srcDir2)).toAPI();
-			List<BreakingChange> bcs = new APIDiff(v1, v2).diff().getAllBreakingChanges();
+			List<BreakingChange> bcs = new ApiDiff(v1, v2).diff().getAllBreakingChanges();
 
 			// --- Compile client against API v1 (sanity check) ---
 			List<Diagnostic<? extends JavaFileObject>> compilationErrors1 = otf.compileClient(clientFile, clsDir1);

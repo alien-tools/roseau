@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
@@ -20,8 +21,10 @@ public final class RecordDecl extends ClassDecl {
 	                  List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                  TypeReference<TypeDecl> enclosingType, Set<ConstructorDecl> constructors,
 	                  List<RecordComponentDecl> recordComponents) {
-		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, formalTypeParameters,
-			fields, methods, enclosingType, TypeReference.RECORD, constructors, Set.of());
+		// §8.10: records are implicitly final
+		super(qualifiedName, visibility, Sets.union(modifiers, Set.of(Modifier.FINAL)), annotations, location,
+			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, TypeReference.RECORD, constructors,
+			Set.of());
 		Preconditions.checkNotNull(recordComponents);
 		this.recordComponents = List.copyOf(recordComponents);
 	}

@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
@@ -75,7 +76,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
 	@JsonCreator
-	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") List<TypeDecl> types) {
+	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") Set<TypeDecl> types) {
 		Preconditions.checkNotNull(library);
 		Preconditions.checkNotNull(module);
 		Preconditions.checkNotNull(types);
@@ -98,7 +99,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param library The analyzed library
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(Library library, List<TypeDecl> types) {
+	public LibraryTypes(Library library, Set<TypeDecl> types) {
 		this(library, ModuleDecl.UNNAMED_MODULE, types);
 	}
 
@@ -118,7 +119,8 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), library.getClasspath());
+		TypeProvider typeProvider = new SpoonTypeProvider(
+			new DefaultApiFactory(new CachingTypeReferenceFactory()), library.getClasspath());
 		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
 	}
 

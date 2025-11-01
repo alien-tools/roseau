@@ -12,8 +12,8 @@ public final class RecordComponentDecl extends TypeMemberDecl {
 
 	public RecordComponentDecl(String qualifiedName, Set<Annotation> annotations, SourceLocation location,
 	                           TypeReference<TypeDecl> containingType, ITypeReference type, boolean isVarargs) {
-		super(qualifiedName, AccessModifier.PRIVATE, EnumSet.of(Modifier.FINAL), annotations, location, containingType, type);
-
+		super(qualifiedName, AccessModifier.PRIVATE, EnumSet.of(Modifier.FINAL), annotations, location,
+			containingType, type);
 		this.isVarargs = isVarargs;
 	}
 

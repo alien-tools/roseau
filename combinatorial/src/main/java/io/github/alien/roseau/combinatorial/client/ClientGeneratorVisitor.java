@@ -1,13 +1,13 @@
 package io.github.alien.roseau.combinatorial.client;
 
 import io.github.alien.roseau.api.model.*;
-import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
+import io.github.alien.roseau.api.visit.AbstractApiVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.writer.ClientWriter;
 
 import java.util.Optional;
 
-public final class ClientGeneratorVisitor extends AbstractAPIVisitor {
+public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 	private final ClientWriter writer;
 	private final API api;
 

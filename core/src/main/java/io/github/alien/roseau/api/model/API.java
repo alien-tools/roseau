@@ -1,8 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
-import io.github.alien.roseau.api.analysis.CachingAPIAnalyzer;
+import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import org.apache.logging.log4j.LogManager;
@@ -19,7 +18,7 @@ import java.util.stream.Collectors;
 /**
  * An API augments {@link LibraryTypes} with analysis capabilities and symbol export information.
  */
-public class API extends CachingAPIAnalyzer {
+public class API extends CachingApiAnalyzer {
 	/**
 	 * The types, exported or not, declared in the library.
 	 */
@@ -44,7 +43,7 @@ public class API extends CachingAPIAnalyzer {
 				}
 			})
 			.filter(Objects::nonNull)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	public LibraryTypes getLibraryTypes() {

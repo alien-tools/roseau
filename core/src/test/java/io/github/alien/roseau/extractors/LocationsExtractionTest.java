@@ -6,6 +6,8 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
@@ -121,7 +123,8 @@ class LocationsExtractionTest {
 	@Test
 	void accurate_asm_locations() {
 		var jar = Path.of("src/test/resources/api-showcase.jar");
-		var api = new AsmTypesExtractor().extractTypes(Library.of(jar)).toAPI();
+		var factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
+		var api = new AsmTypesExtractor(factory).extractTypes(Library.of(jar)).toAPI();
 
 		api.getLibraryTypes().getAllTypes().forEach(t -> {
 			assertThat(t.getLocation().file()).isEqualTo(Path.of("io", "github", "alien", "roseau", "APIShowcase.java"));
@@ -150,7 +153,8 @@ class LocationsExtractionTest {
 	@Test
 	void no_jar_locations_when_no_debug_information() {
 		var jar = Path.of("src/test/resources/api-showcase-no-debug.jar");
-		var api = new AsmTypesExtractor().extractTypes(Library.of(jar)).toAPI();
+		var factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
+		var api = new AsmTypesExtractor(factory).extractTypes(Library.of(jar)).toAPI();
 
 		var locations = api.getLibraryTypes().getAllTypes().stream()
 			.flatMap(type -> Stream.concat(Stream.of(type.getLocation()), Stream.concat(

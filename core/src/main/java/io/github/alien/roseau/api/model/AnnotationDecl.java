@@ -1,11 +1,10 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.lang.annotation.ElementType;
-import java.util.Collections;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Objects;
@@ -14,7 +13,7 @@ import java.util.Set;
 /**
  * An annotation interface declaration (e.g., {@code public @interface Ann {}}).
  */
-public final class AnnotationDecl extends TypeDecl {
+public final class AnnotationDecl extends InterfaceDecl {
 	/**
 	 * The methods declared in this annotation, which correspond to annotation elements, possibly with a default value
 	 */
@@ -32,15 +31,13 @@ public final class AnnotationDecl extends TypeDecl {
 			List.of(), fields, Set.of(), enclosingType, Set.of());
 		Preconditions.checkNotNull(annotationMethods);
 		Preconditions.checkNotNull(targets);
-		this.annotationMethods = ImmutableSet.copyOf(annotationMethods);
+		this.annotationMethods = Set.copyOf(annotationMethods);
 		if (hasAnnotation(TypeReference.ANNOTATION_TARGET)) {
-			this.targets = Collections.unmodifiableSet(targets.isEmpty()
-				// If @Target({}), the annotation cannot be placed on anything (cf. @Target's javadoc)
-				? EnumSet.noneOf(ElementType.class)
-				: EnumSet.copyOf(targets));
+			// If @Target({}), the annotation cannot be placed on anything (cf. @Target's javadoc)
+			this.targets = Sets.immutableEnumSet(targets);
 		} else {
 			// §9.6.4.1: if no explicit @Target annotation, defaults to everything but TYPE_USE
-			this.targets = ImmutableSet.copyOf(EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)));
+			this.targets = Sets.immutableEnumSet(EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)));
 		}
 	}
 

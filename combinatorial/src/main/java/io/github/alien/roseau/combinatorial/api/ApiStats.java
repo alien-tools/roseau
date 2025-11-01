@@ -42,11 +42,11 @@ final class ApiStats {
 					classesCount++;
 					countEntities(classDecl, api);
 					break;
+				case AnnotationDecl ignored:
+					break;
 				case InterfaceDecl interfaceDecl:
 					interfacesCount++;
 					countEntities(interfaceDecl, api);
-					break;
-				case AnnotationDecl ignored:
 					break;
 			}
 		}

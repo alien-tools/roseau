@@ -4,13 +4,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
-import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
@@ -19,6 +20,7 @@ import io.github.alien.roseau.extractors.incremental.HashFunction;
 import io.github.alien.roseau.extractors.incremental.HashingChangedFilesProvider;
 import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.IncrementalJdtTypesExtractor;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -45,7 +47,8 @@ public final class Roseau {
 	 */
 	public static API buildAPI(Library library) {
 		Preconditions.checkNotNull(library);
-		return toAPI(library, extractTypes(library));
+		ApiFactory factory = defaultApiFactory();
+		return toAPI(library, extractTypes(library, factory), factory);
 	}
 
 	/**
@@ -60,7 +63,7 @@ public final class Roseau {
 		Preconditions.checkNotNull(v2);
 
 		Stopwatch sw = Stopwatch.createStarted();
-		RoseauReport report = new APIDiff(v1, v2).diff();
+		RoseauReport report = new ApiDiff(v1, v2).diff();
 		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
 			() -> sw.elapsed().toMillis(), () -> report.getBreakingChanges().size());
 
@@ -125,8 +128,10 @@ public final class Roseau {
 		CompletableFuture<ChangedFiles> futureChanges = CompletableFuture.supplyAsync(
 			() -> provider.getChangedFiles(v1.getLocation(), v2.getLocation()));
 		CompletableFuture<API> futureV2 = futureV1.thenCombineAsync(futureChanges, (api, changes) -> {
-			IncrementalTypesExtractor extractor = new IncrementalJdtTypesExtractor();
-			return toAPI(v2, extractor.incrementalUpdate(api.getLibraryTypes(), v2, changes));
+			ApiFactory factory = defaultApiFactory();
+			JdtTypesExtractor jdtExtractor = new JdtTypesExtractor(factory);
+			IncrementalTypesExtractor incremental = new IncrementalJdtTypesExtractor(jdtExtractor);
+			return toAPI(v2, incremental.incrementalUpdate(api.getLibraryTypes(), v2, changes), factory);
 		});
 
 		try {
@@ -140,8 +145,8 @@ public final class Roseau {
 		}
 	}
 
-	private static LibraryTypes extractTypes(Library library) {
-		TypesExtractor extractor = library.getExtractorType().newExtractor();
+	private static LibraryTypes extractTypes(Library library, ApiFactory factory) {
+		TypesExtractor extractor = library.getExtractorType().newExtractor(factory);
 
 		Stopwatch sw = Stopwatch.createStarted();
 		LibraryTypes types = extractor.extractTypes(library);
@@ -152,11 +157,14 @@ public final class Roseau {
 		return types;
 	}
 
-	private static API toAPI(Library library, LibraryTypes types) {
-		TypeReferenceFactory factory = new CachingTypeReferenceFactory();
+	private static API toAPI(Library library, LibraryTypes types, ApiFactory factory) {
 		TypeProvider typeProvider = new SpoonTypeProvider(factory, library.getClasspath());
 		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, typeProvider));
 
 		return new API(types, cachingTypeResolver);
+	}
+
+	private static ApiFactory defaultApiFactory() {
+		return new DefaultApiFactory(new CachingTypeReferenceFactory());
 	}
 }

@@ -3,6 +3,7 @@ package io.github.alien.roseau.utils;
 import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauOptions.Exclude;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -12,16 +13,13 @@ import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.diff.APIDiff;
+import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
-import io.github.alien.roseau.extractors.spoon.SpoonTypesExtractor;
+import io.github.alien.roseau.extractors.ExtractorType;
 import japicmp.cmp.JApiCmpArchive;
 import japicmp.cmp.JarArchiveComparator;
 import japicmp.cmp.JarArchiveComparatorOptions;
@@ -303,10 +301,13 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.of(sourcesPath);
-			LibraryTypes api = new SpoonTypesExtractor().extractTypes(library);
+			Library library = Library.builder()
+				.location(sourcesPath)
+				.extractorType(ExtractorType.SPOON)
+				.build();
+			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api.toAPI();
+			return api;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -316,10 +317,14 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.builder().location(sourcesPath).exclusions(exclusions).build();
-			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
+			Library library = Library.builder()
+				.location(sourcesPath)
+				.extractorType(ExtractorType.JDT)
+				.exclusions(exclusions)
+				.build();
+			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api.toAPI();
+			return api;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -329,10 +334,13 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.of(sourcesPath);
-			LibraryTypes api = new JdtTypesExtractor().extractTypes(library);
+			Library library = Library.builder()
+				.location(sourcesPath)
+				.extractorType(ExtractorType.JDT)
+				.build();
+			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api.toAPI();
+			return api;
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -344,8 +352,11 @@ public class TestUtils {
 			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
 			tempJarFile.deleteOnExit();
 			buildJar(sourcesMap, tempJarFile.toPath());
-			Library library = Library.of(tempJarFile.toPath());
-			return new AsmTypesExtractor().extractTypes(library).toAPI();
+			Library library = Library.builder()
+				.location(tempJarFile.toPath())
+				.extractorType(ExtractorType.ASM)
+				.build();
+			return Roseau.buildAPI(library);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
 		}
@@ -370,7 +381,7 @@ public class TestUtils {
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		APIDiff apiDiff = new APIDiff(buildJdtAPI(sourcesV1), buildJdtAPI(sourcesV2));
+		ApiDiff apiDiff = new ApiDiff(buildJdtAPI(sourcesV1), buildJdtAPI(sourcesV2));
 		return apiDiff.diff().getBreakingChanges();
 
 		// Simple differential testing with japicmp
