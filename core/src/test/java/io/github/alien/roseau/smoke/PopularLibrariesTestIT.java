@@ -1,6 +1,5 @@
 package io.github.alien.roseau.smoke;
 
-import com.cedarsoftware.util.DeepEquals;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.MavenClasspathBuilder;
@@ -30,7 +29,6 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -115,7 +113,8 @@ class PopularLibrariesTestIT {
 		);
 	}
 
-	record Lib(Path binary, Path sources, List<Path> classpath) {}
+	record Lib(Path binary, Path sources, List<Path> classpath) {
+	}
 
 	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
 
@@ -134,12 +133,98 @@ class PopularLibrariesTestIT {
 			.classpath(classpath)
 			.extractorType(ExtractorType.ASM)
 			.build();
+		var jdtLibrary = Library
+			.builder()
+			.location(sourcesDir)
+			.classpath(classpath)
+			.extractorType(ExtractorType.JDT)
+			.build();
 
 		// ASM API
 		sw.reset().start();
 		var asmApi = Roseau.buildAPI(asmLibrary);
 		var asmTypes = asmApi.getLibraryTypes();
 		long asmApiTime = sw.elapsed().toMillis();
+
+		// JDT API
+		sw.reset().start();
+		var jdtApi = Roseau.buildAPI(jdtLibrary);
+		long jdtApiTime = sw.elapsed().toMillis();
+		var jdtTypes = jdtApi.getLibraryTypes();
+
+		// -sources JAR often do not have module-info.java (?); use the other one
+		if (!jdtTypes.getModule().equals(asmTypes.getModule())) {
+			System.out.printf("Different modules: asm=%s, jdt=%s%n", asmTypes.getModule(), jdtTypes.getModule());
+			jdtApi = jdtApi.getLibraryTypes().getModule().isUnnamed()
+				? new LibraryTypes(jdtTypes.getLibrary(), asmTypes.getModule(),
+				new HashSet<>(jdtTypes.getAllTypes())).toAPI()
+				: jdtApi;
+		}
+
+		var asmVisitor = new ReferenceVisitor();
+		asmVisitor.$(asmApi).visit();
+		var jdtVisitor = new ReferenceVisitor();
+		jdtVisitor.$(jdtApi).visit();
+
+		if (asmVisitor.unresolved.size() + jdtVisitor.unresolved.size() > 0) {
+			System.out.println("classpath=" + classpath);
+			System.out.printf("Unresolved references: asm=%d jdt=%d%n",
+				asmVisitor.unresolved.size(), jdtVisitor.unresolved.size());
+			fail("Unresolved references");
+		}
+
+		// Diffs
+		sw.reset().start();
+		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
+		long diffTime = sw.elapsed().toMillis();
+		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
+		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
+		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
+
+		// Stats
+		long loc = countLinesOfCode(sourcesDir);
+		int numTypes = jdtTypes.getAllTypes().size();
+		int numMethods = jdtTypes.getAllTypes().stream()
+			.mapToInt(type -> type.getDeclaredMethods().size())
+			.sum();
+		int numFields = jdtTypes.getAllTypes().stream()
+			.mapToInt(type -> type.getDeclaredFields().size())
+			.sum();
+
+		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
+				"\tASM: %dms; %dms diff%n" +
+				"\tJDT: %dms%n" +
+				"\tBCs: %s%n",
+			libraryGAV, loc, numTypes, numMethods, numFields,
+			asmApiTime, diffTime, jdtApiTime,
+			asmToAsmBCs.size());
+
+		if (!jdtTypes.getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
+			jdtTypes.getAllTypes().forEach(jdtType -> {
+				var asmType = asmTypes.findType(jdtType.getQualifiedName()).orElseThrow(
+					() -> new AssertionError("Missing ASM type: " + jdtType.getQualifiedName()));
+				if (!asmType.equals(jdtType)) {
+					System.out.println("jdt=" + jdtType);
+					System.out.println("asm=" + asmType);
+				}
+			});
+
+			fail("Type mismatch");
+		}
+
+		// We extracted some types
+		assertThat(asmTypes.getAllTypes()).isNotEmpty();
+		assertThat(jdtTypes.getAllTypes()).isNotEmpty();
+
+		// Equal APIs
+		assertThat(asmTypes.getAllTypes()).isEqualTo(jdtTypes.getAllTypes());
+		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
+
+		// No BCs
+		assertThat(jdtToJdtBCs).isEmpty();
+		assertThat(asmToAsmBCs).isEmpty();
+		assertThat(jdtToAsmBCs).isEmpty();
+		assertThat(asmToJdtBCs).isEmpty();
 	}
 
 	private static Path downloadSourcesJar(String groupId, String artifactId, String version) {
