@@ -1,6 +1,9 @@
 package io.github.alien.roseau.api.resolution;
 
 import com.google.common.base.Preconditions;
+import com.google.common.cache.CacheBuilder;
+import com.google.common.cache.LoadingCache;
+import com.google.common.cache.CacheLoader;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.ExtractorSink;
@@ -17,9 +20,27 @@ import java.util.jar.JarFile;
 import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
-public class ClasspathTypeProvider implements TypeProvider {
+public class ClasspathTypeProvider implements TypeProvider, AutoCloseable {
 	private final AsmTypesExtractor extractor;
-	private final Map<String, Path> entries = new HashMap<>();
+	private final Map<String, Path> entryToJar = new HashMap<>();
+	private final LoadingCache<Path, JarFile> jarCache = CacheBuilder.newBuilder()
+		.maximumSize(100)
+		.removalListener(notification -> {
+			JarFile jar = (JarFile) notification.getValue();
+			if (jar != null) {
+				try {
+					jar.close();
+				} catch (IOException ignored) {
+					// Don't throw on cleanup
+				}
+			}
+		})
+		.build(new CacheLoader<>() {
+			@Override
+			public JarFile load(Path path) throws IOException {
+				return new JarFile(path.toFile(), false, ZipFile.OPEN_READ, Runtime.version());
+			}
+		});
 
 	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 
@@ -27,32 +48,38 @@ public class ClasspathTypeProvider implements TypeProvider {
 		Preconditions.checkNotNull(extractor);
 		Preconditions.checkNotNull(classpath);
 		this.extractor = extractor;
+
+		// Build index: entry name -> JAR path
+		// Use putIfAbsent to ensure first JAR on classpath wins
 		classpath.forEach(cp -> {
 			try (JarFile jar = new JarFile(cp.toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
 				jar.versionedStream()
 					.filter(this::isRegularClassFile)
-					.forEach(entry -> entries.put(entry.getName(), cp)); // classpath clash, priorities, etc.
+					.forEach(entry -> entryToJar.putIfAbsent(entry.getName(), cp));
 			} catch (IOException e) {
-				throw new RoseauException("Failed to process JAR file", e);
+				throw new RoseauException("Failed to process JAR file %s".formatted(cp), e);
 			}
 		});
 	}
 
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
-		var found = entries.get(nameToEntry(qualifiedName));
+		String entryName = nameToEntry(qualifiedName);
+		Path jarPath = entryToJar.get(entryName);
 
-		if (found != null) {
+		if (jarPath != null) {
 			ExtractorSink sink = new ExtractorSink(1);
 
-			try (JarFile jar = new JarFile(found.toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
-				var entry = jar.getJarEntry(nameToEntry(qualifiedName));
+			try {
+				// Use cached JarFile - no need to close, managed by cache
+				JarFile jar = jarCache.getUnchecked(jarPath);
+				var entry = jar.getJarEntry(entryName);
 
 				if (entry != null) {
 					extractor.processEntry(jar, entry, sink);
 				}
-			} catch (IOException e) {
-				e.printStackTrace();
+			} catch (Exception e) {
+				throw new RoseauException("Failed to process JAR file %s".formatted(jarPath), e);
 			}
 
 			if (sink.getTypes().size() == 1) {
@@ -71,5 +98,10 @@ public class ClasspathTypeProvider implements TypeProvider {
 		return !entry.isDirectory()
 			&& entry.getName().endsWith(".class")
 			&& !ANONYMOUS_MATCHER.matcher(entry.getName()).find();
+	}
+
+	@Override
+	public void close() {
+		jarCache.invalidateAll();
 	}
 }
