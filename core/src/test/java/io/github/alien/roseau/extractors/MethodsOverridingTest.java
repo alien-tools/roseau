@@ -39,40 +39,40 @@ class MethodsOverridingTest {
 		var c = assertClass(api, "C");
 		var d = assertClass(api, "D");
 
-		assertThat(api.getAllMethods(i))
-			.singleElement()
+		assertThat(api.getExportedMethods(i))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.isEqualTo("I.m");
+			.contains("I.m()");
 
-		assertThat(api.getAllMethods(j))
-			.singleElement()
+		assertThat(api.getExportedMethods(j))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.isEqualTo("J.m");
+			.contains("J.m()");
 
-		assertThat(api.getAllMethods(k))
-			.singleElement()
+		assertThat(api.getExportedMethods(k))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.isEqualTo("K.m");
+			.contains("K.m()");
 
-		assertThat(api.getAllMethods(a))
-			.hasSize(1 + 11) // java.lang.Object's defaults
+		assertThat(api.getExportedMethods(a))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("A.m");
+			.contains("A.m()");
 
-		assertThat(api.getAllMethods(b))
-			.hasSize(1 + 11) // java.lang.Object's defaults
+		assertThat(api.getExportedMethods(b))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("A.m");
+			.contains("A.m()");
 
-		assertThat(api.getAllMethods(c))
-			.hasSize(1 + 11) // java.lang.Object's defaults
+		assertThat(api.getExportedMethods(c))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("C.m");
+			.contains("C.m()");
 
-		assertThat(api.getAllMethods(d))
-			.hasSize(1 + 11) // java.lang.Object's defaults
+		assertThat(api.getExportedMethods(d))
+			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
-			.contains("K.m");
+			.contains("K.m()");
 	}
 
 	@ParameterizedTest

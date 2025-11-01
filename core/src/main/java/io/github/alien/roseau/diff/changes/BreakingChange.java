@@ -1,27 +1,60 @@
 package io.github.alien.roseau.diff.changes;
 
-import io.github.alien.roseau.api.model.LibraryTypes;
+import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
-
-import java.util.Objects;
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 
 /**
- * A breaking change identified when comparing two {@link LibraryTypes} instances.
+ * A breaking change identified when comparing two {@link io.github.alien.roseau.api.model.API} instances.
  *
  * @param kind           The kind of breaking change
+ * @param impactedType   The API type impacted by the breaking change
  * @param impactedSymbol The API symbol impacted by the breaking change
  * @param newSymbol      If applicable, the corresponding symbol in the new version
+ * @param details        Additional details about the breaking change
  * @see BreakingChangeKind
  */
 public record BreakingChange(
 	BreakingChangeKind kind,
+	TypeDecl impactedType,
 	Symbol impactedSymbol,
-	Symbol newSymbol
+	Symbol newSymbol,
+	BreakingChangeDetails details
 ) {
 	public BreakingChange {
-		Objects.requireNonNull(kind);
-		Objects.requireNonNull(impactedSymbol);
+		Preconditions.checkNotNull(kind);
+		Preconditions.checkNotNull(impactedType);
+		Preconditions.checkNotNull(impactedSymbol);
+		if (details == null) {
+			details = new BreakingChangeDetails.None();
+		}
+	}
+
+	/**
+	 * Checks whether this breaking change is local to the type it impacts.
+	 *
+	 * @return true if this breaking change is local
+	 */
+	public boolean isLocal() {
+		if (impactedSymbol instanceof TypeMemberDecl member) {
+			return member.getContainingType().getQualifiedName().equals(impactedType.getQualifiedName());
+		}
+		return true;
+	}
+
+	/**
+	 * Returns the most accurate location for this breaking change, either the {@link #impactedSymbol()} or the
+	 * {@link #impactedType()}.
+	 *
+	 * @return the location
+	 */
+	public SourceLocation getLocation() {
+		return impactedSymbol.getLocation() == SourceLocation.NO_LOCATION
+			? impactedType.getLocation()
+			: impactedSymbol.getLocation();
 	}
 
 	private static String printSymbol(Symbol s) {
@@ -36,7 +69,7 @@ public record BreakingChange(
 
 	@Override
 	public String toString() {
-		return "BC[kind=%s, impactedSymbol=%s, newSymbol=%s]".formatted(kind,
-			printSymbol(impactedSymbol), printSymbol(newSymbol));
+		return "BC[kind=%s, impactedType=%s, impactedSymbol=%s, newSymbol=%s, details=%s]".formatted(kind,
+			printSymbol(impactedType), printSymbol(impactedSymbol), printSymbol(newSymbol), details);
 	}
 }

@@ -1,11 +1,10 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.Collections;
-import java.util.EnumSet;
-import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -18,9 +17,9 @@ import java.util.Set;
  */
 public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
-	 * Fully qualified name of the symbol, unique within an {@link LibraryTypes}'s scope. Types and fields are uniquely
-	 * identified by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by the erasure
-	 * of their fully qualified signature (e.g., {@code pkg.sub.T.m(int)})
+	 * Fully qualified name of the symbol, unique within a {@link LibraryTypes}'s scope. Types and fields are uniquely
+	 * identified by their fully qualified name (e.g., {@code pkg.sub.T}). Methods are uniquely identified by their fully
+	 * qualified signature (e.g., {@code pkg.sub.T.m(int)})
 	 */
 	protected final String qualifiedName;
 
@@ -37,7 +36,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	/**
 	 * Annotations placed on the symbol (e.g., @Deprecated, @Beta)
 	 */
-	protected final List<Annotation> annotations;
+	protected final Set<Annotation> annotations;
 
 	/**
 	 * The exact physical location of the symbol in the source (e.g., /src/pkg/T.java:4)
@@ -50,7 +49,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	protected final String simpleName;
 
 	protected Symbol(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                 List<Annotation> annotations, SourceLocation location) {
+	                 Set<Annotation> annotations, SourceLocation location) {
 		Preconditions.checkNotNull(qualifiedName);
 		Preconditions.checkNotNull(visibility);
 		Preconditions.checkNotNull(modifiers);
@@ -58,14 +57,10 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		Preconditions.checkNotNull(location);
 		this.qualifiedName = qualifiedName;
 		this.visibility = visibility;
-		// Yup, there's no simpler way to get an EnumSet implementation that's immutable
-		this.modifiers = Collections.unmodifiableSet(
-			modifiers.isEmpty()
-				? EnumSet.noneOf(Modifier.class)
-				: EnumSet.copyOf(modifiers));
-		this.annotations = List.copyOf(annotations);
+		this.modifiers = Sets.immutableEnumSet(modifiers);
+		this.annotations = Set.copyOf(annotations);
 		this.location = location;
-		this.simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
+		simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
 	}
 
 	public String getQualifiedName() {
@@ -80,7 +75,7 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		return modifiers;
 	}
 
-	public List<Annotation> getAnnotations() {
+	public Set<Annotation> getAnnotations() {
 		return annotations;
 	}
 
@@ -92,6 +87,10 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 
 	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation) {
 		return getAnnotation(annotation).isPresent();
+	}
+
+	public boolean hasAnnotation(TypeReference<AnnotationDecl> annotation, Map<String, String> annotationValues) {
+		return getAnnotation(annotation).map(ann -> ann.hasValues(annotationValues)).orElse(false);
 	}
 
 	public SourceLocation getLocation() {
@@ -131,19 +130,15 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		Symbol other = (Symbol) obj;
-		return Objects.equals(qualifiedName, other.qualifiedName)
+		return obj instanceof Symbol other
+			&& Objects.equals(qualifiedName, other.qualifiedName)
 			&& visibility == other.visibility
 			&& Objects.equals(modifiers, other.modifiers)
-			&& Objects.equals(annotations, other.annotations)
-			&& Objects.equals(location, other.location);
+			&& Objects.equals(annotations, other.annotations);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(qualifiedName, visibility, modifiers, annotations, location);
+		return Objects.hash(qualifiedName, visibility, modifiers, annotations);
 	}
 }

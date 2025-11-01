@@ -8,17 +8,18 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class LibraryTest {
-	@Test
-	void of_jar_defaults_to_asm(@TempDir Path tempDir) throws IOException {
-		var tmp = tempDir.resolve("lib.jar");
-		Files.createFile(tmp);
+	final Path validJar = Path.of("src/test/resources/api-showcase.jar");
 
-		var lib = Library.of(tmp);
+	@Test
+	void of_jar_defaults_to_asm() {
+		var lib = Library.of(validJar);
+		assertThat(lib.getLocation()).isEqualTo(validJar.toAbsolutePath());
 		assertThat(lib.isJar()).isTrue();
 		assertThat(lib.isSources()).isFalse();
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
@@ -26,10 +27,23 @@ class LibraryTest {
 
 	@Test
 	void of_sources_defaults_to_jdt(@TempDir Path tempDir) throws IOException {
-		var dir = tempDir.resolve("src");
-		Files.createDirectories(dir);
+		var src = tempDir.resolve("src");
+		Files.createDirectories(src);
 
-		var lib = Library.of(dir);
+		var lib = Library.of(tempDir);
+		assertThat(lib.getLocation()).isEqualTo(tempDir);
+		assertThat(lib.isSources()).isTrue();
+		assertThat(lib.isJar()).isFalse();
+		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.JDT);
+	}
+
+	@Test
+	void of_module_info_defaults_to_jdt(@TempDir Path tempDir) throws IOException {
+		var module = tempDir.resolve("module-info.java");
+		Files.createFile(module);
+
+		var lib = Library.of(module);
+		assertThat(lib.getLocation()).isEqualTo(tempDir);
 		assertThat(lib.isSources()).isTrue();
 		assertThat(lib.isJar()).isFalse();
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.JDT);
@@ -38,36 +52,73 @@ class LibraryTest {
 	@Test
 	void of_unknown_throws() {
 		assertThatThrownBy(() -> Library.of(Path.of("unknown/path")))
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
+	}
+
+	@Test
+	void of_invalid_jar_throws() {
+		assertThatThrownBy(() -> Library.of(Path.of("src/test/resources/invalid.jar")))
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("Invalid path to library");
+	}
+
+	@Test
+	void multiple_module_info_throws(@TempDir Path tempDir) throws IOException {
+		var pkg1 = tempDir.resolve("pkg1");
+		var pkg2 = tempDir.resolve("pkg2");
+		Files.createDirectories(pkg1);
+		Files.createDirectories(pkg2);
+		Files.createFile(pkg1.resolve("module-info.java"));
+		Files.createFile(pkg2.resolve("module-info.java"));
+
+		assertThatThrownBy(() -> Library.of(tempDir))
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("A library cannot contain multiple module-info.java");
 	}
 
 	@Test
 	void builder_without_location_throws() {
 		assertThatThrownBy(() -> Library.builder().build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
 	}
 
 	@Test
 	void builder_with_all_parameters_set(@TempDir Path tempDir) throws IOException {
-		var jar = tempDir.resolve("lib.jar");
 		var pom = tempDir.resolve("pom.xml");
-		var cp = List.of(tempDir.resolve("cp"));
-		Files.createFile(jar);
+		var cp = Set.of(tempDir.resolve("cp"));
 		Files.createFile(pom);
 
 		var lib = Library.builder()
-			.location(jar)
+			.location(validJar)
 			.classpath(cp)
 			.pom(pom)
 			.extractorType(ExtractorType.ASM)
 			.build();
 
-		assertThat(lib.getLocation()).isEqualTo(jar.toAbsolutePath());
-		assertThat(lib.getClasspath()).isEqualTo(cp);
+		assertThat(lib.getLocation()).isEqualTo(validJar.toAbsolutePath());
+		assertThat(lib.getCustomClasspath()).isEqualTo(cp);
 		assertThat(lib.getPom()).isEqualTo(pom);
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
+	}
+
+	@Test
+	void classpath_merges_custom_and_pom() {
+		var pom = Path.of("pom.xml"); // Roseau's pom.xml
+		var cp = Set.of(Path.of("cp"));
+
+		var lib = Library.builder()
+			.location(validJar)
+			.classpath(cp)
+			.pom(pom)
+			.build();
+
+		assertThat(lib.getLocation()).isEqualTo(validJar.toAbsolutePath());
+		assertThat(lib.getCustomClasspath()).isEqualTo(cp);
+		assertThat(lib.getPom()).isEqualTo(pom);
+		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
+		assertThat(lib.getClasspath()).hasSizeGreaterThan(10);
 	}
 
 	@Test
@@ -76,11 +127,13 @@ class LibraryTest {
 		Files.createDirectories(dir);
 
 		var lib = Library.builder()
-			.location(dir)
+			.location(tempDir)
 			.extractorType(ExtractorType.SPOON)
 			.build();
 
+		assertThat(lib.getLocation()).isEqualTo(tempDir);
 		assertThat(lib.isSources()).isTrue();
+		assertThat(lib.isJar()).isFalse();
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.SPOON);
 	}
 
@@ -88,7 +141,7 @@ class LibraryTest {
 	void builder_invalid_location_throws() {
 		var nonExisting = Path.of("unknown/path");
 		assertThatThrownBy(() -> Library.builder().location(nonExisting).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to library");
 	}
 
@@ -100,7 +153,7 @@ class LibraryTest {
 		Files.createFile(invalidPom);
 
 		assertThatThrownBy(() -> Library.builder().location(dir).pom(invalidPom).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to POM file");
 	}
 
@@ -111,7 +164,7 @@ class LibraryTest {
 		var invalidPom = tempDir.resolve("pom.xml");
 
 		assertThatThrownBy(() -> Library.builder().location(dir).pom(invalidPom).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to POM file");
 	}
 
@@ -119,19 +172,17 @@ class LibraryTest {
 	void builder_invalid_extractor_throws(@TempDir Path tempDir) throws IOException {
 		var sources = tempDir.resolve("src");
 		Files.createDirectories(sources);
-		var jar = tempDir.resolve("lib.jar");
-		Files.createFile(jar);
 
 		assertThatThrownBy(() -> Library.builder().location(sources).extractorType(ExtractorType.ASM).build())
-			.isInstanceOf(IllegalArgumentException.class)
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("ASM extractor cannot be used on source directories");
 
-		assertThatThrownBy(() -> Library.builder().location(jar).extractorType(ExtractorType.JDT).build())
-			.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.JDT).build())
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Source extractors cannot be used on JARs");
 
-		assertThatThrownBy(() -> Library.builder().location(jar).extractorType(ExtractorType.SPOON).build())
-			.isInstanceOf(IllegalArgumentException.class)
+		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.SPOON).build())
+			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Source extractors cannot be used on JARs");
 	}
 }

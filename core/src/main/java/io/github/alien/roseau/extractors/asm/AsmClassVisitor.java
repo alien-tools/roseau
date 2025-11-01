@@ -2,32 +2,29 @@ package io.github.alien.roseau.extractors.asm;
 
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
-import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.ParameterDecl;
-import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import io.github.alien.roseau.extractors.ExtractorSink;
 import org.objectweb.asm.AnnotationVisitor;
 import org.objectweb.asm.ClassVisitor;
 import org.objectweb.asm.FieldVisitor;
 import org.objectweb.asm.Label;
 import org.objectweb.asm.MethodVisitor;
+import org.objectweb.asm.ModuleVisitor;
 import org.objectweb.asm.Opcodes;
 import org.objectweb.asm.Type;
 import org.objectweb.asm.signature.SignatureReader;
@@ -36,43 +33,41 @@ import java.lang.annotation.ElementType;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.EnumSet;
-import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
+import static java.util.stream.Collectors.toSet;
+
 final class AsmClassVisitor extends ClassVisitor {
-	private final TypeReferenceFactory typeRefFactory;
+	private final ExtractorSink sink;
+	private final ApiFactory factory;
 	private String className;
-	private Path sourceFile = Path.of("<unknown>");
+	private Path sourceFile;
 	private int classAccess;
-	private TypeDecl typeDecl;
 	private TypeReference<TypeDecl> enclosingType;
 	private TypeReference<ClassDecl> superClass;
-	private List<TypeReference<InterfaceDecl>> implementedInterfaces = new ArrayList<>();
-	private final List<FieldDecl> fields = new ArrayList<>();
-	private final List<MethodDecl> methods = new ArrayList<>();
-	private final List<AnnotationMethodDecl> annotationMethods = new ArrayList<>();
-	private final Set<ElementType> targets = new HashSet<>();
-	private final List<ConstructorDecl> constructors = new ArrayList<>();
-	private List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
-	private final List<String> annotations = new ArrayList<>();
-	private boolean isSealed;
-	private boolean hasNonPrivateConstructor;
+	private boolean hasAccessibleConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
+	private final Set<TypeReference<InterfaceDecl>> implementedInterfaces = new LinkedHashSet<>();
+	private final Set<FieldDecl> fields = new LinkedHashSet<>();
+	private final Set<MethodDecl> methods = new LinkedHashSet<>();
+	private final Set<AnnotationMethodDecl> annotationMethods = new LinkedHashSet<>();
+	private final Set<ElementType> targets = new LinkedHashSet<>();
+	private final Set<ConstructorDecl> constructors = new LinkedHashSet<>();
+	private final List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
+	private final Set<TypeReference<TypeDecl>> permittedTypes = new LinkedHashSet<>();
+	private final Set<AsmAnnotationVisitor.Data> annotations = new LinkedHashSet<>();
+	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 
-	private static final Logger LOGGER = LogManager.getLogger(AsmClassVisitor.class);
-
-	AsmClassVisitor(int api, TypeReferenceFactory typeRefFactory) {
+	AsmClassVisitor(int api, ExtractorSink sink, ApiFactory factory) {
 		super(api);
-		this.typeRefFactory = typeRefFactory;
-	}
-
-	TypeDecl getTypeDecl() {
-		return typeDecl;
+		this.sink = sink;
+		this.factory = factory;
 	}
 
 	@Override
@@ -80,7 +75,11 @@ final class AsmClassVisitor extends ClassVisitor {
 		// Skipping our non-Java JVM friends
 		if (source != null) {
 			if (source.endsWith(".java")) {
-				sourceFile = Path.of(source);
+				if (className != null) {
+					sourceFile = Path.of(className.replace('.', '/')).resolveSibling(source);
+				} else {
+					sourceFile = Path.of(source);
+				}
 			} else {
 				shouldSkip = true;
 			}
@@ -88,63 +87,67 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	@Override
+	public ModuleVisitor visitModule(String name, int access, String version) {
+		return new ModuleVisitor(api) {
+			private Set<String> exports = new LinkedHashSet<>();
+
+			@Override
+			public void visitExport(String pkg, int pkgAccess, String... modules) {
+				// modules correspond to qualified exports
+				if (modules == null || modules.length == 0) {
+					exports.add(bytecodeToFqn(pkg));
+				}
+			}
+
+			@Override
+			public void visitEnd() {
+				sink.accept(factory.createModule(name, exports));
+			}
+		};
+	}
+
+	@Override
 	public void visit(int version, int access, String name, String signature, String superName, String[] interfaces) {
 		className = bytecodeToFqn(name);
 		classAccess = access;
 
-		if (className.endsWith("package-info") || className.endsWith("module-info")) {
-			LOGGER.trace("Skipping package/module-info {}", className);
-			shouldSkip = true;
-			return;
-		}
-
-		if (isSynthetic(classAccess)) {
-			LOGGER.trace("Skipping synthetic class {}", className);
+		if (isSynthetic(classAccess) || className.endsWith("package-info") || className.endsWith("module-info")) {
 			shouldSkip = true;
 			return;
 		}
 
 		if (signature != null) {
 			SignatureReader reader = new SignatureReader(signature);
-			AsmSignatureVisitor signatureVisitor = new AsmSignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor signatureVisitor = new AsmSignatureVisitor(api, factory);
 			reader.accept(signatureVisitor);
-			formalTypeParameters = signatureVisitor.getFormalTypeParameters();
 			superClass = signatureVisitor.getSuperclass();
-			implementedInterfaces = signatureVisitor.getSuperInterfaces();
+			implementedInterfaces.addAll(signatureVisitor.getSuperInterfaces());
+			formalTypeParameters.addAll(signatureVisitor.getFormalTypeParameters());
 		} else {
 			if (superName != null) {
-				superClass = typeRefFactory.createTypeReference(bytecodeToFqn(superName));
+				superClass = factory.references().createTypeReference(bytecodeToFqn(superName));
 			}
-			implementedInterfaces = Arrays.stream(interfaces)
+			implementedInterfaces.addAll(Arrays.stream(interfaces)
 				.map(AsmClassVisitor::bytecodeToFqn)
-				.map(typeRefFactory::<InterfaceDecl>createTypeReference)
-				.toList();
+				.map(factory.references()::<InterfaceDecl>createTypeReference)
+				.collect(toSet()));
 		}
 	}
 
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-		if (shouldSkip) {
-			return null;
-		}
-
-		if (isSynthetic(access)) {
-			LOGGER.trace("Skipping synthetic field {}", name);
-			return null;
-		}
-
-		if (!isTypeMemberExported(access)) {
-			LOGGER.trace("Skipping unexported field {}", name);
+		if (shouldSkip || isSynthetic(access) || !isTypeMemberExported(access)) {
 			return null;
 		}
 
 		return new FieldVisitor(api) {
-			private final List<String> annotations = new ArrayList<>();
+			private final Set<AsmAnnotationVisitor.Data> annotations = new LinkedHashSet<>();
 
 			@Override
-			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-				annotations.add(descriptor);
-				return null;
+			public AnnotationVisitor visitAnnotation(String annotationDescriptor, boolean visible) {
+				AsmAnnotationVisitor.Data data = new AsmAnnotationVisitor.Data(annotationDescriptor);
+				annotations.add(data);
+				return new AsmAnnotationVisitor(api, annotationDescriptor, data);
 			}
 
 			@Override
@@ -156,49 +159,24 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		if (shouldSkip) {
-			return null;
+		if (isAccessibleConstructor(name, access)) {
+			hasAccessibleConstructor = true;
 		}
 
-		if (isSynthetic(access) || isBridge(access)) {
-			LOGGER.trace("Skipping synthetic/bridge method {}", name);
-			return null;
-		}
-
-		if ("<init>".equals(name) && convertVisibility(access) != AccessModifier.PRIVATE) {
-			hasNonPrivateConstructor = true;
-		}
-
-		if (!isTypeMemberExported(access)) {
-			LOGGER.trace("Skipping unexported method {}", name);
-			return null;
-		}
-
-		// Stupid heuristics below to mark non-source but non-synthetic stuff
-		boolean isEnumValues = "values".equals(name) && descriptor.startsWith("()[L");
-		boolean isEnumValueOf = "valueOf".equals(name) && descriptor.startsWith("(Ljava/lang/String;)L");
-		if (isEnum(classAccess) && (isEnumValues || isEnumValueOf)) {
-			LOGGER.trace("Skipping {}'s values()/valueOf()", className);
-			return null;
-		}
-
-		boolean isRecordToString = "toString".equals(name) && "()Ljava/lang/String;".equals(descriptor);
-		boolean isRecordEquals = "equals".equals(name) && "(Ljava/lang/Object;)Z".equals(descriptor);
-		boolean isRecordHashCode = "hashCode".equals(name) && "()I".equals(descriptor);
-		if (isRecord(classAccess) && (isRecordToString || isRecordEquals || isRecordHashCode)) {
-			LOGGER.trace("Skipping {}'s toString()/hashCode()/equals()", className);
+		if (shouldSkip || isSynthetic(access) || isBridge(access) || !isTypeMemberExported(access)) {
 			return null;
 		}
 
 		return new MethodVisitor(api) {
+			private final Set<AsmAnnotationVisitor.Data> annotations = new LinkedHashSet<>();
 			private boolean hasDefault;
-			private final List<String> annotations = new ArrayList<>();
 			private int firstLine = -1;
 
 			@Override
-			public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-				annotations.add(descriptor);
-				return null;
+			public AnnotationVisitor visitAnnotation(String annotationDescriptor, boolean visible) {
+				AsmAnnotationVisitor.Data data = new AsmAnnotationVisitor.Data(annotationDescriptor);
+				annotations.add(data);
+				return new AsmAnnotationVisitor(api, annotationDescriptor, data);
 			}
 
 			@Override
@@ -210,7 +188,6 @@ final class AsmClassVisitor extends ClassVisitor {
 			@Override
 			public void visitLineNumber(int line, Label start) {
 				firstLine = firstLine > 0 ? Math.min(firstLine, line) : line;
-				super.visitLineNumber(line, start);
 			}
 
 			@Override
@@ -229,29 +206,28 @@ final class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitPermittedSubclass(String permittedSubclass) {
 		if (!shouldSkip) {
-			// Roseau's current API model does not care about the list of permitted subclasses,
-			// but we need to know whether the class is sealed or not, and there is no ACC_SEALED in ASM
-			isSealed = true;
+			// No Opcodes.ACC_NON_SEALED in ASM yet
+			permittedTypes.add(factory.references().createTypeReference(bytecodeToFqn(permittedSubclass)));
 		}
 	}
 
 	@Override
 	public void visitInnerClass(String name, String outerName, String innerName, int access) {
-		// Constant bodies are inner classes? Though this is not 100% accurate
-		hasEnumConstantBody = true;
+		// FIXME: Constant bodies are inner classes
+		hasEnumConstantBody = isEnum(classAccess);
 
 		if (shouldSkip || !bytecodeToFqn(name).equals(className)) {
 			return;
 		}
 
-		if (outerName != null && innerName != null) {
+		if (outerName != null && innerName != null && !ANONYMOUS_MATCHER.matcher(outerName).find()) {
 			// Nested/inner types
 			// Merge the kind bits (class/interface/enum/annotation/record) from the class header with
 			// the visibility/modifier bits from the InnerClasses entry. Some compilers omit ACC_RECORD
 			// in the InnerClasses attributes for nested records, which would make us misclassify them.
 			int kindBits = Opcodes.ACC_INTERFACE | Opcodes.ACC_ENUM | Opcodes.ACC_ANNOTATION | Opcodes.ACC_RECORD;
 			classAccess = (access & ~kindBits) | (classAccess & kindBits);
-			enclosingType = typeRefFactory.createTypeReference(bytecodeToFqn(outerName));
+			enclosingType = factory.references().createTypeReference(bytecodeToFqn(outerName));
 		} else {
 			// Anonymous/local types
 			shouldSkip = true;
@@ -260,26 +236,13 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public AnnotationVisitor visitAnnotation(String descriptor, boolean visible) {
-		if (!shouldSkip) {
-			annotations.add(descriptor);
-			if ("Ljava/lang/annotation/Target;".equals(descriptor)) {
-				return new AnnotationVisitor(api) {
-					@Override
-					public AnnotationVisitor visitArray(String name) {
-						if (!"value".equals(name)) return super.visitArray(name);
-						return new AnnotationVisitor(api) {
-							@Override
-							public void visitEnum(String n, String enumDesc, String value) {
-								if ("Ljava/lang/annotation/ElementType;".equals(enumDesc)) {
-									targets.add(ElementType.valueOf(value));
-								}
-							}
-						};
-					}
-				};
-			}
+		if (shouldSkip) {
+			return null;
 		}
-		return null;
+
+		AsmAnnotationVisitor.Data data = new AsmAnnotationVisitor.Data(descriptor);
+		annotations.add(data);
+		return new AsmAnnotationVisitor(api, descriptor, data, targets);
 	}
 
 	@Override
@@ -289,14 +252,9 @@ final class AsmClassVisitor extends ClassVisitor {
 		}
 
 		AccessModifier visibility = convertVisibility(classAccess);
-		EnumSet<Modifier> modifiers = convertClassModifiers(classAccess);
-		List<Annotation> anns = convertAnnotations(annotations);
-		// No bullet-proof line information for types
-		SourceLocation location = new SourceLocation(sourceFile, -1);
-
-		if (isSealed) {
-			modifiers.add(Modifier.SEALED);
-		}
+		Set<Modifier> modifiers = convertClassModifiers(classAccess);
+		Set<Annotation> anns = convertAnnotations(annotations);
+		SourceLocation location = factory.location(sourceFile, -1);
 
 		if (isEffectivelyFinal(classAccess)) {
 			// We initially included all PUBLIC/PROTECTED type members
@@ -306,56 +264,57 @@ final class AsmClassVisitor extends ClassVisitor {
 			constructors.removeIf(TypeMemberDecl::isProtected);
 		}
 
-		// Roughly §8.9
-		if (isEnum(classAccess) && hasEnumConstantBody && !isFinal(classAccess)) {
-			modifiers.add(Modifier.SEALED);
+		// §8.9: an enum class E is implicitly sealed if its declaration contains at least one
+		// enum constant that has a class body. Otherwise, final.
+		if (isEnum(classAccess)) {
+			if (hasEnumConstantBody && !isFinal(classAccess)) {
+				modifiers.add(Modifier.SEALED);
+			} else {
+				modifiers.add(Modifier.FINAL);
+			}
 		}
 
 		if (isAnnotation(classAccess)) {
-			typeDecl = new AnnotationDecl(className, visibility, modifiers, anns, location,
-				fields, annotationMethods, enclosingType, targets);
+			sink.accept(factory.createAnnotation(className, visibility, modifiers, anns, location, fields, annotationMethods,
+				enclosingType, targets));
 		} else if (isInterface(classAccess)) {
-			typeDecl = new InterfaceDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, List.of());
+			sink.accept(factory.createInterface(className, visibility, modifiers, anns, location, implementedInterfaces,
+				formalTypeParameters, fields, methods, enclosingType, permittedTypes));
 		} else if (isEnum(classAccess)) {
-			typeDecl = new EnumDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, fields, methods, enclosingType, constructors, List.of());
+			sink.accept(factory.createEnum(className, visibility, modifiers, anns, location, implementedInterfaces,
+				fields, methods, enclosingType, constructors));
 		} else if (isRecord(classAccess)) {
-			typeDecl = new RecordDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, constructors, List.of());
+			sink.accept(factory.createRecord(className, visibility, modifiers, anns, location, implementedInterfaces,
+				formalTypeParameters, fields, methods, enclosingType, constructors));
 		} else {
-			typeDecl = new ClassDecl(className, visibility, modifiers, anns, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass, constructors, List.of());
+			sink.accept(factory.createClass(className, visibility, modifiers, anns, location, implementedInterfaces,
+				formalTypeParameters, fields, methods, enclosingType, superClass, constructors, permittedTypes));
 		}
 	}
 
 	private FieldDecl convertField(int access, String name, String descriptor, String signature,
-	                               List<String> annotations) {
+	                               Set<AsmAnnotationVisitor.Data> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
-			AsmTypeSignatureVisitor<ITypeReference> visitor =
-				new AsmTypeSignatureVisitor<>(api, typeRefFactory);
+			AsmTypeSignatureVisitor<ITypeReference> visitor = new AsmTypeSignatureVisitor<>(api, factory.references());
 			new SignatureReader(signature).accept(visitor);
 			fieldType = visitor.getType();
 		} else {
 			fieldType = convertType(descriptor);
 		}
-
-		// No bullet-proof line information for fields
-		SourceLocation location = new SourceLocation(sourceFile, -1);
-		return new FieldDecl(String.format("%s.%s", className, name), convertVisibility(access),
-			convertFieldModifiers(access), convertAnnotations(annotations), location,
-			typeRefFactory.createTypeReference(className), fieldType);
+		SourceLocation location = factory.location(sourceFile, -1);
+		return factory.createField(className + "." + name, convertVisibility(access), convertFieldModifiers(access),
+			convertAnnotations(annotations), location, factory.references().createTypeReference(className), fieldType);
 	}
 
 	private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
-	                                           List<String> annotations, int line) {
+	                                           Set<AsmAnnotationVisitor.Data> annotations, int line) {
 		List<ParameterDecl> parameters;
-		List<ITypeReference> thrownExceptions;
+		Set<ITypeReference> thrownExceptions;
 		List<FormalTypeParameter> typeParameters;
 
 		if (signature != null) {
-			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, factory);
 			new SignatureReader(signature).accept(visitor);
 			parameters = visitor.getParameters();
 			typeParameters = visitor.getFormalTypeParameters();
@@ -368,7 +327,7 @@ final class AsmClassVisitor extends ClassVisitor {
 			parameters = (enclosingType != null && !isStatic(classAccess) && originalParams.length >= 1)
 				? convertParameters(Arrays.copyOfRange(originalParams, 1, originalParams.length))
 				: convertParameters(originalParams);
-			typeParameters = Collections.emptyList();
+			typeParameters = List.of();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
 
@@ -377,22 +336,21 @@ final class AsmClassVisitor extends ClassVisitor {
 			parameters = convertVarargParameter(parameters);
 		}
 
-		return new ConstructorDecl(String.format("%s.<init>", className), convertVisibility(access),
-			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
-			typeRefFactory.createTypeReference(className),
-			typeRefFactory.createTypeReference(className),
+		return factory.createConstructor(String.format("%s.<init>", className), convertVisibility(access),
+			convertMethodModifiers(access), convertAnnotations(annotations), factory.location(sourceFile, line),
+			factory.references().createTypeReference(className), factory.references().createTypeReference(className),
 			parameters, typeParameters, thrownExceptions);
 	}
 
 	private MethodDecl convertMethod(int access, String name, String descriptor, String signature, String[] exceptions,
-	                                 List<String> annotations, int line) {
+	                                 Set<AsmAnnotationVisitor.Data> annotations, int line) {
 		ITypeReference returnType;
 		List<ParameterDecl> parameters;
 		List<FormalTypeParameter> typeParameters;
-		List<ITypeReference> thrownExceptions;
+		Set<ITypeReference> thrownExceptions;
 
 		if (signature != null) {
-			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, factory);
 			new SignatureReader(signature).accept(visitor);
 			returnType = visitor.getReturnType();
 			parameters = visitor.getParameters();
@@ -403,7 +361,7 @@ final class AsmClassVisitor extends ClassVisitor {
 		} else {
 			returnType = convertType(Type.getReturnType(descriptor).getDescriptor());
 			parameters = convertParameters(Type.getArgumentTypes(descriptor));
-			typeParameters = Collections.emptyList();
+			typeParameters = List.of();
 			thrownExceptions = convertThrownExceptions(exceptions);
 		}
 
@@ -412,31 +370,32 @@ final class AsmClassVisitor extends ClassVisitor {
 			parameters = convertVarargParameter(parameters);
 		}
 
-		return new MethodDecl(String.format("%s.%s", className, name), convertVisibility(access),
-			convertMethodModifiers(access), convertAnnotations(annotations), new SourceLocation(sourceFile, line),
-			typeRefFactory.createTypeReference(className), returnType, parameters,
+		return factory.createMethod(String.format("%s.%s", className, name), convertVisibility(access),
+			convertMethodModifiers(access), convertAnnotations(annotations), factory.location(sourceFile, line),
+			factory.references().createTypeReference(className), returnType, parameters,
 			typeParameters, thrownExceptions);
 	}
 
 	private AnnotationMethodDecl convertAnnotationMethod(String name, String descriptor, String signature,
-	                                 List<String> annotations, int line, boolean hasDefault) {
+	                                                     Set<AsmAnnotationVisitor.Data> annotations, int line,
+	                                                     boolean hasDefault) {
 		ITypeReference returnType;
 
 		if (signature != null) {
-			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, typeRefFactory);
+			AsmSignatureVisitor visitor = new AsmSignatureVisitor(api, factory);
 			new SignatureReader(signature).accept(visitor);
 			returnType = visitor.getReturnType();
 		} else {
 			returnType = convertType(Type.getReturnType(descriptor).getDescriptor());
 		}
 
-		return new AnnotationMethodDecl(String.format("%s.%s", className, name), convertAnnotations(annotations),
-			new SourceLocation(sourceFile, line), typeRefFactory.createTypeReference(className), returnType, hasDefault);
+		return factory.createAnnotationMethod(String.format("%s.%s", className, name), convertAnnotations(annotations),
+			factory.location(sourceFile, line), factory.references().createTypeReference(className), returnType, hasDefault);
 	}
 
 	private List<ParameterDecl> convertVarargParameter(List<ParameterDecl> parameters) {
 		if (parameters.isEmpty()) {
-			return Collections.emptyList();
+			return List.of();
 		}
 
 		List<ParameterDecl> params = new ArrayList<>(parameters);
@@ -444,61 +403,49 @@ final class AsmClassVisitor extends ClassVisitor {
 		if (last.type() instanceof ArrayTypeReference(ITypeReference componentType, int dimension)) {
 			// If this is a multidimensional array, remove one dimension, otherwise make it a regular reference
 			if (dimension > 1) {
-				params.set(params.size() - 1, new ParameterDecl(last.name(),
-					typeRefFactory.createArrayTypeReference(componentType, dimension - 1), true));
+				params.set(params.size() - 1, factory.createParameter(last.name(),
+					factory.references().createArrayTypeReference(componentType, dimension - 1), true));
 			} else {
-				params.set(params.size() - 1, new ParameterDecl(last.name(), componentType, true));
+				params.set(params.size() - 1, factory.createParameter(last.name(), componentType, true));
 			}
 		}
 		return params;
 	}
 
-	private List<Annotation> convertAnnotations(List<String> descriptors) {
-		return descriptors.stream()
-			.map(ann -> new Annotation(typeRefFactory.createTypeReference(descriptorToFqn(ann))))
-			.toList();
+	private Set<Annotation> convertAnnotations(Set<AsmAnnotationVisitor.Data> dataList) {
+		return dataList.stream()
+			.map(data -> factory.createAnnotation(
+				factory.references().createTypeReference(descriptorToFqn(data.descriptor())),
+				data.values()))
+			.collect(toSet());
 	}
 
-	private List<ITypeReference> convertThrownExceptions(String[] exceptions) {
+	private Set<ITypeReference> convertThrownExceptions(String[] exceptions) {
 		if (exceptions == null) {
-			return Collections.emptyList();
+			return Set.of();
 		}
 
 		return Arrays.stream(exceptions)
-			.map(e -> typeRefFactory.createTypeReference(bytecodeToFqn(e)))
-			.map(ITypeReference.class::cast)
-			.toList();
+			.map(e -> factory.references().createTypeReference(bytecodeToFqn(e)))
+			.collect(toSet());
 	}
 
 	private ITypeReference convertType(String descriptor) {
 		Type type = Type.getType(descriptor);
 		if (type.getSort() == Type.ARRAY) {
 			ITypeReference component = convertType(type.getElementType().getDescriptor());
-			return typeRefFactory.createArrayTypeReference(component, type.getDimensions());
+			return factory.references().createArrayTypeReference(component, type.getDimensions());
 		} else if (type.getSort() == Type.OBJECT) {
-			return typeRefFactory.createTypeReference(type.getClassName());
+			return factory.references().createTypeReference(type.getClassName());
 		} else {
-			return typeRefFactory.createPrimitiveTypeReference(type.getClassName());
+			return factory.references().createPrimitiveTypeReference(type.getClassName());
 		}
 	}
 
 	private List<ParameterDecl> convertParameters(Type[] paramTypes) {
 		return IntStream.range(0, paramTypes.length)
-			.mapToObj(i -> new ParameterDecl("p" + i, convertType(paramTypes[i].getDescriptor()), false))
+			.mapToObj(i -> factory.createParameter("p" + i, convertType(paramTypes[i].getDescriptor()), false))
 			.toList();
-	}
-
-	private static AccessModifier convertVisibility(int access) {
-		if ((access & Opcodes.ACC_PUBLIC) != 0) {
-			return AccessModifier.PUBLIC;
-		}
-		if ((access & Opcodes.ACC_PROTECTED) != 0) {
-			return AccessModifier.PROTECTED;
-		}
-		if ((access & Opcodes.ACC_PRIVATE) != 0) {
-			return AccessModifier.PRIVATE;
-		}
-		return AccessModifier.PACKAGE_PRIVATE;
 	}
 
 	private static boolean isTypeMemberExported(int access) {
@@ -507,66 +454,8 @@ final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private boolean isEffectivelyFinal(int access) {
-		// FIXME: non-sealed
-		return isFinal(access) || isSealed || (isClass(classAccess) && !hasNonPrivateConstructor);
-	}
-
-	private static EnumSet<Modifier> convertClassModifiers(int access) {
-		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-		if ((access & Opcodes.ACC_FINAL) != 0) {
-			modifiers.add(Modifier.FINAL);
-		}
-		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-			modifiers.add(Modifier.ABSTRACT);
-		}
-		if ((access & Opcodes.ACC_STATIC) != 0) {
-			// shouldn't work on classes, but it does?
-			modifiers.add(Modifier.STATIC);
-		}
-		return modifiers;
-	}
-
-	private static EnumSet<Modifier> convertFieldModifiers(int access) {
-		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-		if ((access & Opcodes.ACC_STATIC) != 0) {
-			modifiers.add(Modifier.STATIC);
-		}
-		if ((access & Opcodes.ACC_FINAL) != 0) {
-			modifiers.add(Modifier.FINAL);
-		}
-		if ((access & Opcodes.ACC_VOLATILE) != 0) {
-			modifiers.add(Modifier.VOLATILE);
-		}
-		if ((access & Opcodes.ACC_TRANSIENT) != 0) {
-			modifiers.add(Modifier.TRANSIENT);
-		}
-		return modifiers;
-	}
-
-	private EnumSet<Modifier> convertMethodModifiers(int access) {
-		EnumSet<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
-		if ((access & Opcodes.ACC_STATIC) != 0) {
-			modifiers.add(Modifier.STATIC);
-		}
-		if ((access & Opcodes.ACC_FINAL) != 0) {
-			modifiers.add(Modifier.FINAL);
-		}
-		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
-			modifiers.add(Modifier.ABSTRACT);
-		}
-		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
-			modifiers.add(Modifier.SYNCHRONIZED);
-		}
-		if ((access & Opcodes.ACC_NATIVE) != 0) {
-			modifiers.add(Modifier.NATIVE);
-		}
-		if ((access & Opcodes.ACC_STRICT) != 0) {
-			modifiers.add(Modifier.STRICTFP);
-		}
-		if (isDefault(access)) {
-			modifiers.add(Modifier.DEFAULT);
-		}
-		return modifiers;
+		// FIXME: No Opcodes.ACC_NON_SEALED in ASM yet
+		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasAccessibleConstructor);
 	}
 
 	private static String bytecodeToFqn(String bytecodeName) {
@@ -575,6 +464,10 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	private static String descriptorToFqn(String descriptor) {
 		return Type.getType(descriptor).getClassName();
+	}
+
+	private boolean isAccessibleConstructor(String name, int access) {
+		return "<init>".equals(name) && !isSynthetic(access) && convertVisibility(access) != AccessModifier.PRIVATE;
 	}
 
 	private static boolean isSynthetic(int access) {
@@ -615,6 +508,72 @@ final class AsmClassVisitor extends ClassVisitor {
 
 	private static boolean isFinal(int access) {
 		return (access & Opcodes.ACC_FINAL) != 0;
+	}
+
+	private static AccessModifier convertVisibility(int access) {
+		return switch (access & (Opcodes.ACC_PUBLIC | Opcodes.ACC_PROTECTED | Opcodes.ACC_PRIVATE)) {
+			case Opcodes.ACC_PUBLIC -> AccessModifier.PUBLIC;
+			case Opcodes.ACC_PROTECTED -> AccessModifier.PROTECTED;
+			case Opcodes.ACC_PRIVATE -> AccessModifier.PRIVATE;
+			default -> AccessModifier.PACKAGE_PRIVATE;
+		};
+	}
+
+	private static Set<Modifier> convertClassModifiers(int access) {
+		Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+		if (isFinal(access)) {
+			modifiers.add(Modifier.FINAL);
+		}
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+			modifiers.add(Modifier.ABSTRACT);
+		}
+		if ((access & Opcodes.ACC_STATIC) != 0) {
+			modifiers.add(Modifier.STATIC);
+		}
+		return modifiers;
+	}
+
+	private static Set<Modifier> convertFieldModifiers(int access) {
+		Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+		if ((access & Opcodes.ACC_STATIC) != 0) {
+			modifiers.add(Modifier.STATIC);
+		}
+		if ((access & Opcodes.ACC_FINAL) != 0) {
+			modifiers.add(Modifier.FINAL);
+		}
+		if ((access & Opcodes.ACC_VOLATILE) != 0) {
+			modifiers.add(Modifier.VOLATILE);
+		}
+		if ((access & Opcodes.ACC_TRANSIENT) != 0) {
+			modifiers.add(Modifier.TRANSIENT);
+		}
+		return modifiers;
+	}
+
+	private Set<Modifier> convertMethodModifiers(int access) {
+		Set<Modifier> modifiers = EnumSet.noneOf(Modifier.class);
+		if ((access & Opcodes.ACC_STATIC) != 0) {
+			modifiers.add(Modifier.STATIC);
+		}
+		if ((access & Opcodes.ACC_FINAL) != 0) {
+			modifiers.add(Modifier.FINAL);
+		}
+		if ((access & Opcodes.ACC_ABSTRACT) != 0) {
+			modifiers.add(Modifier.ABSTRACT);
+		}
+		if ((access & Opcodes.ACC_SYNCHRONIZED) != 0) {
+			modifiers.add(Modifier.SYNCHRONIZED);
+		}
+		if ((access & Opcodes.ACC_NATIVE) != 0) {
+			modifiers.add(Modifier.NATIVE);
+		}
+		if ((access & Opcodes.ACC_STRICT) != 0) {
+			modifiers.add(Modifier.STRICTFP);
+		}
+		if (isDefault(access)) {
+			modifiers.add(Modifier.DEFAULT);
+		}
+		return modifiers;
 	}
 
 	// No Opcodes.ACC_DEFAULT, so that's how we infer it

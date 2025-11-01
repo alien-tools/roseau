@@ -2,24 +2,25 @@ package io.github.alien.roseau.api.resolution;
 
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
 
 import java.nio.file.Path;
-import java.util.List;
+import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 class SpoonTypeProviderTest {
-	SpoonTypeProvider newProvider(List<Path> classpath) {
-		CachingTypeReferenceFactory factory = new CachingTypeReferenceFactory();
+	SpoonTypeProvider newProvider(Set<Path> classpath) {
+		var factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
 		return new SpoonTypeProvider(factory, classpath);
 	}
 
 	@Test
 	void resolve_jdk() {
-		var cp = List.<Path>of();
+		var cp = Set.<Path>of();
 		var provider = newProvider(cp);
 		var opt = provider.findType("java.lang.Number", ClassDecl.class);
 
@@ -38,7 +39,7 @@ class SpoonTypeProviderTest {
 
 	@Test
 	void resolve_unknown() {
-		var cp = List.<Path>of();
+		var cp = Set.<Path>of();
 		var provider = newProvider(cp);
 		var opt = provider.findType("java.lang.Unknown");
 
@@ -48,7 +49,7 @@ class SpoonTypeProviderTest {
 	@Test
 	void resolve_with_classpath() {
 		var showcase = Path.of("src/test/resources/api-showcase.jar");
-		var cp = List.of(showcase);
+		var cp = Set.of(showcase);
 		var provider = newProvider(cp);
 		var opt = provider.findType("io.github.alien.roseau.APIShowcase$Square", ClassDecl.class);
 
@@ -67,7 +68,7 @@ class SpoonTypeProviderTest {
 
 	@Test
 	void resolve_unexpected_kind() {
-		var provider = newProvider(List.of());
+		var provider = newProvider(Set.of());
 		var opt = provider.findType("java.lang.Number", InterfaceDecl.class);
 
 		assertThat(opt).isEmpty();
@@ -75,7 +76,7 @@ class SpoonTypeProviderTest {
 
 	@Test
 	void resolve_unexpected_kind_sub() {
-		var provider = newProvider(List.of());
+		var provider = newProvider(Set.of());
 		var opt = provider.findType("java.time.DayOfWeek", ClassDecl.class);
 
 		assertThat(opt).isPresent();

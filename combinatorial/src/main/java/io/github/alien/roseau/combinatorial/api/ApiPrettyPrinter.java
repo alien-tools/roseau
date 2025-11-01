@@ -1,4 +1,4 @@
-package io.github.alien.roseau.api.visit;
+package io.github.alien.roseau.combinatorial.api;
 
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
@@ -25,15 +25,16 @@ import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
+import io.github.alien.roseau.api.visit.ApiAlgebra;
 
 import java.util.Arrays;
 import java.util.Set;
 import java.util.stream.Collectors;
 
-public class APIPrettyPrinter implements APIAlgebra<Print> {
+public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 	private API api;
 
-	public APIPrettyPrinter(API api) {
+	public ApiPrettyPrinter(API api) {
 		this.api = api;
 	}
 
@@ -70,7 +71,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				: "implements " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getPermittedTypes().isEmpty()
 				? ""
-				: "permits " + String.join(", ", it.getPermittedTypes()),
+				: "permits " + it.getPermittedTypes().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredConstructors().stream().map(cons -> $(cons).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
@@ -96,7 +97,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 				: "extends " + it.getImplementedInterfaces().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getPermittedTypes().isEmpty()
 				? ""
-				: "permits " + String.join(", ", it.getPermittedTypes()),
+				: "permits " + it.getPermittedTypes().stream().map(TypeReference::getQualifiedName).collect(Collectors.joining(", ")),
 			it.getDeclaredFields().stream().map(f -> $(f).print()).collect(Collectors.joining("\n")),
 			it.getDeclaredMethods().stream().map(m -> $(m).print()).collect(Collectors.joining("\n"))
 		);
@@ -191,7 +192,7 @@ public class APIPrettyPrinter implements APIAlgebra<Print> {
 			it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", ")),
 			!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(ITypeReference::getQualifiedName).collect(Collectors.joining(", ")) : "",
 			hasBody(it)
-				? it.getType().getQualifiedName().equals("void")
+				? "void".equals(it.getType().getQualifiedName())
 				? "{}"
 				: "{ return %s; }".formatted(getDefaultValue(it.getType()))
 				: ";"

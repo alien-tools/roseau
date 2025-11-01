@@ -1,14 +1,17 @@
 package io.github.alien.roseau.api.model;
 
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.PropertyAccessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
@@ -19,9 +22,13 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 
 /**
@@ -38,30 +45,62 @@ public final class LibraryTypes implements TypeProvider {
 	private final Library library;
 
 	/**
+	 * The module corresponding to the library.
+	 */
+	private final ModuleDecl module;
+
+	/**
 	 * An immutable map that stores all types within the library, including both exported and non-exported
 	 * {@link TypeDecl} instances. Allows for efficient lookup of type declarations by their qualified names.
 	 */
-	private final ImmutableMap<String, TypeDecl> allTypes;
+	private final Map<String, TypeDecl> allTypes;
 
+	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
+
+	static {
+		MAPPER.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
+		MAPPER.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
+		MAPPER.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
+		// For Optional<>
+		MAPPER.registerModule(new Jdk8Module());
+		// For @JsonCreator
+		MAPPER.registerModule(new ParanamerModule());
+	}
+
+	/**
+	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}.
+	 *
+	 * @param library The analyzed library
+	 * @param module  The module corresponding to the library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 */
+	@JsonCreator
+	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") Set<TypeDecl> types) {
+		Preconditions.checkNotNull(library);
+		Preconditions.checkNotNull(module);
+		Preconditions.checkNotNull(types);
+		this.library = library;
+		this.module = module;
+		allTypes = types.stream()
+			.collect(ImmutableSortedMap.toImmutableSortedMap(
+				Comparator.naturalOrder(),
+				Symbol::getQualifiedName,
+				Function.identity(),
+				(fqn, duplicate) -> {
+					throw new RoseauException("Duplicated type in %s: %s".formatted(library, fqn));
+				}
+			));
+	}
 
 	/**
 	 * Initializes from the given list of {@link TypeDecl}.
 	 *
-	 * @param types Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 * @param library The analyzed library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(Library library, @JsonProperty("allTypes") List<TypeDecl> types) {
-		Preconditions.checkNotNull(library);
-		Preconditions.checkNotNull(types);
-		this.library = library;
-		this.allTypes = types.stream()
-			.collect(ImmutableMap.toImmutableMap(
-				Symbol::getQualifiedName,
-				Function.identity(),
-				(fqn, duplicate) -> {
-					throw new IllegalArgumentException("Duplicated types " + fqn);
-				}
-			));
+	public LibraryTypes(Library library, Set<TypeDecl> types) {
+		this(library, ModuleDecl.UNNAMED_MODULE, types);
 	}
 
 	/**
@@ -75,23 +114,14 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Creates a new resolved API using the given classpath and a default resolver.
-	 *
-	 * @param classpath the classpath used for type resolution
-	 * @return the new resolved API
-	 */
-	public API toAPI(List<Path> classpath) {
-		TypeProvider reflectiveTypeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
-		return toAPI(new CachingTypeResolver(List.of(this, reflectiveTypeProvider)));
-	}
-
-	/**
-	 * Convenience method to create a resolved API using a default resolver.
+	 * Creates a new resolved API using a default resolver.
 	 *
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		return toAPI(List.of());
+		TypeProvider typeProvider = new SpoonTypeProvider(
+			new DefaultApiFactory(new CachingTypeReferenceFactory()), library.getClasspath());
+		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
 	}
 
 	/**
@@ -105,13 +135,23 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
+	 * The module corresponding to the library.
+	 *
+	 * @return the module
+	 */
+	@JsonProperty("module")
+	public ModuleDecl getModule() {
+		return module;
+	}
+
+	/**
 	 * Returns <strong>all</strong> types contained in the API, including those that are *not* exported.
 	 *
 	 * @return The list of <strong>all</strong> {@link TypeDecl}
 	 */
 	@JsonProperty("allTypes")
-	public List<TypeDecl> getAllTypes() {
-		return allTypes.values().stream().toList();
+	public Collection<TypeDecl> getAllTypes() {
+		return allTypes.values();
 	}
 
 	/**
@@ -141,12 +181,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @throws IOException if serialization fails
 	 */
 	public void writeJson(Path jsonFile) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		mapper.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);
-		mapper.setVisibility(PropertyAccessor.FIELD, JsonAutoDetect.Visibility.ANY);
-		mapper.setVisibility(PropertyAccessor.CREATOR, JsonAutoDetect.Visibility.ANY);
-		mapper.registerModule(new Jdk8Module());
-		mapper.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
+		MAPPER.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
 	}
 
 	/**
@@ -157,12 +192,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @throws IOException If the file cannot be parsed
 	 */
 	public static LibraryTypes fromJson(Path jsonFile) throws IOException {
-		ObjectMapper mapper = new ObjectMapper();
-		// For Optional<>
-		mapper.registerModule(new Jdk8Module());
-		// For @JsonCreator
-		mapper.registerModule(new ParanamerModule());
-		return mapper.readValue(jsonFile.toFile(), LibraryTypes.class);
+		return MAPPER.readValue(jsonFile.toFile(), LibraryTypes.class);
 	}
 
 	@Override
@@ -170,15 +200,14 @@ public final class LibraryTypes implements TypeProvider {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		LibraryTypes other = (LibraryTypes) obj;
-		return Objects.equals(library, other.library) && Objects.equals(allTypes, other.allTypes);
+		return obj instanceof LibraryTypes other
+			&& Objects.equals(library, other.library)
+			&& Objects.equals(module, other.module)
+			&& Objects.equals(allTypes, other.allTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(library, allTypes);
+		return Objects.hash(library, module, allTypes);
 	}
 }

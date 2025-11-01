@@ -4,10 +4,10 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.EnumSet;
-import java.util.List;
+import java.util.Set;
 
 public final class EnumValueDecl extends TypeMemberDecl {
-	public EnumValueDecl(String qualifiedName, List<Annotation> annotations, SourceLocation location,
+	public EnumValueDecl(String qualifiedName, Set<Annotation> annotations, SourceLocation location,
 	                     TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, AccessModifier.PUBLIC, EnumSet.of(Modifier.FINAL, Modifier.STATIC),
 			annotations, location, containingType, type);

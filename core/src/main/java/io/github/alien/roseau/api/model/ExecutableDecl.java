@@ -17,20 +17,25 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	protected final List<FormalTypeParameter> formalTypeParameters;
 	// Thrown exceptions aren't necessarily TypeReference<ClassDecl>
 	// e.g.: <X extends Throwable> m() throws X
-	protected final List<ITypeReference> thrownExceptions;
+	protected final Set<ITypeReference> thrownExceptions;
 
 	protected ExecutableDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                         List<Annotation> annotations, SourceLocation location,
+	                         Set<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,
-	                         List<ITypeReference> thrownExceptions) {
+	                         Set<ITypeReference> thrownExceptions) {
 		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		Preconditions.checkNotNull(parameters);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(thrownExceptions);
 		this.parameters = List.copyOf(parameters);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
-		this.thrownExceptions = List.copyOf(thrownExceptions);
+		this.thrownExceptions = Set.copyOf(thrownExceptions);
+	}
+
+	@Override
+	public String getQualifiedName() {
+		return String.format("%s.%s", getContainingType().getQualifiedName(), getSignature());
 	}
 
 	/**
@@ -57,20 +62,20 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 	 * @return the executable's signature
 	 */
 	public String getSignature() {
-		var sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(100);
 		sb.append(simpleName);
-		sb.append("(");
+		sb.append('(');
 		for (int i = 0; i < parameters.size(); i++) {
-			var p = parameters.get(i);
+			ParameterDecl p = parameters.get(i);
 			sb.append(p.type());
 			if (p.isVarargs()) {
 				sb.append("[]");
 			}
 			if (i < parameters.size() - 1) {
-				sb.append(",");
+				sb.append(',');
 			}
 		}
-		sb.append(")");
+		sb.append(')');
 		return sb.toString();
 	}
 
@@ -91,7 +96,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		return formalTypeParameters;
 	}
 
-	public List<ITypeReference> getThrownExceptions() {
+	public Set<ITypeReference> getThrownExceptions() {
 		return thrownExceptions;
 	}
 
@@ -100,8 +105,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 		if (!super.equals(obj)) {
 			return false;
 		}
-		ExecutableDecl other = (ExecutableDecl) obj;
-		return Objects.equals(parameters, other.parameters)
+		return obj instanceof ExecutableDecl other
+			&& Objects.equals(parameters, other.parameters)
 			&& Objects.equals(formalTypeParameters, other.formalTypeParameters)
 			&& Objects.equals(thrownExceptions, other.thrownExceptions);
 	}

@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.alien-tools</groupId>
         <artifactId>roseau-parent</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>roseau-core</artifactId>
@@ -34,7 +34,7 @@
             <plugin>
                 <groupId>org.pitest</groupId>
                 <artifactId>pitest-maven</artifactId>
-                <version>1.20.2</version>
+                <version>1.21.0</version>
                 <dependencies>
                     <dependency>
                         <groupId>org.pitest</groupId>
@@ -81,16 +81,15 @@
             <groupId>com.fasterxml.jackson.module</groupId>
             <artifactId>jackson-module-paranamer</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.fasterxml.jackson.dataformat</groupId>
+            <artifactId>jackson-dataformat-yaml</artifactId>
+        </dependency>
         <!-- Drop that someday -->
         <dependency>
             <groupId>org.json</groupId>
             <artifactId>json</artifactId>
             <version>20250517</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.xmlet</groupId>
-            <artifactId>htmlflow</artifactId>
-            <version>4.7</version>
         </dependency>
         <dependency>
             <groupId>org.apache.logging.log4j</groupId>
@@ -139,11 +138,18 @@
         <dependency>
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
+            <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>1.4.1</version>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>com.cedarsoftware</groupId>
+            <artifactId>java-util</artifactId>
+            <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

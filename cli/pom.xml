@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.alien-tools</groupId>
         <artifactId>roseau-parent</artifactId>
-        <version>0.3.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>roseau-cli</artifactId>
@@ -38,11 +38,24 @@
                 <artifactId>maven-javadoc-plugin</artifactId>
             </plugin>
             <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-jar-plugin</artifactId>
+                <configuration>
+                    <archive>
+                        <manifest>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
+                        </manifest>
+                    </archive>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-assembly-plugin</artifactId>
                 <configuration>
                     <archive>
                         <manifest>
                             <mainClass>io.github.alien.roseau.cli.RoseauCLI</mainClass>
+                            <addDefaultImplementationEntries>true</addDefaultImplementationEntries>
                         </manifest>
                         <manifestEntries>
                             <Multi-Release>true</Multi-Release>
@@ -62,29 +75,6 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.codehaus.mojo</groupId>
-                <artifactId>appassembler-maven-plugin</artifactId>
-                <version>2.1.0</version>
-                <configuration>
-                    <programs>
-                        <program>
-                            <mainClass>io.github.alien.roseau.cli.RoseauCLI</mainClass>
-                            <id>roseau</id>
-                        </program>
-                    </programs>
-                </configuration>
-                <executions>
-                    <execution>
-                        <id>assemble-cli</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>assemble</goal>
-                        </goals>
-                    </execution>
-                </executions>
-            </plugin>
-
         </plugins>
     </build>
 
@@ -145,7 +135,7 @@
         <dependency>
             <groupId>io.github.alien-tools</groupId>
             <artifactId>roseau-core</artifactId>
-            <version>0.3.0-SNAPSHOT</version>
+            <version>0.5.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>
@@ -166,12 +156,6 @@
         <dependency>
             <groupId>org.assertj</groupId>
             <artifactId>assertj-core</artifactId>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.github.stefanbirkner</groupId>
-            <artifactId>system-lambda</artifactId>
-            <version>1.2.1</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

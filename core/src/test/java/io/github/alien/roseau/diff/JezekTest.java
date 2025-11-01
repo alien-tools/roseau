@@ -7,6 +7,9 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
+/**
+ * Should check for overlaps and merge them with "regular" tests
+ */
 class JezekTest {
 	@Test
 	void genericsWildcardsClazzConstructorParamLowerBoundsAdd() {
@@ -19,7 +22,7 @@ class JezekTest {
 			  public A(java.util.List<A> l) {}
 			}""";
 
-		assertBC("A.<init>", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.<init>(java.util.List<? extends java.lang.Object>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -33,7 +36,7 @@ class JezekTest {
 			  public <T extends Number & java.util.List<T>> void m() {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -47,7 +50,7 @@ class JezekTest {
 			  public int f;
 			}""";
 
-		assertBC("A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -61,7 +64,7 @@ class JezekTest {
 			  public int f = 5;
 			}""";
 
-		assertBC("I.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("I", "I.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -131,7 +134,7 @@ class JezekTest {
 				public void m() throws Exception {}
 			}""";
 
-		assertBC("A.m", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -145,7 +148,7 @@ class JezekTest {
 				public void m() throws java.io.FileNotFoundException {}
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -189,9 +192,7 @@ class JezekTest {
 				void m();
 			}""";
 
-		var bcs = buildDiff(v1, v2);
-		assertBC("S.m", BreakingChangeKind.METHOD_REMOVED, 2, bcs);
-		assertNoBC(4, bcs);
+		assertBC("S", "S.m()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -207,9 +208,7 @@ class JezekTest {
 			}
 			public interface I extends S {}""";
 
-		var bcs = buildDiff(v1, v2);
-		assertBC("S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, bcs);
-		assertNoBC(3, bcs);
+		assertBC("S", "S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -225,9 +224,7 @@ class JezekTest {
 				public int f;
 			}""";
 
-		var bcs = buildDiff(v1, v2);
-		assertBC("S.f", BreakingChangeKind.FIELD_REMOVED, 2, bcs);
-		assertNoBC(4, bcs);
+		assertBC("S", "S.f", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -315,7 +312,7 @@ class JezekTest {
 				public void m(java.util.ArrayList<? extends Number> al) {}
 			}""";
 
-		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m(java.util.ArrayList<? extends java.lang.Object>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -328,7 +325,7 @@ class JezekTest {
 			}
 			public interface I extends J {}""";
 
-		assertBC("I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
+		assertBC("I", "I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -336,7 +333,7 @@ class JezekTest {
 		var v1 = "public interface I<T> {}";
 		var v2 = "public interface I<T extends Number> {}";
 
-		assertBC("I", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("I", "I", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -408,7 +405,7 @@ class JezekTest {
 				public void m(java.util.List<?> l) {}
 			}""";
 
-		assertBC("C.m", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m(java.util.List<java.lang.String>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -450,7 +447,7 @@ class JezekTest {
 				public void m() {}
 			}""";
 
-		assertBC("C.m", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -475,6 +472,6 @@ class JezekTest {
 			}""";
 		var v2 = "public interface I1 {}";
 
-		assertBC("I1$I2", BreakingChangeKind.TYPE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("I1$I2", "I1$I2", BreakingChangeKind.TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 }

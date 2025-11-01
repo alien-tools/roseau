@@ -4,9 +4,10 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -20,49 +21,60 @@ import org.eclipse.jdt.core.dom.FileASTRequestor;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
  * A JDT-based {@link TypesExtractor}.
  */
-public class JdtTypesExtractor implements TypesExtractor {
+public final class JdtTypesExtractor implements TypesExtractor {
+	private final ApiFactory factory;
+
 	private static final Logger LOGGER = LogManager.getLogger(JdtTypesExtractor.class);
+
+	record ParsingResult(Set<TypeDecl> types, Set<ModuleDecl> modules) {
+	}
+
+	public JdtTypesExtractor(ApiFactory factory) {
+		this.factory = Preconditions.checkNotNull(factory);
+	}
 
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
 		try (Stream<Path> files = Files.walk(library.getLocation())) {
-			List<Path> sourceFiles = files
+			Set<Path> sourceFiles = files
 				.filter(JdtTypesExtractor::isRegularJavaFile)
-				.toList();
+				.collect(Collectors.toSet());
 
-			TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-			List<TypeDecl> parsedTypes = parseTypes(library, sourceFiles, typeRefFactory);
-			return new LibraryTypes(library, parsedTypes);
+			ParsingResult result = parseTypes(library, sourceFiles);
+
+			if (result.modules().isEmpty()) {
+				return new LibraryTypes(library, result.types());
+			} else if (result.modules().size() == 1) {
+				return new LibraryTypes(library, result.modules().iterator().next(), result.types());
+			} else {
+				throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, result.modules()));
+			}
 		} catch (IOException e) {
-			throw new RoseauException("Failed to retrieve sources at " + library.getLocation(), e);
+			throw new RoseauException("Failed to parse sources", e);
 		}
 	}
 
-	@Override
-	public boolean canExtract(Library library) {
-		return library != null && library.isSources();
-	}
-
-	List<TypeDecl> parseTypes(Library library, List<Path> sourcesToParse, TypeReferenceFactory typeRefFactory) {
+	ParsingResult parseTypes(Library library, Set<Path> sourcesToParse) {
 		String[] sourcesArray = sourcesToParse.stream()
-			.map(p -> p.toAbsolutePath().toString())
+			.map(Path::toString)
 			.toArray(String[]::new);
 
 		Map<String, String> options = JavaCore.getOptions();
 		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_21);
 		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
 
-		String[] sourcesRootArray = { library.getLocation().toAbsolutePath().toString() };
+		String[] sourcesRootArray = {library.getLocation().toAbsolutePath().toString()};
 		String[] classpathEntries = library.getClasspath().stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
@@ -78,38 +90,40 @@ public class JdtTypesExtractor implements TypesExtractor {
 		parser.setCompilerOptions(options);
 		parser.setEnvironment(classpathEntries, sourcesRootArray, null, true);
 
+		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
 		// Receive parsed ASTs and forward them to the visitor
-		List<TypeDecl> typeDecls = new ArrayList<>(sourcesToParse.size());
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
+				Path filePath = library.getLocation().relativize(Path.of(sourceFilePath));
 				IProblem[] problems = ast.getProblems();
 				if (problems != null) {
 					// Actual parsing errors are just warnings for us
 					Arrays.stream(problems)
 						.filter(IProblem::isError)
-						.forEach(p -> LOGGER.warn("{} [{}:{}]: {}", p.isError() ? "error" : "warning",
-							sourceFilePath, p.getSourceLineNumber(), p.getMessage()));
+						.forEach(p -> LOGGER.warn("JDT error [{}:{}]: {}", filePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 
-				JdtAPIVisitor visitor = new JdtAPIVisitor(ast, sourceFilePath, typeRefFactory);
+				JdtApiVisitor visitor = new JdtApiVisitor(ast, filePath, sink, factory);
 				ast.accept(visitor);
-				typeDecls.addAll(visitor.getCollectedTypeDecls());
 			}
 		};
 
 		// Start parsing and forwarding ASTs
 		try {
 			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
-			return typeDecls;
+			return new ParsingResult(sink.getTypes(), sink.getModules());
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
-			throw new RoseauException("Failed to parse code from " + library.getLocation(), e);
+			throw new RoseauException("JDT failed to parse code from " + library.getLocation(), e);
 		}
 	}
 
+	private static boolean canExtract(Library library) {
+		return library != null && library.isSources();
+	}
+
 	private static boolean isRegularJavaFile(Path file) {
-		return Files.isRegularFile(file) && file.toString().endsWith(".java") &&
-			!file.endsWith("package-info.java") && !file.endsWith("module-info.java");
+		return Files.isRegularFile(file) && file.toString().endsWith(".java") && !file.endsWith("package-info.java");
 	}
 }

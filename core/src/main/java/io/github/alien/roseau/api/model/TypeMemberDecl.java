@@ -18,7 +18,7 @@ public abstract sealed class TypeMemberDecl extends Symbol
 	protected final ITypeReference type;
 
 	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                         List<Annotation> annotations, SourceLocation location,
+	                         Set<Annotation> annotations, SourceLocation location,
 	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		super(qualifiedName, visibility, modifiers, annotations, location);
 		Preconditions.checkNotNull(containingType);
@@ -43,8 +43,9 @@ public abstract sealed class TypeMemberDecl extends Symbol
 		if (!super.equals(obj)) {
 			return false;
 		}
-		TypeMemberDecl other = (TypeMemberDecl) obj;
-		return Objects.equals(type, other.type) && Objects.equals(containingType, other.containingType);
+		return obj instanceof TypeMemberDecl other
+			&& Objects.equals(type, other.type)
+			&& Objects.equals(containingType, other.containingType);
 	}
 
 	@Override

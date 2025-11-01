@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
@@ -20,20 +21,20 @@ public interface ErasureProvider {
 	 */
 	default String getErasure(ExecutableDecl executable) {
 		Preconditions.checkNotNull(executable);
-		var sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(100);
 		sb.append(executable.getSimpleName());
-		sb.append("(");
+		sb.append('(');
 		for (int i = 0; i < executable.getParameters().size(); i++) {
-			var p = executable.getParameters().get(i);
+			ParameterDecl p = executable.getParameters().get(i);
 			sb.append(getErasedType(executable, p.type()).getQualifiedName());
 			if (p.isVarargs()) {
 				sb.append("[]");
 			}
 			if (i < executable.getParameters().size() - 1) {
-				sb.append(",");
+				sb.append(',');
 			}
 		}
-		sb.append(")");
+		sb.append(')');
 		return sb.toString();
 	}
 

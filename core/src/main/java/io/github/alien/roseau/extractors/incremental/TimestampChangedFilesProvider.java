@@ -44,8 +44,8 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 		try (Stream<Path> files = Files.walk(sources)) {
 			Set<Path> currentFiles = files
 				.filter(TimestampChangedFilesProvider::isRegularJavaFile)
-				.map(Path::toAbsolutePath)
-				.collect(Collectors.toSet());
+				.map(sources::relativize)
+				.collect(Collectors.toUnmodifiableSet());
 
 			if (previousFiles.isEmpty()) {
 				return new ChangedFiles(Set.of(), Set.of(), currentFiles);
@@ -54,8 +54,8 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 			Set<Path> deletedFiles = Sets.difference(previousFiles, currentFiles);
 			Set<Path> createdFiles = Sets.difference(currentFiles, previousFiles);
 			Set<Path> updatedFiles = currentFiles.stream()
-				.filter(f -> previousFiles.contains(f) && f.toFile().lastModified() > timestamp)
-				.collect(Collectors.toSet());
+				.filter(f -> previousFiles.contains(f) && sources.resolve(f).toFile().lastModified() > timestamp)
+				.collect(Collectors.toUnmodifiableSet());
 
 			return new ChangedFiles(updatedFiles, deletedFiles, createdFiles);
 		} catch (IOException e) {
@@ -66,7 +66,6 @@ public class TimestampChangedFilesProvider implements ChangedFilesProvider {
 	private static boolean isRegularJavaFile(Path file) {
 		return Files.isRegularFile(file) &&
 			file.toString().endsWith(".java") &&
-			!file.endsWith("package-info.java") &&
-			!file.endsWith("module-info.java");
+			!file.endsWith("package-info.java");
 	}
 }

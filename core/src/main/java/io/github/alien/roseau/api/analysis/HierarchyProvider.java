@@ -11,10 +11,11 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
-import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,6 +28,8 @@ public interface HierarchyProvider {
 
 	SubtypingResolver subtyping();
 
+	PropertiesProvider properties();
+
 	/**
 	 * Finds a {@link FieldDecl} by simple name, declared (or inherited) by this type.
 	 *
@@ -37,14 +40,13 @@ public interface HierarchyProvider {
 	default Optional<FieldDecl> findField(TypeDecl type, String name) {
 		Preconditions.checkNotNull(type);
 		Preconditions.checkNotNull(name);
-		return getAllFields(type).stream()
-			.filter(f -> Objects.equals(f.getSimpleName(), name))
-			.findFirst();
+		return Optional.ofNullable(getExportedFieldsByName(type).get(name));
 	}
 
 	/**
 	 * Finds a {@link MethodDecl} by erasure, declared (or inherited) by this type.
 	 *
+	 * @param typeDecl the type to search in
 	 * @param erasure the erasure of the method to find
 	 * @return an {@link Optional} indicating whether the matching method was found
 	 * @see ErasureProvider#getErasure(ExecutableDecl)
@@ -52,9 +54,7 @@ public interface HierarchyProvider {
 	default Optional<MethodDecl> findMethod(TypeDecl typeDecl, String erasure) {
 		Preconditions.checkNotNull(typeDecl);
 		Preconditions.checkNotNull(erasure);
-		return getAllMethods(typeDecl).stream()
-			.filter(m -> Objects.equals(erasure().getErasure(m), erasure))
-			.findFirst();
+		return Optional.ofNullable(getExportedMethodsByErasure(typeDecl).get(erasure));
 	}
 
 	/**
@@ -105,13 +105,13 @@ public interface HierarchyProvider {
 	default List<TypeReference<ClassDecl>> getAllSuperClasses(ClassDecl cls) {
 		Preconditions.checkNotNull(cls);
 		if (cls.getSuperClass().getQualifiedName().equals(cls.getQualifiedName())) {
-			return Collections.emptyList();
+			return List.of();
 		}
 		return Stream.concat(
 			Stream.of(cls.getSuperClass()),
 			resolver().resolve(cls.getSuperClass(), ClassDecl.class)
 				.map(this::getAllSuperClasses)
-				.orElseGet(Collections::emptyList)
+				.orElseGet(List::of)
 				.stream()
 		).toList();
 	}
@@ -139,14 +139,21 @@ public interface HierarchyProvider {
 	@SuppressWarnings("unchecked")
 	default List<TypeReference<TypeDecl>> getAllSuperTypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		return Stream.concat(
-				type.getImplementedInterfaces().stream(),
-				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.empty()
-			)
-			.map(ref -> (TypeReference<TypeDecl>) (TypeReference<?>) ref)
-			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
+		return getSuperTypes(type).stream()
 			.flatMap(ref -> Stream.concat(Stream.of(ref), getAllSuperTypes(ref).stream()))
 			.distinct()
+			.toList();
+	}
+
+	default List<TypeReference<TypeDecl>> getSuperTypes(TypeDecl type) {
+		return Stream.concat(
+				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
+				// since there will be a concrete java.lang.Object on which the methods are invoked anyway
+				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT),
+				type.getImplementedInterfaces().stream()
+			)
+			.map(ref -> (TypeReference<TypeDecl>) ref)
+			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
 			.toList();
 	}
 
@@ -161,7 +168,30 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(reference);
 		return resolver().resolve(reference)
 			.map(this::getAllSuperTypes)
-			.orElseGet(Collections::emptyList);
+			.orElseGet(List::of);
+	}
+
+	/**
+	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
+	 * method erasure, returns the most concrete implementation, indexed by erasure.
+	 *
+	 * @param type the base type
+	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
+	 * invoked on this type
+	 */
+	default Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return Stream.concat(
+				type.getDeclaredMethods().stream(),
+				getAllSuperTypes(type).stream()
+					.map(resolver()::resolve)
+					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Set::of).stream()))
+			.filter(m -> properties().isExported(type, m))
+			.collect(Collectors.toMap(
+				erasure()::getErasure,
+				Function.identity(),
+				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
+			));
 	}
 
 	/**
@@ -171,18 +201,8 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type
 	 */
-	default List<MethodDecl> getAllMethods(TypeDecl type) {
-		Preconditions.checkNotNull(type);
-		return Stream.concat(
-			type.getDeclaredMethods().stream(),
-			getAllSuperTypes(type).stream()
-				.map(resolver()::resolve)
-				.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Collections::emptyList).stream())
-		).collect(Collectors.toMap(
-			erasure()::getErasure,
-			Function.identity(),
-			(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
-		)).values().stream().toList();
+	default Set<MethodDecl> getExportedMethods(TypeDecl type) {
+		return Set.copyOf(getExportedMethodsByErasure(type).values());
 	}
 
 	/**
@@ -191,14 +211,36 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return each {@link MethodDecl} that must be implemented on this type
 	 */
-	default List<MethodDecl> getAllMethodsToImplement(TypeDecl type) {
-		return getAllMethods(type).stream().filter(m -> {
+	default Set<MethodDecl> getAllMethodsToImplement(TypeDecl type) {
+		return getExportedMethods(type).stream().filter(m -> {
 			if (resolver().resolve(m.getContainingType()).map(TypeDecl::isInterface).orElse(false)) {
 				return !m.isDefault() && !m.isStatic();
 			}
 
 			return m.isAbstract();
-		}).toList();
+		}).collect(Collectors.toUnmodifiableSet());
+	}
+
+	/**
+	 * Returns all fields that can be accessed on this type, including those declared in its super types. In case of
+	 * shadowing, returns the visible field, indexed by simple name.
+	 *
+	 * @param type the base type
+	 * @return a map from field simple name to each {@link FieldDecl} that can be accessed on this type
+	 */
+	default Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return Stream.concat(
+				type.getDeclaredFields().stream(),
+				getAllSuperTypes(type).stream()
+					.map(resolver()::resolve)
+					.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Set::of).stream()))
+			.filter(f -> properties().isExported(type, f))
+			.collect(Collectors.toMap(
+				FieldDecl::getSimpleName,
+				Function.identity(),
+				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
+			));
 	}
 
 	/**
@@ -208,18 +250,8 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return all {@link FieldDecl} that can be accessed on this type
 	 */
-	default List<FieldDecl> getAllFields(TypeDecl type) {
-		Preconditions.checkNotNull(type);
-		return Stream.concat(
-			type.getDeclaredFields().stream(),
-			getAllSuperTypes(type).stream()
-				.map(resolver()::resolve)
-				.flatMap(t -> t.map(TypeDecl::getDeclaredFields).orElseGet(Collections::emptyList).stream())
-		).collect(Collectors.toMap(
-			FieldDecl::getSimpleName,
-			Function.identity(),
-			(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
-		)).values().stream().toList();
+	default Set<FieldDecl> getExportedFields(TypeDecl type) {
+		return Set.copyOf(getExportedFieldsByName(type).values());
 	}
 
 	/**

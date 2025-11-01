@@ -3,6 +3,7 @@ package io.github.alien.roseau.extractors.spoon;
 import io.github.alien.roseau.RoseauException;
 import spoon.Launcher;
 import spoon.MavenLauncher;
+import spoon.compiler.Environment;
 import spoon.reflect.CtModel;
 import spoon.support.compiler.SpoonProgress;
 
@@ -19,7 +20,7 @@ import java.util.concurrent.TimeoutException;
  * A collection of utilities for parsing and building models using Spoon.
  */
 public final class SpoonUtils {
-	private static final int JAVA_VERSION = 21;
+	static final int JAVA_VERSION = 21;
 
 	private SpoonUtils() {
 
@@ -49,11 +50,11 @@ public final class SpoonUtils {
 	 * @throws RoseauException If there is an error in building the Spoon model
 	 */
 	public static CtModel buildModel(Launcher launcher, Path location, Duration timeout) {
-		long timeoutSeconds = timeout != null ? timeout.getSeconds() : Long.MAX_VALUE;
+		long timeoutSeconds = timeout.getSeconds();
 		CompletableFuture<CtModel> future = CompletableFuture.supplyAsync(launcher::buildModel);
 
 		try {
-			return future.get(timeoutSeconds, TimeUnit.SECONDS);
+			return future.get(timeout.getSeconds(), TimeUnit.SECONDS);
 		} catch (TimeoutException e) {
 			throw new RoseauException("Couldn't build Spoon model for %s in < %ds".formatted(location, timeoutSeconds), e);
 		} catch (ExecutionException e) {
@@ -70,11 +71,11 @@ public final class SpoonUtils {
 	 * @param location  The path to the source code
 	 * @param classpath The classpath used to resolve references
 	 * @return The created Spoon Launcher, either regular or Maven-specific
-	 * @throws IllegalArgumentException if the specified location does not exist
+	 * @throws RoseauException if the specified location does not exist
 	 */
 	public static Launcher launcherFor(Path location, Collection<Path> classpath) {
 		if (!location.toFile().exists()) {
-			throw new IllegalArgumentException(location + " does not exist");
+			throw new RoseauException(location + " does not exist");
 		}
 
 		Launcher launcher = new Launcher();
@@ -97,21 +98,7 @@ public final class SpoonUtils {
 			launcher = mavenLauncher;
 		}
 
-		// Set log level; messages are redirected to log4j with our own independent level
-		launcher.getEnvironment().setLevel("ERROR");
-		// Ignore missing types/classpath related errors
-		//launcher.getEnvironment().setNoClasspath(true);
-		// Proceed even if we find the same type twice; affects the precision of the result.
-		// Caution: this will make the not-so-safe generics typecasts break if two types
-		// of different kinds (e.g. class vs interface) exist in our sources
-		// launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
-		launcher.getEnvironment().setComplianceLevel(JAVA_VERSION);
-		// Ignore files with syntax/JLS violations and proceed
-		launcher.getEnvironment().setIgnoreSyntaxErrors(true);
-		// Ignore comments
-		launcher.getEnvironment().setCommentEnabled(false);
-		// Set Java version
-		// Note: even when using the MavenLauncher, it's sometimes not properly inferred, better be safe
+		setupEnvironment(launcher.getEnvironment());
 
 		// Interruptible launcher: this is dirty.
 		// Spoon's compiler does two lengthy things: compile units with JDTs,
@@ -131,5 +118,21 @@ public final class SpoonUtils {
 		});
 
 		return launcher;
+	}
+
+	public static void setupEnvironment(Environment environment) {
+		// Set log level; messages are redirected to log4j with our own independent level
+		environment.setLevel("ERROR");
+		// Ignore missing types/classpath related errors
+		//launcher.getEnvironment().setNoClasspath(true);
+		// Proceed even if we find the same type twice; affects the precision of the result.
+		// Caution: this will make the not-so-safe generics typecasts break if two types
+		// of different kinds (e.g. class vs interface) exist in our sources
+		// launcher.getEnvironment().setIgnoreDuplicateDeclarations(true);
+		environment.setComplianceLevel(JAVA_VERSION);
+		// Ignore files with syntax/JLS violations and proceed
+		environment.setIgnoreSyntaxErrors(true);
+		// Ignore comments
+		environment.setCommentEnabled(false);
 	}
 }

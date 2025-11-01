@@ -1,10 +1,12 @@
 package io.github.alien.roseau.api.model.reference;
 
+import com.google.common.cache.Cache;
+import com.google.common.cache.CacheBuilder;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.TypeDecl;
 
 import java.util.List;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -15,10 +17,18 @@ import java.util.stream.Collectors;
  * given name within the factory.
  */
 public class CachingTypeReferenceFactory implements TypeReferenceFactory {
-	private final Map<String, ITypeReference> referencesCache = new ConcurrentHashMap<>(100);
+	private final Cache<String, ITypeReference> referencesCache =
+		CacheBuilder.newBuilder()
+			.maximumSize(5_000L)
+			.build();
 
+	@SuppressWarnings("unchecked")
 	private <U extends ITypeReference> U cache(String key, Supplier<U> supplier) {
-		return (U) referencesCache.computeIfAbsent(key, k -> supplier.get());
+		try {
+			return (U) referencesCache.get(key, supplier::get);
+		} catch (ExecutionException e) {
+			throw new RoseauException("Failed to create type reference for key: " + key, e);
+		}
 	}
 
 	@Override

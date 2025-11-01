@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.visit;
 
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
@@ -12,6 +11,7 @@ import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordComponentDecl;
@@ -26,20 +26,16 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
 /**
- * A default abstract implementation of {@link APIAlgebra} using {@link Visit} as the lambda type that produces no
+ * A default abstract implementation of {@link ApiAlgebra} using {@link Visit} as the lambda type that produces no
  * value.
  */
-public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
+public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
+	@Override
 	public Visit api(API it) {
 		return () -> $(it.getLibraryTypes()).visit();
 	}
 
-	/**
-	 * Visits the given {@link LibraryTypes}.
-	 *
-	 * @param it the {@link LibraryTypes} to visit
-	 * @return a lambda {@link Visit} that must be invoked to run the actual visit
-	 */
+	@Override
 	public Visit libraryTypes(LibraryTypes it) {
 		return () -> it.getAllTypes().forEach(t -> $(t).visit());
 	}
@@ -49,13 +45,17 @@ public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
 		return () -> {
 			typeDecl(it).visit();
 			$(it.getSuperClass()).visit();
+			it.getPermittedTypes().forEach(t -> $(t).visit());
 			it.getDeclaredConstructors().forEach(cons -> $(cons).visit());
 		};
 	}
 
 	@Override
 	public Visit interfaceDecl(InterfaceDecl it) {
-		return typeDecl(it);
+		return () -> {
+			typeDecl(it).visit();
+			it.getPermittedTypes().forEach(t -> $(t).visit());
+		};
 	}
 
 	@Override
