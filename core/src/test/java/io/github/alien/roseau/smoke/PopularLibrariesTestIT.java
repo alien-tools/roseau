@@ -32,6 +32,7 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -114,7 +115,8 @@ class PopularLibrariesTestIT {
 		);
 	}
 
-	record Lib(Path binary, Path sources, Set<Path> classpath) {}
+	record Lib(Path binary, Path sources, List<Path> classpath) {}
+
 	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
 
 	@ParameterizedTest(name = "{0}")

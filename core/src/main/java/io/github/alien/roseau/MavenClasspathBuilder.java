@@ -35,7 +35,7 @@ public class MavenClasspathBuilder {
 	 * @param pom the {@code pom.xml} file
 	 * @return the retrieved classpath or an empty list if something went wrong
 	 */
-	public Set<Path> buildClasspath(Path pom) {
+	public List<Path> buildClasspath(Path pom) {
 		Preconditions.checkNotNull(pom);
 
 		if (!Files.isRegularFile(pom)) {
@@ -58,7 +58,7 @@ public class MavenClasspathBuilder {
 					LOGGER.debug("Extracted classpath from {}", pom);
 					return Arrays.stream(cpString.split(File.pathSeparator))
 						.map(Path::of)
-						.collect(Collectors.toUnmodifiableSet());
+						.toList();
 				} else {
 					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
 				}
@@ -76,7 +76,7 @@ public class MavenClasspathBuilder {
 			}
 		}
 
-		return Set.of();
+		return List.of();
 	}
 
 	private static InvocationRequest makeClasspathRequest(Path pom, Path classpathFile) {

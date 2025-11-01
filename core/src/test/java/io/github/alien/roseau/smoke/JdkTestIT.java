@@ -43,7 +43,7 @@ class JdkTestIT {
 			fail("No sources for " + jmod);
 
 		var sw = Stopwatch.createUnstarted();
-		var classpath = jmods().filter(mod -> !mod.equals(jmod)).collect(Collectors.toSet());
+		var classpath = jmods().filter(mod -> !mod.equals(jmod)).toList();
 		var srcLibrary = Library.builder()
 			.location(src)
 			.classpath(classpath)
@@ -76,7 +76,7 @@ class JdkTestIT {
 			fail("No sources for " + jmod);
 
 		var sw = Stopwatch.createUnstarted();
-		var classpath = jmods().filter(mod -> !mod.equals(jmod)).collect(Collectors.toSet());
+		var classpath = jmods().filter(mod -> !mod.equals(jmod)).toList();
 		var srcLibrary = Library.builder()
 			.location(src)
 			.classpath(classpath)
@@ -103,7 +103,7 @@ class JdkTestIT {
 	@Timeout(value = 1, unit = TimeUnit.MINUTES)
 	void jdk21Asm(Path jmod) {
 		var sw = Stopwatch.createUnstarted();
-		var classpath = jmods().filter(mod -> !mod.equals(jmod)).collect(Collectors.toSet());
+		var classpath = jmods().filter(mod -> !mod.equals(jmod)).toList();
 		var jarLibrary = Library.builder()
 			.location(jmod)
 			.classpath(classpath)

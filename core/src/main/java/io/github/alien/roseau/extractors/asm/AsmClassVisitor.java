@@ -42,7 +42,7 @@ import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toSet;
 
-final class AsmClassVisitor extends ClassVisitor {
+public final class AsmClassVisitor extends ClassVisitor {
 	private final ExtractorSink sink;
 	private final ApiFactory factory;
 	private String className;
@@ -63,7 +63,7 @@ final class AsmClassVisitor extends ClassVisitor {
 	private final Set<TypeReference<TypeDecl>> permittedTypes = new LinkedHashSet<>();
 	private final Set<AsmAnnotationVisitor.Data> annotations = new LinkedHashSet<>();
 
-	AsmClassVisitor(int api, ExtractorSink sink, ApiFactory factory) {
+	public AsmClassVisitor(int api, ExtractorSink sink, ApiFactory factory) {
 		super(api);
 		this.sink = sink;
 		this.factory = factory;

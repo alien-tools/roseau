@@ -28,7 +28,7 @@ class RoseauOptionsTest {
 
 	@Test
 	void merge_overrides_existing() {
-		var cpBase = new RoseauOptions.Classpath(Path.of("base-pom.xml"), Set.of(Path.of("base.jar")));
+		var cpBase = new RoseauOptions.Classpath(Path.of("base-pom.xml"), List.of(Path.of("base.jar")));
 		var exBase = new RoseauOptions.Exclude(
 			List.of("base.*"), List.of(new RoseauOptions.AnnotationExclusion("BaseAnn", Map.of("baseK", "baseV"))));
 		var commonBase = new RoseauOptions.Common(ExtractorType.ASM, cpBase, exBase);
@@ -37,7 +37,7 @@ class RoseauOptionsTest {
 		var base = new RoseauOptions(commonBase, libBase, libBase, Path.of("base-ignore.csv"),
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
-		var cpOther = new RoseauOptions.Classpath(Path.of("other-pom.xml"), Set.of(Path.of("other.jar")));
+		var cpOther = new RoseauOptions.Classpath(Path.of("other-pom.xml"), List.of(Path.of("other.jar")));
 		var exOther = new RoseauOptions.Exclude(
 			List.of("other.*"), List.of(new RoseauOptions.AnnotationExclusion("OtherAnn", Map.of("otherK", "otherV"))));
 		var commonOther = new RoseauOptions.Common(ExtractorType.JDT, cpOther, exOther);
@@ -71,7 +71,7 @@ class RoseauOptionsTest {
 
 	@Test
 	void merge_does_not_override_with_null_or_empty() {
-		var cpBase = new RoseauOptions.Classpath(Path.of("base-pom.xml"), Set.of(Path.of("base.jar")));
+		var cpBase = new RoseauOptions.Classpath(Path.of("base-pom.xml"), List.of(Path.of("base.jar")));
 		var exBase = new RoseauOptions.Exclude(
 			List.of("base.*"), List.of(new RoseauOptions.AnnotationExclusion("BaseAnn", Map.of("baseK", "baseV"))));
 		var commonBase = new RoseauOptions.Common(ExtractorType.ASM, cpBase, exBase);
@@ -80,7 +80,7 @@ class RoseauOptionsTest {
 		var base = new RoseauOptions(commonBase, libBase, libBase, Path.of("base-ignore.csv"),
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
-		var cpOther = new RoseauOptions.Classpath(null, Set.of());
+		var cpOther = new RoseauOptions.Classpath(null, List.of());
 		var exOther = new RoseauOptions.Exclude(List.of(), List.of());
 		var commonOther = new RoseauOptions.Common(null, cpOther, exOther);
 		var libOther = new RoseauOptions.Library(null, null, cpOther, exOther, null);
@@ -92,17 +92,17 @@ class RoseauOptionsTest {
 
 	@Test
 	void merge_with_common_overrides_when_not_set() {
-		var cpCommon = new RoseauOptions.Classpath(Path.of("common-pom.xml"), Set.of(Path.of("common.jar")));
+		var cpCommon = new RoseauOptions.Classpath(Path.of("common-pom.xml"), List.of(Path.of("common.jar")));
 		var exCommon = new RoseauOptions.Exclude(
 			List.of("common.*"), List.of(new RoseauOptions.AnnotationExclusion("CommonAnn", Map.of("commonK", "commonV"))));
 		var common = new RoseauOptions.Common(ExtractorType.JDT, cpCommon, exCommon);
 
-		var cpSet = new RoseauOptions.Classpath(Path.of("set-pom.xml"), Set.of(Path.of("set.jar")));
+		var cpSet = new RoseauOptions.Classpath(Path.of("set-pom.xml"), List.of(Path.of("set.jar")));
 		var exSet = new RoseauOptions.Exclude(
 			List.of("set.*"), List.of(new RoseauOptions.AnnotationExclusion("SetAnn", Map.of("setK", "setV"))));
 		var set = new RoseauOptions.Library(Path.of("set"), ExtractorType.ASM, cpSet, exSet, Path.of("a.json"));
 
-		var cpUnset = new RoseauOptions.Classpath(null, Set.of());
+		var cpUnset = new RoseauOptions.Classpath(null, List.of());
 		var exUnset = new RoseauOptions.Exclude(List.of(), List.of());
 		var unset = new RoseauOptions.Library(Path.of("unset"), null, cpUnset, exUnset, Path.of("a.json"));
 

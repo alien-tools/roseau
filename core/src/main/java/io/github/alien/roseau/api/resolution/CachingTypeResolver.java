@@ -36,7 +36,7 @@ public class CachingTypeResolver implements TypeResolver {
 	// Cannot store null in typeCache, so this serves as a marker/sentinel value
 	// to keep track of whether we've already attempted resolution or not
 	private record ResolvedType(TypeDecl typeDecl) {
-		public static final ResolvedType UNRESOLVED = new ResolvedType(null);
+		private static final ResolvedType UNRESOLVED = new ResolvedType(null);
 	}
 
 	/**

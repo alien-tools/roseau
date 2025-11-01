@@ -103,7 +103,7 @@ public class SpoonApiFactory {
 	}
 
 	// Avoid having Spoon throwing at us due to "invalid" classpath
-	private List<Path> sanitizeClasspath(Set<Path> classpath) {
+	private List<Path> sanitizeClasspath(List<Path> classpath) {
 		return classpath.stream()
 			.map(Path::toFile)
 			.filter(File::exists)

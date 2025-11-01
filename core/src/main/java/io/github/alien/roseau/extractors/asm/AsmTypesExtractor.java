@@ -74,7 +74,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 		}
 	}
 
-	private void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
+	public void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
 		try (InputStream is = jar.getInputStream(entry)) {
 			ClassReader reader = new ClassReader(is);
 			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
