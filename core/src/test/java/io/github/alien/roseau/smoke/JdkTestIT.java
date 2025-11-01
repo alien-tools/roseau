@@ -13,7 +13,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -30,39 +29,6 @@ class JdkTestIT {
 		} catch (IOException e) {
 			throw new RuntimeException("Couldn't list jmods");
 		}
-	}
-
-	@ParameterizedTest(name = "{0}")
-	@MethodSource("jmods")
-	@Timeout(value = 1, unit = TimeUnit.MINUTES)
-	void jdk21Spoon(Path jmod) {
-		var moduleName = jmod.getFileName().toString().replace(".jmod", "");
-		var src = Path.of(String.format("%s/src/%s/share/classes", JDK_SRC_PATH, moduleName));
-
-		if (!src.toFile().exists())
-			fail("No sources for " + jmod);
-
-		var sw = Stopwatch.createUnstarted();
-		var classpath = jmods().filter(mod -> !mod.equals(jmod)).toList();
-		var srcLibrary = Library.builder()
-			.location(src)
-			.classpath(classpath)
-			.extractorType(ExtractorType.SPOON)
-			.build();
-
-		sw.reset().start();
-		var api = Roseau.buildAPI(srcLibrary);
-		var apiTime = sw.elapsed().toMillis();
-		System.out.printf("[%s] API took %dms (%d types, %d exported)%n", jmod.getFileName(), apiTime,
-			api.getLibraryTypes().getAllTypes().size(), api.getExportedTypes().size());
-
-		sw.reset().start();
-		var report = Roseau.diff(api, api);
-		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime,
-			report.getAllBreakingChanges().size());
-
-		assertThat(report.getAllBreakingChanges()).isEmpty();
 	}
 
 	@ParameterizedTest(name = "{0}")

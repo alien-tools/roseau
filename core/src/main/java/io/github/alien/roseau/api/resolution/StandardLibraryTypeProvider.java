@@ -103,7 +103,10 @@ public class StandardLibraryTypeProvider implements TypeProvider, AutoCloseable 
 			}
 
 			if (sink.getTypes().size() == 1) {
-				return Optional.of(type.cast(sink.getTypes().iterator().next()));
+				TypeDecl foundType = sink.getTypes().iterator().next();
+				if (type.isInstance(foundType)) {
+					return Optional.of(type.cast(foundType));
+				}
 			}
 		}
 

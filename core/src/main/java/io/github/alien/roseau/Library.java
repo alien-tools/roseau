@@ -13,7 +13,6 @@ import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Stream;
 import java.util.zip.ZipFile;
@@ -308,8 +307,8 @@ public final class Library {
 				throw new RoseauException("ASM extractor cannot be used on source directories and module-info.java");
 			}
 
-			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(location)) {
-				throw new RoseauException("Source extractors cannot be used on JARs");
+			if (extractorType == ExtractorType.JDT && isJar(location)) {
+				throw new RoseauException("JDT extractor cannot be used on JARs");
 			}
 
 			return new Library(location, classpath, pom, extractorType, exclusions);

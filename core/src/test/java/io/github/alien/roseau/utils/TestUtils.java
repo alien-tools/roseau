@@ -34,9 +34,6 @@ import japicmp.model.JApiMethod;
 import japicmp.model.JApiSuperclass;
 import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
-import spoon.Launcher;
-import spoon.reflect.CtModel;
-import spoon.support.compiler.VirtualFile;
 
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
@@ -221,18 +218,6 @@ public class TestUtils {
 		return (AnnotationDecl) assertType(api, name, "annotation");
 	}
 
-	public static CtModel buildModel(Map<String, String> sourcesMap) {
-		Launcher launcher = new Launcher();
-
-		sourcesMap.forEach((typeName, sources) -> {
-			launcher.addInputResource(new VirtualFile(sources, typeName + ".java"));
-		});
-		launcher.getEnvironment().setComplianceLevel(17);
-		launcher.getEnvironment().setLevel("TRACE");
-
-		return launcher.buildModel();
-	}
-
 	public static Map<String, String> buildSourcesMap(String sources) {
 		Map<String, String> sourcesMap = new HashMap<>();
 
@@ -295,22 +280,6 @@ public class TestUtils {
 		}
 
 		return sourcesMap;
-	}
-
-	public static API buildSpoonAPI(String sources) {
-		try {
-			Map<String, String> sourcesMap = buildSourcesMap(sources);
-			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.builder()
-				.location(sourcesPath)
-				.extractorType(ExtractorType.SPOON)
-				.build();
-			API api = Roseau.buildAPI(library);
-			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	public static API buildJdtAPI(String sources, Exclude exclusions) {

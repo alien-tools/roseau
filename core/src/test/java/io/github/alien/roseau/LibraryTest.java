@@ -122,22 +122,6 @@ class LibraryTest {
 	}
 
 	@Test
-	void builder_with_spoon_extractor(@TempDir Path tempDir) throws IOException {
-		var dir = tempDir.resolve("src");
-		Files.createDirectories(dir);
-
-		var lib = Library.builder()
-			.location(tempDir)
-			.extractorType(ExtractorType.SPOON)
-			.build();
-
-		assertThat(lib.getLocation()).isEqualTo(tempDir);
-		assertThat(lib.isSources()).isTrue();
-		assertThat(lib.isJar()).isFalse();
-		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.SPOON);
-	}
-
-	@Test
 	void builder_invalid_location_throws() {
 		var nonExisting = Path.of("unknown/path");
 		assertThatThrownBy(() -> Library.builder().location(nonExisting).build())
@@ -179,10 +163,6 @@ class LibraryTest {
 
 		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.JDT).build())
 			.isInstanceOf(RoseauException.class)
-			.hasMessageContaining("Source extractors cannot be used on JARs");
-
-		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.SPOON).build())
-			.isInstanceOf(RoseauException.class)
-			.hasMessageContaining("Source extractors cannot be used on JARs");
+			.hasMessageContaining("JDT extractor cannot be used on JARs");
 	}
 }

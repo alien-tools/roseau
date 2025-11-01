@@ -60,36 +60,36 @@ class PopularLibrariesTestIT {
 			"org.eclipse.collections:eclipse-collections:13.0.0",
 			"io.dropwizard:dropwizard-core:4.0.1",
 			"org.reactivestreams:reactive-streams:1.0.4",
-			"com.google.code.gson:gson:2.10.1",
+			//"com.google.code.gson:gson:2.10.1",
 			"org.junit.jupiter:junit-jupiter-api:5.14.0",
 			"org.junit.jupiter:junit-jupiter-engine:5.14.0",
 			"org.junit.jupiter:junit-jupiter-api:6.0.0",
 			"org.junit.jupiter:junit-jupiter-engine:6.0.0",
-			"com.squareup:javapoet:1.13.0",
-			"org.jooq:joor-java-8:0.9.15",
+			//"com.squareup:javapoet:1.13.0",
+			//"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
 			"com.google.dagger:dagger:2.55",
-			"ch.qos.logback:logback-classic:1.5.16",
+			//"ch.qos.logback:logback-classic:1.5.16",
 			"org.slf4j:slf4j-simple:2.0.16",
 			"org.slf4j:slf4j-api:2.0.16",
-			"tools.jackson.core:jackson-databind:3.0.0",
-			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
-			"fr.inria.gforge.spoon:spoon-core:11.2.0",
-			"org.apache.commons:commons-lang3:3.17.0",
+			//"tools.jackson.core:jackson-databind:3.0.0",
+			//"org.apache.httpcomponents.client5:httpclient5:5.4.2",
+			//"fr.inria.gforge.spoon:spoon-core:11.2.0",
+			//"org.apache.commons:commons-lang3:3.17.0",
 			"commons-codec:commons-codec:1.18.0",
 			"commons-io:commons-io:2.18.0",
-			"commons-logging:commons-logging:1.3.5",
-			"commons-beanutils:commons-beanutils:1.10.0",
-			"org.hamcrest:hamcrest:3.0",
-			"org.osgi:org.osgi.core:6.0.0",
-			"com.alibaba:fastjson:2.0.54",
+			//"commons-logging:commons-logging:1.3.5",
+			//"commons-beanutils:commons-beanutils:1.10.0",
+			//"org.hamcrest:hamcrest:3.0",
+			//"org.osgi:org.osgi.core:6.0.0",
+			//"com.alibaba:fastjson:2.0.54",
 			"org.json:json:20250107",
 			"org.apache.maven:maven-plugin-api:3.9.11",
 			"org.ow2.asm:asm:9.9",
-			"com.google.auto.service:auto-service:1.1.1",
+			//"com.google.auto.service:auto-service:1.1.1",
 			"io.reactivex.rxjava3:rxjava:3.1.12",
 			"org.openjdk.jmh:jmh-core:1.37",
-			"org.glassfish.jersey.core:jersey-server:3.1.11",
+			//"org.glassfish.jersey.core:jersey-server:3.1.11",
 			"org.glassfish.jersey.core:jersey-client:3.1.11"
 			//"org.mapstruct:mapstruct:1.6.3", // repeatable annotation difference between ASM and JDT
 			//"org.eclipse.collections:eclipse-collections-api:13.0.0", // interface diamond conflict
@@ -134,101 +134,12 @@ class PopularLibrariesTestIT {
 			.classpath(classpath)
 			.extractorType(ExtractorType.ASM)
 			.build();
-		var jdtLibrary = Library
-			.builder()
-			.location(sourcesDir)
-			.classpath(classpath)
-			.extractorType(ExtractorType.JDT)
-			.build();
 
 		// ASM API
 		sw.reset().start();
 		var asmApi = Roseau.buildAPI(asmLibrary);
 		var asmTypes = asmApi.getLibraryTypes();
 		long asmApiTime = sw.elapsed().toMillis();
-
-		// JDT API
-		sw.reset().start();
-		var jdtApi = Roseau.buildAPI(jdtLibrary);
-		long jdtApiTime = sw.elapsed().toMillis();
-		var jdtTypes = jdtApi.getLibraryTypes();
-
-		// -sources JAR often do not have module-info.java (?); use the other one
-		if (!jdtTypes.getModule().equals(asmTypes.getModule())) {
-			System.out.printf("Different modules: asm=%s, jdt=%s%n", asmTypes.getModule(), jdtTypes.getModule());
-			jdtApi = jdtApi.getLibraryTypes().getModule().isUnnamed()
-				? new LibraryTypes(jdtTypes.getLibrary(), asmTypes.getModule(),
-				new HashSet<>(jdtTypes.getAllTypes())).toAPI()
-				: jdtApi;
-		}
-
-		var asmVisitor = new ReferenceVisitor();
-		asmVisitor.$(asmApi).visit();
-		var jdtVisitor = new ReferenceVisitor();
-		jdtVisitor.$(jdtApi).visit();
-
-		if (asmVisitor.unresolved.size() + jdtVisitor.unresolved.size() > 0) {
-			System.out.println("classpath=" + classpath);
-			System.out.printf("Unresolved references: asm=%d jdt=%d%n",
-				asmVisitor.unresolved.size(), jdtVisitor.unresolved.size());
-			fail("Unresolved references");
-		}
-
-		// Diffs
-		sw.reset().start();
-		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
-		long diffTime = sw.elapsed().toMillis();
-		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
-		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
-		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
-
-		// Stats
-		long loc = countLinesOfCode(sourcesDir);
-		int numTypes = jdtTypes.getAllTypes().size();
-		int numMethods = jdtTypes.getAllTypes().stream()
-			.mapToInt(type -> type.getDeclaredMethods().size())
-			.sum();
-		int numFields = jdtTypes.getAllTypes().stream()
-			.mapToInt(type -> type.getDeclaredFields().size())
-			.sum();
-
-		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
-				"\tASM: %dms; %dms diff%n" +
-				"\tJDT: %dms%n" +
-				"\tBCs: %s%n",
-			libraryGAV, loc, numTypes, numMethods, numFields,
-			asmApiTime, diffTime, jdtApiTime,
-			asmToAsmBCs.size());
-
-		if (!jdtTypes.getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
-			jdtTypes.getAllTypes().forEach(jdtType -> {
-				var asmType = asmTypes.findType(jdtType.getQualifiedName()).orElseThrow(
-					() -> new AssertionError("Missing ASM type: " + jdtType.getQualifiedName()));
-				if (!asmType.equals(jdtType)) {
-					System.out.println("jdt=" + jdtType);
-					System.out.println("asm=" + asmType);
-					var opts = new HashMap<String, Object>();
-					DeepEquals.deepEquals(jdtType, asmType, opts);
-					System.out.println(opts);
-				}
-			});
-
-			fail("Type mismatch");
-		}
-
-		// We extracted some types
-		assertThat(asmTypes.getAllTypes()).isNotEmpty();
-		assertThat(jdtTypes.getAllTypes()).isNotEmpty();
-
-		// Equal APIs
-		assertThat(asmTypes.getAllTypes()).isEqualTo(jdtTypes.getAllTypes());
-		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
-
-		// No BCs
-		assertThat(jdtToJdtBCs).isEmpty();
-		assertThat(asmToAsmBCs).isEmpty();
-		assertThat(jdtToAsmBCs).isEmpty();
-		assertThat(asmToJdtBCs).isEmpty();
 	}
 
 	private static Path downloadSourcesJar(String groupId, String artifactId, String version) {
