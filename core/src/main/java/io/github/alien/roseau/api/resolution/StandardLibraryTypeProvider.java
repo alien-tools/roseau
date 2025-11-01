@@ -85,7 +85,7 @@ public class StandardLibraryTypeProvider implements TypeProvider, AutoCloseable 
 
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
-		String entryName = CLASSES_PREFIX + "/" + nameToEntry(qualifiedName);
+		String entryName = CLASSES_PREFIX + "/" + nameToEntry(qualifiedName); // FIXME: Windows?
 		Path jmodPath = entryToJmod.get(entryName);
 
 		if (jmodPath != null) {

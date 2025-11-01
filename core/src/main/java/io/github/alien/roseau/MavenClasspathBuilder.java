@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Utility class to automatically infer the classpath of a Maven library. This implementation attempts to retrieve the
@@ -55,10 +53,13 @@ public class MavenClasspathBuilder {
 
 				if (result.getExitCode() == 0 && Files.isRegularFile(classpathFile)) {
 					String cpString = Files.readString(classpathFile);
-					LOGGER.debug("Extracted classpath from {}", pom);
-					return Arrays.stream(cpString.split(File.pathSeparator))
+					List<Path> cp = Arrays.stream(cpString.split(File.pathSeparator))
+						.filter(s -> !s.isBlank())
 						.map(Path::of)
+						.filter(Files::isRegularFile)
 						.toList();
+					LOGGER.debug("Extracted classpath from {}: {} entries", pom, cp.size());
+					return cp;
 				} else {
 					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
 				}
