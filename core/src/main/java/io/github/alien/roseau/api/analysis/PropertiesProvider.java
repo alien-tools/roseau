@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
@@ -13,11 +12,14 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface PropertiesProvider {
 	// Dependencies
 	TypeResolver resolver();
+
 	SubtypingResolver subtyping();
+
 	TypeParameterResolver typeParameter();
 
 	default boolean isExported(Symbol symbol) {
@@ -153,6 +155,6 @@ public interface PropertiesProvider {
 		return executable.getThrownExceptions().stream()
 			.map(exc -> typeParameter().resolveBound(executable, exc))
 			.filter(exc -> subtyping().isCheckedException(exc))
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 }

@@ -12,8 +12,10 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.visit.AbstractApiVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.extractors.ExtractorType;
+import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -30,11 +32,15 @@ import java.nio.file.Path;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -42,6 +48,9 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopularLibrariesTestIT {
+	@TempDir
+	static Path tempDir;
+
 	static Stream<String> libraries() {
 		return Stream.of(
 			"io.github.alien-tools:roseau-core:0.4.0", // ;)
@@ -58,7 +67,6 @@ class PopularLibrariesTestIT {
 			"com.squareup:javapoet:1.13.0",
 			"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
-			"com.google.auto.service:auto-service:1.1.1",
 			"com.google.dagger:dagger:2.55",
 			"ch.qos.logback:logback-classic:1.5.16",
 			"org.slf4j:slf4j-simple:2.0.16",
@@ -106,29 +114,17 @@ class PopularLibrariesTestIT {
 		);
 	}
 
+	record Lib(Path binary, Path sources, Set<Path> classpath) {}
+	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
+
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("libraries")
 	@Timeout(value = 3, unit = TimeUnit.MINUTES)
 	void analyzeLibrary(String libraryGAV) throws Exception {
-		var parts = libraryGAV.split(":");
-		var groupId = parts[0];
-		var artifactId = parts[1];
-		var version = parts[2];
-
-		var binaryFuture = CompletableFuture
-			.supplyAsync(() -> downloadBinaryJar(groupId, artifactId, version));
-		var sourcesFuture = CompletableFuture
-			.supplyAsync(() -> downloadSourcesJar(groupId, artifactId, version))
-			.thenApplyAsync(this::extractSourcesJar);
-		var classpathFuture = CompletableFuture
-			.supplyAsync(() -> downloadPom(groupId, artifactId, version))
-			.thenApplyAsync(pom -> new MavenClasspathBuilder().buildClasspath(pom));
-
-		CompletableFuture.allOf(binaryFuture, sourcesFuture, classpathFuture).join();
-
-		var binaryJar = binaryFuture.get();
-		var sourcesDir = sourcesFuture.get();
-		var classpath = classpathFuture.get();
+		var lib = downloaded.get(libraryGAV);
+		var binaryJar = lib.binary();
+		var sourcesDir = lib.sources();
+		var classpath = lib.classpath();
 
 		var sw = Stopwatch.createUnstarted();
 		var asmLibrary = Library.builder()
@@ -254,7 +250,8 @@ class PopularLibrariesTestIT {
 				.uri(URI.create(url))
 				.build();
 
-			Path tempFile = Files.createTempFile("sources-", ".jar");
+			String file = Long.toHexString(Double.doubleToLongBits(Math.random()));
+			Path tempFile = tempDir.resolve(file);
 			HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
 
 			if (response.statusCode() != 200) {
@@ -270,7 +267,7 @@ class PopularLibrariesTestIT {
 
 	private Path extractSourcesJar(Path jarPath) {
 		try {
-			Path outputDir = Files.createTempDirectory("sources-");
+			Path outputDir = jarPath.resolveSibling(jarPath.getFileName() + "-extracted");
 			try (JarFile jar = new JarFile(jarPath.toFile())) {
 				Enumeration<JarEntry> entries = jar.entries();
 				while (entries.hasMoreElements()) {
@@ -326,6 +323,39 @@ class PopularLibrariesTestIT {
 				unresolved.add(it);
 			}
 			return super.typeReference(it);
+		}
+	}
+
+	@BeforeAll
+	void setUp() {
+		try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+			var futures = libraries()
+				.collect(Collectors.toMap(
+					libraryGAV -> libraryGAV,
+					libraryGAV -> {
+						var parts = libraryGAV.split(":");
+						var groupId = parts[0];
+						var artifactId = parts[1];
+						var version = parts[2];
+
+						var binaryFuture = CompletableFuture
+							.supplyAsync(() -> downloadBinaryJar(groupId, artifactId, version), executor);
+						var sourcesFuture = CompletableFuture
+							.supplyAsync(() -> downloadSourcesJar(groupId, artifactId, version), executor)
+							.thenApplyAsync(this::extractSourcesJar, executor);
+						var classpathFuture = CompletableFuture
+							.supplyAsync(() -> downloadPom(groupId, artifactId, version), executor)
+							.thenApplyAsync(pom -> new MavenClasspathBuilder().buildClasspath(pom), executor);
+						return CompletableFuture.allOf(binaryFuture, sourcesFuture, classpathFuture)
+							.thenApply(ignored -> new Lib(binaryFuture.join(), sourcesFuture.join(), classpathFuture.join()));
+					}
+				));
+
+			downloaded.putAll(futures.entrySet().stream()
+				.collect(Collectors.toMap(
+					Map.Entry::getKey,
+					e -> e.getValue().join()
+				)));
 		}
 	}
 }

@@ -96,9 +96,8 @@ public class API extends CachingApiAnalyzer {
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
-		return getExportedTypes().stream()
-			.filter(type -> type.getQualifiedName().equals(qualifiedName))
-			.findFirst();
+		return libraryTypes.findType(qualifiedName)
+			.filter(this::isExported);
 	}
 
 	@Override

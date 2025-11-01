@@ -1,13 +1,13 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A record declaration is a special {@link ClassDecl} within an {@link LibraryTypes}.
@@ -40,7 +40,7 @@ public final class RecordDecl extends ClassDecl {
 
 	@Override
 	public Set<FieldDecl> getDeclaredFields() {
-		return super.getDeclaredFields().stream().filter(FieldDecl::isStatic).collect(ImmutableSet.toImmutableSet());
+		return super.getDeclaredFields().stream().filter(FieldDecl::isStatic).collect(Collectors.toUnmodifiableSet());
 	}
 
 	@Override

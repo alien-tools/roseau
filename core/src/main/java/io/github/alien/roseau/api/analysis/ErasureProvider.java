@@ -21,7 +21,7 @@ public interface ErasureProvider {
 	 */
 	default String getErasure(ExecutableDecl executable) {
 		Preconditions.checkNotNull(executable);
-		StringBuilder sb = new StringBuilder();
+		StringBuilder sb = new StringBuilder(100);
 		sb.append(executable.getSimpleName());
 		sb.append('(');
 		for (int i = 0; i < executable.getParameters().size(); i++) {

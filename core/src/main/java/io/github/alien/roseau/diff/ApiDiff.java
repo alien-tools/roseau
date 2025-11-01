@@ -22,6 +22,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -81,25 +82,31 @@ public class ApiDiff {
 	}
 
 	private void diffFields(TypeDecl t1, TypeDecl t2) {
-		v1.getExportedFields(t1).forEach(f1 ->
-			v2.findField(t2, f1.getSimpleName()).ifPresentOrElse(
+		Map<String, FieldDecl> fields2 = v2.getExportedFieldsByName(t2);
+		v1.getExportedFieldsByName(t1).forEach((name, f1) -> {
+			FieldDecl f2 = fields2.get(name);
+			if (f2 != null) {
 				// There is a matching field
-				f2 -> diffField(t1, f1, f2),
+				diffField(t1, f1, f2);
+			} else {
 				// The field has been removed
-				() -> memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1)
-			)
-		);
+				memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1);
+			}
+		});
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
-		v1.getExportedMethods(t1).forEach(m1 ->
-			v2.findMethod(t2, v2.getErasure(m1)).ifPresentOrElse(
+		Map<String, MethodDecl> methods2 = v2.getExportedMethodsByErasure(t2);
+		v1.getExportedMethodsByErasure(t1).forEach((erasure, m1) -> {
+			MethodDecl m2 = methods2.get(erasure);
+			if (m2 != null) {
 				// There is a matching method
-				m2 -> diffMethod(t1, t2, m1, m2),
+				diffMethod(t1, t2, m1, m2);
+			} else {
 				// The method has been removed
-				() -> memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1)
-			)
-		);
+				memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1);
+			}
+		});
 	}
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {

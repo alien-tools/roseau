@@ -56,7 +56,7 @@ public final class Library {
 			if (pom != null && Files.isRegularFile(pom)) {
 				MavenClasspathBuilder builder = new MavenClasspathBuilder();
 				return Stream.concat(builder.buildClasspath(pom).stream(), this.customClasspath.stream())
-					.collect(ImmutableSet.toImmutableSet());
+					.collect(Collectors.toUnmodifiableSet());
 			} else {
 				return this.customClasspath;
 			}

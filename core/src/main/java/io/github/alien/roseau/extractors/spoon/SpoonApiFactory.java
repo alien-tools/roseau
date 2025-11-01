@@ -1,6 +1,5 @@
 package io.github.alien.roseau.extractors.spoon;
 
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.AccessModifier;
@@ -144,7 +143,7 @@ public class SpoonApiFactory {
 		return typeRefs.stream()
 			.map(this::createITypeReference)
 			.filter(Objects::nonNull)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private List<ITypeReference> createITypeReferencesList(Collection<CtTypeReference<?>> typeRefs) {
@@ -158,7 +157,7 @@ public class SpoonApiFactory {
 		return typeRefs.stream()
 			.map(this::<T>createTypeReference)
 			.filter(Objects::nonNull)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	public ModuleDecl convertCtModule(CtModule module) {
@@ -169,7 +168,7 @@ public class SpoonApiFactory {
 				.filter(pkg -> pkg.getTargetExport().isEmpty())
 				.map(CtPackageExport::getPackageReference)
 				.map(CtPackageReference::getQualifiedName)
-				.collect(ImmutableSet.toImmutableSet()));
+				.collect(Collectors.toUnmodifiableSet()));
 	}
 
 	public TypeDecl convertCtType(CtType<?> type) {
@@ -336,20 +335,20 @@ public class SpoonApiFactory {
 		return type.getFields().stream()
 			.filter(SpoonApiFactory::isExported)
 			.map(this::convertCtField)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private Set<MethodDecl> convertCtMethods(CtType<?> type) {
 		return type.getMethods().stream()
 			.filter(SpoonApiFactory::isExported)
 			.map(this::convertCtMethod)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private Set<AnnotationMethodDecl> convertCtAnnotationMethods(CtAnnotationType<?> type) {
 		return type.getAnnotationMethods().stream()
 			.map(this::convertCtAnnotationMethod)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private Set<ConstructorDecl> convertCtConstructors(CtClass<?> cls) {
@@ -359,7 +358,7 @@ public class SpoonApiFactory {
 		return cls.getConstructors().stream()
 			.filter(SpoonApiFactory::isExported)
 			.map(this::convertCtConstructor)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private List<FormalTypeParameter> convertCtFormalTypeParameters(CtFormalTypeDeclarer declarer) {
@@ -404,7 +403,7 @@ public class SpoonApiFactory {
 	private Set<TypeReference<TypeDecl>> convertCtSealable(CtSealable sealable) {
 		return sealable.getPermittedTypes().stream()
 			.map(this::createTypeReference)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private AccessModifier convertSpoonVisibility(ModifierKind visibility) {
@@ -444,7 +443,7 @@ public class SpoonApiFactory {
 		return annotations.stream()
 			.filter(ann -> !isSourceAnnotation(ann))
 			.map(this::convertSpoonAnnotation)
-			.collect(ImmutableSet.toImmutableSet());
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	private boolean isSourceAnnotation(CtAnnotation<?> annotation) {
@@ -501,7 +500,7 @@ public class SpoonApiFactory {
 				return elems.stream()
 					.map(CtFieldRead.class::cast)
 					.map(fieldRead -> ElementType.valueOf(fieldRead.getVariable().getSimpleName()))
-					.collect(ImmutableSet.toImmutableSet());
+					.collect(Collectors.toUnmodifiableSet());
 			} else if (value instanceof CtFieldRead<?> fieldRead) {
 				return Set.of(ElementType.valueOf(fieldRead.getVariable().getSimpleName()));
 			}

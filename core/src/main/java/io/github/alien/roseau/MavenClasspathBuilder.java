@@ -2,7 +2,6 @@ package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import com.google.common.collect.ImmutableSet;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
@@ -38,15 +37,15 @@ public class MavenClasspathBuilder {
 	 */
 	public Set<Path> buildClasspath(Path pom) {
 		Preconditions.checkNotNull(pom);
-		Path parent = pom.toAbsolutePath().getParent();
 
-		if (!Files.isRegularFile(pom) || !Files.isDirectory(parent)) {
+		if (!Files.isRegularFile(pom)) {
 			LOGGER.warn("Invalid pom.xml file {}", pom);
 		}
 
-		Path classpathFile = parent.resolve(".classpath.tmp");
+		String random = Long.toHexString(Double.doubleToLongBits(Math.random()));
+		Path classpathFile = pom.resolveSibling(".roseau-classpath-" + random + ".tmp");
 		try {
-			Optional<File> mvnExecutable = findMavenExecutable(parent);
+			Optional<File> mvnExecutable = findMavenExecutable(pom);
 
 			if (mvnExecutable.isPresent()) {
 				InvocationRequest request = makeClasspathRequest(pom, classpathFile);
@@ -59,7 +58,7 @@ public class MavenClasspathBuilder {
 					LOGGER.debug("Extracted classpath from {}", pom);
 					return Arrays.stream(cpString.split(File.pathSeparator))
 						.map(Path::of)
-						.collect(ImmutableSet.toImmutableSet());
+						.collect(Collectors.toUnmodifiableSet());
 				} else {
 					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
 				}
@@ -99,10 +98,10 @@ public class MavenClasspathBuilder {
 	/**
 	 * Attempts to retrieve some mvn executable (local wrapper > MAVEN/M2_HOME > PATH)
 	 */
-	private static Optional<File> findMavenExecutable(Path projectDir) {
+	private static Optional<File> findMavenExecutable(Path pom) {
 		// Look for a potential wrapper
 		boolean isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
-		Path mvnw = projectDir.resolve(isWindows ? "mvnw.cmd" : "mvnw");
+		Path mvnw = pom.resolveSibling(isWindows ? "mvnw.cmd" : "mvnw");
 		if (Files.isExecutable(mvnw)) {
 			return Optional.of(mvnw.toFile());
 		}

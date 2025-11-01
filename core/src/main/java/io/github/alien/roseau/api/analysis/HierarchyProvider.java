@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
@@ -13,6 +12,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
@@ -40,14 +40,13 @@ public interface HierarchyProvider {
 	default Optional<FieldDecl> findField(TypeDecl type, String name) {
 		Preconditions.checkNotNull(type);
 		Preconditions.checkNotNull(name);
-		return getExportedFields(type).stream()
-			.filter(f -> Objects.equals(f.getSimpleName(), name))
-			.findFirst();
+		return Optional.ofNullable(getExportedFieldsByName(type).get(name));
 	}
 
 	/**
 	 * Finds a {@link MethodDecl} by erasure, declared (or inherited) by this type.
 	 *
+	 * @param typeDecl the type to search in
 	 * @param erasure the erasure of the method to find
 	 * @return an {@link Optional} indicating whether the matching method was found
 	 * @see ErasureProvider#getErasure(ExecutableDecl)
@@ -55,9 +54,7 @@ public interface HierarchyProvider {
 	default Optional<MethodDecl> findMethod(TypeDecl typeDecl, String erasure) {
 		Preconditions.checkNotNull(typeDecl);
 		Preconditions.checkNotNull(erasure);
-		return getExportedMethods(typeDecl).stream()
-			.filter(m -> Objects.equals(erasure().getErasure(m), erasure))
-			.findFirst();
+		return Optional.ofNullable(getExportedMethodsByErasure(typeDecl).get(erasure));
 	}
 
 	/**
@@ -142,16 +139,21 @@ public interface HierarchyProvider {
 	@SuppressWarnings("unchecked")
 	default List<TypeReference<TypeDecl>> getAllSuperTypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		return Stream.concat(
-				type.getImplementedInterfaces().stream(),
-				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
-				// since there will be a concrete java.lang.Object on which the methods are invoked anyway
-				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT)
-			)
-			.map(ref -> (TypeReference<TypeDecl>) (TypeReference<?>) ref)
-			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
+		return getSuperTypes(type).stream()
 			.flatMap(ref -> Stream.concat(Stream.of(ref), getAllSuperTypes(ref).stream()))
 			.distinct()
+			.toList();
+	}
+
+	default List<TypeReference<TypeDecl>> getSuperTypes(TypeDecl type) {
+		return Stream.concat(
+				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
+				// since there will be a concrete java.lang.Object on which the methods are invoked anyway
+				type instanceof ClassDecl cls ? Stream.of(cls.getSuperClass()) : Stream.of(TypeReference.OBJECT),
+				type.getImplementedInterfaces().stream()
+			)
+			.map(ref -> (TypeReference<TypeDecl>) ref)
+			.filter(ref -> !ref.qualifiedName().equals(type.getQualifiedName()))
 			.toList();
 	}
 
@@ -171,12 +173,13 @@ public interface HierarchyProvider {
 
 	/**
 	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
-	 * method erasure, returns the most concrete implementation.
+	 * method erasure, returns the most concrete implementation, indexed by erasure.
 	 *
 	 * @param type the base type
-	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type
+	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
+	 * invoked on this type
 	 */
-	default Set<MethodDecl> getExportedMethods(TypeDecl type) {
+	default Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredMethods().stream(),
@@ -188,7 +191,18 @@ public interface HierarchyProvider {
 				erasure()::getErasure,
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
-			)).values().stream().collect(ImmutableSet.toImmutableSet());
+			));
+	}
+
+	/**
+	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
+	 * method erasure, returns the most concrete implementation.
+	 *
+	 * @param type the base type
+	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type
+	 */
+	default Set<MethodDecl> getExportedMethods(TypeDecl type) {
+		return Set.copyOf(getExportedMethodsByErasure(type).values());
 	}
 
 	/**
@@ -204,17 +218,17 @@ public interface HierarchyProvider {
 			}
 
 			return m.isAbstract();
-		}).collect(ImmutableSet.toImmutableSet());
+		}).collect(Collectors.toUnmodifiableSet());
 	}
 
 	/**
 	 * Returns all fields that can be accessed on this type, including those declared in its super types. In case of
-	 * shadowing, returns the visible field.
+	 * shadowing, returns the visible field, indexed by simple name.
 	 *
 	 * @param type the base type
-	 * @return all {@link FieldDecl} that can be accessed on this type
+	 * @return a map from field simple name to each {@link FieldDecl} that can be accessed on this type
 	 */
-	default Set<FieldDecl> getExportedFields(TypeDecl type) {
+	default Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredFields().stream(),
@@ -226,7 +240,18 @@ public interface HierarchyProvider {
 				FieldDecl::getSimpleName,
 				Function.identity(),
 				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
-			)).values().stream().collect(ImmutableSet.toImmutableSet());
+			));
+	}
+
+	/**
+	 * Returns all fields that can be accessed on this type, including those declared in its super types. In case of
+	 * shadowing, returns the visible field.
+	 *
+	 * @param type the base type
+	 * @return all {@link FieldDecl} that can be accessed on this type
+	 */
+	default Set<FieldDecl> getExportedFields(TypeDecl type) {
+		return Set.copyOf(getExportedFieldsByName(type).values());
 	}
 
 	/**
