@@ -48,13 +48,11 @@ public class SpoonTypesExtractor implements TypesExtractor {
 			.filter(mod -> !mod.isUnnamedModule())
 			.collect(Collectors.toSet());
 
-		if (modules.isEmpty()) {
-			return new LibraryTypes(library, allTypes);
-		} else if (modules.size() == 1) {
-			return new LibraryTypes(library, spoonFactory.convertCtModule(modules.iterator().next()), allTypes);
-		} else {
-			throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
-		}
+		return switch (modules.size()) {
+			case 0 -> new LibraryTypes(library, allTypes);
+			case 1 -> new LibraryTypes(library, spoonFactory.convertCtModule(modules.iterator().next()), allTypes);
+			default -> throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
+		};
 	}
 
 	// Returns all types within a package

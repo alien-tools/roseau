@@ -52,14 +52,14 @@ public final class JdtTypesExtractor implements TypesExtractor {
 				.collect(Collectors.toSet());
 
 			ParsingResult result = parseTypes(library, sourceFiles);
+			Set<TypeDecl> types = result.types();
+			Set<ModuleDecl> modules = result.modules();
 
-			if (result.modules().isEmpty()) {
-				return new LibraryTypes(library, result.types());
-			} else if (result.modules().size() == 1) {
-				return new LibraryTypes(library, result.modules().iterator().next(), result.types());
-			} else {
-				throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, result.modules()));
-			}
+			return switch (modules.size()) {
+				case 0 -> new LibraryTypes(library, types);
+				case 1 -> new LibraryTypes(library, modules.iterator().next(), result.types());
+				default -> throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
+			};
 		} catch (IOException e) {
 			throw new RoseauException("Failed to parse sources", e);
 		}

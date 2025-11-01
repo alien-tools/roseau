@@ -61,15 +61,13 @@ public class AsmTypesExtractor implements TypesExtractor {
 			.filter(this::isRegularClassFile)
 			.forEach(entry -> processEntry(jar, entry, sink));
 
-		Set<TypeDecl> typeDecls = sink.getTypes();
-		Set<ModuleDecl> moduleDecls = sink.getModules();
-		if (moduleDecls.isEmpty()) {
-			return new LibraryTypes(library, typeDecls);
-		} else if (moduleDecls.size() == 1) {
-			return new LibraryTypes(library, moduleDecls.iterator().next(), typeDecls);
-		} else {
-			throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, moduleDecls));
-		}
+		Set<TypeDecl> types = sink.getTypes();
+		Set<ModuleDecl> modules = sink.getModules();
+		return switch (modules.size()) {
+			case 0 -> new LibraryTypes(library, types);
+			case 1 -> new LibraryTypes(library, modules.iterator().next(), types);
+			default -> throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
+		};
 	}
 
 	private void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
