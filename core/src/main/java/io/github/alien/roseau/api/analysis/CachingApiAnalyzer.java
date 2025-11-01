@@ -12,11 +12,11 @@ import java.util.concurrent.ExecutionException;
 public abstract class CachingApiAnalyzer implements ApiAnalyzer {
 	private final Cache<String, Map<String, MethodDecl>> methodsCache =
 		CacheBuilder.newBuilder()
-			.maximumSize(1_000L)
+			.maximumSize(2_000L)
 			.build();
 	private final Cache<String, Map<String, FieldDecl>> fieldsCache =
 		CacheBuilder.newBuilder()
-			.maximumSize(1_000L)
+			.maximumSize(2_000L)
 			.build();
 
 	@Override
