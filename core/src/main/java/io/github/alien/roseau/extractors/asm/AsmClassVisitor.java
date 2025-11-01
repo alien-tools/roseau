@@ -62,7 +62,6 @@ final class AsmClassVisitor extends ClassVisitor {
 	private final List<FormalTypeParameter> formalTypeParameters = new ArrayList<>();
 	private final Set<TypeReference<TypeDecl>> permittedTypes = new LinkedHashSet<>();
 	private final Set<AsmAnnotationVisitor.Data> annotations = new LinkedHashSet<>();
-	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 
 	AsmClassVisitor(int api, ExtractorSink sink, ApiFactory factory) {
 		super(api);
@@ -220,7 +219,7 @@ final class AsmClassVisitor extends ClassVisitor {
 			return;
 		}
 
-		if (outerName != null && innerName != null && !ANONYMOUS_MATCHER.matcher(outerName).find()) {
+		if (outerName != null && innerName != null) {
 			// Nested/inner types
 			// Merge the kind bits (class/interface/enum/annotation/record) from the class header with
 			// the visibility/modifier bits from the InnerClasses entry. Some compilers omit ACC_RECORD
