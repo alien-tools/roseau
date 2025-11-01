@@ -10,7 +10,7 @@ import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import java.util.Objects;
 
 public interface ErasureProvider {
-	TypeParameterResolver typeParameter();
+	TypeParameterProvider typeParameter();
 
 	/**
 	 * Returns the unqualified erasure of the signature of an executable as specified in JLS §4.6. Parameter types are

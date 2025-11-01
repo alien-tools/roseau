@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.stream.Stream;
 
-public interface TypeParameterResolver {
+public interface TypeParameterProvider {
 	// Dependencies
 	TypeResolver resolver();
 
