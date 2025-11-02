@@ -12,7 +12,7 @@
     </Appenders>
 
     <Loggers>
-        <Logger name="io.github.alien.roseau" level="DEBUG"/>
+        <Logger name="io.github.alien.roseau" level="WARN"/>
         <Root level="WARN">
             <AppenderRef ref="CONSOLE"/>
         </Root>
