@@ -84,6 +84,12 @@ public class AsmTypesExtractor implements TypesExtractor {
 		}
 	}
 
+	public void processEntry(byte[] bytes, ExtractorSink sink) {
+		ClassReader reader = new ClassReader(bytes);
+		AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
+		reader.accept(visitor, PARSING_OPTIONS);
+	}
+
 	private boolean isRegularClassFile(JarEntry entry) {
 		return !entry.isDirectory()
 			&& entry.getName().endsWith(".class")

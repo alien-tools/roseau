@@ -41,9 +41,6 @@ class TypeProviderIntegrationTest {
 
 	@AfterEach
 	void tearDown() throws IOException {
-		if (stdLibProvider != null) {
-			stdLibProvider.close();
-		}
 		if (classpathProvider != null) {
 			classpathProvider.close();
 		}

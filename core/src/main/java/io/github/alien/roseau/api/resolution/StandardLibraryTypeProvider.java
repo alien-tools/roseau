@@ -1,111 +1,65 @@
 package io.github.alien.roseau.api.resolution;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.CacheBuilder;
-import com.google.common.cache.CacheLoader;
-import com.google.common.cache.LoadingCache;
-import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.net.URI;
+import java.nio.file.FileSystem;
+import java.nio.file.FileSystems;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.jar.JarFile;
-import java.util.zip.ZipFile;
+import java.util.stream.Collectors;
 
-public class StandardLibraryTypeProvider implements TypeProvider, AutoCloseable {
+public class StandardLibraryTypeProvider implements TypeProvider {
 	private final AsmTypesExtractor extractor;
-	private final Map<String, Path> entryToJmod = new HashMap<>();
-	private final LoadingCache<Path, JarFile> jarCache = CacheBuilder.newBuilder()
-		.maximumSize(20)
-		.removalListener(notification -> {
-			JarFile jar = (JarFile) notification.getValue();
-			if (jar != null) {
-				try {
-					jar.close();
-				} catch (IOException ignored) {
-					// Don't throw on cleanup
-				}
-			}
-		})
-		.build(new CacheLoader<>() {
-			@Override
-			public JarFile load(Path path) throws IOException {
-				return new JarFile(path.toFile(), false, ZipFile.OPEN_READ, Runtime.version());
-			}
-		});
 
-	private static final String CLASSES_PREFIX = "classes";
-
-	public StandardLibraryTypeProvider(AsmTypesExtractor extractor, List<String> jmodNames) {
-		Preconditions.checkNotNull(extractor);
-		Preconditions.checkNotNull(jmodNames);
-		this.extractor = extractor;
-
-		// Validate and resolve jmod paths
-		Path jmodsPath = Path.of(System.getProperty("java.home"), "jmods");
-		if (!Files.isDirectory(jmodsPath)) {
-			throw new RoseauException("Couldn't resolve jmods path: " + jmodsPath);
-		}
-
-		List<Path> jmodPaths = jmodNames.stream()
-			.<Path>mapMulti((jmod, downstream) -> {
-				var jmodPath = jmodsPath.resolve(jmod + ".jmod");
-				if (Files.isRegularFile(jmodPath)) {
-					downstream.accept(jmodPath);
-				} else {
-					throw new RoseauException("Couldn't resolve jmod file: " + jmodPath);
-				}
-			})
-			.toList();
-
-		// Build index: entry name -> jmod path
-		jmodPaths.forEach(jmodPath -> {
-			try (JarFile jar = new JarFile(jmodPath.toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
-				jar.stream()
-					.filter(entry -> !entry.isDirectory()
-						&& entry.getName().startsWith(CLASSES_PREFIX + "/")
-						&& entry.getName().endsWith(".class"))
-					.forEach(entry -> entryToJmod.putIfAbsent(entry.getName(), jmodPath));
-			} catch (IOException e) {
-				throw new RoseauException("Failed to index jmod file %s".formatted(jmodPath), e);
-			}
-		});
-	}
+	private static final FileSystem JRT_FILESYSTEM = FileSystems.getFileSystem(URI.create("jrt:/"));
+	private static final String MODULES_PATH = "modules";
+	private static final Map<String, Module> PACKAGE_TO_MODULES =
+		ModuleLayer.boot()
+			.modules()
+			.stream()
+			.flatMap(m -> m.getPackages().stream().map(p -> Map.entry(p, m)))
+			.collect(Collectors.toUnmodifiableMap(Map.Entry::getKey, Map.Entry::getValue));
+	private static final Logger LOGGER = LogManager.getLogger(StandardLibraryTypeProvider.class);
 
 	public StandardLibraryTypeProvider(AsmTypesExtractor extractor) {
-		this(extractor, List.of("java.base"));
+		this.extractor = Preconditions.checkNotNull(extractor);
 	}
 
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
-		String entryName = CLASSES_PREFIX + "/" + nameToEntry(qualifiedName); // FIXME: Windows?
-		Path jmodPath = entryToJmod.get(entryName);
+		Preconditions.checkNotNull(qualifiedName);
+		Preconditions.checkNotNull(type);
 
-		if (jmodPath != null) {
-			ExtractorSink sink = new ExtractorSink(1);
+		String entry = nameToEntry(qualifiedName);
+		String pkgName = packageName(qualifiedName);
+		Module module = PACKAGE_TO_MODULES.get(pkgName);
 
-			try {
-				JarFile jar = jarCache.getUnchecked(jmodPath);
-				var entry = jar.getJarEntry(entryName);
+		if (module != null) {
+			Path clsFile = JRT_FILESYSTEM.getPath(MODULES_PATH, module.getName(), entry);
 
-				if (entry != null) {
-					extractor.processEntry(jar, entry, sink);
-				}
-			} catch (Exception e) {
-				throw new RoseauException("Failed to process jmod file %s".formatted(jmodPath), e);
-			}
+			if (Files.isRegularFile(clsFile)) {
+				try {
+					ExtractorSink sink = new ExtractorSink(1);
+					byte[] clsBytes = Files.readAllBytes(clsFile);
+					extractor.processEntry(clsBytes, sink);
 
-			if (sink.getTypes().size() == 1) {
-				TypeDecl foundType = sink.getTypes().iterator().next();
-				if (type.isInstance(foundType)) {
-					return Optional.of(type.cast(foundType));
+					if (sink.getTypes().size() == 1) {
+						TypeDecl foundType = sink.getTypes().iterator().next();
+						if (type.isInstance(foundType)) {
+							return Optional.of(type.cast(foundType));
+						}
+					}
+				} catch (IOException e) {
+					LOGGER.warn("Failed to process class file {}", clsFile, e);
 				}
 			}
 		}
@@ -113,13 +67,13 @@ public class StandardLibraryTypeProvider implements TypeProvider, AutoCloseable 
 		return Optional.empty();
 	}
 
-	private String nameToEntry(String name) {
-		return name.replace('.', '/') + ".class";
+	private static String packageName(String qualifiedName) {
+		return qualifiedName.contains(".")
+			? qualifiedName.substring(0, qualifiedName.lastIndexOf('.'))
+			: "";
 	}
 
-	@Override
-	public void close() {
-		// Invalidate all entries, triggering removal listener to close all JarFiles
-		jarCache.invalidateAll();
+	private static String nameToEntry(String name) {
+		return name.replace('.', '/') + ".class";
 	}
 }
