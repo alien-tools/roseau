@@ -1,7 +1,7 @@
 package io.github.alien.roseau.utils;
 
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
 import java.util.List;
@@ -21,6 +21,6 @@ public enum ApiDifferType implements ApiDiffer {
 	};
 
 	List<BreakingChange> diff(API v1, API v2) {
-		return new ApiDiff().compare(v1, v2).getBreakingChanges();
+		return Roseau.diff(v1, v2).getBreakingChanges();
 	}
 }

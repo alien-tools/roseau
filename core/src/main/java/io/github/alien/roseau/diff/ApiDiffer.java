@@ -6,28 +6,30 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 
-public interface ApiDiffer {
-	void onMatchedType(TypeDecl v1, TypeDecl v2);
+public interface ApiDiffer<T> {
+	T get();
 
-	void onRemovedType(TypeDecl v1);
+	void onMatchedType(TypeDecl type1, TypeDecl type2);
 
-	void onAddedType(TypeDecl v2);
+	void onRemovedType(TypeDecl type);
 
-	void onMatchedField(TypeDecl ownerV1, FieldDecl v1, FieldDecl v2);
+	void onAddedType(TypeDecl type);
 
-	void onRemovedField(TypeDecl ownerV1, FieldDecl v1);
+	void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field2, FieldDecl field1);
 
-	void onAddedField(TypeDecl ownerV2, FieldDecl v2);
+	void onRemovedField(TypeDecl type, FieldDecl field);
 
-	void onMatchedMethod(TypeDecl ownerV1, MethodDecl v1, MethodDecl v2);
+	void onAddedField(TypeDecl type, FieldDecl field);
 
-	void onRemovedMethod(TypeDecl ownerV1, MethodDecl v1);
+	void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method2, MethodDecl method1);
 
-	void onAddedMethod(TypeDecl ownerV2, MethodDecl v2);
+	void onRemovedMethod(TypeDecl type, MethodDecl method);
 
-	void onMatchedConstructor(ClassDecl ownerV1, ConstructorDecl v1, ConstructorDecl v2);
+	void onAddedMethod(TypeDecl type, MethodDecl method);
 
-	void onRemovedConstructor(ClassDecl ownerV1, ConstructorDecl v1);
+	void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons2, ConstructorDecl cons1);
 
-	void onAddedConstructor(ClassDecl ownerV2, ConstructorDecl v2);
+	void onRemovedConstructor(ClassDecl cls, ConstructorDecl cons);
+
+	void onAddedConstructor(ClassDecl cls, ConstructorDecl cons);
 }

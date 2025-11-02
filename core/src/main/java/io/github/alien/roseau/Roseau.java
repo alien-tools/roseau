@@ -11,7 +11,10 @@ import io.github.alien.roseau.api.resolution.CachingTypeResolver;
 import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
-import io.github.alien.roseau.diff.ApiDiff;
+import io.github.alien.roseau.diff.ApiDiffer;
+import io.github.alien.roseau.diff.ApiWalker;
+import io.github.alien.roseau.diff.DefaultSymbolMatcher;
+import io.github.alien.roseau.diff.BreakingChangeAnalyzer;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
@@ -64,7 +67,10 @@ public final class Roseau {
 		Preconditions.checkNotNull(v2);
 
 		Stopwatch sw = Stopwatch.createStarted();
-		RoseauReport report = new ApiDiff().compare(v1, v2);
+		ApiWalker walker = new ApiWalker(v1, v2, new DefaultSymbolMatcher());
+		ApiDiffer<RoseauReport> differ = new BreakingChangeAnalyzer(v1, v2);
+		walker.walk(differ);
+		RoseauReport report = differ.get();
 		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
 			() -> sw.elapsed().toMillis(), () -> report.getBreakingChanges().size());
 

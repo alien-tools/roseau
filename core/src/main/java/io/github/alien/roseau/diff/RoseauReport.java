@@ -103,37 +103,41 @@ public final class RoseauReport {
 			));
 	}
 
+	public static Builder builder(API v1, API v2) {
+		return new Builder(v1, v2);
+	}
+
 	// FIXME: Do the exclusion/java.lang.Object here, through another class
-	static final class Builder {
+	public static final class Builder {
 		private final API v1;
 		private final API v2;
 		private final Set<BreakingChange> bcs = Sets.newConcurrentHashSet();
 
-		Builder(API v1, API v2) {
+		public Builder(API v1, API v2) {
 			Preconditions.checkNotNull(v1);
 			Preconditions.checkNotNull(v2);
 			this.v1 = v1;
 			this.v2 = v2;
 		}
 
-		void typeBC(BreakingChangeKind kind, TypeDecl impactedType) {
+		public void typeBC(BreakingChangeKind kind, TypeDecl impactedType) {
 			typeBC(kind, impactedType, new BreakingChangeDetails.None());
 		}
 
-		void typeBC(BreakingChangeKind kind, TypeDecl impactedType, BreakingChangeDetails details) {
+		public void typeBC(BreakingChangeKind kind, TypeDecl impactedType, BreakingChangeDetails details) {
 			bcs.add(new BreakingChange(kind, impactedType, impactedType, null, details));
 		}
 
-		void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember) {
+		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember) {
 			memberBC(kind, impactedType, impactedMember, null, new BreakingChangeDetails.None());
 		}
 
-		void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
+		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
 		              TypeMemberDecl newMember) {
 			memberBC(kind, impactedType, impactedMember, newMember, new BreakingChangeDetails.None());
 		}
 
-		void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
+		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
 		              TypeMemberDecl newMember, BreakingChangeDetails details) {
 			// java.lang.Object methods are an absolute pain to handle. Many rules
 			// do not apply to them as they're implicitly provided to any class.
@@ -143,7 +147,7 @@ public final class RoseauReport {
 			bcs.add(new BreakingChange(kind, impactedType, impactedMember, newMember, details));
 		}
 
-		RoseauReport build() {
+		public RoseauReport build() {
 			return new RoseauReport(v1, v2, bcs.stream().toList());
 		}
 	}

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff;
 
+import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -19,8 +20,6 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 
@@ -30,135 +29,57 @@ import java.util.Set;
  * The compared APIs are visited deeply to match their symbols pairwise based on their unique name and compare their
  * properties when their names match. This implementation visits all {@link TypeDecl} instances in parallel.
  */
-public class ApiDiff implements ApiComparator<RoseauReport> {
-	/**
-	 * The first version of the API to be compared.
-	 */
-	private API v1;
+public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
+	private final API v1;
+	private final API v2;
+	private final RoseauReport.Builder builder;
 
-	/**
-	 * The second version of the API to be compared.
-	 */
-	private API v2;
+	public BreakingChangeAnalyzer(API v1, API v2) {
+		this.v1 = Preconditions.checkNotNull(v1);
+		this.v2 = Preconditions.checkNotNull(v2);
+		this.builder = RoseauReport.builder(v1, v2);
+	}
 
-	private RoseauReport.Builder builder;
-
-	/**
-	 * Diff the two APIs to detect breaking changes.
-	 *
-	 * @return the report built for the two APIs
-	 */
 	@Override
-	public RoseauReport compare(API v1, API v2) {
-		this.v1 = Objects.requireNonNull(v1);
-		this.v2 = Objects.requireNonNull(v2);
-		builder = new RoseauReport.Builder(v1, v2);
-
-		v1.getExportedTypes().stream().parallel().forEach(t1 ->
-			v2.findExportedType(t1.getQualifiedName()).ifPresentOrElse(
-				// There is a matching type
-				t2 -> diffType(t1, t2),
-				// Type has been removed
-				() -> builder.typeBC(BreakingChangeKind.TYPE_REMOVED, t1)
-			)
-		);
-
-		return builder.build();
+	public RoseauReport get() {
+		return this.builder.build();
 	}
 
-	private void diffFields(TypeDecl t1, TypeDecl t2) {
-		Map<String, FieldDecl> fields2 = v2.getExportedFieldsByName(t2);
-		v1.getExportedFieldsByName(t1).forEach((name, f1) -> {
-			FieldDecl f2 = fields2.get(name);
-			if (f2 != null) {
-				// There is a matching field
-				diffField(t1, f1, f2);
-			} else {
-				// The field has been removed
-				builder.memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1);
-			}
-		});
-	}
-
-	private void diffMethods(TypeDecl t1, TypeDecl t2) {
-		Map<String, MethodDecl> methods2 = v2.getExportedMethodsByErasure(t2);
-		v1.getExportedMethodsByErasure(t1).forEach((erasure, m1) -> {
-			MethodDecl m2 = methods2.get(erasure);
-			if (m2 != null) {
-				// There is a matching method
-				diffMethod(t1, t2, m1, m2);
-			} else {
-				// The method has been removed
-				builder.memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1);
-			}
-		});
-	}
-
-	private void diffConstructors(ClassDecl c1, ClassDecl c2) {
-		c1.getDeclaredConstructors().forEach(cons1 ->
-			v2.findConstructor(c2, v2.getErasure(cons1)).ifPresentOrElse(
-				// There is a matching constructor
-				cons2 -> diffConstructor(c1, cons1, cons2),
-				// The constructor has been removed
-				() -> builder.memberBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, c1, cons1)
-			)
-		);
-	}
-
-	private void diffAddedMethods(TypeDecl t1, TypeDecl t2) {
-		v2.getExportedMethods(t2).stream()
-			.filter(MethodDecl::isAbstract)
-			.filter(m2 -> v1.getExportedMethods(t1).stream().noneMatch(m1 -> v1.haveSameErasure(m1, m2)))
-			.forEach(m2 -> {
-				if (t1.isInterface()) {
-					builder.typeBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, t1,
-						new BreakingChangeDetails.MethodAddedToInterface(m2));
-				}
-
-				if (t1.isClass()) {
-					builder.typeBC(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, t1,
-						new BreakingChangeDetails.MethodAbstractAddedToClass(m2));
-				}
-			});
-	}
-
-	private void diffType(TypeDecl t1, TypeDecl t2) {
-		if (t1.isPublic() && t2.isProtected()) {
-			builder.typeBC(BreakingChangeKind.TYPE_NOW_PROTECTED, t1);
+	@Override
+	public void onMatchedType(TypeDecl type1, TypeDecl type2) {
+		if (type1.isPublic() && type2.isProtected()) {
+			builder.typeBC(BreakingChangeKind.TYPE_NOW_PROTECTED, type1);
 		}
 
-		if (!t1.getClass().equals(t2.getClass())) {
-			builder.typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, t1,
-				new BreakingChangeDetails.ClassTypeChanged(t1.getClass(), t2.getClass()));
+		if (!type1.getClass().equals(type2.getClass())) {
+			builder.typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, type1,
+				new BreakingChangeDetails.ClassTypeChanged(type1.getClass(), type2.getClass()));
 			return; // Avoid all cascading changes
 		}
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		List<TypeReference<TypeDecl>> candidates = v1.getAllSuperTypes(t1).stream()
+		List<TypeReference<TypeDecl>> candidates = v1.getAllSuperTypes(type1).stream()
 			.filter(v1::isExported)
-			.filter(sup -> !v2.isSubtypeOf(t2, sup))
+			.filter(sup -> !v2.isSubtypeOf(type2, sup))
 			.toList();
 
 		// Only report on the closest super type
 		candidates.stream()
 			.filter(sup -> candidates.stream().noneMatch(other -> !other.equals(sup) && v1.isSubtypeOf(other, sup)))
 			.forEach(sup ->
-				builder.typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, t1,
+				builder.typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, type1,
 					new BreakingChangeDetails.SuperTypeRemoved(sup)));
 
-		diffFields(t1, t2);
-		diffMethods(t1, t2);
-		diffAddedMethods(t1, t2);
-		diffFormalTypeParameters(t1, t2);
-
-		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
+		if (type1 instanceof ClassDecl c1 && type2 instanceof ClassDecl c2) {
 			diffClass(c1, c2);
 		}
 
-		if (t1 instanceof AnnotationDecl a1 && t2 instanceof AnnotationDecl a2) {
+		if (type1 instanceof AnnotationDecl a1 && type2 instanceof AnnotationDecl a2) {
 			diffAnnotationInterface(a1, a2);
 		}
+
+		diffFormalTypeParameters(type1, type2);
 	}
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
@@ -183,8 +104,6 @@ public class ApiDiff implements ApiComparator<RoseauReport> {
 		if (v1.isUncheckedException(c1) && v2.isCheckedException(c2)) {
 			builder.typeBC(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, c1);
 		}
-
-		diffConstructors(c1, c2);
 	}
 
 	private void diffAnnotationInterface(AnnotationDecl a1, AnnotationDecl a2) {
@@ -226,68 +145,121 @@ public class ApiDiff implements ApiComparator<RoseauReport> {
 					new BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(m2)));
 	}
 
-	private void diffField(TypeDecl t1, FieldDecl f1, FieldDecl f2) {
-		if (!f1.isFinal() && f2.isFinal()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NOW_FINAL, t1, f1, f2);
+	@Override
+	public void onRemovedType(TypeDecl type) {
+		builder.typeBC(BreakingChangeKind.TYPE_REMOVED, type);
+	}
+
+	@Override
+	public void onAddedType(TypeDecl type) {
+
+	}
+
+	@Override
+	public void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field2, FieldDecl field1) {
+		if (!field1.isFinal() && field2.isFinal()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NOW_FINAL, type1, field1, field2);
 		}
 
-		if (!f1.isStatic() && f2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NOW_STATIC, t1, f1, f2);
+		if (!field1.isStatic() && field2.isStatic()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NOW_STATIC, type1, field1, field2);
 		}
 
-		if (f1.isStatic() && !f2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NO_LONGER_STATIC, t1, f1, f2);
+		if (field1.isStatic() && !field2.isStatic()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NO_LONGER_STATIC, type1, field1, field2);
 		}
 
-		if (!f1.getType().equals(f2.getType())) {
-			builder.memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED, t1, f1, f2,
-				new BreakingChangeDetails.FieldTypeChanged(f1.getType(), f2.getType()));
+		if (!field1.getType().equals(field2.getType())) {
+			builder.memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED, type1, field1, field2,
+				new BreakingChangeDetails.FieldTypeChanged(field1.getType(), field2.getType()));
 		}
 
-		if (f1.isPublic() && f2.isProtected()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NOW_PROTECTED, t1, f1, f2);
+		if (field1.isPublic() && field2.isProtected()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NOW_PROTECTED, type1, field1, field2);
 		}
 	}
 
-	private void diffMethod(TypeDecl t1, TypeDecl t2, MethodDecl m1, MethodDecl m2) {
-		if (!v1.isEffectivelyFinal(t1, m1) && v2.isEffectivelyFinal(t2, m2)) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_FINAL, t1, m1, m2);
-		}
-
-		if (!m1.isStatic() && m2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_STATIC, t1, m1, m2);
-		}
-
-		if (m1.isStatic() && !m2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NO_LONGER_STATIC, t1, m1, m2);
-		}
-
-		if (!m1.isAbstract() && m2.isAbstract()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_ABSTRACT, t1, m1, m2);
-		}
-
-		if (m1.isPublic() && m2.isProtected()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_PROTECTED, t1, m1, m2);
-		}
-
-		if (!m1.getType().equals(m2.getType())) {
-			builder.memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, t1, m1, m2,
-				new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
-		}
-
-		diffThrownExceptions(t1, m1, m2);
-		diffFormalTypeParameters(t1, m1, m2);
-		diffParameters(t1, m1, m2);
+	@Override
+	public void onRemovedField(TypeDecl type, FieldDecl field) {
+		builder.memberBC(BreakingChangeKind.FIELD_REMOVED, type, field);
 	}
 
-	private void diffConstructor(TypeDecl t1, ConstructorDecl cons1, ConstructorDecl cons2) {
+	@Override
+	public void onAddedField(TypeDecl type, FieldDecl field) {
+
+	}
+
+	@Override
+	public void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method2, MethodDecl method1) {
+		if (!v1.isEffectivelyFinal(type1, method1) && v2.isEffectivelyFinal(type2, method2)) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_FINAL, type1, method1, method2);
+		}
+
+		if (!method1.isStatic() && method2.isStatic()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_STATIC, type1, method1, method2);
+		}
+
+		if (method1.isStatic() && !method2.isStatic()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NO_LONGER_STATIC, type1, method1, method2);
+		}
+
+		if (!method1.isAbstract() && method2.isAbstract()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_ABSTRACT, type1, method1, method2);
+		}
+
+		if (method1.isPublic() && method2.isProtected()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_PROTECTED, type1, method1, method2);
+		}
+
+		if (!method1.getType().equals(method2.getType())) {
+			builder.memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, type1, method1, method2,
+				new BreakingChangeDetails.MethodReturnTypeChanged(method1.getType(), method2.getType()));
+		}
+
+		diffThrownExceptions(type1, method1, method2);
+		diffFormalTypeParameters(type1, method1, method2);
+		diffParameters(type1, method1, method2);
+	}
+
+	@Override
+	public void onRemovedMethod(TypeDecl type, MethodDecl method) {
+		builder.memberBC(BreakingChangeKind.METHOD_REMOVED, type, method);
+	}
+
+	@Override
+	public void onAddedMethod(TypeDecl type, MethodDecl method) {
+		if (method.isAbstract()) {
+			if (type.isInterface()) {
+				builder.typeBC(BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, type,
+					new BreakingChangeDetails.MethodAddedToInterface(method));
+			}
+
+			if (type.isClass()) {
+				builder.typeBC(BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, type,
+					new BreakingChangeDetails.MethodAbstractAddedToClass(method));
+			}
+		}
+	}
+
+	@Override
+	public void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons2, ConstructorDecl cons1) {
 		if (cons1.isPublic() && cons2.isProtected()) {
-			builder.memberBC(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, t1, cons1, cons2);
+			builder.memberBC(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cls1, cons1, cons2);
 		}
 
-		diffThrownExceptions(t1, cons1, cons2);
-		diffFormalTypeParameters(t1, cons1, cons2);
-		diffParameters(t1, cons1, cons2);
+		diffThrownExceptions(cls1, cons1, cons2);
+		diffFormalTypeParameters(cls1, cons1, cons2);
+		diffParameters(cls1, cons1, cons2);
+	}
+
+	@Override
+	public void onRemovedConstructor(ClassDecl cls, ConstructorDecl cons) {
+		builder.memberBC(BreakingChangeKind.CONSTRUCTOR_REMOVED, cls, cons);
+	}
+
+	@Override
+	public void onAddedConstructor(ClassDecl cls, ConstructorDecl cons) {
+
 	}
 
 	/**

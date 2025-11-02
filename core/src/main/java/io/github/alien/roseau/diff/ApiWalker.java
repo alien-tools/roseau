@@ -38,7 +38,7 @@ public final class ApiWalker {
 	private void walkMembers(TypeDecl t1, TypeDecl t2, ApiDiffer sink) {
 		v1.getExportedFields(t1).forEach(f1 ->
 			matcher.matchField(v2, t2, f1).ifPresentOrElse(
-				f2 -> sink.onMatchedField(t1, f1, f2),
+				f2 -> sink.onMatchedField(t1, t2, f2, f1),
 				() -> sink.onRemovedField(t1, f1)
 			)
 		);
@@ -49,7 +49,7 @@ public final class ApiWalker {
 
 		v1.getExportedMethods(t1).forEach(m1 ->
 			matcher.matchMethod(v2, t2, m1).ifPresentOrElse(
-				m2 -> sink.onMatchedMethod(t1, m1, m2),
+				m2 -> sink.onMatchedMethod(t1, t2, m2, m1),
 				() -> sink.onRemovedMethod(t1, m1)
 			)
 		);
@@ -61,7 +61,7 @@ public final class ApiWalker {
 		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
 			c1.getDeclaredConstructors().forEach(cons1 ->
 				matcher.matchConstructor(v2, c2, cons1).ifPresentOrElse(
-					cons2 -> sink.onMatchedConstructor(c1, cons1, cons2),
+					cons2 -> sink.onMatchedConstructor(c1, c2, cons2, cons1),
 					() -> sink.onRemovedConstructor(c1, cons1)
 				)
 			);

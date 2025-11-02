@@ -16,10 +16,8 @@ import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.ExtractorType;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.FileObject;
@@ -333,8 +331,9 @@ public class TestUtils {
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		ApiDiff apiDiff = new ApiDiff();
-		return apiDiff.compare(buildSourcesAPI(sourcesV1), buildSourcesAPI(sourcesV2)).getBreakingChanges();
+		API v1 = buildSourcesAPI(sourcesV1);
+		API v2 = buildSourcesAPI(sourcesV2);
+		return Roseau.diff(v1, v2).getBreakingChanges();
 
 		// Simple differential testing with japicmp
 		/*try {
