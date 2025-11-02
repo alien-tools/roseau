@@ -692,7 +692,7 @@ public final class CombinatorialApi {
 
 	private static List<AccessModifier> fieldVisibilities(Builder<TypeDecl> container) {
 		return switch (container) {
-			case InterfaceBuilder ignored -> List.of(PUBLIC);
+			case InterfaceBuilder _ -> List.of(PUBLIC);
 			case RecordBuilder record -> record.recordComponents.isEmpty()
 				? List.of(PUBLIC, PROTECTED)
 				: List.of();
@@ -702,7 +702,7 @@ public final class CombinatorialApi {
 
 	private static Set<Set<Modifier>> fieldModifiers(Builder<TypeDecl> container) {
 		return switch (container) {
-			case RecordBuilder ignored -> powerSet(STATIC, FINAL).stream()
+			case RecordBuilder _ -> powerSet(STATIC, FINAL).stream()
 				.filter(mods -> mods.contains(STATIC))
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 			default -> powerSet(STATIC, FINAL);
@@ -711,7 +711,7 @@ public final class CombinatorialApi {
 
 	private static List<AccessModifier> methodVisibilities(Builder<TypeDecl> container) {
 		return switch (container) {
-			case InterfaceBuilder ignored -> List.of(PUBLIC);
+			case InterfaceBuilder _ -> List.of(PUBLIC);
 			case RecordBuilder record -> record.recordComponents.isEmpty()
 				? List.of(PUBLIC, PROTECTED)
 				: List.of();
@@ -728,10 +728,10 @@ public final class CombinatorialApi {
 			.collect(Collectors.toCollection(LinkedHashSet::new));
 
 		return switch (container) {
-			case InterfaceBuilder ignored -> modifiers.stream()
+			case InterfaceBuilder _ -> modifiers.stream()
 				.filter(mods -> Sets.intersection(mods, Set.of(SYNCHRONIZED, FINAL)).isEmpty())
 				.collect(Collectors.toCollection(LinkedHashSet::new));
-			case RecordBuilder ignored -> modifiers.stream()
+			case RecordBuilder _ -> modifiers.stream()
 				.filter(mods -> Sets.intersection(mods, Set.of(ABSTRACT, DEFAULT)).isEmpty())
 				.collect(Collectors.toCollection(LinkedHashSet::new));
 			case ClassBuilder b -> modifiers.stream()

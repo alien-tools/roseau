@@ -26,7 +26,7 @@ public class ClasspathTypeProvider implements TypeProvider, AutoCloseable {
 			.<URL>mapMulti((jar, downstream) -> {
 				try {
 					downstream.accept(jar.toUri().toURL());
-				} catch (MalformedURLException ignored) {
+				} catch (MalformedURLException _) {
 					// Just ignore
 				}
 			})
@@ -53,7 +53,7 @@ public class ClasspathTypeProvider implements TypeProvider, AutoCloseable {
 					}
 				}
 			}
-		} catch (IOException ignored) {
+		} catch (IOException _) {
 			// Just ignore
 		}
 

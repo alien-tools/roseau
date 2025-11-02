@@ -50,7 +50,7 @@ public final class ApiBuilder implements Builder<API> {
 					var classBuilder = ClassBuilder.from(classDecl);
 					apiBuilder.allTypes.put(classDecl.getQualifiedName(), classBuilder);
 					break;
-				case AnnotationDecl ignored:
+				case AnnotationDecl _:
 					break;
 				case InterfaceDecl interfaceDecl:
 					var interfaceBuilder = InterfaceBuilder.from(interfaceDecl);

@@ -30,8 +30,8 @@ public abstract sealed class TypeDecl extends Symbol permits ClassDecl, Interfac
 	                   List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                   TypeReference<TypeDecl> enclosingType, Set<TypeReference<TypeDecl>> permittedTypes) {
 		// §8.1.6: permitted types implies sealed
-		super(qualifiedName, visibility,
-			Sets.union(modifiers, permittedTypes.isEmpty() ? Set.of() : Set.of(Modifier.SEALED)), annotations, location);
+		Set<Modifier> mods = Sets.union(modifiers, permittedTypes.isEmpty() ? Set.of() : Set.of(Modifier.SEALED));
+		super(qualifiedName, visibility, mods, annotations, location);
 		Preconditions.checkNotNull(implementedInterfaces);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(fields);

@@ -89,7 +89,7 @@ public final class LibraryTypes implements TypeProvider {
 				Comparator.naturalOrder(),
 				Symbol::getQualifiedName,
 				Function.identity(),
-				(fqn, duplicate) -> {
+				(fqn, _) -> {
 					throw new RoseauException("Duplicated type in %s: %s".formatted(library, fqn));
 				}
 			));

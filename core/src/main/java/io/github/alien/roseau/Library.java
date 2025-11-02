@@ -138,7 +138,7 @@ public final class Library {
 		// Just read the entries; even on stupidly huge JARs, this is fine
 		try (ZipFile zf = new ZipFile(file.toFile())) {
 			return true;
-		} catch (IOException e) {
+		} catch (IOException _) {
 			return false;
 		}
 	}

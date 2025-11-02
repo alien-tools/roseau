@@ -300,7 +300,7 @@ class PopularLibrariesTestIT {
 					}
 				})
 				.sum();
-		} catch (IOException ignored) {
+		} catch (IOException _) {
 			return -1L;
 		}
 	}
@@ -345,7 +345,7 @@ class PopularLibrariesTestIT {
 							.supplyAsync(() -> downloadPom(groupId, artifactId, version), executor)
 							.thenApplyAsync(pom -> new MavenClasspathBuilder().buildClasspath(pom), executor);
 						return CompletableFuture.allOf(binaryFuture, sourcesFuture, classpathFuture)
-							.thenApply(ignored -> new Lib(binaryFuture.join(), sourcesFuture.join(), classpathFuture.join()));
+							.thenApply(_ -> new Lib(binaryFuture.join(), sourcesFuture.join(), classpathFuture.join()));
 					}
 				));
 

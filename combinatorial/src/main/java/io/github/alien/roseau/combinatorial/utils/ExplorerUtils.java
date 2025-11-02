@@ -19,7 +19,7 @@ public final class ExplorerUtils {
 			FileUtils.deleteDirectory(file);
 
 			return true;
-		} catch (IOException ignored) {
+		} catch (IOException _) {
 			return false;
 		}
 	}
@@ -33,7 +33,7 @@ public final class ExplorerUtils {
 				try {
 					FileUtils.cleanDirectory(file);
 					return true;
-				} catch (IOException ignored) {
+				} catch (IOException _) {
 					return false;
 				}
 			}

@@ -170,11 +170,11 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 
 	private static String formatMemberKind(TypeMemberDecl member) {
 		return switch (member) {
-			case EnumValueDecl ignored -> "Enum value";
-			case MethodDecl ignored -> "Method";
-			case ConstructorDecl ignored -> "Constructor";
-			case FieldDecl ignored -> "Field";
-			case RecordComponentDecl ignored -> "Record component";
+			case EnumValueDecl _ -> "Enum value";
+			case MethodDecl _ -> "Method";
+			case ConstructorDecl _ -> "Constructor";
+			case FieldDecl _ -> "Field";
+			case RecordComponentDecl _ -> "Record component";
 		};
 	}
 
