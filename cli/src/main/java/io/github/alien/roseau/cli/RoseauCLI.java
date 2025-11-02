@@ -11,7 +11,6 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
-import io.github.alien.roseau.extractors.ExtractorType;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -63,9 +62,6 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--v2", paramLabel = "<path>",
 		description = "Path to the second version of the library; either a source directory or a JAR")
 	private Path v2;
-	@Option(names = "--extractor", paramLabel = "<extractor>",
-		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
-	private ExtractorType extractorType;
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
@@ -94,12 +90,6 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--v2-pom", paramLabel = "<path>",
 		description = "A --pom for --v2")
 	private Path v2Pom;
-	@Option(names = "--v1-extractor", paramLabel = "<extractor>",
-		description = "An --extractor for --v1")
-	private ExtractorType v1ExtractorType;
-	@Option(names = "--v2-extractor", paramLabel = "<extractor>",
-		description = "An --extractor for --v2")
-	private ExtractorType v2ExtractorType;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as the one produced by --format CSV")
@@ -235,16 +225,15 @@ public final class RoseauCLI implements Callable<Integer> {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
-			extractorType,
 			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)),
 			noExclusions
 		);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, v1ExtractorType, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
+			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
 			noExclusions, apiJson
 		);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, v2ExtractorType, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
+			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
 			noExclusions, null
 		);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)

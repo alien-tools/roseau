@@ -46,7 +46,6 @@ class JdkTestIT {
 		var srcLibrary = Library.builder()
 			.location(src)
 			.classpath(classpath)
-			.extractorType(ExtractorType.JDT)
 			.build();
 
 		sw.reset().start();
@@ -73,7 +72,6 @@ class JdkTestIT {
 		var jarLibrary = Library.builder()
 			.location(jmod)
 			.classpath(classpath)
-			.extractorType(ExtractorType.ASM)
 			.build();
 
 		sw.reset().start();

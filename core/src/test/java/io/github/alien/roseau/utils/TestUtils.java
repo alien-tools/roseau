@@ -268,13 +268,12 @@ public class TestUtils {
 		return sourcesMap;
 	}
 
-	public static API buildJdtAPI(String sources, Exclude exclusions) {
+	public static API buildSourcesAPI(String sources, Exclude exclusions) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
 			Library library = Library.builder()
 				.location(sourcesPath)
-				.extractorType(ExtractorType.JDT)
 				.exclusions(exclusions)
 				.build();
 			API api = Roseau.buildAPI(library);
@@ -285,13 +284,12 @@ public class TestUtils {
 		}
 	}
 
-	public static API buildJdtAPI(String sources) {
+	public static API buildSourcesAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
 			Library library = Library.builder()
 				.location(sourcesPath)
-				.extractorType(ExtractorType.JDT)
 				.build();
 			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
@@ -301,7 +299,7 @@ public class TestUtils {
 		}
 	}
 
-	public static API buildAsmAPI(String sources) {
+	public static API buildJarAPI(String sources) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
@@ -309,7 +307,6 @@ public class TestUtils {
 			buildJar(sourcesMap, tempJarFile.toPath());
 			Library library = Library.builder()
 				.location(tempJarFile.toPath())
-				.extractorType(ExtractorType.ASM)
 				.build();
 			return Roseau.buildAPI(library);
 		} catch (IOException e) {
@@ -336,7 +333,7 @@ public class TestUtils {
 	}
 
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
-		ApiDiff apiDiff = new ApiDiff(buildJdtAPI(sourcesV1), buildJdtAPI(sourcesV2));
+		ApiDiff apiDiff = new ApiDiff(buildSourcesAPI(sourcesV1), buildSourcesAPI(sourcesV2));
 		return apiDiff.diff().getBreakingChanges();
 
 		// Simple differential testing with japicmp

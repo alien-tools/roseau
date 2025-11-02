@@ -55,18 +55,15 @@ Roseau supports different modes, output formats, and options:
 ```
 $ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help
 Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
-              [--classpath=<path>[,<path>...]] [--config=<path>]
-              [--extractor=<extractor>] [--format=<format>] [--ignored=<path>]
-              [--pom=<path>] [--report=<path>] [--v1=<path>]
-              [--v1-classpath=<path>[,<path>...]] [--v1-extractor=<extractor>]
-              [--v1-pom=<path>] [--v2=<path>] [--v2-classpath=<path>[,
-              <path>...]] [--v2-extractor=<extractor>] [--v2-pom=<path>] (--api
-              | --diff)
+              [--classpath=<path>[,<path>...]] [--config=<path>] [--format=<format>]
+              [--ignored=<path>] [--pom=<path>] [--report=<path>]
+              [--v1=<path>] [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
+              [--v2=<path>] [--v2-classpath=<path>[,<path>...]] [--v2-pom=<path>]
+              (--api | --diff)
       --api               Serialize the API model of --v1; see --api-json
       --diff              Compute breaking changes between versions --v1 and --v2
       --v1=<path>         Path to the first version of the library; either a source directory or a JAR
       --v2=<path>         Path to the second version of the library; either a source directory or a JAR
-      --extractor=<extractor> API extractor to use: ASM, JDT
       --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
       --report=<path>     Where to write the breaking changes report in --diff mode
       --format=<format>   Format of the report: CLI, CSV, HTML, JSON, MD
@@ -76,8 +73,6 @@ Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
       --v2-classpath=<path>[,<path>...] A --classpath for --v2
       --v1-pom=<path>     A --pom for --v1
       --v2-pom=<path>     A --pom for --v2
-      --v1-extractor=<extractor> An --extractor for --v1
-      --v2-extractor=<extractor> An --extractor for --v2
       --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as the one produced by --format CSV
       --config=<path>     A roseau.yaml config file; CLI options take precedence over these options
       --fail-on-bc        Return with exit code 1 if breaking changes are detected
@@ -93,7 +88,6 @@ common:
   classpath:
     pom: /path/to/pom.xml
     jars: [ /path/to/dependency.jar ]
-  extractor: JDT
 v1:
   apiReport: ./reports/v1.json
 v2:
@@ -112,6 +106,7 @@ Roseau can be configured to ignore breaking changes on symbols matching a given 
 ```yaml
 common:
   excludes:
+    names: [ com\.google\.common\..* ]
     annotations:
       - name: com.google.common.annotations.Beta
       - name: org.apiguardian.api.API

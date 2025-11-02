@@ -222,27 +222,6 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void unsupported_extractor() {
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--extractor=UNKNOWN",
-			"--api");
-
-		assertThat(err.toString()).contains("Invalid value for option '--extractor'");
-		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
-	}
-
-	@Test
-	void incompatible_extractor() {
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--v2=src/test/resources/test-project-v2/src",
-			"--extractor=ASM",
-			"--diff");
-
-		assertThat(err.toString()).contains("ASM extractor cannot be used");
-		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
-	}
-
-	@Test
 	void unsupported_formatter() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",

@@ -10,13 +10,13 @@ public enum ApiDifferType implements ApiDiffer {
 	ASM {
 		@Override
 		public List<BreakingChange> diff(String v1, String v2) {
-			return diff(TestUtils.buildAsmAPI(v1), TestUtils.buildAsmAPI(v2));
+			return diff(TestUtils.buildJarAPI(v1), TestUtils.buildJarAPI(v2));
 		}
 	},
 	JDT {
 		@Override
 		public List<BreakingChange> diff(String v1, String v2) {
-			return diff(TestUtils.buildJdtAPI(v1), TestUtils.buildJdtAPI(v2));
+			return diff(TestUtils.buildSourcesAPI(v1), TestUtils.buildSourcesAPI(v2));
 		}
 	};
 

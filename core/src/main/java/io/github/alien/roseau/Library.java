@@ -176,14 +176,13 @@ public final class Library {
 
 	/**
 	 * Builder class for constructing {@link Library} instances. Use the provided methods to set the physical location,
-	 * classpath, {@code pom.xml} file, and {@link ExtractorType} of the library, and invoke {@link #build()} to create
+	 * classpath, {@code pom.xml} file, and API exclusions of the library, and invoke {@link #build()} to create
 	 * the corresponding {@link Library}. Only the library's location is required.
 	 */
 	public static final class Builder {
 		private Path location;
 		private List<Path> classpath = List.of();
 		private Path pom;
-		private ExtractorType extractorType;
 		private RoseauOptions.Exclude exclusions = new RoseauOptions.Exclude(List.of(), List.of());
 
 		private Builder() {
@@ -220,17 +219,6 @@ public final class Library {
 		 */
 		public Builder pom(Path pom) {
 			this.pom = pom;
-			return this;
-		}
-
-		/**
-		 * Sets the extractor to be used for parsing and inferring types.
-		 *
-		 * @param extractorType the desired {@link ExtractorType}
-		 * @return this builder
-		 */
-		public Builder extractorType(ExtractorType extractorType) {
-			this.extractorType = extractorType;
 			return this;
 		}
 
@@ -274,8 +262,7 @@ public final class Library {
 		 * Constructs and returns a new {@link Library} instance based on the parameters set in the builder.
 		 *
 		 * @return the new instance
-		 * @throws IllegalArgumentException if the library's location is invalid, if the POM file path is invalid, or if the
-		 *                                  specified extractor type is incompatible with the library's type
+		 * @throws IllegalArgumentException if the library's location or POM file is invalid
 		 */
 		public Library build() {
 			if (!isValidLocation(location)) {
@@ -295,22 +282,7 @@ public final class Library {
 			}
 
 			// Default extractors
-			if (extractorType == null) {
-				if (isSources(location)) {
-					extractorType = ExtractorType.JDT;
-				} else {
-					extractorType = ExtractorType.ASM;
-				}
-			}
-
-			if (extractorType == ExtractorType.ASM && isSources(location)) {
-				throw new RoseauException("ASM extractor cannot be used on source directories and module-info.java");
-			}
-
-			if (extractorType == ExtractorType.JDT && isJar(location)) {
-				throw new RoseauException("JDT extractor cannot be used on JARs");
-			}
-
+			ExtractorType extractorType = isSources(location) ? ExtractorType.JDT : ExtractorType.ASM;
 			return new Library(location, classpath, pom, extractorType, exclusions);
 		}
 	}

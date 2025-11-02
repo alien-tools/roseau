@@ -131,13 +131,11 @@ class PopularLibrariesTestIT {
 		var asmLibrary = Library.builder()
 			.location(binaryJar)
 			.classpath(classpath)
-			.extractorType(ExtractorType.ASM)
 			.build();
 		var jdtLibrary = Library
 			.builder()
 			.location(sourcesDir)
 			.classpath(classpath)
-			.extractorType(ExtractorType.JDT)
 			.build();
 
 		// ASM API
