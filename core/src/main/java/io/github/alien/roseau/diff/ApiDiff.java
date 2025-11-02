@@ -30,7 +30,7 @@ import java.util.Set;
  * The compared APIs are visited deeply to match their symbols pairwise based on their unique name and compare their
  * properties when their names match. This implementation visits all {@link TypeDecl} instances in parallel.
  */
-public class ApiDiff implements APIComparator<RoseauReport> {
+public class ApiDiff implements ApiComparator<RoseauReport> {
 	/**
 	 * The first version of the API to be compared.
 	 */

@@ -10,11 +10,11 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import java.util.Optional;
 
 public interface SymbolMatcher {
-	Optional<TypeDecl> matchType(API api, TypeDecl t1);
+	Optional<TypeDecl> matchType(API api, TypeDecl type);
 
-	Optional<FieldDecl> matchField(API api, TypeDecl t2, FieldDecl f1);
+	Optional<FieldDecl> matchField(API api, TypeDecl type, FieldDecl field);
 
-	Optional<MethodDecl> matchMethod(API api, TypeDecl t2, MethodDecl m1);
+	Optional<MethodDecl> matchMethod(API api, TypeDecl type, MethodDecl method);
 
-	Optional<ConstructorDecl> matchConstructor(API api, ClassDecl c2, ConstructorDecl cons1);
+	Optional<ConstructorDecl> matchConstructor(API api, ClassDecl cls, ConstructorDecl cons);
 }

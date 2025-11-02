@@ -6,7 +6,7 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 
-public interface DiffSink {
+public interface ApiDiffer {
 	void onMatchedType(TypeDecl v1, TypeDecl v2);
 
 	void onRemovedType(TypeDecl v1);

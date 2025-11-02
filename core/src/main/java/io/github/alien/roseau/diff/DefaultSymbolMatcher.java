@@ -11,22 +11,22 @@ import java.util.Optional;
 
 public class DefaultSymbolMatcher implements SymbolMatcher {
 	@Override
-	public Optional<TypeDecl> matchType(API api, TypeDecl t1) {
-		return api.findExportedType(t1.getQualifiedName());
+	public Optional<TypeDecl> matchType(API api, TypeDecl type) {
+		return api.findExportedType(type.getQualifiedName());
 	}
 
 	@Override
-	public Optional<FieldDecl> matchField(API api, TypeDecl t2, FieldDecl f1) {
-		return api.findField(t2, f1.getSimpleName());
+	public Optional<FieldDecl> matchField(API api, TypeDecl type, FieldDecl field) {
+		return api.findField(type, field.getSimpleName());
 	}
 
 	@Override
-	public Optional<MethodDecl> matchMethod(API api, TypeDecl t2, MethodDecl m1) {
-		return api.findMethod(t2, api.getErasure(m1));
+	public Optional<MethodDecl> matchMethod(API api, TypeDecl type, MethodDecl method) {
+		return api.findMethod(type, api.getErasure(method));
 	}
 
 	@Override
-	public Optional<ConstructorDecl> matchConstructor(API api, ClassDecl c2, ConstructorDecl cons1) {
-		return api.findConstructor(c2, api.getErasure(cons1));
+	public Optional<ConstructorDecl> matchConstructor(API api, ClassDecl cls, ConstructorDecl cons) {
+		return api.findConstructor(cls, api.getErasure(cons));
 	}
 }
