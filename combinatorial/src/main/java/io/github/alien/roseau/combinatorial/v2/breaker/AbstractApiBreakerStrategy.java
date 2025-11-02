@@ -37,7 +37,7 @@ public abstract class AbstractApiBreakerStrategy {
 			applyBreakToMutableApi(mutableApi);
 
 			newApiQueue.put(strategyName, mutableApi.make());
-		} catch (ImpossibleChangeException ignored) {
+		} catch (ImpossibleChangeException _) {
 			impossibleStrategyQueue.put(strategyName, null);
 		} catch (Exception e) {
 			LOGGER.error("Failed to apply breaking changes for strategy {}", strategyName);

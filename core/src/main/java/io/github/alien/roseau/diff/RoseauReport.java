@@ -49,6 +49,7 @@ public final class RoseauReport {
 	public List<BreakingChange> getBreakingChanges() {
 		return breakingChanges.stream()
 			.filter(bc -> !v1.isExcluded(bc.impactedSymbol()))
+			.filter(bc -> !v1.isExcluded(bc.impactedType()))
 			.toList();
 	}
 

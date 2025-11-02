@@ -56,7 +56,7 @@ public final class RevapiTool extends AbstractTool {
 							})
 					)
 			);
-		} catch (Exception ignored) {}
+		} catch (Exception _) {}
 
 		var isBinaryBreaking = breakingChanges.stream().anyMatch(diff ->
 				diff.classification.get(CompatibilityType.BINARY).equals(DifferenceSeverity.BREAKING)

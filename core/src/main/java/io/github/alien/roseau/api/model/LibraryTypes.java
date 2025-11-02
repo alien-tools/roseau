@@ -8,19 +8,24 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
-import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
+import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -73,17 +78,18 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
 	@JsonCreator
-	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") List<TypeDecl> types) {
+	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") Set<TypeDecl> types) {
 		Preconditions.checkNotNull(library);
 		Preconditions.checkNotNull(module);
 		Preconditions.checkNotNull(types);
 		this.library = library;
 		this.module = module;
 		allTypes = types.stream()
-			.collect(ImmutableMap.toImmutableMap(
+			.collect(ImmutableSortedMap.toImmutableSortedMap(
+				Comparator.naturalOrder(),
 				Symbol::getQualifiedName,
 				Function.identity(),
-				(fqn, duplicate) -> {
+				(fqn, _) -> {
 					throw new RoseauException("Duplicated type in %s: %s".formatted(library, fqn));
 				}
 			));
@@ -95,7 +101,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param library The analyzed library
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
-	public LibraryTypes(Library library, List<TypeDecl> types) {
+	public LibraryTypes(Library library, Set<TypeDecl> types) {
 		this(library, ModuleDecl.UNNAMED_MODULE, types);
 	}
 
@@ -110,23 +116,15 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Creates a new resolved API using the given classpath and a default resolver.
-	 *
-	 * @param classpath the classpath used for type resolution
-	 * @return the new resolved API
-	 */
-	public API toAPI(Set<Path> classpath) {
-		TypeProvider typeProvider = new SpoonTypeProvider(new CachingTypeReferenceFactory(), classpath);
-		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
-	}
-
-	/**
-	 * Convenience method to create a resolved API using a default resolver.
+	 * Creates a new resolved API using a default resolver.
 	 *
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		return toAPI(Set.of());
+		ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
+		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
+		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
+		return toAPI(new CachingTypeResolver(List.of(this, classpathProvider)));
 	}
 
 	/**
@@ -155,8 +153,8 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return The list of <strong>all</strong> {@link TypeDecl}
 	 */
 	@JsonProperty("allTypes")
-	public List<TypeDecl> getAllTypes() {
-		return allTypes.values().stream().toList();
+	public Collection<TypeDecl> getAllTypes() {
+		return allTypes.values();
 	}
 
 	/**
@@ -205,13 +203,10 @@ public final class LibraryTypes implements TypeProvider {
 		if (this == obj) {
 			return true;
 		}
-		if (obj == null || getClass() != obj.getClass()) {
-			return false;
-		}
-		LibraryTypes other = (LibraryTypes) obj;
-		return Objects.equals(library, other.library) &&
-			Objects.equals(module, other.module) &&
-			Objects.equals(allTypes, other.allTypes);
+		return obj instanceof LibraryTypes other
+			&& Objects.equals(library, other.library)
+			&& Objects.equals(module, other.module)
+			&& Objects.equals(allTypes, other.allTypes);
 	}
 
 	@Override

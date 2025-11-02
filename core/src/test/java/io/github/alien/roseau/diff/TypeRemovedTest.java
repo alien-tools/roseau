@@ -173,4 +173,46 @@ class TypeRemovedTest {
 
 		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
+
+	@Client("new C().m();")
+	@Test
+	void anonymous_nested_class_removed() {
+		var v1 = """
+			public class C {
+			  public void m() {
+			    new Thread() {
+			      public static class I {}
+			      @Override public void run() {}
+			    };
+			  }
+			}""";
+		var v2 = """
+			public class C {
+			  public void m() {
+			    new Thread() {
+			      @Override public void run() {}
+			    };
+			  }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new C().m();")
+	@Test
+	void local_class_removed() {
+		var v1 = """
+			public class C {
+			  public void m() {
+			    class I {}
+			  }
+			}""";
+		var v2 = """
+			public class C {
+			  public void m() {
+			  }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

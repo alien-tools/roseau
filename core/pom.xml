@@ -7,7 +7,7 @@
     <parent>
         <groupId>io.github.alien-tools</groupId>
         <artifactId>roseau-parent</artifactId>
-        <version>0.4.0-SNAPSHOT</version>
+        <version>0.5.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>roseau-core</artifactId>
@@ -51,19 +51,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>fr.inria.gforge.spoon</groupId>
-            <artifactId>spoon-core</artifactId>
-            <version>11.2.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
         </dependency>
-        <!-- match Spoon's version -->
         <dependency>
             <groupId>org.eclipse.jdt</groupId>
             <artifactId>org.eclipse.jdt.core</artifactId>
-            <version>3.41.0</version>
+            <version>3.43.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -104,21 +98,16 @@
             <artifactId>log4j-layout-template-json</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Process Spoon's slf4j logs with ours -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j2-impl</artifactId>
-            <scope>runtime</scope>
-        </dependency>
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
             <version>3.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.siom79.japicmp</groupId>
-            <artifactId>japicmp</artifactId>
-            <version>0.23.1</version>
+            <exclusions>
+                <exclusion>
+                    <groupId>commons-io</groupId>
+                    <artifactId>commons-io</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
         <dependency>
             <groupId>net.openhft</groupId>

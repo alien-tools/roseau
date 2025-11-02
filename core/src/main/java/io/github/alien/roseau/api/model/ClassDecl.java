@@ -14,20 +14,20 @@ import java.util.Set;
  */
 public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	protected final TypeReference<ClassDecl> superClass;
-	protected final List<ConstructorDecl> constructors;
+	protected final Set<ConstructorDecl> constructors;
 
 	public ClassDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-	                 List<Annotation> annotations, SourceLocation location,
-	                 List<TypeReference<InterfaceDecl>> implementedInterfaces,
-	                 List<FormalTypeParameter> formalTypeParameters, List<FieldDecl> fields, List<MethodDecl> methods,
+	                 Set<Annotation> annotations, SourceLocation location,
+	                 Set<TypeReference<InterfaceDecl>> implementedInterfaces,
+	                 List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
-	                 List<ConstructorDecl> constructors, List<TypeReference<TypeDecl>> permittedTypes) {
+	                 Set<ConstructorDecl> constructors, Set<TypeReference<TypeDecl>> permittedTypes) {
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
 		Preconditions.checkNotNull(constructors);
 		Preconditions.checkNotNull(permittedTypes);
 		this.superClass = Optional.ofNullable(superClass).orElse(TypeReference.OBJECT);
-		this.constructors = List.copyOf(constructors);
+		this.constructors = Set.copyOf(constructors);
 	}
 
 	@Override
@@ -49,7 +49,7 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		return superClass;
 	}
 
-	public List<ConstructorDecl> getDeclaredConstructors() {
+	public Set<ConstructorDecl> getDeclaredConstructors() {
 		return constructors;
 	}
 
@@ -68,9 +68,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 		if (!super.equals(obj)) {
 			return false;
 		}
-		ClassDecl other = (ClassDecl) obj;
-		return Objects.equals(superClass, other.superClass) &&
-			Objects.equals(constructors, other.constructors);
+		return obj instanceof ClassDecl other
+			&& Objects.equals(superClass, other.superClass)
+			&& Objects.equals(constructors, other.constructors);
 	}
 
 	@Override

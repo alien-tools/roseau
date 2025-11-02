@@ -5,7 +5,6 @@ import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
-import io.github.alien.roseau.extractors.ExtractorType;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -27,14 +26,13 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	/**
 	 * Options shared by v1 and v2
 	 *
-	 * @param extractor the {@link ExtractorType} to use
 	 * @param classpath the {@link Classpath} to use
 	 * @param excludes  the API {@link Exclude} options to apply
 	 */
-	public record Common(ExtractorType extractor, Classpath classpath, Exclude excludes) {
+	public record Common(Classpath classpath, Exclude excludes) {
 		Common mergeWith(Common other) {
 			return other != null
-				? new Common(either(other.extractor(), extractor), classpath.mergeWith(other.classpath()),
+				? new Common(classpath.mergeWith(other.classpath()),
 				excludes.mergeWith(other.excludes()))
 				: this;
 		}
@@ -44,23 +42,21 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	 * Options for a particular library, v1 or v2
 	 *
 	 * @param location  the location of the library
-	 * @param extractor the {@link ExtractorType} to use
 	 * @param classpath the {@link Classpath} to use
 	 * @param excludes  the API {@link Exclude} options to apply
 	 * @param apiReport the location of the API report to generate
 	 */
-	public record Library(Path location, ExtractorType extractor, Classpath classpath, Exclude excludes, Path apiReport) {
+	public record Library(Path location, Classpath classpath, Exclude excludes, Path apiReport) {
 		Library mergeWith(Library other) {
 			return other != null
-				? new Library(either(other.location(), location), either(other.extractor(), extractor),
-				classpath.mergeWith(other.classpath()), excludes.mergeWith(other.excludes()),
-				either(other.apiReport(), apiReport))
+				? new Library(either(other.location(), location), classpath.mergeWith(other.classpath()),
+				excludes.mergeWith(other.excludes()), either(other.apiReport(), apiReport))
 				: this;
 		}
 
 		public Library mergeWith(Common common) {
 			return common != null
-				? new Library(location, either(extractor, common.extractor()), common.classpath().mergeWith(classpath),
+				? new Library(location, common.classpath().mergeWith(classpath),
 				common.excludes().mergeWith(excludes), apiReport)
 				: this;
 		}
@@ -70,7 +66,6 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 				.location(location)
 				.classpath(classpath.jars())
 				.pom(classpath.pom())
-				.extractorType(extractor)
 				.exclusions(excludes)
 				.build();
 		}
@@ -82,7 +77,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	 * @param pom  the path to the {@code pom.xml} to extract a classpath from
 	 * @param jars the manual classpath
 	 */
-	public record Classpath(Path pom, Set<Path> jars) {
+	public record Classpath(Path pom, List<Path> jars) {
 		Classpath mergeWith(Classpath other) {
 			return other != null
 				? new Classpath(either(other.pom(), pom), either(other.jars(), jars))
@@ -153,10 +148,10 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	 * @return the empty instance
 	 */
 	public static RoseauOptions newDefault() {
-		Classpath defaultClasspath = new Classpath(null, Set.of());
+		Classpath defaultClasspath = new Classpath(null, List.of());
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
-		Library defaultLibrary = new Library(null, null, defaultClasspath, defaultExclusion, null);
-		Common defaultCommon = new Common(null, defaultClasspath, defaultExclusion);
+		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null);
+		Common defaultCommon = new Common(defaultClasspath, defaultExclusion);
 		List<Report> defaultReports = List.of();
 		return new RoseauOptions(defaultCommon, defaultLibrary, defaultLibrary, null, defaultReports);
 	}

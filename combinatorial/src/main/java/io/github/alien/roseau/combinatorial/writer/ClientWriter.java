@@ -655,7 +655,7 @@ public final class ClientWriter extends AbstractWriter {
 			var valuesAsFields = enumDecl.getDeclaredFields().stream().filter(f -> f.isStatic() && f.isFinal());
 			enumValue = valuesAsFields.findFirst().map(Symbol::getSimpleName).orElse("");
 		} else {
-			enumValue = enumDecl.getValues().getFirst().toString();
+			enumValue = enumDecl.getValues().stream().toList().getFirst().toString();
 		}
 
 		return "%s.%s".formatted(StringUtils.cleanQualifiedNameForType(enumDecl), enumValue);

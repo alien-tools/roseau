@@ -11,7 +11,6 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
-import io.github.alien.roseau.extractors.ExtractorType;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -26,10 +25,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -39,15 +36,17 @@ import static picocli.CommandLine.Spec;
 /**
  * Main class implementing a CLI for interacting with Roseau. See {@code --help} for usage information.
  */
-@Command(name = "roseau", version = "Roseau 0.4.0-SNAPSHOT", sortOptions = false, mixinStandardHelpOptions = true,
+@Command(name = "roseau", sortOptions = false, mixinStandardHelpOptions = true,
+	versionProvider = RoseauCLI.VersionProvider.class,
 	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
 		"--v1 and --v2 can point to either JAR files or source code directories. " +
 		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
 public final class RoseauCLI implements Callable<Integer> {
 	@Spec
-	CommandSpec spec;
+	private CommandSpec spec;
 	@ArgGroup(exclusive = true, multiplicity = "1")
-	Mode mode;
+	private Mode mode;
+
 	private static class Mode {
 		@Option(names = "--api",
 			description = "Serialize the API model of --v1; see --api-json")
@@ -56,17 +55,15 @@ public final class RoseauCLI implements Callable<Integer> {
 			description = "Compute breaking changes between versions --v1 and --v2")
 		boolean diff;
 	}
+
 	@Option(names = "--v1", paramLabel = "<path>",
 		description = "Path to the first version of the library; either a source directory or a JAR")
 	private Path v1;
 	@Option(names = "--v2", paramLabel = "<path>",
 		description = "Path to the second version of the library; either a source directory or a JAR")
 	private Path v2;
-	@Option(names = "--extractor", paramLabel = "<extractor>",
-		description = "API extractor to use: ${COMPLETION-CANDIDATES}")
-	private ExtractorType extractorType;
 	@Option(names = "--api-json", paramLabel = "<path>",
-		description = "Where to serialize the JSON API model of --v1 in --api mode")
+		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
 	@Option(names = "--report", paramLabel = "<path>",
 		description = "Where to write the breaking changes report in --diff mode")
@@ -79,7 +76,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			"shared by --v1 and --v2")
 	private String classpath;
 	@Option(names = "--pom", paramLabel = "<path>",
-		description = "A pom.xml file to build a classpath from, shared by --v1 and --v2")
+		description = "A pom.xml file to extract the classpath from, shared by --v1 and --v2")
 	private Path pom;
 	@Option(names = "--v1-classpath", paramLabel = "<path>[,<path>...]",
 		description = "A --classpath for --v1")
@@ -93,21 +90,15 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--v2-pom", paramLabel = "<path>",
 		description = "A --pom for --v2")
 	private Path v2Pom;
-	@Option(names = "--v1-extractor", paramLabel = "<extractor>",
-		description = "An --extractor for --v1")
-	private ExtractorType v1ExtractorType;
-	@Option(names = "--v2-extractor", paramLabel = "<extractor>",
-		description = "An --extractor for --v2")
-	private ExtractorType v2ExtractorType;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as the one produced by --format CSV")
 	private Path ignoredCsv;
 	@Option(names = "--config", paramLabel = "<path>",
-		description = "A roseau.yaml config file; overridden by CLI options")
+		description = "A roseau.yaml config file; CLI options take precedence over these options")
 	private Path config;
 	@Option(names = "--fail-on-bc",
-		description = "Return 1 if breaking changes are detected")
+		description = "Return with exit code 1 if breaking changes are detected")
 	private boolean failMode;
 	@Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
@@ -141,13 +132,15 @@ public final class RoseauCLI implements Callable<Integer> {
 		return report;
 	}
 
-	private static Set<Path> buildClasspathFromString(String cp) {
-		return cp != null
-			? Arrays.stream(cp.split(File.pathSeparator))
+	private static List<Path> buildClasspathFromString(String cp) {
+		if (cp == null) {
+			return List.of();
+		}
+
+		return Arrays.stream(cp.split(File.pathSeparator))
 			.filter(p -> p.endsWith(".jar"))
 			.map(Path::of)
-			.collect(Collectors.toSet())
-			: Set.of();
+			.toList();
 	}
 
 	private void writeReport(RoseauReport report, BreakingChangesFormatterFactory format, Path path) {
@@ -232,16 +225,15 @@ public final class RoseauCLI implements Callable<Integer> {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
-			extractorType,
 			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)),
 			noExclusions
 		);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, v1ExtractorType, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
+			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
 			noExclusions, apiJson
 		);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, v2ExtractorType, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
+			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
 			noExclusions, null
 		);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
@@ -328,18 +320,22 @@ public final class RoseauCLI implements Callable<Integer> {
 				boolean breaking = doDiff(libraryV1, libraryV2, options);
 
 				if (breaking && failMode) {
-					return ExitCode.BREAKING.getCode();
+					return ExitCode.BREAKING.code();
 				}
 			}
 
-			return ExitCode.SUCCESS.getCode();
+			return ExitCode.SUCCESS.code();
 		} catch (RuntimeException e) {
 			if (verbose) {
 				e.printStackTrace(spec.commandLine().getErr());
 			} else {
-				printErr(Optional.ofNullable(e.getMessage()).orElse(e.getClass().getSimpleName()));
+				String message = Optional.ofNullable(e.getMessage())
+					.or(() -> Optional.ofNullable(e.getCause()).map(Throwable::getMessage))
+					.orElseGet(() -> e.getClass().getCanonicalName());
+				printErr(message);
+				printErr("Use -v/-vv for detailed error logs.");
 			}
-			return ExitCode.ERROR.getCode();
+			return ExitCode.ERROR.code();
 		}
 	}
 
@@ -363,8 +359,16 @@ public final class RoseauCLI implements Callable<Integer> {
 		spec.commandLine().getErr().println(message);
 	}
 
-	public static void main(String[] args) {
+	static void main(String[] args) {
 		int exitCode = new CommandLine(new RoseauCLI()).execute(args);
 		System.exit(exitCode);
+	}
+
+	static final class VersionProvider implements CommandLine.IVersionProvider {
+		@Override
+		public String[] getVersion() {
+			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.4.0-SNAPSHOT");
+			return new String[]{"Roseau " + impl};
+		}
 	}
 }

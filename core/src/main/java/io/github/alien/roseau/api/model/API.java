@@ -1,8 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.Library;
-import io.github.alien.roseau.api.analysis.CachingAPIAnalyzer;
+import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import org.apache.logging.log4j.LogManager;
@@ -11,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
@@ -18,13 +18,13 @@ import java.util.stream.Collectors;
 /**
  * An API augments {@link LibraryTypes} with analysis capabilities and symbol export information.
  */
-public final class API extends CachingAPIAnalyzer {
+public final class API extends CachingApiAnalyzer {
 	/**
 	 * The types, exported or not, declared in the library.
 	 */
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver typeResolver;
-	private final List<Pattern> namePatterns;
+	private final Set<Pattern> namePatterns;
 
 	private static final Logger LOGGER = LogManager.getLogger(API.class);
 
@@ -43,7 +43,7 @@ public final class API extends CachingAPIAnalyzer {
 				}
 			})
 			.filter(Objects::nonNull)
-			.toList();
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	public LibraryTypes getLibraryTypes() {
@@ -96,9 +96,8 @@ public final class API extends CachingAPIAnalyzer {
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
-		return getExportedTypes().stream()
-			.filter(type -> type.getQualifiedName().equals(qualifiedName))
-			.findFirst();
+		return libraryTypes.findType(qualifiedName)
+			.filter(this::isExported);
 	}
 
 	public Library getLibrary() {

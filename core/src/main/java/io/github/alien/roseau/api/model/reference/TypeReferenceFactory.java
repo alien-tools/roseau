@@ -3,12 +3,12 @@ package io.github.alien.roseau.api.model.reference;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 
-import java.util.Collections;
 import java.util.List;
 
 /**
- * An abstract factory of {@link ITypeReference} instances. All references within an {@link LibraryTypes} should be created using
- * the same factory. Implementations can return the same instance when the same reference is created multiple times.
+ * An abstract factory of {@link ITypeReference} instances. All references within an {@link LibraryTypes} should be
+ * created using the same factory. Implementations can return the same instance when the same reference is created
+ * multiple times.
  *
  * @see CachingTypeReferenceFactory
  */
@@ -72,6 +72,6 @@ public interface TypeReferenceFactory {
 	 * @see TypeReference<T>
 	 */
 	default <T extends TypeDecl> TypeReference<T> createTypeReference(String qualifiedName) {
-		return createTypeReference(qualifiedName, Collections.emptyList());
+		return createTypeReference(qualifiedName, List.of());
 	}
 }

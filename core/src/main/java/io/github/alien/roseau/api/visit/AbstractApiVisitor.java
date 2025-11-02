@@ -26,10 +26,10 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
 /**
- * A default abstract implementation of {@link APIAlgebra} using {@link Visit} as the lambda type that produces no
+ * A default abstract implementation of {@link ApiAlgebra} using {@link Visit} as the lambda type that produces no
  * value.
  */
-public abstract class AbstractAPIVisitor implements APIAlgebra<Visit> {
+public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 	@Override
 	public Visit api(API it) {
 		return () -> $(it.getLibraryTypes()).visit();

@@ -31,7 +31,7 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
  *
  * @param <T> the lambda type returned by each visit method
  */
-public interface APIAlgebra<T> {
+public interface ApiAlgebra<T> {
 	T api(API it);
 	T libraryTypes(LibraryTypes it);
 	T classDecl(ClassDecl it);
@@ -66,8 +66,8 @@ public interface APIAlgebra<T> {
 			case RecordDecl r          -> recordDecl(r);
 			case EnumDecl e            -> enumDecl(e);
 			case ClassDecl c           -> classDecl(c);
-			case InterfaceDecl i       -> interfaceDecl(i);
 			case AnnotationDecl a      -> annotationDecl(a);
+			case InterfaceDecl i       -> interfaceDecl(i);
 			case MethodDecl m          -> methodDecl(m);
 			case ConstructorDecl c     -> constructorDecl(c);
 			case EnumValueDecl v       -> enumValueDecl(v);

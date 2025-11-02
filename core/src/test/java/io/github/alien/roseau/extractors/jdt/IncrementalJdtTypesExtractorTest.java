@@ -1,9 +1,12 @@
 package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -18,6 +21,15 @@ import static io.github.alien.roseau.utils.TestUtils.assertRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class IncrementalJdtTypesExtractorTest {
+	JdtTypesExtractor extractor;
+	IncrementalJdtTypesExtractor incrementalExtractor;
+
+	@BeforeEach
+	void setUp() {
+		extractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
+		incrementalExtractor = new IncrementalJdtTypesExtractor(extractor);
+	}
+
 	@Test
 	void unchanged_symbols_are_kept(@TempDir Path wd) throws Exception {
 		var i = wd.resolve("I.java");
@@ -26,14 +38,12 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(wd.resolve("C.java"), "public class C implements I {}");
 		Files.writeString(wd.resolve("R.java"), "public record R() {}");
 
-		var extractor = new JdtTypesExtractor();
 		var types1 = extractor.extractTypes(library1);
 		var api1 = types1.toAPI();
 
 		Files.writeString(i, "public interface I { void m(); }");
 		var changedFiles = new ChangedFiles(Set.of(wd.relativize(i)), Set.of(), Set.of());
 
-		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
 		var api2 = types2.toAPI();
 
@@ -50,10 +60,10 @@ class IncrementalJdtTypesExtractorTest {
 
 		assertThat(c1.getImplementedInterfaces())
 			.singleElement()
-			.isSameAs(c2.getImplementedInterfaces().getFirst());
+			.isSameAs(c2.getImplementedInterfaces().iterator().next());
 
-		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().getFirst())).containsSame(i1);
-		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().getFirst())).containsSame(i2);
+		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().iterator().next())).containsSame(i1);
+		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().iterator().next())).containsSame(i2);
 
 		assertThat(api1.findMethod(c1, "m()")).isEmpty();
 		assertThat(api2.findMethod(c2, "m()")).isPresent();
@@ -64,10 +74,9 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(wd.resolve("A.java"), "public class A {}");
 		Files.writeString(wd.resolve("B.java"), "public class B {}");
 
-		var types1 = new JdtTypesExtractor().extractTypes(Library.of(wd));
+		var types1 = extractor.extractTypes(Library.of(wd));
 
 		var changedFiles = ChangedFiles.NO_CHANGES;
-		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
 
 		assertThat(types1).isSameAs(types2);
@@ -80,10 +89,9 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(a, "public class A {}");
 		Files.writeString(b, "public class B {}");
 
-		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
+		var api1 = extractor.extractTypes(Library.of(wd)).toAPI();
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(wd.relativize(a)), Set.of());
-		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd),
 			changedFiles).toAPI();
 
@@ -102,13 +110,12 @@ class IncrementalJdtTypesExtractorTest {
 		var a = wd.resolve("A.java");
 		Files.writeString(a, "public class A {}");
 
-		var api1 = new JdtTypesExtractor().extractTypes(Library.of(wd)).toAPI();
+		var api1 = extractor.extractTypes(Library.of(wd)).toAPI();
 
 		var b = wd.resolve("B.java");
 		Files.writeString(b, "public class B {}");
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(wd.relativize(b)));
-		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd), changedFiles).toAPI();
 
 		var a1 = assertClass(api1, "A");
@@ -150,7 +157,7 @@ class IncrementalJdtTypesExtractorTest {
 			package pkg2;
 			class D {}""");
 
-		var api1 = new JdtTypesExtractor().extractTypes(Library.of(root)).toAPI();
+		var api1 = extractor.extractTypes(Library.of(root)).toAPI();
 		assertThat(api1.getExportedTypes()).hasSize(3);
 
 		Files.writeString(b, """
@@ -162,7 +169,6 @@ class IncrementalJdtTypesExtractorTest {
 			}""");
 
 		var changedFiles = new ChangedFiles(Set.of(root.relativize(b)), Set.of(), Set.of());
-		var incrementalExtractor = new IncrementalJdtTypesExtractor();
 
 		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(root), changedFiles).toAPI();
 		assertThat(api2.getExportedTypes()).hasSize(2);
@@ -174,15 +180,15 @@ class IncrementalJdtTypesExtractorTest {
 			.extracting(ftp -> ftp.bounds().getFirst())
 			.isEqualTo(new TypeReference<>("java.lang.CharSequence"));
 		assertThat(clsB.getDeclaredMethods()).hasSize(1);
-		assertThat(clsB.getDeclaredMethods().getFirst().getFormalTypeParameters())
+		assertThat(clsB.getDeclaredMethods().iterator().next().getFormalTypeParameters())
 			.singleElement()
 			.extracting(ftp -> ftp.bounds().getFirst())
 			.isEqualTo(new TypeReference<>("pkg1.A"));
-		assertThat(clsB.getDeclaredMethods().getFirst().getType()).isEqualTo(
+		assertThat(clsB.getDeclaredMethods().iterator().next().getType()).isEqualTo(
 			new TypeReference<>("pkg3.C", List.of(new TypeParameterReference("U"))));
-		assertThat(clsB.getDeclaredMethods().getFirst().getParameters().getFirst().type())
+		assertThat(clsB.getDeclaredMethods().iterator().next().getParameters().getFirst().type())
 			.isEqualTo(new TypeReference<>("pkg2.D"));
-		assertThat(clsB.getDeclaredMethods().getFirst().getParameters().get(1).type())
+		assertThat(clsB.getDeclaredMethods().iterator().next().getParameters().get(1).type())
 			.isEqualTo(new TypeReference<>("pkg1.A"));
 	}
 }

@@ -11,13 +11,16 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
-import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 public interface PropertiesProvider {
 	// Dependencies
 	TypeResolver resolver();
-	SubtypingResolver subtyping();
-	TypeParameterResolver typeParameter();
+
+	SubtypingProvider subtyping();
+
+	TypeParameterProvider typeParameter();
 
 	default boolean isExported(Symbol symbol) {
 		return switch (symbol) {
@@ -147,11 +150,11 @@ public interface PropertiesProvider {
 	 * @param executable the executable to check
 	 * @return the thrown checked exceptions
 	 */
-	default List<ITypeReference> getThrownCheckedExceptions(ExecutableDecl executable) {
+	default Set<ITypeReference> getThrownCheckedExceptions(ExecutableDecl executable) {
 		Preconditions.checkNotNull(executable);
 		return executable.getThrownExceptions().stream()
 			.map(exc -> typeParameter().resolveBound(executable, exc))
 			.filter(exc -> subtyping().isCheckedException(exc))
-			.toList();
+			.collect(Collectors.toUnmodifiableSet());
 	}
 }

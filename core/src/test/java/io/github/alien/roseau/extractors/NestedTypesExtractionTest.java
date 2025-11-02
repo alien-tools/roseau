@@ -11,6 +11,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertConstructor;
 import static io.github.alien.roseau.utils.TestUtils.assertEnum;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertRecord;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -410,14 +411,14 @@ class NestedTypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void nested_types_in_enum(ApiBuilder builder) {
 		var api = builder.build("""
-        public enum A {
-          ONE, TWO;
-          class B {}
-          interface C {}
-          enum D {}
-          @interface E {}
-        }
-        """);
+			public enum A {
+			  ONE, TWO;
+			  class B {}
+			  interface C {}
+			  enum D {}
+			  @interface E {}
+			}
+			""");
 		assertEnum(api, "A");
 		var b = assertClass(api, "A$B");
 		var c = assertInterface(api, "A$C");
@@ -464,11 +465,11 @@ class NestedTypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void nested_sealed_class(ApiBuilder builder) {
 		var api = builder.build("""
-        public class A {
-          sealed class B permits C {}
-          final class C extends B {}
-        }
-        """);
+			public class A {
+			  sealed class B permits C {}
+			  final class C extends B {}
+			}
+			""");
 		assertClass(api, "A");
 		var b = assertClass(api, "A$B");
 		var c = assertClass(api, "A$C");
@@ -500,10 +501,10 @@ class NestedTypesExtractionTest {
 	@EnumSource(ApiBuilderType.class)
 	void nested_constructors(ApiBuilder builder) {
 		var api = builder.build("""
-        public class A {
-          public class B {}
-          public static class C {}
-        }""");
+			public class A {
+			  public class B {}
+			  public static class C {}
+			}""");
 
 		assertClass(api, "A");
 		var b = assertClass(api, "A$B");
@@ -511,5 +512,34 @@ class NestedTypesExtractionTest {
 
 		assertConstructor(api, b, "<init>()");
 		assertConstructor(api, c, "<init>()");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void nested_in_anonymous_class(ApiBuilder builder) {
+		var api = builder.build("""
+			public class C {
+			  public void m() {
+			    new Thread() {
+			      public static class I {}
+			      @Override public void run() {}
+			    };
+			  }
+			}""");
+
+		assertThat(api.getExportedTypes()).hasSize(1);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void local_class(ApiBuilder builder) {
+		var api = builder.build("""
+			public class C {
+			  public void m() {
+			    class I {}
+			  }
+			}""");
+
+		assertThat(api.getExportedTypes()).hasSize(1);
 	}
 }

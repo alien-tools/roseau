@@ -43,9 +43,7 @@ $ git push origin v<x.y.z>
   $ mvn versions:set -DnewVersion=<x.y.z>-SNAPSHOT
   $ mvn versions:commit
   ```
-2. In CLI:
-  `@Command(version = <x.y.z>-SNAPSHOT)`
-3. Commit
+2. Commit
 ```bash
 $ git add <...>
 $ git commit -m "Prepare next iteration v<x.y.z>"

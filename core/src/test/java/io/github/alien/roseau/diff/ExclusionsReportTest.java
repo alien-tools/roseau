@@ -22,9 +22,9 @@ class ExclusionsReportTest {
 			public class C {}""";
 
 		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.C*"), List.of());
-		var v1 = TestUtils.buildSpoonAPI(v1src, exclude);
-		var v2 = TestUtils.buildSpoonAPI(v2src, exclude);
-		var report = new APIDiff().compare(v1, v2);
+		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
+		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var report = new ApiDiff().compare(v1, v2);
 
 		assertThat(report.getAllBreakingChanges()).hasSize(1);
 		assertThat(report.getBreakingChanges()).isEmpty();

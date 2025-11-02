@@ -1,242 +1,288 @@
 package io.github.alien.roseau.smoke;
 
 import com.google.common.base.Stopwatch;
-import com.google.common.collect.ArrayListMultimap;
-import com.google.common.collect.Multimap;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.MavenClasspathBuilder;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.ClassDecl;
-import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.ParameterDecl;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.api.visit.AbstractApiVisitor;
+import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.extractors.ExtractorType;
-import io.github.alien.roseau.extractors.MavenClasspathBuilder;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.core.config.Configurator;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopularLibrariesTestIT {
+	@TempDir
+	static Path tempDir;
+
 	static Stream<String> libraries() {
 		return Stream.of(
+			"io.github.alien-tools:roseau-core:0.4.0", // ;)
 			"org.assertj:assertj-core:3.27.3",
-			"commons-codec:commons-codec:1.18.0",
 			"com.google.guava:guava:32.1.3-jre",
-			"org.apache.commons:commons-lang3:3.17.0",
-			"commons-io:commons-io:2.18.0",
-			"org.eclipse.collections:eclipse-collections-api:11.1.0",
-			"org.springframework:spring-core:6.1.5",
+			"org.eclipse.collections:eclipse-collections:13.0.0",
 			"io.dropwizard:dropwizard-core:4.0.1",
-			"io.projectreactor:reactor-core:3.6.3",
 			"org.reactivestreams:reactive-streams:1.0.4",
-			"org.apache.kafka:kafka-clients:3.6.0",
 			"com.google.code.gson:gson:2.10.1",
-			"org.junit.jupiter:junit-jupiter-api:5.10.1",
+			"org.junit.jupiter:junit-jupiter-api:5.14.0",
+			"org.junit.jupiter:junit-jupiter-engine:5.14.0",
+			"org.junit.jupiter:junit-jupiter-api:6.0.0",
+			"org.junit.jupiter:junit-jupiter-engine:6.0.0",
 			"com.squareup:javapoet:1.13.0",
 			"org.jooq:joor-java-8:0.9.15",
 			"joda-time:joda-time:2.12.5",
-			"com.google.auto.service:auto-service:1.1.1",
 			"com.google.dagger:dagger:2.55",
-			"ch.qos.logback:logback-core:1.5.16",
 			"ch.qos.logback:logback-classic:1.5.16",
-			"org.apache.logging.log4j:log4j-core:2.24.3", // external libs
-			"org.apache.logging.log4j:log4j-api:2.24.3",
 			"org.slf4j:slf4j-simple:2.0.16",
 			"org.slf4j:slf4j-api:2.0.16",
-			"com.fasterxml.jackson.core:jackson-core:2.18.2", // shaded
+			"tools.jackson.core:jackson-databind:3.0.0",
 			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
 			"fr.inria.gforge.spoon:spoon-core:11.2.0",
+			"org.apache.commons:commons-lang3:3.17.0",
+			"commons-codec:commons-codec:1.18.0",
+			"commons-io:commons-io:2.18.0",
 			"commons-logging:commons-logging:1.3.5",
-			"org.springframework:spring-web:6.2.2",
-			"com.h2database:h2:2.3.232",
-			"org.hamcrest:hamcrest:3.0",
-			"org.springframework:spring-beans:6.2.2",
-			"org.osgi:org.osgi.core:6.0.0",
-			"com.alibaba:fastjson:2.0.54",
-			"commons-collections:commons-collections:3.2.2",
-			"org.json:json:20250107",
 			"commons-beanutils:commons-beanutils:1.10.0",
-			"com.squareup.retrofit2:retrofit:2.11.0"
+			"org.hamcrest:hamcrest:3.0",
+			"com.alibaba:fastjson:2.0.54",
+			"org.json:json:20250107",
+			"org.apache.maven:maven-plugin-api:3.9.11",
+			"org.ow2.asm:asm:9.9",
+			"com.google.auto.service:auto-service:1.1.1",
+			"io.reactivex.rxjava3:rxjava:3.1.12",
+			"org.openjdk.jmh:jmh-core:1.37",
+			"org.glassfish.jersey.core:jersey-server:3.1.11",
+			"org.glassfish.jersey.core:jersey-client:3.1.11"
+			//"org.osgi:org.osgi.core:6.0.0", // Missing dependencies
+			//"org.mapstruct:mapstruct:1.6.3", // repeatable annotation difference between ASM and JDT
+			//"org.eclipse.collections:eclipse-collections-api:13.0.0", // interface diamond conflict
+			//"commons-collections:commons-collections:3.2.2", // interface diamond conflict
+			//"org.apache.commons:commons-collections4:4.5.0", // interface diamond conflict
+			//"io.micrometer:micrometer-core:1.15.5", // sources and JARs do not match (!= version?)
+			//"com.fasterxml.jackson.core:jackson-core:2.20.0", // shaded
+			//"ch.qos.logback:logback-core:1.5.16", // Multi-release JAR with different API
+			//"org.apache.logging.log4j:log4j-api:2.24.3", // Multi-release JAR with different API
+			//"org.apache.logging.log4j:log4j-core:2.24.3", // Multi-release JAR with different API
+			//"org.hibernate.orm:hibernate-core:7.1.4.Final", // Missing dependencies
+			//"io.vertx:vertx-core:5.0.4", // Missing dependencies
+			//"org.quartz-scheduler:quartz:2.5.0", // jakarta/JBoss missing
+			//"org.immutables:value:2.11.6", // Missing dependencies
+			//"org.mockito:mockito-core:5.20.0", // Missing dependencies
+			//"org.projectlombok:lombok:1.18.42", // Missing dependencies
+			//"com.h2database:h2:2.3.232", // javax
+			//"org.springframework:spring-core:6.1.5", // Missing dependencies
+			//"org.springframework:spring-context:6.2.12", // Missing dependencies
+			//"org.springframework:spring-web:6.2.2", // Missing dependencies
+			//"io.projectreactor:reactor-core:3.6.3", // Missing dependencies
+			//"org.apache.kafka:kafka-clients:4.1.0", // Missing dependencies
 		);
 	}
 
+	record Lib(Path binary, Path sources, List<Path> classpath) {
+	}
+
+	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
+
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("libraries")
-	@Timeout(value = 2, unit = TimeUnit.MINUTES)
+	@Timeout(value = 3, unit = TimeUnit.MINUTES)
 	void analyzeLibrary(String libraryGAV) {
+		var lib = downloaded.get(libraryGAV);
+		var binaryJar = lib.binary();
+		var sourcesDir = lib.sources();
+		var classpath = lib.classpath();
+
 		var sw = Stopwatch.createUnstarted();
-		var binaryJar = binaryJars.get(libraryGAV);
-		var sourcesDir = sourcesDirs.get(libraryGAV);
-		var classpath = classpaths.get(libraryGAV).stream().collect(Collectors.toSet());
 		var asmLibrary = Library.builder()
 			.location(binaryJar)
 			.classpath(classpath)
-			.extractorType(ExtractorType.ASM)
-			.build();
-		var spoonLibrary = Library
-			.builder()
-			.location(sourcesDir)
-			.classpath(classpath)
-			.extractorType(ExtractorType.SPOON)
 			.build();
 		var jdtLibrary = Library
 			.builder()
 			.location(sourcesDir)
 			.classpath(classpath)
-			.extractorType(ExtractorType.JDT)
 			.build();
 
 		// ASM API
 		sw.reset().start();
 		var asmApi = Roseau.buildAPI(asmLibrary);
+		var asmTypes = asmApi.getLibraryTypes();
 		long asmApiTime = sw.elapsed().toMillis();
 
 		// JDT API
 		sw.reset().start();
 		var jdtApi = Roseau.buildAPI(jdtLibrary);
 		long jdtApiTime = sw.elapsed().toMillis();
+		var jdtTypes = jdtApi.getLibraryTypes();
 
-		// Spoon API
-		sw.reset().start();
-		var spoonApi = Roseau.buildAPI(spoonLibrary);
-		long spoonApiTime = sw.elapsed().toMillis();
+		// -sources JAR often do not have module-info.java (?); use the other one
+		if (!jdtTypes.getModule().equals(asmTypes.getModule())) {
+			System.out.printf("Different modules: asm=%s, jdt=%s%n", asmTypes.getModule(), jdtTypes.getModule());
+			jdtApi = jdtApi.getLibraryTypes().getModule().isUnnamed()
+				? new LibraryTypes(jdtTypes.getLibrary(), asmTypes.getModule(),
+				new HashSet<>(jdtTypes.getAllTypes())).toAPI()
+				: jdtApi;
+		}
+
+		var asmVisitor = new ReferenceVisitor();
+		asmVisitor.$(asmApi).visit();
+		var jdtVisitor = new ReferenceVisitor();
+		jdtVisitor.$(jdtApi).visit();
+
+		if (asmVisitor.unresolved.size() + jdtVisitor.unresolved.size() > 0) {
+			System.out.println("classpath=" + classpath);
+			System.out.printf("Unresolved references: asm=%d jdt=%d%n",
+				asmVisitor.unresolved.size(), jdtVisitor.unresolved.size());
+			fail("Unresolved references");
+		}
 
 		// Diffs
-		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
-		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
-		var spoonToSpoonBCs = Roseau.diff(spoonApi, spoonApi).getAllBreakingChanges();
-		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
 		sw.reset().start();
 		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
 		long diffTime = sw.elapsed().toMillis();
+		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
+		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
+		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
 
 		// Stats
 		long loc = countLinesOfCode(sourcesDir);
-		int numTypes = spoonApi.getLibraryTypes().getAllTypes().size();
-		int numMethods = spoonApi.getLibraryTypes().getAllTypes().stream()
+		int numTypes = jdtTypes.getAllTypes().size();
+		int numMethods = jdtTypes.getAllTypes().stream()
 			.mapToInt(type -> type.getDeclaredMethods().size())
 			.sum();
-		int numFields = spoonApi.getLibraryTypes().getAllTypes().stream()
+		int numFields = jdtTypes.getAllTypes().stream()
 			.mapToInt(type -> type.getDeclaredFields().size())
 			.sum();
 
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
-				"\tSpoon: %dms%n" +
 				"\tASM: %dms; %dms diff%n" +
 				"\tJDT: %dms%n" +
 				"\tBCs: %s%n",
 			libraryGAV, loc, numTypes, numMethods, numFields,
-			spoonApiTime, asmApiTime, diffTime, jdtApiTime,
+			asmApiTime, diffTime, jdtApiTime,
 			asmToAsmBCs.size());
 
-		System.out.println("### JDT to ASM API diff:");
-		diffAPIs(jdtApi, asmApi);
-		System.out.println("### ASM to JDT API diff:");
-		diffAPIs(asmApi, jdtApi);
+		if (!jdtTypes.getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
+			jdtTypes.getAllTypes().forEach(jdtType -> {
+				var asmType = asmTypes.findType(jdtType.getQualifiedName()).orElseThrow(
+					() -> new AssertionError("Missing ASM type: " + jdtType.getQualifiedName()));
+				if (!asmType.equals(jdtType)) {
+					System.out.println("jdt=" + jdtType);
+					System.out.println("asm=" + asmType);
+				}
+			});
 
-		if (!jdtToAsmBCs.isEmpty() || !asmToJdtBCs.isEmpty()) {
-			System.out.println("JDT to ASM BCs:");
-			System.out.println(jdtToAsmBCs.stream()
-				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
-			System.out.println("ASM to JDT BCs:");
-			System.out.println(asmToJdtBCs.stream()
-				.map(BreakingChange::toString).collect(Collectors.joining("\n")));
+			fail("Type mismatch");
 		}
 
-		// Check everything went well
-		assertFalse(spoonApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertFalse(asmApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertFalse(jdtApi.getLibraryTypes().getAllTypes().stream().findAny().isEmpty());
-		assertEquals(0, spoonToSpoonBCs.size());
-		assertEquals(0, jdtToJdtBCs.size());
-		assertEquals(0, asmToAsmBCs.size());
+		// We extracted some types
+		assertThat(asmTypes.getAllTypes()).isNotEmpty();
+		assertThat(jdtTypes.getAllTypes()).isNotEmpty();
+
+		// Equal APIs
+		assertThat(asmTypes.getAllTypes()).isEqualTo(jdtTypes.getAllTypes());
+		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
+
+		// No BCs
+		assertThat(jdtToJdtBCs).isEmpty();
+		assertThat(asmToAsmBCs).isEmpty();
+		assertThat(jdtToAsmBCs).isEmpty();
+		assertThat(asmToJdtBCs).isEmpty();
 	}
 
-	private static Path downloadSourcesJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+	private static Path downloadSourcesJar(String groupId, String artifactId, String version) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s-sources.jar",
 			groupId.replace('.', '/'), artifactId, version, artifactId, version));
 	}
 
-	private static Path downloadBinaryJar(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+	private static Path downloadBinaryJar(String groupId, String artifactId, String version) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
 			groupId.replace('.', '/'), artifactId, version, artifactId, version));
 	}
 
-	private static Path downloadPom(String groupId, String artifactId, String version) throws IOException, InterruptedException {
+	private static Path downloadPom(String groupId, String artifactId, String version) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.pom",
 			groupId.replace('.', '/'), artifactId, version, artifactId, version));
 	}
 
-	private static Path download(String url) throws IOException, InterruptedException {
-		HttpClient client = HttpClient.newHttpClient();
-		HttpRequest request = HttpRequest.newBuilder()
-			.uri(URI.create(url))
-			.build();
+	private static Path download(String url) {
+		try (HttpClient client = HttpClient.newHttpClient()) {
+			HttpRequest request = HttpRequest.newBuilder()
+				.uri(URI.create(url))
+				.build();
 
-		Path tempFile = Files.createTempFile("sources-", ".jar");
-		HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
+			String file = Long.toHexString(Double.doubleToLongBits(Math.random()));
+			Path tempFile = tempDir.resolve(file);
+			HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
 
-		if (response.statusCode() != 200) {
-			Files.deleteIfExists(tempFile);
-			throw new IOException("Failed to download JAR: HTTP " + response.statusCode());
+			if (response.statusCode() != 200) {
+				Files.deleteIfExists(tempFile);
+				throw new IOException("Failed to download JAR: HTTP " + response.statusCode());
+			}
+
+			return tempFile;
+		} catch (IOException | InterruptedException e) {
+			throw new RuntimeException(e);
 		}
-
-		return tempFile;
 	}
 
-	private static Path extractSourcesJar(Path jarPath) throws IOException {
-		Path outputDir = Files.createTempDirectory("sources-");
-		try (JarFile jar = new JarFile(jarPath.toFile())) {
-			Enumeration<JarEntry> entries = jar.entries();
-			while (entries.hasMoreElements()) {
-				JarEntry entry = entries.nextElement();
-				Path entryPath = outputDir.resolve(entry.getName());
-				if (entry.isDirectory()) {
-					Files.createDirectories(entryPath);
-				} else {
-					Files.createDirectories(entryPath.getParent());
-					try (InputStream is = jar.getInputStream(entry)) {
-						Files.copy(is, entryPath);
+	private Path extractSourcesJar(Path jarPath) {
+		try {
+			Path outputDir = jarPath.resolveSibling(jarPath.getFileName() + "-extracted");
+			try (JarFile jar = new JarFile(jarPath.toFile())) {
+				Enumeration<JarEntry> entries = jar.entries();
+				while (entries.hasMoreElements()) {
+					JarEntry entry = entries.nextElement();
+					Path entryPath = outputDir.resolve(entry.getName());
+					if (entry.isDirectory()) {
+						Files.createDirectories(entryPath);
+					} else {
+						Files.createDirectories(entryPath.getParent());
+						try (InputStream is = jar.getInputStream(entry)) {
+							Files.copy(is, entryPath);
+						}
 					}
 				}
 			}
+			return outputDir;
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
 		}
-		return outputDir;
 	}
 
 	private long countLinesOfCode(Path sourcesDir) {
@@ -252,322 +298,60 @@ class PopularLibrariesTestIT {
 					}
 				})
 				.sum();
-		} catch (IOException ignored) {
+		} catch (IOException _) {
 			return -1L;
 		}
 	}
 
-	private static void cleanup(Path path) throws IOException {
-		if (path.toFile().isDirectory())
-			deleteDirectory(path);
-		else
-			Files.deleteIfExists(path);
-	}
+	static class ReferenceVisitor extends AbstractApiVisitor {
+		API api;
+		Set<TypeReference<?>> unresolved = new HashSet<>();
 
-	private static void deleteDirectory(Path path) throws IOException {
-		if (Files.exists(path)) {
-			try (Stream<Path> files = Files.walk(path)) {
-				files.sorted(Comparator.reverseOrder())
-					.forEach(p -> {
-						try {
-							Files.delete(p);
-						} catch (IOException e) {
-							System.err.println("Failed to delete " + p + ": " + e.getMessage());
-						}
-					});
+		@Override
+		public Visit $(API api) {
+			this.api = api;
+			return super.$(api);
+		}
+
+		@Override
+		public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
+			if (api.resolver().resolve(it).isEmpty()) {
+				unresolved.add(it);
 			}
+			return super.typeReference(it);
 		}
 	}
-
-	private static final Map<String, Path> binaryJars = new HashMap<>();
-	private static final Map<String, Path> sourcesDirs = new HashMap<>();
-	private static final Multimap<String, Path> classpaths = ArrayListMultimap.create();
 
 	@BeforeAll
-	static void setUp() {
-		// Way too noisy 'cause of missing classpath
-		Configurator.setLevel("spoon", Level.ERROR);
-		Configurator.setLevel("io.github.alien.roseau", Level.ERROR);
+	void setUp() {
+		try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
+			var futures = libraries()
+				.collect(Collectors.toMap(
+					libraryGAV -> libraryGAV,
+					libraryGAV -> {
+						var parts = libraryGAV.split(":");
+						var groupId = parts[0];
+						var artifactId = parts[1];
+						var version = parts[2];
 
-		// Prepare data for all tests
-		libraries().parallel().forEach(libraryGAV -> {
-			try {
-				String[] parts = libraryGAV.split(":");
-				String groupId = parts[0];
-				String artifactId = parts[1];
-				String version = parts[2];
+						var binaryFuture = CompletableFuture
+							.supplyAsync(() -> downloadBinaryJar(groupId, artifactId, version), executor);
+						var sourcesFuture = CompletableFuture
+							.supplyAsync(() -> downloadSourcesJar(groupId, artifactId, version), executor)
+							.thenApplyAsync(this::extractSourcesJar, executor);
+						var classpathFuture = CompletableFuture
+							.supplyAsync(() -> downloadPom(groupId, artifactId, version), executor)
+							.thenApplyAsync(pom -> new MavenClasspathBuilder().buildClasspath(pom), executor);
+						return CompletableFuture.allOf(binaryFuture, sourcesFuture, classpathFuture)
+							.thenApply(_ -> new Lib(binaryFuture.join(), sourcesFuture.join(), classpathFuture.join()));
+					}
+				));
 
-				Path binaryJar = downloadBinaryJar(groupId, artifactId, version);
-				Path sourcesJar = downloadSourcesJar(groupId, artifactId, version);
-				Path pom = downloadPom(groupId, artifactId, version);
-				Path sourcesDir = extractSourcesJar(sourcesJar);
-
-				try {
-					Set<Path> classpath = new MavenClasspathBuilder().buildClasspath(pom);
-					classpaths.putAll(libraryGAV, classpath);
-				} catch (Exception e) {
-					e.printStackTrace();
-				}
-
-				binaryJars.put(libraryGAV, binaryJar);
-				sourcesDirs.put(libraryGAV, sourcesDir);
-
-				cleanup(sourcesJar);
-				cleanup(pom);
-			} catch (Exception e) {
-				throw new RuntimeException("Failed to download " + libraryGAV, e);
-			}
-		});
-	}
-
-	@AfterAll
-	void tearDown() {
-		binaryJars.values().forEach(path -> {
-			try {
-				cleanup(path);
-			} catch (Exception ignored) {
-			}
-		});
-		sourcesDirs.values().forEach(path -> {
-			try {
-				cleanup(path);
-			} catch (Exception ignored) {
-			}
-		});
-	}
-
-	private static boolean diffAPIs(API api1, API api2) {
-		boolean equal = true;
-
-		for (TypeDecl type1 : api1.getLibraryTypes().getAllTypes()) {
-			Optional<TypeDecl> type2 = api2.getLibraryTypes().findType(type1.getQualifiedName());
-
-			if (type2.isEmpty()) {
-				System.out.printf("%s %s is missing in the second API%n",
-					type1.getClass().getSimpleName(), type1.getQualifiedName());
-				equal = false;
-			} else {
-				if (!diffTypeDecl(api1, api2, type1, type2.get())) {
-					equal = false;
-				}
-			}
+			downloaded.putAll(futures.entrySet().stream()
+				.collect(Collectors.toMap(
+					Map.Entry::getKey,
+					e -> e.getValue().join()
+				)));
 		}
-
-		return equal;
-	}
-
-	private static boolean unsortedListsMatch(List<?> list1, List<?> list2) {
-		return new HashSet<>(list1).equals(new HashSet<>(list2));
-	}
-
-	private static boolean diffTypeDecl(API api1, API api2, TypeDecl type1, TypeDecl type2) {
-		boolean equal = true;
-		String typeName = type1.getClass().getSimpleName() + " " + type1.getQualifiedName();
-
-		if (!type1.getQualifiedName().equals(type2.getQualifiedName())) {
-			System.out.printf("Type name mismatch: %s vs %s%n", type1.getQualifiedName(), type2.getQualifiedName());
-			equal = false;
-		}
-
-		if (!type1.getSimpleName().equals(type2.getSimpleName())) {
-			System.out.printf("Type name mismatch: %s vs %s%n", type1.getSimpleName(), type2.getSimpleName());
-			equal = false;
-		}
-
-		if (type1.getVisibility() != type2.getVisibility()) {
-			System.out.printf("Visibility mismatch for %s: %s vs %s%n", typeName, type1.getVisibility(), type2.getVisibility());
-			equal = false;
-		}
-
-		if (!type1.getModifiers().equals(type2.getModifiers())) {
-			System.out.printf("Modifiers mismatch for %s: %s vs %s%n", typeName, type1.getModifiers(), type2.getModifiers());
-			equal = false;
-		}
-
-		if (!unsortedListsMatch(type1.getImplementedInterfaces(), type2.getImplementedInterfaces())) {
-			equal = false;
-			System.out.printf("Implemented interfaces mismatch for %s: %s vs %s%n", typeName, type1.getImplementedInterfaces(), type2.getImplementedInterfaces());
-		}
-
-		if (!diffFields(type1.getDeclaredFields(), type2.getDeclaredFields())) {
-			equal = false;
-		}
-
-		if (!diffMethods(api1, api2, type1.getDeclaredMethods(), type2.getDeclaredMethods())) {
-			equal = false;
-		}
-
-		if (!type1.getEnclosingType().equals(type2.getEnclosingType())) {
-			System.out.printf("Enclosing type mismatch for type %s%n", type1.getQualifiedName());
-			equal = false;
-		}
-
-		if (!type1.getFormalTypeParameters().equals(type2.getFormalTypeParameters())) {
-			System.out.printf("Formal type parameters mismatch for type %s: %s vs %s%n",
-				type1.getQualifiedName(), type1.getFormalTypeParameters(), type2.getFormalTypeParameters());
-		}
-
-		if (type1 instanceof ClassDecl class1 && type2 instanceof ClassDecl class2) {
-			if (!diffConstructors(api1, api2, class1.getDeclaredConstructors(), class2.getDeclaredConstructors())) {
-				equal = false;
-			}
-
-			if (!class1.getSuperClass().equals(class2.getSuperClass())) {
-				System.out.printf("Super class mismatch for %s: %s vs %s%n", type1.getQualifiedName(), class1.getSuperClass(), class2.getSuperClass());
-				equal = false;
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffFields(List<FieldDecl> fields1, List<FieldDecl> fields2) {
-		boolean equal = true;
-		Map<String, FieldDecl> fieldMap1 = fields1.stream().collect(Collectors.toMap(FieldDecl::getSimpleName, f -> f));
-		Map<String, FieldDecl> fieldMap2 = fields2.stream().collect(Collectors.toMap(FieldDecl::getSimpleName, f -> f));
-
-		for (String fieldName : fieldMap1.keySet()) {
-			FieldDecl field1 = fieldMap1.get(fieldName);
-
-			if (!fieldMap2.containsKey(fieldName)) {
-				System.out.printf("Field %s is missing in the second API%n", field1.getQualifiedName());
-				equal = false;
-				break;
-			}
-
-			FieldDecl field2 = fieldMap2.get(fieldName);
-
-			if (!field1.getType().equals(field2.getType())) {
-				System.out.printf("Field type mismatch for %s: %s vs %s%n", field1.getQualifiedName(), field1.getType().getQualifiedName(), field2.getType().getQualifiedName());
-				equal = false;
-			}
-
-			if (field1.getVisibility() != field2.getVisibility()) {
-				System.out.printf("Field visibility mismatch for %s: %s vs %s%n", field1.getQualifiedName(), field1.getVisibility(), field2.getVisibility());
-				equal = false;
-			}
-
-			if (!field1.getModifiers().equals(field2.getModifiers())) {
-				System.out.printf("Field modifiers mismatch for %s: %s vs %s%n", field1.getQualifiedName(), field1.getModifiers(), field2.getModifiers());
-				equal = false;
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffMethods(API api1, API api2, List<MethodDecl> methods1, List<MethodDecl> methods2) {
-		boolean equal = true;
-		Map<String, MethodDecl> methodMap1 = methods1.stream().collect(Collectors.toMap(m -> api1.getErasure(m), m -> m));
-		Map<String, MethodDecl> methodMap2 = methods2.stream().collect(Collectors.toMap(m -> api1.getErasure(m), m -> m));
-
-		for (String methodErasure : methodMap1.keySet()) {
-			MethodDecl method1 = methodMap1.get(methodErasure);
-			String methodFqn = method1.getContainingType().getQualifiedName() + "#" + method1.getSignature();
-
-			if (!methodMap2.containsKey(methodErasure)) {
-				System.out.printf("Method %s is missing in the second API%n", methodFqn);
-				equal = false;
-				break;
-			}
-
-			MethodDecl method2 = methodMap2.get(methodErasure);
-
-			if (!method1.getType().getQualifiedName().equals(method2.getType().getQualifiedName())) {
-				System.out.printf("Method return type mismatch for %s: %s vs %s%n", methodFqn, method1.getType().getQualifiedName(), method2.getType().getQualifiedName());
-				equal = false;
-			}
-
-			if (method1.getVisibility() != method2.getVisibility()) {
-				System.out.printf("Method visibility mismatch for %s: %s vs %s%n", methodFqn, method1.getVisibility(), method2.getVisibility());
-				equal = false;
-			}
-
-			if (!method1.getModifiers().equals(method2.getModifiers())) {
-				System.out.printf("Method modifiers mismatch for %s: %s vs %s%n", methodFqn, method1.getModifiers(), method2.getModifiers());
-				equal = false;
-			}
-
-			if (!diffParameters(method1.getParameters(), method2.getParameters())) {
-				equal = false;
-			}
-
-			if (!method1.getFormalTypeParameters().equals(method2.getFormalTypeParameters())) {
-				System.out.printf("Formal type parameters mismatch for method %s: %s vs %s%n",
-					method1.getQualifiedName(), method1.getFormalTypeParameters(), method2.getFormalTypeParameters());
-			}
-
-			if (!unsortedListsMatch(method1.getThrownExceptions(), method2.getThrownExceptions())) {
-				System.out.printf("Thrown exceptions mismatch for method %s: %s vs %s%n",
-					method1.getQualifiedName(), method1.getThrownExceptions(), method2.getThrownExceptions());
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffConstructors(API api1, API api2, List<ConstructorDecl> constructors1, List<ConstructorDecl> constructors2) {
-		boolean equal = true;
-		Map<String, ConstructorDecl> constructorMap1 = constructors1.stream().collect(Collectors.toMap(c -> api1.getErasure(c), c -> c));
-		Map<String, ConstructorDecl> constructorMap2 = constructors2.stream().collect(Collectors.toMap(c -> api1.getErasure(c), c -> c));
-
-		for (String constructorErasure : constructorMap1.keySet()) {
-			ConstructorDecl constructor1 = constructorMap1.get(constructorErasure);
-			String consFqn = constructor1.getContainingType().getQualifiedName() + "." + constructor1.getSignature();
-
-			if (!constructorMap2.containsKey(constructorErasure)) {
-				System.out.printf("Constructor %s is missing in the second API%n", consFqn);
-				equal = false;
-				break;
-			}
-
-			ConstructorDecl constructor2 = constructorMap2.get(constructorErasure);
-
-			if (constructor1.getVisibility() != constructor2.getVisibility()) {
-				System.out.printf("Constructor visibility mismatch for %s: %s vs %s%n", consFqn, constructor1.getVisibility(), constructor2.getVisibility());
-				equal = false;
-			}
-
-			if (!constructor1.getModifiers().equals(constructor2.getModifiers())) {
-				System.out.printf("Constructor modifiers mismatch for %s: %s vs %s%n", consFqn, constructor1.getModifiers(), constructor2.getModifiers());
-				equal = false;
-			}
-
-			if (!diffParameters(constructor1.getParameters(), constructor2.getParameters())) {
-				equal = false;
-			}
-
-			if (!constructor1.getFormalTypeParameters().equals(constructor2.getFormalTypeParameters())) {
-				System.out.printf("Formal type parameters mismatch for constructor %s: %s vs %s%n",
-					constructor1.getQualifiedName(), constructor1.getFormalTypeParameters(), constructor2.getFormalTypeParameters());
-			}
-
-			if (!unsortedListsMatch(constructor1.getThrownExceptions(), constructor2.getThrownExceptions())) {
-				System.out.printf("Thrown exceptions mismatch for method %s: %s vs %s%n",
-					constructor1.getQualifiedName(), constructor1.getThrownExceptions(), constructor2.getThrownExceptions());
-			}
-		}
-
-		return equal;
-	}
-
-	private static boolean diffParameters(List<ParameterDecl> parameters1, List<ParameterDecl> parameters2) {
-		boolean equal = true;
-		for (int i = 0; i < parameters1.size(); i++) {
-			ParameterDecl param1 = parameters1.get(i);
-			ParameterDecl param2 = parameters2.get(i);
-
-			if (!param1.type().equals(param2.type())) {
-				System.out.printf("Parameter type mismatch: %s vs %s%n", param1.type().getQualifiedName(), param2.type().getQualifiedName());
-				equal = false;
-			}
-
-			if (param1.isVarargs() != param2.isVarargs()) {
-				System.out.printf("Parameter varargs mismatch: %s vs %s%n", param1.isVarargs(), param2.isVarargs());
-				equal = false;
-			}
-		}
-
-		return equal;
 	}
 }

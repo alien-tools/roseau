@@ -6,6 +6,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 
 public sealed class ClassBuilder extends TypeBuilder permits EnumBuilder, RecordBuilder {
 	public TypeReference<ClassDecl> superClass;
@@ -17,9 +18,9 @@ public sealed class ClassBuilder extends TypeBuilder permits EnumBuilder, Record
 		var methods = this.methods.stream().map(MethodBuilder::make).toList();
 		var constructors = this.constructors.stream().map(ConstructorBuilder::make).toList();
 
-		return new ClassDecl(qualifiedName, visibility, modifiers, annotations, location,
-				implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, superClass,
-				constructors, permittedTypes);
+		return new ClassDecl(qualifiedName, visibility, modifiers, Set.copyOf(annotations), location,
+				Set.copyOf(implementedInterfaces), formalTypeParameters, Set.copyOf(fields), Set.copyOf(methods), enclosingType, superClass,
+				Set.copyOf(constructors), Set.copyOf(permittedTypes));
 	}
 
 	public static ClassBuilder from(ClassDecl decl) {

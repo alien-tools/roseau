@@ -9,7 +9,6 @@ import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
 import static io.github.alien.roseau.utils.TestUtils.assertNoMethod;
-import static io.github.alien.roseau.utils.TestUtils.buildSpoonAPI;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -137,8 +136,8 @@ class MethodsExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void leaked_methods() {
-		var v1 = buildSpoonAPI("""
+	void leaked_methods(ApiBuilder builder) {
+		var v1 = builder.build("""
 			class A {
 				public void m() {}
 				protected void n() {}

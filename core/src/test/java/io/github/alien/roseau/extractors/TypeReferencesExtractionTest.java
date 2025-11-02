@@ -72,7 +72,7 @@ class TypeReferencesExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"ASM", "JDT"}, mode = EnumSource.Mode.EXCLUDE)
+	@EnumSource(value = ApiBuilderType.class, names = "JDT")
 	void field_unknown(ApiBuilder builder) {
 		var api = builder.build("public class C { public Unknown f; }");
 		var c = assertClass(api, "C");
@@ -116,7 +116,7 @@ class TypeReferencesExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"SPOON"})
+	@EnumSource(value = ApiBuilderType.class, names = "JDT")
 	void extends_unknown(ApiBuilder builder) {
 		var api = builder.build("""
 			public class B extends Unknown {
@@ -153,8 +153,8 @@ class TypeReferencesExtractionTest {
 			public class B implements I {}""");
 		var a = assertClass(api, "A");
 		var b = assertClass(api, "B");
-		var implA = a.getImplementedInterfaces().getFirst();
-		var implB = b.getImplementedInterfaces().getFirst();
+		var implA = a.getImplementedInterfaces().iterator().next();
+		var implB = b.getImplementedInterfaces().iterator().next();
 
 		assertThat(implA).isSameAs(implB);
 	}

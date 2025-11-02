@@ -2,7 +2,7 @@ name: Publish release to Sonatype Central
 
 on:
   release:
-    types: [ released, published ]
+    types: [ published ]
 
 jobs:
   verify:
@@ -11,20 +11,24 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ ubuntu-latest, windows-latest ]
+        include:
+          - os: ubuntu-latest
+            wrapper: ./mvnw
+          - os: windows-latest
+            wrapper: .\mvnw.cmd
     timeout-minutes: 30
     permissions:
       contents: read
     steps:
       - uses: actions/checkout@v5
-      - name: Set up Java
+      - name: Set up Java 25
         uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
       - name: Verify build
-        run: mvn --batch-mode verify
+        run: ${{ matrix.wrapper }} --batch-mode verify
         env:
           # Ensure UTF-8 (Windows might not)
           MAVEN_OPTS: -Dfile.encoding=UTF-8
@@ -41,7 +45,7 @@ jobs:
       - uses: actions/checkout@v5
       - uses: actions/setup-java@v5
         with:
-          java-version: '21'
+          java-version: '25'
           distribution: 'temurin'
           server-id: central
           server-username: MAVEN_USERNAME
@@ -49,7 +53,7 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Publish package
-        run: mvn --batch-mode -Ppublish-sonatype deploy
+        run: ./mvnw --batch-mode -Ppublish-sonatype -DskipTests deploy
         env:
           MAVEN_USERNAME: ${{ secrets.NEXUS_USERNAME }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.NEXUS_PASSWORD }}

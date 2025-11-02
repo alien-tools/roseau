@@ -1,4 +1,4 @@
-package io.github.alien.roseau.extractors;
+package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
@@ -19,8 +19,6 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Properties;
-import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * Utility class to automatically infer the classpath of a Maven library. This implementation attempts to retrieve the
@@ -35,17 +33,17 @@ public class MavenClasspathBuilder {
 	 * @param pom the {@code pom.xml} file
 	 * @return the retrieved classpath or an empty list if something went wrong
 	 */
-	public Set<Path> buildClasspath(Path pom) {
+	public List<Path> buildClasspath(Path pom) {
 		Preconditions.checkNotNull(pom);
-		Path parent = pom.toAbsolutePath().getParent();
 
-		if (!Files.isRegularFile(pom) || !Files.isDirectory(parent)) {
+		if (!Files.isRegularFile(pom)) {
 			LOGGER.warn("Invalid pom.xml file {}", pom);
 		}
 
-		Path classpathFile = parent.resolve(".classpath.tmp");
+		String random = Long.toHexString(Double.doubleToLongBits(Math.random()));
+		Path classpathFile = pom.resolveSibling(".roseau-classpath-" + random + ".tmp");
 		try {
-			Optional<File> mvnExecutable = findMavenExecutable(parent);
+			Optional<File> mvnExecutable = findMavenExecutable(pom);
 
 			if (mvnExecutable.isPresent()) {
 				InvocationRequest request = makeClasspathRequest(pom, classpathFile);
@@ -55,12 +53,15 @@ public class MavenClasspathBuilder {
 
 				if (result.getExitCode() == 0 && Files.isRegularFile(classpathFile)) {
 					String cpString = Files.readString(classpathFile);
-					LOGGER.debug("Extracted classpath from {}", pom);
-					return Arrays.stream(cpString.split(File.pathSeparator))
+					List<Path> cp = Arrays.stream(cpString.split(File.pathSeparator))
+						.filter(s -> !s.isBlank())
 						.map(Path::of)
-						.collect(Collectors.toSet());
+						.filter(Files::isRegularFile)
+						.toList();
+					LOGGER.debug("Extracted classpath from {}: {} entries", pom, cp.size());
+					return cp;
 				} else {
-					LOGGER.warn("Failed to build Maven classpath from {}", pom, result.getExecutionException());
+					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
 				}
 			} else {
 				LOGGER.warn("Cannot find Maven executable; skipping classpath resolution for {}", pom);
@@ -76,7 +77,7 @@ public class MavenClasspathBuilder {
 			}
 		}
 
-		return Set.of();
+		return List.of();
 	}
 
 	private static InvocationRequest makeClasspathRequest(Path pom, Path classpathFile) {
@@ -90,7 +91,7 @@ public class MavenClasspathBuilder {
 		// "An empty string indicates include all dependencies"
 		properties.setProperty("mdep.includeScope", "");
 		request.setProperties(properties);
-		request.setOutputHandler(LOGGER::debug);
+		request.setOutputHandler(LOGGER::trace);
 		request.setErrorHandler(LOGGER::warn);
 		return request;
 	}
@@ -98,10 +99,10 @@ public class MavenClasspathBuilder {
 	/**
 	 * Attempts to retrieve some mvn executable (local wrapper > MAVEN/M2_HOME > PATH)
 	 */
-	private static Optional<File> findMavenExecutable(Path projectDir) {
+	private static Optional<File> findMavenExecutable(Path pom) {
 		// Look for a potential wrapper
 		boolean isWindows = System.getProperty("os.name").toLowerCase(Locale.ROOT).contains("win");
-		Path mvnw = projectDir.resolve(isWindows ? "mvnw.cmd" : "mvnw");
+		Path mvnw = pom.resolveSibling(isWindows ? "mvnw.cmd" : "mvnw");
 		if (Files.isExecutable(mvnw)) {
 			return Optional.of(mvnw.toFile());
 		}
