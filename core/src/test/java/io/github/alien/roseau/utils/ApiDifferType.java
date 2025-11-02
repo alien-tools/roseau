@@ -21,6 +21,6 @@ public enum ApiDifferType implements ApiDiffer {
 	};
 
 	List<BreakingChange> diff(API v1, API v2) {
-		return new ApiDiff(v1, v2).diff().getBreakingChanges();
+		return new ApiDiff().compare(v1, v2).getBreakingChanges();
 	}
 }

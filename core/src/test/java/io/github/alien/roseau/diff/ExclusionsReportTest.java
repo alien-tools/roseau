@@ -47,9 +47,9 @@ class ExclusionsReportTest {
 
 		var exclude = new RoseauOptions.Exclude(List.of(),
 			List.of(new RoseauOptions.AnnotationExclusion("p.api.Internal", Map.of("value", "alpha"))));
-		var v1 = TestUtils.buildSpoonAPI(v1src, exclude);
-		var v2 = TestUtils.buildSpoonAPI(v2src, exclude);
-		var report = new APIDiff().compare(v1, v2);
+		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
+		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var report = new ApiDiff().compare(v1, v2);
 
 		assertThat(report.getAllBreakingChanges()).hasSize(2);
 		assertThat(report.getBreakingChanges()).hasSize(1);
@@ -78,9 +78,9 @@ class ExclusionsReportTest {
 
 		var exclude = new RoseauOptions.Exclude(List.of(),
 			List.of(new RoseauOptions.AnnotationExclusion("java.lang.Deprecated", Map.of())));
-		var v1 = TestUtils.buildSpoonAPI(v1src, exclude);
-		var v2 = TestUtils.buildSpoonAPI(v2src, exclude);
-		var report = new APIDiff().compare(v1, v2);
+		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
+		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var report = new ApiDiff().compare(v1, v2);
 
 		assertThat(report.getAllBreakingChanges()).hasSize(1);
 		assertThat(report.getBreakingChanges()).isEmpty();

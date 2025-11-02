@@ -23,7 +23,7 @@ public final class RoseauTool extends AbstractTool {
 		var v2Api = new AsmTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()))
 			.extractTypes(Library.of(v2Path));
 
-		var report = new APIDiff().compare(v1Api.toAPI(), v2Api.toAPI());
+		var report = new ApiDiff().compare(v1Api.toAPI(), v2Api.toAPI());
 
 		var breakingChanges = report.getBreakingChanges();
 		var isBinaryBreaking = breakingChanges.stream().anyMatch(bC -> bC.kind().isBinaryBreaking());

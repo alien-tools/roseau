@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * Computes the list of breaking changes between two {@link API} instances.
@@ -74,9 +75,9 @@ public class ApiDiff implements APIComparator<RoseauReport> {
 				diffField(t1, f1, f2);
 			} else {
 				// The field has been removed
-				() -> builder.memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1)
-			)
-		);
+				builder.memberBC(BreakingChangeKind.FIELD_REMOVED, t1, f1);
+			}
+		});
 	}
 
 	private void diffMethods(TypeDecl t1, TypeDecl t2) {
@@ -88,9 +89,9 @@ public class ApiDiff implements APIComparator<RoseauReport> {
 				diffMethod(t1, t2, m1, m2);
 			} else {
 				// The method has been removed
-				() -> builder.memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1)
-			)
-		);
+				builder.memberBC(BreakingChangeKind.METHOD_REMOVED, t1, m1);
+			}
+		});
 	}
 
 	private void diffConstructors(ClassDecl c1, ClassDecl c2) {

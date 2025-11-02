@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
