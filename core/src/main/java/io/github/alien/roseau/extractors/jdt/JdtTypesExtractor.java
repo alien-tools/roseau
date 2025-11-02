@@ -71,15 +71,15 @@ public final class JdtTypesExtractor implements TypesExtractor {
 			.toArray(String[]::new);
 
 		Map<String, String> options = JavaCore.getOptions();
-		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_21);
-		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_21);
+		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_25);
+		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_25);
 
 		String[] sourcesRootArray = {library.getLocation().toAbsolutePath().toString()};
 		String[] classpathEntries = library.getClasspath().stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
 
-		ASTParser parser = ASTParser.newParser(AST.JLS21);
+		ASTParser parser = ASTParser.newParser(AST.JLS24);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setResolveBindings(true);
 		// Bindings recovery allows us to resolve incomplete bindings
