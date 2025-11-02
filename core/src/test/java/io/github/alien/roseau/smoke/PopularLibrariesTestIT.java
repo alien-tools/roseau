@@ -1,6 +1,5 @@
 package io.github.alien.roseau.smoke;
 
-import com.cedarsoftware.util.DeepEquals;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.MavenClasspathBuilder;
@@ -30,8 +29,8 @@ import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -80,7 +79,6 @@ class PopularLibrariesTestIT {
 			"commons-logging:commons-logging:1.3.5",
 			"commons-beanutils:commons-beanutils:1.10.0",
 			"org.hamcrest:hamcrest:3.0",
-			"org.osgi:org.osgi.core:6.0.0",
 			"com.alibaba:fastjson:2.0.54",
 			"org.json:json:20250107",
 			"org.apache.maven:maven-plugin-api:3.9.11",
@@ -90,6 +88,7 @@ class PopularLibrariesTestIT {
 			"org.openjdk.jmh:jmh-core:1.37",
 			"org.glassfish.jersey.core:jersey-server:3.1.11",
 			"org.glassfish.jersey.core:jersey-client:3.1.11"
+			//"org.osgi:org.osgi.core:6.0.0", // Missing dependencies
 			//"org.mapstruct:mapstruct:1.6.3", // repeatable annotation difference between ASM and JDT
 			//"org.eclipse.collections:eclipse-collections-api:13.0.0", // interface diamond conflict
 			//"commons-collections:commons-collections:3.2.2", // interface diamond conflict
@@ -114,13 +113,15 @@ class PopularLibrariesTestIT {
 		);
 	}
 
-	record Lib(Path binary, Path sources, Set<Path> classpath) {}
+	record Lib(Path binary, Path sources, List<Path> classpath) {
+	}
+
 	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("libraries")
 	@Timeout(value = 3, unit = TimeUnit.MINUTES)
-	void analyzeLibrary(String libraryGAV) throws Exception {
+	void analyzeLibrary(String libraryGAV) {
 		var lib = downloaded.get(libraryGAV);
 		var binaryJar = lib.binary();
 		var sourcesDir = lib.sources();
@@ -205,9 +206,6 @@ class PopularLibrariesTestIT {
 				if (!asmType.equals(jdtType)) {
 					System.out.println("jdt=" + jdtType);
 					System.out.println("asm=" + asmType);
-					var opts = new HashMap<String, Object>();
-					DeepEquals.deepEquals(jdtType, asmType, opts);
-					System.out.println(opts);
 				}
 			});
 

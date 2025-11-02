@@ -13,7 +13,6 @@
 
     <Loggers>
         <Logger name="io.github.alien.roseau" level="WARN"/>
-        <Logger name="spoon" level="ERROR"/>
         <Root level="ERROR">
             <AppenderRef ref="CONSOLE"/>
         </Root>

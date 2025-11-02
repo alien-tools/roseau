@@ -15,6 +15,7 @@ import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -85,7 +86,7 @@ class LibraryTypesTest {
 	void json_round_trip(@TempDir Path tempDir) throws IOException {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
-		Set<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
+		List<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
 		Library library = Library.builder().location(sources).classpath(classpath).build();
 		ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
 		TypesExtractor extractor = new JdtTypesExtractor(factory);

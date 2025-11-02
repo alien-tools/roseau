@@ -82,7 +82,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	 * @param pom  the path to the {@code pom.xml} to extract a classpath from
 	 * @param jars the manual classpath
 	 */
-	public record Classpath(Path pom, Set<Path> jars) {
+	public record Classpath(Path pom, List<Path> jars) {
 		Classpath mergeWith(Classpath other) {
 			return other != null
 				? new Classpath(either(other.pom(), pom), either(other.jars(), jars))
@@ -153,7 +153,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	 * @return the empty instance
 	 */
 	public static RoseauOptions newDefault() {
-		Classpath defaultClasspath = new Classpath(null, Set.of());
+		Classpath defaultClasspath = new Classpath(null, List.of());
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
 		Library defaultLibrary = new Library(null, null, defaultClasspath, defaultExclusion, null);
 		Common defaultCommon = new Common(null, defaultClasspath, defaultExclusion);

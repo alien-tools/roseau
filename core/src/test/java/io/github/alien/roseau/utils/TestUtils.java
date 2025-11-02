@@ -20,23 +20,7 @@ import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.extractors.ExtractorType;
-import japicmp.cmp.JApiCmpArchive;
-import japicmp.cmp.JarArchiveComparator;
-import japicmp.cmp.JarArchiveComparatorOptions;
-import japicmp.config.Options;
-import japicmp.model.JApiAnnotation;
-import japicmp.model.JApiClass;
-import japicmp.model.JApiCompatibilityChange;
-import japicmp.model.JApiConstructor;
-import japicmp.model.JApiField;
-import japicmp.model.JApiImplementedInterface;
-import japicmp.model.JApiMethod;
-import japicmp.model.JApiSuperclass;
-import japicmp.output.Filter;
 import org.opentest4j.AssertionFailedError;
-import spoon.Launcher;
-import spoon.reflect.CtModel;
-import spoon.support.compiler.VirtualFile;
 
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
@@ -56,7 +40,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
-import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -221,18 +204,6 @@ public class TestUtils {
 		return (AnnotationDecl) assertType(api, name, "annotation");
 	}
 
-	public static CtModel buildModel(Map<String, String> sourcesMap) {
-		Launcher launcher = new Launcher();
-
-		sourcesMap.forEach((typeName, sources) -> {
-			launcher.addInputResource(new VirtualFile(sources, typeName + ".java"));
-		});
-		launcher.getEnvironment().setComplianceLevel(17);
-		launcher.getEnvironment().setLevel("TRACE");
-
-		return launcher.buildModel();
-	}
-
 	public static Map<String, String> buildSourcesMap(String sources) {
 		Map<String, String> sourcesMap = new HashMap<>();
 
@@ -295,22 +266,6 @@ public class TestUtils {
 		}
 
 		return sourcesMap;
-	}
-
-	public static API buildSpoonAPI(String sources) {
-		try {
-			Map<String, String> sourcesMap = buildSourcesMap(sources);
-			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.builder()
-				.location(sourcesPath)
-				.extractorType(ExtractorType.SPOON)
-				.build();
-			API api = Roseau.buildAPI(library);
-			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
 	}
 
 	public static API buildJdtAPI(String sources, Exclude exclusions) {
@@ -411,7 +366,7 @@ public class TestUtils {
 		}*/
 	}
 
-	public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {
+	/*public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {
 		Map<String, String> sourcesMap1 = buildSourcesMap(sourcesV1);
 		Map<String, String> sourcesMap2 = buildSourcesMap(sourcesV2);
 		File tempJarFile1 = File.createTempFile("inMemory1.Jar", ".jar");
@@ -467,7 +422,7 @@ public class TestUtils {
 			}
 		});
 		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
-	}
+	}*/
 
 	public static JarFile buildJar(Map<String, String> sourcesMap, Path jar) {
 		JavaCompiler compiler = ToolProvider.getSystemJavaCompiler();

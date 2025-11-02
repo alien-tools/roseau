@@ -159,22 +159,6 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void write_api_spoon(@TempDir Path tempDir) {
-		var jsonFile = tempDir.resolve("spoon.json");
-		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
-			"--extractor=SPOON",
-			"--api",
-			"--api-json=" + jsonFile,
-			"--verbose");
-
-		assertThat(jsonFile).isNotEmptyFile();
-		assertThat(out.toString())
-			.contains("Extracting API from", "using SPOON")
-			.contains("API has been written to " + jsonFile);
-		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
-	}
-
-	@Test
 	void write_api_io_error(@TempDir Path tempDir) throws IOException {
 		var apiFile = tempDir.resolve("api.json");
 		Files.writeString(apiFile, "{}");

@@ -87,7 +87,7 @@ class LibraryTest {
 	@Test
 	void builder_with_all_parameters_set(@TempDir Path tempDir) throws IOException {
 		var pom = tempDir.resolve("pom.xml");
-		var cp = Set.of(tempDir.resolve("cp"));
+		var cp = List.of(tempDir.resolve("cp"));
 		Files.createFile(pom);
 
 		var lib = Library.builder()
@@ -106,7 +106,7 @@ class LibraryTest {
 	@Test
 	void classpath_merges_custom_and_pom() {
 		var pom = Path.of("pom.xml"); // Roseau's pom.xml
-		var cp = Set.of(Path.of("cp"));
+		var cp = List.of(Path.of("cp"));
 
 		var lib = Library.builder()
 			.location(validJar)
@@ -119,22 +119,6 @@ class LibraryTest {
 		assertThat(lib.getPom()).isEqualTo(pom);
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
 		assertThat(lib.getClasspath()).hasSizeGreaterThan(10);
-	}
-
-	@Test
-	void builder_with_spoon_extractor(@TempDir Path tempDir) throws IOException {
-		var dir = tempDir.resolve("src");
-		Files.createDirectories(dir);
-
-		var lib = Library.builder()
-			.location(tempDir)
-			.extractorType(ExtractorType.SPOON)
-			.build();
-
-		assertThat(lib.getLocation()).isEqualTo(tempDir);
-		assertThat(lib.isSources()).isTrue();
-		assertThat(lib.isJar()).isFalse();
-		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.SPOON);
 	}
 
 	@Test
@@ -179,10 +163,6 @@ class LibraryTest {
 
 		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.JDT).build())
 			.isInstanceOf(RoseauException.class)
-			.hasMessageContaining("Source extractors cannot be used on JARs");
-
-		assertThatThrownBy(() -> Library.builder().location(validJar).extractorType(ExtractorType.SPOON).build())
-			.isInstanceOf(RoseauException.class)
-			.hasMessageContaining("Source extractors cannot be used on JARs");
+			.hasMessageContaining("JDT extractor cannot be used on JARs");
 	}
 }

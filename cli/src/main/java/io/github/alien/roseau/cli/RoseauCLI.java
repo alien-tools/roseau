@@ -26,10 +26,8 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -49,6 +47,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	private CommandSpec spec;
 	@ArgGroup(exclusive = true, multiplicity = "1")
 	private Mode mode;
+
 	private static class Mode {
 		@Option(names = "--api",
 			description = "Serialize the API model of --v1; see --api-json")
@@ -57,6 +56,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			description = "Compute breaking changes between versions --v1 and --v2")
 		boolean diff;
 	}
+
 	@Option(names = "--v1", paramLabel = "<path>",
 		description = "Path to the first version of the library; either a source directory or a JAR")
 	private Path v1;
@@ -142,15 +142,15 @@ public final class RoseauCLI implements Callable<Integer> {
 		return report;
 	}
 
-	private static Set<Path> buildClasspathFromString(String cp) {
+	private static List<Path> buildClasspathFromString(String cp) {
 		if (cp == null) {
-			return Set.of();
+			return List.of();
 		}
 
 		return Arrays.stream(cp.split(File.pathSeparator))
 			.filter(p -> p.endsWith(".jar"))
 			.map(Path::of)
-			.collect(Collectors.toSet());
+			.toList();
 	}
 
 	private void writeReport(RoseauReport report, BreakingChangesFormatterFactory format, Path path) {

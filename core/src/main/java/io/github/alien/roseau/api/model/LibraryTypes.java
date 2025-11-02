@@ -11,12 +11,14 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
-import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
+import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -119,9 +121,10 @@ public final class LibraryTypes implements TypeProvider {
 	 * @return the new resolved API
 	 */
 	public API toAPI() {
-		TypeProvider typeProvider = new SpoonTypeProvider(
-			new DefaultApiFactory(new CachingTypeReferenceFactory()), library.getClasspath());
-		return toAPI(new CachingTypeResolver(List.of(this, typeProvider)));
+		ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
+		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
+		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
+		return toAPI(new CachingTypeResolver(List.of(this, classpathProvider)));
 	}
 
 	/**
