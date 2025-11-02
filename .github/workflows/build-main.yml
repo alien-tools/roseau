@@ -33,11 +33,11 @@ jobs:
           gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
           gpg-passphrase: MAVEN_GPG_PASSPHRASE
       - name: Build with Maven
-        run: mvn --batch-mode -DskipTests package
+        run: ./mvnw --batch-mode -DskipTests package
       - name: Run tests
         id: tests
         continue-on-error: true
-        run: mvn --batch-mode verify
+        run: ./mvnw --batch-mode verify
       - name: Build tests report
         uses: dorny/test-reporter@v2
         if: always()
@@ -51,7 +51,7 @@ jobs:
         run: exit 1
       - name: Publish SNAPSHOT
         if: ${{ success() && github.event_name == 'push' }}
-        run: mvn --batch-mode -DskipTests -Ppublish-sonatype deploy
+        run: ./mvnw --batch-mode -DskipTests -Ppublish-sonatype deploy
         env:
           MAVEN_USERNAME: ${{ secrets.NEXUS_USERNAME }}
           MAVEN_CENTRAL_TOKEN: ${{ secrets.NEXUS_PASSWORD }}

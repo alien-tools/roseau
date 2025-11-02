@@ -35,7 +35,7 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
-$ mvn package
+$ ./mvnw package
 $ java -jar cli/target/roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help 
 ```
 

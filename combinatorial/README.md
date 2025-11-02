@@ -249,7 +249,7 @@ Java 21 is required to run properly the benchmark.
 From the `combinatorial` directory, first package the project:
 
 ```bash
-mvn clean package -DskipTests
+./mvnw clean package -DskipTests
 ```
 
 Then, you can access the CLI help:
