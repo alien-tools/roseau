@@ -7,9 +7,8 @@ import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
-import io.github.alien.roseau.api.resolution.StandardLibraryTypeProvider;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
+import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import io.github.alien.roseau.diff.ApiDiff;
@@ -162,8 +161,7 @@ public final class Roseau {
 	private static API toAPI(Library library, LibraryTypes types, ApiFactory factory) {
 		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
 		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
-		TypeProvider stdProvider = new StandardLibraryTypeProvider(extractor);
-		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, classpathProvider, stdProvider));
+		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, classpathProvider));
 		return new API(types, cachingTypeResolver);
 	}
 

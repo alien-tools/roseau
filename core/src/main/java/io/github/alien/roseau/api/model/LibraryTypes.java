@@ -14,9 +14,8 @@ import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
-import io.github.alien.roseau.api.resolution.StandardLibraryTypeProvider;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
+import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
@@ -125,8 +124,7 @@ public final class LibraryTypes implements TypeProvider {
 		ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
 		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
 		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
-		TypeProvider stdProvider = new StandardLibraryTypeProvider(extractor);
-		return toAPI(new CachingTypeResolver(List.of(this, classpathProvider, stdProvider)));
+		return toAPI(new CachingTypeResolver(List.of(this, classpathProvider)));
 	}
 
 	/**
