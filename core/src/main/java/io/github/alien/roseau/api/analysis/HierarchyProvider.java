@@ -26,7 +26,7 @@ public interface HierarchyProvider {
 
 	ErasureProvider erasure();
 
-	SubtypingResolver subtyping();
+	SubtypingProvider subtyping();
 
 	PropertiesProvider properties();
 

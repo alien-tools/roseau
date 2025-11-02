@@ -18,9 +18,9 @@ public interface PropertiesProvider {
 	// Dependencies
 	TypeResolver resolver();
 
-	SubtypingResolver subtyping();
+	SubtypingProvider subtyping();
 
-	TypeParameterResolver typeParameter();
+	TypeParameterProvider typeParameter();
 
 	default boolean isExported(Symbol symbol) {
 		return switch (symbol) {

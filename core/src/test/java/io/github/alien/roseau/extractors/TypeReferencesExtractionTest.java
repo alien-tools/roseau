@@ -72,7 +72,7 @@ class TypeReferencesExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"ASM", "JDT"}, mode = EnumSource.Mode.EXCLUDE)
+	@EnumSource(value = ApiBuilderType.class, names = "JDT")
 	void field_unknown(ApiBuilder builder) {
 		var api = builder.build("public class C { public Unknown f; }");
 		var c = assertClass(api, "C");
@@ -116,7 +116,7 @@ class TypeReferencesExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"SPOON"})
+	@EnumSource(value = ApiBuilderType.class, names = "JDT")
 	void extends_unknown(ApiBuilder builder) {
 		var api = builder.build("""
 			public class B extends Unknown {

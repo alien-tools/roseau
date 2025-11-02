@@ -2,18 +2,18 @@ package io.github.alien.roseau;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
-import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.extractors.ExtractorType;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-import java.util.Set;
 import java.util.function.Supplier;
-import java.util.stream.Collectors;
 import java.util.stream.Stream;
 import java.util.zip.ZipFile;
 
@@ -35,32 +35,43 @@ import java.util.zip.ZipFile;
  */
 public final class Library {
 	private final Path location;
-	private final Set<Path> customClasspath;
+	private final List<Path> customClasspath;
 	private final Path pom;
 	private final ExtractorType extractorType;
 	private final RoseauOptions.Exclude exclusions;
 	@JsonIgnore
-	private final Supplier<Set<Path>> classpath;
+	private final Supplier<List<Path>> classpath;
+
+	private static final Logger LOGGER = LogManager.getLogger(Library.class);
 
 	/**
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
 	 */
-	private Library(Path location, Set<Path> customClasspath, Path pom, ExtractorType extractorType,
+	private Library(Path location, List<Path> customClasspath, Path pom, ExtractorType extractorType,
 	                RoseauOptions.Exclude exclusions) {
 		this.location = location.toAbsolutePath();
-		this.customClasspath = Set.copyOf(customClasspath);
+		this.customClasspath = List.copyOf(customClasspath);
 		this.pom = pom;
 		this.extractorType = extractorType;
 		this.exclusions = exclusions;
-		this.classpath = Suppliers.memoize(() -> {
-			if (pom != null && Files.isRegularFile(pom)) {
-				MavenClasspathBuilder builder = new MavenClasspathBuilder();
-				return Stream.concat(builder.buildClasspath(pom).stream(), this.customClasspath.stream())
-					.collect(Collectors.toUnmodifiableSet());
-			} else {
-				return this.customClasspath;
-			}
-		});
+		this.classpath = Suppliers.memoize(this::resolveClasspath);
+	}
+
+	private List<Path> resolveClasspath() {
+		List<Path> resolved = new ArrayList<>(customClasspath);
+		if (pom != null && Files.isRegularFile(pom)) {
+			MavenClasspathBuilder builder = new MavenClasspathBuilder();
+			resolved.addAll(builder.buildClasspath(pom));
+		}
+		return resolved.stream()
+			.<Path>mapMulti((p, downstream) -> {
+				if (Files.isRegularFile(p)) {
+					downstream.accept(p);
+				} else {
+					LOGGER.warn("Missing classpath file {}", p);
+				}
+			})
+			.toList();
 	}
 
 	/**
@@ -88,14 +99,14 @@ public final class Library {
 	/**
 	 * @return the user-defined classpath
 	 */
-	public Set<Path> getCustomClasspath() {
+	public List<Path> getCustomClasspath() {
 		return customClasspath;
 	}
 
 	/**
 	 * @return the resolved classpath, including custom classpath and pom-inferred classpath
 	 */
-	public Set<Path> getClasspath() {
+	public List<Path> getClasspath() {
 		return classpath.get();
 	}
 
@@ -170,7 +181,7 @@ public final class Library {
 	 */
 	public static final class Builder {
 		private Path location;
-		private Set<Path> classpath = Set.of();
+		private List<Path> classpath = List.of();
 		private Path pom;
 		private ExtractorType extractorType;
 		private RoseauOptions.Exclude exclusions = new RoseauOptions.Exclude(List.of(), List.of());
@@ -196,7 +207,7 @@ public final class Library {
 		 * @param classpath the classpath
 		 * @return this builder
 		 */
-		public Builder classpath(Set<Path> classpath) {
+		public Builder classpath(List<Path> classpath) {
 			this.classpath = classpath;
 			return this;
 		}
@@ -296,8 +307,8 @@ public final class Library {
 				throw new RoseauException("ASM extractor cannot be used on source directories and module-info.java");
 			}
 
-			if ((extractorType == ExtractorType.SPOON || extractorType == ExtractorType.JDT) && isJar(location)) {
-				throw new RoseauException("Source extractors cannot be used on JARs");
+			if (extractorType == ExtractorType.JDT && isJar(location)) {
+				throw new RoseauException("JDT extractor cannot be used on JARs");
 			}
 
 			return new Library(location, classpath, pom, extractorType, exclusions);

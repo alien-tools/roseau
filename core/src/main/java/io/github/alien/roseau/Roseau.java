@@ -8,13 +8,14 @@ import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.resolution.CachingTypeResolver;
-import io.github.alien.roseau.api.resolution.SpoonTypeProvider;
+import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import io.github.alien.roseau.diff.ApiDiff;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
+import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.HashFunction;
 import io.github.alien.roseau.extractors.incremental.HashingChangedFilesProvider;
@@ -158,9 +159,9 @@ public final class Roseau {
 	}
 
 	private static API toAPI(Library library, LibraryTypes types, ApiFactory factory) {
-		TypeProvider typeProvider = new SpoonTypeProvider(factory, library.getClasspath());
-		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, typeProvider));
-
+		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
+		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
+		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, classpathProvider));
 		return new API(types, cachingTypeResolver);
 	}
 

@@ -19,6 +19,7 @@ import java.io.InputStream;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 /**
@@ -29,6 +30,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
+	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
 
 	public AsmTypesExtractor(ApiFactory factory) {
@@ -70,7 +72,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 		};
 	}
 
-	private void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
+	public void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
 		try (InputStream is = jar.getInputStream(entry)) {
 			ClassReader reader = new ClassReader(is);
 			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
@@ -80,7 +82,15 @@ public class AsmTypesExtractor implements TypesExtractor {
 		}
 	}
 
+	public void processEntry(byte[] bytes, ExtractorSink sink) {
+		ClassReader reader = new ClassReader(bytes);
+		AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
+		reader.accept(visitor, PARSING_OPTIONS);
+	}
+
 	private boolean isRegularClassFile(JarEntry entry) {
-		return !entry.isDirectory() && entry.getName().endsWith(".class");
+		return !entry.isDirectory()
+			&& entry.getName().endsWith(".class")
+			&& !ANONYMOUS_MATCHER.matcher(entry.getName()).find();
 	}
 }

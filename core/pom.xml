@@ -51,19 +51,13 @@
 
     <dependencies>
         <dependency>
-            <groupId>fr.inria.gforge.spoon</groupId>
-            <artifactId>spoon-core</artifactId>
-            <version>11.2.1</version>
-        </dependency>
-        <dependency>
             <groupId>org.ow2.asm</groupId>
             <artifactId>asm</artifactId>
         </dependency>
-        <!-- match Spoon's version -->
         <dependency>
             <groupId>org.eclipse.jdt</groupId>
             <artifactId>org.eclipse.jdt.core</artifactId>
-            <version>3.41.0</version>
+            <version>3.43.0</version>
         </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
@@ -104,21 +98,10 @@
             <artifactId>log4j-layout-template-json</artifactId>
             <scope>runtime</scope>
         </dependency>
-        <!-- Process Spoon's slf4j logs with ours -->
-        <dependency>
-            <groupId>org.apache.logging.log4j</groupId>
-            <artifactId>log4j-slf4j2-impl</artifactId>
-            <scope>runtime</scope>
-        </dependency>
         <dependency>
             <groupId>org.apache.maven.shared</groupId>
             <artifactId>maven-invoker</artifactId>
             <version>3.3.0</version>
-        </dependency>
-        <dependency>
-            <groupId>com.github.siom79.japicmp</groupId>
-            <artifactId>japicmp</artifactId>
-            <version>0.23.1</version>
         </dependency>
         <dependency>
             <groupId>net.openhft</groupId>
@@ -144,12 +127,6 @@
             <groupId>com.tngtech.archunit</groupId>
             <artifactId>archunit-junit5</artifactId>
             <version>1.4.1</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
-            <groupId>com.cedarsoftware</groupId>
-            <artifactId>java-util</artifactId>
-            <version>4.1.0</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

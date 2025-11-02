@@ -7,12 +7,6 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import java.util.List;
 
 public enum ApiDifferType implements ApiDiffer {
-	SPOON {
-		@Override
-		public List<BreakingChange> diff(String v1, String v2) {
-			return diff(TestUtils.buildSpoonAPI(v1), TestUtils.buildSpoonAPI(v2));
-		}
-	},
 	ASM {
 		@Override
 		public List<BreakingChange> diff(String v1, String v2) {

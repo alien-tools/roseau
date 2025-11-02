@@ -6,7 +6,7 @@ Whether you're a library maintainer or a developer worrying about upgrading your
 ## Key Features
 
   - Detects both binary-level and source-level breaking changes
-  - Indifferently analyzes JAR files (using [ASM](https://asm.ow2.io/)) or Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon))
+  - Indifferently analyzes JAR files (using [ASM](https://asm.ow2.io/)) or Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core))
   - Excellent accuracy and performance
   - Supports Java up to version 21 (including records, sealed types, modules, etc.)
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
@@ -21,7 +21,7 @@ Unlike others, Roseau can also analyze source code directly, making it ideal for
   2. It performs side-by-side comparison of the two APIs to detect any breaking changes
 
 Roseau builds lightweight, technology-agnostic API models that list all the exported symbols in a library—including types, methods, and fields—along with their properties. These models can be easily serialized and stored as JSON for further analysis or archival.
-Roseau relies on either [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) or [Spoon](https://github.com/INRIA/spoon) to extract API models from source code, and on [ASM](https://asm.ow2.io/) to extract API models from bytecode.
+Roseau relies on either [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) to extract API models from source code, and on [ASM](https://asm.ow2.io/) to extract API models from bytecode.
 
 
 The breaking change detection algorithm is efficient, agnostic of the underlying parsing technology, and is [extensively tested](core/src/test/java/io/github/alien/roseau/diff).
@@ -66,7 +66,7 @@ Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
       --diff              Compute breaking changes between versions --v1 and --v2
       --v1=<path>         Path to the first version of the library; either a source directory or a JAR
       --v2=<path>         Path to the second version of the library; either a source directory or a JAR
-      --extractor=<extractor> API extractor to use: SPOON, ASM, JDT
+      --extractor=<extractor> API extractor to use: ASM, JDT
       --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
       --report=<path>     Where to write the breaking changes report in --diff mode
       --format=<format>   Format of the report: CLI, CSV, HTML, JSON, MD

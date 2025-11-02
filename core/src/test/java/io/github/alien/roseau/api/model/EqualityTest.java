@@ -1,11 +1,9 @@
 package io.github.alien.roseau.api.model;
 
-import com.cedarsoftware.util.DeepEquals;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.HashMap;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -140,9 +138,6 @@ class EqualityTest {
 		apis.forEach(api -> {
 			var apiTypes = api.getLibraryTypes().getAllTypes();
 			var baselineTypes = baseline.getLibraryTypes().getAllTypes();
-			var opts = new HashMap<String, Object>();
-			boolean equals = DeepEquals.deepEquals(apiTypes, baselineTypes, opts);
-			assertThat(equals).as(opts.toString()).isTrue();
 			assertThat(apiTypes).isEqualTo(baselineTypes);
 		});
 	}
