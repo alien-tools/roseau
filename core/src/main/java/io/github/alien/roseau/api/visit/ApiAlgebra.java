@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.visit;
 
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
@@ -12,6 +13,7 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
@@ -34,6 +36,7 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 public interface ApiAlgebra<T> {
 	T api(API it);
 	T libraryTypes(LibraryTypes it);
+	T moduleDecl(ModuleDecl it);
 	T classDecl(ClassDecl it);
 	T interfaceDecl(InterfaceDecl it);
 	T enumDecl(EnumDecl it);
@@ -41,6 +44,7 @@ public interface ApiAlgebra<T> {
 	T recordDecl(RecordDecl it);
 	T methodDecl(MethodDecl it);
 	T constructorDecl(ConstructorDecl it);
+	T annotationMethodDecl(AnnotationMethodDecl it);
 	T fieldDecl(FieldDecl it);
 	T parameterDecl(ParameterDecl it);
 	<U extends TypeDecl> T typeReference(TypeReference<U> it);
@@ -61,18 +65,21 @@ public interface ApiAlgebra<T> {
 		return libraryTypes(it);
 	}
 
+	default T $(ModuleDecl it) { return moduleDecl(it); }
+
 	default T $(Symbol it) {
 		return switch (it) {
-			case RecordDecl r          -> recordDecl(r);
-			case EnumDecl e            -> enumDecl(e);
-			case ClassDecl c           -> classDecl(c);
-			case AnnotationDecl a      -> annotationDecl(a);
-			case InterfaceDecl i       -> interfaceDecl(i);
-			case MethodDecl m          -> methodDecl(m);
-			case ConstructorDecl c     -> constructorDecl(c);
-			case EnumValueDecl v       -> enumValueDecl(v);
-			case RecordComponentDecl c -> recordComponentDecl(c);
-			case FieldDecl f           -> fieldDecl(f);
+			case RecordDecl r           -> recordDecl(r);
+			case EnumDecl e             -> enumDecl(e);
+			case ClassDecl c            -> classDecl(c);
+			case AnnotationDecl a       -> annotationDecl(a);
+			case InterfaceDecl i        -> interfaceDecl(i);
+			case AnnotationMethodDecl m -> annotationMethodDecl(m);
+			case MethodDecl m           -> methodDecl(m);
+			case ConstructorDecl c      -> constructorDecl(c);
+			case EnumValueDecl v        -> enumValueDecl(v);
+			case RecordComponentDecl c  -> recordComponentDecl(c);
+			case FieldDecl f            -> fieldDecl(f);
 		};
 	}
 

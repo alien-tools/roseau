@@ -4,6 +4,7 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -14,6 +15,7 @@ import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Modifier;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
@@ -46,6 +48,11 @@ public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 
 	@Override
 	public Print libraryTypes(LibraryTypes it) {
+		return () -> "";
+	}
+
+	@Override
+	public Print moduleDecl(ModuleDecl it) {
 		return () -> "";
 	}
 
@@ -207,6 +214,11 @@ public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 			it.getParameters().stream().map(p -> $(p).print()).collect(Collectors.joining(", ")),
 			!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(ITypeReference::getQualifiedName).collect(Collectors.joining(", ")) : ""
 		);
+	}
+
+	@Override
+	public Print annotationMethodDecl(AnnotationMethodDecl it) {
+		return null;
 	}
 
 	@Override
