@@ -42,11 +42,11 @@ final class ApiStats {
 					classesCount++;
 					countEntities(classDecl, api);
 					break;
+				case AnnotationDecl _:
+					break;
 				case InterfaceDecl interfaceDecl:
 					interfacesCount++;
 					countEntities(interfaceDecl, api);
-					break;
-				case AnnotationDecl ignored:
 					break;
 			}
 		}
@@ -69,8 +69,8 @@ final class ApiStats {
 	}
 
 	private static void countEntities(TypeDecl type, API api) {
-		methodsCount += api.getAllMethods(type).size();
-		fieldsCount += api.getAllFields(type).size();
+		methodsCount += api.getExportedMethods(type).size();
+		fieldsCount += api.getExportedFields(type).size();
 
 		if (type instanceof EnumDecl enumDecl) {
 			enumValuesCount += enumDecl.getValues().size();

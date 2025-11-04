@@ -114,7 +114,7 @@ public final class GenerateNewVersionsAndLaunchBenchmark extends AbstractStep {
 			benchmark.informApisGenerationIsOver();
 
 		for (var thread : benchmarkThreads.values())
-			try { thread.join(); } catch (InterruptedException ignored) {}
+			try { thread.join(); } catch (InterruptedException _) {}
 
 		LOGGER.info("-- All bench threads finished --");
 		int totalErrors = benchmarkThreads.keySet().stream().mapToInt(Benchmark::getErrorsCount).sum();

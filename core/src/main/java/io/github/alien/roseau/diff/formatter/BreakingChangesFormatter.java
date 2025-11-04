@@ -1,6 +1,5 @@
 package io.github.alien.roseau.diff.formatter;
 
-import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
 
 /**
@@ -13,5 +12,5 @@ public interface BreakingChangesFormatter {
 	 * @param report the report to format
 	 * @return the formatted list
 	 */
-	String format(API api, RoseauReport report);
+	String format(RoseauReport report);
 }

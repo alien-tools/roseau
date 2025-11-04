@@ -2,7 +2,7 @@ package io.github.alien.roseau.combinatorial.v2;
 
 import io.github.alien.roseau.api.model.*;
 import io.github.alien.roseau.api.model.reference.*;
-import io.github.alien.roseau.api.visit.AbstractAPIVisitor;
+import io.github.alien.roseau.api.visit.AbstractApiVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.combinatorial.v2.breaker.cls.*;
 import io.github.alien.roseau.combinatorial.v2.breaker.ctr.*;
@@ -16,7 +16,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 import java.util.List;
 import java.util.stream.Stream;
 
-public final class BreakingChangesGeneratorVisitor extends AbstractAPIVisitor {
+public final class BreakingChangesGeneratorVisitor extends AbstractApiVisitor {
 	private final API api;
 
 	private final NewApiQueue queue;

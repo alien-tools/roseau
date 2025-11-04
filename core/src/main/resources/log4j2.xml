@@ -4,54 +4,15 @@
                xsi:schemaLocation="
                        https://logging.apache.org/xml/ns
                        https://logging.apache.org/xml/ns/log4j-config-2.xsd">
-    <Properties>
-        <Property name="baseDir">logs</Property>
-    </Properties>
 
     <Appenders>
         <Console name="CONSOLE">
             <PatternLayout pattern="%p %c{1.} - %m%n"/>
         </Console>
-
-        <Routing name="combinatorialRouting">
-            <Routes pattern="$${event:ThreadName}">
-                <Route>
-                    <RollingFile name="Rolling-${event:ThreadName}"
-                                 fileName="${baseDir}/thread-${event:ThreadName}.log"
-                                 filePattern="${baseDir}/thread-${event:ThreadName}.log.%d{yyyy-MM-dd}">
-                        <PatternLayout pattern="%d [%-5p] [%t] [%c{1}] [%M] - %m%n"/>
-                        <TimeBasedTriggeringPolicy/>
-                    </RollingFile>
-                </Route>
-            </Routes>
-        </Routing>
-
-        <RollingFile name="combinatorialFileLogger" fileName="${baseDir}/app.log" filePattern="${baseDir}/app-%d{yyyy-MM-dd}.log">
-            <PatternLayout pattern="[%-5level] %d{yyyy-MM-dd HH:mm:ss.SSS} [%t] %c{1} - %msg%n"/>
-            <Policies>
-                <TimeBasedTriggeringPolicy interval="1" modulate="true"/>
-                <SizeBasedTriggeringPolicy size="10MB"/>
-            </Policies>
-            <DefaultRolloverStrategy max="10">
-                <Delete basePath="${baseDir}" maxDepth="10">
-                    <IfLastModified age="30d"/>
-                </Delete>
-            </DefaultRolloverStrategy>
-        </RollingFile>
-
-        <Console name="combinatorialConsole" target="SYSTEM_OUT">
-            <PatternLayout pattern="[%maxLen{%-6t}{6}] %maxLen{%-5p}{5} %m%n"/>
-        </Console>
     </Appenders>
 
     <Loggers>
         <Logger name="io.github.alien.roseau" level="WARN"/>
-        <Logger name="spoon" level="ERROR"/>
-        <Logger name="io.github.alien.roseau.combinatorial" level="DEBUG" additivity="false">
-            <AppenderRef ref="combinatorialRouting"/>
-            <AppenderRef ref="combinatorialFileLogger"/>
-            <AppenderRef ref="combinatorialConsole"/>
-        </Logger>
         <Root level="ERROR">
             <AppenderRef ref="CONSOLE"/>
         </Root>

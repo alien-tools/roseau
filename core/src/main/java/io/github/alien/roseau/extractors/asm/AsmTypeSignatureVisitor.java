@@ -1,66 +1,41 @@
 package io.github.alien.roseau.extractors.asm;
 
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 import org.objectweb.asm.signature.SignatureVisitor;
 
 import java.util.ArrayList;
 import java.util.List;
-import java.util.function.Supplier;
 
 final class AsmTypeSignatureVisitor<T extends ITypeReference> extends SignatureVisitor {
 	private final TypeReferenceFactory factory;
+	private final char wildcard;
 	private ITypeReference type;
-	private final List<Supplier<ITypeReference>> visitors = new ArrayList<>();
-	private char wildcard = INSTANCEOF;
+	private final List<AsmTypeSignatureVisitor<?>> typeArgumentVisitors = new ArrayList<>();
+	private AsmTypeSignatureVisitor<?> arrayComponentVisitor;
+	private boolean finalized;
 
 	AsmTypeSignatureVisitor(int api, TypeReferenceFactory factory) {
-		super(api);
-		this.factory = factory;
+		this(api, factory, INSTANCEOF);
 	}
 
-	AsmTypeSignatureVisitor(int api, TypeReferenceFactory factory, char wildcard) {
-		this(api, factory);
+	private AsmTypeSignatureVisitor(int api, TypeReferenceFactory factory, char wildcard) {
+		super(api);
+		this.factory = factory;
 		this.wildcard = wildcard;
 	}
 
 	@Override
 	public void visitTypeVariable(String name) {
-		type = wrapWildcard(factory.createTypeParameterReference(name));
+		type = factory.createTypeParameterReference(name);
 	}
 
 	@Override
 	public void visitClassType(String name) {
-		String typeName = name.replace('/', '.');
-		type = wrapWildcard(factory.createTypeReference(typeName));
-	}
-
-	@Override
-	public SignatureVisitor visitArrayType() {
-		AsmTypeSignatureVisitor<ITypeReference> visitor = new AsmTypeSignatureVisitor<>(api, factory);
-		visitors.add(() -> {
-			// If we've got an array, just increment the dimension
-			ITypeReference arrayType =
-				visitor.getType() instanceof ArrayTypeReference(ITypeReference componentType, int dimension)
-					? factory.createArrayTypeReference(componentType, dimension + 1)
-					: factory.createArrayTypeReference(visitor.getType(), 1);
-
-			return wrapWildcard(arrayType);
-		});
-		return visitor;
-	}
-
-	// If we're currently building a wildcard (wildcard != INSTANCEOF), wrap it
-	private ITypeReference wrapWildcard(ITypeReference wrapped) {
-		return switch (wildcard) {
-			case INSTANCEOF -> wrapped;
-			case SUPER -> factory.createWildcardTypeReference(List.of(wrapped), false);
-			case EXTENDS -> factory.createWildcardTypeReference(List.of(wrapped), true);
-			default -> throw new IllegalStateException("ASM is drunk");
-		};
+		type = factory.createTypeReference(name.replace('/', '.'));
 	}
 
 	@Override
@@ -74,51 +49,85 @@ final class AsmTypeSignatureVisitor<T extends ITypeReference> extends SignatureV
 			case 'S' -> factory.createPrimitiveTypeReference("short");
 			case 'C' -> factory.createPrimitiveTypeReference("char");
 			case 'F' -> factory.createPrimitiveTypeReference("float");
-			default -> factory.createPrimitiveTypeReference("double");
+			case 'D' -> factory.createPrimitiveTypeReference("double");
+			default -> throw new RoseauException("Unexpected base type descriptor: " + descriptor);
 		};
 	}
 
 	@Override
+	public SignatureVisitor visitArrayType() {
+		arrayComponentVisitor = new AsmTypeSignatureVisitor<>(api, factory);
+		return arrayComponentVisitor;
+	}
+
+	@Override
 	public void visitInnerClassType(String name) {
-		// Discard what we had already (a visitClassType with possible type args that are irrelevant)
-		// and just register the inner, most precise type
-		visitors.clear();
-		visitClassType(type.getQualifiedName() + "$" + name);
+		if (type != null) {
+			// Discard outer class type arguments; they're replaced by inner class
+			typeArgumentVisitors.clear();
+			type = factory.createTypeReference(type.getQualifiedName() + "$" + name);
+		}
 	}
 
 	@Override
 	public SignatureVisitor visitTypeArgument(char wildcard) {
 		AsmTypeSignatureVisitor<ITypeReference> visitor = new AsmTypeSignatureVisitor<>(api, factory, wildcard);
-		visitors.add(visitor::getType);
+		typeArgumentVisitors.add(visitor);
 		return visitor;
 	}
 
 	@Override
 	public void visitTypeArgument() {
-		// If this is called, it's an unbounded wildcard
-		visitors.add(() -> factory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true));
+		// Unbounded wildcard: ? extends Object
+		typeArgumentVisitors.add(createUnboundedWildcard());
+	}
+
+	private AsmTypeSignatureVisitor<ITypeReference> createUnboundedWildcard() {
+		AsmTypeSignatureVisitor<ITypeReference> visitor = new AsmTypeSignatureVisitor<>(api, factory, INSTANCEOF);
+		visitor.type = factory.createWildcardTypeReference(List.of(TypeReference.OBJECT), true);
+		visitor.finalized = true;
+		return visitor;
 	}
 
 	@Override
 	public void visitEnd() {
-		if (!visitors.isEmpty()) {
-			if (type instanceof WildcardTypeReference wtr) {
-				// We need to attach current bounds to the existing wildcard
-				var newBounds = visitors.stream().map(Supplier::get).toList();
-				// FIXME: this getLast() won't last
-				type = factory.createWildcardTypeReference(
-					List.of(factory.createTypeReference(wtr.bounds().getLast().getQualifiedName(), newBounds)),
-					wildcard == EXTENDS);
-			} else {
-				// We attach the collected bounds to the current type
-				type = factory.createTypeReference(type.getQualifiedName(), visitors.stream().map(Supplier::get).toList());
-			}
+		finalizeType();
+	}
+
+	private void finalizeType() {
+		if (finalized) {
+			return;
+		}
+		finalized = true;
+
+		// Handle array types
+		if (arrayComponentVisitor != null) {
+			ITypeReference componentType = arrayComponentVisitor.getType();
+			type = (componentType instanceof ArrayTypeReference arrayRef)
+				? factory.createArrayTypeReference(arrayRef.componentType(), arrayRef.dimension() + 1)
+				: factory.createArrayTypeReference(componentType, 1);
+		}
+
+		// Apply type arguments to parameterize the current type
+		if (!typeArgumentVisitors.isEmpty()) {
+			List<ITypeReference> typeArgs = typeArgumentVisitors.stream()
+				.<ITypeReference>map(AsmTypeSignatureVisitor::getType)
+				.toList();
+			type = factory.createTypeReference(type.getQualifiedName(), typeArgs);
+		}
+
+		// Wrap in wildcard if needed (e.g., "? extends List<String>")
+		if (wildcard != INSTANCEOF) {
+			type = factory.createWildcardTypeReference(List.of(type), wildcard == EXTENDS);
 		}
 	}
 
 	@SuppressWarnings("unchecked")
-	public T getType() {
-		// prayge
-		return (T) (type != null ? type : visitors.getFirst().get());
+	T getType() {
+		// Finalize type if not already done (visitEnd may not have been called)
+		if (!finalized) {
+			finalizeType();
+		}
+		return (T) type;
 	}
 }

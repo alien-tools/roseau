@@ -1,0 +1,5 @@
+site_name: Roseau
+site_url: https://alien-tools.github.io/roseau
+theme:
+  name: material
+

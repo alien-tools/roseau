@@ -26,7 +26,7 @@ class MethodsExtractionTest {
 		var i = assertInterface(api, "pkg.I");
 		var m = assertMethod(api, i, "m()");
 
-		assertThat(m.getQualifiedName()).isEqualTo("pkg.I.m");
+		assertThat(m.getQualifiedName()).isEqualTo("pkg.I.m()");
 		assertThat(m.getSimpleName()).isEqualTo("m");
 	}
 
@@ -136,7 +136,33 @@ class MethodsExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
-	void method_thrown_exceptions(ApiBuilder builder) {
+	void leaked_methods(ApiBuilder builder) {
+		var v1 = builder.build("""
+			class A {
+				public void m() {}
+				protected void n() {}
+				private void o() {}
+			}
+			public class B extends A {}
+			public final class C extends B {}""");
 
+		var a = assertClass(v1, "A");
+		var am = assertMethod(v1, a, "m()");
+		var an = assertMethod(v1, a, "n()");
+		var b = assertClass(v1, "B");
+		var c = assertClass(v1, "C");
+
+		assertFalse(v1.isExported(a, am));
+		assertFalse(v1.isExported(a, an));
+		assertTrue(v1.isExported(b, am));
+		assertTrue(v1.isExported(b, an));
+		assertTrue(v1.isExported(c, am));
+		assertFalse(v1.isExported(c, an));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void method_thrown_exceptions(ApiBuilder builder) {
+		// FIXME
 	}
 }

@@ -6,8 +6,8 @@ import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
+import io.github.alien.roseau.api.model.factory.ApiFactory;
+import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -16,30 +16,37 @@ import org.objectweb.asm.Opcodes;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
+import java.util.regex.Pattern;
+import java.util.zip.ZipFile;
 
 /**
  * An ASM-based {@link TypesExtractor}.
  */
 public class AsmTypesExtractor implements TypesExtractor {
+	private final ApiFactory factory;
+
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
+	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
+
+	public AsmTypesExtractor(ApiFactory factory) {
+		this.factory = Preconditions.checkNotNull(factory);
+	}
 
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (JarFile jar = new JarFile(library.getLocation().toFile())) {
+		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
-			throw new RoseauException("Error processing JAR file", e);
+			throw new RoseauException("Failed to process JAR file", e);
 		}
 	}
 
-	@Override
 	public boolean canExtract(Library library) {
 		return library != null && library.isJar();
 	}
@@ -51,61 +58,39 @@ public class AsmTypesExtractor implements TypesExtractor {
 	 * @return the extracted {@link LibraryTypes}
 	 */
 	private LibraryTypes extractTypes(Library library, JarFile jar) {
-		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-
-		List<TypeDecl> typeDecls = jar.stream()
+		ExtractorSink sink = new ExtractorSink(jar.size() << 1);
+		jar.versionedStream().parallel()
 			.filter(this::isRegularClassFile)
-			.parallel()
-			.flatMap(entry -> extractTypeDecl(jar, entry, typeRefFactory).stream())
-			.toList();
-		List<ModuleDecl> moduleDecls = jar.stream()
-			.filter(this::isModuleInfo)
-			.flatMap(entry -> extractModuleDecl(jar, entry).stream())
-			.toList();
+			.forEach(entry -> processEntry(jar, entry, sink));
 
-		if (moduleDecls.isEmpty()) {
-			return new LibraryTypes(library, typeDecls);
-		} else if (moduleDecls.size() == 1) {
-			return new LibraryTypes(library, moduleDecls.getFirst(), typeDecls);
-		} else {
-			throw new IllegalStateException("%s contains multiple module declarations: %s".formatted(library, moduleDecls));
-		}
+		Set<TypeDecl> types = sink.getTypes();
+		Set<ModuleDecl> modules = sink.getModules();
+		return switch (modules.size()) {
+			case 0 -> new LibraryTypes(library, types);
+			case 1 -> new LibraryTypes(library, modules.iterator().next(), types);
+			default -> throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
+		};
 	}
 
-	private static Optional<TypeDecl> extractTypeDecl(JarFile jar, JarEntry entry, TypeReferenceFactory typeRefFactory) {
+	public void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
 		try (InputStream is = jar.getInputStream(entry)) {
 			ClassReader reader = new ClassReader(is);
-			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, typeRefFactory);
+			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
 			reader.accept(visitor, PARSING_OPTIONS);
-			return Optional.ofNullable(visitor.getTypeDecl());
 		} catch (IOException e) {
 			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
-			return Optional.empty();
 		}
 	}
 
-	private static Optional<ModuleDecl> extractModuleDecl(JarFile jar, JarEntry entry) {
-		try (InputStream is = jar.getInputStream(entry)) {
-			ClassReader reader = new ClassReader(is);
-			AsmModuleVisitor visitor = new AsmModuleVisitor(ASM_VERSION);
-			reader.accept(visitor, PARSING_OPTIONS);
-			return Optional.ofNullable(visitor.getModuleDecl());
-		} catch (IOException e) {
-			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
-			return Optional.empty();
-		}
-	}
-
-	private boolean isModuleInfo(JarEntry entry) {
-		return !entry.isDirectory() &&
-			"module-info.class".equals(entry.getName());
+	public void processEntry(byte[] bytes, ExtractorSink sink) {
+		ClassReader reader = new ClassReader(bytes);
+		AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
+		reader.accept(visitor, PARSING_OPTIONS);
 	}
 
 	private boolean isRegularClassFile(JarEntry entry) {
-		return !entry.isDirectory() &&
-			entry.getName().endsWith(".class") &&
-			// Multi-release JARs store version-specific class files there, so we could have duplicates
-			!entry.getName().startsWith("META-INF/") &&
-			!isModuleInfo(entry);
+		return !entry.isDirectory()
+			&& entry.getName().endsWith(".class")
+			&& !ANONYMOUS_MATCHER.matcher(entry.getName()).find();
 	}
 }

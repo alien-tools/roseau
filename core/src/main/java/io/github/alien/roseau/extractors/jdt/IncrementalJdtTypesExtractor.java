@@ -5,13 +5,10 @@ import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 
 import java.nio.file.Path;
-import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -27,11 +24,17 @@ import java.util.stream.Stream;
  *   <li>Parses new files to extract new symbols</li>
  * </ul>
  */
-public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements IncrementalTypesExtractor {
+public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtractor {
+	private final JdtTypesExtractor extractor;
+
+	public IncrementalJdtTypesExtractor(JdtTypesExtractor extractor) {
+		this.extractor = Preconditions.checkNotNull(extractor);
+	}
+
 	@Override
 	public LibraryTypes incrementalUpdate(LibraryTypes previousTypes, Library newVersion, ChangedFiles changedFiles) {
 		Preconditions.checkNotNull(previousTypes);
-		Preconditions.checkArgument(canExtract(newVersion));
+		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
 
 		// If nothing's changed, just return the old one
@@ -39,34 +42,26 @@ public class IncrementalJdtTypesExtractor extends JdtTypesExtractor implements I
 			return previousTypes;
 		}
 
-		Path oldRoot = previousTypes.getLibrary().getLocation();
-		Path newRoot = newVersion.getLocation();
-
 		// Collect types that should be discarded from the previous API
-		Set<Path> discarded = Sets.union(resolve(oldRoot, changedFiles.deletedFiles()),
-			resolve(oldRoot, changedFiles.updatedFiles()));
+		Set<Path> discarded = Sets.union(changedFiles.deletedFiles(),
+			changedFiles.updatedFiles());
 
 		// Collect files to be parsed
-		List<Path> filesToParse = Sets.union(resolve(newRoot, changedFiles.updatedFiles()),
-			resolve(newRoot, changedFiles.createdFiles())).stream().toList();
+		Set<Path> filesToParse = Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()).stream()
+			.map(newVersion.getLocation()::resolve)
+			.collect(Collectors.toSet());
+
+		Set<TypeDecl> unchanged = previousTypes.getAllTypes().stream()
+			.filter(t -> !discarded.contains(t.getLocation().file()))
+			.collect(Collectors.toSet());
 
 		// Parse, collect, and merge the updated files
-		TypeReferenceFactory typeRefFactory = new CachingTypeReferenceFactory();
-		List<TypeDecl> newTypeDecls = Stream.concat(
-			// Previous unchanged types
-			previousTypes.getAllTypes().stream()
-				.filter(t -> !discarded.contains(t.getLocation().file())),
-			// New reparsed types
-			parseTypes(newVersion, filesToParse, typeRefFactory).types().stream()
-		).toList();
+		Set<TypeDecl> newTypeDecls = Stream.concat(
+			unchanged.stream(),
+			extractor.parseTypes(newVersion, filesToParse).types().stream()
+		).collect(Collectors.toSet());
 
 		// FIXME: the module declaration might have changed between the two versions
 		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
-	}
-
-	private Set<Path> resolve(Path root, Set<Path> files) {
-		return files.stream()
-			.map(root::resolve)
-			.collect(Collectors.toSet());
 	}
 }

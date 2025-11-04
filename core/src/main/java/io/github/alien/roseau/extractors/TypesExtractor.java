@@ -18,11 +18,4 @@ public interface TypesExtractor {
 	 * @throws RoseauException if anything went wrong
 	 */
 	LibraryTypes extractTypes(Library library);
-
-	/**
-	 * Checks whether this extractor can handle the given {@code sources}.
-	 *
-	 * @param library@return true if this extractor handles the given {@code sources}
-	 */
-	boolean canExtract(Library library);
 }

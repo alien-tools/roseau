@@ -14,7 +14,7 @@ class OnTheFlyCasesTest {
 			"public class A {}",
 			"public abstract class A {}",
 			"new A();",
-			"A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1);
+			"A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1);
 	}
 
 	// Source-breaking, binary-compatible
@@ -29,7 +29,7 @@ class OnTheFlyCasesTest {
 			}""", """
 				int i = A.f;
 				System.out.println("i="+i);""",
-			"A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2);
+			"A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2);
 	}
 
 	// Source-compatible, binary-breaking
@@ -45,7 +45,7 @@ class OnTheFlyCasesTest {
 				A a = new A();
 				int i = 2;
 				a.boxing(i);""",
-			"A.boxing", BreakingChangeKind.METHOD_REMOVED, 2);
+			"A", "A.boxing(int)", BreakingChangeKind.METHOD_REMOVED, 2);
 	}
 
 	// Source-compatible, binary-compatible

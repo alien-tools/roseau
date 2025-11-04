@@ -14,6 +14,7 @@ import io.github.alien.roseau.api.model.reference.TypeReferenceFactory;
 import java.nio.file.Path;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.stream.Collectors;
 
 public final class ApiBuilder implements Builder<API> {
 	public final Map<String, TypeBuilder> allTypes = new HashMap<>();
@@ -26,7 +27,8 @@ public final class ApiBuilder implements Builder<API> {
 
 	@Override
 	public API make() {
-		var types = new LibraryTypes(Library.of(Path.of("api")), allTypes.values().stream().map(TypeBuilder::make).toList());
+		var types = new LibraryTypes(Library.of(Path.of("api")),
+			allTypes.values().stream().map(TypeBuilder::make).collect(Collectors.toSet()));
 		return types.toAPI();
 	}
 
@@ -48,11 +50,11 @@ public final class ApiBuilder implements Builder<API> {
 					var classBuilder = ClassBuilder.from(classDecl);
 					apiBuilder.allTypes.put(classDecl.getQualifiedName(), classBuilder);
 					break;
+				case AnnotationDecl _:
+					break;
 				case InterfaceDecl interfaceDecl:
 					var interfaceBuilder = InterfaceBuilder.from(interfaceDecl);
 					apiBuilder.allTypes.put(interfaceDecl.getQualifiedName(), interfaceBuilder);
-					break;
-				case AnnotationDecl ignored:
 					break;
 			}
 		});
