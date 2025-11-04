@@ -29,5 +29,14 @@ class RoseauPluginIT {
 			assertThat(result).isFailure()
 				.out().error().anyMatch(m -> m.contains("Binary incompatible changes found"));
 		}
+
+		@SystemProperty("roseau.skip")
+		@MavenTest
+		void roseau_can_be_skipped(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().error().isEmpty();
+			assertThat(result).out().warn().noneMatch(m -> m.contains("METHOD_ADDED_TO_INTERFACE"));
+			assertThat(result).out().info().anyMatch(m -> m.contains("Skipping."));
+		}
 	}
 }

@@ -26,12 +26,19 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
-@Mojo(name = "check", defaultPhase = LifecyclePhase.VERIFY)
+@Mojo(
+	name = "check",
+	defaultPhase = LifecyclePhase.VERIFY,
+	threadSafe = true,
+	requiresOnline = true
+)
 public final class RoseauMojo extends AbstractMojo {
 	@Parameter(defaultValue = "${project}", required = true, readonly = true)
 	private MavenProject project;
 	@Parameter(property = "roseau.skip", defaultValue = "false")
 	private boolean skip;
+	@Parameter(property = "roseau.failOnIncompatibility", defaultValue = "false")
+	private boolean failOnIncompatibility;
 	@Parameter(property = "roseau.failOnBinaryIncompatibility", defaultValue = "false")
 	private boolean failOnBinaryIncompatibility;
 	@Parameter(property = "roseau.failOnSourceIncompatibility", defaultValue = "false")
@@ -56,6 +63,7 @@ public final class RoseauMojo extends AbstractMojo {
 
 		if (project.getPackaging().equals("pom")) {
 			getLog().info("Packaging of the project is 'pom'; skipping.");
+			return;
 		}
 
 		if (baselineVersion.getArtifactId() == null && baselineJar == null) {
@@ -63,23 +71,23 @@ public final class RoseauMojo extends AbstractMojo {
 			return;
 		}
 
-		Optional<Path> artifactJar = resolveArtifactJar();
-		if (artifactJar.isEmpty()) {
-			getLog().error("Current artifact " + artifactJar + " not found; skipping." +
+		Optional<Path> maybeJar = resolveArtifactJar();
+		if (maybeJar.isEmpty()) {
+			getLog().error("Current artifact " + maybeJar + " not found; skipping." +
 				" Make sure that the artifact was built in the 'package' phase.");
 			return;
 		}
 
 		if (baselineVersion.getArtifactId() != null) {
-			Optional<Path> opt = resolveBaselineVersion();
-			if (opt.isPresent()) {
-				check(opt.get(), artifactJar.get());
+			Optional<Path> maybeBaseline = resolveBaselineVersion();
+			if (maybeBaseline.isPresent()) {
+				check(maybeBaseline.get(), maybeJar.get());
 			} else {
 				getLog().error("Couldn't resolve the baseline version; skipping.");
 			}
 		} else if (baselineJar != null) {
 			if (Files.isRegularFile(baselineJar)) {
-				check(baselineJar, artifactJar.get());
+				check(baselineJar, maybeJar.get());
 			} else {
 				getLog().error("Invalid baseline JAR " + baselineJar);
 			}
@@ -97,12 +105,16 @@ public final class RoseauMojo extends AbstractMojo {
 			bcs.forEach(bc -> getLog().warn(format(bc)));
 		}
 
+		if (failOnIncompatibility && !bcs.isEmpty()) {
+			throw new MojoExecutionException("Breaking changes found; failing.");
+		}
+
 		if (failOnBinaryIncompatibility && bcs.stream().anyMatch(bc -> bc.kind().isBinaryBreaking())) {
-			throw new MojoExecutionException("Binary incompatible changes found.");
+			throw new MojoExecutionException("Binary incompatible changes found; failing.");
 		}
 
 		if (failOnSourceIncompatibility && bcs.stream().anyMatch(bc -> bc.kind().isSourceBreaking())) {
-			throw new MojoExecutionException("Source incompatible changes found.");
+			throw new MojoExecutionException("Source incompatible changes found; failing.");
 		}
 	}
 
@@ -110,7 +122,7 @@ public final class RoseauMojo extends AbstractMojo {
 		Library oldLibrary = Library.of(oldJar);
 		Library newLibrary = Library.of(newJar);
 
-		return Roseau.diff(oldLibrary, newLibrary).breakingChanges();
+		return Roseau.diff(oldLibrary, newLibrary).getBreakingChanges();
 	}
 
 	private Optional<Path> resolveArtifactJar() {
@@ -125,8 +137,9 @@ public final class RoseauMojo extends AbstractMojo {
 
 	private Optional<Path> resolveBaselineVersion() {
 		try {
-			String coords = "%s:%s:%s".formatted(baselineVersion.getGroupId(), baselineVersion.getArtifactId(), baselineVersion.getVersion());
-			Artifact artifact = new DefaultArtifact(coords);
+			String coordinates = "%s:%s:%s".formatted(baselineVersion.getGroupId(), baselineVersion.getArtifactId(),
+				baselineVersion.getVersion());
+			Artifact artifact = new DefaultArtifact(coordinates);
 			ArtifactRequest request = new ArtifactRequest()
 				.setArtifact(artifact)
 				.setRepositories(remoteRepositories);
@@ -137,7 +150,7 @@ public final class RoseauMojo extends AbstractMojo {
 				return Optional.of(resolved.toPath());
 			}
 		} catch (ArtifactResolutionException e) {
-			getLog().debug(e);
+			getLog().warn(e);
 		}
 
 		return Optional.empty();
