@@ -125,11 +125,12 @@ pkg.T;pkg.T.m();METHOD_REMOVED
 If you use Roseau for academic purposes, please cite: [Roseau: Fast, Accurate, Source-based Breaking Change Analysis in Java](https://hal.science/hal-05176866/document). Corentin Latappy, Thomas Degueule, Jean-Rémy Falleri, Romain Robbes, Lina Ochoa. In _IEEE International Conference on Software Maintenance and Evolution_ (ICSME 2025).
 
 ```bibtex
-@inproceedings{latappy25roseau,
+@inproceedings{roseau,
     author    = {Corentin Latappy and Thomas Degueule and Jean-Rémy Falleri and Romain Robbes and Lina Ochoa},
     title     = {{Roseau}: Fast, Accurate, Source-based Breaking Change Analysis in {Java}},
     booktitle = {{IEEE} International Conference on Software Maintenance and Evolution, {ICSME} 2025, Auckland, New Zealand, September 7-12, 2025},
-    publisher = {{IEEE}},
+    pages     = {517--528},
+    doi       = {10.1109/ICSME64153.2025.00053},
     year      = {2025}
 }
 ```
