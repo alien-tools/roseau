@@ -1,9 +1,11 @@
 package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Stopwatch;
 import com.google.common.base.Strings;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.apache.maven.cli.MavenCli;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationRequest;
@@ -26,6 +28,45 @@ import java.util.Properties;
  */
 public class MavenClasspathBuilder {
 	private static final Logger LOGGER = LogManager.getLogger(MavenClasspathBuilder.class);
+
+	static void main() {
+		Path baseDir = Path.of(".").toAbsolutePath();
+		Path pom = Path.of("pom.xml").toAbsolutePath();
+		File mvnExecutable = findMavenExecutable(pom).get();
+		System.setProperty("maven.multiModuleProjectDirectory", baseDir.toString());
+		MavenCli cli = new MavenCli();
+
+		Stopwatch sw = Stopwatch.createUnstarted();
+		for (int i = 0; i < 5; i++) {
+			sw.start();
+			// Required to avoid the error:
+			// "-Dmaven.multiModuleProjectDirectory system property is not set."
+			cli.doMain(new String[]{"--batch-mode", "--quiet", "-U", "dependency:build-classpath"}, baseDir.toString(), System.out, System.err);
+			System.out.printf("CLI took %dms%n", sw.elapsed().toMillis());
+			sw.reset();
+		}
+
+		var b = new MavenClasspathBuilder();
+		for (int i = 0; i < 5; i++) {
+			sw.start();
+			b.other(pom, mvnExecutable.toPath());
+			System.out.println("MCP took %dms".formatted(sw.elapsed().toMillis()));
+			sw.reset();
+		}
+	}
+
+	void other(Path pom, Path mvnExecutable) {
+		try {
+			String random = Long.toHexString(Double.doubleToLongBits(Math.random()));
+			Path classpathFile = pom.resolveSibling(".roseau-classpath-" + random + ".tmp");
+			InvocationRequest request = makeClasspathRequest(pom, classpathFile);
+			Invoker invoker = new DefaultInvoker();
+			invoker.setMavenExecutable(mvnExecutable.toFile());
+			InvocationResult result = invoker.execute(request);
+		} catch (Exception e) {
+			e.printStackTrace();
+		}
+	}
 
 	/**
 	 * Returns the classpath of the supplied {@code pom.xml} file using {@code mvn dependency:build-classpath}.
