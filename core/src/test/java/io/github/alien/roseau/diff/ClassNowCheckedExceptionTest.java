@@ -40,7 +40,10 @@ class ClassNowCheckedExceptionTest {
 			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1));
 	}
 
-	@Client("throw new A();")
+	@Client("""
+		try {
+			throw new A();
+		} catch (Throwable t) {}""")
 	@Test
 	void throwable_becomes_checked_exception() {
 		var v1 = "public class A extends Throwable {}";
@@ -125,7 +128,10 @@ class ClassNowCheckedExceptionTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("throw new A();")
+	@Client("""
+		try {
+			throw new A();
+		} catch (Exception e) {}""")
 	@Test
 	void exception_becomes_throwable() {
 		var v1 = "public class A extends Exception {}";
@@ -134,7 +140,10 @@ class ClassNowCheckedExceptionTest {
 		assertBC("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("throw new A();")
+	@Client("""
+		try {
+			throw new A();
+		} catch (Exception e) {}""")
 	@Test
 	void exception_becomes_error() {
 		var v1 = "public class A extends Exception {}";

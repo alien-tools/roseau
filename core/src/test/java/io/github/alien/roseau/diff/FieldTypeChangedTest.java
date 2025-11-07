@@ -337,7 +337,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("List<String> l = new A<String>().f;")
+	@Client("java.util.List<String> l = new A<String>().f;")
 	@Test
 	void generic_bounded_to_object() {
 		var v1 = """
@@ -353,7 +353,7 @@ class FieldTypeChangedTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("List<Object> l = new A<String>().f;")
+	@Client("java.util.List<Object> l = new A<String>().f;")
 	@Test
 	void generic_object_to_bounded() {
 		var v1 = """
@@ -369,7 +369,7 @@ class FieldTypeChangedTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("List<String> l = new A<String>().f;")
+	@Client("java.util.List<String> l = new A<String>().f;")
 	@Test
 	void generic_unbounded_to_object() {
 		var v1 = """
@@ -385,7 +385,7 @@ class FieldTypeChangedTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("List<Object> l = new A<String>().f;")
+	@Client("java.util.List<Object> l = new A<String>().f;")
 	@Test
 	void generic_object_to_unbounded() {
 		var v1 = """

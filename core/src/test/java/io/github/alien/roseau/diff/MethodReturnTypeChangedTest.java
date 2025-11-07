@@ -420,7 +420,7 @@ class MethodReturnTypeChangedTest {
 		new A<String>() {
 			@Override public java.util.List<String> m() { return super.m(); }
 		};
-		List<String> l = new A<String>().m();""")
+		java.util.List<String> l = new A<String>().m();""")
 	@Test
 	void generic_bounded_to_object() {
 		var v1 = """
@@ -440,7 +440,7 @@ class MethodReturnTypeChangedTest {
 		new A<String>() {
 			@Override public java.util.List<Object> m() { return super.m(); }
 		};
-		List<Object> l = new A<String>().m();""")
+		java.util.List<Object> l = new A<String>().m();""")
 	@Test
 	void generic_object_to_bounded() {
 		var v1 = """
@@ -460,7 +460,7 @@ class MethodReturnTypeChangedTest {
 		new A<String>() {
 			@Override public java.util.List<String> m() { return super.m(); }
 		};
-		List<String> l = new A<String>().m();""")
+		java.util.List<String> l = new A<String>().m();""")
 	@Test
 	void generic_unbounded_to_object() {
 		var v1 = """
@@ -480,7 +480,7 @@ class MethodReturnTypeChangedTest {
 		new A<String>() {
 			@Override public java.util.List<Object> m() { return super.m(); }
 		};
-		List<Object> l = new A<String>().m();""")
+		java.util.List<Object> l = new A<String>().m();""")
 	@Test
 	void generic_object_to_unbounded() {
 		var v1 = """
@@ -619,7 +619,7 @@ class MethodReturnTypeChangedTest {
 	void unbounded_array_to_object() {
 		var v1 = """
 			public class A<T> {
-				public T[] m() { return new T[] { null }; }
+				public T[] m() { return null; }
 			}""";
 		var v2 = """
 			public class A<T> {
@@ -643,7 +643,7 @@ class MethodReturnTypeChangedTest {
 			}""";
 		var v2 = """
 			public class A<T> {
-				public T[] m() { return new T[] { null }; }
+				public T[] m() { return null; }
 			}""";
 
 		// Source-breaking, not binary-breaking
@@ -659,7 +659,7 @@ class MethodReturnTypeChangedTest {
 	void bounded_array_to_object() {
 		var v1 = """
 			public class A<T extends String> {
-				public T[] m() { return new T[] { null }; }
+				public T[] m() { return null; }
 			}""";
 		var v2 = """
 			public class A<T extends String> {
@@ -679,11 +679,11 @@ class MethodReturnTypeChangedTest {
 	void object_array_to_bounded() {
 		var v1 = """
 			public class A<T extends String> {
-				public Object[] m() { return new Object[] { null }; }
+				public Object[] m() { return null; }
 			}""";
 		var v2 = """
 			public class A<T extends String> {
-				public T[] m() { return new T[] { null }; }
+				public T[] m() { return null; }
 			}""";
 
 		// Both breaking
