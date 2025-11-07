@@ -164,4 +164,58 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (OutOfMemoryError e) {}""")
+	@Test
+	void method_no_longer_throws_error() {
+		var v1 = """
+			public class A {
+				public void m() throws OutOfMemoryError {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (Throwable e) {}""")
+	@Test
+	void method_no_longer_throws_throwable() {
+		var v1 = """
+			public class A {
+				public void m() throws Throwable {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new A() {
+			@Override public void m() throws Throwable {}
+		};""")
+	@Test
+	void method_now_throws_throwable_subtype() {
+		var v1 = """
+			public class A {
+				public void m() throws Throwable {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
 }

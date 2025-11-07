@@ -107,12 +107,10 @@ public interface SubtypingProvider {
 	private boolean checkTypeSubtyping(TypeReference<?> reference, ITypeReference other) {
 		return switch (other) {
 			// FIXME: what if upper() or !upper()?
-			case WildcardTypeReference wtr ->
-				wtr.bounds().stream().allMatch(b -> isSubtypeOf(reference, b));
-			case TypeReference<?> tr ->
-				Stream.concat(Stream.of(reference), hierarchy().getAllSuperTypes(reference).stream())
-					.anyMatch(sup -> Objects.equals(sup.getQualifiedName(), tr.getQualifiedName()) &&
-						hasCompatibleTypeParameters(reference, tr));
+			case WildcardTypeReference wtr -> wtr.bounds().stream().allMatch(b -> isSubtypeOf(reference, b));
+			case TypeReference<?> tr -> Stream.concat(Stream.of(reference), hierarchy().getAllSuperTypes(reference).stream())
+				.anyMatch(sup -> Objects.equals(sup.getQualifiedName(), tr.getQualifiedName()) &&
+					hasCompatibleTypeParameters(reference, tr));
 			default -> false;
 		};
 	}
@@ -129,23 +127,24 @@ public interface SubtypingProvider {
 	}
 
 	/**
-	 * Checks whether the current class is a checked exception type. Checked exception types are subclasses of
-	 * {@link Exception} but not of {@link RuntimeException}.
+	 * Checks whether the given type is a checked exception type. Checked exception types are subclasses of
+	 * {@link Throwable} but not of {@link RuntimeException}.
 	 *
 	 * @return whether the current class is a checked exception
 	 */
 	default boolean isCheckedException(TypeDecl type) {
-		return type.isClass() && isSubtypeOf(type, TypeReference.EXCEPTION) && !isUncheckedException(type);
+		return type.isClass() && isSubtypeOf(type, TypeReference.THROWABLE) && !isUncheckedException(type);
 	}
 
 	/**
-	 * Checks whether the current class is an unchecked exception type. Checked exception types are subclasses of
-	 * {@link RuntimeException}.
+	 * Checks whether the given type is an unchecked exception type. Unchecked exception types are subclasses of
+	 * either {@link RuntimeException} or {@link Error}.
 	 *
 	 * @return whether the current class is an unchecked exception
 	 */
 	default boolean isUncheckedException(TypeDecl type) {
-		return type.isClass() && isSubtypeOf(type, TypeReference.RUNTIME_EXCEPTION);
+		return type.isClass() &&
+			(isSubtypeOf(type, TypeReference.RUNTIME_EXCEPTION) || isSubtypeOf(type, TypeReference.ERROR));
 	}
 
 	/**

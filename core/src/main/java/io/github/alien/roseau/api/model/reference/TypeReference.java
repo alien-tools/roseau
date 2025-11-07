@@ -47,15 +47,20 @@ public record TypeReference<T extends TypeDecl>(
 	public static final TypeReference<ClassDecl> ENUM =
 		new TypeReference<>(Enum.class.getCanonicalName(), List.of());
 	/**
-	 * A reference to {@link Exception}.
+	 * A reference to {@link Throwable}.
 	 */
-	public static final TypeReference<ClassDecl> EXCEPTION =
-		new TypeReference<>(Exception.class.getCanonicalName(), List.of());
+	public static final TypeReference<ClassDecl> THROWABLE =
+		new TypeReference<>(Throwable.class.getCanonicalName(), List.of());
 	/**
 	 * A reference to {@link RuntimeException}.
 	 */
 	public static final TypeReference<ClassDecl> RUNTIME_EXCEPTION =
 		new TypeReference<>(RuntimeException.class.getCanonicalName(), List.of());
+	/**
+	 * A reference to {@link Error}.
+	 */
+	public static final TypeReference<ClassDecl> ERROR =
+		new TypeReference<>(Error.class.getCanonicalName(), List.of());
 	/**
 	 * A reference to {@link IOException}.
 	 */
