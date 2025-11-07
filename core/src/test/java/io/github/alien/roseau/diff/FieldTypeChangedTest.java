@@ -337,6 +337,224 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("List<String> l = new A<String>().f;")
+	@Test
+	void generic_bounded_to_object() {
+		var v1 = """
+			public class A<T extends String> {
+				public java.util.List<T> f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public java.util.List<Object> f;
+			}""";
+
+		// Only source-breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("List<Object> l = new A<String>().f;")
+	@Test
+	void generic_object_to_bounded() {
+		var v1 = """
+			public class A<T extends String> {
+				public java.util.List<Object> f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public java.util.List<T> f;
+			}""";
+
+		// Only source-breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("List<String> l = new A<String>().f;")
+	@Test
+	void generic_unbounded_to_object() {
+		var v1 = """
+			public class A<T> {
+				public java.util.List<T> f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<Object> f;
+			}""";
+
+		// Only source-breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("List<Object> l = new A<String>().f;")
+	@Test
+	void generic_object_to_unbounded() {
+		var v1 = """
+			public class A<T> {
+				public java.util.List<Object> f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T> f;
+			}""";
+
+		// Only source-breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A<String>().f;")
+	@Test
+	void unbounded_to_object() {
+		var v1 = """
+			public class A<T> {
+				public T f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public Object f;
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("Object s = new A<String>().f;")
+	@Test
+	void object_to_unbounded() {
+		var v1 = """
+			public class A<T> {
+				public Object f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A<String>().f;")
+	@Test
+	void bounded_to_object() {
+		var v1 = """
+			public class A<T extends String> {
+				public T f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public Object f;
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("Object s = new A<String>().f;")
+	@Test
+	void object_to_bounded() {
+		var v1 = """
+			public class A<T extends String> {
+				public Object f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A<String>().f;")
+	@Test
+	void bounded_to_matching_type() {
+		var v1 = """
+			public class A<T extends String> {
+				public T f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public String f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A<String>().f;")
+	@Test
+	void type_to_matching_bounded() {
+		var v1 = """
+			public class A<T extends String> {
+				public String f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String[] a = new A<String>().f;")
+	@Test
+	void unbounded_array_to_object() {
+		var v1 = """
+			public class A<T> {
+				public T[] f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public Object[] f;
+			}""";
+
+		// Source-breaking, not binary-breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("Object[] a = new A<String>().f;")
+	@Test
+	void object_array_to_unbounded() {
+		var v1 = """
+			public class A<T> {
+				public Object[] f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public T[] f;
+			}""";
+
+		// Source-breaking, not binary-breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("String[] a = new A<String>().f;")
+	@Test
+	void bounded_array_to_object() {
+		var v1 = """
+			public class A<T extends String> {
+				public T[] f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public Object[] f;
+			}""";
+
+		// Both breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("Object[] a = new A<String>().f;")
+	@Test
+	void object_array_to_bounded() {
+		var v1 = """
+			public class A<T extends String> {
+				public Object[] f;
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public T[] f;
+			}""";
+
+		// Both breaking
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
 	@Test
 	void to_unknown() {
 		var v1 = """
