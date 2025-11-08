@@ -276,11 +276,8 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		RoseauReport report = filterReport(diff(v1, v2), options.diff());
-		if (report.getBreakingChanges().isEmpty()) {
-			print("No breaking changes found.");
-		} else {
-			print(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
-		}
+
+		print(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {
 			writeApiReport(report.v1(), options.v1().apiReport());

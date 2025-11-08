@@ -386,7 +386,7 @@ class RoseauCLITest {
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
