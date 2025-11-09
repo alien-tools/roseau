@@ -116,13 +116,13 @@ public final class RoseauCLI implements Callable<Integer> {
 		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(libraryV2));
 		API apiV1 = futureV1.join();
 		API apiV2 = futureV2.join();
-		console.printlnVerbose("%d types → %d types (%dms)".formatted(apiV1.getLibraryTypes().getAllTypes().size(),
+		console.printlnVerbose("%d types → %d types (%d ms)".formatted(apiV1.getLibraryTypes().getAllTypes().size(),
 			apiV2.getLibraryTypes().getAllTypes().size(), sw.elapsed().toMillis()));
 
 		sw.reset().start();
 		console.printVerbose("Comparing APIs... ");
 		RoseauReport report = Roseau.diff(apiV1, apiV2);
-		console.printlnVerbose("%d breaking changes (%dms)".formatted(report.getBreakingChanges().size(),
+		console.printlnVerbose("%d breaking changes (%d ms)".formatted(report.getBreakingChanges().size(),
 			sw.elapsed().toMillis()));
 
 		return report;
@@ -238,28 +238,31 @@ public final class RoseauCLI implements Callable<Integer> {
 		return new RoseauOptions(commonCli, v1Cli, v2Cli, ignoredCsv, reportsCli);
 	}
 
-	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
-		if (library.getClasspath().isEmpty()) {
-			console.printlnErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(
-				library.getLocation()));
+	private void checkClasspath(Library library) {
+		Stopwatch sw = Stopwatch.createStarted();
+		if (Files.isRegularFile(library.getPom())) {
+			console.printVerbose("Building classpath... ");
 		}
+		List<Path> classpath = library.getClasspath();
+		console.printlnVerbose("%d classpath entries for %s (%d ms)%s".formatted(classpath.size(), library.getLocation(),
+			sw.elapsed().toMillis(), classpath.isEmpty() ? ", results may be inaccurate" : ""));
+	}
 
+	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
+		checkClasspath(library);
 		Stopwatch sw = Stopwatch.createStarted();
 		console.printVerbose("Building API... ");
 		API api = Roseau.buildAPI(library);
-		console.printlnVerbose(" %d types (%dms)");
+		console.printlnVerbose(" %d types (%d ms)".formatted(api.getLibraryTypes().getAllTypes().size(),
+			sw.elapsed().toMillis()));
 		if (libraryOptions.apiReport() != null) {
 			writeApiReport(api, libraryOptions.apiReport());
 		}
 	}
 
 	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
-		if (v1.getClasspath().isEmpty()) {
-			console.printlnErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v1.getLocation()));
-		}
-		if (v2.getClasspath().isEmpty()) {
-			console.printlnErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v2.getLocation()));
-		}
+		checkClasspath(v1);
+		checkClasspath(v2);
 		RoseauReport originalReport = diff(v1, v2);
 		Path ignoreFile = options.ignore();
 		RoseauReport filteredReport = ignoreFile != null && Files.isRegularFile(ignoreFile)
