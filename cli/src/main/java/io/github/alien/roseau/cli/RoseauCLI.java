@@ -90,6 +90,12 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--v2-pom", paramLabel = "<path>",
 		description = "A --pom for --v2")
 	private Path v2Pom;
+	@Option(names = "--binary-only",
+		description = "Only report binary-breaking changes")
+	private Boolean binaryOnly;
+	@Option(names = "--source-only",
+		description = "Only report source-breaking changes")
+	private Boolean sourceOnly;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as the one produced by --format CSV")
@@ -168,12 +174,22 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private RoseauReport filterReport(RoseauReport report, Path ignoredPath) {
-		IgnoredCsvFile ignored = new IgnoredCsvFile(ignoredPath);
-		List<BreakingChange> filtered = report.getBreakingChanges().stream()
-			.filter(bc -> !ignored.isIgnored(bc))
-			.toList();
-		return new RoseauReport(report.v1(), report.v2(), filtered);
+	private RoseauReport filterReport(RoseauReport report, RoseauOptions.Diff diffOptions) {
+		List<BreakingChange> bcs = diffOptions.sourceOnly()
+			? report.getSourceBreakingChanges()
+			: diffOptions.binaryOnly()
+				? report.getBinaryBreakingChanges()
+				: report.getBreakingChanges();
+
+		Path ignorePath = diffOptions.ignore();
+		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
+			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
+			bcs = bcs.stream()
+				.filter(bc -> !ignoredFile.isIgnored(bc))
+				.toList();
+		}
+
+		return new RoseauReport(report.v1(), report.v2(), bcs);
 	}
 
 	private void checkOptions(RoseauOptions options) {
@@ -181,6 +197,10 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		if (config != null && !Files.isRegularFile(config)) {
 			printErr("Warning: ignoring missing configuration file %s".formatted(config));
+		}
+
+		if (sourceOnly != null && binaryOnly != null) {
+			throw new RoseauException("Specify either --source-only or --binary-only");
 		}
 
 		if (v1Path == null || !Files.exists(v1Path)) {
@@ -215,7 +235,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("Cannot find pom: %s".formatted(pomPath));
 		}
 
-		Path ignoredPath = options.ignore();
+		Path ignoredPath = options.diff().ignore();
 		if (ignoredPath != null && !Files.isRegularFile(ignoredPath)) {
 			throw new RoseauException("Cannot find ignored CSV: %s".formatted(ignoredPath));
 		}
@@ -225,21 +245,16 @@ public final class RoseauCLI implements Callable<Integer> {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
-			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)),
-			noExclusions
-		);
+			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
-			noExclusions, apiJson
-		);
+			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
-			noExclusions, null
-		);
+			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
+		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, sourceOnly, binaryOnly);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))
 			: List.of();
-		return new RoseauOptions(commonCli, v1Cli, v2Cli, ignoredCsv, reportsCli);
+		return new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
 	}
 
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
@@ -259,29 +274,25 @@ public final class RoseauCLI implements Callable<Integer> {
 		if (v2.getClasspath().isEmpty()) {
 			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v2.getLocation()));
 		}
-		RoseauReport originalReport = diff(v1, v2);
-		Path ignoreFile = options.ignore();
-		RoseauReport filteredReport = ignoreFile != null && Files.isRegularFile(ignoreFile)
-			? filterReport(originalReport, ignoreFile)
-			: originalReport;
 
-		if (filteredReport.getBreakingChanges().isEmpty()) {
+		RoseauReport report = filterReport(diff(v1, v2), options.diff());
+		if (report.getBreakingChanges().isEmpty()) {
 			print("No breaking changes found.");
 		} else {
-			print(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(filteredReport));
+			print(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 		}
 
 		if (options.v1().apiReport() != null) {
-			writeApiReport(filteredReport.v1(), options.v1().apiReport());
+			writeApiReport(report.v1(), options.v1().apiReport());
 		}
 		if (options.v2().apiReport() != null) {
-			writeApiReport(filteredReport.v2(), options.v2().apiReport());
+			writeApiReport(report.v2(), options.v2().apiReport());
 		}
 		options.reports().forEach(reportOption ->
-			writeReport(filteredReport, reportOption.format(), reportOption.file())
+			writeReport(report, reportOption.format(), reportOption.file())
 		);
 
-		return !filteredReport.getBreakingChanges().isEmpty();
+		return !report.getBreakingChanges().isEmpty();
 	}
 
 	@Override
