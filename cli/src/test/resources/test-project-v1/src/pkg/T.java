@@ -1,5 +1,6 @@
 package pkg;
 
-public class T {
+public class T<U> {
 	public void m() {}
+	public void n() {}
 }
