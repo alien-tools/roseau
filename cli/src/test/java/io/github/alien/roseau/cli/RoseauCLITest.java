@@ -44,8 +44,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(out.toString()).contains("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED pkg.T");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -56,8 +56,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(out.toString()).contains("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED pkg.T");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -68,8 +68,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(out.toString()).contains("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED pkg.T");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -80,8 +80,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
-		assertThat(out.toString()).contains("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED pkg.T");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -468,7 +468,8 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
-			"--plain");
+			"--plain",
+			"-vv");
 
 		assertThat(err.toString()).contains("Malformed kind");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());

@@ -63,18 +63,6 @@ public final class RoseauReport {
 		return breakingChanges;
 	}
 
-	public List<BreakingChange> getBinaryBreakingChanges() {
-		return getBreakingChanges().stream()
-			.filter(bc -> bc.kind().isBinaryBreaking())
-			.toList();
-	}
-
-	public List<BreakingChange> getSourceBreakingChanges() {
-		return getBreakingChanges().stream()
-			.filter(bc -> bc.kind().isSourceBreaking())
-			.toList();
-	}
-
 	public boolean isBinaryBreaking() {
 		return !getBinaryBreakingChanges().isEmpty();
 	}

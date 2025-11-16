@@ -253,18 +253,22 @@ public final class RoseauCLI implements Callable<Integer> {
 		return new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
 	}
 
-	private void checkClasspath(Library library) {
+	private void buildClasspath(Library library) {
 		Stopwatch sw = Stopwatch.createStarted();
-		if (Files.isRegularFile(library.getPom())) {
+		if (library.getPom() != null && Files.isRegularFile(library.getPom())) {
 			console.printVerbose("Building classpath... ");
 		}
 		List<Path> classpath = library.getClasspath();
-		console.printlnVerbose("%d classpath entries for %s (%d ms)%s".formatted(classpath.size(), library.getLocation(),
-			sw.elapsed().toMillis(), classpath.isEmpty() ? ", results may be inaccurate" : ""));
+		console.printlnVerbose("%d classpath entries for %s (%d ms)".formatted(classpath.size(), library.getLocation(),
+			sw.elapsed().toMillis()));
+
+		if (classpath.isEmpty()) {
+			console.printlnErr("Warning: no classpath provided, results may be inaccurate");
+		}
 	}
 
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
-		checkClasspath(library);
+		buildClasspath(library);
 		Stopwatch sw = Stopwatch.createStarted();
 		console.printVerbose("Building API... ");
 		API api = Roseau.buildAPI(library);
@@ -276,10 +280,10 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
-		checkClasspath(v1);
-		checkClasspath(v2);
+		buildClasspath(v1);
+		buildClasspath(v2);
 		RoseauReport report = filterReport(diff(v1, v2), options.diff());
-		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(filteredReport));
+		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {
 			writeApiReport(report.v1(), options.v1().apiReport());
@@ -296,14 +300,15 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	@Override
 	public Integer call() {
+		Console.Verbosity verbosity = verbosityLevel == null
+			? Console.Verbosity.NORMAL
+			: switch (verbosityLevel.length) {
+			case 0 -> Console.Verbosity.NORMAL;
+			case 1 -> Console.Verbosity.VERBOSE;
+			default -> Console.Verbosity.DEBUG;
+		};
+
 		try {
-			Console.Verbosity verbosity = verbosityLevel == null
-				? Console.Verbosity.NORMAL
-				: switch (verbosityLevel.length) {
-					case 0 -> Console.Verbosity.NORMAL;
-					case 1 -> Console.Verbosity.VERBOSE;
-					default -> Console.Verbosity.DEBUG;
-				};
 			console = new Console(spec.commandLine().getOut(), spec.commandLine().getErr(), verbosity);
 
 			if (verbosity == Console.Verbosity.DEBUG) {
@@ -340,7 +345,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			return ExitCode.SUCCESS.code();
 		} catch (RuntimeException e) {
-			if (verbosityLevel.length >= Console.Verbosity.VERBOSE.level) {
+			if (verbosity.level >= Console.Verbosity.VERBOSE.level) {
 				console.printStackTrace(e);
 			} else {
 				String message = Optional.ofNullable(e.getMessage())
