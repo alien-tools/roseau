@@ -209,4 +209,37 @@ class MethodNowThrowsCheckedExceptionTest {
 
 		assertBC("A", "A.<init>()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void method_now_throws_throwable() {
+		var v1 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws Throwable {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m();")
+	@Test
+	void method_now_throws_error() {
+		var v1 = """
+			public class A {
+				public void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws OutOfMemoryError {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

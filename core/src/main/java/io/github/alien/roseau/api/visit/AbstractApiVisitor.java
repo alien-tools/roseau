@@ -3,6 +3,7 @@ package io.github.alien.roseau.api.visit;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
@@ -13,6 +14,7 @@ import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.RecordComponentDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
@@ -37,7 +39,15 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 
 	@Override
 	public Visit libraryTypes(LibraryTypes it) {
-		return () -> it.getAllTypes().forEach(t -> $(t).visit());
+		return () -> {
+			$(it.getModule()).visit();
+			it.getAllTypes().forEach(t -> $(t).visit());
+		};
+	}
+
+	@Override
+	public Visit moduleDecl(ModuleDecl it) {
+		return () -> {};
 	}
 
 	@Override
@@ -45,7 +55,6 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 		return () -> {
 			typeDecl(it).visit();
 			$(it.getSuperClass()).visit();
-			it.getPermittedTypes().forEach(t -> $(t).visit());
 			it.getDeclaredConstructors().forEach(cons -> $(cons).visit());
 		};
 	}
@@ -54,7 +63,6 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 	public Visit interfaceDecl(InterfaceDecl it) {
 		return () -> {
 			typeDecl(it).visit();
-			it.getPermittedTypes().forEach(t -> $(t).visit());
 		};
 	}
 
@@ -68,7 +76,10 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 
 	@Override
 	public Visit annotationDecl(AnnotationDecl it) {
-		return typeDecl(it);
+		return () -> {
+			interfaceDecl(it).visit();
+			it.getAnnotationMethods().forEach(am -> $(am).visit());
+		};
 	}
 
 	@Override
@@ -90,6 +101,11 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 	}
 
 	@Override
+	public Visit annotationMethodDecl(AnnotationMethodDecl it) {
+		return executableDecl(it);
+	}
+
+	@Override
 	public Visit fieldDecl(FieldDecl it) {
 		return typeMemberDecl(it);
 	}
@@ -106,8 +122,7 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 
 	@Override
 	public Visit primitiveTypeReference(PrimitiveTypeReference it) {
-		return () -> {
-		};
+		return () -> {};
 	}
 
 	@Override
@@ -117,8 +132,7 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 
 	@Override
 	public Visit typeParameterReference(TypeParameterReference it) {
-		return () -> {
-		};
+		return () -> {};
 	}
 
 	@Override
@@ -158,6 +172,7 @@ public abstract class AbstractApiVisitor implements ApiAlgebra<Visit> {
 			it.getDeclaredFields().forEach(field -> $(field).visit());
 			it.getDeclaredMethods().forEach(meth -> $(meth).visit());
 			it.getEnclosingType().ifPresent(t -> $(t).visit());
+			it.getPermittedTypes().forEach(t -> $(t).visit());
 		};
 	}
 

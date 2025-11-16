@@ -21,5 +21,7 @@ preferred-citation:
   conference:
     name: IEEE International Conference on Software Maintenance and Evolution (ICSME)
     location: Auckland, New Zealand
-  publisher: IEEE
+  identifiers:
+    - type: doi
+      value: 10.1109/ICSME64153.2025.00053
   year: 2025

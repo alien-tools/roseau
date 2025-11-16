@@ -18,6 +18,7 @@ class RoseauOptionsTest {
 		var base = RoseauOptions.newDefault();
 		assertThat(base.mergeWith(null)).isSameAs(base);
 		assertThat(base.common().mergeWith(null)).isSameAs(base.common());
+		assertThat(base.diff().mergeWith(null)).isSameAs(base.diff());
 		assertThat(base.v1().mergeWith((RoseauOptions.Library) null)).isSameAs(base.v1());
 		assertThat(base.v1().mergeWith((RoseauOptions.Common) null)).isSameAs(base.v1());
 		assertThat(base.v1().classpath().mergeWith(null)).isSameAs(base.v1().classpath());
@@ -32,7 +33,8 @@ class RoseauOptionsTest {
 		var commonBase = new RoseauOptions.Common(cpBase, exBase);
 		var libBase = new RoseauOptions.Library(
 			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
-		var base = new RoseauOptions(commonBase, libBase, libBase, Path.of("base-ignore.csv"),
+		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true);
+		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
 		var cpOther = new RoseauOptions.Classpath(Path.of("other-pom.xml"), List.of(Path.of("other.jar")));
@@ -41,12 +43,15 @@ class RoseauOptionsTest {
 		var commonOther = new RoseauOptions.Common(cpOther, exOther);
 		var libOther = new RoseauOptions.Library(
 			Path.of("other-lib"), cpOther, exOther, Path.of("other.json"));
-		var other = new RoseauOptions(commonOther, libOther, libOther, Path.of("other-ignore.csv"),
+		var diffOther = new RoseauOptions.Diff(Path.of("other-ignore.csv"), false, false);
+		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther,
 			List.of(new RoseauOptions.Report(Path.of("other.html"), BreakingChangesFormatterFactory.HTML)));
 
 		var merged = base.mergeWith(other);
 
-		assertThat(merged.ignore()).isEqualTo(Path.of("other-ignore.csv"));
+		assertThat(merged.diff().ignore()).isEqualTo(Path.of("other-ignore.csv"));
+		assertThat(merged.diff().sourceOnly()).isFalse();
+		assertThat(merged.diff().binaryOnly()).isFalse();
 		assertThat(merged.reports()).singleElement().isEqualTo(
 			new RoseauOptions.Report(Path.of("other.html"), BreakingChangesFormatterFactory.HTML));
 
@@ -73,14 +78,16 @@ class RoseauOptionsTest {
 		var commonBase = new RoseauOptions.Common(cpBase, exBase);
 		var libBase = new RoseauOptions.Library(
 			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
-		var base = new RoseauOptions(commonBase, libBase, libBase, Path.of("base-ignore.csv"),
+		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true);
+		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
 		var cpOther = new RoseauOptions.Classpath(null, List.of());
 		var exOther = new RoseauOptions.Exclude(List.of(), List.of());
 		var commonOther = new RoseauOptions.Common(cpOther, exOther);
 		var libOther = new RoseauOptions.Library(null, cpOther, exOther, null);
-		var other = new RoseauOptions(commonOther, libOther, libOther, null, List.of());
+		var diffOther = new RoseauOptions.Diff(null, null, null);
+		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther, List.of());
 
 		var merged = base.mergeWith(other);
 		assertThat(merged).isEqualTo(base);
@@ -139,13 +146,15 @@ class RoseauOptionsTest {
 			  excludes:
 			    names: [y]
 			  apiReport: /api/v2.json
-			ignore: /ignore.yaml
+			diff:
+			  ignore: /ignore.csv
+			  sourceOnly: false
+			  binaryOnly: true
 			reports:
 			  - file: /report.csv
 			    format: CSV
 			  - file: /report.html
-			    format: HTML
-			""";
+			    format: HTML""";
 		Files.writeString(yaml, content);
 
 		var options = RoseauOptions.load(yaml);
@@ -157,7 +166,9 @@ class RoseauOptionsTest {
 		assertThat(options.v1().location()).isEqualTo(Path.of("/lib/v1"));
 		assertThat(options.v1().apiReport()).isEqualTo(Path.of("/api/v1.json"));
 		assertThat(options.v2().location()).isEqualTo(Path.of("/lib/v2"));
-		assertThat(options.ignore()).isEqualTo(Path.of("/ignore.yaml"));
+		assertThat(options.diff().ignore()).isEqualTo(Path.of("/ignore.csv"));
+		assertThat(options.diff().sourceOnly()).isEqualTo(false);
+		assertThat(options.diff().binaryOnly()).isEqualTo(true);
 		assertThat(options.reports()).containsExactly(
 			new RoseauOptions.Report(Path.of("/report.csv"), BreakingChangesFormatterFactory.CSV),
 			new RoseauOptions.Report(Path.of("/report.html"), BreakingChangesFormatterFactory.HTML));
