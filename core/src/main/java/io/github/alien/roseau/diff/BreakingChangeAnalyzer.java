@@ -156,7 +156,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field2, FieldDecl field1) {
+	public void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field1, FieldDecl field2) {
 		if (!field1.isFinal() && field2.isFinal()) {
 			builder.memberBC(BreakingChangeKind.FIELD_NOW_FINAL, type1, field1, field2);
 		}
@@ -190,7 +190,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method2, MethodDecl method1) {
+	public void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method1, MethodDecl method2) {
 		if (!v1.isEffectivelyFinal(type1, method1) && v2.isEffectivelyFinal(type2, method2)) {
 			builder.memberBC(BreakingChangeKind.METHOD_NOW_FINAL, type1, method1, method2);
 		}
@@ -242,7 +242,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons2, ConstructorDecl cons1) {
+	public void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons1, ConstructorDecl cons2) {
 		if (cons1.isPublic() && cons2.isProtected()) {
 			builder.memberBC(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cls1, cons1, cons2);
 		}

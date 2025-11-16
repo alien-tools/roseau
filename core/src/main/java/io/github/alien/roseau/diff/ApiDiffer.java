@@ -15,19 +15,19 @@ public interface ApiDiffer<T> {
 
 	void onAddedType(TypeDecl type);
 
-	void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field2, FieldDecl field1);
+	void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field1, FieldDecl field2);
 
 	void onRemovedField(TypeDecl type, FieldDecl field);
 
 	void onAddedField(TypeDecl type, FieldDecl field);
 
-	void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method2, MethodDecl method1);
+	void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method1, MethodDecl method2);
 
 	void onRemovedMethod(TypeDecl type, MethodDecl method);
 
 	void onAddedMethod(TypeDecl type, MethodDecl method);
 
-	void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons2, ConstructorDecl cons1);
+	void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons1, ConstructorDecl cons2);
 
 	void onRemovedConstructor(ClassDecl cls, ConstructorDecl cons);
 
