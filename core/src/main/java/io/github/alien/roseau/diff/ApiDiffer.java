@@ -9,25 +9,25 @@ import io.github.alien.roseau.api.model.TypeDecl;
 public interface ApiDiffer<T> {
 	T get();
 
-	void onMatchedType(TypeDecl type1, TypeDecl type2);
+	void onMatchedType(TypeDecl oldType, TypeDecl newType);
 
 	void onRemovedType(TypeDecl type);
 
 	void onAddedType(TypeDecl type);
 
-	void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field1, FieldDecl field2);
+	void onMatchedField(TypeDecl oldType, TypeDecl newType, FieldDecl oldField, FieldDecl newField);
 
 	void onRemovedField(TypeDecl type, FieldDecl field);
 
 	void onAddedField(TypeDecl type, FieldDecl field);
 
-	void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method1, MethodDecl method2);
+	void onMatchedMethod(TypeDecl oldType, TypeDecl newType, MethodDecl oldMethod, MethodDecl newMethod);
 
 	void onRemovedMethod(TypeDecl type, MethodDecl method);
 
 	void onAddedMethod(TypeDecl type, MethodDecl method);
 
-	void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons1, ConstructorDecl cons2);
+	void onMatchedConstructor(ClassDecl oldCls, ClassDecl newCls, ConstructorDecl oldCons, ConstructorDecl newCons);
 
 	void onRemovedConstructor(ClassDecl cls, ConstructorDecl cons);
 

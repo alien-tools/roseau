@@ -19,7 +19,7 @@ public final class ApiWalker {
 		this.matcher = matcher;
 	}
 
-	public void walk(ApiDiffer sink) {
+	public <T> T walk(ApiDiffer<T> sink) {
 		v1.getExportedTypes().parallelStream().forEach(t1 -> {
 			matcher.matchType(v2, t1).ifPresentOrElse(
 				t2 -> {
@@ -33,6 +33,8 @@ public final class ApiWalker {
 		v2.getExportedTypes().parallelStream()
 			.filter(t2 -> matcher.matchType(v1, t2).isEmpty())
 			.forEach(sink::onAddedType);
+
+		return sink.get();
 	}
 
 	private void walkMembers(TypeDecl t1, TypeDecl t2, ApiDiffer sink) {

@@ -46,40 +46,40 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedType(TypeDecl type1, TypeDecl type2) {
-		if (type1.isPublic() && type2.isProtected()) {
-			builder.typeBC(BreakingChangeKind.TYPE_NOW_PROTECTED, type1);
+	public void onMatchedType(TypeDecl oldType, TypeDecl newType) {
+		if (oldType.isPublic() && newType.isProtected()) {
+			builder.typeBC(BreakingChangeKind.TYPE_NOW_PROTECTED, oldType);
 		}
 
-		if (!type1.getClass().equals(type2.getClass())) {
-			builder.typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, type1,
-				new BreakingChangeDetails.ClassTypeChanged(type1.getClass(), type2.getClass()));
+		if (!oldType.getClass().equals(newType.getClass())) {
+			builder.typeBC(BreakingChangeKind.CLASS_TYPE_CHANGED, oldType,
+				new BreakingChangeDetails.ClassTypeChanged(oldType.getClass(), newType.getClass()));
 			return; // Avoid all cascading changes
 		}
 
 		// If a supertype that was exported has been removed,
 		// it may have been used in client code for casts
-		List<TypeReference<TypeDecl>> candidates = v1.getAllSuperTypes(type1).stream()
+		List<TypeReference<TypeDecl>> candidates = v1.getAllSuperTypes(oldType).stream()
 			.filter(v1::isExported)
-			.filter(sup -> !v2.isSubtypeOf(type2, sup))
+			.filter(sup -> !v2.isSubtypeOf(newType, sup))
 			.toList();
 
 		// Only report on the closest super type
 		candidates.stream()
 			.filter(sup -> candidates.stream().noneMatch(other -> !other.equals(sup) && v1.isSubtypeOf(other, sup)))
 			.forEach(sup ->
-				builder.typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, type1,
+				builder.typeBC(BreakingChangeKind.SUPERTYPE_REMOVED, oldType,
 					new BreakingChangeDetails.SuperTypeRemoved(sup)));
 
-		if (type1 instanceof ClassDecl c1 && type2 instanceof ClassDecl c2) {
+		if (oldType instanceof ClassDecl c1 && newType instanceof ClassDecl c2) {
 			diffClass(c1, c2);
 		}
 
-		if (type1 instanceof AnnotationDecl a1 && type2 instanceof AnnotationDecl a2) {
+		if (oldType instanceof AnnotationDecl a1 && newType instanceof AnnotationDecl a2) {
 			diffAnnotationInterface(a1, a2);
 		}
 
-		diffFormalTypeParameters(type1, type2);
+		diffFormalTypeParameters(oldType, newType);
 	}
 
 	private void diffClass(ClassDecl c1, ClassDecl c2) {
@@ -156,26 +156,26 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedField(TypeDecl type1, TypeDecl type2, FieldDecl field1, FieldDecl field2) {
-		if (!field1.isFinal() && field2.isFinal()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NOW_FINAL, type1, field1, field2);
+	public void onMatchedField(TypeDecl oldType, TypeDecl newType, FieldDecl oldField, FieldDecl newField) {
+		if (!oldField.isFinal() && newField.isFinal()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NOW_FINAL, oldType, oldField, newField);
 		}
 
-		if (!field1.isStatic() && field2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NOW_STATIC, type1, field1, field2);
+		if (!oldField.isStatic() && newField.isStatic()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NOW_STATIC, oldType, oldField, newField);
 		}
 
-		if (field1.isStatic() && !field2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NO_LONGER_STATIC, type1, field1, field2);
+		if (oldField.isStatic() && !newField.isStatic()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NO_LONGER_STATIC, oldType, oldField, newField);
 		}
 
-		if (!field1.getType().equals(field2.getType())) {
-			builder.memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED, type1, field1, field2,
-				new BreakingChangeDetails.FieldTypeChanged(field1.getType(), field2.getType()));
+		if (!oldField.getType().equals(newField.getType())) {
+			builder.memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED, oldType, oldField, newField,
+				new BreakingChangeDetails.FieldTypeChanged(oldField.getType(), newField.getType()));
 		}
 
-		if (field1.isPublic() && field2.isProtected()) {
-			builder.memberBC(BreakingChangeKind.FIELD_NOW_PROTECTED, type1, field1, field2);
+		if (oldField.isPublic() && newField.isProtected()) {
+			builder.memberBC(BreakingChangeKind.FIELD_NOW_PROTECTED, oldType, oldField, newField);
 		}
 	}
 
@@ -190,35 +190,35 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedMethod(TypeDecl type1, TypeDecl type2, MethodDecl method1, MethodDecl method2) {
-		if (!v1.isEffectivelyFinal(type1, method1) && v2.isEffectivelyFinal(type2, method2)) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_FINAL, type1, method1, method2);
+	public void onMatchedMethod(TypeDecl oldType, TypeDecl newType, MethodDecl oldMethod, MethodDecl newMethod) {
+		if (!v1.isEffectivelyFinal(oldType, oldMethod) && v2.isEffectivelyFinal(newType, newMethod)) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_FINAL, oldType, oldMethod, newMethod);
 		}
 
-		if (!method1.isStatic() && method2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_STATIC, type1, method1, method2);
+		if (!oldMethod.isStatic() && newMethod.isStatic()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_STATIC, oldType, oldMethod, newMethod);
 		}
 
-		if (method1.isStatic() && !method2.isStatic()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NO_LONGER_STATIC, type1, method1, method2);
+		if (oldMethod.isStatic() && !newMethod.isStatic()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NO_LONGER_STATIC, oldType, oldMethod, newMethod);
 		}
 
-		if (!method1.isAbstract() && method2.isAbstract()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_ABSTRACT, type1, method1, method2);
+		if (!oldMethod.isAbstract() && newMethod.isAbstract()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_ABSTRACT, oldType, oldMethod, newMethod);
 		}
 
-		if (method1.isPublic() && method2.isProtected()) {
-			builder.memberBC(BreakingChangeKind.METHOD_NOW_PROTECTED, type1, method1, method2);
+		if (oldMethod.isPublic() && newMethod.isProtected()) {
+			builder.memberBC(BreakingChangeKind.METHOD_NOW_PROTECTED, oldType, oldMethod, newMethod);
 		}
 
-		if (!method1.getType().equals(method2.getType())) {
-			builder.memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, type1, method1, method2,
-				new BreakingChangeDetails.MethodReturnTypeChanged(method1.getType(), method2.getType()));
+		if (!oldMethod.getType().equals(newMethod.getType())) {
+			builder.memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, oldType, oldMethod, newMethod,
+				new BreakingChangeDetails.MethodReturnTypeChanged(oldMethod.getType(), newMethod.getType()));
 		}
 
-		diffThrownExceptions(type1, method1, method2);
-		diffFormalTypeParameters(type1, method1, method2);
-		diffParameters(type1, method1, method2);
+		diffThrownExceptions(oldType, oldMethod, newMethod);
+		diffFormalTypeParameters(oldType, oldMethod, newMethod);
+		diffParameters(oldType, oldMethod, newMethod);
 	}
 
 	@Override
@@ -242,14 +242,14 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
-	public void onMatchedConstructor(ClassDecl cls1, ClassDecl cls2, ConstructorDecl cons1, ConstructorDecl cons2) {
-		if (cons1.isPublic() && cons2.isProtected()) {
-			builder.memberBC(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, cls1, cons1, cons2);
+	public void onMatchedConstructor(ClassDecl oldCls, ClassDecl newCls, ConstructorDecl oldCons, ConstructorDecl newCons) {
+		if (oldCons.isPublic() && newCons.isProtected()) {
+			builder.memberBC(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, oldCls, oldCons, newCons);
 		}
 
-		diffThrownExceptions(cls1, cons1, cons2);
-		diffFormalTypeParameters(cls1, cons1, cons2);
-		diffParameters(cls1, cons1, cons2);
+		diffThrownExceptions(oldCls, oldCons, newCons);
+		diffFormalTypeParameters(oldCls, oldCons, newCons);
+		diffParameters(oldCls, oldCons, newCons);
 	}
 
 	@Override

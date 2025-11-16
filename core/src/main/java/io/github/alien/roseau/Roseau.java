@@ -69,8 +69,7 @@ public final class Roseau {
 		Stopwatch sw = Stopwatch.createStarted();
 		ApiWalker walker = new ApiWalker(v1, v2, new DefaultSymbolMatcher());
 		ApiDiffer<RoseauReport> differ = new BreakingChangeAnalyzer(v1, v2);
-		walker.walk(differ);
-		RoseauReport report = differ.get();
+		RoseauReport report = walker.walk(differ);
 		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
 			() -> sw.elapsed().toMillis(), () -> report.getBreakingChanges().size());
 
