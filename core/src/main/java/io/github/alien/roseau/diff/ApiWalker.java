@@ -37,7 +37,7 @@ public final class ApiWalker {
 		return sink.get();
 	}
 
-	private void walkMembers(TypeDecl t1, TypeDecl t2, ApiDiffer sink) {
+	private <T> void walkMembers(TypeDecl t1, TypeDecl t2, ApiDiffer<T> sink) {
 		v1.getExportedFields(t1).forEach(f1 ->
 			matcher.matchField(v2, t2, f1).ifPresentOrElse(
 				f2 -> sink.onMatchedField(t1, t2, f1, f2),
