@@ -6,10 +6,13 @@ import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
+import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
+import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -35,66 +38,26 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	private final RuleSet ruleSet;
 	private final RoseauReport.Builder builder;
 
-	public BreakingChangeAnalyzer(API v1, API v2) {
+	public BreakingChangeAnalyzer(API v1, API v2, RuleSet ruleSet) {
 		this.v1 = Preconditions.checkNotNull(v1);
 		this.v2 = Preconditions.checkNotNull(v2);
-		this.ruleSet = new DefaultRuleSet();
+		this.ruleSet = ruleSet;
 		this.builder = RoseauReport.builder(v1, v2);
+	}
+
+	public BreakingChangeAnalyzer(API v1, API v2) {
+		this(v1, v2, new DefaultRuleSet());
 	}
 
 	@Override
 	public RoseauReport get() {
-		return this.builder.build();
+		return builder.build();
 	}
 
 	@Override
 	public void onMatchedType(TypeDecl oldType, TypeDecl newType) {
-		ruleSet.getTypeRules().forEach(rule -> rule.onMatchedType(oldType, newType, new TypeRuleContext(v1, v2, builder)));
-
-		if (oldType instanceof ClassDecl c1 && newType instanceof ClassDecl c2) {
-			diffClass(c1, c2);
-		}
-
-		if (oldType instanceof AnnotationDecl a1 && newType instanceof AnnotationDecl a2) {
-			diffAnnotationInterface(a1, a2);
-		}
-	}
-
-	private void diffClass(ClassDecl c1, ClassDecl c2) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getClassRules().forEach(rule -> rule.onMatchedClass(c1, c2, context));
-	}
-
-	private void diffAnnotationInterface(AnnotationDecl a1, AnnotationDecl a2) {
-		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getAnnotationRules().forEach(rule -> rule.onMatchedAnnotation(a1, a2, context));
-
-		a1.getAnnotationMethods().forEach(m1 -> {
-			// Annotation methods do not have parameters, so no overloading going on
-			//   -> simple name matching should be enough
-			Optional<AnnotationMethodDecl> optMatch = a2.getAnnotationMethods().stream()
-				.filter(m2 -> m1.getSimpleName().equals(m2.getSimpleName()))
-				.findFirst();
-
-			optMatch.ifPresentOrElse(m2 -> {
-				if (m1.hasDefault() && !m2.hasDefault()) {
-					builder.memberBC(BreakingChangeKind.ANNOTATION_METHOD_NO_LONGER_DEFAULT, a1, m1, m2);
-				}
-
-				if (!m1.getType().equals(m2.getType())) {
-					builder.memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED, a1, m1, m2,
-						new BreakingChangeDetails.MethodReturnTypeChanged(m1.getType(), m2.getType()));
-				}
-			}, () -> builder.memberBC(BreakingChangeKind.METHOD_REMOVED, a1, m1));
-		});
-
-		a2.getAnnotationMethods().stream()
-			.filter(m2 -> !m2.hasDefault())
-			.filter(m2 -> a1.getAnnotationMethods().stream()
-				.noneMatch(m1 -> m1.getSimpleName().equals(m2.getSimpleName())))
-			.forEach(m2 ->
-				builder.typeBC(BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, a1,
-					new BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(m2)));
+		ruleSet.getTypeRules().forEach(rule -> rule.onMatchedType(oldType, newType, context));
 	}
 
 	@Override
@@ -107,6 +70,96 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	public void onAddedType(TypeDecl type) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
 		ruleSet.getTypeRules().forEach(rule -> rule.onAddedType(type, context));
+	}
+
+	@Override
+	public void onMatchedClass(ClassDecl oldCls, ClassDecl newCls) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getClassRules().forEach(rule -> rule.onMatchedClass(oldCls, newCls, context));
+	}
+
+	@Override
+	public void onRemovedClass(ClassDecl cls) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getClassRules().forEach(rule -> rule.onRemovedClass(cls, context));
+	}
+
+	@Override
+	public void onAddedClass(ClassDecl cls) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getClassRules().forEach(rule -> rule.onAddedClass(cls, context));
+	}
+
+	@Override
+	public void onMatchedEnum(EnumDecl oldEnum, EnumDecl newEnum) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getEnumRules().forEach(rule -> rule.onMatchedEnum(oldEnum, newEnum, context));
+	}
+
+	@Override
+	public void onRemovedEnum(EnumDecl enm) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getEnumRules().forEach(rule -> rule.onRemovedEnum(enm, context));
+	}
+
+	@Override
+	public void onAddedEnum(EnumDecl enm) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getEnumRules().forEach(rule -> rule.onAddedEnum(enm, context));
+	}
+
+	@Override
+	public void onMatchedRecord(RecordDecl oldRecord, RecordDecl newRecord) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getRecordRules().forEach(rule -> rule.onMatchedRecord(oldRecord, newRecord, context));
+	}
+
+	@Override
+	public void onRemovedRecord(RecordDecl rcrd) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getRecordRules().forEach(rule -> rule.onRemovedRecord(rcrd, context));
+	}
+
+	@Override
+	public void onAddedRecord(RecordDecl rcrd) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getRecordRules().forEach(rule -> rule.onAddedRecord(rcrd, context));
+	}
+
+	@Override
+	public void onMatchedInterface(InterfaceDecl oldInterface, InterfaceDecl newInterface) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getInterfaceRules().forEach(rule -> rule.onMatchedInterface(oldInterface, newInterface, context));
+	}
+
+	@Override
+	public void onRemovedInterface(InterfaceDecl intf) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getInterfaceRules().forEach(rule -> rule.onRemovedInterface(intf, context));
+	}
+
+	@Override
+	public void onAddedInterface(InterfaceDecl intf) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getInterfaceRules().forEach(rule -> rule.onAddedInterface(intf, context));
+	}
+
+	@Override
+	public void onMatchedAnnotation(AnnotationDecl oldAnnotation, AnnotationDecl newAnnotation) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getAnnotationRules().forEach(rule -> rule.onMatchedAnnotation(oldAnnotation, newAnnotation, context));
+	}
+
+	@Override
+	public void onRemovedAnnotation(AnnotationDecl annotation) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getAnnotationRules().forEach(rule -> rule.onRemovedAnnotation(annotation, context));
+	}
+
+	@Override
+	public void onAddedAnnotation(AnnotationDecl annotation) {
+		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
+		ruleSet.getAnnotationRules().forEach(rule -> rule.onAddedAnnotation(annotation, context));
 	}
 
 	@Override
@@ -167,5 +220,27 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, cls, null, builder);
 		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(cons, context));
 		ruleSet.getConstructorRules().forEach(rule -> rule.onAddedConstructor(cons, context));
+	}
+
+	@Override
+	public void onMatchedAnnotationMethod(AnnotationDecl oldAnnotation, AnnotationDecl newAnnotation,
+	                                      AnnotationMethodDecl oldMethod, AnnotationMethodDecl newMethod) {
+		MemberRuleContext context = new MemberRuleContext(v1, v2, oldAnnotation, newAnnotation, builder);
+		ruleSet.getExecutableRules().forEach(rule -> rule.onMatchedExecutable(oldMethod, newMethod, context));
+		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onMatchedAnnotationMethod(oldMethod, newMethod, context));
+	}
+
+	@Override
+	public void onRemovedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
+		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
+		ruleSet.getExecutableRules().forEach(rule -> rule.onRemovedExecutable(method, context));
+		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onRemovedAnnotationMethod(method, context));
+	}
+
+	@Override
+	public void onAddedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
+		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
+		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(method, context));
+		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onAddedAnnotationMethod(method, context));
 	}
 }

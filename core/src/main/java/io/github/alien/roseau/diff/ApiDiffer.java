@@ -1,9 +1,14 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
+import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 
 public interface ApiDiffer<T> {
@@ -14,6 +19,36 @@ public interface ApiDiffer<T> {
 	void onRemovedType(TypeDecl type);
 
 	void onAddedType(TypeDecl type);
+
+	void onMatchedClass(ClassDecl oldCls, ClassDecl newCls);
+
+	void onRemovedClass(ClassDecl cls);
+
+	void onAddedClass(ClassDecl cls);
+
+	void onMatchedEnum(EnumDecl oldEnum, EnumDecl newEnum);
+
+	void onRemovedEnum(EnumDecl enm);
+
+	void onAddedEnum(EnumDecl enm);
+
+	void onMatchedRecord(RecordDecl oldRecord, RecordDecl newRecord);
+
+	void onRemovedRecord(RecordDecl rcrd);
+
+	void onAddedRecord(RecordDecl rcrd);
+
+	void onMatchedInterface(InterfaceDecl oldInterface, InterfaceDecl newInterface);
+
+	void onRemovedInterface(InterfaceDecl intf);
+
+	void onAddedInterface(InterfaceDecl intf);
+
+	void onMatchedAnnotation(AnnotationDecl oldAnnotation, AnnotationDecl newAnnotation);
+
+	void onRemovedAnnotation(AnnotationDecl annotation);
+
+	void onAddedAnnotation(AnnotationDecl annotation);
 
 	void onMatchedField(TypeDecl oldType, TypeDecl newType, FieldDecl oldField, FieldDecl newField);
 
@@ -32,4 +67,11 @@ public interface ApiDiffer<T> {
 	void onRemovedConstructor(ClassDecl cls, ConstructorDecl cons);
 
 	void onAddedConstructor(ClassDecl cls, ConstructorDecl cons);
+
+	void onMatchedAnnotationMethod(AnnotationDecl oldAnnotation, AnnotationDecl newAnnotation,
+	                               AnnotationMethodDecl oldMethod, AnnotationMethodDecl newMethod);
+
+	void onRemovedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method);
+
+	void onAddedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method);
 }

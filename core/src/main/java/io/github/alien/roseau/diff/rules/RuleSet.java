@@ -13,6 +13,7 @@ public interface RuleSet {
 	List<ExecutableRule> getExecutableRules();
 	List<MethodRule> getMethodRules();
 	List<ConstructorRule> getConstructorRules();
+	List<AnnotationMethodRule> getAnnotationMethodRules();
 
 	List<FieldRule> getFieldRules();
 }

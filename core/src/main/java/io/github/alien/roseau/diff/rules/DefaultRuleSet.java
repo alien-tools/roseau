@@ -79,6 +79,14 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
+	public List<AnnotationMethodRule> getAnnotationMethodRules() {
+		return List.of(
+			new AnnotationMethodAddedWithoutDefaultRule(),
+			new AnnotationMethodNoLongerDefaultRule()
+		);
+	}
+
+	@Override
 	public List<FieldRule> getFieldRules() {
 		return List.of(
 			new FieldRemovedRule(),
