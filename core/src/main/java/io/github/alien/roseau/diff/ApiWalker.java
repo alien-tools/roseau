@@ -81,17 +81,14 @@ public final class ApiWalker {
 
 		if (t1 instanceof AnnotationDecl a1 && t2 instanceof AnnotationDecl a2) {
 			a1.getAnnotationMethods().forEach(m1 ->
-				matcher.matchMethod(v2, a2, m1)
-					.filter(AnnotationMethodDecl.class::isInstance)
-					.map(AnnotationMethodDecl.class::cast)
-					.ifPresentOrElse(
-						m2 -> sink.onMatchedAnnotationMethod(a1, a2, m1, m2),
-						() -> sink.onRemovedAnnotationMethod(a1, m1)
+				matcher.matchAnnotationMethod(v2, a2, m1).ifPresentOrElse(
+					m2 -> sink.onMatchedAnnotationMethod(a1, a2, m1, m2),
+					() -> sink.onRemovedAnnotationMethod(a1, m1)
 				)
 			);
 
 			a2.getAnnotationMethods().stream()
-				.filter(m2 -> matcher.matchMethod(v1, a1, m2).isEmpty())
+				.filter(m2 -> matcher.matchAnnotationMethod(v1, a1, m2).isEmpty())
 				.forEach(m2 -> sink.onAddedAnnotationMethod(a2, m2));
 		}
 	}

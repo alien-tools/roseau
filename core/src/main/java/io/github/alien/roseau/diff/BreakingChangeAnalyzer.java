@@ -227,6 +227,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	                                      AnnotationMethodDecl oldMethod, AnnotationMethodDecl newMethod) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, oldAnnotation, newAnnotation, builder);
 		ruleSet.getExecutableRules().forEach(rule -> rule.onMatchedExecutable(oldMethod, newMethod, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onMatchedMethod(oldMethod, newMethod, context));
 		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onMatchedAnnotationMethod(oldMethod, newMethod, context));
 	}
 
@@ -234,6 +235,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	public void onRemovedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
 		ruleSet.getExecutableRules().forEach(rule -> rule.onRemovedExecutable(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onRemovedMethod(method, context));
 		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onRemovedAnnotationMethod(method, context));
 	}
 
@@ -241,6 +243,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	public void onAddedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
 		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onRemovedMethod(method, context));
 		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onAddedAnnotationMethod(method, context));
 	}
 }

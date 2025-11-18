@@ -1,6 +1,8 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
@@ -17,4 +19,6 @@ public interface SymbolMatcher {
 	Optional<MethodDecl> matchMethod(API api, TypeDecl type, MethodDecl method);
 
 	Optional<ConstructorDecl> matchConstructor(API api, ClassDecl cls, ConstructorDecl cons);
+
+	Optional<AnnotationMethodDecl> matchAnnotationMethod(API api, AnnotationDecl type, AnnotationMethodDecl method);
 }
