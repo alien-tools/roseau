@@ -8,14 +8,14 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class NestedClassNowStaticTest {
+class ClassNowStaticTest {
 	@Client("new A().new B();")
 	@Test
 	void nested_class_now_static() {
 		var v1 = "public class A { public class B {} }";
 		var v2 = "public class A { public static class B {} }";
 
-		assertBC("A$B", "A$B", BreakingChangeKind.NESTED_CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
+		assertBC("A$B", "A$B", BreakingChangeKind.CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A().new B().new C();")
@@ -24,7 +24,7 @@ class NestedClassNowStaticTest {
 		var v1 = "public class A { public class B { public class C {} } }";
 		var v2 = "public class A { public class B { public static class C {} } }";
 
-		assertBC("A$B$C", "A$B$C", BreakingChangeKind.NESTED_CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
+		assertBC("A$B$C", "A$B$C", BreakingChangeKind.CLASS_NOW_STATIC, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A.B b;")

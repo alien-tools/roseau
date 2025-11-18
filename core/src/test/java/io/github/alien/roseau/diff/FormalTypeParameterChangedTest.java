@@ -8,7 +8,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class TypeFormalTypeParameterChangedTest {
+class FormalTypeParameterChangedTest {
 	@Client("A<String> a = new A<>();")
 	@Test
 	void param_renamed() {
@@ -33,7 +33,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends String, U extends CharSequence> {}";
 		var v2 = "public class A<U extends CharSequence, T extends String> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<Object> a = new A<>();")
@@ -42,7 +42,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T> {}";
 		var v2 = "public class A<T extends String> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<Object> a = new A<>();")
@@ -90,7 +90,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T, U> {}";
 		var v2 = "public class A<T, U extends T> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<String> a = new A<>();")
@@ -108,7 +108,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends CharSequence> {}";
 		var v2 = "public class A<T extends String> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<String, StringBuilder, String> a = new A<>();")
@@ -118,7 +118,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends String, U extends CharSequence, V extends T> {}";
 		var v2 = "public class A<T extends String, U extends CharSequence, V extends U> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<String, CharSequence, CharSequence> a = new A<>();")
@@ -127,7 +127,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends String, U extends CharSequence, V extends U> {}";
 		var v2 = "public class A<T extends String, U extends CharSequence, V extends T> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<String> a = new A<>();")
@@ -145,7 +145,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends String> {}";
 		var v2 = "public class A<T extends String & Runnable> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<String>> a = new A<>();")
@@ -163,7 +163,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
 		var v2 = "public class A<T extends java.util.List<? extends String>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.ArrayList<String>> a = new A<>();")
@@ -181,7 +181,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<? extends String>> {}";
 		var v2 = "public class A<T extends java.util.ArrayList<? extends CharSequence>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<CharSequence>> a = new A<>();")
@@ -199,7 +199,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<? super String>> {}";
 		var v2 = "public class A<T extends java.util.List<? super CharSequence>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.ArrayList<CharSequence>> a = new A<>();")
@@ -217,7 +217,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<? super CharSequence>> {}";
 		var v2 = "public class A<T extends java.util.ArrayList<? super String>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<String>> a = new A<>();")
@@ -235,7 +235,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<?>> {}";
 		var v2 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<Object>> a = new A<>();")
@@ -253,7 +253,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<?>> {}";
 		var v2 = "public class A<T extends java.util.List<? super CharSequence>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<String>> a = new A<>();")
@@ -262,7 +262,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<? extends CharSequence>> {}";
 		var v2 = "public class A<T extends java.util.List<CharSequence>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<String>> a = new A<>();")
@@ -280,7 +280,7 @@ class TypeFormalTypeParameterChangedTest {
 		var v1 = "public class A<T extends java.util.List<CharSequence>> {}";
 		var v2 = "public class A<T extends java.util.List<? extends String>> {}";
 
-		assertBC("A", "A", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A<java.util.List<CharSequence>, String> a = new A();")

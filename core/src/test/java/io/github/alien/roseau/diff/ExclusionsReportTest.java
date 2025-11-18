@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -24,7 +25,7 @@ class ExclusionsReportTest {
 		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.C*"), List.of());
 		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
 		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
-		var report = new ApiDiff(v1, v2).diff();
+		var report = Roseau.diff(v1, v2);
 
 		assertThat(report.getAllBreakingChanges()).hasSize(1);
 		assertThat(report.getBreakingChanges()).isEmpty();
@@ -49,7 +50,7 @@ class ExclusionsReportTest {
 			List.of(new RoseauOptions.AnnotationExclusion("p.api.Internal", Map.of("value", "alpha"))));
 		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
 		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
-		var report = new ApiDiff(v1, v2).diff();
+		var report = Roseau.diff(v1, v2);
 
 		assertThat(report.getAllBreakingChanges()).hasSize(2);
 		assertThat(report.getBreakingChanges()).hasSize(1);
@@ -80,7 +81,7 @@ class ExclusionsReportTest {
 			List.of(new RoseauOptions.AnnotationExclusion("java.lang.Deprecated", Map.of())));
 		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
 		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
-		var report = new ApiDiff(v1, v2).diff();
+		var report = Roseau.diff(v1, v2);
 
 		assertThat(report.getAllBreakingChanges()).hasSize(1);
 		assertThat(report.getBreakingChanges()).isEmpty();

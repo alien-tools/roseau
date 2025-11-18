@@ -9,7 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class MethodAbstractAddedToClassTest {
+class TypeNewAbstractMethodTest {
 	@Client("A a = new A() {};")
 	@Test
 	void method_abstract_added_to_class() {
@@ -19,7 +19,7 @@ class MethodAbstractAddedToClassTest {
 				public abstract void m();
 			}""";
 
-		assertBC("A", "A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
 	}
 
 	@Client("B b = new B() {};")
@@ -35,7 +35,34 @@ class MethodAbstractAddedToClassTest {
 			public abstract class B extends A {}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1),
-			bc("B", "B", BreakingChangeKind.METHOD_ABSTRACT_ADDED_TO_CLASS, 1));
+			bc("A", "A", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1),
+			bc("B", "B", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1));
+	}
+
+	@Client("I i = new I() {};")
+	@Test
+	void method_added_to_interface() {
+		var v1 = "public interface I {}";
+		var v2 = """
+			public interface I {
+				void m();
+			}""";
+
+		assertBC("I", "I", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
+	}
+
+	@Client("J j = new J() {};")
+	@Test
+	void method_added_to_interface_indirect() {
+		var v1 = """
+			public interface I {}
+			public interface J extends I {}""";
+		var v2 = """
+			public interface I { void m(); }
+			public interface J extends I {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("I", "I", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1),
+			bc("J", "J", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1));
 	}
 }

@@ -1,0 +1,15 @@
+package io.github.alien.roseau.diff.rules.breaking;
+
+import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.diff.rules.MemberRule;
+import io.github.alien.roseau.diff.rules.MemberRuleContext;
+
+public class FieldNoLongerStatic implements MemberRule<FieldDecl> {
+	@Override
+	public void onMatched(FieldDecl oldField, FieldDecl newField, MemberRuleContext ctx) {
+		if (oldField.isStatic() && !newField.isStatic()) {
+			ctx.builder().memberBC(BreakingChangeKind.FIELD_NO_LONGER_STATIC, ctx.oldType(), oldField, newField);
+		}
+	}
+}

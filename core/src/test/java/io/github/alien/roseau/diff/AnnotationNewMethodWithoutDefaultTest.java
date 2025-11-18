@@ -8,7 +8,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class AnnotationMethodAddedWithoutDefaultTest {
+class AnnotationNewMethodWithoutDefaultTest {
 	@Client("@A(i=0) int a;")
 	@Test
 	void new_annotation_method_without_default() {
@@ -22,7 +22,7 @@ class AnnotationMethodAddedWithoutDefaultTest {
 				String s();
 			}""";
 
-		assertBC("A", "A", BreakingChangeKind.ANNOTATION_METHOD_ADDED_WITHOUT_DEFAULT, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.ANNOTATION_NEW_METHOD_WITHOUT_DEFAULT, 1, buildDiff(v1, v2));
 	}
 
 	@Client("@A(i=0) int a;")

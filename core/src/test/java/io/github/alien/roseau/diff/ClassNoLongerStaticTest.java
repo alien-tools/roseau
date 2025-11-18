@@ -8,14 +8,14 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class NestedClassNoLongerStaticTest {
+class ClassNoLongerStaticTest {
 	@Client("A.B b = new A.B();")
 	@Test
 	void nested_class_no_longer_static() {
 		var v1 = "public class A { public static class B {} }";
 		var v2 = "public class A { public class B {} }";
 
-		assertBC("A$B", "A$B", BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, 1, buildDiff(v1, v2));
+		assertBC("A$B", "A$B", BreakingChangeKind.CLASS_NO_LONGER_STATIC, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A.B.C c = new A.B.C();")
@@ -24,7 +24,7 @@ class NestedClassNoLongerStaticTest {
 		var v1 = "public class A { public class B { public static class C {} } }";
 		var v2 = "public class A { public class B { public class C {} } }";
 
-		assertBC("A$B$C", "A$B$C", BreakingChangeKind.NESTED_CLASS_NO_LONGER_STATIC, 1, buildDiff(v1, v2));
+		assertBC("A$B$C", "A$B$C", BreakingChangeKind.CLASS_NO_LONGER_STATIC, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A.B b = new A.B();")

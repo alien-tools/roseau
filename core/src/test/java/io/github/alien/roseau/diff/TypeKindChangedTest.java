@@ -9,14 +9,14 @@ import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-class ClassTypeChangedTest {
+class TypeKindChangedTest {
 	@Client("A a = new A();")
 	@Test
 	void class_to_interface() {
 		var v1 = "public class A {}";
 		var v2 = "public interface A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A(){};")
@@ -25,7 +25,7 @@ class ClassTypeChangedTest {
 		var v1 = "public class A {}";
 		var v2 = "public record A() {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Disabled("Not sure about this one; we might still want to report it.")
@@ -44,7 +44,7 @@ class ClassTypeChangedTest {
 		var v1 = "public class A {}";
 		var v2 = "public enum A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -55,7 +55,7 @@ class ClassTypeChangedTest {
 		var v1 = "public interface A {}";
 		var v2 = "public class A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -66,7 +66,7 @@ class ClassTypeChangedTest {
 		var v1 = "public interface A {}";
 		var v2 = "public record A() {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -77,7 +77,7 @@ class ClassTypeChangedTest {
 		var v1 = "public interface A {}";
 		var v2 = "public enum A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -89,7 +89,7 @@ class ClassTypeChangedTest {
 		var v1 = "public record A() {}";
 		var v2 = "public class A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A a = new A();")
@@ -98,7 +98,7 @@ class ClassTypeChangedTest {
 		var v1 = "public record A() {}";
 		var v2 = "public interface A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A[] as = A.values();")
@@ -107,7 +107,7 @@ class ClassTypeChangedTest {
 		var v1 = "public enum A {}";
 		var v2 = "public class A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("A[] as = A.values();")
@@ -116,6 +116,6 @@ class ClassTypeChangedTest {
 		var v1 = "public enum A {}";
 		var v2 = "public interface A {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 }
