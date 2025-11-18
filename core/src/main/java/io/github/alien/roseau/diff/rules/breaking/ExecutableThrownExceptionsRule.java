@@ -4,12 +4,12 @@ import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.diff.rules.ExecutableRule;
+import io.github.alien.roseau.diff.rules.MemberRule;
 import io.github.alien.roseau.diff.rules.MemberRuleContext;
 
 import java.util.Set;
 
-public class ExecutableThrownExceptionsRule implements ExecutableRule {
+public class ExecutableThrownExceptionsRule implements MemberRule<ExecutableDecl> {
 	/**
 	 * Always binary-compatible.
 	 * <ul>
@@ -21,7 +21,7 @@ public class ExecutableThrownExceptionsRule implements ExecutableRule {
 	 * </ul>
 	 */
 	@Override
-	public void onMatchedExecutable(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
+	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
 		Set<ITypeReference> thrown1 = ctx.v1().getThrownCheckedExceptions(oldExecutable);
 		Set<ITypeReference> thrown2 = ctx.v2().getThrownCheckedExceptions(newExecutable);
 

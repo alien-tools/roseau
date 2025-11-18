@@ -4,16 +4,16 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.diff.rules.TypeRule;
+import io.github.alien.roseau.diff.rules.Rule;
 import io.github.alien.roseau.diff.rules.TypeRuleContext;
 
 import java.util.List;
 
-public class TypeSupertypeRemovedRule implements TypeRule {
+public class TypeSupertypeRemovedRule implements Rule<TypeDecl> {
 	// If a supertype that was exported has been removed,
 	// it may have been used in client code for casts
 	@Override
-	public void onMatchedType(TypeDecl oldType, TypeDecl newType, TypeRuleContext ctx) {
+	public void onMatched(TypeDecl oldType, TypeDecl newType, TypeRuleContext ctx) {
 		List<TypeReference<TypeDecl>> candidates = ctx.v1().getAllSuperTypes(oldType).stream()
 			.filter(sup -> ctx.v1().isExported(sup))
 			.filter(sup -> !ctx.v2().isSubtypeOf(newType, sup))

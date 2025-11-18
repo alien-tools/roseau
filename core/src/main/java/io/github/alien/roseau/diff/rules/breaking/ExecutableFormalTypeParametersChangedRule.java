@@ -6,15 +6,15 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.diff.rules.ExecutableRule;
+import io.github.alien.roseau.diff.rules.MemberRule;
 import io.github.alien.roseau.diff.rules.MemberRuleContext;
 
 import java.util.HashSet;
 import java.util.List;
 
-public class ExecutableFormalTypeParametersChangedRule implements ExecutableRule {
+public class ExecutableFormalTypeParametersChangedRule implements MemberRule<ExecutableDecl> {
 	@Override
-	public void onMatchedExecutable(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
+	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
 		int paramsCount1 = oldExecutable.getFormalTypeParameters().size();
 		int paramsCount2 = newExecutable.getFormalTypeParameters().size();
 		boolean isOverridable = !ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);

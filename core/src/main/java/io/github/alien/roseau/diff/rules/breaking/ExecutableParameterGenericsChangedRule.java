@@ -5,12 +5,12 @@ import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.diff.rules.ExecutableRule;
+import io.github.alien.roseau.diff.rules.MemberRule;
 import io.github.alien.roseau.diff.rules.MemberRuleContext;
 
-public class ExecutableParameterGenericsChangedRule implements ExecutableRule {
+public class ExecutableParameterGenericsChangedRule implements MemberRule<ExecutableDecl> {
 	@Override
-	public void onMatchedExecutable(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
+	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
 		// We checked executable erasures, so we know parameter types are equals modulo type arguments
 		for (int i = 0; i < oldExecutable.getParameters().size(); i++) {
 			ParameterDecl p1 = oldExecutable.getParameters().get(i);

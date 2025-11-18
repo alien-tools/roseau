@@ -1,12 +1,25 @@
 package io.github.alien.roseau.diff.rules;
 
-import io.github.alien.roseau.diff.rules.breaking.AnnotationNewMethodWithoutDefaultRule;
+import io.github.alien.roseau.api.model.AnnotationDecl;
+import io.github.alien.roseau.api.model.AnnotationMethodDecl;
+import io.github.alien.roseau.api.model.ClassDecl;
+import io.github.alien.roseau.api.model.ConstructorDecl;
+import io.github.alien.roseau.api.model.EnumDecl;
+import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.InterfaceDecl;
+import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.RecordDecl;
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationMethodNoLongerDefaultRule;
+import io.github.alien.roseau.diff.rules.breaking.AnnotationNewMethodWithoutDefaultRule;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationNoLongerRepeatableRule;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationTargetRemovedRule;
+import io.github.alien.roseau.diff.rules.breaking.ClassNoLongerStaticRule;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowAbstractRule;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowCheckedExceptionRule;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowFinalRule;
+import io.github.alien.roseau.diff.rules.breaking.ClassNowStaticRule;
 import io.github.alien.roseau.diff.rules.breaking.ConstructorNowProtectedRule;
 import io.github.alien.roseau.diff.rules.breaking.ExecutableFormalTypeParametersChangedRule;
 import io.github.alien.roseau.diff.rules.breaking.ExecutableParameterGenericsChangedRule;
@@ -24,20 +37,18 @@ import io.github.alien.roseau.diff.rules.breaking.MethodNowFinalRule;
 import io.github.alien.roseau.diff.rules.breaking.MethodNowProtectedRule;
 import io.github.alien.roseau.diff.rules.breaking.MethodNowStaticRule;
 import io.github.alien.roseau.diff.rules.breaking.MethodReturnTypeChangedRule;
-import io.github.alien.roseau.diff.rules.breaking.ClassNoLongerStaticRule;
-import io.github.alien.roseau.diff.rules.breaking.ClassNowStaticRule;
-import io.github.alien.roseau.diff.rules.breaking.TypeSupertypeRemovedRule;
 import io.github.alien.roseau.diff.rules.breaking.TypeFormalTypeParametersChangedRule;
 import io.github.alien.roseau.diff.rules.breaking.TypeKindChangedRule;
 import io.github.alien.roseau.diff.rules.breaking.TypeNewAbstractMethodRule;
 import io.github.alien.roseau.diff.rules.breaking.TypeNowProtectedRule;
 import io.github.alien.roseau.diff.rules.breaking.TypeRemovedRule;
+import io.github.alien.roseau.diff.rules.breaking.TypeSupertypeRemovedRule;
 
 import java.util.List;
 
 public class DefaultRuleSet implements RuleSet {
 	@Override
-	public List<TypeRule> getTypeRules() {
+	public List<Rule<TypeDecl>> getTypeRules() {
 		return List.of(
 			new TypeKindChangedRule(),
 			new TypeRemovedRule(),
@@ -48,7 +59,7 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<ClassRule> getClassRules() {
+	public List<Rule<ClassDecl>> getClassRules() {
 		return List.of(
 			new ClassNowAbstractRule(),
 			new ClassNowCheckedExceptionRule(),
@@ -59,22 +70,22 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<InterfaceRule> getInterfaceRules() {
+	public List<Rule<InterfaceDecl>> getInterfaceRules() {
 		return List.of();
 	}
 
 	@Override
-	public List<EnumRule> getEnumRules() {
+	public List<Rule<EnumDecl>> getEnumRules() {
 		return List.of();
 	}
 
 	@Override
-	public List<RecordRule> getRecordRules() {
+	public List<Rule<RecordDecl>> getRecordRules() {
 		return List.of();
 	}
 
 	@Override
-	public List<AnnotationRule> getAnnotationRules() {
+	public List<Rule<AnnotationDecl>> getAnnotationRules() {
 		return List.of(
 			new AnnotationNoLongerRepeatableRule(),
 			new AnnotationTargetRemovedRule()
@@ -82,7 +93,7 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<ExecutableRule> getExecutableRules() {
+	public List<MemberRule<ExecutableDecl>> getExecutableRules() {
 		return List.of(
 			new ExecutableRemovedRule(),
 			new ExecutableFormalTypeParametersChangedRule(),
@@ -92,7 +103,7 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<MethodRule> getMethodRules() {
+	public List<MemberRule<MethodDecl>> getMethodRules() {
 		return List.of(
 			new TypeNewAbstractMethodRule(),
 			new MethodNoLongerStaticRule(),
@@ -105,14 +116,14 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<ConstructorRule> getConstructorRules() {
+	public List<MemberRule<ConstructorDecl>> getConstructorRules() {
 		return List.of(
 			new ConstructorNowProtectedRule()
 		);
 	}
 
 	@Override
-	public List<AnnotationMethodRule> getAnnotationMethodRules() {
+	public List<MemberRule<AnnotationMethodDecl>> getAnnotationMethodRules() {
 		return List.of(
 			new AnnotationNewMethodWithoutDefaultRule(),
 			new AnnotationMethodNoLongerDefaultRule()
@@ -120,7 +131,7 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<FieldRule> getFieldRules() {
+	public List<MemberRule<FieldDecl>> getFieldRules() {
 		return List.of(
 			new FieldRemovedRule(),
 			new FieldNoLongerStaticRule(),

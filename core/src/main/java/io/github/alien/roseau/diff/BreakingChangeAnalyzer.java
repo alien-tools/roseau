@@ -57,193 +57,193 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	@Override
 	public void onMatchedType(TypeDecl oldType, TypeDecl newType) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getTypeRules().forEach(rule -> rule.onMatchedType(oldType, newType, context));
+		ruleSet.getTypeRules().forEach(rule -> rule.onMatched(oldType, newType, context));
 	}
 
 	@Override
 	public void onRemovedType(TypeDecl type) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getTypeRules().forEach(rule -> rule.onRemovedType(type, context));
+		ruleSet.getTypeRules().forEach(rule -> rule.onRemoved(type, context));
 	}
 
 	@Override
 	public void onAddedType(TypeDecl type) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getTypeRules().forEach(rule -> rule.onAddedType(type, context));
+		ruleSet.getTypeRules().forEach(rule -> rule.onAdded(type, context));
 	}
 
 	@Override
 	public void onMatchedClass(ClassDecl oldCls, ClassDecl newCls) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getClassRules().forEach(rule -> rule.onMatchedClass(oldCls, newCls, context));
+		ruleSet.getClassRules().forEach(rule -> rule.onMatched(oldCls, newCls, context));
 	}
 
 	@Override
 	public void onRemovedClass(ClassDecl cls) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getClassRules().forEach(rule -> rule.onRemovedClass(cls, context));
+		ruleSet.getClassRules().forEach(rule -> rule.onRemoved(cls, context));
 	}
 
 	@Override
 	public void onAddedClass(ClassDecl cls) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getClassRules().forEach(rule -> rule.onAddedClass(cls, context));
+		ruleSet.getClassRules().forEach(rule -> rule.onAdded(cls, context));
 	}
 
 	@Override
 	public void onMatchedEnum(EnumDecl oldEnum, EnumDecl newEnum) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getEnumRules().forEach(rule -> rule.onMatchedEnum(oldEnum, newEnum, context));
+		ruleSet.getEnumRules().forEach(rule -> rule.onMatched(oldEnum, newEnum, context));
 	}
 
 	@Override
 	public void onRemovedEnum(EnumDecl enm) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getEnumRules().forEach(rule -> rule.onRemovedEnum(enm, context));
+		ruleSet.getEnumRules().forEach(rule -> rule.onRemoved(enm, context));
 	}
 
 	@Override
 	public void onAddedEnum(EnumDecl enm) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getEnumRules().forEach(rule -> rule.onAddedEnum(enm, context));
+		ruleSet.getEnumRules().forEach(rule -> rule.onAdded(enm, context));
 	}
 
 	@Override
 	public void onMatchedRecord(RecordDecl oldRecord, RecordDecl newRecord) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getRecordRules().forEach(rule -> rule.onMatchedRecord(oldRecord, newRecord, context));
+		ruleSet.getRecordRules().forEach(rule -> rule.onMatched(oldRecord, newRecord, context));
 	}
 
 	@Override
 	public void onRemovedRecord(RecordDecl rcrd) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getRecordRules().forEach(rule -> rule.onRemovedRecord(rcrd, context));
+		ruleSet.getRecordRules().forEach(rule -> rule.onRemoved(rcrd, context));
 	}
 
 	@Override
 	public void onAddedRecord(RecordDecl rcrd) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getRecordRules().forEach(rule -> rule.onAddedRecord(rcrd, context));
+		ruleSet.getRecordRules().forEach(rule -> rule.onAdded(rcrd, context));
 	}
 
 	@Override
 	public void onMatchedInterface(InterfaceDecl oldInterface, InterfaceDecl newInterface) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getInterfaceRules().forEach(rule -> rule.onMatchedInterface(oldInterface, newInterface, context));
+		ruleSet.getInterfaceRules().forEach(rule -> rule.onMatched(oldInterface, newInterface, context));
 	}
 
 	@Override
 	public void onRemovedInterface(InterfaceDecl intf) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getInterfaceRules().forEach(rule -> rule.onRemovedInterface(intf, context));
+		ruleSet.getInterfaceRules().forEach(rule -> rule.onRemoved(intf, context));
 	}
 
 	@Override
 	public void onAddedInterface(InterfaceDecl intf) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getInterfaceRules().forEach(rule -> rule.onAddedInterface(intf, context));
+		ruleSet.getInterfaceRules().forEach(rule -> rule.onAdded(intf, context));
 	}
 
 	@Override
 	public void onMatchedAnnotation(AnnotationDecl oldAnnotation, AnnotationDecl newAnnotation) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getAnnotationRules().forEach(rule -> rule.onMatchedAnnotation(oldAnnotation, newAnnotation, context));
+		ruleSet.getAnnotationRules().forEach(rule -> rule.onMatched(oldAnnotation, newAnnotation, context));
 	}
 
 	@Override
 	public void onRemovedAnnotation(AnnotationDecl annotation) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getAnnotationRules().forEach(rule -> rule.onRemovedAnnotation(annotation, context));
+		ruleSet.getAnnotationRules().forEach(rule -> rule.onRemoved(annotation, context));
 	}
 
 	@Override
 	public void onAddedAnnotation(AnnotationDecl annotation) {
 		TypeRuleContext context = new TypeRuleContext(v1, v2, builder);
-		ruleSet.getAnnotationRules().forEach(rule -> rule.onAddedAnnotation(annotation, context));
+		ruleSet.getAnnotationRules().forEach(rule -> rule.onAdded(annotation, context));
 	}
 
 	@Override
 	public void onMatchedField(TypeDecl oldType, TypeDecl newType, FieldDecl oldField, FieldDecl newField) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, oldType, newType, builder);
-		ruleSet.getFieldRules().forEach(rule -> rule.onMatchedField(oldField, newField, context));
+		ruleSet.getFieldRules().forEach(rule -> rule.onMatched(oldField, newField, context));
 	}
 
 	@Override
 	public void onRemovedField(TypeDecl type, FieldDecl field) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, type, null, builder);
-		ruleSet.getFieldRules().forEach(rule -> rule.onRemovedField(field, context));
+		ruleSet.getFieldRules().forEach(rule -> rule.onRemoved(field, context));
 	}
 
 	@Override
 	public void onAddedField(TypeDecl type, FieldDecl field) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, type, null, builder);
-		ruleSet.getFieldRules().forEach(rule -> rule.onAddedField(field, context));
+		ruleSet.getFieldRules().forEach(rule -> rule.onAdded(field, context));
 	}
 
 	@Override
 	public void onMatchedMethod(TypeDecl oldType, TypeDecl newType, MethodDecl oldMethod, MethodDecl newMethod) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, oldType, newType, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onMatchedExecutable(oldMethod, newMethod, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onMatchedMethod(oldMethod, newMethod, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onMatched(oldMethod, newMethod, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onMatched(oldMethod, newMethod, context));
 	}
 
 	@Override
 	public void onRemovedMethod(TypeDecl type, MethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, type, null, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onRemovedExecutable(method, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onRemovedMethod(method, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onRemoved(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onRemoved(method, context));
 	}
 
 	@Override
 	public void onAddedMethod(TypeDecl type, MethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, type, null, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(method, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onAddedMethod(method, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onAdded(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onAdded(method, context));
 	}
 
 	@Override
 	public void onMatchedConstructor(ClassDecl oldCls, ClassDecl newCls, ConstructorDecl oldCons, ConstructorDecl newCons) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, oldCls, newCls, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onMatchedExecutable(oldCons, newCons, context));
-		ruleSet.getConstructorRules().forEach(rule -> rule.onMatchedConstructor(oldCons, newCons, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onMatched(oldCons, newCons, context));
+		ruleSet.getConstructorRules().forEach(rule -> rule.onMatched(oldCons, newCons, context));
 	}
 
 	@Override
 	public void onRemovedConstructor(ClassDecl cls, ConstructorDecl cons) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, cls, null, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onRemovedExecutable(cons, context));
-		ruleSet.getConstructorRules().forEach(rule -> rule.onRemovedConstructor(cons, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onRemoved(cons, context));
+		ruleSet.getConstructorRules().forEach(rule -> rule.onRemoved(cons, context));
 	}
 
 	@Override
 	public void onAddedConstructor(ClassDecl cls, ConstructorDecl cons) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, cls, null, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(cons, context));
-		ruleSet.getConstructorRules().forEach(rule -> rule.onAddedConstructor(cons, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onAdded(cons, context));
+		ruleSet.getConstructorRules().forEach(rule -> rule.onAdded(cons, context));
 	}
 
 	@Override
 	public void onMatchedAnnotationMethod(AnnotationDecl oldAnnotation, AnnotationDecl newAnnotation,
 	                                      AnnotationMethodDecl oldMethod, AnnotationMethodDecl newMethod) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, oldAnnotation, newAnnotation, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onMatchedExecutable(oldMethod, newMethod, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onMatchedMethod(oldMethod, newMethod, context));
-		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onMatchedAnnotationMethod(oldMethod, newMethod, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onMatched(oldMethod, newMethod, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onMatched(oldMethod, newMethod, context));
+		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onMatched(oldMethod, newMethod, context));
 	}
 
 	@Override
 	public void onRemovedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onRemovedExecutable(method, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onRemovedMethod(method, context));
-		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onRemovedAnnotationMethod(method, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onRemoved(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onRemoved(method, context));
+		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onRemoved(method, context));
 	}
 
 	@Override
 	public void onAddedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
-		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(method, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onAddedMethod(method, context));
-		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onAddedAnnotationMethod(method, context));
+		ruleSet.getExecutableRules().forEach(rule -> rule.onAdded(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onAdded(method, context));
+		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onAdded(method, context));
 	}
 }

@@ -2,12 +2,12 @@ package io.github.alien.roseau.diff.rules.breaking;
 
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.diff.rules.TypeRule;
+import io.github.alien.roseau.diff.rules.Rule;
 import io.github.alien.roseau.diff.rules.TypeRuleContext;
 
-public class TypeRemovedRule implements TypeRule {
+public class TypeRemovedRule implements Rule<TypeDecl> {
 	@Override
-	public void onRemovedType(TypeDecl type, TypeRuleContext ctx) {
+	public void onRemoved(TypeDecl type, TypeRuleContext ctx) {
 		ctx.builder().typeBC(BreakingChangeKind.TYPE_REMOVED, type);
 	}
 }
