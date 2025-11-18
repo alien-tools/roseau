@@ -15,12 +15,12 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import java.util.List;
 
 public interface RuleSet {
-	List<Rule<TypeDecl>> getTypeRules();
-	List<Rule<ClassDecl>> getClassRules();
-	List<Rule<InterfaceDecl>> getInterfaceRules();
-	List<Rule<EnumDecl>> getEnumRules();
-	List<Rule<RecordDecl>> getRecordRules();
-	List<Rule<AnnotationDecl>> getAnnotationRules();
+	List<TypeRule<TypeDecl>> getTypeRules();
+	List<TypeRule<ClassDecl>> getClassRules();
+	List<TypeRule<InterfaceDecl>> getInterfaceRules();
+	List<TypeRule<EnumDecl>> getEnumRules();
+	List<TypeRule<RecordDecl>> getRecordRules();
+	List<TypeRule<AnnotationDecl>> getAnnotationRules();
 
 	List<MemberRule<ExecutableDecl>> getExecutableRules();
 	List<MemberRule<MethodDecl>> getMethodRules();

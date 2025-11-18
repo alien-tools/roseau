@@ -48,7 +48,7 @@ import java.util.List;
 
 public class DefaultRuleSet implements RuleSet {
 	@Override
-	public List<Rule<TypeDecl>> getTypeRules() {
+	public List<TypeRule<TypeDecl>> getTypeRules() {
 		return List.of(
 			new TypeKindChangedRule(),
 			new TypeRemovedRule(),
@@ -59,7 +59,7 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<Rule<ClassDecl>> getClassRules() {
+	public List<TypeRule<ClassDecl>> getClassRules() {
 		return List.of(
 			new ClassNowAbstractRule(),
 			new ClassNowCheckedExceptionRule(),
@@ -70,22 +70,22 @@ public class DefaultRuleSet implements RuleSet {
 	}
 
 	@Override
-	public List<Rule<InterfaceDecl>> getInterfaceRules() {
+	public List<TypeRule<InterfaceDecl>> getInterfaceRules() {
 		return List.of();
 	}
 
 	@Override
-	public List<Rule<EnumDecl>> getEnumRules() {
+	public List<TypeRule<EnumDecl>> getEnumRules() {
 		return List.of();
 	}
 
 	@Override
-	public List<Rule<RecordDecl>> getRecordRules() {
+	public List<TypeRule<RecordDecl>> getRecordRules() {
 		return List.of();
 	}
 
 	@Override
-	public List<Rule<AnnotationDecl>> getAnnotationRules() {
+	public List<TypeRule<AnnotationDecl>> getAnnotationRules() {
 		return List.of(
 			new AnnotationNoLongerRepeatableRule(),
 			new AnnotationTargetRemovedRule()

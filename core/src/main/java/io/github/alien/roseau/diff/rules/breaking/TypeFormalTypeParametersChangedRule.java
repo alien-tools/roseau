@@ -5,10 +5,10 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.diff.rules.Rule;
+import io.github.alien.roseau.diff.rules.TypeRule;
 import io.github.alien.roseau.diff.rules.TypeRuleContext;
 
-public class TypeFormalTypeParametersChangedRule implements Rule<TypeDecl> {
+public class TypeFormalTypeParametersChangedRule implements TypeRule<TypeDecl> {
 	@Override
 	public void onMatched(TypeDecl oldType, TypeDecl newType, TypeRuleContext ctx) {
 		int paramsCount1 = oldType.getFormalTypeParameters().size();
