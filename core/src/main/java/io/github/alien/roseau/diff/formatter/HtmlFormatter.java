@@ -223,17 +223,15 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 				"<code>" + escape(String.valueOf(prev)) + "</code> → <code>" + escape(String.valueOf(now)) + "</code>";
 			case BreakingChangeDetails.FieldTypeChanged(var prev, var now) ->
 				"<code>" + escape(String.valueOf(prev)) + "</code> → <code>" + escape(String.valueOf(now)) + "</code>";
-			case BreakingChangeDetails.MethodAddedToInterface(var newMethod) ->
+			case BreakingChangeDetails.TypeNewAbstractMethod(var newMethod) ->
 				"<code>" + escape(newMethod.getSignature()) + "</code>";
-			case BreakingChangeDetails.MethodAbstractAddedToClass(var newMethod) ->
-				"<code>" + escape(newMethod.getSignature()) + "</code>";
-			case BreakingChangeDetails.ClassTypeChanged(var oldType, var newType) ->
+			case BreakingChangeDetails.TypeKindChanged(var oldType, var newType) ->
 				"<code>" + escape(oldType.getSimpleName()) + "</code> → <code>" + escape(newType.getSimpleName()) + "</code>";
-			case BreakingChangeDetails.SuperTypeRemoved(var superType) ->
+			case BreakingChangeDetails.TypeSupertypeRemoved(var superType) ->
 				"<code>" + escape(String.valueOf(superType)) + "</code>";
 			case BreakingChangeDetails.AnnotationTargetRemoved(var target) ->
 				"<code>" + escape(String.valueOf(target)) + "</code>";
-			case BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(var newMethod) ->
+			case BreakingChangeDetails.AnnotationNewMethodWithoutDefault(var newMethod) ->
 				"<code>" + escape(newMethod.getSignature()) + "</code>";
 			case BreakingChangeDetails.MethodNoLongerThrowsCheckedException(var exception) ->
 				"<code>" + escape(String.valueOf(exception)) + "</code>";
@@ -241,17 +239,11 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 				"<code>" + escape(String.valueOf(exception)) + "</code>";
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"<code>" + escape(String.valueOf(oldType)) + "</code> → <code>" + escape(String.valueOf(newType)) + "</code>";
-			case BreakingChangeDetails.TypeFormalTypeParametersRemoved(var ftp) ->
+			case BreakingChangeDetails.FormalTypeParametersRemoved(var ftp) ->
 				"<code>" + escape(String.valueOf(ftp)) + "</code>";
-			case BreakingChangeDetails.TypeFormalTypeParametersAdded(var ftp) ->
+			case BreakingChangeDetails.FormalTypeParametersAdded(var ftp) ->
 				"<code>" + escape(String.valueOf(ftp)) + "</code>";
-			case BreakingChangeDetails.TypeFormalTypeParametersChanged(var oldFtp, var newFtp) ->
-				"<code>" + escape(String.valueOf(oldFtp)) + "</code> → <code>" + escape(String.valueOf(newFtp)) + "</code>";
-			case BreakingChangeDetails.MethodFormalTypeParametersRemoved(var ftp) ->
-				"<code>" + escape(String.valueOf(ftp)) + "</code>";
-			case BreakingChangeDetails.MethodFormalTypeParametersAdded(var ftp) ->
-				"<code>" + escape(String.valueOf(ftp)) + "</code>";
-			case BreakingChangeDetails.MethodFormalTypeParametersChanged(var oldFtp, var newFtp) ->
+			case BreakingChangeDetails.FormalTypeParametersChanged(var oldFtp, var newFtp) ->
 				"<code>" + escape(String.valueOf(oldFtp)) + "</code> → <code>" + escape(String.valueOf(newFtp)) + "</code>";
 			case BreakingChangeDetails.None() -> "";
 		};

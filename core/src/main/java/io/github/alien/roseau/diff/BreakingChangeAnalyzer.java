@@ -243,7 +243,7 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	public void onAddedAnnotationMethod(AnnotationDecl annotation, AnnotationMethodDecl method) {
 		MemberRuleContext context = new MemberRuleContext(v1, v2, annotation, null, builder);
 		ruleSet.getExecutableRules().forEach(rule -> rule.onAddedExecutable(method, context));
-		ruleSet.getMethodRules().forEach(rule -> rule.onRemovedMethod(method, context));
+		ruleSet.getMethodRules().forEach(rule -> rule.onAddedMethod(method, context));
 		ruleSet.getAnnotationMethodRules().forEach(rule -> rule.onAddedAnnotationMethod(method, context));
 	}
 }
