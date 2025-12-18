@@ -1,0 +1,695 @@
+
+<!doctype html>
+<html lang="en" class="no-js">
+  <head>
+    
+      <meta charset="utf-8">
+      <meta name="viewport" content="width=device-width,initial-scale=1">
+      
+      
+      
+        <link rel="canonical" href="https://alien-tools.github.io/roseau/">
+      
+      
+      
+      
+        
+      
+      
+      <link rel="icon" href="assets/images/favicon.png">
+      <meta name="generator" content="mkdocs-1.6.1, mkdocs-material-9.7.1">
+    
+    
+      
+        <title>Roseau</title>
+      
+    
+    
+      <link rel="stylesheet" href="assets/stylesheets/main.484c7ddc.min.css">
+      
+      
+
+
+    
+    
+      
+    
+    
+      
+        
+        
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link rel="stylesheet" href="https://fonts.googleapis.com/css?family=Roboto:300,300i,400,400i,700,700i%7CRoboto+Mono:400,400i,700,700i&display=fallback">
+        <style>:root{--md-text-font:"Roboto";--md-code-font:"Roboto Mono"}</style>
+      
+    
+    
+    <script>__md_scope=new URL(".",location),__md_hash=e=>[...e].reduce(((e,_)=>(e<<5)-e+_.charCodeAt(0)),0),__md_get=(e,_=localStorage,t=__md_scope)=>JSON.parse(_.getItem(t.pathname+"."+e)),__md_set=(e,_,t=localStorage,a=__md_scope)=>{try{t.setItem(a.pathname+"."+e,JSON.stringify(_))}catch(e){}}</script>
+    
+      
+
+    
+    
+  </head>
+  
+  
+    <body dir="ltr">
+  
+    
+    <input class="md-toggle" data-md-toggle="drawer" type="checkbox" id="__drawer" autocomplete="off">
+    <input class="md-toggle" data-md-toggle="search" type="checkbox" id="__search" autocomplete="off">
+    <label class="md-overlay" for="__drawer"></label>
+    <div data-md-component="skip">
+      
+        
+        <a href="#roseau-breaking-change-analysis-for-java-libraries" class="md-skip">
+          Skip to content
+        </a>
+      
+    </div>
+    <div data-md-component="announce">
+      
+    </div>
+    
+    
+      
+
+  
+
+<header class="md-header md-header--shadow" data-md-component="header">
+  <nav class="md-header__inner md-grid" aria-label="Header">
+    <a href="." title="Roseau" class="md-header__button md-logo" aria-label="Roseau" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    <label class="md-header__button md-icon" for="__drawer">
+      
+      <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M3 6h18v2H3zm0 5h18v2H3zm0 5h18v2H3z"/></svg>
+    </label>
+    <div class="md-header__title" data-md-component="header-title">
+      <div class="md-header__ellipsis">
+        <div class="md-header__topic">
+          <span class="md-ellipsis">
+            Roseau
+          </span>
+        </div>
+        <div class="md-header__topic" data-md-component="header-topic">
+          <span class="md-ellipsis">
+            
+              Roseau: Breaking Change Analysis for Java Libraries
+            
+          </span>
+        </div>
+      </div>
+    </div>
+    
+    
+      <script>var palette=__md_get("__palette");if(palette&&palette.color){if("(prefers-color-scheme)"===palette.color.media){var media=matchMedia("(prefers-color-scheme: light)"),input=document.querySelector(media.matches?"[data-md-color-media='(prefers-color-scheme: light)']":"[data-md-color-media='(prefers-color-scheme: dark)']");palette.color.media=input.getAttribute("data-md-color-media"),palette.color.scheme=input.getAttribute("data-md-color-scheme"),palette.color.primary=input.getAttribute("data-md-color-primary"),palette.color.accent=input.getAttribute("data-md-color-accent")}for(var[key,value]of Object.entries(palette.color))document.body.setAttribute("data-md-color-"+key,value)}</script>
+    
+    
+    
+      
+      
+        <label class="md-header__button md-icon" for="__search">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        </label>
+        <div class="md-search" data-md-component="search" role="dialog">
+  <label class="md-search__overlay" for="__search"></label>
+  <div class="md-search__inner" role="search">
+    <form class="md-search__form" name="search">
+      <input type="text" class="md-search__input" name="query" aria-label="Search" placeholder="Search" autocapitalize="off" autocorrect="off" autocomplete="off" spellcheck="false" data-md-component="search-query" required>
+      <label class="md-search__icon md-icon" for="__search">
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M9.5 3A6.5 6.5 0 0 1 16 9.5c0 1.61-.59 3.09-1.56 4.23l.27.27h.79l5 5-1.5 1.5-5-5v-.79l-.27-.27A6.52 6.52 0 0 1 9.5 16 6.5 6.5 0 0 1 3 9.5 6.5 6.5 0 0 1 9.5 3m0 2C7 5 5 7 5 9.5S7 14 9.5 14 14 12 14 9.5 12 5 9.5 5"/></svg>
+        
+        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M20 11v2H8l5.5 5.5-1.42 1.42L4.16 12l7.92-7.92L13.5 5.5 8 11z"/></svg>
+      </label>
+      <nav class="md-search__options" aria-label="Search">
+        
+        <button type="reset" class="md-search__icon md-icon" title="Clear" aria-label="Clear" tabindex="-1">
+          
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19 6.41 17.59 5 12 10.59 6.41 5 5 6.41 10.59 12 5 17.59 6.41 19 12 13.41 17.59 19 19 17.59 13.41 12z"/></svg>
+        </button>
+      </nav>
+      
+    </form>
+    <div class="md-search__output">
+      <div class="md-search__scrollwrap" tabindex="0" data-md-scrollfix>
+        <div class="md-search-result" data-md-component="search-result">
+          <div class="md-search-result__meta">
+            Initializing search
+          </div>
+          <ol class="md-search-result__list" role="presentation"></ol>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+      
+    
+    
+  </nav>
+  
+</header>
+    
+    <div class="md-container" data-md-component="container">
+      
+      
+        
+          
+        
+      
+      <main class="md-main" data-md-component="main">
+        <div class="md-main__inner md-grid">
+          
+            
+              
+              <div class="md-sidebar md-sidebar--primary" data-md-component="sidebar" data-md-type="navigation" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+
+
+<nav class="md-nav md-nav--primary" aria-label="Navigation" data-md-level="0">
+  <label class="md-nav__title" for="__drawer">
+    <a href="." title="Roseau" class="md-nav__button md-logo" aria-label="Roseau" data-md-component="logo">
+      
+  
+  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 8a3 3 0 0 0 3-3 3 3 0 0 0-3-3 3 3 0 0 0-3 3 3 3 0 0 0 3 3m0 3.54C9.64 9.35 6.5 8 3 8v11c3.5 0 6.64 1.35 9 3.54 2.36-2.19 5.5-3.54 9-3.54V8c-3.5 0-6.64 1.35-9 3.54"/></svg>
+
+    </a>
+    Roseau
+  </label>
+  
+  <ul class="md-nav__list" data-md-scrollfix>
+    
+      
+      
+  
+  
+    
+  
+  
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roseau: Breaking Change Analysis for Java Libraries
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="." class="md-nav__link md-nav__link--active">
+        
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Roseau: Breaking Change Analysis for Java Libraries
+  
+
+    
+  </span>
+  
+  
+
+      </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-a-nutshell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In a nutshell
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#as-a-standalone-cli-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        As a standalone CLI tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-breaking-changes-on-specific-types-and-symbols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ignoring breaking changes on specific types and symbols
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-specific-breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ignoring specific breaking changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#citing-roseau" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citing Roseau
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
+    </li>
+  
+
+    
+  </ul>
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+            
+              
+              <div class="md-sidebar md-sidebar--secondary" data-md-component="sidebar" data-md-type="toc" >
+                <div class="md-sidebar__scrollwrap">
+                  <div class="md-sidebar__inner">
+                    
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#key-features" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Key Features
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#in-a-nutshell" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        In a nutshell
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#usage" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Usage
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Usage">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#as-a-standalone-cli-tool" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        As a standalone CLI tool
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#configuration" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Configuration
+      
+    </span>
+  </a>
+  
+    <nav class="md-nav" aria-label="Configuration">
+      <ul class="md-nav__list">
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-breaking-changes-on-specific-types-and-symbols" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ignoring breaking changes on specific types and symbols
+      
+    </span>
+  </a>
+  
+</li>
+        
+          <li class="md-nav__item">
+  <a href="#ignoring-specific-breaking-changes" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Ignoring specific breaking changes
+      
+    </span>
+  </a>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+        
+      </ul>
+    </nav>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#citing-roseau" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Citing Roseau
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#license" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        License
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+                  </div>
+                </div>
+              </div>
+            
+          
+          
+            <div class="md-content" data-md-component="content">
+              
+              <article class="md-content__inner md-typeset">
+                
+                  
+
+
+
+<h1 id="roseau-breaking-change-analysis-for-java-libraries">Roseau: Breaking Change Analysis for Java Libraries</h1>
+<p>Roseau (/ʁozo/) is a <strong>fast</strong> and <strong>accurate</strong> tool for detecting breaking changes between two versions of a library, similar to other tools like <a href="https://github.com/siom79/japicmp/">japicmp</a> or <a href="https://github.com/revapi/revapi/">Revapi</a>.
+Whether you're a library maintainer or a developer worrying about upgrading your dependencies, Roseau helps ensure backward compatibility across versions.</p>
+<h2 id="key-features">Key Features</h2>
+<ul>
+<li>Detects both binary-level and source-level breaking changes</li>
+<li>Indifferently analyzes JAR files (using <a href="https://asm.ow2.io/">ASM</a>) or Java source code (using <a href="https://github.com/eclipse-jdt/eclipse.jdt.core">JDT</a>)</li>
+<li>Excellent accuracy and performance</li>
+<li>Supports Java up to version 21 (including records, sealed types, modules, etc.)</li>
+<li>Outputs reports in CSV, HTML, JSON, and Markdown formats</li>
+<li>Highly configurable, CLI-first, and scriptable</li>
+</ul>
+<p>Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
+Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.</p>
+<h2 id="in-a-nutshell">In a nutshell</h2>
+<ol>
+<li>Roseau infers the exact API of each version of the library to analyze</li>
+<li>It performs side-by-side comparison of the two APIs to detect any breaking changes</li>
+</ol>
+<p>Roseau builds lightweight, technology-agnostic API models that list all the exported symbols in a library—including types, methods, and fields—along with their properties. These models can be easily serialized and stored as JSON for further analysis or archival.
+Roseau relies on either <a href="https://github.com/eclipse-jdt/eclipse.jdt.core">JDT</a> to extract API models from source code, and on <a href="https://asm.ow2.io/">ASM</a> to extract API models from bytecode.</p>
+<p>The breaking change detection algorithm is efficient, agnostic of the underlying parsing technology, and is <a href="core/src/test/java/io/github/alien/roseau/diff">extensively tested</a>.
+The list of source-level and binary-level breaking changes considered in Roseau is specified <a href="core/src/main/java/io/github/alien/roseau/diff/changes/BreakingChangeKind.java">here</a> and matches the <a href="https://docs.oracle.com/javase/specs/">Java Language Specification</a>.</p>
+<h2 id="usage">Usage</h2>
+<h3 id="as-a-standalone-cli-tool">As a standalone CLI tool</h3>
+<p>Download the latest stable version of the CLI JAR from the <a href="https://github.com/alien-tools/roseau/releases">releases page</a> or build the latest version locally (Java 25 required): </p>
+<pre><code class="language-bash">$ git clone https://github.com/alien-tools/roseau.git
+$ ./mvnw package
+$ java -jar cli/target/roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help 
+</code></pre>
+<p>Identify breaking changes between two versions, either from compiled JARs or source trees:</p>
+<pre><code>$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+  CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
+    com/pkg/ClassNowAbstract.java:4
+$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+  METHOD_REMOVED com.pkg.Interface.m(int)
+    com/pkg/Interface.java:18
+</code></pre>
+<p>Roseau supports different modes, output formats, and options:</p>
+<pre><code>$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help
+Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=&lt;path&gt;]
+              [--classpath=&lt;path&gt;[,&lt;path&gt;...]] [--config=&lt;path&gt;] [--format=&lt;format&gt;]
+              [--ignored=&lt;path&gt;] [--pom=&lt;path&gt;] [--report=&lt;path&gt;]
+              [--v1=&lt;path&gt;] [--v1-classpath=&lt;path&gt;[,&lt;path&gt;...]] [--v1-pom=&lt;path&gt;]
+              [--v2=&lt;path&gt;] [--v2-classpath=&lt;path&gt;[,&lt;path&gt;...]] [--v2-pom=&lt;path&gt;]
+              (--api | --diff)
+      --api               Serialize the API model of --v1; see --api-json
+      --diff              Compute breaking changes between versions --v1 and --v2
+      --v1=&lt;path&gt;         Path to the first version of the library; either a source directory or a JAR
+      --v2=&lt;path&gt;         Path to the second version of the library; either a source directory or a JAR
+      --api-json=&lt;path&gt;   Where to serialize the Json API model of --v1 in --api mode
+      --report=&lt;path&gt;     Where to write the breaking changes report in --diff mode
+      --format=&lt;format&gt;   Format of the report: CLI, CSV, HTML, JSON, MD
+      --classpath=&lt;path&gt;[,&lt;path&gt;...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
+      --pom=&lt;path&gt;        A pom.xml file to extract the classpath from, shared by --v1 and --v2
+      --v1-classpath=&lt;path&gt;[,&lt;path&gt;...] A --classpath for --v1
+      --v2-classpath=&lt;path&gt;[,&lt;path&gt;...] A --classpath for --v2
+      --v1-pom=&lt;path&gt;     A --pom for --v1
+      --v2-pom=&lt;path&gt;     A --pom for --v2
+      --ignored=&lt;path&gt;    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as the one produced by --format CSV
+      --config=&lt;path&gt;     A roseau.yaml config file; CLI options take precedence over these options
+      --fail-on-bc        Return with exit code 1 if breaking changes are detected
+      --plain             Disable ANSI colors, output plain text
+  -v, --verbose           Increase verbosity (-v, -vv).
+</code></pre>
+<h3 id="configuration">Configuration</h3>
+<p>Roseau accepts a YAML configuration file supplied using the <code>--config</code> option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence.</p>
+<pre><code class="language-yaml">common:
+  classpath:
+    pom: /path/to/pom.xml
+    jars: [ /path/to/dependency.jar ]
+v1:
+  apiReport: ./reports/v1.json
+v2:
+  apiReport: ./reports/v2.json
+ignore: ignored-breaking-changes.csv
+reports:
+  - file: ./reports/guava.html
+    format: HTML
+  - file: ./reports/guava.csv
+    format: CSV
+</code></pre>
+<h4 id="ignoring-breaking-changes-on-specific-types-and-symbols">Ignoring breaking changes on specific types and symbols</h4>
+<p>Roseau can be configured to ignore breaking changes on symbols matching a given regular expression or annotated with a specific annotation:</p>
+<pre><code class="language-yaml">common:
+  excludes:
+    names: [ com\.google\.common\..* ]
+    annotations:
+      - name: com.google.common.annotations.Beta
+      - name: org.apiguardian.api.API
+        args: { status: org.apiguardian.api.API$Status.INTERNAL }
+</code></pre>
+<h4 id="ignoring-specific-breaking-changes">Ignoring specific breaking changes</h4>
+<p>Breaking changes are sometimes necessary and intended. To avoid reporting the same breaking changes over and over against a given baseline, Roseau can be configured to ignore/accept specific breaking changes and stop reporting them using a dedicated CSV file supplied using the <code>--ignored</code> option:</p>
+<pre><code class="language-csv">type;symbol;kind
+pkg.T;pkg.T.m();METHOD_REMOVED
+</code></pre>
+<h2 id="citing-roseau">Citing Roseau</h2>
+<p>If you use Roseau for academic purposes, please cite: <a href="https://hal.science/hal-05176866/document">Roseau: Fast, Accurate, Source-based Breaking Change Analysis in Java</a>. Corentin Latappy, Thomas Degueule, Jean-Rémy Falleri, Romain Robbes, Lina Ochoa. In <em>IEEE International Conference on Software Maintenance and Evolution</em> (ICSME 2025).</p>
+<pre><code class="language-bibtex">@inproceedings{roseau,
+    author    = {Corentin Latappy and Thomas Degueule and Jean-Rémy Falleri and Romain Robbes and Lina Ochoa},
+    title     = {{Roseau}: Fast, Accurate, Source-based Breaking Change Analysis in {Java}},
+    booktitle = {{IEEE} International Conference on Software Maintenance and Evolution, {ICSME} 2025, Auckland, New Zealand, September 7-12, 2025},
+    pages     = {517--528},
+    doi       = {10.1109/ICSME64153.2025.00053},
+    year      = {2025}
+}
+</code></pre>
+<h2 id="license">License</h2>
+<p>This repository—and all its content—is licensed under the <a href="https://choosealicense.com/licenses/mit/">MIT License</a>.  („• ‿ •„) </p>
+
+
+
+
+
+
+
+
+
+
+
+
+                
+              </article>
+            </div>
+          
+          
+<script>var target=document.getElementById(location.hash.slice(1));target&&target.name&&(target.checked=target.name.startsWith("__tabbed_"))</script>
+        </div>
+        
+      </main>
+      
+        <footer class="md-footer">
+  
+  <div class="md-footer-meta md-typeset">
+    <div class="md-footer-meta__inner md-grid">
+      <div class="md-copyright">
+  
+  
+    Made with
+    <a href="https://squidfunk.github.io/mkdocs-material/" target="_blank" rel="noopener">
+      Material for MkDocs
+    </a>
+  
+</div>
+      
+    </div>
+  </div>
+</footer>
+      
+    </div>
+    <div class="md-dialog" data-md-component="dialog">
+      <div class="md-dialog__inner md-typeset"></div>
+    </div>
+    
+    
+    
+      
+      
+      <script id="__config" type="application/json">{"annotate": null, "base": ".", "features": [], "search": "assets/javascripts/workers/search.2c215733.min.js", "tags": null, "translations": {"clipboard.copied": "Copied to clipboard", "clipboard.copy": "Copy to clipboard", "search.result.more.one": "1 more on this page", "search.result.more.other": "# more on this page", "search.result.none": "No matching documents", "search.result.one": "1 matching document", "search.result.other": "# matching documents", "search.result.placeholder": "Type to start searching", "search.result.term.missing": "Missing", "select.version": "Select version"}, "version": null}</script>
+    
+    
+      <script src="assets/javascripts/bundle.79ae519e.min.js"></script>
+      
+    
+  </body>
+</html>
