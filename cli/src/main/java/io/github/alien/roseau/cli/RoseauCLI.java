@@ -366,7 +366,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	static final class VersionProvider implements CommandLine.IVersionProvider {
 		@Override
 		public String[] getVersion() {
-			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.4.0-SNAPSHOT");
+			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.5.0-SNAPSHOT");
 			return new String[]{"Roseau " + impl};
 		}
 	}
