@@ -36,7 +36,7 @@ class JezekTest {
 			  public <T extends Number & java.util.List<T>> void m() {}
 			}""";
 
-		assertBC("A", "A.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_CHANGED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -208,7 +208,7 @@ class JezekTest {
 			}
 			public interface I extends S {}""";
 
-		assertBC("S", "S", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
+		assertBC("S", "S", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -325,7 +325,7 @@ class JezekTest {
 			}
 			public interface I extends J {}""";
 
-		assertBC("I", "I", BreakingChangeKind.METHOD_ADDED_TO_INTERFACE, 1, buildDiff(v1, v2));
+		assertBC("I", "I", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -333,7 +333,7 @@ class JezekTest {
 		var v1 = "public interface I<T> {}";
 		var v2 = "public interface I<T extends Number> {}";
 
-		assertBC("I", "I", BreakingChangeKind.TYPE_FORMAL_TYPE_PARAMETERS_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("I", "I", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Test
@@ -447,7 +447,7 @@ class JezekTest {
 				public void m() {}
 			}""";
 
-		assertBC("C", "C.m()", BreakingChangeKind.METHOD_FORMAL_TYPE_PARAMETERS_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("C", "C.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_REMOVED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

@@ -112,22 +112,17 @@ public class CliFormatter implements BreakingChangesFormatter {
 			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType, newType);
 			case BreakingChangeDetails.FieldTypeChanged(var oldType, var newType) -> "%s → %s".formatted(oldType, newType);
-			case BreakingChangeDetails.MethodAddedToInterface(var newMethod) -> newMethod.getSignature();
-			case BreakingChangeDetails.MethodAbstractAddedToClass(var newMethod) -> newMethod.getSignature();
-			case BreakingChangeDetails.SuperTypeRemoved(var type) -> type.getQualifiedName();
+			case BreakingChangeDetails.TypeNewAbstractMethod(var newMethod) -> newMethod.getSignature();
+			case BreakingChangeDetails.TypeSupertypeRemoved(var type) -> type.getQualifiedName();
 			case BreakingChangeDetails.AnnotationTargetRemoved(var target) -> target.name();
-			case BreakingChangeDetails.AnnotationMethodAddedWithoutDefault(var newMethod) -> newMethod.getSignature();
-			case BreakingChangeDetails.ClassTypeChanged(var oldType, var newType) ->
+			case BreakingChangeDetails.AnnotationNewMethodWithoutDefault(var newMethod) -> newMethod.getSignature();
+			case BreakingChangeDetails.TypeKindChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType.getSimpleName(), newType.getSimpleName());
 			case BreakingChangeDetails.MethodNoLongerThrowsCheckedException(var exc) -> exc.getQualifiedName();
 			case BreakingChangeDetails.MethodNowThrowsCheckedException(var exc) -> exc.getQualifiedName();
-			case BreakingChangeDetails.MethodFormalTypeParametersAdded(var ftp) -> ftp.name();
-			case BreakingChangeDetails.MethodFormalTypeParametersRemoved(var ftp) -> ftp.name();
-			case BreakingChangeDetails.TypeFormalTypeParametersAdded(var ftp) -> ftp.name();
-			case BreakingChangeDetails.TypeFormalTypeParametersRemoved(var ftp) -> ftp.name();
-			case BreakingChangeDetails.MethodFormalTypeParametersChanged(var oldFtp, var newFtp) ->
-				"%s → %s".formatted(oldFtp.name(), newFtp.name());
-			case BreakingChangeDetails.TypeFormalTypeParametersChanged(var oldFtp, var newFtp) ->
+			case BreakingChangeDetails.FormalTypeParametersAdded(var ftp) -> ftp.name();
+			case BreakingChangeDetails.FormalTypeParametersRemoved(var ftp) -> ftp.name();
+			case BreakingChangeDetails.FormalTypeParametersChanged(var oldFtp, var newFtp) ->
 				"%s → %s".formatted(oldFtp.name(), newFtp.name());
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType, newType);

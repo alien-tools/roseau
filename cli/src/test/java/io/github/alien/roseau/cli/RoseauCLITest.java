@@ -45,7 +45,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
-		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -57,7 +57,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
-		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -69,7 +69,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
-		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -81,7 +81,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
-		assertThat(out.toString()).contains("pkg.T TYPE_FORMAL_TYPE_PARAMETERS_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -105,7 +105,7 @@ class RoseauCLITest {
 
 		assertThat(out.toString())
 			.contains("METHOD_REMOVED")
-			.doesNotContain("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED")
+			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -120,7 +120,7 @@ class RoseauCLITest {
 
 		assertThat(out.toString())
 			.contains("METHOD_REMOVED")
-			.contains("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED")
+			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
 			.doesNotContain("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -415,7 +415,7 @@ class RoseauCLITest {
 		Files.writeString(ignored, """
 			type;symbol;kind
 			pkg.T;pkg.T.m();METHOD_REMOVED
-			pkg.T;pkg.T;TYPE_FORMAL_TYPE_PARAMETERS_REMOVED""");
+			pkg.T;pkg.T;FORMAL_TYPE_PARAMETER_REMOVED""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
@@ -424,7 +424,7 @@ class RoseauCLITest {
 
 		assertThat(out.toString())
 			.doesNotContain("METHOD_REMOVED")
-			.doesNotContain("TYPE_FORMAL_TYPE_PARAMETERS_REMOVED")
+			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}

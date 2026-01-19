@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
@@ -18,7 +19,7 @@ import java.util.stream.Collectors;
 /**
  * An API augments {@link LibraryTypes} with analysis capabilities and symbol export information.
  */
-public class API extends CachingApiAnalyzer {
+public final class API extends CachingApiAnalyzer {
 	/**
 	 * The types, exported or not, declared in the library.
 	 */
@@ -33,7 +34,7 @@ public class API extends CachingApiAnalyzer {
 		Preconditions.checkNotNull(typeResolver);
 		this.libraryTypes = libraryTypes;
 		this.typeResolver = typeResolver;
-		this.namePatterns = libraryTypes.getLibrary().getExclusions().names().stream()
+		this.namePatterns = getLibrary().getExclusions().names().stream()
 			.map(name -> {
 				try {
 					return Pattern.compile(name);
@@ -98,6 +99,10 @@ public class API extends CachingApiAnalyzer {
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
 		return libraryTypes.findType(qualifiedName)
 			.filter(this::isExported);
+	}
+
+	public Library getLibrary() {
+		return libraryTypes.getLibrary();
 	}
 
 	@Override
