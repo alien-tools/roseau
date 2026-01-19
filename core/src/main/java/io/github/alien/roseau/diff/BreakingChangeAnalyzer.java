@@ -57,6 +57,11 @@ public class BreakingChangeAnalyzer implements ApiDiffer<RoseauReport> {
 	}
 
 	@Override
+	public void onTypeKindChanged(TypeDecl oldType, TypeDecl newType) {
+		applyTypeRules(ruleSet.getTypeKindChangeRules(), (rule, ctx) -> rule.onMatched(oldType, newType, ctx));
+	}
+
+	@Override
 	public void onRemovedType(TypeDecl type) {
 		applyTypeRules(ruleSet.getTypeRules(), (rule, ctx) -> rule.onRemoved(type, ctx));
 	}

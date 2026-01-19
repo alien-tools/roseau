@@ -48,9 +48,13 @@ import java.util.List;
 
 public class DefaultRuleSet implements RuleSet {
 	@Override
+	public List<TypeRule<TypeDecl>> getTypeKindChangeRules() {
+		return List.of(new TypeKindChanged());
+	}
+
+	@Override
 	public List<TypeRule<TypeDecl>> getTypeRules() {
 		return List.of(
-			new TypeKindChanged(),
 			new TypeRemoved(),
 			new TypeSupertypeRemoved(),
 			new TypeFormalTypeParametersChanged(),

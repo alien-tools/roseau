@@ -15,6 +15,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import java.util.List;
 
 public interface RuleSet {
+	List<TypeRule<TypeDecl>> getTypeKindChangeRules();
 	List<TypeRule<TypeDecl>> getTypeRules();
 	List<TypeRule<ClassDecl>> getClassRules();
 	List<TypeRule<InterfaceDecl>> getInterfaceRules();

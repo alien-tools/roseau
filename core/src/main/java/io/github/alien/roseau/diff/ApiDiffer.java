@@ -16,6 +16,8 @@ public interface ApiDiffer<T> {
 
 	void onMatchedType(TypeDecl oldType, TypeDecl newType);
 
+	void onTypeKindChanged(TypeDecl oldType, TypeDecl newType);
+
 	void onRemovedType(TypeDecl type);
 
 	void onAddedType(TypeDecl type);

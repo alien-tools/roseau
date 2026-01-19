@@ -29,8 +29,12 @@ public final class ApiWalker {
 		v1.getExportedTypes().parallelStream().forEach(t1 -> {
 			matcher.matchType(v2, t1).ifPresentOrElse(
 				t2 -> {
-					onMatchedType(sink, t1, t2);
-					walkMembers(t1, t2, sink);
+					if (t1.getClass().equals(t2.getClass())) {
+						onMatchedType(sink, t1, t2);
+						walkMembers(t1, t2, sink);
+					} else {
+						sink.onTypeKindChanged(t1, t2);
+					}
 				},
 				() -> onRemovedType(sink, t1)
 			);

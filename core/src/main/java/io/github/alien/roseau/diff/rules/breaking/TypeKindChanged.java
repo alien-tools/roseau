@@ -9,9 +9,7 @@ import io.github.alien.roseau.diff.rules.TypeRuleContext;
 public class TypeKindChanged implements TypeRule<TypeDecl> {
 	@Override
 	public void onMatched(TypeDecl oldType, TypeDecl newType, TypeRuleContext ctx) {
-		if (!oldType.getClass().equals(newType.getClass())) {
-			ctx.builder().typeBC(BreakingChangeKind.TYPE_KIND_CHANGED, oldType,
-				new BreakingChangeDetails.TypeKindChanged(oldType.getClass(), newType.getClass()));
-		}
+		ctx.builder().typeBC(BreakingChangeKind.TYPE_KIND_CHANGED, oldType,
+			new BreakingChangeDetails.TypeKindChanged(oldType.getClass(), newType.getClass()));
 	}
 }
