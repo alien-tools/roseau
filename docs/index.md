@@ -8,7 +8,7 @@ Whether you're a library maintainer or a developer worrying about upgrading your
   - Detects both binary-level and source-level breaking changes
   - Indifferently analyzes JAR files (using [ASM](https://asm.ow2.io/)) or Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core))
   - Excellent accuracy and performance
-  - Supports Java up to version 21 (including records, sealed types, modules, etc.)
+  - Supports Java up to version 25 (including records, sealed types, modules, etc.)
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
   - Highly configurable, CLI-first, and scriptable
 
@@ -36,16 +36,16 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ ./mvnw package
-$ java -jar cli/target/roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help 
+$ java -jar cli/target/roseau-cli-0.5.0-jar-with-dependencies.jar --help 
 ```
 
 Identify breaking changes between two versions, either from compiled JARs or source trees:
 
 ```
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -53,7 +53,7 @@ $ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /pat
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help
+$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --help
 Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
               [--classpath=<path>[,<path>...]] [--config=<path>] [--format=<format>]
               [--ignored=<path>] [--pom=<path>] [--report=<path>]
