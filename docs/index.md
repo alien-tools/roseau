@@ -54,12 +54,13 @@ Roseau supports different modes, output formats, and options:
 
 ```
 $ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --help
-Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
-              [--classpath=<path>[,<path>...]] [--config=<path>] [--format=<format>]
-              [--ignored=<path>] [--pom=<path>] [--report=<path>]
-              [--v1=<path>] [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
-              [--v2=<path>] [--v2-classpath=<path>[,<path>...]] [--v2-pom=<path>]
-              (--api | --diff)
+Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
+              [--api-json=<path>] [--classpath=<path>[,<path>...]]
+              [--config=<path>] [--format=<format>] [--ignored=<path>]
+              [--pom=<path>] [--report=<path>] [--v1=<path>]
+              [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
+              [--v2=<path>] [--v2-classpath=<path>[,<path>...]]
+              [--v2-pom=<path>] (--api | --diff)
       --api               Serialize the API model of --v1; see --api-json
       --diff              Compute breaking changes between versions --v1 and --v2
       --v1=<path>         Path to the first version of the library; either a source directory or a JAR
@@ -73,6 +74,8 @@ Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
       --v2-classpath=<path>[,<path>...] A --classpath for --v2
       --v1-pom=<path>     A --pom for --v1
       --v2-pom=<path>     A --pom for --v2
+      --binary-only       Only report binary-breaking changes
+      --source-only       Only report source-breaking changes
       --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as the one produced by --format CSV
       --config=<path>     A roseau.yaml config file; CLI options take precedence over these options
       --fail-on-bc        Return with exit code 1 if breaking changes are detected
