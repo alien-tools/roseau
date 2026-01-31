@@ -547,8 +547,14 @@ class TypesExtractionTest {
 				}
 			}""");
 
-		assertClass(api, "A");
-		assertClass(api, "A$B");
-		assertClass(api, "A$B$C");
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "A$B");
+		var c = assertClass(api, "A$B$C");
+		assertThat(a.getQualifiedName()).isEqualTo("A");
+		assertThat(b.getQualifiedName()).isEqualTo("A$B");
+		assertThat(c.getQualifiedName()).isEqualTo("A$B$C");
+		assertThat(a.getSimpleName()).isEqualTo("A");
+		assertThat(b.getSimpleName()).isEqualTo("B");
+		assertThat(c.getSimpleName()).isEqualTo("C");
 	}
 }

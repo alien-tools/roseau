@@ -60,7 +60,10 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		this.modifiers = Sets.immutableEnumSet(modifiers);
 		this.annotations = Set.copyOf(annotations);
 		this.location = location;
-		simpleName = qualifiedName.substring(qualifiedName.lastIndexOf('.') + 1);
+		int lastDot = qualifiedName.lastIndexOf('.');
+		int lastDollar = qualifiedName.lastIndexOf('$');
+		int lastSeparator = Math.max(lastDot, lastDollar);
+		simpleName = qualifiedName.substring(lastSeparator + 1);
 	}
 
 	public String getQualifiedName() {
