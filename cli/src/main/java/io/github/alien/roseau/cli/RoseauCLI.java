@@ -204,7 +204,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (mode.api && options.v1().apiReport() == null) {
-			throw new RoseauException("Path to a JSON file required in --api mode");
+			throw new RoseauException("--api-json option required with --api mode");
 		}
 
 		Path v2Path = options.v2().location();
@@ -213,7 +213,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (reportPath != null && format == null) {
-			throw new RoseauException("--format required with --report");
+			throw new RoseauException("--format option required with --report");
 		}
 
 		Path v1PomPath = options.v1().classpath().pom();
