@@ -6,9 +6,10 @@ Whether you're a library maintainer or a developer worrying about upgrading your
 ## Key Features
 
   - Detects both binary-level and source-level breaking changes
+  - Accurate and customizable definition of the API surface (using visibilities, modules, annotations, naming conventions, etc.) 
   - Indifferently analyzes JAR files (using [ASM](https://asm.ow2.io/)) or Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core))
   - Excellent accuracy and performance
-  - Supports Java up to version 21 (including records, sealed types, modules, etc.)
+  - Supports Java up to version 25 (including records, sealed types, modules, etc.)
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
   - Highly configurable, CLI-first, and scriptable
 

@@ -42,6 +42,7 @@ import static picocli.CommandLine.Spec;
 		"--v1 and --v2 can point to either JAR files or source code directories. " +
 		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
 public final class RoseauCLI implements Callable<Integer> {
+	private Console console;
 	@Spec
 	private CommandSpec spec;
 	@ArgGroup(exclusive = true, multiplicity = "1")
@@ -90,6 +91,12 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--v2-pom", paramLabel = "<path>",
 		description = "A --pom for --v2")
 	private Path v2Pom;
+	@Option(names = "--binary-only",
+		description = "Only report binary-breaking changes")
+	private Boolean binaryOnly;
+	@Option(names = "--source-only",
+		description = "Only report source-breaking changes")
+	private Boolean sourceOnly;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as the one produced by --format CSV")
@@ -105,29 +112,24 @@ public final class RoseauCLI implements Callable<Integer> {
 	private boolean plain;
 	@Option(names = {"-v", "--verbose"},
 		description = "Increase verbosity (-v, -vv).")
-	private boolean[] verbosity;
-	private boolean verbose;
-	private boolean debug;
-
-	private API buildAPI(Library library) {
-		Stopwatch sw = Stopwatch.createStarted();
-		API api = Roseau.buildAPI(library);
-		printVerbose("Extracting API from %s using %s took %dms (%d types)".formatted(
-			library.getLocation(), library.getExtractorType(), sw.elapsed().toMillis(), api.getExportedTypes().size()));
-		return api;
-	}
+	private boolean[] verbosityLevel;
 
 	private RoseauReport diff(Library libraryV1, Library libraryV2) {
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV1));
-		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> buildAPI(libraryV2));
+		Stopwatch sw = Stopwatch.createStarted();
 
+		console.printVerbose("Building APIs...  ");
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(libraryV1));
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(libraryV2));
 		API apiV1 = futureV1.join();
 		API apiV2 = futureV2.join();
+		console.printlnVerbose("%d types → %d types (%d ms)".formatted(apiV1.getLibraryTypes().getAllTypes().size(),
+			apiV2.getLibraryTypes().getAllTypes().size(), sw.elapsed().toMillis()));
 
-		Stopwatch sw = Stopwatch.createStarted();
+		sw.reset().start();
+		console.printVerbose("Comparing APIs... ");
 		RoseauReport report = Roseau.diff(apiV1, apiV2);
-		printVerbose("Diffing APIs took %dms (%d breaking changes)".formatted(
-			sw.elapsed().toMillis(), report.getBreakingChanges().size()));
+		console.printlnVerbose("%d breaking changes (%d ms)".formatted(report.getBreakingChanges().size(),
+			sw.elapsed().toMillis()));
 
 		return report;
 	}
@@ -150,7 +152,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			}
 			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 			Files.writeString(path, fmt.format(report), StandardCharsets.UTF_8);
-			printVerbose("Report has been written to %s".formatted(path));
+			console.printlnVerbose("Report has been written to %s".formatted(path));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing report to %s".formatted(path), e);
 		}
@@ -162,25 +164,39 @@ public final class RoseauCLI implements Callable<Integer> {
 				Files.createDirectories(apiPath.getParent());
 			}
 			api.getLibraryTypes().writeJson(apiPath);
-			printVerbose("API has been written to %s".formatted(apiPath));
+			console.printlnVerbose("API has been written to %s".formatted(apiPath));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing API to %s".formatted(apiPath), e);
 		}
 	}
 
-	private RoseauReport filterReport(RoseauReport report, Path ignoredPath) {
-		IgnoredCsvFile ignored = new IgnoredCsvFile(ignoredPath);
-		List<BreakingChange> filtered = report.getBreakingChanges().stream()
-			.filter(bc -> !ignored.isIgnored(bc))
-			.toList();
-		return new RoseauReport(report.v1(), report.v2(), filtered);
+	private RoseauReport filterReport(RoseauReport report, RoseauOptions.Diff diffOptions) {
+		List<BreakingChange> bcs = diffOptions.sourceOnly()
+			? report.getSourceBreakingChanges()
+			: diffOptions.binaryOnly()
+				? report.getBinaryBreakingChanges()
+				: report.getBreakingChanges();
+
+		Path ignorePath = diffOptions.ignore();
+		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
+			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
+			bcs = bcs.stream()
+				.filter(bc -> !ignoredFile.isIgnored(bc))
+				.toList();
+		}
+
+		return new RoseauReport(report.v1(), report.v2(), bcs);
 	}
 
 	private void checkOptions(RoseauOptions options) {
 		Path v1Path = options.v1().location();
 
 		if (config != null && !Files.isRegularFile(config)) {
-			printErr("Warning: ignoring missing configuration file %s".formatted(config));
+			console.printlnErr("Warning: ignoring missing configuration file %s".formatted(config));
+		}
+
+		if (sourceOnly != null && binaryOnly != null) {
+			throw new RoseauException("Specify either --source-only or --binary-only");
 		}
 
 		if (v1Path == null || !Files.exists(v1Path)) {
@@ -215,7 +231,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("Cannot find pom: %s".formatted(pomPath));
 		}
 
-		Path ignoredPath = options.ignore();
+		Path ignoredPath = options.diff().ignore();
 		if (ignoredPath != null && !Files.isRegularFile(ignoredPath)) {
 			throw new RoseauException("Cannot find ignored CSV: %s".formatted(ignoredPath));
 		}
@@ -225,76 +241,79 @@ public final class RoseauCLI implements Callable<Integer> {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
-			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)),
-			noExclusions
-		);
+			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
-			noExclusions, apiJson
-		);
+			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
-			noExclusions, null
-		);
+			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
+		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, sourceOnly, binaryOnly);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))
 			: List.of();
-		return new RoseauOptions(commonCli, v1Cli, v2Cli, ignoredCsv, reportsCli);
+		return new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
+	}
+
+	private void buildClasspath(Library library) {
+		Stopwatch sw = Stopwatch.createStarted();
+		if (library.getPom() != null && Files.isRegularFile(library.getPom())) {
+			console.printVerbose("Building classpath... ");
+		}
+		List<Path> classpath = library.getClasspath();
+		console.printlnVerbose("%d classpath entries for %s (%d ms)".formatted(classpath.size(), library.getLocation(),
+			sw.elapsed().toMillis()));
+
+		if (classpath.isEmpty()) {
+			console.printlnErr("Warning: no classpath provided, results may be inaccurate");
+		}
 	}
 
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
-		if (library.getClasspath().isEmpty()) {
-			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(library.getLocation()));
-		}
-		API api = buildAPI(library);
+		buildClasspath(library);
+		Stopwatch sw = Stopwatch.createStarted();
+		console.printVerbose("Building API... ");
+		API api = Roseau.buildAPI(library);
+		console.printlnVerbose(" %d types (%d ms)".formatted(api.getLibraryTypes().getAllTypes().size(),
+			sw.elapsed().toMillis()));
 		if (libraryOptions.apiReport() != null) {
 			writeApiReport(api, libraryOptions.apiReport());
 		}
 	}
 
 	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
-		if (v1.getClasspath().isEmpty()) {
-			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v1.getLocation()));
-		}
-		if (v2.getClasspath().isEmpty()) {
-			printErr("Warning: no classpath provided for %s, results may be inaccurate".formatted(v2.getLocation()));
-		}
-		RoseauReport originalReport = diff(v1, v2);
-		Path ignoreFile = options.ignore();
-		RoseauReport filteredReport = ignoreFile != null && Files.isRegularFile(ignoreFile)
-			? filterReport(originalReport, ignoreFile)
-			: originalReport;
-
-		if (filteredReport.getBreakingChanges().isEmpty()) {
-			print("No breaking changes found.");
-		} else {
-			print(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(filteredReport));
-		}
+		buildClasspath(v1);
+		buildClasspath(v2);
+		RoseauReport report = filterReport(diff(v1, v2), options.diff());
+		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {
-			writeApiReport(filteredReport.v1(), options.v1().apiReport());
+			writeApiReport(report.v1(), options.v1().apiReport());
 		}
 		if (options.v2().apiReport() != null) {
-			writeApiReport(filteredReport.v2(), options.v2().apiReport());
+			writeApiReport(report.v2(), options.v2().apiReport());
 		}
 		options.reports().forEach(reportOption ->
-			writeReport(filteredReport, reportOption.format(), reportOption.file())
+			writeReport(report, reportOption.format(), reportOption.file())
 		);
 
-		return !filteredReport.getBreakingChanges().isEmpty();
+		return !report.getBreakingChanges().isEmpty();
 	}
 
 	@Override
 	public Integer call() {
-		try {
-			if (verbosity != null) {
-				this.verbose = verbosity.length > 0;
-				this.debug = verbosity.length > 1;
-			}
+		Console.Verbosity verbosity = verbosityLevel == null
+			? Console.Verbosity.NORMAL
+			: switch (verbosityLevel.length) {
+			case 0 -> Console.Verbosity.NORMAL;
+			case 1 -> Console.Verbosity.VERBOSE;
+			default -> Console.Verbosity.DEBUG;
+		};
 
-			if (debug) {
+		try {
+			console = new Console(spec.commandLine().getOut(), spec.commandLine().getErr(), verbosity);
+
+			if (verbosity == Console.Verbosity.DEBUG) {
 				Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
-			} else if (verbose) {
+			} else if (verbosity == Console.Verbosity.VERBOSE) {
 				Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
 			}
 
@@ -304,19 +323,19 @@ public final class RoseauCLI implements Callable<Integer> {
 				: RoseauOptions.newDefault();
 			RoseauOptions options = fileOptions.mergeWith(cliOptions);
 			checkOptions(options);
-			printDebug("Options are " + options);
+			console.printlnDebug("Options are " + options);
 
 			if (mode.api) {
 				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
-				printDebug("v1 = " + libraryV1);
+				console.printlnDebug("v1 = " + libraryV1);
 				doApi(libraryV1, options.v1());
 			}
 
 			if (mode.diff) {
 				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
 				Library libraryV2 = options.v2().mergeWith(options.common()).toLibrary();
-				printDebug("v1 = " + libraryV1);
-				printDebug("v2 = " + libraryV2);
+				console.printlnDebug("v1 = " + libraryV1);
+				console.printlnDebug("v2 = " + libraryV2);
 				boolean breaking = doDiff(libraryV1, libraryV2, options);
 
 				if (breaking && failMode) {
@@ -326,37 +345,17 @@ public final class RoseauCLI implements Callable<Integer> {
 
 			return ExitCode.SUCCESS.code();
 		} catch (RuntimeException e) {
-			if (verbose) {
-				e.printStackTrace(spec.commandLine().getErr());
+			if (verbosity.level >= Console.Verbosity.VERBOSE.level) {
+				console.printStackTrace(e);
 			} else {
 				String message = Optional.ofNullable(e.getMessage())
 					.or(() -> Optional.ofNullable(e.getCause()).map(Throwable::getMessage))
 					.orElseGet(() -> e.getClass().getCanonicalName());
-				printErr(message);
-				printErr("Use -v/-vv for detailed error logs.");
+				console.printlnErr(message);
+				console.printlnErr("Use -v/-vv for detailed error logs.");
 			}
 			return ExitCode.ERROR.code();
 		}
-	}
-
-	private void print(String message) {
-		spec.commandLine().getOut().println(message);
-	}
-
-	private void printVerbose(String message) {
-		if (verbose) {
-			print(message);
-		}
-	}
-
-	private void printDebug(String message) {
-		if (debug) {
-			print(message);
-		}
-	}
-
-	private void printErr(String message) {
-		spec.commandLine().getErr().println(message);
 	}
 
 	static void main(String[] args) {
@@ -367,7 +366,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	static final class VersionProvider implements CommandLine.IVersionProvider {
 		@Override
 		public String[] getVersion() {
-			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.4.0-SNAPSHOT");
+			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.5.0-SNAPSHOT");
 			return new String[]{"Roseau " + impl};
 		}
 	}

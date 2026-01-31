@@ -83,7 +83,7 @@
         <dependency>
             <groupId>com.github.siom79.japicmp</groupId>
             <artifactId>japicmp</artifactId>
-            <version>0.24.2</version>
+            <version>0.25.4</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>

@@ -7,8 +7,7 @@
   $ mvn versions:set -DnewVersion=<x.y.z>
   $ mvn versions:commit
   ```
-- In CLI:
-  `@Command(version = <x.y.z>)`
+- In CLI: update `VersionProvider`
 
 ### Confirm we're all good
 

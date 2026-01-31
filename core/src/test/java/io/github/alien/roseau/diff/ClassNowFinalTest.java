@@ -56,7 +56,7 @@ class ClassNowFinalTest {
 		var v1 = "public class A {}";
 		var v2 = "public record A() {}";
 
-		assertBC("A", "A", BreakingChangeKind.CLASS_TYPE_CHANGED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A();")

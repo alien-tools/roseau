@@ -19,12 +19,12 @@ import java.util.Set;
  * @param common  options shared by v1 and v2
  * @param v1      options specific to v1
  * @param v2      options specific to v2
- * @param ignore  the CSV "ignore" file to use
+ * @param diff    diff options
  * @param reports reports configuration
  */
-public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, List<Report> reports) {
+public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, List<Report> reports) {
 	/**
-	 * Options shared by v1 and v2
+	 * Options shared by v1 and v2.
 	 *
 	 * @param classpath the {@link Classpath} to use
 	 * @param excludes  the API {@link Exclude} options to apply
@@ -39,7 +39,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	}
 
 	/**
-	 * Options for a particular library, v1 or v2
+	 * Options for a particular library, v1 or v2.
 	 *
 	 * @param location  the location of the library
 	 * @param classpath the {@link Classpath} to use
@@ -72,6 +72,22 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	}
 
 	/**
+	 * Diff options.
+	 *
+	 * @param ignore     the CSV "ignore" file to use
+	 * @param sourceOnly whether to report source-breaking changes only
+	 * @param binaryOnly whether to report binary-breaking changes only
+	 */
+	public record Diff(Path ignore, Boolean sourceOnly, Boolean binaryOnly) {
+		Diff mergeWith(Diff other) {
+			return other != null
+				? new Diff(either(other.ignore(), ignore), either(other.sourceOnly(), either(sourceOnly, false)),
+					either(other.binaryOnly(), either(binaryOnly, false)))
+				: this;
+		}
+	}
+
+	/**
 	 * A classpath configuration for a library.
 	 *
 	 * @param pom  the path to the {@code pom.xml} to extract a classpath from
@@ -86,7 +102,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	}
 
 	/**
-	 * Exclusion options when reporting breaking changes
+	 * Exclusion options when reporting breaking changes.
 	 *
 	 * @param names       the list of regex-based names to be excluded
 	 * @param annotations the list of {@link AnnotationExclusion} to consider
@@ -152,8 +168,9 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
 		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null);
 		Common defaultCommon = new Common(defaultClasspath, defaultExclusion);
+		Diff diff = new Diff(null, false, false);
 		List<Report> defaultReports = List.of();
-		return new RoseauOptions(defaultCommon, defaultLibrary, defaultLibrary, null, defaultReports);
+		return new RoseauOptions(defaultCommon, defaultLibrary, defaultLibrary, diff, defaultReports);
 	}
 
 	/**
@@ -166,7 +183,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Path ignore, 
 	public RoseauOptions mergeWith(RoseauOptions other) {
 		return other != null
 			? new RoseauOptions(common.mergeWith(other.common()), v1.mergeWith(other.v1()), v2.mergeWith(other.v2()),
-			either(other.ignore(), ignore), either(other.reports(), reports))
+			diff.mergeWith(other.diff()), either(other.reports(), reports))
 			: this;
 	}
 

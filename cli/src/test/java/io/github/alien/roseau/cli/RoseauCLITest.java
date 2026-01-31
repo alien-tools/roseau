@@ -44,7 +44,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -55,7 +56,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -66,7 +68,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -77,7 +80,8 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -88,6 +92,36 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void binary_only() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--binary-only",
+			"--plain");
+
+		assertThat(out.toString())
+			.contains("METHOD_REMOVED")
+			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
+			.contains("METHOD_NOW_STATIC");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void source_only() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--source-only",
+			"--plain");
+
+		assertThat(out.toString())
+			.contains("METHOD_REMOVED")
+			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
+			.doesNotContain("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -352,7 +386,7 @@ class RoseauCLITest {
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).contains("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -380,14 +414,18 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind
-			pkg.T;pkg.T.m();METHOD_REMOVED""");
+			pkg.T;pkg.T.m();METHOD_REMOVED
+			pkg.T;pkg.T;FORMAL_TYPE_PARAMETER_REMOVED""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(out.toString())
+			.doesNotContain("METHOD_REMOVED")
+			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
+			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -430,7 +468,8 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
-			"--plain");
+			"--plain",
+			"-vv");
 
 		assertThat(err.toString()).contains("Malformed kind");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());

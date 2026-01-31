@@ -37,7 +37,27 @@ class ClassNowCheckedExceptionTest {
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1),
-			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1));
+			bc("A", "A", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1));
+	}
+
+	@Client("throw new A();")
+	@Test
+	void throwable_becomes_checked_exception() {
+		var v1 = "public class A extends Throwable {}";
+		var v2 = "public class A extends Exception {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("throw new A();")
+	@Test
+	void error_becomes_checked_exception() {
+		var v1 = "public class A extends Error {}";
+		var v2 = "public class A extends Exception {}";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1),
+			bc("A", "A", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1));
 	}
 
 	@Client("throw new A();")
@@ -48,7 +68,7 @@ class ClassNowCheckedExceptionTest {
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A", BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, 1),
-			bc("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1));
+			bc("A", "A", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1));
 	}
 
 	@Client("""
@@ -75,7 +95,7 @@ class ClassNowCheckedExceptionTest {
 		var v1 = "public class A extends java.io.IOException {}";
 		var v2 = "public class A extends Exception {}";
 
-		assertBC("A", "A", BreakingChangeKind.SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+		assertBC("A", "A", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
 	@Client("new A();")
@@ -85,5 +105,41 @@ class ClassNowCheckedExceptionTest {
 		var v2 = "public class A extends RuntimeException {}";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A();")
+	@Test
+	void class_becomes_throwable() {
+		var v1 = "public class A {}";
+		var v2 = "public class A extends Throwable {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A();")
+	@Test
+	void class_becomes_error() {
+		var v1 = "public class A {}";
+		var v2 = "public class A extends Error {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("throw new A();")
+	@Test
+	void exception_becomes_throwable() {
+		var v1 = "public class A extends Exception {}";
+		var v2 = "public class A extends Throwable {}";
+
+		assertBC("A", "A", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
+	}
+
+	@Client("throw new A();")
+	@Test
+	void exception_becomes_error() {
+		var v1 = "public class A extends Exception {}";
+		var v2 = "public class A extends Error {}";
+
+		assertBC("A", "A", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 }
