@@ -246,14 +246,8 @@ public final class RoseauCLI implements Callable<Integer> {
 			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
 			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
-		Boolean cliSourceOnly = sourceOnly;
-		Boolean cliBinaryOnly = binaryOnly;
-		if (Boolean.TRUE.equals(cliBinaryOnly)) {
-			cliSourceOnly = Boolean.FALSE;
-		}
-		if (Boolean.TRUE.equals(cliSourceOnly)) {
-			cliBinaryOnly = Boolean.FALSE;
-		}
+		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
+		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))

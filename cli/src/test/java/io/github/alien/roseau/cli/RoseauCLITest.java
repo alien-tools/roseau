@@ -137,6 +137,18 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void both_source_and_binary_only() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--source-only",
+			"--binary-only");
+
+		assertThat(err.toString()).contains("Specify either --source-only or --binary-only");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
 	void invalid_v1_path() {
 		var exitCode = cmd.execute("--v1=src/test/resources/invalid-path",
 			"--v2=src/test/resources/test-project-v2/test-project-v1.jar",
@@ -295,7 +307,7 @@ class RoseauCLITest {
 			"--diff",
 			"--report=" + reportFile);
 
-		assertThat(err.toString()).contains("--format required with --report");
+		assertThat(err.toString()).contains("--format option required with --report");
 		assertThat(reportFile).doesNotExist();
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
