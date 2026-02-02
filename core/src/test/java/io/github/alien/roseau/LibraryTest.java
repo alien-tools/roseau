@@ -4,6 +4,7 @@ import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.ExtractorType;
+import io.github.alien.roseau.options.RoseauOptions;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;

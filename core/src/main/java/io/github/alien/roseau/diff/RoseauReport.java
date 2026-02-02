@@ -9,7 +9,11 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.options.IgnoredCsvFile;
+import io.github.alien.roseau.options.RoseauOptions;
 
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -113,6 +117,24 @@ public final class RoseauReport {
 				() -> new TreeMap<>(Comparator.comparing(TypeMemberDecl::getQualifiedName)),
 				Collectors.toList()
 			));
+	}
+
+	public RoseauReport filterReport(RoseauOptions.Diff diffOptions) {
+		List<BreakingChange> bcs = diffOptions.sourceOnly()
+			? getSourceBreakingChanges()
+			: diffOptions.binaryOnly()
+			? getBinaryBreakingChanges()
+			: getBreakingChanges();
+
+		Path ignorePath = diffOptions.ignore();
+		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
+			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
+			bcs = bcs.stream()
+				.filter(bc -> !ignoredFile.isIgnored(bc))
+				.toList();
+		}
+
+		return new RoseauReport(v1(), v2(), bcs);
 	}
 
 	public static Builder builder(API v1, API v2) {

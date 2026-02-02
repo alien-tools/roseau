@@ -1,7 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.RoseauOptions;
+import io.github.alien.roseau.options.RoseauOptions;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 

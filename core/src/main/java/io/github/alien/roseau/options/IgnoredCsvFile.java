@@ -1,4 +1,4 @@
-package io.github.alien.roseau.cli;
+package io.github.alien.roseau.options;
 
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.diff.changes.BreakingChange;
@@ -10,13 +10,12 @@ import java.nio.file.Path;
 import java.util.List;
 import java.util.stream.Stream;
 
-class IgnoredCsvFile {
+public class IgnoredCsvFile {
 	private final List<Ignored> ignoredBCs;
 
-	private record Ignored(String type, String symbol, BreakingChangeKind kind) {
-	}
+	private record Ignored(String type, String symbol, BreakingChangeKind kind) {}
 
-	IgnoredCsvFile(Path csv) {
+	public IgnoredCsvFile(Path csv) {
 		try (Stream<String> lines = Files.lines(csv)) {
 			ignoredBCs = lines
 				.map(String::strip)
@@ -41,7 +40,7 @@ class IgnoredCsvFile {
 		}
 	}
 
-	boolean isIgnored(BreakingChange bc) {
+	public boolean isIgnored(BreakingChange bc) {
 		return ignoredBCs.stream().anyMatch(ign -> bc.impactedType().getQualifiedName().equals(ign.type()) &&
 			bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
 			bc.kind() == ign.kind());

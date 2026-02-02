@@ -4,7 +4,8 @@ import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.RoseauOptions;
+import io.github.alien.roseau.options.IgnoredCsvFile;
+import io.github.alien.roseau.options.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
@@ -170,24 +171,6 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private RoseauReport filterReport(RoseauReport report, RoseauOptions.Diff diffOptions) {
-		List<BreakingChange> bcs = diffOptions.sourceOnly()
-			? report.getSourceBreakingChanges()
-			: diffOptions.binaryOnly()
-				? report.getBinaryBreakingChanges()
-				: report.getBreakingChanges();
-
-		Path ignorePath = diffOptions.ignore();
-		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
-			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
-			bcs = bcs.stream()
-				.filter(bc -> !ignoredFile.isIgnored(bc))
-				.toList();
-		}
-
-		return new RoseauReport(report.v1(), report.v2(), bcs);
-	}
-
 	private void checkOptions(RoseauOptions options) {
 		Path v1Path = options.v1().location();
 
@@ -282,7 +265,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
 		buildClasspath(v1);
 		buildClasspath(v2);
-		RoseauReport report = filterReport(diff(v1, v2), options.diff());
+		RoseauReport report = diff(v1, v2).filterReport(options.diff());
 		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {

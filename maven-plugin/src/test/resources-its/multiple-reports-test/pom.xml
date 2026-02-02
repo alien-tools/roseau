@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.alien-tools</groupId>
+    <artifactId>roseau-multiple-reports-test</artifactId>
+    <version>0.2.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.github.alien-tools</groupId>
+                <artifactId>roseau-maven-plugin</artifactId>
+                <version>0.5.0-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <baselineJar>old.jar</baselineJar>
+                    <reports>
+                        <report>
+                            <file>report.html</file>
+                            <format>HTML</format>
+                        </report>
+                        <report>
+                            <file>report.csv</file>
+                            <format>CSV</format>
+                        </report>
+                        <report>
+                            <file>report.json</file>
+                            <format>JSON</format>
+                        </report>
+                        <report>
+                            <file>report.md</file>
+                            <format>MD</format>
+                        </report>
+                    </reports>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

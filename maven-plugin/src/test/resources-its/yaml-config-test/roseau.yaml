@@ -1,0 +1,6 @@
+diff:
+  binaryOnly: true
+
+reports:
+  - file: target/roseau/yaml-report.html
+    format: HTML
