@@ -1,83 +1,51 @@
-package io.github.alien.roseau.diff.formatter;
+package io.github.alien.roseau.maven;
 
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
+import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
+import org.apache.maven.plugin.logging.Log;
 
 import java.util.List;
 
 /**
- * A formatter of {@link RoseauReport} that produces a CLI-friendly report.
+ * A formatter of {@link RoseauReport} that feeds a Maven-friendly report into a {@link Log}
  */
-public class CliFormatter implements BreakingChangesFormatter {
-	private final Mode mode;
-
-	private static final String BOLD = "\u001B[1m";
-	private static final String DIM = "\u001B[2m";
-	private static final String CYAN = "\u001B[36m";
-	private static final String RESET = "\u001B[0m";
-
-	private static final String KIND_ADDITION = "➕";
-	private static final String KIND_DELETION = "✗";
-	private static final String KIND_MUTATION = "⚠";
+public class MavenFormatter implements BreakingChangesFormatter {
+	private final Log log;
 
 	private static final String COMPATIBLE = "✓";
 	private static final String BREAKING = "✗";
 
-	public enum Mode {
-		PLAIN,
-		ANSI
-	}
-
-	public CliFormatter(Mode mode) {
-		this.mode = mode;
-	}
-
-	public CliFormatter() {
-		boolean user = System.console() != null && System.getenv("CI") == null;
-		this(user ? Mode.ANSI : Mode.PLAIN);
+	public MavenFormatter(Log log) {
+		this.log = log;
 	}
 
 	@Override
 	public String format(RoseauReport report) {
 		List<BreakingChange> changes = report.getBreakingChanges();
 		if (changes.isEmpty()) {
-			return "No breaking changes found.";
+			log.info("No breaking changes found.");
 		}
 
 		int binaryBreaking = report.getBinaryBreakingChanges().size();
 		int sourceBreaking = report.getSourceBreakingChanges().size();
 
-		StringBuilder sb = new StringBuilder();
+		log.warn(String.format("Breaking Changes found: %d (%d binary-breaking, %d source-breaking",
+			changes.size(), binaryBreaking, sourceBreaking));
 
-		sb.append(bold("Breaking Changes found: ")).append(changes.size());
-		sb.append(" (").append(binaryBreaking).append(" binary-breaking, ");
-		sb.append(sourceBreaking).append(" source-breaking)");
-		sb.append(System.lineSeparator());
+		report.getBreakingChanges().forEach(bc -> formatBreakingChange(bc));
 
-		report.getBreakingChanges().forEach(bc -> formatBreakingChange(bc, sb));
-
-		return sb.toString();
+		return "";
 	}
 
-	private void formatBreakingChange(BreakingChange bc, StringBuilder sb) {
-		String emoji = switch (bc.kind().getNature()) {
-			case ADDITION -> KIND_ADDITION;
-			case DELETION -> KIND_DELETION;
-			case MUTATION -> KIND_MUTATION;
-		};
-
-		sb.append(emoji).append(" ").append(formatSymbol(bc)).append(" ").append(formatKind(bc));
+	private void formatBreakingChange(BreakingChange bc) {
 		String details = formatDetails(bc);
-		if (!details.isEmpty()) {
-			sb.append(" ").append(cyan("[" + details + "]"));
-		}
-		sb.append(System.lineSeparator());
-		sb.append("  ").append(formatCompatibility(bc));
-		sb.append(System.lineSeparator());
-		sb.append("  ").append(dim(formatLocation(bc)));
-		sb.append(System.lineSeparator());
+		log.warn(String.format("%s %s%s", formatSymbol(bc), formatKind(bc),
+			details.isEmpty() ? "" : "[" + details + "]"));
+		log.warn("  " + formatCompatibility(bc));
+		log.warn("  " + formatLocation(bc));
 	}
 
 	private static String formatKind(BreakingChange bc) {
@@ -127,17 +95,5 @@ public class CliFormatter implements BreakingChangesFormatter {
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType, newType);
 		};
-	}
-
-	private String bold(String text) {
-		return mode == Mode.ANSI ? (BOLD + text + RESET) : text;
-	}
-
-	private String dim(String text) {
-		return mode == Mode.ANSI ? (DIM + text + RESET) : text;
-	}
-
-	private String cyan(String text) {
-		return mode == Mode.ANSI ? (CYAN + text + RESET) : text;
 	}
 }

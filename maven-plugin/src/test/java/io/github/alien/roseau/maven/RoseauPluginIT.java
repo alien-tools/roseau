@@ -18,7 +18,7 @@ import static com.soebes.itf.extension.assertj.MavenITAssertions.assertThat;
 class RoseauPluginIT {
 	@Nested
 	@MavenProjectSources(sources = "simple-module-test")
-	class NestedSetup {
+	class SimpleModule {
 		@MavenTest
 		void bcs_are_reported(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
@@ -50,13 +50,12 @@ class RoseauPluginIT {
 		void reports_are_generated(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 
-			Path targetDir = result.getMavenProjectResult().getTargetProjectDirectory();
-			Path roseauDir = targetDir.resolve("target/roseau");
+			Path baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 
 			// Check that all report files are created
-			Path htmlReport = roseauDir.resolve("roseau-report.html");
-			Path csvReport = roseauDir.resolve("roseau-report.csv");
-			Path jsonReport = roseauDir.resolve("roseau-report.json");
+			Path htmlReport = baseDir.resolve("roseau-report.html");
+			Path csvReport = baseDir.resolve("roseau-report.csv");
+			Path jsonReport = baseDir.resolve("roseau-report.json");
 
 			assertThat(Files.exists(htmlReport))
 				.as("HTML report should exist at " + htmlReport)

@@ -6,7 +6,6 @@ import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
-import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -492,8 +491,8 @@ public final class RoseauMojo extends AbstractMojo {
 			return;
 		} else {
 			boolean user = System.console() != null && System.getenv("CI") == null;
-			CliFormatter formatter = new CliFormatter(user ? CliFormatter.Mode.ANSI : CliFormatter.Mode.PLAIN);
-			getLog().warn(formatter.format(report));
+			BreakingChangesFormatter formatter = new MavenFormatter(getLog());
+			formatter.format(report);
 		}
 
 		// Fail checks
