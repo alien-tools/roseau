@@ -1,3 +1,0 @@
-# Ignored breaking changes
-type;symbol;kind
-pkg.I;pkg.I.foo();METHOD_REMOVED

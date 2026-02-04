@@ -5,7 +5,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>io.github.alien-tools</groupId>
-    <artifactId>simple-module</artifactId>
+    <artifactId>module-with-maven-baseline</artifactId>
     <version>0.1.0</version>
     <packaging>jar</packaging>
 
@@ -28,7 +28,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <baselineJar>old.jar</baselineJar>
+                    <baselineVersion>
+                        <groupId>io.github.alien-tools</groupId>
+                        <artifactId>roseau-core</artifactId>
+                        <version>0.4.0</version>
+                    </baselineVersion>
                 </configuration>
             </plugin>
         </plugins>

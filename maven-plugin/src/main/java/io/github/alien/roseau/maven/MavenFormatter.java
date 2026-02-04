@@ -32,7 +32,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 		int binaryBreaking = report.getBinaryBreakingChanges().size();
 		int sourceBreaking = report.getSourceBreakingChanges().size();
 
-		log.warn(String.format("Breaking Changes found: %d (%d binary-breaking, %d source-breaking",
+		log.warn(String.format("Breaking Changes found: %d (%d binary-breaking, %d source-breaking)",
 			changes.size(), binaryBreaking, sourceBreaking));
 
 		report.getBreakingChanges().forEach(bc -> formatBreakingChange(bc));

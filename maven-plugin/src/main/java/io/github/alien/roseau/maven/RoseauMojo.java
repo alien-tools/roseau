@@ -69,8 +69,6 @@ public final class RoseauMojo extends AbstractMojo {
 	private Dependency baselineVersion;
 	@Parameter(property = "roseau.baselineJar")
 	private Path baselineJar;
-	@Parameter(property = "roseau.includeProjectDependencies", defaultValue = "true")
-	private boolean includeProjectDependencies;
 	@Parameter
 	private List<Path> classpath;
 	@Parameter
@@ -276,7 +274,9 @@ public final class RoseauMojo extends AbstractMojo {
 
 		// Build and merge Maven configuration (Maven takes precedence)
 		RoseauOptions mavenOptions = buildMavenOptions(oldJar, newJar);
+		getLog().debug("mavenOptions = " + mavenOptions);
 		options = options.mergeWith(mavenOptions);
+		getLog().debug("Roseau options = " + options);
 
 		return options;
 	}
@@ -290,9 +290,7 @@ public final class RoseauMojo extends AbstractMojo {
 	 */
 	private RoseauOptions buildMavenOptions(Path oldJar, Path newJar) {
 		// Resolve project classpath if enabled
-		List<Path> projectClasspath = includeProjectDependencies
-			? resolveProjectClasspath()
-			: List.of();
+		List<Path> projectClasspath = resolveProjectClasspath();
 
 		// Merge with manual classpath
 		List<Path> mergedClasspath = new ArrayList<>();
@@ -490,9 +488,8 @@ public final class RoseauMojo extends AbstractMojo {
 			getLog().info("No breaking changes found.");
 			return;
 		} else {
-			boolean user = System.console() != null && System.getenv("CI") == null;
 			BreakingChangesFormatter formatter = new MavenFormatter(getLog());
-			formatter.format(report);
+			formatter.format(filteredReport);
 		}
 
 		// Fail checks
