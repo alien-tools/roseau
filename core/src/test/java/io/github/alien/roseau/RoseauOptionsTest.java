@@ -32,7 +32,7 @@ class RoseauOptionsTest {
 			List.of("base.*"), List.of(new RoseauOptions.AnnotationExclusion("BaseAnn", Map.of("baseK", "baseV"))));
 		var commonBase = new RoseauOptions.Common(cpBase, exBase);
 		var libBase = new RoseauOptions.Library(
-			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
+			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"), null);
 		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true);
 		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
@@ -42,7 +42,7 @@ class RoseauOptionsTest {
 			List.of("other.*"), List.of(new RoseauOptions.AnnotationExclusion("OtherAnn", Map.of("otherK", "otherV"))));
 		var commonOther = new RoseauOptions.Common(cpOther, exOther);
 		var libOther = new RoseauOptions.Library(
-			Path.of("other-lib"), cpOther, exOther, Path.of("other.json"));
+			Path.of("other-lib"), cpOther, exOther, Path.of("other.json"), null);
 		var diffOther = new RoseauOptions.Diff(Path.of("other-ignore.csv"), false, false);
 		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther,
 			List.of(new RoseauOptions.Report(Path.of("other.html"), BreakingChangesFormatterFactory.HTML)));
@@ -77,7 +77,7 @@ class RoseauOptionsTest {
 			List.of("base.*"), List.of(new RoseauOptions.AnnotationExclusion("BaseAnn", Map.of("baseK", "baseV"))));
 		var commonBase = new RoseauOptions.Common(cpBase, exBase);
 		var libBase = new RoseauOptions.Library(
-			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
+			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"), null);
 		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true);
 		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
@@ -85,7 +85,7 @@ class RoseauOptionsTest {
 		var cpOther = new RoseauOptions.Classpath(null, List.of());
 		var exOther = new RoseauOptions.Exclude(List.of(), List.of());
 		var commonOther = new RoseauOptions.Common(cpOther, exOther);
-		var libOther = new RoseauOptions.Library(null, cpOther, exOther, null);
+		var libOther = new RoseauOptions.Library(null, cpOther, exOther, null, null);
 		var diffOther = new RoseauOptions.Diff(null, null, null);
 		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther, List.of());
 
@@ -103,11 +103,11 @@ class RoseauOptionsTest {
 		var cpSet = new RoseauOptions.Classpath(Path.of("set-pom.xml"), List.of(Path.of("set.jar")));
 		var exSet = new RoseauOptions.Exclude(
 			List.of("set.*"), List.of(new RoseauOptions.AnnotationExclusion("SetAnn", Map.of("setK", "setV"))));
-		var set = new RoseauOptions.Library(Path.of("set"), cpSet, exSet, Path.of("a.json"));
+		var set = new RoseauOptions.Library(Path.of("set"), cpSet, exSet, Path.of("a.json"), null);
 
 		var cpUnset = new RoseauOptions.Classpath(null, List.of());
 		var exUnset = new RoseauOptions.Exclude(List.of(), List.of());
-		var unset = new RoseauOptions.Library(Path.of("unset"), cpUnset, exUnset, Path.of("a.json"));
+		var unset = new RoseauOptions.Library(Path.of("unset"), cpUnset, exUnset, Path.of("a.json"), null);
 
 		var mergedWithSet = set.mergeWith(common);
 		assertThat(mergedWithSet).isEqualTo(set);

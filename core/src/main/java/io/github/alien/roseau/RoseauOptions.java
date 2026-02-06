@@ -41,23 +41,25 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	/**
 	 * Options for a particular library, v1 or v2.
 	 *
-	 * @param location  the location of the library
-	 * @param classpath the {@link Classpath} to use
-	 * @param excludes  the API {@link Exclude} options to apply
-	 * @param apiReport the location of the API report to generate
+	 * @param location      the location of the library
+	 * @param classpath     the {@link Classpath} to use
+	 * @param excludes      the API {@link Exclude} options to apply
+	 * @param apiReport     the location of the JSON API report to generate
+	 * @param apiHtmlReport the location of the HTML API report to generate
 	 */
-	public record Library(Path location, Classpath classpath, Exclude excludes, Path apiReport) {
+	public record Library(Path location, Classpath classpath, Exclude excludes, Path apiReport, Path apiHtmlReport) {
 		Library mergeWith(Library other) {
 			return other != null
 				? new Library(either(other.location(), location), classpath.mergeWith(other.classpath()),
-				excludes.mergeWith(other.excludes()), either(other.apiReport(), apiReport))
+				excludes.mergeWith(other.excludes()), either(other.apiReport(), apiReport),
+				either(other.apiHtmlReport(), apiHtmlReport))
 				: this;
 		}
 
 		public Library mergeWith(Common common) {
 			return common != null
 				? new Library(location, common.classpath().mergeWith(classpath),
-				common.excludes().mergeWith(excludes), apiReport)
+				common.excludes().mergeWith(excludes), apiReport, apiHtmlReport)
 				: this;
 		}
 
@@ -166,7 +168,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	public static RoseauOptions newDefault() {
 		Classpath defaultClasspath = new Classpath(null, List.of());
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
-		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null);
+		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null, null);
 		Common defaultCommon = new Common(defaultClasspath, defaultExclusion);
 		Diff diff = new Diff(null, false, false);
 		List<Report> defaultReports = List.of();

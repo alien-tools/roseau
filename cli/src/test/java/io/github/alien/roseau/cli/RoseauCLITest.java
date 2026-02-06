@@ -177,7 +177,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api");
 
-		assertThat(err.toString()).contains("Path to a JSON file required in --api mode");
+		assertThat(err.toString()).contains("At least one of --api-json or --api-html required in --api mode");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 

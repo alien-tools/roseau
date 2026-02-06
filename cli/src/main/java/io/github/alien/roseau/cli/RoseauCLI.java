@@ -6,6 +6,7 @@ import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
@@ -25,8 +26,10 @@ import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -50,7 +53,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private static class Mode {
 		@Option(names = "--api",
-			description = "Serialize the API model of --v1; see --api-json")
+			description = "Serialize the API model of --v1; see --api-json, --api-html")
 		boolean api;
 		@Option(names = "--diff",
 			description = "Compute breaking changes between versions --v1 and --v2")
@@ -66,6 +69,9 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
+	@Option(names = "--api-html", paramLabel = "<path>",
+		description = "Where to write the HTML API report of --v1 in --api mode")
+	private Path apiHtml;
 	@Option(names = "--report", paramLabel = "<path>",
 		description = "Where to write the breaking changes report in --diff mode")
 	private Path reportPath;
@@ -170,6 +176,21 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
+	private void writeApiHtmlReport(API api, Path htmlPath) {
+		try {
+			if (htmlPath.getParent() != null) {
+				Files.createDirectories(htmlPath.getParent());
+			}
+			Set<String> exportedNames = api.getExportedTypes().stream()
+				.map(TypeDecl::getQualifiedName)
+				.collect(Collectors.toUnmodifiableSet());
+			api.getLibraryTypes().writeHtml(htmlPath, exportedNames);
+			console.printlnVerbose("HTML API report has been written to %s".formatted(htmlPath));
+		} catch (IOException e) {
+			throw new RoseauException("Error writing HTML API report to %s".formatted(htmlPath), e);
+		}
+	}
+
 	private RoseauReport filterReport(RoseauReport report, RoseauOptions.Diff diffOptions) {
 		List<BreakingChange> bcs = diffOptions.sourceOnly()
 			? report.getSourceBreakingChanges()
@@ -203,8 +224,8 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("Cannot find v1: %s".formatted(v1Path));
 		}
 
-		if (mode.api && options.v1().apiReport() == null) {
-			throw new RoseauException("Path to a JSON file required in --api mode");
+		if (mode.api && options.v1().apiReport() == null && options.v1().apiHtmlReport() == null) {
+			throw new RoseauException("At least one of --api-json or --api-html required in --api mode");
 		}
 
 		Path v2Path = options.v2().location();
@@ -243,9 +264,9 @@ public final class RoseauCLI implements Callable<Integer> {
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
 			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
+			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson, apiHtml);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
+			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null, null);
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, sourceOnly, binaryOnly);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))
@@ -277,6 +298,9 @@ public final class RoseauCLI implements Callable<Integer> {
 		if (libraryOptions.apiReport() != null) {
 			writeApiReport(api, libraryOptions.apiReport());
 		}
+		if (libraryOptions.apiHtmlReport() != null) {
+			writeApiHtmlReport(api, libraryOptions.apiHtmlReport());
+		}
 	}
 
 	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
@@ -290,6 +314,12 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 		if (options.v2().apiReport() != null) {
 			writeApiReport(report.v2(), options.v2().apiReport());
+		}
+		if (options.v1().apiHtmlReport() != null) {
+			writeApiHtmlReport(report.v1(), options.v1().apiHtmlReport());
+		}
+		if (options.v2().apiHtmlReport() != null) {
+			writeApiHtmlReport(report.v2(), options.v2().apiHtmlReport());
 		}
 		options.reports().forEach(reportOption ->
 			writeReport(report, reportOption.format(), reportOption.file())

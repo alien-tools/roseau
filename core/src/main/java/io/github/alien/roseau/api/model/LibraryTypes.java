@@ -11,6 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.formatter.HtmlApiFormatter;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -23,6 +24,8 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
@@ -32,6 +35,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Collectors;
 
 /**
  * Holds a set of {@link Symbol} extracted from a library and provides convenience methods to access type declarations.
@@ -185,6 +189,31 @@ public final class LibraryTypes implements TypeProvider {
 	 */
 	public void writeJson(Path jsonFile) throws IOException {
 		MAPPER.writerWithDefaultPrettyPrinter().writeValue(jsonFile.toFile(), this);
+	}
+
+	/**
+	 * Generates an HTML report of the API for the given set of exported type names and writes it to the specified file.
+	 *
+	 * @param htmlFile          the {@link Path} to write to
+	 * @param exportedTypeNames the qualified names of the types considered exported
+	 * @throws IOException if writing fails
+	 */
+	public void writeHtml(Path htmlFile, Set<String> exportedTypeNames) throws IOException {
+		HtmlApiFormatter formatter = new HtmlApiFormatter(this, exportedTypeNames);
+		Files.writeString(htmlFile, formatter.format(), StandardCharsets.UTF_8);
+	}
+
+	/**
+	 * Generates an HTML report of the API containing all types and writes it to the specified file.
+	 *
+	 * @param htmlFile the {@link Path} to write to
+	 * @throws IOException if writing fails
+	 */
+	public void writeHtml(Path htmlFile) throws IOException {
+		Set<String> allNames = allTypes.values().stream()
+			.map(TypeDecl::getQualifiedName)
+			.collect(Collectors.toUnmodifiableSet());
+		writeHtml(htmlFile, allNames);
 	}
 
 	/**
