@@ -195,7 +195,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			console.printlnErr("Warning: ignoring missing configuration file %s".formatted(config));
 		}
 
-		if (sourceOnly != null && binaryOnly != null) {
+		if (options.diff().sourceOnly() && options.diff().binaryOnly()) {
 			throw new RoseauException("Specify either --source-only or --binary-only");
 		}
 
@@ -246,7 +246,15 @@ public final class RoseauCLI implements Callable<Integer> {
 			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
 			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
-		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, sourceOnly, binaryOnly);
+		Boolean cliSourceOnly = sourceOnly;
+		Boolean cliBinaryOnly = binaryOnly;
+		if (Boolean.TRUE.equals(cliBinaryOnly)) {
+			cliSourceOnly = Boolean.FALSE;
+		}
+		if (Boolean.TRUE.equals(cliSourceOnly)) {
+			cliBinaryOnly = Boolean.FALSE;
+		}
+		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))
 			: List.of();
