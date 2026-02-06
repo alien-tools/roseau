@@ -453,7 +453,9 @@ public final class AsmClassVisitor extends ClassVisitor {
 	}
 
 	private boolean isEffectivelyFinal(int access) {
-		// FIXME: No Opcodes.ACC_NON_SEALED in ASM yet
+		if (isEnum(access) || isRecord(access)) {
+			return true;
+		}
 		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasAccessibleConstructor);
 	}
 
