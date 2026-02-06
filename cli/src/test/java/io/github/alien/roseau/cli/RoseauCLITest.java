@@ -86,6 +86,17 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void non_local_members_show_containing_type() {
+		var exitCode = cmd.execute("--v1=src/test/resources/inheritance-v1/src",
+			"--v2=src/test/resources/inheritance-v2/src",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("pkg.Base.removed() in pkg.Child");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void no_breaking_changes() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v1/test-project-v1.jar",

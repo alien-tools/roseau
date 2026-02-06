@@ -97,7 +97,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 	private static String formatSymbol(BreakingChange bc) {
 		return bc.isLocal()
 			? bc.impactedSymbol().getQualifiedName()
-			: "%s in %s".formatted(bc.impactedSymbol().getQualifiedName(), bc.impactedSymbol().getQualifiedName());
+			: "%s in %s".formatted(bc.impactedSymbol().getQualifiedName(), bc.impactedType().getQualifiedName());
 	}
 
 	private static String formatLocation(BreakingChange bc) {
