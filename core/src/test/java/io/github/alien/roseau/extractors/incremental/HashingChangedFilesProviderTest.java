@@ -95,4 +95,21 @@ class HashingChangedFilesProviderTest {
 		var created = Set.of(Path.of("new/A.java"));
 		assertThat(result).isEqualTo(new ChangedFiles(Set.of(), deleted, created));
 	}
+
+	@Test
+	void hashing_failures_do_not_hide_modifications() throws IOException {
+		var flakyProvider = new HashingChangedFilesProvider(file -> file.getFileName().toString().equals("Faulty.java")
+			? -1L
+			: HashFunction.XXHASH.hash(file));
+
+		var faultyLeft = left.resolve("Faulty.java");
+		var faultyRight = right.resolve("Faulty.java");
+		Files.writeString(faultyLeft, "v1");
+		Files.writeString(faultyRight, "v1");
+
+		Files.writeString(faultyRight, "v2");
+
+		var result = flakyProvider.getChangedFiles(left, right);
+		assertThat(result.updatedFiles()).contains(Path.of("Faulty.java"));
+	}
 }
