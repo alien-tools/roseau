@@ -25,10 +25,11 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 		Set<ITypeReference> thrown1 = ctx.v1().getThrownCheckedExceptions(oldExecutable);
 		Set<ITypeReference> thrown2 = ctx.v2().getThrownCheckedExceptions(newExecutable);
 
+		boolean effectivelyFinal = ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);
+
 		thrown1.stream()
 			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
-				// FIXME: correct, but meh
-				ctx.v2().isSubtypeOf(exc1, exc2) || ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable)
+				effectivelyFinal ? ctx.v2().isSubtypeOf(exc2, exc1) : ctx.v2().isSubtypeOf(exc1, exc2)
 			))
 			.forEach(exc1 ->
 				ctx.builder().memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,

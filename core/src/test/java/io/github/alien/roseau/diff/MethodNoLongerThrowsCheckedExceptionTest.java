@@ -218,4 +218,127 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void final_method_throws_another_checked() {
+		var v1 = """
+			public class A {
+				public final void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m() throws java.sql.SQLException {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException | java.sql.SQLException e) {}""")
+	@Test
+	void method_no_longer_throws_one_of_multiple() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException, java.sql.SQLException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 3, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException | java.sql.SQLException e) {}""")
+	@Test
+	void method_no_longer_throws_all_of_multiple() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException, java.sql.SQLException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public void m() {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 3),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 3));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void method_throws_another_checked() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public void m() throws java.sql.SQLException {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 3),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 3));
+	}
+
+	@Client("""
+		try {
+			A.m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void static_method_no_longer_throws() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public static void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public static void m() {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 3, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			A a = null;
+			a.m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void interface_default_method_no_longer_throws() {
+		var v1 = """
+			public interface A {
+				default void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public interface A {
+				default void m() {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
 }
