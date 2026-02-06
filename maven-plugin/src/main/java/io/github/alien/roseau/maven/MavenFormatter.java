@@ -43,7 +43,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 	private void formatBreakingChange(BreakingChange bc) {
 		String details = formatDetails(bc);
 		log.warn(String.format("%s %s%s", formatSymbol(bc), formatKind(bc),
-			details.isEmpty() ? "" : "[" + details + "]"));
+			details.isEmpty() ? "" : " [" + details + "]"));
 		log.warn("  " + formatCompatibility(bc));
 		log.warn("  " + formatLocation(bc));
 	}

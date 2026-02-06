@@ -43,7 +43,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
@@ -59,6 +58,10 @@ public final class RoseauMojo extends AbstractMojo {
 	private MavenProject project;
 	@Parameter(property = "roseau.skip", defaultValue = "false")
 	private boolean skip;
+	@Parameter(property = "roseau.binaryOnly", defaultValue = "false")
+	private boolean binaryOnly;
+	@Parameter(property = "roseau.sourceOnly", defaultValue = "false")
+	private boolean sourceOnly;
 	@Parameter(property = "roseau.failOnIncompatibility", defaultValue = "false")
 	private boolean failOnIncompatibility;
 	@Parameter(property = "roseau.failOnBinaryIncompatibility", defaultValue = "false")
@@ -78,16 +81,6 @@ public final class RoseauMojo extends AbstractMojo {
 	@Parameter
 	private Path baselineClasspathPom;
 	@Parameter
-	private List<String> excludeNames;
-	@Parameter
-	private List<AnnotationExclusion> excludeAnnotations;
-	@Parameter(property = "roseau.binaryOnly", defaultValue = "false")
-	private boolean binaryOnly;
-	@Parameter(property = "roseau.sourceOnly", defaultValue = "false")
-	private boolean sourceOnly;
-	@Parameter(property = "roseau.ignoredCsv")
-	private Path ignoredCsv;
-	@Parameter
 	private List<ReportConfig> reports;
 	@Parameter(property = "roseau.reportDirectory")
 	private File reportDirectory;
@@ -97,8 +90,6 @@ public final class RoseauMojo extends AbstractMojo {
 	private Path exportCurrentApi;
 	@Parameter(property = "roseau.configFile", defaultValue = "${project.basedir}/roseau.yaml")
 	private Path configFile;
-	@Parameter(property = "roseau.useConfigFile", defaultValue = "true")
-	private boolean useConfigFile;
 	@Parameter(property = "roseau.verbosity")
 	private String verbosity;
 
@@ -194,59 +185,20 @@ public final class RoseauMojo extends AbstractMojo {
 	 * @param report the RoseauReport to format and write
 	 * @throws MojoExecutionException if an error occurs while writing reports
 	 */
-	private void writeReports(RoseauReport report) throws MojoExecutionException {
-		if (reports == null || reports.isEmpty()) {
+	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs) throws MojoExecutionException {
+		if (reportConfigs == null || reportConfigs.isEmpty()) {
 			return;
 		}
 
-		// Determine the base directory for reports
-		// Default to ${project.build.directory}/roseau if not specified
-		Path baseDir;
-		if (reportDirectory != null) {
-			Path reportDirectory = this.reportDirectory.toPath();
-			baseDir = reportDirectory.isAbsolute()
-				? reportDirectory
-				: project.getBasedir().toPath().resolve(reportDirectory);
-			getLog().debug("Using configured report directory: " + baseDir);
-		} else {
-			// Use project.build.directory + "/roseau" as default
-			File buildDir = new File(project.getBuild().getDirectory());
-			baseDir = buildDir.toPath().resolve("roseau");
-			getLog().debug("Using default report directory: " + baseDir + " (build dir: " + project.getBuild().getDirectory() + ")");
-		}
-
-		for (ReportConfig reportConfig : reports) {
+		reportConfigs.forEach(config -> {
 			try {
-				getLog().debug("Processing report config: file=" + reportConfig.file + ", isAbsolute=" + reportConfig.file.isAbsolute());
-				getLog().debug("Base directory for reports: " + baseDir);
-
-				Path reportFile = reportConfig.file.isAbsolute()
-					? reportConfig.file
-					: baseDir.resolve(reportConfig.file);
-
-				getLog().debug("Final report file path: " + reportFile);
-
-				// Create parent directories if they don't exist
-				Path parentDir = reportFile.getParent();
-				if (parentDir != null && !Files.exists(parentDir)) {
-					Files.createDirectories(parentDir);
-				}
-
-				// Get formatter and format report
-				RoseauOptions.Report roseauReport = reportConfig.toRoseauReport();
-				BreakingChangesFormatter formatter = BreakingChangesFormatterFactory.newBreakingChangesFormatter(roseauReport.format());
-				String formattedReport = formatter.format(report);
-
-				// Write to file
-				Files.writeString(reportFile, formattedReport);
-
-				getLog().info("Report written to " + reportFile);
-			} catch (IOException e) {
-				throw new MojoExecutionException("Failed to write report to " + reportConfig.file, e);
-			} catch (IllegalArgumentException e) {
-				throw new MojoExecutionException("Invalid report format: " + reportConfig.format, e);
+				report.writeReport(config.format(), config.file());
+				getLog().info(String.format("%s report written to %s", config.format(), config.file()));
+			} catch (Exception e) {
+				getLog().error(String.format("Failed to write %s report to %s: %s",
+					config.format(), config.file(), e.getMessage()));
 			}
-		}
+		});
 	}
 
 	/**
@@ -262,13 +214,13 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions options = RoseauOptions.newDefault();
 
 		// Load and merge YAML configuration if enabled and exists
-		if (useConfigFile && configFile != null && Files.isRegularFile(configFile)) {
+		if (configFile != null && Files.isRegularFile(configFile)) {
 			try {
 				RoseauOptions yamlOptions = RoseauOptions.load(configFile);
 				options = options.mergeWith(yamlOptions);
-				getLog().debug("Loaded configuration from " + configFile);
+				getLog().info("Loaded configuration from " + configFile);
 			} catch (Exception e) {
-				getLog().warn("Could not load configuration file " + configFile + ": " + e.getMessage());
+				getLog().warn("Could not load configuration file " + configFile + ": " + e.getCause().getMessage());
 			}
 		}
 
@@ -312,14 +264,7 @@ public final class RoseauMojo extends AbstractMojo {
 			mergedClasspath
 		);
 
-		RoseauOptions.Exclude commonExclude = new RoseauOptions.Exclude(
-			excludeNames != null ? excludeNames : List.of(),
-			excludeAnnotations != null
-				? excludeAnnotations.stream()
-				.map(AnnotationExclusion::toRoseauAnnotationExclusion)
-				.collect(Collectors.toList())
-				: List.of()
-		);
+		RoseauOptions.Exclude commonExclude = new RoseauOptions.Exclude(List.of(), List.of());
 
 		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude);
 
@@ -344,11 +289,7 @@ public final class RoseauMojo extends AbstractMojo {
 		);
 
 		// Build Diff configuration
-		RoseauOptions.Diff diff = new RoseauOptions.Diff(
-			ignoredCsv,
-			sourceOnly,
-			binaryOnly
-		);
+		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, sourceOnly, binaryOnly);
 
 		// Build Reports list
 		List<RoseauOptions.Report> reportsList = reports != null
@@ -469,6 +410,10 @@ public final class RoseauMojo extends AbstractMojo {
 		Library oldLibrary = options.v1().mergeWith(options.common()).toLibrary();
 		Library newLibrary = options.v2().mergeWith(options.common()).toLibrary();
 
+		// Debug
+		getLog().debug("v1 classpath is: " + oldLibrary.getClasspath());
+		getLog().debug("v2 classpath is: " + newLibrary.getClasspath());
+
 		// Run diff
 		RoseauReport report = Roseau.diff(oldLibrary, newLibrary);
 
@@ -479,7 +424,7 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauReport filteredReport = report.filterReport(options.diff());
 
 		// Write reports to files if configured
-		writeReports(filteredReport);
+		writeReports(filteredReport, options.reports());
 
 		// Get breaking changes for display and fail checks
 		List<BreakingChange> bcs = filteredReport.getBreakingChanges();
@@ -535,25 +480,6 @@ public final class RoseauMojo extends AbstractMojo {
 		}
 
 		return Optional.empty();
-	}
-
-	/**
-	 * Configuration for annotation-based exclusions.
-	 */
-	public static class AnnotationExclusion {
-		@Parameter(required = true)
-		private String name;
-		@Parameter
-		private Map<String, String> args;
-
-		/**
-		 * Converts this Maven configuration to a Roseau AnnotationExclusion.
-		 *
-		 * @return the Roseau AnnotationExclusion instance
-		 */
-		public RoseauOptions.AnnotationExclusion toRoseauAnnotationExclusion() {
-			return new RoseauOptions.AnnotationExclusion(name, args != null ? args : Map.of());
-		}
 	}
 
 	/**

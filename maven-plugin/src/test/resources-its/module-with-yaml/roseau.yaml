@@ -1,0 +1,15 @@
+common:
+  classpath:
+    jars: [common-cp.jar]
+  excludes:
+    names: [pkg.C]
+v2:
+  classpath:
+    jars: [v2-cp.jar]
+diff:
+  ignore: ignore.csv
+reports:
+  - file: report.csv
+    format: CSV
+  - file: report.html
+    format: HTML

@@ -4,14 +4,11 @@ import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.options.IgnoredCsvFile;
-import io.github.alien.roseau.options.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -20,7 +17,6 @@ import picocli.CommandLine.Model.CommandSpec;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -146,19 +142,6 @@ public final class RoseauCLI implements Callable<Integer> {
 			.toList();
 	}
 
-	private void writeReport(RoseauReport report, BreakingChangesFormatterFactory format, Path path) {
-		try {
-			if (path.getParent() != null) {
-				Files.createDirectories(path.getParent());
-			}
-			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
-			Files.writeString(path, fmt.format(report), StandardCharsets.UTF_8);
-			console.printlnVerbose("Report has been written to %s".formatted(path));
-		} catch (IOException e) {
-			throw new RoseauException("Error writing report to %s".formatted(path), e);
-		}
-	}
-
 	private void writeApiReport(API api, Path apiPath) {
 		try {
 			if (apiPath.getParent() != null) {
@@ -275,7 +258,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			writeApiReport(report.v2(), options.v2().apiReport());
 		}
 		options.reports().forEach(reportOption ->
-			writeReport(report, reportOption.format(), reportOption.file())
+			report.writeReport(reportOption.format(), reportOption.file())
 		);
 
 		return !report.getBreakingChanges().isEmpty();
