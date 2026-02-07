@@ -12,13 +12,22 @@ import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.util.io.DisabledOutputStream;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -34,12 +43,13 @@ public class WalkRepository {
 		"typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|betaAnnotationsCount|" +
 		"checkoutTime|classpathTime|apiTime|diffTime|statsTime|" +
 		"breakingChangesCount|breakingChanges\n";
+	private static final Logger LOGGER = LogManager.getLogger(WalkRepository.class);
 
 	static void main() throws Exception {
 		new WalkRepository().walk(
 			Path.of("/home/dig/repositories/guava/.git"),
 			Path.of("/home/dig/repositories/guava/guava"),
-			Path.of("/home/dig/repositories/guava/pom.xml"),
+			Path.of("/home/dig/repositories/guava/guava/pom.xml"),
 			Path.of("guava.csv")
 		);
 	}
@@ -65,12 +75,11 @@ public class WalkRepository {
 				cur = rw.parseCommit(cur.getParent(0)); // first parent only
 			}
 			Collections.reverse(chain); // oldest -> newest
-			System.out.println(String.format("Walking %d commits", chain.size()));
+			LOGGER.info("Walking {} commits", chain.size());
 
 			MavenClasspathBuilder maven = new MavenClasspathBuilder();
 			API oldApi = null;
 			List<Path> classpath = List.of();
-			long pomModified = -1L;
 			for (RevCommit commit : chain) {
 				sw.reset().start();
 				String sha = commit.getName();
@@ -80,23 +89,27 @@ public class WalkRepository {
 					.setName(sha)
 					.setForced(true)
 					.call();
+				Flags flags = changedJavaOrPom(repo, commit);
 				long checkoutTime = sw.elapsed().toMillis();
 
-				System.out.println(String.format("Commit %s on %s: %s",
-					sha, date, msg));
+				LOGGER.info("Commit {} on {}: {}", sha, date, msg);
 
 				if (!Files.exists(sources) || !Files.exists(pom)) {
-					System.out.println("Skipping.");
+					LOGGER.info("Skipping.");
 					continue;
 				}
 
 				long classpathTime = 0L;
-				if (pomModified < pom.toFile().lastModified()) {
+				if (classpath.isEmpty() || flags.pomChanged()) {
 					sw.reset().start();
-					classpath = maven.buildClasspath(pom);
+					List<Path> cp = maven.buildClasspath(pom);
+					if (!cp.isEmpty()) {
+						classpath = cp;
+					} else {
+						LOGGER.warn("Couldn't build classpath");
+					}
 					classpathTime = sw.elapsed().toMillis();
-					pomModified = pom.toFile().lastModified();
-					System.out.println(String.format("Recomputing classpath took %dms: %s", classpathTime, classpath));
+					LOGGER.info("Recomputing classpath took {}ms: {}", classpathTime, classpath);
 				}
 
 				sw.reset().start();
@@ -109,7 +122,7 @@ public class WalkRepository {
 					long diffTime = sw.elapsed().toMillis();
 
 					List<BreakingChange> bcs = diff.getBreakingChanges();
-					System.out.println(String.format("Found %d breaking changes", bcs.size()));
+					LOGGER.info("Found {} breaking changes", bcs.size());
 
 					sw.reset().start();
 					var numTypes = currentApi.getExportedTypes().size();
@@ -137,7 +150,8 @@ public class WalkRepository {
 		}
 	}
 
-	API buildApi(Path sources, List<Path> classpath) {
+	static API buildApi(Path sources, List<Path> classpath) {
+		LOGGER.info("Classpath is {}", classpath);
 		Library library = Library.builder()
 			.location(sources)
 			.classpath(classpath)
@@ -147,7 +161,7 @@ public class WalkRepository {
 		return types.toAPI();
 	}
 
-	long getApiAnnotationsCount(API api, String fqn) {
+	static long getApiAnnotationsCount(API api, String fqn) {
 		return api.getExportedTypes().stream()
 			.mapToLong(type -> {
 				var typeAnnotationCount = type.getAnnotations().stream()
@@ -163,5 +177,60 @@ public class WalkRepository {
 				return typeAnnotationCount + fieldsAnnotationCount + methodsAnnotationCount;
 			})
 			.sum();
+	}
+
+	record Flags(boolean javaChanged, boolean pomChanged) {
+	}
+
+	static Flags changedJavaOrPom(Repository repo, RevCommit commit) throws IOException {
+		try (RevWalk rw = new RevWalk(repo);
+		     ObjectReader reader = repo.newObjectReader();
+		     DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+
+			df.setRepository(repo);
+			df.setDetectRenames(false);
+
+			// New tree (this commit)
+			CanonicalTreeParser newTree = new CanonicalTreeParser();
+			newTree.reset(reader, commit.getTree().getId());
+
+			// Old tree (first parent) or empty tree for initial commit
+			CanonicalTreeParser oldTree = new CanonicalTreeParser();
+			if (commit.getParentCount() > 0) {
+				RevCommit parent = rw.parseCommit(commit.getParent(0).getId());
+				oldTree.reset(reader, parent.getTree().getId());
+			} else {
+				ObjectId emptyTreeId = repo.resolve(Constants.EMPTY_TREE_ID.name());
+				oldTree.reset(reader, emptyTreeId);
+			}
+
+			List<DiffEntry> diffs = df.scan(oldTree, newTree);
+
+			boolean javaChanged = false;
+			boolean pomChanged = false;
+
+			for (DiffEntry e : diffs) {
+				// For deletions, newPath is DEV_NULL, so check both sides
+				String path = e.getNewPath();
+				if (DiffEntry.DEV_NULL.equals(path)) {
+					path = e.getOldPath();
+				}
+
+				if (!javaChanged && path.endsWith(".java")) {
+					javaChanged = true;
+				}
+
+				// Match root pom.xml and module poms
+				if (!pomChanged && (path.equals("pom.xml") || path.endsWith("/pom.xml"))) {
+					pomChanged = true;
+				}
+
+				if (javaChanged && pomChanged) {
+					break;
+				}
+			}
+
+			return new Flags(javaChanged, pomChanged);
+		}
 	}
 }
