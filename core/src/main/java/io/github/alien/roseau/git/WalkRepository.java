@@ -1,5 +1,9 @@
 package io.github.alien.roseau.git;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.MavenClasspathBuilder;
@@ -15,12 +19,12 @@ import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
-import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -50,34 +54,75 @@ public class WalkRepository {
 		"breakingChangesCount|breakingChanges\n";
 	private static final Logger LOGGER = LogManager.getLogger(WalkRepository.class);
 
-	static void main() throws Exception {
-		new WalkRepository().walk(
-			"https://github.com/google/guava",
-			Path.of("/home/dig/repositories/guava/.git"),
-			List.of(Path.of("/home/dig/repositories/guava/guava")),
-			Path.of("/home/dig/repositories/guava/guava/pom.xml"),
-			Path.of("guava.csv")
-		);
-
-		/*new WalkRepository().walk(
-			"https://github.com/apache/commons-lang",
-			Path.of("/home/dig/repositories/commons-lang/.git"),
-			List.of(
-				Path.of("/home/dig/repositories/commons-lang/src/main/java"),
-				Path.of("/home/dig/repositories/commons-lang/src/java")
-			),
-			Path.of("/home/dig/repositories/commons-lang/pom.xml"),
-			Path.of("commons-lang.csv")
-		);*/
+	public record Repository(
+		String id,
+		String url,
+		Path gitDir,
+		List<Path> sourceRoots,
+		List<Path> poms,
+		Path csv
+	) {
 	}
 
-	void walk(String url, Path gitDir, List<Path> sources, Path pom, Path csv) throws Exception {
+	private static final ObjectMapper MAPPER = createMapper();
+
+	private static ObjectMapper createMapper() {
+		ObjectMapper om = new ObjectMapper(new YAMLFactory());
+
+		SimpleModule pathModule = new SimpleModule();
+		pathModule.addDeserializer(Path.class,
+			new com.fasterxml.jackson.databind.JsonDeserializer<>() {
+				@Override
+				public Path deserialize(com.fasterxml.jackson.core.JsonParser p,
+				                        com.fasterxml.jackson.databind.DeserializationContext ctxt)
+					throws IOException {
+					return Path.of(p.getValueAsString());
+				}
+			});
+		pathModule.addSerializer(Path.class,
+			new com.fasterxml.jackson.databind.JsonSerializer<>() {
+				@Override
+				public void serialize(Path value,
+				                      com.fasterxml.jackson.core.JsonGenerator gen,
+				                      com.fasterxml.jackson.databind.SerializerProvider serializers)
+					throws IOException {
+					gen.writeString(value.toString());
+				}
+			});
+
+		om.registerModule(pathModule);
+		return om;
+	}
+
+	public static List<Repository> loadConfig(Path yamlFile) throws IOException {
+		return MAPPER.readValue(
+			yamlFile.toFile(),
+			new TypeReference<List<Repository>>() {
+			}
+		);
+	}
+
+	static void main() throws Exception {
+		Path config = Path.of("walk.yaml");
+
+		List<Repository> repos = loadConfig(config);
+
+		repos.stream().parallel().forEach(repo -> {
+			try {
+				walk(repo.url(), repo.gitDir(), repo.sourceRoots(), repo.poms(), repo.csv());
+			} catch (Exception e) {
+				LOGGER.error("Analysis of {} failed: {}", repo.url(), e);
+			}
+		});
+	}
+
+	static void walk(String url, Path gitDir, List<Path> sources, List<Path> poms, Path csv) throws Exception {
 		Files.writeString(csv, HEADER,
 			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
 		Stopwatch sw = Stopwatch.createUnstarted();
 		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();
-		try (Repository repo = builder.build(); Git git = new Git(repo); RevWalk rw = new RevWalk(repo)) {
+		try (org.eclipse.jgit.lib.Repository repo = builder.build(); Git git = new Git(repo); RevWalk rw = new RevWalk(repo)) {
 			ObjectId headId = repo.resolve("HEAD");
 			if (headId == null) {
 				throw new IllegalStateException("Cannot resolve HEAD");
@@ -102,6 +147,7 @@ public class WalkRepository {
 				String sha = commit.getName();
 				Date date = Date.from(Instant.ofEpochSecond(commit.getCommitTime()));
 				String msg = commit.getShortMessage();
+				makePristine(git);
 				git.checkout()
 					.setName(sha)
 					.setForced(true)
@@ -111,13 +157,14 @@ public class WalkRepository {
 
 				LOGGER.info("Commit {} on {}: {}", sha, date, msg);
 
-				if (sources.stream().noneMatch(Files::exists) || !Files.exists(pom)) {
+				if (sources.stream().noneMatch(Files::exists) || poms.stream().noneMatch(Files::exists)) {
 					LOGGER.info("Skipping.");
 					continue;
 				}
 
 				long classpathTime = 0L;
 				if (classpath.isEmpty() || flags.pomChanged()) {
+					Path pom = poms.stream().filter(Files::exists).findFirst().get();
 					sw.reset().start();
 					List<Path> cp = maven.buildClasspath(pom);
 					if (!cp.isEmpty()) {
@@ -200,7 +247,7 @@ public class WalkRepository {
 	record Flags(boolean javaChanged, boolean pomChanged) {
 	}
 
-	static Flags changedJavaOrPom(Repository repo, RevCommit commit) throws IOException {
+	static Flags changedJavaOrPom(org.eclipse.jgit.lib.Repository repo, RevCommit commit) throws IOException {
 		try (RevWalk rw = new RevWalk(repo);
 		     ObjectReader reader = repo.newObjectReader();
 		     DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
@@ -250,5 +297,18 @@ public class WalkRepository {
 
 			return new Flags(javaChanged, pomChanged);
 		}
+	}
+
+	private static void makePristine(Git git) throws Exception {
+		// Clears unmerged index entries and resets tracked files.
+		git.reset()
+			.setMode(ResetCommand.ResetType.HARD)
+			.call();
+
+		// Removes anything untracked/ignored that could block updates or violate “exact tree”.
+		git.clean()
+			.setCleanDirectories(true)
+			.setIgnore(false)
+			.call();
 	}
 }
