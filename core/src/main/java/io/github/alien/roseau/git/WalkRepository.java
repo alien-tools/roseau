@@ -59,7 +59,7 @@ public class WalkRepository {
 		String url,
 		Path gitDir,
 		List<Path> sourceRoots,
-		List<Path> poms,
+		//List<Path> poms,
 		Path csv
 	) {
 	}
@@ -107,11 +107,12 @@ public class WalkRepository {
 
 		List<Repository> repos = loadConfig(config);
 
-		repos.stream().parallel().forEach(repo -> {
+		repos.stream().forEach(repo -> {
 			try {
-				walk(repo.url(), repo.gitDir(), repo.sourceRoots(), repo.poms(), repo.csv());
+				walk(repo.url(), repo.gitDir(), repo.sourceRoots(), List.of(), repo.csv());
 			} catch (Exception e) {
-				LOGGER.error("Analysis of {} failed: {}", repo.url(), e);
+				LOGGER.error("Analysis of {} failed: {}", repo.url());
+				e.printStackTrace();
 			}
 		});
 	}
@@ -157,13 +158,13 @@ public class WalkRepository {
 
 				LOGGER.info("Commit {} on {}: {}", sha, date, msg);
 
-				if (sources.stream().noneMatch(Files::exists) || poms.stream().noneMatch(Files::exists)) {
+				if (sources.stream().noneMatch(Files::exists)/* || poms.stream().noneMatch(Files::exists)*/) {
 					LOGGER.info("Skipping.");
 					continue;
 				}
 
 				long classpathTime = 0L;
-				if (classpath.isEmpty() || flags.pomChanged()) {
+				/*if (classpath.isEmpty() || flags.pomChanged()) {
 					Path pom = poms.stream().filter(Files::exists).findFirst().get();
 					sw.reset().start();
 					List<Path> cp = maven.buildClasspath(pom);
@@ -174,7 +175,7 @@ public class WalkRepository {
 					}
 					classpathTime = sw.elapsed().toMillis();
 					LOGGER.info("Recomputing classpath took {}ms: {}", classpathTime, classpath);
-				}
+				}*/
 
 				Path src = sources.stream().filter(Files::exists).findFirst().get();
 				sw.reset().start();
@@ -247,7 +248,7 @@ public class WalkRepository {
 	record Flags(boolean javaChanged, boolean pomChanged) {
 	}
 
-	static Flags changedJavaOrPom(org.eclipse.jgit.lib.Repository repo, RevCommit commit) throws IOException {
+	static Flags changedJavaOrPom(org.eclipse.jgit.lib.Repository repo, RevCommit commit) {
 		try (RevWalk rw = new RevWalk(repo);
 		     ObjectReader reader = repo.newObjectReader();
 		     DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
@@ -296,6 +297,8 @@ public class WalkRepository {
 			}
 
 			return new Flags(javaChanged, pomChanged);
+		} catch (Exception e) {
+			return new Flags(true, true);
 		}
 	}
 
