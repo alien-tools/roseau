@@ -38,6 +38,11 @@ import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * Helpful resources when setting up a repository for analysis:
+ * - git log --reverse --format="%H %cd %s" -- src/main/java | head -n 1
+ * - git log --reverse --format="%H %cd %s" -- pom.xml | head -n 1
+ */
 public class WalkRepository {
 	private final static String HEADER = "commit|date|message|commit_url|" +
 		"typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|betaAnnotationsCount|" +
@@ -49,13 +54,24 @@ public class WalkRepository {
 		new WalkRepository().walk(
 			"https://github.com/google/guava",
 			Path.of("/home/dig/repositories/guava/.git"),
-			Path.of("/home/dig/repositories/guava/guava"),
+			List.of(Path.of("/home/dig/repositories/guava/guava")),
 			Path.of("/home/dig/repositories/guava/guava/pom.xml"),
 			Path.of("guava.csv")
 		);
+
+		/*new WalkRepository().walk(
+			"https://github.com/apache/commons-lang",
+			Path.of("/home/dig/repositories/commons-lang/.git"),
+			List.of(
+				Path.of("/home/dig/repositories/commons-lang/src/main/java"),
+				Path.of("/home/dig/repositories/commons-lang/src/java")
+			),
+			Path.of("/home/dig/repositories/commons-lang/pom.xml"),
+			Path.of("commons-lang.csv")
+		);*/
 	}
 
-	void walk(String url, Path gitDir, Path sources, Path pom, Path csv) throws Exception {
+	void walk(String url, Path gitDir, List<Path> sources, Path pom, Path csv) throws Exception {
 		Files.writeString(csv, HEADER,
 			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
@@ -95,7 +111,7 @@ public class WalkRepository {
 
 				LOGGER.info("Commit {} on {}: {}", sha, date, msg);
 
-				if (!Files.exists(sources) || !Files.exists(pom)) {
+				if (sources.stream().noneMatch(Files::exists) || !Files.exists(pom)) {
 					LOGGER.info("Skipping.");
 					continue;
 				}
@@ -113,8 +129,9 @@ public class WalkRepository {
 					LOGGER.info("Recomputing classpath took {}ms: {}", classpathTime, classpath);
 				}
 
+				Path src = sources.stream().filter(Files::exists).findFirst().get();
 				sw.reset().start();
-				API currentApi = buildApi(sources, classpath);
+				API currentApi = buildApi(src, classpath);
 				long apiTime = sw.elapsed().toMillis();
 
 				if (oldApi != null) {
