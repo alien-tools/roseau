@@ -191,4 +191,69 @@ class IncrementalJdtTypesExtractorTest {
 		assertThat(clsB.getDeclaredMethods().iterator().next().getParameters().get(1).type())
 			.isEqualTo(new TypeReference<>("pkg1.A"));
 	}
+
+	@Test
+	void module_info_update_is_reflected_in_incremental_api(@TempDir Path wd) throws Exception {
+		var root = Files.createDirectories(wd.resolve("src/main/java"));
+		var moduleInfo = root.resolve("module-info.java");
+		var a = root.resolve("pkg/A.java");
+		Files.createDirectories(a.getParent());
+		Files.writeString(moduleInfo, """
+			module m {
+				exports pkg;
+			}
+			""");
+		Files.writeString(a, "package pkg; public class A {}");
+
+		var types1 = extractor.extractTypes(Library.of(root));
+		assertThat(types1.getModule().getQualifiedName()).isEqualTo("m");
+		assertThat(types1.getModule().getExports()).contains("pkg");
+
+		Files.writeString(moduleInfo, """
+			module m {
+				exports pkg;
+				exports pkg2;
+			}
+			""");
+		var b = root.resolve("pkg2/B.java");
+		Files.createDirectories(b.getParent());
+		Files.writeString(b, "package pkg2; public class B {}");
+
+		var changedFiles = new ChangedFiles(
+			Set.of(root.relativize(moduleInfo)),
+			Set.of(),
+			Set.of(root.relativize(b))
+		);
+		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(root), changedFiles);
+
+		assertThat(types2.getModule().getQualifiedName()).isEqualTo("m");
+		assertThat(types2.getModule().getExports()).contains("pkg", "pkg2");
+	}
+
+	@Test
+	void module_info_deletion_falls_back_to_unnamed_module(@TempDir Path wd) throws Exception {
+		var root = Files.createDirectories(wd.resolve("src/main/java"));
+		var moduleInfo = root.resolve("module-info.java");
+		var a = root.resolve("pkg/A.java");
+		Files.createDirectories(a.getParent());
+		Files.writeString(moduleInfo, """
+			module m {
+				exports pkg;
+			}
+			""");
+		Files.writeString(a, "package pkg; public class A {}");
+
+		var types1 = extractor.extractTypes(Library.of(root));
+		assertThat(types1.getModule().isUnnamed()).isFalse();
+
+		Files.delete(moduleInfo);
+		var changedFiles = new ChangedFiles(
+			Set.of(),
+			Set.of(root.relativize(moduleInfo)),
+			Set.of()
+		);
+		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(root), changedFiles);
+
+		assertThat(types2.getModule().isUnnamed()).isTrue();
+	}
 }

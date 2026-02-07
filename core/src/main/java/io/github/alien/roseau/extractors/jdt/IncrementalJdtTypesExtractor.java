@@ -3,7 +3,9 @@ package io.github.alien.roseau.extractors.jdt;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
@@ -55,13 +57,39 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 			.filter(t -> !discarded.contains(t.getLocation().file()))
 			.collect(Collectors.toSet());
 
-		// Parse, collect, and merge the updated files
+		// Parse, collect, and merge updated files
+		JdtTypesExtractor.ParsingResult parsingResult = extractor.parseTypes(newVersion, filesToParse);
 		Set<TypeDecl> newTypeDecls = Stream.concat(
 			unchanged.stream(),
-			extractor.parseTypes(newVersion, filesToParse).types().stream()
+			parsingResult.types().stream()
 		).collect(Collectors.toSet());
 
-		// FIXME: the module declaration might have changed between the two versions
-		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
+		ModuleDecl module = resolveModule(previousTypes, changedFiles, parsingResult.modules());
+		return new LibraryTypes(newVersion, module, newTypeDecls);
+	}
+
+	private static ModuleDecl resolveModule(LibraryTypes previousTypes, ChangedFiles changedFiles, Set<ModuleDecl> parsedModules) {
+		boolean moduleTouched = Stream.of(
+				changedFiles.updatedFiles(),
+				changedFiles.deletedFiles(),
+				changedFiles.createdFiles()
+			)
+			.flatMap(Set::stream)
+			.anyMatch(IncrementalJdtTypesExtractor::isModuleInfo);
+
+		if (!moduleTouched) {
+			return previousTypes.getModule();
+		}
+
+		return switch (parsedModules.size()) {
+			case 0 -> ModuleDecl.UNNAMED_MODULE;
+			case 1 -> parsedModules.iterator().next();
+			default -> throw new RoseauException("%s contains multiple module declarations: %s"
+				.formatted(previousTypes.getLibrary(), parsedModules));
+		};
+	}
+
+	private static boolean isModuleInfo(Path path) {
+		return path.getFileName() != null && "module-info.java".equals(path.getFileName().toString());
 	}
 }
