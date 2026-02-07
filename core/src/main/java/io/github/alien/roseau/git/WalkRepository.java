@@ -32,6 +32,7 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import java.io.IOException;
+import java.io.BufferedWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -118,12 +119,15 @@ public class WalkRepository {
 	}
 
 	static void walk(String url, Path gitDir, List<Path> sources, List<Path> poms, Path csv) throws Exception {
-		Files.writeString(csv, HEADER,
-			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-
 		Stopwatch sw = Stopwatch.createUnstarted();
 		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();
-		try (org.eclipse.jgit.lib.Repository repo = builder.build(); Git git = new Git(repo); RevWalk rw = new RevWalk(repo)) {
+		try (BufferedWriter csvWriter = Files.newBufferedWriter(csv,
+			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
+		     org.eclipse.jgit.lib.Repository repo = builder.build();
+		     Git git = new Git(repo);
+		     RevWalk rw = new RevWalk(repo)) {
+			csvWriter.write(HEADER);
+
 			ObjectId headId = repo.resolve("HEAD");
 			if (headId == null) {
 				throw new IllegalStateException("Cannot resolve HEAD");
@@ -142,18 +146,35 @@ public class WalkRepository {
 
 			MavenClasspathBuilder maven = new MavenClasspathBuilder();
 			API oldApi = null;
+			ApiStats oldStats = null;
 			List<Path> classpath = List.of();
 			for (RevCommit commit : chain) {
-				sw.reset().start();
 				String sha = commit.getName();
 				Date date = Date.from(Instant.ofEpochSecond(commit.getCommitTime()));
 				String msg = commit.getShortMessage();
+
+				Flags flags = changedJavaOrPom(repo, commit);
+				if (!flags.javaChanged()) {
+					if (oldStats != null) {
+						var line = "%s|%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
+							sha, date, msg.replace("|", " "), url + "/commit/" + sha,
+							oldStats.typesCount(), oldStats.methodsCount(), oldStats.fieldsCount(),
+							oldStats.deprecatedAnnotationsCount(), oldStats.betaAnnotationsCount(),
+							0, 0, 0, 0, 0, 0, "");
+						csvWriter.write(line);
+						LOGGER.info("Skipping commit {} (no Java source changes), reusing previous API stats", sha);
+					} else {
+						LOGGER.info("Skipping commit {} (no Java source changes), no previous API stats to reuse", sha);
+					}
+					continue;
+				}
+
+				sw.reset().start();
 				makePristine(git);
 				git.checkout()
 					.setName(sha)
 					.setForced(true)
 					.call();
-				Flags flags = changedJavaOrPom(repo, commit);
 				long checkoutTime = sw.elapsed().toMillis();
 
 				LOGGER.info("Commit {} on {}: {}", sha, date, msg);
@@ -181,6 +202,9 @@ public class WalkRepository {
 				sw.reset().start();
 				API currentApi = buildApi(src, classpath);
 				long apiTime = sw.elapsed().toMillis();
+				sw.reset().start();
+				ApiStats currentStats = computeApiStats(currentApi);
+				long statsTime = sw.elapsed().toMillis();
 
 				if (oldApi != null) {
 					sw.reset().start();
@@ -190,28 +214,18 @@ public class WalkRepository {
 					List<BreakingChange> bcs = diff.getBreakingChanges();
 					LOGGER.info("Found {} breaking changes", bcs.size());
 
-					sw.reset().start();
-					var numTypes = currentApi.getExportedTypes().size();
-					var numMethods = currentApi.getExportedTypes().stream()
-						.mapToInt(type -> type.getDeclaredMethods().size())
-						.sum();
-					var numFields = currentApi.getExportedTypes().stream()
-						.mapToInt(type -> type.getDeclaredFields().size())
-						.sum();
-					var numDeprecatedAnnotations = getApiAnnotationsCount(currentApi, "java.lang.Deprecated");
-					var numBetaAnnotations = getApiAnnotationsCount(currentApi, "com.google.common.annotations.Beta");
-					long statsTime = sw.elapsed().toMillis();
-
 					var line = "%s|%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
 						sha, date, msg.replace("|", " "), url + "/commit/" + sha,
-						numTypes, numMethods, numFields, numDeprecatedAnnotations, numBetaAnnotations,
+						currentStats.typesCount(), currentStats.methodsCount(), currentStats.fieldsCount(),
+						currentStats.deprecatedAnnotationsCount(), currentStats.betaAnnotationsCount(),
 						checkoutTime, classpathTime, apiTime, diffTime, statsTime,
 						bcs.size(), bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
 
-					Files.writeString(csv, line, StandardOpenOption.APPEND);
+					csvWriter.write(line);
 				}
 
 				oldApi = currentApi;
+				oldStats = currentStats;
 			}
 		}
 	}
@@ -245,7 +259,30 @@ public class WalkRepository {
 			.sum();
 	}
 
+	static ApiStats computeApiStats(API api) {
+		return new ApiStats(
+			api.getExportedTypes().size(),
+			api.getExportedTypes().stream()
+				.mapToInt(type -> type.getDeclaredMethods().size())
+				.sum(),
+			api.getExportedTypes().stream()
+				.mapToInt(type -> type.getDeclaredFields().size())
+				.sum(),
+			getApiAnnotationsCount(api, "java.lang.Deprecated"),
+			getApiAnnotationsCount(api, "com.google.common.annotations.Beta")
+		);
+	}
+
 	record Flags(boolean javaChanged, boolean pomChanged) {
+	}
+
+	record ApiStats(
+		int typesCount,
+		int methodsCount,
+		int fieldsCount,
+		long deprecatedAnnotationsCount,
+		long betaAnnotationsCount
+	) {
 	}
 
 	static Flags changedJavaOrPom(org.eclipse.jgit.lib.Repository repo, RevCommit commit) {
