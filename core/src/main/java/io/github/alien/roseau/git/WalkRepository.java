@@ -2,6 +2,7 @@ package io.github.alien.roseau.git;
 
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.MavenClasspathBuilder;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
@@ -31,14 +32,14 @@ import java.util.stream.Collectors;
 public class WalkRepository {
 	private final static String HEADER = "commit|date|message|" +
 		"typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|betaAnnotationsCount|" +
-		"checkoutTime|apiTime|diffTime|statsTime|" +
+		"checkoutTime|classpathTime|apiTime|diffTime|statsTime|" +
 		"breakingChangesCount|breakingChanges\n";
 
 	static void main() throws Exception {
 		new WalkRepository().walk(
 			Path.of("/home/dig/repositories/guava/.git"),
 			Path.of("/home/dig/repositories/guava/guava"),
-			Path.of("/home/dig/repositories/guava/guava/pom.xml"),
+			Path.of("/home/dig/repositories/guava/pom.xml"),
 			Path.of("guava.csv")
 		);
 	}
@@ -66,7 +67,10 @@ public class WalkRepository {
 			Collections.reverse(chain); // oldest -> newest
 			System.out.println(String.format("Walking %d commits", chain.size()));
 
+			MavenClasspathBuilder maven = new MavenClasspathBuilder();
 			API oldApi = null;
+			List<Path> classpath = List.of();
+			long pomModified = -1L;
 			for (RevCommit commit : chain) {
 				sw.reset().start();
 				String sha = commit.getName();
@@ -86,8 +90,17 @@ public class WalkRepository {
 					continue;
 				}
 
+				long classpathTime = 0L;
+				if (pomModified < pom.toFile().lastModified()) {
+					sw.reset().start();
+					classpath = maven.buildClasspath(pom);
+					classpathTime = sw.elapsed().toMillis();
+					pomModified = pom.toFile().lastModified();
+					System.out.println(String.format("Recomputing classpath took %dms: %s", classpathTime, classpath));
+				}
+
 				sw.reset().start();
-				API currentApi = buildApi(sources, pom);
+				API currentApi = buildApi(sources, classpath);
 				long apiTime = sw.elapsed().toMillis();
 
 				if (oldApi != null) {
@@ -110,10 +123,10 @@ public class WalkRepository {
 					var numBetaAnnotations = getApiAnnotationsCount(currentApi, "com.google.common.annotations.Beta");
 					long statsTime = sw.elapsed().toMillis();
 
-					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
+					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
 						sha, date, msg.replace("|", " "),
 						numTypes, numMethods, numFields, numDeprecatedAnnotations, numBetaAnnotations,
-						checkoutTime, apiTime, diffTime, statsTime,
+						checkoutTime, classpathTime, apiTime, diffTime, statsTime,
 						bcs.size(), bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
 
 					Files.writeString(csv, line, StandardOpenOption.APPEND);
@@ -124,10 +137,10 @@ public class WalkRepository {
 		}
 	}
 
-	API buildApi(Path sources, Path pom) {
+	API buildApi(Path sources, List<Path> classpath) {
 		Library library = Library.builder()
 			.location(sources)
-			.pom(pom)
+			.classpath(classpath)
 			.build();
 		TypesExtractor extractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
 		LibraryTypes types = extractor.extractTypes(library);
