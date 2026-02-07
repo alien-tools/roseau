@@ -39,7 +39,7 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 public class WalkRepository {
-	private final static String HEADER = "commit|date|message|" +
+	private final static String HEADER = "commit|date|message|commit_url|" +
 		"typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|betaAnnotationsCount|" +
 		"checkoutTime|classpathTime|apiTime|diffTime|statsTime|" +
 		"breakingChangesCount|breakingChanges\n";
@@ -47,6 +47,7 @@ public class WalkRepository {
 
 	static void main() throws Exception {
 		new WalkRepository().walk(
+			"https://github.com/google/guava",
 			Path.of("/home/dig/repositories/guava/.git"),
 			Path.of("/home/dig/repositories/guava/guava"),
 			Path.of("/home/dig/repositories/guava/guava/pom.xml"),
@@ -54,7 +55,7 @@ public class WalkRepository {
 		);
 	}
 
-	void walk(Path gitDir, Path sources, Path pom, Path csv) throws Exception {
+	void walk(String url, Path gitDir, Path sources, Path pom, Path csv) throws Exception {
 		Files.writeString(csv, HEADER,
 			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
 
@@ -136,8 +137,8 @@ public class WalkRepository {
 					var numBetaAnnotations = getApiAnnotationsCount(currentApi, "com.google.common.annotations.Beta");
 					long statsTime = sw.elapsed().toMillis();
 
-					var line = "%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
-						sha, date, msg.replace("|", " "),
+					var line = "%s|%s|%s|%s|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%d|%s%n".formatted(
+						sha, date, msg.replace("|", " "), url + "/commit/" + sha,
 						numTypes, numMethods, numFields, numDeprecatedAnnotations, numBetaAnnotations,
 						checkoutTime, classpathTime, apiTime, diffTime, statsTime,
 						bcs.size(), bcs.stream().map(BreakingChange::toString).collect(Collectors.joining(",")));
