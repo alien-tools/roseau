@@ -31,6 +31,10 @@ import java.util.Optional;
 
 /**
  * Incremental commit walker: builds APIs incrementally from one commit to the next.
+ *
+ * TODO:
+ *   - Account for library-specific exclusions
+ *   - Always ignore *.internal.*?
  */
 public class IncrementalWalkRepository {
 	private static final Logger LOGGER = LogManager.getLogger(IncrementalWalkRepository.class);
@@ -48,6 +52,19 @@ public class IncrementalWalkRepository {
 	}
 
 	static void walk(String url, Path gitDir, List<Path> sourceRoots, Path csv) throws Exception {
+		try {
+			walkOnce(url, gitDir, sourceRoots, csv);
+		} catch (Exception e) {
+			if (!RepositoryWalkerUtils.isMissingObjectFailure(e)) {
+				throw e;
+			}
+			LOGGER.warn("Repository {} is missing objects during checkout, re-cloning and retrying once", gitDir, e);
+			RepositoryWalkerUtils.recloneRepository(url, gitDir);
+			walkOnce(url, gitDir, sourceRoots, csv);
+		}
+	}
+
+	private static void walkOnce(String url, Path gitDir, List<Path> sourceRoots, Path csv) throws Exception {
 		RepositoryWalkerUtils.prepareRepository(url, gitDir);
 		Stopwatch sw = Stopwatch.createUnstarted();
 		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();

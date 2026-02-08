@@ -3,6 +3,7 @@ package io.github.alien.roseau.git;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevCommit;
+import org.eclipse.jgit.revwalk.RevWalk;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -66,6 +67,44 @@ class RepositoryWalkerUtilsTest {
 				assertThat(Files.readString(cloneRoot.resolve("src/main/java/pkg/A.java"))).contains("n()");
 				assertThat(cleanedLocal.log().setMaxCount(1).call().iterator().next().getName()).isEqualTo(remoteHead.getName());
 			}
+		}
+	}
+
+	@Test
+	void prepare_repository_unshallows_existing_clone(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public void a(){} }"),
+				List.of());
+			GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/B.java", "package pkg; public class B { public void b(){} }"),
+				List.of());
+			GitWalkTestUtils.commit(remote, "c3",
+				Map.of("src/main/java/pkg/C.java", "package pkg; public class C { public void c(){} }"),
+				List.of());
+		}
+
+		Path cloneRoot = wd.resolve("shallow-clone");
+		Path cloneGitDir = cloneRoot.resolve(".git");
+		String remoteUrl = remoteDir.toUri().toString();
+		try (Git ignored = Git.cloneRepository()
+			.setURI(remoteUrl)
+			.setDirectory(cloneRoot.toFile())
+			.setDepth(1)
+			.call()) {
+		}
+
+		try (Git shallowClone = Git.open(cloneRoot.toFile())) {
+			assertThat(shallowClone.getRepository().getObjectDatabase().getShallowCommits()).isNotEmpty();
+		}
+
+		RepositoryWalkerUtils.prepareRepository(remoteUrl, cloneGitDir);
+
+		try (Git completeClone = Git.open(cloneRoot.toFile());
+		     RevWalk rw = new RevWalk(completeClone.getRepository())) {
+			assertThat(completeClone.getRepository().getObjectDatabase().getShallowCommits()).isEmpty();
+			assertThat(RepositoryWalkerUtils.firstParentChain(completeClone.getRepository(), rw)).hasSize(3);
 		}
 	}
 

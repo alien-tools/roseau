@@ -41,6 +41,19 @@ public class WalkRepository {
 	}
 
 	static void walk(String url, Path gitDir, List<Path> sources, List<Path> poms, Path csv) throws Exception {
+		try {
+			walkOnce(url, gitDir, sources, poms, csv);
+		} catch (Exception e) {
+			if (!RepositoryWalkerUtils.isMissingObjectFailure(e)) {
+				throw e;
+			}
+			LOGGER.warn("Repository {} is missing objects during checkout, re-cloning and retrying once", gitDir, e);
+			RepositoryWalkerUtils.recloneRepository(url, gitDir);
+			walkOnce(url, gitDir, sources, poms, csv);
+		}
+	}
+
+	private static void walkOnce(String url, Path gitDir, List<Path> sources, List<Path> poms, Path csv) throws Exception {
 		RepositoryWalkerUtils.prepareRepository(url, gitDir);
 		Stopwatch sw = Stopwatch.createUnstarted();
 		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();

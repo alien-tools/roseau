@@ -13,11 +13,14 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -33,6 +36,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
@@ -41,6 +45,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 final class RepositoryWalkerUtils {
+	private static final Logger LOGGER = LogManager.getLogger(RepositoryWalkerUtils.class);
 	static final String HEADER = "commit|date|message|commit_url|" +
 		"typesCount|methodsCount|fieldsCount|deprecatedAnnotationsCount|betaAnnotationsCount|" +
 		"checkoutTime|classpathTime|apiTime|diffTime|statsTime|" +
@@ -90,10 +95,33 @@ final class RepositoryWalkerUtils {
 
 		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();
 		try (org.eclipse.jgit.lib.Repository repo = builder.build(); Git git = new Git(repo)) {
-			git.fetch().setRemote("origin").call();
-			alignToRemoteDefaultBranch(git, repo);
+			fetchAndAlignRepository(git, repo);
 			makePristine(git);
+		} catch (Exception e) {
+			if (!isMissingObjectFailure(e)) {
+				throw e;
+			}
+			LOGGER.warn("Repository {} has missing objects, deleting local clone and cloning again", gitDir, e);
+			recloneRepository(url, gitDir);
 		}
+		return workTree;
+	}
+
+	static boolean isMissingObjectFailure(Throwable throwable) {
+		Throwable current = throwable;
+		while (current != null) {
+			if (current instanceof MissingObjectException) {
+				return true;
+			}
+			current = current.getCause();
+		}
+		return false;
+	}
+
+	static Path recloneRepository(String url, Path gitDir) throws Exception {
+		Path workTree = workTreeFromGitDir(gitDir);
+		deleteRecursively(workTree);
+		cloneRepository(url, workTree);
 		return workTree;
 	}
 
@@ -317,6 +345,15 @@ final class RepositoryWalkerUtils {
 			.close();
 	}
 
+	private static void fetchAndAlignRepository(Git git, org.eclipse.jgit.lib.Repository repo) throws Exception {
+		var fetch = git.fetch().setRemote("origin");
+		if (isShallowRepository(repo)) {
+			fetch.setUnshallow(true);
+		}
+		fetch.call();
+		alignToRemoteDefaultBranch(git, repo);
+	}
+
 	private static void alignToRemoteDefaultBranch(Git git, org.eclipse.jgit.lib.Repository repo) throws Exception {
 		String branchName = resolveRemoteBranchName(repo);
 		if (branchName == null) {
@@ -368,6 +405,30 @@ final class RepositoryWalkerUtils {
 			.filter(name -> !name.equals("HEAD"))
 			.findFirst()
 			.orElse(null);
+	}
+
+	private static boolean isShallowRepository(org.eclipse.jgit.lib.Repository repo) throws IOException {
+		return !repo.getObjectDatabase().getShallowCommits().isEmpty();
+	}
+
+	private static void deleteRecursively(Path root) throws IOException {
+		if (root == null || !Files.exists(root)) {
+			return;
+		}
+		try (var paths = Files.walk(root)) {
+			paths.sorted(Comparator.reverseOrder()).forEach(path -> {
+				try {
+					Files.deleteIfExists(path);
+				} catch (IOException e) {
+					throw new RuntimeException("Failed to delete " + path, e);
+				}
+			});
+		} catch (RuntimeException e) {
+			if (e.getCause() instanceof IOException io) {
+				throw io;
+			}
+			throw e;
+		}
 	}
 
 	private static long getApiAnnotationsCount(API api, String fqn) {
