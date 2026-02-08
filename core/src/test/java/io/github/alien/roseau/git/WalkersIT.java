@@ -134,6 +134,63 @@ class WalkersIT {
 	}
 
 	@Test
+	void walkers_emit_all_tags_and_versions_for_each_commit(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-tags");
+		RevCommit c1;
+		RevCommit c2;
+		RevCommit c3;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			c1 = GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public void a(){} }"),
+				List.of());
+			remote.tag().setName("baseline").setObjectId(c1).call();
+
+			c2 = GitWalkTestUtils.commit(remote, "c2-change",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public void b(){} }"),
+				List.of());
+			remote.tag().setName("v1.0.0").setObjectId(c2).call();
+			remote.tag().setName("1.0.0").setObjectId(c2).call();
+			remote.tag().setName("latest").setObjectId(c2).call();
+
+			c3 = GitWalkTestUtils.commit(remote, "c3-change",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public void c(){} }"),
+				List.of());
+			remote.tag().setName("release").setObjectId(c3).call();
+		}
+
+		Path regularOutputDir = wd.resolve("regular-tags-out");
+		Path incrementalOutputDir = wd.resolve("incremental-tags-out");
+		Path regularCommits = regularOutputDir.resolve("regular-tags-commits.csv");
+		Path incrementalCommits = incrementalOutputDir.resolve("incremental-tags-commits.csv");
+		Path regularRoot = wd.resolve("regular-tags-clone");
+		Path incrementalRoot = wd.resolve("incremental-tags-clone");
+		String url = remoteDir.toUri().toString();
+
+		WalkRepository.walk("regular-tags", url, regularRoot.resolve(".git"), List.of(regularRoot.resolve("src/main/java")),
+			List.of(), regularOutputDir, NO_EXCLUSIONS);
+		IncrementalWalkRepository.walk("incremental-tags", url, incrementalRoot.resolve(".git"),
+			List.of(incrementalRoot.resolve("src/main/java")), incrementalOutputDir, NO_EXCLUSIONS);
+
+		Map<String, Map<String, String>> regularRows = GitWalkTestUtils.readCsvRows(regularCommits).stream()
+			.collect(java.util.stream.Collectors.toMap(r -> r.get("commit_sha"), r -> r));
+		Map<String, Map<String, String>> incrementalRows = GitWalkTestUtils.readCsvRows(incrementalCommits).stream()
+			.collect(java.util.stream.Collectors.toMap(r -> r.get("commit_sha"), r -> r));
+
+		assertThat(regularRows).containsKeys(c1.getName(), c2.getName(), c3.getName());
+		assertThat(incrementalRows).containsKeys(c1.getName(), c2.getName(), c3.getName());
+
+		assertThat(regularRows.get(c2.getName()).get("tag")).isEqualTo("1.0.0;latest;v1.0.0");
+		assertThat(regularRows.get(c2.getName()).get("version")).isEqualTo("1.0.0;latest;v1.0.0");
+		assertThat(regularRows.get(c3.getName()).get("tag")).isEqualTo("release");
+		assertThat(regularRows.get(c3.getName()).get("version")).isEqualTo("release");
+
+		assertThat(incrementalRows.get(c2.getName()).get("tag")).isEqualTo("1.0.0;latest;v1.0.0");
+		assertThat(incrementalRows.get(c2.getName()).get("version")).isEqualTo("1.0.0;latest;v1.0.0");
+		assertThat(incrementalRows.get(c3.getName()).get("tag")).isEqualTo("release");
+		assertThat(incrementalRows.get(c3.getName()).get("version")).isEqualTo("release");
+	}
+
+	@Test
 	void emits_excluded_bcs_when_excluded_by_name(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote-name");
 		RevCommit breaking;

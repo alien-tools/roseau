@@ -120,7 +120,6 @@ final class RepositoryWalkerUtils {
 	);
 	private static final RoseauOptions.Exclude EMPTY_EXCLUDE = new RoseauOptions.Exclude(List.of(), List.of());
 	private static final Pattern CONVENTIONAL_COMMIT = Pattern.compile("^([a-zA-Z]+)(?:\\([^)]*\\))?(!)?:\\s+.+$");
-	private static final Pattern VERSION_LIKE_TAG = Pattern.compile("^v?\\d+(?:\\.\\d+)*(?:[-+._][\\w.-]+)?$");
 
 	record Repository(
 		String id,
@@ -612,13 +611,6 @@ final class RepositoryWalkerUtils {
 
 	static String joinedTags(Map<String, List<String>> tagsByCommit, String commitSha) {
 		return String.join(";", tagsByCommit.getOrDefault(commitSha, List.of()));
-	}
-
-	static String resolveVersionFromTags(Map<String, List<String>> tagsByCommit, String commitSha) {
-		List<String> tags = tagsByCommit.getOrDefault(commitSha, List.of());
-		return tags.stream().filter(tag -> VERSION_LIKE_TAG.matcher(tag).matches()).findFirst()
-			.or(() -> tags.stream().findFirst())
-			.orElse("");
 	}
 
 	static ExclusionMatcher exclusionMatcher(RoseauOptions.Exclude exclusions) {

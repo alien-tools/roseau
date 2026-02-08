@@ -205,4 +205,20 @@ class RepositoryWalkerUtilsTest {
 
 		assertThat(commitUrl).isEmpty();
 	}
+
+	@Test
+	void joined_tags_returns_all_tags_without_filtering() {
+		Map<String, List<String>> tagsByCommit = Map.of(
+			"c1", List.of("latest", "v1.0.0", "1.0.1"),
+			"c2", List.of("release", "stable"),
+			"c3", List.of()
+		);
+
+		assertThat(RepositoryWalkerUtils.joinedTags(tagsByCommit, "c1"))
+			.isEqualTo("latest;v1.0.0;1.0.1");
+		assertThat(RepositoryWalkerUtils.joinedTags(tagsByCommit, "c2"))
+			.isEqualTo("release;stable");
+		assertThat(RepositoryWalkerUtils.joinedTags(tagsByCommit, "c3"))
+			.isEmpty();
+	}
 }

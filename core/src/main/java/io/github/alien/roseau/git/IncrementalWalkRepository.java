@@ -99,7 +99,6 @@ public class IncrementalWalkRepository {
 				String conventionalCommitTag = RepositoryWalkerUtils.conventionalCommitTag(msg);
 				String parentCommit = RepositoryWalkerUtils.parentCommit(commit);
 				String tags = RepositoryWalkerUtils.joinedTags(tagsByCommit, sha);
-				String version = RepositoryWalkerUtils.resolveVersionFromTags(tagsByCommit, sha);
 
 				RepositoryWalkerUtils.CommitDiff commitDiff = RepositoryWalkerUtils.computeCommitDiff(repo, commit);
 				if (!commitDiff.javaChanged()) {
@@ -114,7 +113,7 @@ public class IncrementalWalkRepository {
 							parentCommit,
 							branch,
 							tags,
-							version,
+							tags,
 							daysSincePrevCommit,
 							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, 0, 0, 0, 0, 0)
 						);
@@ -224,7 +223,7 @@ public class IncrementalWalkRepository {
 					parentCommit,
 					branch,
 					tags,
-					version,
+					tags,
 					daysSincePrevCommit,
 					new RepositoryWalkerUtils.CommitAnalysis(
 						commitDiff,
