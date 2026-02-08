@@ -38,7 +38,7 @@ public class IncrementalWalkRepository {
 	static void main() throws Exception {
 		Path config = Path.of("walk.yaml");
 		List<RepositoryWalkerUtils.Repository> repos = RepositoryWalkerUtils.loadConfig(config);
-		repos.stream().filter(repo -> repo.id().equals("guava")).forEach(repo -> {
+		repos.parallelStream().forEach(repo -> {
 			try {
 				walk(repo.id(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.outputDir(), repo.exclusions());
 			} catch (Exception e) {

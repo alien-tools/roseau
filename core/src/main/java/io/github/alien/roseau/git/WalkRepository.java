@@ -31,7 +31,7 @@ public class WalkRepository {
 	static void main() throws Exception {
 		Path config = Path.of("walk.yaml");
 		List<RepositoryWalkerUtils.Repository> repos = RepositoryWalkerUtils.loadConfig(config);
-		repos.forEach(repo -> {
+		repos.parallelStream().forEach(repo -> {
 			try {
 				walk(repo.id(), repo.url(), repo.gitDir(), repo.sourceRoots(), List.of(), repo.outputDir(), repo.exclusions());
 			} catch (Exception e) {
