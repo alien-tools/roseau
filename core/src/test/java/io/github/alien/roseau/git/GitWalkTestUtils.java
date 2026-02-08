@@ -7,6 +7,7 @@ import org.eclipse.jgit.revwalk.RevCommit;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -15,16 +16,16 @@ final class GitWalkTestUtils {
 	private GitWalkTestUtils() {
 	}
 
-	record CsvRow(
+	record CommitCsvRow(
 		String commit,
 		String message,
-		int typesCount,
-		int methodsCount,
-		int fieldsCount,
-		long checkoutTime,
-		long apiTime,
-		long diffTime,
-		long statsTime,
+		int exportedTypesCount,
+		int exportedMethodsCount,
+		int exportedFieldsCount,
+		long checkoutTimeMs,
+		long apiTimeMs,
+		long diffTimeMs,
+		long statsTimeMs,
 		int breakingChangesCount
 	) {
 	}
@@ -60,32 +61,88 @@ final class GitWalkTestUtils {
 			.call();
 	}
 
-	static Map<String, CsvRow> readCsvRows(Path csv) throws IOException {
+	static Map<String, CommitCsvRow> readCommitCsvRows(Path commitsCsv) throws IOException {
+		List<Map<String, String>> rows = readCsv(commitsCsv);
+		Map<String, CommitCsvRow> result = new LinkedHashMap<>();
+		for (Map<String, String> row : rows) {
+			String sha = row.get("commit_sha");
+			result.put(sha, new CommitCsvRow(
+				sha,
+				row.get("commit_short_msg"),
+				Integer.parseInt(row.get("exported_types_count")),
+				Integer.parseInt(row.get("exported_methods_count")),
+				Integer.parseInt(row.get("exported_fields_count")),
+				Long.parseLong(row.get("checkout_time_ms")),
+				Long.parseLong(row.get("api_time_ms")),
+				Long.parseLong(row.get("diff_time_ms")),
+				Long.parseLong(row.get("stats_time_ms")),
+				Integer.parseInt(row.get("breaking_changes_count"))
+			));
+		}
+		return result;
+	}
+
+	static Map<String, Integer> readBreakingChangesCountByCommit(Path bcsCsv) throws IOException {
+		List<Map<String, String>> rows = readCsv(bcsCsv);
+		Map<String, Integer> result = new LinkedHashMap<>();
+		for (Map<String, String> row : rows) {
+			result.merge(row.get("commit"), 1, Integer::sum);
+		}
+		return result;
+	}
+
+	static Status status(Git git) throws Exception {
+		return git.status().call();
+	}
+
+	static List<Map<String, String>> readCsvRows(Path csv) throws IOException {
+		return readCsv(csv);
+	}
+
+	private static List<Map<String, String>> readCsv(Path csv) throws IOException {
 		List<String> lines = Files.readAllLines(csv);
-		Map<String, CsvRow> rows = new LinkedHashMap<>();
+		if (lines.isEmpty()) {
+			return List.of();
+		}
+		List<String> header = parseCsvLine(lines.getFirst());
+		List<Map<String, String>> rows = new ArrayList<>();
 		for (int i = 1; i < lines.size(); i++) {
 			String line = lines.get(i);
 			if (line.isBlank()) {
 				continue;
 			}
-			String[] fields = line.split("\\|", -1);
-			rows.put(fields[0], new CsvRow(
-				fields[0],
-				fields[2],
-				Integer.parseInt(fields[4]),
-				Integer.parseInt(fields[5]),
-				Integer.parseInt(fields[6]),
-				Long.parseLong(fields[9]),
-				Long.parseLong(fields[11]),
-				Long.parseLong(fields[12]),
-				Long.parseLong(fields[13]),
-				Integer.parseInt(fields[14])
-			));
+			List<String> values = parseCsvLine(line);
+			Map<String, String> row = new LinkedHashMap<>();
+			for (int col = 0; col < header.size(); col++) {
+				String value = col < values.size() ? values.get(col) : "";
+				row.put(header.get(col), value);
+			}
+			rows.add(row);
 		}
 		return rows;
 	}
 
-	static Status status(Git git) throws Exception {
-		return git.status().call();
+	private static List<String> parseCsvLine(String line) {
+		List<String> values = new ArrayList<>();
+		StringBuilder current = new StringBuilder();
+		boolean inQuotes = false;
+		for (int i = 0; i < line.length(); i++) {
+			char c = line.charAt(i);
+			if (c == '"') {
+				if (inQuotes && i + 1 < line.length() && line.charAt(i + 1) == '"') {
+					current.append('"');
+					i++;
+				} else {
+					inQuotes = !inQuotes;
+				}
+			} else if (c == ',' && !inQuotes) {
+				values.add(current.toString());
+				current.setLength(0);
+			} else {
+				current.append(c);
+			}
+		}
+		values.add(current.toString());
+		return values;
 	}
 }

@@ -1,269 +1,284 @@
-- id: tomcat
-  url: "https://github.com/apache/tomcat"
-  gitDir: "/data/tomcat/.git"
-  sourceRoots:
-    - "/data/tomcat/java"
-  csv: "tomcat.csv"
+defaults:
+  exclusions:
+    names:
+      - ".*\\.internal\\..*"
+    annotations:
+      - name: Internal
+        args: { }
+      - name: Beta
+        args: { }
 
-- id: rxjava-core
-  url: "https://github.com/ReactiveX/RxJava"
-  gitDir: "/data/RxJava/.git"
-  sourceRoots:
-    - "/data/RxJava/src/main/java"
-    - "/data/RxJava/rxjava-core/src/main/java"
-  csv: "rxjava-core.csv"
+repositories:
+  - id: tomcat
+    url: "https://github.com/apache/tomcat"
+    gitDir: "/data/tomcat/.git"
+    sourceRoots:
+      - "/data/tomcat/java"
+    outputDir: "."
 
-- id: retrofit
-  url: "https://github.com/square/retrofit"
-  gitDir: "/data/retrofit/.git"
-  sourceRoots:
-    - "/data/retrofit/retrofit/src/main/java"
-  csv: "retrofit.csv"
+  - id: rxjava-core
+    url: "https://github.com/ReactiveX/RxJava"
+    gitDir: "/data/RxJava/.git"
+    sourceRoots:
+      - "/data/RxJava/src/main/java"
+      - "/data/RxJava/rxjava-core/src/main/java"
+    outputDir: "."
 
-- id: jakartaee-validation
-  url: "https://github.com/jakartaee/validation"
-  gitDir: "/data/validation/.git"
-  sourceRoots:
-    - "/data/validation/src/main/java"
-  csv: "jakartaee-servlet-api.csv"
+  - id: retrofit
+    url: "https://github.com/square/retrofit"
+    gitDir: "/data/retrofit/.git"
+    sourceRoots:
+      - "/data/retrofit/retrofit/src/main/java"
+    outputDir: "."
 
-- id: jakartaee-servlet-api
-  url: "https://github.com/jakartaee/servlet"
-  gitDir: "/data/servlet/.git"
-  sourceRoots:
-    - "/data/servlet/api/src/main/java"
-    - "/data/servlet/src/main/java"
-  csv: "jakartaee-servlet-api.csv"
+  - id: jakartaee-validation
+    url: "https://github.com/jakartaee/validation"
+    gitDir: "/data/validation/.git"
+    sourceRoots:
+      - "/data/validation/src/main/java"
+    outputDir: "."
 
-- id: jakartaee-jaxrs-api
-  url: "https://github.com/jakartaee/rest"
-  gitDir: "/data/rest/.git"
-  sourceRoots:
-    - "/data/rest/jaxrs-api/src/main/java"
-  csv: "jakartaee-jaxrs-api.csv"
+  - id: jakartaee-servlet-api
+    url: "https://github.com/jakartaee/servlet"
+    gitDir: "/data/servlet/.git"
+    sourceRoots:
+      - "/data/servlet/api/src/main/java"
+      - "/data/servlet/src/main/java"
+    outputDir: "."
 
-- id: protobuf-java
-  url: "https://github.com/protocolbuffers/protobuf"
-  gitDir: "/data/protobuf/.git"
-  sourceRoots:
-    - "/data/protobuf/java/core/src/main/java"
-    - "/data/protobuf/java/src/main/java"
-  csv: "protobuf-java.csv"
+  - id: jakartaee-jaxrs-api
+    url: "https://github.com/jakartaee/rest"
+    gitDir: "/data/rest/.git"
+    sourceRoots:
+      - "/data/rest/jaxrs-api/src/main/java"
+    outputDir: "."
 
-- id: netty-codec-http
-  url: "https://github.com/netty/netty"
-  gitDir: "/data/netty/.git"
-  sourceRoots:
-    - "/data/netty/codec-http/src/main/java"
-  csv: "netty-codec-http.csv"
+  - id: protobuf-java
+    url: "https://github.com/protocolbuffers/protobuf"
+    gitDir: "/data/protobuf/.git"
+    sourceRoots:
+      - "/data/protobuf/java/core/src/main/java"
+      - "/data/protobuf/java/src/main/java"
+    outputDir: "."
 
-- id: log4j-api
-  url: "https://github.com/apache/logging-log4j2"
-  gitDir: "/data/logging-log4j2/.git"
-  sourceRoots:
-    - "/data/logging-log4j2/log4j-api/src/main/java"
-  csv: "log4j-api.csv"
+  - id: netty-codec-http
+    url: "https://github.com/netty/netty"
+    gitDir: "/data/netty/.git"
+    sourceRoots:
+      - "/data/netty/codec-http/src/main/java"
+    outputDir: "."
 
-- id: jsoup
-  url: "https://github.com/jhy/jsoup"
-  gitDir: "/data/jsoup/.git"
-  sourceRoots:
-    - "/data/jsoup/src/main/java"
-  csv: "jsoup.csv"
+  - id: log4j-api
+    url: "https://github.com/apache/logging-log4j2"
+    gitDir: "/data/logging-log4j2/.git"
+    sourceRoots:
+      - "/data/logging-log4j2/log4j-api/src/main/java"
+    outputDir: "."
 
-- id: JSON-java
-  url: "https://github.com/stleary/JSON-java"
-  gitDir: "/data/JSON-java/.git"
-  sourceRoots:
-    - "/data/JSON-java/src/main/java"
-    - "/data/JSON-java/"
-  csv: "JSON-java.csv"
+  - id: jsoup
+    url: "https://github.com/jhy/jsoup"
+    gitDir: "/data/jsoup/.git"
+    sourceRoots:
+      - "/data/jsoup/src/main/java"
+    outputDir: "."
 
-- id: joda-time
-  url: "https://github.com/JodaOrg/joda-time"
-  gitDir: "/data/joda-time/.git"
-  sourceRoots:
-    - "/data/joda-time/src/main/java"
-    - "/data/joda-time/JodaTime/src/java"
-  csv: "joda-time.csv"
+  - id: JSON-java
+    url: "https://github.com/stleary/JSON-java"
+    gitDir: "/data/JSON-java/.git"
+    sourceRoots:
+      - "/data/JSON-java/src/main/java"
+      - "/data/JSON-java/"
+    outputDir: "."
 
-- id: hamcrest-core
-  url: "https://github.com/hamcrest/JavaHamcrest"
-  gitDir: "/data/JavaHamcrest/.git"
-  sourceRoots:
-    - "/data/JavaHamcrest/hamcrest-core/src/main/java"
-  csv: "hamcrest-core.csv"
+  - id: joda-time
+    url: "https://github.com/JodaOrg/joda-time"
+    gitDir: "/data/joda-time/.git"
+    sourceRoots:
+      - "/data/joda-time/src/main/java"
+      - "/data/joda-time/JodaTime/src/java"
+    outputDir: "."
 
-- id: hibernate-core
-  url: "https://github.com/hibernate/hibernate-orm"
-  gitDir: "/data/hibernate-orm/.git"
-  sourceRoots:
-    - "/data/hibernate-orm/hibernate-core/src/main/java"
-  csv: "hibernate-core.csv"
+  - id: hamcrest-core
+    url: "https://github.com/hamcrest/JavaHamcrest"
+    gitDir: "/data/JavaHamcrest/.git"
+    sourceRoots:
+      - "/data/JavaHamcrest/hamcrest-core/src/main/java"
+    outputDir: "."
 
-- id: h2-database
-  url: "https://github.com/h2database/h2database"
-  gitDir: "/data/h2database/.git"
-  sourceRoots:
-    - "/data/h2database/h2/src/main"
-  csv: "h2-database.csv"
+  - id: hibernate-core
+    url: "https://github.com/hibernate/hibernate-orm"
+    gitDir: "/data/hibernate-orm/.git"
+    sourceRoots:
+      - "/data/hibernate-orm/hibernate-core/src/main/java"
+    outputDir: "."
 
-- id: fastjson-core
-  url: "https://github.com/alibaba/fastjson"
-  gitDir: "/data/fastjson/.git"
-  sourceRoots:
-    - "/data/fastjson/src/main/java"
-  csv: "fastjson-core.csv"
+  - id: h2-database
+    url: "https://github.com/h2database/h2database"
+    gitDir: "/data/h2database/.git"
+    sourceRoots:
+      - "/data/h2database/h2/src/main"
+    outputDir: "."
 
-- id: fastjson2-core
-  url: "https://github.com/alibaba/fastjson2"
-  gitDir: "/data/fastjson2/.git"
-  sourceRoots:
-    - "/data/fastjson2/core/src/main/java"
-  csv: "fastjson2-core.csv"
+  - id: fastjson-core
+    url: "https://github.com/alibaba/fastjson"
+    gitDir: "/data/fastjson/.git"
+    sourceRoots:
+      - "/data/fastjson/src/main/java"
+    outputDir: "."
 
-- id: commons-cli
-  url: "https://github.com/apache/commons-cli"
-  gitDir: "/data/commons-cli/.git"
-  sourceRoots:
-    - "/data/commons-cli/src/main/java"
-    - "/data/commons-cli/src"
-  csv: "commons-cli.csv"
+  - id: fastjson2-core
+    url: "https://github.com/alibaba/fastjson2"
+    gitDir: "/data/fastjson2/.git"
+    sourceRoots:
+      - "/data/fastjson2/core/src/main/java"
+    outputDir: "."
 
-- id: commons-codec
-  url: "https://github.com/apache/commons-codec"
-  gitDir: "/data/commons-codec/.git"
-  sourceRoots:
-    - "/data/commons-codec/src/main/java"
-    - "/data/commons-codec/src"
-  csv: "commons-codec.csv"
+  - id: commons-cli
+    url: "https://github.com/apache/commons-cli"
+    gitDir: "/data/commons-cli/.git"
+    sourceRoots:
+      - "/data/commons-cli/src/main/java"
+      - "/data/commons-cli/src"
+    outputDir: "."
 
-- id: commons-compress
-  url: "https://github.com/apache/commons-compress"
-  gitDir: "/data/commons-compress/.git"
-  sourceRoots:
-    - "/data/commons-compress/src/main/java"
-    - "/data/commons-compress/src"
-  csv: "commons-compress.csv"
+  - id: commons-codec
+    url: "https://github.com/apache/commons-codec"
+    gitDir: "/data/commons-codec/.git"
+    sourceRoots:
+      - "/data/commons-codec/src/main/java"
+      - "/data/commons-codec/src"
+    outputDir: "."
 
-- id: commons-logging
-  url: "https://github.com/apache/commons-logging"
-  gitDir: "/data/commons-logging/.git"
-  sourceRoots:
-    - "/data/commons-logging/src/main/java"
-    - "/data/commons-logging/src"
-  csv: "commons-logging.csv"
+  - id: commons-compress
+    url: "https://github.com/apache/commons-compress"
+    gitDir: "/data/commons-compress/.git"
+    sourceRoots:
+      - "/data/commons-compress/src/main/java"
+      - "/data/commons-compress/src"
+    outputDir: "."
 
-- id: commons-pool
-  url: "https://github.com/apache/commons-pool"
-  gitDir: "/data/commons-pool/.git"
-  sourceRoots:
-    - "/data/commons-pool/src/main/java"
-    - "/data/commons-pool/src"
-  csv: "commons-pool.csv"
+  - id: commons-logging
+    url: "https://github.com/apache/commons-logging"
+    gitDir: "/data/commons-logging/.git"
+    sourceRoots:
+      - "/data/commons-logging/src/main/java"
+      - "/data/commons-logging/src"
+    outputDir: "."
 
-- id: commons-text
-  url: "https://github.com/apache/commons-text"
-  gitDir: "/data/commons-text/.git"
-  sourceRoots:
-    - "/data/commons-text/src/main/java"
-    - "/data/commons-text/src"
-  csv: "commons-text.csv"
+  - id: commons-pool
+    url: "https://github.com/apache/commons-pool"
+    gitDir: "/data/commons-pool/.git"
+    sourceRoots:
+      - "/data/commons-pool/src/main/java"
+      - "/data/commons-pool/src"
+    outputDir: "."
 
-- id: commons-beanutils
-  url: "https://github.com/apache/commons-beanutils"
-  gitDir: "/data/commons-beanutils/.git"
-  sourceRoots:
-    - "/data/commons-beanutils/src/main/java"
-    - "/data/commons-beanutils/src"
-  csv: "commons-beanutils.csv"
+  - id: commons-text
+    url: "https://github.com/apache/commons-text"
+    gitDir: "/data/commons-text/.git"
+    sourceRoots:
+      - "/data/commons-text/src/main/java"
+      - "/data/commons-text/src"
+    outputDir: "."
 
-- id: awaitility
-  url: "https://github.com/awaitility/awaitility"
-  gitDir: "/data/awaitility/.git"
-  sourceRoots:
-    - "/data/awaitility/awaitility/src/main/java"
-  csv: "awaitility.csv"
+  - id: commons-beanutils
+    url: "https://github.com/apache/commons-beanutils"
+    gitDir: "/data/commons-beanutils/.git"
+    sourceRoots:
+      - "/data/commons-beanutils/src/main/java"
+      - "/data/commons-beanutils/src"
+    outputDir: "."
 
-- id: assertj-core
-  url: "https://github.com/assertj/assertj"
-  gitDir: "/data/assertj/.git"
-  sourceRoots:
-    - "/data/assertj/asserj-core/src/main/java"
-    - "/data/assertj/src"
-  csv: "assertj-core.csv"
+  - id: awaitility
+    url: "https://github.com/awaitility/awaitility"
+    gitDir: "/data/awaitility/.git"
+    sourceRoots:
+      - "/data/awaitility/awaitility/src/main/java"
+    outputDir: "."
 
-- id: asm
-  url: "https://gitlab.ow2.org/asm/asm/-"
-  gitDir: "/data/asm/.git"
-  sourceRoots:
-    - "/data/asm/asm/src/main/java"
-    - "/data/asm/src"
-  csv: "asm.csv"
+  - id: assertj-core
+    url: "https://github.com/assertj/assertj"
+    gitDir: "/data/assertj/.git"
+    sourceRoots:
+      - "/data/assertj/asserj-core/src/main/java"
+      - "/data/assertj/src"
+    outputDir: "."
 
-- id: commons-io
-  url: "https://github.com/apache/commons-io"
-  gitDir: "/home/dig/repositories/commons-io/.git"
-  sourceRoots:
-    - "/home/dig/repositories/commons-io/src/main/java"
-    - "/home/dig/repositories/commons-io/src/java"
-  csv: "commons-io.csv"
+  - id: asm
+    url: "https://gitlab.ow2.org/asm/asm/-"
+    gitDir: "/data/asm/.git"
+    sourceRoots:
+      - "/data/asm/asm/src/main/java"
+      - "/data/asm/src"
+    outputDir: "."
 
-- id: commons-collections
-  url: "https://github.com/apache/commons-collections"
-  gitDir: "/home/dig/repositories/commons-collections/.git"
-  sourceRoots:
-    - "/home/dig/repositories/commons-collections/src/main/java"
-    - "/home/dig/repositories/commons-collections/src/java"
-  csv: "commons-collections.csv"
+  - id: commons-io
+    url: "https://github.com/apache/commons-io"
+    gitDir: "/data/commons-io/.git"
+    sourceRoots:
+      - "/data/commons-io/src/main/java"
+      - "/data/commons-io/src/java"
+    outputDir: "."
 
-- id: commons-lang
-  url: "https://github.com/apache/commons-lang"
-  gitDir: "/home/dig/repositories/commons-lang/.git"
-  sourceRoots:
-    - "/home/dig/repositories/commons-lang/src/main/java"
-    - "/home/dig/repositories/commons-lang/src/java"
-  csv: "commons-lang.csv"
+  - id: commons-collections
+    url: "https://github.com/apache/commons-collections"
+    gitDir: "/data/commons-collections/.git"
+    sourceRoots:
+      - "/data/commons-collections/src/main/java"
+      - "/data/commons-collections/src/java"
+    outputDir: "."
 
-- id: gson
-  url: "https://github.com/google/gson"
-  gitDir: "/home/dig/repositories/gson/.git"
-  sourceRoots:
-    - "/home/dig/repositories/gson/gson/src/main/java"
-  csv: "gson.csv"
+  - id: commons-lang
+    url: "https://github.com/apache/commons-lang"
+    gitDir: "/data/commons-lang/.git"
+    sourceRoots:
+      - "/data/commons-lang/src/main/java"
+      - "/data/commons-lang/src/java"
+    outputDir: "."
 
-- id: guava
-  url: "https://github.com/google/guava"
-  gitDir: "/home/dig/repositories/guava/.git"
-  sourceRoots:
-    - "/home/dig/repositories/guava/guava/src"
-  csv: "guava.csv"
+  - id: gson
+    url: "https://github.com/google/gson"
+    gitDir: "/data/gson/.git"
+    sourceRoots:
+      - "/data/gson/gson/src/main/java"
+    outputDir: "."
 
-- id: httpcomponents-client
-  url: "https://github.com/apache/httpcomponents-client"
-  gitDir: "/home/dig/repositories/httpcomponents-client/.git"
-  sourceRoots:
-    - "/home/dig/repositories/httpcomponents-client/httpclient5/src/main/java"
-    - "/home/dig/repositories/httpcomponents-client/httpclient/src/main/java"
-  csv: "httpcomponents-client.csv"
+  - id: guava
+    url: "https://github.com/google/guava"
+    gitDir: "/data/guava/.git"
+    sourceRoots:
+      - "/data/guava/guava/src"
+    outputDir: "."
+    exclusions:
+      annotations:
+        - name: com.google.common.annotations.Beta
+          args: { }
 
-- id: jackson-core
-  url: "https://github.com/FasterXML/jackson-core"
-  gitDir: "/home/dig/repositories/jackson-core/.git"
-  sourceRoots:
-    - "/home/dig/repositories/jackson-core/src/main/java"
-  csv: "jackson-core.csv"
+  - id: httpcomponents-client
+    url: "https://github.com/apache/httpcomponents-client"
+    gitDir: "/data/httpcomponents-client/.git"
+    sourceRoots:
+      - "/data/httpcomponents-client/httpclient5/src/main/java"
+      - "/data/httpcomponents-client/httpclient/src/main/java"
+    outputDir: "."
 
-- id: jackson-databind
-  url: "https://github.com/FasterXML/jackson-databind"
-  gitDir: "/home/dig/repositories/jackson-databind/.git"
-  sourceRoots:
-    - "/home/dig/repositories/jackson-databind/src/main/java"
-  csv: "jackson-databind.csv"
+  - id: jackson-core
+    url: "https://github.com/FasterXML/jackson-core"
+    gitDir: "/data/jackson-core/.git"
+    sourceRoots:
+      - "/data/jackson-core/src/main/java"
+    outputDir: "."
 
-- id: slf4j-api
-  url: "https://github.com/qos-ch/slf4j"
-  gitDir: "/home/dig/repositories/slf4j/.git"
-  sourceRoots:
-    - "/home/dig/repositories/slf4j/slf4j-api/src/main/java"
-  csv: "slf4j-api.csv"
+  - id: jackson-databind
+    url: "https://github.com/FasterXML/jackson-databind"
+    gitDir: "/data/jackson-databind/.git"
+    sourceRoots:
+      - "/data/jackson-databind/src/main/java"
+    outputDir: "."
+
+  - id: slf4j-api
+    url: "https://github.com/qos-ch/slf4j"
+    gitDir: "/data/slf4j/.git"
+    sourceRoots:
+      - "/data/slf4j/slf4j-api/src/main/java"
+    outputDir: "."

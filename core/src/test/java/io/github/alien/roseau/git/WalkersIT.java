@@ -12,6 +12,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class WalkersIT {
+	private static final io.github.alien.roseau.RoseauOptions.Exclude NO_EXCLUSIONS =
+		new io.github.alien.roseau.RoseauOptions.Exclude(List.of(), List.of());
+
 	@Test
 	void incremental_and_regular_walkers_match_on_simple_history(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote");
@@ -29,17 +32,25 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path regularCsv = wd.resolve("regular.csv");
-		Path incrementalCsv = wd.resolve("incremental.csv");
+		Path regularOutputDir = wd.resolve("regular-out");
+		Path incrementalOutputDir = wd.resolve("incremental-out");
+		Path regularCommits = regularOutputDir.resolve("regular-commits.csv");
+		Path regularBcs = regularOutputDir.resolve("regular-bcs.csv");
+		Path incrementalCommits = incrementalOutputDir.resolve("incremental-commits.csv");
+		Path incrementalBcs = incrementalOutputDir.resolve("incremental-bcs.csv");
 
 		Path regularRoot = wd.resolve("regular-clone");
 		Path incrementalRoot = wd.resolve("incremental-clone");
 		String url = remoteDir.toUri().toString();
-		WalkRepository.walk(url, regularRoot.resolve(".git"), List.of(regularRoot.resolve("src/main/java")), List.of(), regularCsv);
-		IncrementalWalkRepository.walk(url, incrementalRoot.resolve(".git"), List.of(incrementalRoot.resolve("src/main/java")), incrementalCsv);
+		WalkRepository.walk("regular", url, regularRoot.resolve(".git"), List.of(regularRoot.resolve("src/main/java")),
+			List.of(), regularOutputDir, NO_EXCLUSIONS);
+		IncrementalWalkRepository.walk("incremental", url, incrementalRoot.resolve(".git"),
+			List.of(incrementalRoot.resolve("src/main/java")), incrementalOutputDir, NO_EXCLUSIONS);
 
-		Map<String, GitWalkTestUtils.CsvRow> regular = GitWalkTestUtils.readCsvRows(regularCsv);
-		Map<String, GitWalkTestUtils.CsvRow> incremental = GitWalkTestUtils.readCsvRows(incrementalCsv);
+		Map<String, GitWalkTestUtils.CommitCsvRow> regular = GitWalkTestUtils.readCommitCsvRows(regularCommits);
+		Map<String, GitWalkTestUtils.CommitCsvRow> incremental = GitWalkTestUtils.readCommitCsvRows(incrementalCommits);
+		Map<String, Integer> regularBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(regularBcs);
+		Map<String, Integer> incrementalBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(incrementalBcs);
 
 		assertThat(incremental.keySet()).isEqualTo(regular.keySet());
 		assertThat(regular).containsKeys(c2.getName(), c3.getName());
@@ -48,15 +59,17 @@ class WalkersIT {
 		for (String sha : regular.keySet()) {
 			var r = regular.get(sha);
 			var i = incremental.get(sha);
-			assertThat(i.typesCount()).isEqualTo(r.typesCount());
-			assertThat(i.methodsCount()).isEqualTo(r.methodsCount());
-			assertThat(i.fieldsCount()).isEqualTo(r.fieldsCount());
+			assertThat(i.exportedTypesCount()).isEqualTo(r.exportedTypesCount());
+			assertThat(i.exportedMethodsCount()).isEqualTo(r.exportedMethodsCount());
+			assertThat(i.exportedFieldsCount()).isEqualTo(r.exportedFieldsCount());
 			assertThat(i.breakingChangesCount()).isEqualTo(r.breakingChangesCount());
 		}
+		assertThat(incrementalBcsCount).isEqualTo(regularBcsCount);
 
 		assertThat(regular.get(c2.getName()).breakingChangesCount()).isZero();
-		assertThat(regular.get(c2.getName()).apiTime()).isZero();
+		assertThat(regular.get(c2.getName()).apiTimeMs()).isZero();
 		assertThat(regular.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
+		assertThat(regularBcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
 	}
 
 	@Test
@@ -76,8 +89,12 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path regularCsv = wd.resolve("regular-root-switch.csv");
-		Path incrementalCsv = wd.resolve("incremental-root-switch.csv");
+		Path regularOutputDir = wd.resolve("regular-root-switch-out");
+		Path incrementalOutputDir = wd.resolve("incremental-root-switch-out");
+		Path regularCommits = regularOutputDir.resolve("regular-root-switch-commits.csv");
+		Path incrementalCommits = incrementalOutputDir.resolve("incremental-root-switch-commits.csv");
+		Path regularBcs = regularOutputDir.resolve("regular-root-switch-bcs.csv");
+		Path incrementalBcs = incrementalOutputDir.resolve("incremental-root-switch-bcs.csv");
 
 		Path regularRoot = wd.resolve("regular-clone");
 		Path incrementalRoot = wd.resolve("incremental-clone");
@@ -91,11 +108,15 @@ class WalkersIT {
 		);
 
 		String url = remoteDir.toUri().toString();
-		WalkRepository.walk(url, regularRoot.resolve(".git"), sourceRootsRegular, List.of(), regularCsv);
-		IncrementalWalkRepository.walk(url, incrementalRoot.resolve(".git"), sourceRootsIncremental, incrementalCsv);
+		WalkRepository.walk("regular-root-switch", url, regularRoot.resolve(".git"), sourceRootsRegular, List.of(),
+			regularOutputDir, NO_EXCLUSIONS);
+		IncrementalWalkRepository.walk("incremental-root-switch", url, incrementalRoot.resolve(".git"),
+			sourceRootsIncremental, incrementalOutputDir, NO_EXCLUSIONS);
 
-		Map<String, GitWalkTestUtils.CsvRow> regular = GitWalkTestUtils.readCsvRows(regularCsv);
-		Map<String, GitWalkTestUtils.CsvRow> incremental = GitWalkTestUtils.readCsvRows(incrementalCsv);
+		Map<String, GitWalkTestUtils.CommitCsvRow> regular = GitWalkTestUtils.readCommitCsvRows(regularCommits);
+		Map<String, GitWalkTestUtils.CommitCsvRow> incremental = GitWalkTestUtils.readCommitCsvRows(incrementalCommits);
+		Map<String, Integer> regularBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(regularBcs);
+		Map<String, Integer> incrementalBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(incrementalBcs);
 
 		assertThat(regular).containsKeys(c2.getName(), c3.getName());
 		assertThat(incremental).containsKeys(c2.getName(), c3.getName());
@@ -104,10 +125,122 @@ class WalkersIT {
 		for (String sha : regular.keySet()) {
 			var r = regular.get(sha);
 			var i = incremental.get(sha);
-			assertThat(i.typesCount()).isEqualTo(r.typesCount());
-			assertThat(i.methodsCount()).isEqualTo(r.methodsCount());
-			assertThat(i.fieldsCount()).isEqualTo(r.fieldsCount());
+			assertThat(i.exportedTypesCount()).isEqualTo(r.exportedTypesCount());
+			assertThat(i.exportedMethodsCount()).isEqualTo(r.exportedMethodsCount());
+			assertThat(i.exportedFieldsCount()).isEqualTo(r.exportedFieldsCount());
 			assertThat(i.breakingChangesCount()).isEqualTo(r.breakingChangesCount());
 		}
+		assertThat(incrementalBcsCount).isEqualTo(regularBcsCount);
+	}
+
+	@Test
+	void emits_excluded_bcs_when_excluded_by_name(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-name");
+		RevCommit breaking;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of("src/main/java/pkg/internal/A.java", "package pkg.internal; public class A { public void m(){} }"),
+				List.of());
+			breaking = GitWalkTestUtils.commit(remote, "c2-breaking",
+				Map.of("src/main/java/pkg/internal/A.java", "package pkg.internal; public class A {}"),
+				List.of());
+		}
+
+		Path outputDir = wd.resolve("name-out");
+		Path bcsCsv = outputDir.resolve("name-case-bcs.csv");
+		Path cloneRoot = wd.resolve("name-clone");
+		String url = remoteDir.toUri().toString();
+		var exclusions = new io.github.alien.roseau.RoseauOptions.Exclude(List.of(".*\\.internal\\..*"), List.of());
+		WalkRepository.walk("name-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
+			List.of(), outputDir, exclusions);
+
+		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
+		assertThat(rows).isNotEmpty();
+		assertThat(rows.stream().anyMatch(r ->
+			r.get("commit").equals(breaking.getName()) &&
+				Boolean.parseBoolean(r.get("is_excluded_symbol")))).isTrue();
+	}
+
+	@Test
+	void emits_excluded_bcs_when_excluded_by_annotation_fqn(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-ann-fqn");
+		RevCommit breaking;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of(
+					"src/main/java/com/google/common/annotations/Beta.java",
+					"package com.google.common.annotations; public @interface Beta {}",
+					"src/main/java/pkg/A.java",
+					"package pkg; import com.google.common.annotations.Beta; public class A { @Beta public void m(){} }"
+				),
+				List.of());
+			breaking = GitWalkTestUtils.commit(remote, "c2-breaking",
+				Map.of(
+					"src/main/java/com/google/common/annotations/Beta.java",
+					"package com.google.common.annotations; public @interface Beta {}",
+					"src/main/java/pkg/A.java",
+					"package pkg; import com.google.common.annotations.Beta; public class A {}"
+				),
+				List.of());
+		}
+
+		Path outputDir = wd.resolve("ann-fqn-out");
+		Path bcsCsv = outputDir.resolve("ann-fqn-case-bcs.csv");
+		Path cloneRoot = wd.resolve("ann-fqn-clone");
+		String url = remoteDir.toUri().toString();
+		var exclusions = new io.github.alien.roseau.RoseauOptions.Exclude(
+			List.of(),
+			List.of(new io.github.alien.roseau.RoseauOptions.AnnotationExclusion(
+				"com.google.common.annotations.Beta", Map.of()))
+		);
+		WalkRepository.walk("ann-fqn-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
+			List.of(), outputDir, exclusions);
+
+		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
+		assertThat(rows).isNotEmpty();
+		assertThat(rows.stream().anyMatch(r ->
+			r.get("commit").equals(breaking.getName()) &&
+				Boolean.parseBoolean(r.get("is_excluded_symbol")))).isTrue();
+	}
+
+	@Test
+	void emits_excluded_bcs_when_excluded_by_annotation_simple_name(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-ann-simple");
+		RevCommit breaking;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of(
+					"src/main/java/pkg/Internal.java",
+					"package pkg; public @interface Internal {}",
+					"src/main/java/pkg/A.java",
+					"package pkg; public class A { @Internal public void m(){} }"
+				),
+				List.of());
+			breaking = GitWalkTestUtils.commit(remote, "c2-breaking",
+				Map.of(
+					"src/main/java/pkg/Internal.java",
+					"package pkg; public @interface Internal {}",
+					"src/main/java/pkg/A.java",
+					"package pkg; public class A {}"
+				),
+				List.of());
+		}
+
+		Path outputDir = wd.resolve("ann-simple-out");
+		Path bcsCsv = outputDir.resolve("ann-simple-case-bcs.csv");
+		Path cloneRoot = wd.resolve("ann-simple-clone");
+		String url = remoteDir.toUri().toString();
+		var exclusions = new io.github.alien.roseau.RoseauOptions.Exclude(
+			List.of(),
+			List.of(new io.github.alien.roseau.RoseauOptions.AnnotationExclusion("Internal", Map.of()))
+		);
+		WalkRepository.walk("ann-simple-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
+			List.of(), outputDir, exclusions);
+
+		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
+		assertThat(rows).isNotEmpty();
+		assertThat(rows.stream().anyMatch(r ->
+			r.get("commit").equals(breaking.getName()) &&
+				Boolean.parseBoolean(r.get("is_excluded_symbol")))).isTrue();
 	}
 }

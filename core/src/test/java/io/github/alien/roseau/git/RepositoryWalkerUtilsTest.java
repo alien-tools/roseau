@@ -16,6 +16,40 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 class RepositoryWalkerUtilsTest {
 	@Test
+	void load_config_supports_global_and_repository_exclusions(@TempDir Path wd) throws Exception {
+		Path yaml = wd.resolve("walk.yaml");
+		Files.writeString(yaml, """
+			defaults:
+			  exclusions:
+			    names:
+			      - ".*\\\\.internal\\\\..*"
+			    annotations:
+			      - name: Internal
+			        args: {}
+			repositories:
+			  - id: lib
+			    url: "https://example.org/repo.git"
+			    gitDir: "%s/.git"
+			    sourceRoots:
+			      - "%s/src/main/java"
+			    outputDir: "%s"
+			    exclusions:
+			      annotations:
+			        - name: com.google.common.annotations.Beta
+			          args: {}
+			""".formatted(wd, wd, wd));
+
+		List<RepositoryWalkerUtils.Repository> repositories = RepositoryWalkerUtils.loadConfig(yaml);
+
+		assertThat(repositories).hasSize(1);
+		RepositoryWalkerUtils.Repository repo = repositories.getFirst();
+		assertThat(repo.id()).isEqualTo("lib");
+		assertThat(repo.exclusions().names()).containsExactly(".*\\.internal\\..*");
+		assertThat(repo.exclusions().annotations()).extracting(a -> a.name())
+			.containsExactly("Internal", "com.google.common.annotations.Beta");
+	}
+
+	@Test
 	void prepare_repository_clones_when_missing(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote");
 		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
