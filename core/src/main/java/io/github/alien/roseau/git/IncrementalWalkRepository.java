@@ -108,6 +108,7 @@ public class IncrementalWalkRepository {
 						RepositoryWalkerUtils.writeCommitRow(
 							commitsWriter,
 							library,
+							url,
 							commit,
 							conventionalCommitTag,
 							parentCommit,
@@ -217,6 +218,7 @@ public class IncrementalWalkRepository {
 				RepositoryWalkerUtils.writeCommitRow(
 					commitsWriter,
 					library,
+					url,
 					commit,
 					conventionalCommitTag,
 					parentCommit,

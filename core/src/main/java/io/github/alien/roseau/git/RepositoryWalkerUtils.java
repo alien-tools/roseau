@@ -43,6 +43,7 @@ import org.eclipse.jgit.util.io.DisabledOutputStream;
 import java.io.BufferedWriter;
 import java.io.IOException;
 import java.io.Writer;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
@@ -67,6 +68,7 @@ final class RepositoryWalkerUtils {
 	static final List<String> COMMITS_HEADER = List.of(
 		"library",
 		"commit_sha",
+		"commit_url",
 		"commit_short_msg",
 		"conventional_commit_tag",
 		"parent_commit",
@@ -472,6 +474,7 @@ final class RepositoryWalkerUtils {
 	static void writeCommitRow(
 		Writer writer,
 		String library,
+		String repositoryUrl,
 		RevCommit commit,
 		String conventionalCommitTag,
 		String parentCommit,
@@ -484,6 +487,7 @@ final class RepositoryWalkerUtils {
 		writeCsvRow(writer, List.of(
 			library,
 			commit.getName(),
+			commitUrl(repositoryUrl, commit.getName()),
 			commit.getShortMessage(),
 			conventionalCommitTag,
 			parentCommit,
@@ -516,6 +520,14 @@ final class RepositoryWalkerUtils {
 			analysis.diffTimeMs(),
 			analysis.statsTimeMs()
 		));
+	}
+
+	static String commitUrl(String repositoryUrl, String commitSha) {
+		String base = githubRepositoryBaseUrl(repositoryUrl);
+		if (base.isEmpty() || commitSha == null || commitSha.isBlank()) {
+			return "";
+		}
+		return base + "/commit/" + commitSha;
 	}
 
 	static void writeBreakingChangesRows(
@@ -724,6 +736,47 @@ final class RepositoryWalkerUtils {
 
 	private static boolean isShallowRepository(org.eclipse.jgit.lib.Repository repo) throws IOException {
 		return !repo.getObjectDatabase().getShallowCommits().isEmpty();
+	}
+
+	private static String githubRepositoryBaseUrl(String repositoryUrl) {
+		if (repositoryUrl == null || repositoryUrl.isBlank()) {
+			return "";
+		}
+		String trimmed = repositoryUrl.trim();
+		if (trimmed.startsWith("git@github.com:")) {
+			return toGithubBaseUrl(trimmed.substring("git@github.com:".length()));
+		}
+		try {
+			URI uri = URI.create(trimmed);
+			String host = uri.getHost();
+			if (host == null || !host.equalsIgnoreCase("github.com")) {
+				return "";
+			}
+			return toGithubBaseUrl(uri.getPath());
+		} catch (IllegalArgumentException _) {
+			return "";
+		}
+	}
+
+	private static String toGithubBaseUrl(String repositoryPath) {
+		if (repositoryPath == null || repositoryPath.isBlank()) {
+			return "";
+		}
+		String normalized = repositoryPath.strip();
+		while (normalized.startsWith("/")) {
+			normalized = normalized.substring(1);
+		}
+		while (normalized.endsWith("/")) {
+			normalized = normalized.substring(0, normalized.length() - 1);
+		}
+		if (normalized.endsWith(".git")) {
+			normalized = normalized.substring(0, normalized.length() - 4);
+		}
+		String[] segments = normalized.split("/");
+		if (segments.length < 2 || segments[0].isBlank() || segments[1].isBlank()) {
+			return "";
+		}
+		return "https://github.com/" + segments[0] + "/" + segments[1];
 	}
 
 	private static void deleteRecursively(Path root) throws IOException {

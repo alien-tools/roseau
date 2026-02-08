@@ -96,6 +96,7 @@ public class WalkRepository {
 						RepositoryWalkerUtils.writeCommitRow(
 							commitsWriter,
 							library,
+							url,
 							commit,
 							conventionalCommitTag,
 							parentCommit,
@@ -155,6 +156,7 @@ public class WalkRepository {
 				RepositoryWalkerUtils.writeCommitRow(
 					commitsWriter,
 					library,
+					url,
 					commit,
 					conventionalCommitTag,
 					parentCommit,

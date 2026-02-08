@@ -175,4 +175,34 @@ class RepositoryWalkerUtilsTest {
 			assertThat(changed.deletedFiles()).containsExactly(Path.of("pkg/C.java"));
 		}
 	}
+
+	@Test
+	void build_commit_url_for_github_https_remote() {
+		String commitUrl = RepositoryWalkerUtils.commitUrl(
+			"https://github.com/alien-tools/roseau.git",
+			"abc123"
+		);
+
+		assertThat(commitUrl).isEqualTo("https://github.com/alien-tools/roseau/commit/abc123");
+	}
+
+	@Test
+	void build_commit_url_for_github_ssh_remote() {
+		String commitUrl = RepositoryWalkerUtils.commitUrl(
+			"git@github.com:alien-tools/roseau.git",
+			"abc123"
+		);
+
+		assertThat(commitUrl).isEqualTo("https://github.com/alien-tools/roseau/commit/abc123");
+	}
+
+	@Test
+	void build_commit_url_is_empty_for_non_github_remote() {
+		String commitUrl = RepositoryWalkerUtils.commitUrl(
+			"https://gitlab.com/alien-tools/roseau.git",
+			"abc123"
+		);
+
+		assertThat(commitUrl).isEmpty();
+	}
 }

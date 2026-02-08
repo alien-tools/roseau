@@ -18,6 +18,7 @@ final class GitWalkTestUtils {
 
 	record CommitCsvRow(
 		String commit,
+		String commitUrl,
 		String message,
 		int exportedTypesCount,
 		int exportedMethodsCount,
@@ -68,6 +69,7 @@ final class GitWalkTestUtils {
 			String sha = row.get("commit_sha");
 			result.put(sha, new CommitCsvRow(
 				sha,
+				row.get("commit_url"),
 				row.get("commit_short_msg"),
 				Integer.parseInt(row.get("exported_types_count")),
 				Integer.parseInt(row.get("exported_methods_count")),
