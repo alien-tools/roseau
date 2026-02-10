@@ -1,11 +1,13 @@
 defaults:
   exclusions:
     names:
-      - ".*\\.internal\\..*"
+      - ".*(\\.)?(internal|example|examples)(\\.)?.*"
     annotations:
       - name: Internal
         args: { }
       - name: Beta
+        args: { }
+      - name: Test
         args: { }
 
 repositories:
