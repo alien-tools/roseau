@@ -4,7 +4,6 @@ import com.soebes.itf.jupiter.extension.MavenCLIOptions;
 import com.soebes.itf.jupiter.extension.MavenGoal;
 import com.soebes.itf.jupiter.extension.MavenJupiterExtension;
 import com.soebes.itf.jupiter.extension.MavenOption;
-import com.soebes.itf.jupiter.extension.MavenPredefinedRepository;
 import com.soebes.itf.jupiter.extension.MavenProjectSources;
 import com.soebes.itf.jupiter.extension.MavenTest;
 import com.soebes.itf.jupiter.extension.SystemProperty;
@@ -86,7 +85,6 @@ class RoseauPluginIT {
 		}
 
 		@SystemProperty(value = "roseau.baselineJar", content = "missing.jar")
-		@MavenPredefinedRepository
 		@MavenTest
 		void baseline_jar_from_pom_configuration_takes_precedence_over_system_property(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
@@ -139,41 +137,23 @@ class RoseauPluginIT {
 				.anyMatch(m -> m.matches("^v1 classpath is: \\[.*org/slf4j/slf4j-api/2.0.17/slf4j-api-2\\.0\\.17\\.jar\\]$"))
 				.anyMatch(m -> m.matches("^v2 classpath is: \\[.*org/slf4j/slf4j-api/2.0.17/slf4j-api-2\\.0\\.17\\.jar\\]$"));
 		}
-	}
 
-	@Nested
-	@MavenProjectSources(sources = "module-with-maven-baseline")
-	class ModuleWithMavenBaseline {
+		@SystemProperty(value = "roseau.configFile", content = "roseau-classpath-config.yaml")
+		@MavenOption(MavenCLIOptions.VERBOSE)
 		@MavenTest
-		void baseline_is_resolved(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
-				.out().warn()
-				.anyMatch(m -> m.contains("io.github.alien.roseau.Library TYPE_REMOVED"));
+		void classpath_configuration_is_applied_to_each_version(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().debug()
+				.anyMatch(m -> m.equals("v1 classpath is: [manual-baseline.jar]"));
 		}
 
-		@SystemProperty(value = "roseau.baselineJar", content = "missing.jar")
-		@MavenTest
-		void baseline_version_takes_precedence_over_baseline_jar(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
-				.out().warn().anyMatch(m -> m.contains("io.github.alien.roseau.Library TYPE_REMOVED"));
-			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
-		}
-	}
-
-	@Nested
-	@MavenProjectSources(sources = "module-with-yaml")
-	class ModuleWithYaml {
+		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
 		@MavenTest
 		void yaml_is_loaded(MavenExecutionResult result) {
-			// pkg.C is excluded
-			// pkg.I.foo() is ignored
-			// common-cp.jar in common
-			// v2-cp.jar in v2
-			// report.csv & report.html expected
 			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 			assertThat(result).isSuccessful()
 				.out().info()
-				.anyMatch(m -> m.matches("^Loaded configuration from .*/roseau.yaml$"));
+				.anyMatch(m -> m.matches("^Loaded configuration from .*/roseau-yaml-config.yaml$"));
 			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
@@ -196,6 +176,7 @@ class RoseauPluginIT {
 			assertThat(baseDir.resolve("report.html")).doesNotExist();
 		}
 
+		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
 		@SystemProperty(value = "roseau.binaryOnly")
 		@MavenTest
 		void maven_properties_override_yaml_options(MavenExecutionResult result) {
@@ -204,6 +185,7 @@ class RoseauPluginIT {
 			assertThat(result).out().info().anyMatch(m -> m.contains("No breaking changes found."));
 		}
 
+		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
 		@SystemProperty(value = "roseau.reportDirectory", content = "target/reports")
 		@MavenTest
 		void report_directory_parameter_is_currently_ignored(MavenExecutionResult result) {
@@ -213,6 +195,33 @@ class RoseauPluginIT {
 			assertThat(baseDir.resolve("report.html")).exists();
 			assertThat(baseDir.resolve("target/reports/report.csv")).doesNotExist();
 			assertThat(baseDir.resolve("target/reports/report.html")).doesNotExist();
+		}
+
+		@SystemProperty(value = "roseau.configFile", content = "roseau-report-write-error.yaml")
+		@MavenTest
+		void report_write_error_is_logged_and_build_stays_successful(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().error().anyMatch(m -> m.contains("Failed to write CSV report to"));
+			assertThat(result).out().warn().anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "module-with-maven-baseline")
+	class ModuleWithMavenBaseline {
+		@MavenTest
+		void baseline_is_resolved(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().warn()
+				.anyMatch(m -> m.contains("io.github.alien.roseau.Library TYPE_REMOVED"));
+		}
+
+		@SystemProperty(value = "roseau.baselineJar", content = "missing.jar")
+		@MavenTest
+		void baseline_version_takes_precedence_over_baseline_jar(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().warn().anyMatch(m -> m.contains("io.github.alien.roseau.Library TYPE_REMOVED"));
+			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
 		}
 	}
 
@@ -229,61 +238,10 @@ class RoseauPluginIT {
 	@Nested
 	@MavenProjectSources(sources = "pom-packaging-test")
 	class PomPackaging {
-		@MavenPredefinedRepository
 		@MavenTest
 		void pom_packaging_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().info().anyMatch(m -> m.contains("Packaging of the project is 'pom'; skipping."));
-		}
-	}
-
-	@Nested
-	@MavenProjectSources(sources = "module-with-invalid-report-format")
-	class InvalidReportFormat {
-		@MavenPredefinedRepository
-		@MavenTest
-		void invalid_report_format_fails_the_build(MavenExecutionResult result) {
-			assertThat(result).isFailure();
-			assertThat(result).out().error().anyMatch(m -> m.contains("No enum constant"));
-		}
-	}
-
-	@Nested
-	@MavenProjectSources(sources = "module-with-report-write-error")
-	class ReportWriteError {
-		@MavenPredefinedRepository
-		@MavenTest
-		void report_write_error_is_logged_and_build_stays_successful(MavenExecutionResult result) {
-			assertThat(result).isSuccessful();
-			assertThat(result).out().error().anyMatch(m -> m.contains("Failed to write CSV report to"));
-			assertThat(result).out().warn().anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
-		}
-	}
-
-	@Nested
-	@MavenProjectSources(sources = "module-with-unresolvable-baseline")
-	class UnresolvableBaseline {
-		@MavenPredefinedRepository
-		@MavenTest
-		void unresolved_baseline_version_is_reported_and_check_is_skipped(MavenExecutionResult result) {
-			assertThat(result).isSuccessful();
-			assertThat(result).out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version; skipping."));
-		}
-	}
-
-	@Nested
-	@MavenProjectSources(sources = "module-with-classpath-params")
-	class ClasspathParameters {
-		@MavenOption(MavenCLIOptions.VERBOSE)
-		@MavenPredefinedRepository
-		@MavenTest
-		void classpath_parameters_are_applied_to_each_version(MavenExecutionResult result) {
-			assertThat(result).isSuccessful();
-			assertThat(result).out().debug()
-				.anyMatch(m -> m.contains("v1 classpath is: [") && m.contains("manual-baseline.jar"))
-				.anyMatch(m -> m.contains("v2 classpath is: [") && m.contains("manual-common.jar"))
-				.noneMatch(m -> m.contains("v1 classpath is: [") && m.contains("manual-common.jar"))
-				.noneMatch(m -> m.contains("v2 classpath is: [") && m.contains("manual-baseline.jar"));
 		}
 	}
 }

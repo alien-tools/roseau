@@ -12,7 +12,7 @@
 
     <artifactId>roseau-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
-    <description>Maven plugin for Roseau</description>
+    <name>Roseau Maven plug-in</name>
 
     <properties>
         <maven.version>3.9.11</maven.version>
