@@ -3,6 +3,7 @@ package io.github.alien.roseau;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
 import io.github.alien.roseau.extractors.ExtractorType;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
