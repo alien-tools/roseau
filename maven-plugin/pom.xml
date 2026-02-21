@@ -75,6 +75,16 @@
         </plugins>
     </build>
 
+    <reporting>
+        <plugins>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-plugin-report-plugin</artifactId>
+                <version>${maven-plugin-tools.version}</version>
+            </plugin>
+        </plugins>
+    </reporting>
+
     <dependencies>
         <dependency>
             <groupId>io.github.alien-tools</groupId>

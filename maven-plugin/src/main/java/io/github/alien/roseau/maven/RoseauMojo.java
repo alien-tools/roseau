@@ -46,6 +46,13 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.stream.Collectors;
 
+/**
+ * Compares the current module artifact with a baseline artifact and reports API breaking changes.
+ * <p>
+ * The baseline can be provided either as Maven coordinates ({@code baselineVersion}) or as a local file
+ * ({@code baselineJar}). When reports are configured, report files are written under {@code reportDirectory}
+ * unless absolute report paths are provided.
+ */
 @Mojo(
 	name = "check",
 	defaultPhase = LifecyclePhase.VERIFY,
@@ -54,49 +61,135 @@ import java.util.stream.Collectors;
 	requiresDependencyResolution = ResolutionScope.COMPILE
 )
 public final class RoseauMojo extends AbstractMojo {
+	/**
+	 * Current Maven project.
+	 */
 	@Parameter(defaultValue = "${project}", required = true, readonly = true)
 	private MavenProject project;
+
+	/**
+	 * Skips plugin execution.
+	 */
 	@Parameter(property = "roseau.skip", defaultValue = "false")
 	private boolean skip;
-	@Parameter(property = "roseau.binaryOnly", defaultValue = "false")
-	private boolean binaryOnly;
-	@Parameter(property = "roseau.sourceOnly", defaultValue = "false")
-	private boolean sourceOnly;
+
+	/**
+	 * Reports only binary-breaking changes.
+	 */
+	@Parameter(property = "roseau.binaryOnly")
+	private Boolean binaryOnly;
+
+	/**
+	 * Reports only source-breaking changes.
+	 */
+	@Parameter(property = "roseau.sourceOnly")
+	private Boolean sourceOnly;
+
+	/**
+	 * Fails the build when any breaking change is found.
+	 */
 	@Parameter(property = "roseau.failOnIncompatibility", defaultValue = "false")
 	private boolean failOnIncompatibility;
+
+	/**
+	 * Fails the build when any binary-breaking change is found.
+	 */
 	@Parameter(property = "roseau.failOnBinaryIncompatibility", defaultValue = "false")
 	private boolean failOnBinaryIncompatibility;
+
+	/**
+	 * Fails the build when any source-breaking change is found.
+	 */
 	@Parameter(property = "roseau.failOnSourceIncompatibility", defaultValue = "false")
 	private boolean failOnSourceIncompatibility;
+
+	/**
+	 * Baseline artifact coordinates ({@code groupId:artifactId:version}) resolved from Maven repositories.
+	 */
 	@Parameter(property = "roseau.baselineVersion")
 	private Dependency baselineVersion;
+
+	/**
+	 * Baseline artifact file path, used when {@code baselineVersion} is not provided.
+	 */
 	@Parameter(property = "roseau.baselineJar")
 	private Path baselineJar;
+
+	/**
+	 * Additional classpath entries shared by both baseline and current artifacts.
+	 */
 	@Parameter
 	private List<Path> classpath;
+
+	/**
+	 * POM file used to derive classpath entries shared by both baseline and current artifacts.
+	 */
 	@Parameter
 	private Path classpathPom;
+
+	/**
+	 * Additional classpath entries used only for the baseline artifact.
+	 */
 	@Parameter
 	private List<Path> baselineClasspath;
+
+	/**
+	 * POM file used to derive classpath entries for the baseline artifact.
+	 */
 	@Parameter
 	private Path baselineClasspathPom;
+
+	/**
+	 * Report files to generate (for example CSV, HTML).
+	 */
 	@Parameter
 	private List<ReportConfig> reports;
+
+	/**
+	 * Output directory for relative report file paths.
+	 */
 	@Parameter(property = "roseau.reportDirectory", defaultValue = "${project.build.directory}/roseau")
 	private File reportDirectory;
+
+	/**
+	 * Optional path where to export the baseline API model as JSON.
+	 */
 	@Parameter(property = "roseau.exportBaselineApi")
 	private Path exportBaselineApi;
+
+	/**
+	 * Optional path where to export the current API model as JSON.
+	 */
 	@Parameter(property = "roseau.exportCurrentApi")
 	private Path exportCurrentApi;
+
+	/**
+	 * Optional Roseau YAML configuration file.
+	 */
 	@Parameter(property = "roseau.configFile", defaultValue = "${project.basedir}/roseau.yaml")
 	private Path configFile;
+
+	/**
+	 * Logging verbosity for Roseau internals: QUIET, NORMAL, VERBOSE, DEBUG.
+	 */
 	@Parameter(property = "roseau.verbosity")
 	private String verbosity;
 
+	/**
+	 * Maven artifact resolver.
+	 */
 	@Inject
 	private RepositorySystem repositorySystem;
+
+	/**
+	 * Current Maven resolver session.
+	 */
 	@Parameter(defaultValue = "${repositorySystemSession}", readonly = true)
 	private RepositorySystemSession repositorySystemSession;
+
+	/**
+	 * Remote repositories available for baseline resolution.
+	 */
 	@Parameter(defaultValue = "${project.remoteProjectRepositories}", readonly = true)
 	private List<RemoteRepository> remoteRepositories;
 
@@ -218,16 +311,17 @@ public final class RoseauMojo extends AbstractMojo {
 	private RoseauOptions loadConfiguration(Path oldJar, Path newJar) {
 		// Start with default configuration
 		RoseauOptions options = RoseauOptions.newDefault();
+		Path resolvedConfigFile = resolvePath(configFile);
 
 		// Load and merge YAML configuration if enabled and exists
-		if (configFile != null && Files.isRegularFile(configFile)) {
+		if (resolvedConfigFile != null && Files.isRegularFile(resolvedConfigFile)) {
 			try {
-				RoseauOptions yamlOptions = RoseauOptions.load(configFile);
+				RoseauOptions yamlOptions = RoseauOptions.load(resolvedConfigFile);
 				options = options.mergeWith(yamlOptions);
-				getLog().info("Loaded configuration from " + configFile);
+				getLog().info("Loaded configuration from " + resolvedConfigFile);
 			} catch (Exception e) {
 				Throwable cause = e.getCause() != null ? e.getCause() : e;
-				getLog().warn("Could not load configuration file " + configFile + ": " + cause.getMessage());
+				getLog().warn("Could not load configuration file " + resolvedConfigFile + ": " + cause.getMessage());
 			}
 		}
 
@@ -235,6 +329,7 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions mavenOptions = buildMavenOptions(oldJar, newJar);
 		getLog().debug("mavenOptions = " + mavenOptions);
 		options = options.mergeWith(mavenOptions);
+		options = normalizePaths(options);
 		getLog().debug("Roseau options = " + options);
 
 		return options;
@@ -254,20 +349,20 @@ public final class RoseauMojo extends AbstractMojo {
 		// Merge with manual classpath
 		List<Path> mergedClasspath = new ArrayList<>();
 		if (classpath != null && !classpath.isEmpty()) {
-			mergedClasspath.addAll(classpath);
+			mergedClasspath.addAll(resolvePaths(classpath));
 		}
 		mergedClasspath.addAll(projectClasspath);
 
 		// Resolve baseline classpath
 		List<Path> baselineClasspathResolved = new ArrayList<>();
 		if (baselineClasspath != null && !baselineClasspath.isEmpty()) {
-			baselineClasspathResolved.addAll(baselineClasspath);
+			baselineClasspathResolved.addAll(resolvePaths(baselineClasspath));
 		}
 		baselineClasspathResolved.addAll(resolveBaselineClasspath());
 
 		// Build Common configuration (classpath + exclusions)
 		RoseauOptions.Classpath commonClasspath = new RoseauOptions.Classpath(
-			classpathPom,
+			resolvePath(classpathPom),
 			mergedClasspath
 		);
 
@@ -277,14 +372,14 @@ public final class RoseauMojo extends AbstractMojo {
 
 		// Build Library v1 (baseline)
 		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
-			baselineClasspathPom,
+			resolvePath(baselineClasspathPom),
 			baselineClasspathResolved
 		);
 		RoseauOptions.Library v1 = new RoseauOptions.Library(
 			oldJar,
 			v1Classpath,
 			new RoseauOptions.Exclude(List.of(), List.of()),
-			exportBaselineApi
+			resolvePath(exportBaselineApi)
 		);
 
 		// Build Library v2 (current)
@@ -292,16 +387,16 @@ public final class RoseauMojo extends AbstractMojo {
 			newJar,
 			new RoseauOptions.Classpath(null, List.of()),
 			new RoseauOptions.Exclude(List.of(), List.of()),
-			exportCurrentApi
+			resolvePath(exportCurrentApi)
 		);
 
-		// Build Diff configuration
+		// Build Diff configurationAttempt to exclude tests/examples/etc from analysis
 		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, sourceOnly, binaryOnly);
 
 		// Build Reports list
 		List<RoseauOptions.Report> reportsList = reports != null
 			? reports.stream()
-			.map(ReportConfig::toRoseauReport)
+			.map(this::toRoseauReport)
 			.collect(Collectors.toList())
 			: List.of();
 
@@ -380,38 +475,34 @@ public final class RoseauMojo extends AbstractMojo {
 		}
 
 		if ((baselineVersion == null || baselineVersion.getArtifactId() == null) && baselineJar == null) {
-			getLog().error("No baseline specified; skipping.");
-			return;
+			throw new MojoExecutionException("No baseline specified; configure baselineVersion or baselineJar.");
 		}
 
 		Optional<Path> maybeJar = resolveArtifactJar();
 		if (maybeJar.isEmpty()) {
-			getLog().error("Current artifact not found; skipping." +
-				" Make sure that the artifact was built in the 'package' phase.");
-			return;
+			throw new MojoExecutionException("Current artifact not found. Make sure the artifact was built in the 'package' phase.");
 		}
 
 		if (isBaselineVersionConfigured()) {
 			if (!isBaselineVersionValid()) {
-				getLog().error("Invalid baseline version coordinates; groupId, artifactId and version are required.");
-				return;
+				throw new MojoExecutionException("Invalid baseline version coordinates; groupId, artifactId and version are required.");
 			}
 
 			Optional<Path> maybeBaseline = resolveBaselineVersion();
 			if (maybeBaseline.isPresent()) {
 				check(maybeBaseline.get(), maybeJar.get());
 			} else {
-				getLog().error("Couldn't resolve the baseline version; skipping.");
+				throw new MojoExecutionException("Couldn't resolve the baseline version.");
 			}
 		} else if (baselineJar != null) {
 			Path resolvedBaselineJar = resolvePath(baselineJar);
 			if (Files.isRegularFile(resolvedBaselineJar)) {
 				check(resolvedBaselineJar, maybeJar.get());
 			} else {
-				getLog().error("Invalid baseline JAR " + resolvedBaselineJar);
+				throw new MojoExecutionException("Invalid baseline JAR " + resolvedBaselineJar);
 			}
 		} else {
-			getLog().error("No baseline version specified; skipping.");
+			throw new MojoExecutionException("No baseline version specified.");
 		}
 	}
 
@@ -517,12 +608,78 @@ public final class RoseauMojo extends AbstractMojo {
 		return project.getBasedir().toPath().resolve(path);
 	}
 
+	private List<Path> resolvePaths(List<Path> paths) {
+		if (paths == null || paths.isEmpty()) {
+			return List.of();
+		}
+		return paths.stream()
+			.map(this::resolvePath)
+			.toList();
+	}
+
+	private File resolveFile(File file) {
+		if (file == null || file.isAbsolute()) {
+			return file;
+		}
+		return resolvePath(file.toPath()).toFile();
+	}
+
+	private RoseauOptions normalizePaths(RoseauOptions options) {
+		RoseauOptions.Classpath commonClasspath = new RoseauOptions.Classpath(
+			resolvePath(options.common().classpath().pom()),
+			resolvePaths(options.common().classpath().jars())
+		);
+		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, options.common().excludes());
+
+		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
+			resolvePath(options.v1().classpath().pom()),
+			resolvePaths(options.v1().classpath().jars())
+		);
+		RoseauOptions.Library v1 = new RoseauOptions.Library(
+			resolvePath(options.v1().location()),
+			v1Classpath,
+			options.v1().excludes(),
+			resolvePath(options.v1().apiReport())
+		);
+
+		RoseauOptions.Classpath v2Classpath = new RoseauOptions.Classpath(
+			resolvePath(options.v2().classpath().pom()),
+			resolvePaths(options.v2().classpath().jars())
+		);
+		RoseauOptions.Library v2 = new RoseauOptions.Library(
+			resolvePath(options.v2().location()),
+			v2Classpath,
+			options.v2().excludes(),
+			resolvePath(options.v2().apiReport())
+		);
+
+		RoseauOptions.Diff diff = new RoseauOptions.Diff(
+			resolvePath(options.diff().ignore()),
+			options.diff().sourceOnly(),
+			options.diff().binaryOnly()
+		);
+
+		return new RoseauOptions(common, v1, v2, diff, options.reports());
+	}
+
+	private RoseauOptions.Report toRoseauReport(ReportConfig reportConfig) {
+		try {
+			return reportConfig.toRoseauReport();
+		} catch (Exception e) {
+			String file = reportConfig.file == null ? "<null>" : reportConfig.file;
+			String format = reportConfig.format == null ? "<null>" : reportConfig.format;
+			throw new IllegalArgumentException(
+				"Invalid report configuration for file '%s' and format '%s'".formatted(file, format), e);
+		}
+	}
+
 	private Path resolveReportPath(Path reportPath) {
+		File moduleReportDirectory = resolveFile(reportDirectory);
 		if (reportPath.isAbsolute()) {
 			return reportPath;
 		}
-		if (reportDirectory != null) {
-			return reportDirectory.toPath().resolve(reportPath);
+		if (moduleReportDirectory != null) {
+			return moduleReportDirectory.toPath().resolve(reportPath);
 		}
 		return resolvePath(reportPath);
 	}
@@ -531,8 +688,14 @@ public final class RoseauMojo extends AbstractMojo {
 	 * Configuration for report generation.
 	 */
 	public static class ReportConfig {
+		/**
+		 * Report file path. Relative paths are resolved against {@code reportDirectory}.
+		 */
 		@Parameter(required = true)
-		private Path file;
+		private String file;
+		/**
+		 * Report format (CSV, HTML, JSON, MD).
+		 */
 		@Parameter(required = true)
 		private String format;
 
@@ -542,7 +705,13 @@ public final class RoseauMojo extends AbstractMojo {
 		 * @return the Roseau Report instance
 		 */
 		public RoseauOptions.Report toRoseauReport() {
-			return new RoseauOptions.Report(file,
+			if (file == null || file.isBlank()) {
+				throw new IllegalArgumentException("Report file is required");
+			}
+			if (format == null || format.isBlank()) {
+				throw new IllegalArgumentException("Report format is required");
+			}
+			return new RoseauOptions.Report(Path.of(file),
 				BreakingChangesFormatterFactory.valueOf(format.toUpperCase(Locale.ROOT)));
 		}
 	}

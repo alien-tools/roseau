@@ -1,0 +1,2 @@
+type;symbol;kind;nature;location
+pkg.I;pkg.I.foo();METHOD_REMOVED;DELETION;pkg/I.java:-1

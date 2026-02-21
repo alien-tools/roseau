@@ -187,6 +187,16 @@ class RoseauPluginIT {
 			assertThat(result).out().info().anyMatch(m -> m.contains("No breaking changes found."));
 		}
 
+		@SystemProperty(value = "roseau.configFile", content = "roseau-source-only.yaml")
+		@MavenTest
+		void yaml_diff_source_only_is_applied_when_maven_property_is_not_set(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().warn()
+				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
+				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
+		}
+
 		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
 		@SystemProperty(value = "roseau.reportDirectory", content = "target/foo")
 		@MavenTest
@@ -232,8 +242,8 @@ class RoseauPluginIT {
 	class NoBaseline {
 		@MavenTest
 		void missing_baseline_is_reported_and_check_is_skipped(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
-				.out().error().anyMatch(m -> m.contains("No baseline specified; skipping."));
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("No baseline specified"));
 		}
 	}
 
@@ -242,8 +252,18 @@ class RoseauPluginIT {
 	class InvalidMavenBaseline {
 		@MavenTest
 		void invalid_baseline_version_is_reported_and_check_is_skipped(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
+			assertThat(result).isFailure()
 				.out().error().anyMatch(m -> m.contains("Invalid baseline version coordinates"));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "unresolved-maven-baseline-test")
+	class UnresolvedMavenBaseline {
+		@MavenTest
+		void unresolved_baseline_version_fails_the_build(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version."));
 		}
 	}
 
@@ -254,6 +274,33 @@ class RoseauPluginIT {
 		void pom_packaging_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().info().anyMatch(m -> m.contains("Packaging of the project is 'pom'; skipping."));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "multi-module-paths-test")
+	class MultiModulePaths {
+		@MavenTest
+		void module_relative_paths_are_resolved_against_each_module(MavenExecutionResult result) {
+			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
+			assertThat(result).isSuccessful();
+			assertThat(baseDir.resolve("module-a/target/roseau/report.csv")).exists();
+			assertThat(baseDir.resolve("module-b/target/roseau/report.csv")).exists();
+			assertThat(result).out().warn().noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "maven-report-directory-test")
+	class MavenReportDirectory {
+		@MavenTest
+		void report_directory_is_applied_to_reports_declared_in_maven_configuration(MavenExecutionResult result) {
+			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
+			assertThat(result).isSuccessful();
+			assertThat(baseDir.resolve("report.csv")).doesNotExist();
+			assertThat(baseDir.resolve("report.html")).doesNotExist();
+			assertThat(baseDir.resolve("target/foo/report.csv")).exists();
+			assertThat(baseDir.resolve("target/foo/report.html")).exists();
 		}
 	}
 }
