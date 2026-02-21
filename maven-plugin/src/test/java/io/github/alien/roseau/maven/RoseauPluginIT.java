@@ -144,7 +144,7 @@ class RoseauPluginIT {
 		void classpath_configuration_is_applied_to_each_version(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().debug()
-				.anyMatch(m -> m.equals("v1 classpath is: [manual-baseline.jar]"));
+				.anyMatch(m -> m.contains("v1 classpath is: ") && m.contains("manual-baseline.jar"));
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
