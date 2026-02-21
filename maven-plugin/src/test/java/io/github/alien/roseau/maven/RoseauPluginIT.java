@@ -158,8 +158,10 @@ class RoseauPluginIT {
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
 				.noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
-			assertThat(baseDir.resolve("report.csv")).exists();
-			assertThat(baseDir.resolve("report.html")).exists();
+			assertThat(baseDir.resolve("report.csv")).doesNotExist();
+			assertThat(baseDir.resolve("report.html")).doesNotExist();
+			assertThat(baseDir.resolve("target/roseau/report.csv")).exists();
+			assertThat(baseDir.resolve("target/roseau/report.html")).exists();
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "missing.yaml")
@@ -186,15 +188,15 @@ class RoseauPluginIT {
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
-		@SystemProperty(value = "roseau.reportDirectory", content = "target/reports")
+		@SystemProperty(value = "roseau.reportDirectory", content = "target/foo")
 		@MavenTest
-		void report_directory_parameter_is_currently_ignored(MavenExecutionResult result) {
+		void report_directory_parameter_is_applied(MavenExecutionResult result) {
 			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 			assertThat(result).isSuccessful();
-			assertThat(baseDir.resolve("report.csv")).exists();
-			assertThat(baseDir.resolve("report.html")).exists();
-			assertThat(baseDir.resolve("target/reports/report.csv")).doesNotExist();
-			assertThat(baseDir.resolve("target/reports/report.html")).doesNotExist();
+			assertThat(baseDir.resolve("report.csv")).doesNotExist();
+			assertThat(baseDir.resolve("report.html")).doesNotExist();
+			assertThat(baseDir.resolve("target/foo/report.csv")).exists();
+			assertThat(baseDir.resolve("target/foo/report.html")).exists();
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-report-write-error.yaml")
@@ -232,6 +234,16 @@ class RoseauPluginIT {
 		void missing_baseline_is_reported_and_check_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().error().anyMatch(m -> m.contains("No baseline specified; skipping."));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "invalid-maven-baseline-test")
+	class InvalidMavenBaseline {
+		@MavenTest
+		void invalid_baseline_version_is_reported_and_check_is_skipped(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().error().anyMatch(m -> m.contains("Invalid baseline version coordinates"));
 		}
 	}
 

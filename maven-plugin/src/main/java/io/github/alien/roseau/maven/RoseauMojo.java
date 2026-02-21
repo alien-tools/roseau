@@ -82,7 +82,7 @@ public final class RoseauMojo extends AbstractMojo {
 	private Path baselineClasspathPom;
 	@Parameter
 	private List<ReportConfig> reports;
-	@Parameter(property = "roseau.reportDirectory")
+	@Parameter(property = "roseau.reportDirectory", defaultValue = "${project.build.directory}/roseau")
 	private File reportDirectory;
 	@Parameter(property = "roseau.exportBaselineApi")
 	private Path exportBaselineApi;
@@ -192,11 +192,17 @@ public final class RoseauMojo extends AbstractMojo {
 
 		reportConfigs.forEach(config -> {
 			try {
-				report.writeReport(config.format(), config.file());
-				getLog().info(String.format("%s report written to %s", config.format(), config.file()));
+				Path outputPath = resolveReportPath(config.file());
+				Path parentDir = outputPath.getParent();
+				if (parentDir != null && !Files.exists(parentDir)) {
+					Files.createDirectories(parentDir);
+				}
+
+				report.writeReport(config.format(), outputPath);
+				getLog().info(String.format("%s report written to %s", config.format(), outputPath));
 			} catch (Exception e) {
 				getLog().error(String.format("Failed to write %s report to %s: %s",
-					config.format(), config.file(), e.getMessage()));
+					config.format(), resolveReportPath(config.file()), e.getMessage()));
 			}
 		});
 	}
@@ -220,7 +226,8 @@ public final class RoseauMojo extends AbstractMojo {
 				options = options.mergeWith(yamlOptions);
 				getLog().info("Loaded configuration from " + configFile);
 			} catch (Exception e) {
-				getLog().warn("Could not load configuration file " + configFile + ": " + e.getCause().getMessage());
+				Throwable cause = e.getCause() != null ? e.getCause() : e;
+				getLog().warn("Could not load configuration file " + configFile + ": " + cause.getMessage());
 			}
 		}
 
@@ -384,7 +391,12 @@ public final class RoseauMojo extends AbstractMojo {
 			return;
 		}
 
-		if (baselineVersion != null && baselineVersion.getArtifactId() != null) {
+		if (isBaselineVersionConfigured()) {
+			if (!isBaselineVersionValid()) {
+				getLog().error("Invalid baseline version coordinates; groupId, artifactId and version are required.");
+				return;
+			}
+
 			Optional<Path> maybeBaseline = resolveBaselineVersion();
 			if (maybeBaseline.isPresent()) {
 				check(maybeBaseline.get(), maybeJar.get());
@@ -392,10 +404,11 @@ public final class RoseauMojo extends AbstractMojo {
 				getLog().error("Couldn't resolve the baseline version; skipping.");
 			}
 		} else if (baselineJar != null) {
-			if (Files.isRegularFile(baselineJar)) {
-				check(baselineJar, maybeJar.get());
+			Path resolvedBaselineJar = resolvePath(baselineJar);
+			if (Files.isRegularFile(resolvedBaselineJar)) {
+				check(resolvedBaselineJar, maybeJar.get());
 			} else {
-				getLog().error("Invalid baseline JAR " + baselineJar);
+				getLog().error("Invalid baseline JAR " + resolvedBaselineJar);
 			}
 		} else {
 			getLog().error("No baseline version specified; skipping.");
@@ -480,6 +493,38 @@ public final class RoseauMojo extends AbstractMojo {
 		}
 
 		return Optional.empty();
+	}
+
+	private boolean isBaselineVersionConfigured() {
+		return baselineVersion != null && baselineVersion.getArtifactId() != null;
+	}
+
+	private boolean isBaselineVersionValid() {
+		return baselineVersion != null
+			&& !isBlank(baselineVersion.getGroupId())
+			&& !isBlank(baselineVersion.getArtifactId())
+			&& !isBlank(baselineVersion.getVersion());
+	}
+
+	private static boolean isBlank(String value) {
+		return value == null || value.isBlank();
+	}
+
+	private Path resolvePath(Path path) {
+		if (path == null || path.isAbsolute()) {
+			return path;
+		}
+		return project.getBasedir().toPath().resolve(path);
+	}
+
+	private Path resolveReportPath(Path reportPath) {
+		if (reportPath.isAbsolute()) {
+			return reportPath;
+		}
+		if (reportDirectory != null) {
+			return reportDirectory.toPath().resolve(reportPath);
+		}
+		return resolvePath(reportPath);
 	}
 
 	/**
