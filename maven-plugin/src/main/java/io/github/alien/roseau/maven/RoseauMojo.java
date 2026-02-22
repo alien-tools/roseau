@@ -166,7 +166,7 @@ public final class RoseauMojo extends AbstractMojo {
 	/**
 	 * Optional Roseau YAML configuration file.
 	 */
-	@Parameter(property = "roseau.configFile", defaultValue = "${project.basedir}/roseau.yaml")
+	@Parameter(property = "roseau.configFile")
 	private Path configFile;
 
 	/**
@@ -278,7 +278,7 @@ public final class RoseauMojo extends AbstractMojo {
 	 * @param report the RoseauReport to format and write
 	 * @throws MojoExecutionException if an error occurs while writing reports
 	 */
-	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs) throws MojoExecutionException {
+	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs) {
 		if (reportConfigs == null || reportConfigs.isEmpty()) {
 			return;
 		}
@@ -308,20 +308,19 @@ public final class RoseauMojo extends AbstractMojo {
 	 * @param newJar the path to the current JAR
 	 * @return the final RoseauOptions instance
 	 */
-	private RoseauOptions loadConfiguration(Path oldJar, Path newJar) {
+	private RoseauOptions loadConfiguration(Path oldJar, Path newJar) throws MojoExecutionException {
 		// Start with default configuration
 		RoseauOptions options = RoseauOptions.newDefault();
 		Path resolvedConfigFile = resolvePath(configFile);
 
-		// Load and merge YAML configuration if enabled and exists
-		if (resolvedConfigFile != null && Files.isRegularFile(resolvedConfigFile)) {
+		// Load and merge YAML configuration if enabled
+		if (resolvedConfigFile != null) {
 			try {
 				RoseauOptions yamlOptions = RoseauOptions.load(resolvedConfigFile);
 				options = options.mergeWith(yamlOptions);
 				getLog().info("Loaded configuration from " + resolvedConfigFile);
 			} catch (Exception e) {
-				Throwable cause = e.getCause() != null ? e.getCause() : e;
-				getLog().warn("Could not load configuration file " + resolvedConfigFile + ": " + cause.getMessage());
+				throw new MojoExecutionException("Could not load configuration file " + resolvedConfigFile, e);
 			}
 		}
 

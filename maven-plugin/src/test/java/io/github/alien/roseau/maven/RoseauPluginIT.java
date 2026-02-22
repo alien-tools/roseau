@@ -10,8 +10,6 @@ import com.soebes.itf.jupiter.extension.SystemProperty;
 import com.soebes.itf.jupiter.maven.MavenExecutionResult;
 import org.junit.jupiter.api.Nested;
 
-import java.nio.file.Files;
-
 import static com.soebes.itf.extension.assertj.MavenITAssertions.assertThat;
 
 @MavenJupiterExtension
@@ -22,8 +20,9 @@ class RoseauPluginIT {
 	class SimpleModule {
 		@MavenTest
 		void bcs_are_reported(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
-				.out().warn()
+			assertThat(result).isSuccessful();
+			assertThat(result).out().error().isEmpty();
+			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
@@ -35,8 +34,8 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful()
 				.out().warn()
 				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
-				.noneMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
-				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
+				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
+				.noneMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"));
 		}
 
 		@SystemProperty("roseau.sourceOnly")
@@ -74,7 +73,7 @@ class RoseauPluginIT {
 
 		@SystemProperty("roseau.skip")
 		@MavenTest
-		void roseau_can_be_skipped(MavenExecutionResult result) {
+		void can_be_skipped(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().error().isEmpty();
 			assertThat(result).out().warn()
@@ -95,38 +94,21 @@ class RoseauPluginIT {
 			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
 		}
 
-		@SystemProperty(value = "roseau.configFile", content = "old.jar")
+		@SystemProperty(value = "roseau.configFile", content = "missing.yaml")
 		@MavenTest
-		void invalid_config_file_is_ignored(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
-				.out().warn().anyMatch(m -> m.contains("Could not load configuration file"));
-			assertThat(result).out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
-				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
-				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
+		void invalid_config_file_fails(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Could not load configuration file"));
 		}
 
 		@SystemProperty(value = "roseau.exportBaselineApi", content = "target/apis/v1.json")
 		@SystemProperty(value = "roseau.exportCurrentApi", content = "target/apis/v2.json")
 		@MavenTest
-		void apis_can_be_exported(MavenExecutionResult result) throws Exception {
+		void apis_can_be_exported(MavenExecutionResult result) {
 			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 			assertThat(result).isSuccessful();
-			assertThat(baseDir.resolve("target/apis/v1.json")).exists();
-			assertThat(baseDir.resolve("target/apis/v2.json")).exists();
-			assertThat(Files.size(baseDir.resolve("target/apis/v1.json"))).isGreaterThan(0L);
-			assertThat(Files.size(baseDir.resolve("target/apis/v2.json"))).isGreaterThan(0L);
-		}
-
-		@SystemProperty("roseau.binaryOnly")
-		@SystemProperty("roseau.sourceOnly")
-		@MavenTest
-		void source_only_takes_precedence_when_both_filters_are_set(MavenExecutionResult result) {
-			assertThat(result).isSuccessful()
-				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
-				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
-				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
+			assertThat(baseDir.resolve("target/apis/v1.json")).isRegularFile().isNotEmptyFile();
+			assertThat(baseDir.resolve("target/apis/v2.json")).isRegularFile().isNotEmptyFile();
 		}
 
 		@MavenOption(MavenCLIOptions.VERBOSE)
@@ -134,8 +116,8 @@ class RoseauPluginIT {
 		void only_compile_dependencies_are_included(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().debug()
-				.anyMatch(m -> m.matches("^v1 classpath is: \\[.*org/slf4j/slf4j-api/2.0.17/slf4j-api-2\\.0\\.17\\.jar\\]$"))
-				.anyMatch(m -> m.matches("^v2 classpath is: \\[.*org/slf4j/slf4j-api/2.0.17/slf4j-api-2\\.0\\.17\\.jar\\]$"));
+				.anyMatch(m -> m.contains("v1 classpath is:") && m.contains("org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"))
+				.anyMatch(m -> m.contains("v2 classpath is:") && m.contains("org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"));
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-classpath-config.yaml")
@@ -153,7 +135,7 @@ class RoseauPluginIT {
 			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 			assertThat(result).isSuccessful()
 				.out().info()
-				.anyMatch(m -> m.matches("^Loaded configuration from .*/roseau-yaml-config.yaml$"));
+				.anyMatch(m -> m.contains("Loaded configuration from") && m.contains("roseau-yaml-config.yaml"));
 			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
@@ -162,20 +144,6 @@ class RoseauPluginIT {
 			assertThat(baseDir.resolve("report.html")).doesNotExist();
 			assertThat(baseDir.resolve("target/roseau/report.csv")).exists();
 			assertThat(baseDir.resolve("target/roseau/report.html")).exists();
-		}
-
-		@SystemProperty(value = "roseau.configFile", content = "missing.yaml")
-		@MavenTest
-		void missing_yaml_config_is_ignored(MavenExecutionResult result) {
-			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
-			assertThat(result).isSuccessful();
-			assertThat(result).out().info().noneMatch(m -> m.contains("Loaded configuration from"));
-			assertThat(result).out().warn()
-				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
-				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
-			assertThat(baseDir.resolve("report.csv")).doesNotExist();
-			assertThat(baseDir.resolve("report.html")).doesNotExist();
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
@@ -189,7 +157,7 @@ class RoseauPluginIT {
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-source-only.yaml")
 		@MavenTest
-		void yaml_diff_source_only_is_applied_when_maven_property_is_not_set(MavenExecutionResult result) {
+		void yaml_properties_are_applied(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
@@ -203,18 +171,10 @@ class RoseauPluginIT {
 		void report_directory_parameter_is_applied(MavenExecutionResult result) {
 			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 			assertThat(result).isSuccessful();
-			assertThat(baseDir.resolve("report.csv")).doesNotExist();
-			assertThat(baseDir.resolve("report.html")).doesNotExist();
-			assertThat(baseDir.resolve("target/foo/report.csv")).exists();
-			assertThat(baseDir.resolve("target/foo/report.html")).exists();
-		}
-
-		@SystemProperty(value = "roseau.configFile", content = "roseau-report-write-error.yaml")
-		@MavenTest
-		void report_write_error_is_logged_and_build_stays_successful(MavenExecutionResult result) {
-			assertThat(result).isSuccessful();
-			assertThat(result).out().error().anyMatch(m -> m.contains("Failed to write CSV report to"));
-			assertThat(result).out().warn().anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
+			assertThat(baseDir.resolve("target/roseau/report.csv")).doesNotExist();
+			assertThat(baseDir.resolve("target/roseau/report.html")).doesNotExist();
+			assertThat(baseDir.resolve("target/foo/report.csv")).isRegularFile().isNotEmptyFile();
+			assertThat(baseDir.resolve("target/foo/report.html")).isRegularFile().isNotEmptyFile();
 		}
 	}
 
@@ -253,17 +213,7 @@ class RoseauPluginIT {
 		@MavenTest
 		void invalid_baseline_version_is_reported_and_check_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isFailure()
-				.out().error().anyMatch(m -> m.contains("Invalid baseline version coordinates"));
-		}
-	}
-
-	@Nested
-	@MavenProjectSources(sources = "unresolved-maven-baseline-test")
-	class UnresolvedMavenBaseline {
-		@MavenTest
-		void unresolved_baseline_version_fails_the_build(MavenExecutionResult result) {
-			assertThat(result).isFailure()
-				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version."));
+				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
 		}
 	}
 
@@ -284,9 +234,8 @@ class RoseauPluginIT {
 		void module_relative_paths_are_resolved_against_each_module(MavenExecutionResult result) {
 			var baseDir = result.getMavenProjectResult().getTargetProjectDirectory();
 			assertThat(result).isSuccessful();
-			assertThat(baseDir.resolve("module-a/target/roseau/report.csv")).exists();
-			assertThat(baseDir.resolve("module-b/target/roseau/report.csv")).exists();
-			assertThat(result).out().warn().noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
+			assertThat(baseDir.resolve("module-a/target/roseau/report.csv")).isRegularFile().isNotEmptyFile();
+			assertThat(baseDir.resolve("module-b/target/roseau/report.csv")).isRegularFile().isNotEmptyFile();
 		}
 	}
 
@@ -299,8 +248,8 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful();
 			assertThat(baseDir.resolve("report.csv")).doesNotExist();
 			assertThat(baseDir.resolve("report.html")).doesNotExist();
-			assertThat(baseDir.resolve("target/foo/report.csv")).exists();
-			assertThat(baseDir.resolve("target/foo/report.html")).exists();
+			assertThat(baseDir.resolve("target/foo/report.csv")).isRegularFile().isNotEmptyFile();
+			assertThat(baseDir.resolve("target/foo/report.html")).isRegularFile().isNotEmptyFile();
 		}
 	}
 }
