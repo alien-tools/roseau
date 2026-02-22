@@ -29,6 +29,7 @@
                 </executions>
                 <configuration>
                     <baselineJar>old.jar</baselineJar>
+                    <configFile>roseau.yaml</configFile>
                 </configuration>
             </plugin>
         </plugins>

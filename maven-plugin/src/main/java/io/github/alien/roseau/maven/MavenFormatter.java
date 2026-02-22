@@ -18,7 +18,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 	private static final String COMPATIBLE = "✓";
 	private static final String BREAKING = "✗";
 
-	public MavenFormatter(Log log) {
+	MavenFormatter(Log log) {
 		this.log = log;
 	}
 
@@ -35,7 +35,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 		log.warn(String.format("Breaking Changes found: %d (%d binary-breaking, %d source-breaking)",
 			changes.size(), binaryBreaking, sourceBreaking));
 
-		report.getBreakingChanges().forEach(bc -> formatBreakingChange(bc));
+		report.getBreakingChanges().forEach(this::formatBreakingChange);
 
 		return "";
 	}
