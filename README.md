@@ -37,16 +37,16 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ ./mvnw package
-$ java -jar cli/target/roseau-cli-0.5.0-jar-with-dependencies.jar --help 
+$ java -jar cli/target/roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --help 
 ```
 
 Identify breaking changes between two versions, either from compiled JARs or source trees:
 
 ```
-$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -54,7 +54,7 @@ $ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/sour
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --help
+$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --help
 Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
               [--api-json=<path>] [--classpath=<path>[,<path>...]]
               [--config=<path>] [--format=<format>] [--ignored=<path>]
