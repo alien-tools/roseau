@@ -37,16 +37,16 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ ./mvnw package
-$ java -jar cli/target/roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help 
+$ java -jar cli/target/roseau-cli-0.5.0-jar-with-dependencies.jar --help 
 ```
 
 Identify breaking changes between two versions, either from compiled JARs or source trees:
 
 ```
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -54,13 +54,14 @@ $ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /pat
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help
-Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
-              [--classpath=<path>[,<path>...]] [--config=<path>] [--format=<format>]
-              [--ignored=<path>] [--pom=<path>] [--report=<path>]
-              [--v1=<path>] [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
-              [--v2=<path>] [--v2-classpath=<path>[,<path>...]] [--v2-pom=<path>]
-              (--api | --diff)
+$ java -jar roseau-cli-0.5.0-jar-with-dependencies.jar --help
+Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
+              [--api-json=<path>] [--classpath=<path>[,<path>...]]
+              [--config=<path>] [--format=<format>] [--ignored=<path>]
+              [--pom=<path>] [--report=<path>] [--v1=<path>]
+              [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
+              [--v2=<path>] [--v2-classpath=<path>[,<path>...]]
+              [--v2-pom=<path>] (--api | --diff)
       --api               Serialize the API model of --v1; see --api-json
       --diff              Compute breaking changes between versions --v1 and --v2
       --v1=<path>         Path to the first version of the library; either a source directory or a JAR
@@ -74,6 +75,8 @@ Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
       --v2-classpath=<path>[,<path>...] A --classpath for --v2
       --v1-pom=<path>     A --pom for --v1
       --v2-pom=<path>     A --pom for --v2
+      --binary-only       Only report binary-breaking changes
+      --source-only       Only report source-breaking changes
       --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as the one produced by --format CSV
       --config=<path>     A roseau.yaml config file; CLI options take precedence over these options
       --fail-on-bc        Return with exit code 1 if breaking changes are detected
@@ -82,7 +85,7 @@ Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
 ```
 
 ### Configuration
-Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence.
+Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence. Example:
 
 ```yaml
 common:
@@ -93,7 +96,9 @@ v1:
   apiReport: ./reports/v1.json
 v2:
   apiReport: ./reports/v2.json
-ignore: ignored-breaking-changes.csv
+diff:
+  ignore: ignored-breaking-changes.csv
+  binaryOnly: true
 reports:
   - file: ./reports/guava.html
     format: HTML

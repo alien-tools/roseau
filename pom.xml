@@ -6,7 +6,7 @@
 
     <groupId>io.github.alien-tools</groupId>
     <artifactId>roseau-parent</artifactId>
-    <version>0.5.0-SNAPSHOT</version>
+    <version>0.5.0</version>
     <packaging>pom</packaging>
     <name>Roseau parent module</name>
     <description>Fast and accurate API breaking change analysis of Java libraries</description>
