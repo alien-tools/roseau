@@ -18,7 +18,7 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A a;")
+	@Client("new A();")
 	@Test
 	void class_public_removed() {
 		var v1 = "public class A {}";
@@ -27,7 +27,7 @@ class TypeRemovedTest {
 		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("A a;")
+	@Client("new A();")
 	@Test
 	void class_public_kept() {
 		var v1 = "public class A {}";
@@ -36,7 +36,7 @@ class TypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A a;")
+	@Client("new A();")
 	@Test
 	void class_public_moved() {
 		var v1 = "public class A {}";
@@ -45,7 +45,7 @@ class TypeRemovedTest {
 		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("A a;")
+	@Client("new A();")
 	@Test
 	void class_now_package_private() {
 		var v1 = "public class A {}";
@@ -54,7 +54,7 @@ class TypeRemovedTest {
 		assertBC("A", "A", TYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("A a; // Cannot access A.I")
+	@Client("new A(); // Cannot access A.I")
 	@Test
 	void class_inner_private_in_class_public_removed() {
 		var v1 = """
@@ -71,23 +71,25 @@ class TypeRemovedTest {
 
 	@Client("""
 		new A() {
-			I i;
+			{
+				new I();
+			}
 		};""")
 	@Test
 	void class_inner_protected_in_class_public_removed() {
 		var v1 = """
 			public class A {
-			  protected class I {}
+			  protected class I { public I() {} }
 			}""";
 		var v2 = """
 			public class A {
-			  protected class J {}
+			  protected class J { public J() {} }
 			}""";
 
 		assertBC("A$I", "A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("A.I i;")
+	@Client("new A().new I();")
 	@Test
 	void class_inner_public_in_class_public_removed() {
 		var v1 = """
@@ -119,23 +121,25 @@ class TypeRemovedTest {
 
 	@Client("""
 		new A() {
-			I i;
+			{
+				new I();
+			}
 		};""")
 	@Test
 	void class_inner_static_protected_in_class_public_removed() {
 		var v1 = """
 			public class A {
-			  static protected class I {}
+			  static protected class I { public I() {} }
 			}""";
 		var v2 = """
 			public class A {
-			  static protected class J {}
+			  static protected class J { public J() {} }
 			}""";
 
 		assertBC("A$I", "A$I", TYPE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("A.I i;")
+	@Client("new A.I();")
 	@Test
 	void class_inner_static_public_in_class_public_removed() {
 		var v1 = """
