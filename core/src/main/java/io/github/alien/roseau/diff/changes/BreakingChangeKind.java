@@ -20,7 +20,7 @@ public enum BreakingChangeKind {
 	TYPE_REMOVED(DELETION, true, true),
 	TYPE_NOW_PROTECTED(MUTATION, true, true),
 	TYPE_KIND_CHANGED(MUTATION, true, true),
-	TYPE_SUPERTYPE_REMOVED(MUTATION, true, true),
+	TYPE_SUPERTYPE_REMOVED(MUTATION, false, true),
 	TYPE_NEW_ABSTRACT_METHOD(ADDITION, false, true),
 
 	// Class-related BCs,
