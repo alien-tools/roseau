@@ -14,6 +14,7 @@
 
     <modules>
         <module>core</module>
+        <module>footprint</module>
         <module>cli</module>
         <module>combinatorial</module>
     </modules>

@@ -61,8 +61,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		this.annotations = Set.copyOf(annotations);
 		this.location = location;
 		int lastDot = qualifiedName.lastIndexOf('.');
-		int lastDollar = qualifiedName.lastIndexOf('$');
-		int lastSeparator = Math.max(lastDot, lastDollar);
+		int lastSeparator = lastDot;
+		if (this instanceof TypeDecl) {
+			int lastDollar = qualifiedName.lastIndexOf('$');
+			lastSeparator = Math.max(lastDot, lastDollar);
+		}
 		simpleName = qualifiedName.substring(lastSeparator + 1);
 	}
 
