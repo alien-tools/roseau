@@ -34,6 +34,7 @@ import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
+import java.util.stream.Stream;
 
 /**
  * Generates a deterministic single-source footprint for all exported API symbols.
@@ -145,6 +146,11 @@ public final class FootprintGenerator {
 		block.line("// Type symbol: " + type.getQualifiedName());
 
 		if (!isDirectlyAccessible(type)) {
+			if (emitProtectedNestedTypeUsage(block, type)) {
+				block.outdent();
+				block.line("}");
+				return block.toString();
+			}
 			block.line("// Unrepresentable from a foreign package: " + type.getQualifiedName());
 			block.outdent();
 			block.line("}");
@@ -163,7 +169,9 @@ public final class FootprintGenerator {
 			} else {
 				block.line("// Parameterized use not representable for " + type.getQualifiedName());
 			}
+			emitGenericTypeParameterProbe(block, type);
 		}
+		emitSupertypeCompatibilityUsages(block, type);
 
 		if (type instanceof InterfaceDecl itf) {
 			emitInterfaceTypeUsage(block, itf);
@@ -173,6 +181,9 @@ public final class FootprintGenerator {
 			emitClassTypeUsage(block, cls);
 			if (isThrowableType(cls)) {
 				emitThrowableTypeUsage(block, cls);
+				if (api.isUncheckedException(cls)) {
+					emitUncheckedThrowableProbe(block, cls);
+				}
 			}
 		}
 
@@ -185,6 +196,7 @@ public final class FootprintGenerator {
 
 		if (type instanceof AnnotationDecl ann) {
 			emitAnnotationMethodUsages(block, ann);
+			emitAnnotationApplications(block, ann);
 		}
 
 		block.outdent();
@@ -318,6 +330,14 @@ public final class FootprintGenerator {
 		String typeName = renderTypeName(cls);
 		String superTypeExpression = superType.typeExpression();
 		Map<String, String> superTypeBindings = superType.typeBindings();
+		boolean nonStaticInnerClass = isNonStaticNestedClass(cls);
+		Optional<TypeDecl> enclosingType = nonStaticInnerClass
+			? cls.getEnclosingType().flatMap(api.resolver()::resolve)
+			: Optional.empty();
+		if (nonStaticInnerClass && (enclosingType.isEmpty() || !isDirectlyAccessible(enclosingType.get()))) {
+			block.line("// Non-static inner class extension is unrepresentable due to inaccessible enclosing type: " + cls.getQualifiedName());
+			return;
+		}
 		boolean preserveMethodTypeParameters = superType.parameterized() || cls.getFormalTypeParameters().isEmpty();
 		List<ConstructorDecl> accessibleConstructors = findSubclassAccessibleConstructors(cls);
 		if (accessibleConstructors.isEmpty()) {
@@ -344,19 +364,26 @@ public final class FootprintGenerator {
 				.orElseGet(() -> new LinkedHashMap<>(superTypeBindings));
 
 			String marker = markerParameters(i);
+			String enclosingParameter = "";
+			if (nonStaticInnerClass && enclosingType.isPresent()) {
+				enclosingParameter = renderTypeName(enclosingType.get()) + " outer";
+			}
 			String throwsClause = renderThrowsClause(constructor);
-				String signature = marker.isBlank()
+				String signature = enclosingParameter.isBlank() && marker.isBlank()
 					? subclassName + "()" + throwsClause
-					: subclassName + "(" + marker + ")" + throwsClause;
+					: subclassName + "(" + Stream.of(enclosingParameter, marker)
+						.filter(s -> !s.isBlank())
+						.collect(Collectors.joining(", ")) + ")" + throwsClause;
 				block.line(signature + " {");
 				block.indent();
 				String args = renderArguments(constructor.getParameters(), false, constructorBindings);
-				String superCall = "super(" + args + ");";
+				String superCallPrefix = nonStaticInnerClass ? "outer." : "";
+				String superCall = superCallPrefix + "super(" + args + ");";
 				if (!constructor.getFormalTypeParameters().isEmpty()) {
 					String explicitTypeArgs = constructor.getFormalTypeParameters().stream()
 						.map(parameter -> constructorBindings.get(parameter.name()))
 						.collect(Collectors.joining(", "));
-					superCall = "<" + explicitTypeArgs + ">super(" + args + ");";
+					superCall = superCallPrefix + "<" + explicitTypeArgs + ">super(" + args + ");";
 				}
 				block.line(superCall);
 				block.outdent();
@@ -420,6 +447,7 @@ public final class FootprintGenerator {
 			block.outdent();
 			block.line("}");
 		}
+		boolean hasProtectedMemberProbe = !protectedFields.isEmpty() || !protectedMethods.isEmpty();
 
 		Set<String> implementedSignatures = new HashSet<>();
 		if (concreteSubclass) {
@@ -446,10 +474,32 @@ public final class FootprintGenerator {
 			for (Integer constructorIndex : emittedConstructors) {
 				ConstructorDecl constructor = accessibleConstructors.get(constructorIndex);
 				String markerArgs = markerArguments(constructorIndex);
-				String invocation = markerArgs.isBlank()
+				String enclosingArg = nonStaticInnerClass && enclosingType.isPresent()
+					? "((" + renderTypeName(enclosingType.get()) + ") null)"
+					: "";
+				String invocationArgs = Stream.of(enclosingArg, markerArgs)
+					.filter(s -> !s.isBlank())
+					.collect(Collectors.joining(", "));
+				String invocation = invocationArgs.isBlank()
 					? "new " + subclassName + "();"
-					: "new " + subclassName + "(" + markerArgs + ");";
-				emitInvocation(block, invocation, constructor);
+					: "new " + subclassName + "(" + invocationArgs + ");";
+				if (hasProtectedMemberProbe) {
+					String instanceVar = nextLocal("extendedInstance");
+					block.line("try {");
+					block.indent();
+					block.line(subclassName + " " + instanceVar + " = " + invocation.replace(";", "") + ";");
+					block.line(instanceVar + ".useProtectedMembers();");
+					block.outdent();
+					block.line("}");
+					for (TypeReference<?> checkedType : checkedExceptionTypes(constructor)) {
+						block.line("catch (" + renderRawType(checkedType) + " ignored) {");
+						block.line("}");
+					}
+					block.line("catch (java.lang.RuntimeException ignored) {");
+					block.line("}");
+				} else {
+					emitInvocation(block, invocation, constructor);
+				}
 			}
 			if (emittedConstructors.isEmpty()) {
 				block.line("// No constructible subclass constructor could be emitted for " + cls.getQualifiedName());
@@ -518,6 +568,10 @@ public final class FootprintGenerator {
 					block.line("// Explicit type arguments unrepresentable for " + method.getQualifiedName());
 				}
 				emitMethodReference(block, method, receiver, typeBindings);
+				if (!method.getFormalTypeParameters().isEmpty() &&
+					(typeInstantiation.parameterized() || type.getFormalTypeParameters().isEmpty())) {
+					emitGenericMethodProbe(block, type, method, typeBindings, typeInstantiation.typeExpression());
+				}
 			} else if (method.isProtected() && !canExtendClass(type)) {
 				block.line("// Protected method cannot be accessed without a legal subclass: " + method.getQualifiedName());
 			}
@@ -549,6 +603,148 @@ public final class FootprintGenerator {
 			}
 			emitMethodReference(block, method, receiver, typeParameterErasures);
 		}
+	}
+
+	private void emitGenericTypeParameterProbe(CodeBlock block, TypeDecl type) {
+		if (type.getFormalTypeParameters().isEmpty()) {
+			return;
+		}
+		String probeName = nextLocalType("GenericTypeProbe");
+		String formalTypeParameters = renderFormalTypeParameters(type.getFormalTypeParameters(), Map.of());
+		String typeArguments = type.getFormalTypeParameters().stream()
+			.map(FormalTypeParameter::name)
+			.collect(Collectors.joining(", "));
+		String genericType = renderTypeName(type) + "<" + typeArguments + ">";
+		block.line("class " + probeName + formalTypeParameters + "{");
+		block.indent();
+		block.line(genericType + " " + nextLocal("genericTypeProbe") + " = (" + genericType + ") null;");
+		block.outdent();
+		block.line("}");
+	}
+
+	private void emitGenericMethodProbe(CodeBlock block, TypeDecl type, MethodDecl method, Map<String, String> typeBindings,
+	                                   String receiverTypeExpression) {
+		Map<String, String> declarationBindings = new LinkedHashMap<>(typeBindings);
+		for (FormalTypeParameter parameter : method.getFormalTypeParameters()) {
+			declarationBindings.put(parameter.name(), parameter.name());
+		}
+		if (hasUnresolvedTypeParameter(method.getType(), declarationBindings) ||
+			method.getParameters().stream().anyMatch(parameter -> hasUnresolvedTypeParameter(parameter.type(), declarationBindings)) ||
+			checkedExceptionTypes(method).stream().anyMatch(exceptionType -> hasUnresolvedTypeParameter(exceptionType, declarationBindings))) {
+			block.line("// Generic method probe skipped due unresolved type parameters: " + method.getQualifiedName());
+			return;
+		}
+
+		String probeName = nextLocalType("GenericMethodProbe");
+		String methodTypeParameters = renderFormalTypeParameters(method.getFormalTypeParameters(), typeBindings);
+		String returnType = renderType(method.getType(), declarationBindings);
+		String throwsClause = renderThrowsClause(method);
+		List<String> signatureParams = new ArrayList<>();
+		List<String> callArgs = new ArrayList<>();
+		if (!method.isStatic()) {
+			signatureParams.add(receiverTypeExpression + " receiver");
+		}
+		for (int i = 0; i < method.getParameters().size(); i++) {
+			ParameterDecl parameter = method.getParameters().get(i);
+			String parameterType = renderType(parameter.type(), declarationBindings);
+			if (parameter.isVarargs()) {
+				parameterType += "...";
+			}
+			String parameterName = "p" + i;
+			signatureParams.add(parameterType + " " + parameterName);
+			callArgs.add(parameterName);
+		}
+
+		String explicitTypeArguments = method.getFormalTypeParameters().stream()
+			.map(FormalTypeParameter::name)
+			.collect(Collectors.joining(", "));
+		String targetPrefix = method.isStatic()
+			? renderTypeName(type)
+			: "receiver";
+		String call = targetPrefix + ".<" + explicitTypeArguments + ">" + method.getSimpleName() + "(" + String.join(", ", callArgs) + ")";
+
+		block.line("class " + probeName + " {");
+		block.indent();
+		block.line(methodTypeParameters + returnType + " invoke(" + String.join(", ", signatureParams) + ")" + throwsClause + " {");
+		block.indent();
+		if ("void".equals(returnType)) {
+			block.line(call + ";");
+			block.line("return;");
+		} else {
+			block.line("return " + call + ";");
+		}
+		block.outdent();
+		block.line("}");
+		block.outdent();
+		block.line("}");
+	}
+
+	private boolean emitProtectedNestedTypeUsage(CodeBlock block, TypeDecl type) {
+		if (!type.isNested() || !type.isProtected()) {
+			return false;
+		}
+		Optional<TypeDecl> enclosing = type.getEnclosingType().flatMap(api.resolver()::resolve);
+		if (enclosing.isEmpty() || !(enclosing.get() instanceof ClassDecl enclosingClass)) {
+			return false;
+		}
+		if (isNonStaticNestedClass(enclosingClass) || !canExtendClass(enclosingClass)) {
+			return false;
+		}
+
+		List<ConstructorDecl> constructors = findSubclassAccessibleConstructors(enclosingClass);
+		if (constructors.isEmpty()) {
+			return false;
+		}
+		ConstructorDecl constructor = constructors.getFirst();
+		Map<String, String> enclosingBindings = resolveTypeInstantiation(enclosingClass).typeBindings();
+		Optional<Map<String, String>> resolvedConstructorBindings = resolveTypeParameterBindings(
+			constructor.getFormalTypeParameters(), enclosingBindings);
+		if (!constructor.getFormalTypeParameters().isEmpty() && resolvedConstructorBindings.isEmpty()) {
+			return false;
+		}
+		Map<String, String> constructorBindings = resolvedConstructorBindings
+			.orElseGet(() -> new LinkedHashMap<>(enclosingBindings));
+
+		String helperName = nextLocalType("NestedTypeAccess");
+		String nestedSimpleName = type.getSimpleName();
+		block.line("class " + helperName + " extends " + renderTypeName(enclosingClass) + " {");
+		block.indent();
+		block.line(helperName + "()" + renderThrowsClause(constructor) + " {");
+		block.indent();
+		String args = renderArguments(constructor.getParameters(), false, constructorBindings);
+		String superCall = "super(" + args + ");";
+		if (!constructor.getFormalTypeParameters().isEmpty()) {
+			String explicitTypeArgs = constructor.getFormalTypeParameters().stream()
+				.map(parameter -> constructorBindings.get(parameter.name()))
+				.collect(Collectors.joining(", "));
+			superCall = "<" + explicitTypeArgs + ">super(" + args + ");";
+		}
+		block.line(superCall);
+		block.outdent();
+		block.line("}");
+		block.line("void probe() {");
+		block.indent();
+		block.line(nestedSimpleName + " " + nextLocal("nestedTypeRef") + " = (" + nestedSimpleName + ") null;");
+		block.line("java.lang.Class<?> " + nextLocal("nestedTypeToken") + " = " + renderTypeName(type) + ".class;");
+		block.outdent();
+		block.line("}");
+		block.outdent();
+		block.line("}");
+
+		String helperVar = nextLocal("nestedAccessor");
+		block.line("try {");
+		block.indent();
+		block.line(helperName + " " + helperVar + " = new " + helperName + "();");
+		block.line(helperVar + ".probe();");
+		block.outdent();
+		block.line("}");
+		for (TypeReference<?> checkedType : checkedExceptionTypes(constructor)) {
+			block.line("catch (" + renderRawType(checkedType) + " ignored) {");
+			block.line("}");
+		}
+		block.line("catch (java.lang.RuntimeException ignored) {");
+		block.line("}");
+		return true;
 	}
 
 	private void emitMethodReference(CodeBlock block, MethodDecl method, String receiver,
@@ -591,6 +787,46 @@ public final class FootprintGenerator {
 			target = receiver + "::<" + explicit + ">" + method.getSimpleName();
 		}
 		emitRuntimeStatement(block, methodRefType + " " + methodRefVar + " = " + target + ";");
+
+		if (!method.isStatic() && method.isPublic()) {
+			Optional<TypeDecl> containing = api.resolver().resolve(method.getContainingType());
+			if (containing.isPresent() && isDirectlyAccessible(containing.get())) {
+				String containingTypeExpression = renderTypeName(containing.get());
+				if (!containing.get().getFormalTypeParameters().isEmpty()) {
+					List<String> arguments = containing.get().getFormalTypeParameters().stream()
+						.map(parameter -> bindings.get(parameter.name()))
+						.toList();
+					if (arguments.stream().noneMatch(Objects::isNull)) {
+						containingTypeExpression += "<" + String.join(", ", arguments) + ">";
+					}
+				}
+				String unboundRefType = nextLocalType("UnboundMethodRef");
+				String unboundRefVar = nextLocal("unboundMethodRef");
+				List<String> unboundParams = new ArrayList<>(method.getParameters().size() + 1);
+				unboundParams.add(containingTypeExpression + " receiver");
+				for (int i = 0; i < method.getParameters().size(); i++) {
+					ParameterDecl parameter = method.getParameters().get(i);
+					String pType = parameter.isVarargs()
+						? renderRawType(parameter.type(), bindings) + "[]"
+						: renderType(parameter.type(), bindings);
+					unboundParams.add(pType + " p" + i);
+				}
+				block.line("@java.lang.FunctionalInterface");
+				block.line("interface " + unboundRefType + " {");
+				block.indent();
+				block.line(renderType(method.getType(), bindings) + " invoke(" + String.join(", ", unboundParams) + ")" + renderThrowsClause(method) + ";");
+				block.outdent();
+				block.line("}");
+				String unboundTarget = containingTypeExpression + "::" + method.getSimpleName();
+				if (!method.getFormalTypeParameters().isEmpty()) {
+					String explicit = method.getFormalTypeParameters().stream()
+						.map(parameter -> bindings.get(parameter.name()))
+						.collect(Collectors.joining(", "));
+					unboundTarget = containingTypeExpression + "::<" + explicit + ">" + method.getSimpleName();
+				}
+				emitRuntimeStatement(block, unboundRefType + " " + unboundRefVar + " = " + unboundTarget + ";");
+			}
+		}
 	}
 
 	private void emitMethodImplementation(CodeBlock block, MethodDecl method) {
@@ -736,7 +972,321 @@ public final class FootprintGenerator {
 		block.line("}");
 		block.outdent();
 		block.line("}");
-		block.line(helperName + " " + nextLocal("throwableUsage") + " = new " + helperName + "();");
+		String helperVar = nextLocal("throwableUsage");
+		block.line(helperName + " " + helperVar + " = new " + helperName + "();");
+		emitRuntimeStatement(block, helperVar + ".thrownAndCaught();");
+		block.line("try { " + helperVar + ".declared(); } catch (java.lang.Throwable ignored) {");
+		block.line("}");
+	}
+
+	private void emitUncheckedThrowableProbe(CodeBlock block, ClassDecl cls) {
+		String helperName = nextLocalType("UncheckedThrowProbe");
+		block.line("class " + helperName + " {");
+		block.indent();
+		block.line("void throwNow() {");
+		block.indent();
+		block.line("throw (" + renderTypeName(cls) + ") null;");
+		block.outdent();
+		block.line("}");
+		block.outdent();
+		block.line("}");
+		String probeVar = nextLocal("uncheckedProbe");
+		block.line(helperName + " " + probeVar + " = new " + helperName + "();");
+		emitRuntimeStatement(block, probeVar + ".throwNow();");
+	}
+
+	private void emitSupertypeCompatibilityUsages(CodeBlock block, TypeDecl type) {
+		TypeInstantiation self = resolveTypeInstantiation(type);
+		Map<String, String> bindings = self.typeBindings();
+		for (TypeReference<TypeDecl> superTypeRef : api.getAllSuperTypes(type)) {
+			if (!isRepresentable(superTypeRef)) {
+				continue;
+			}
+			Optional<TypeDecl> resolvedSuper = api.resolver().resolve(superTypeRef);
+			if (resolvedSuper.isPresent() && !api.isExported(resolvedSuper.get())) {
+				continue;
+			}
+			if (resolvedSuper.isPresent() && !isDirectlyAccessible(resolvedSuper.get())) {
+				continue;
+			}
+
+			String superTypeName = renderType(superTypeRef, bindings);
+			if (hasUnresolvedTypeParameter(superTypeRef, bindings)) {
+				superTypeName = renderRawType(superTypeRef, bindings);
+			}
+			String selfTypeName = self.typeExpression();
+			block.line(superTypeName + " " + nextLocal("upcastRef") + " = (" + selfTypeName + ") null;");
+			block.line(selfTypeName + " " + nextLocal("castBackRef") + " = (" + selfTypeName + ") ((" + superTypeName + ") null);");
+		}
+	}
+
+	private void emitAnnotationApplications(CodeBlock block, AnnotationDecl ann) {
+		Optional<String> explicit = renderAnnotationApplication(ann, false);
+		if (explicit.isEmpty()) {
+			block.line("// Annotation application is unrepresentable for: " + ann.getQualifiedName());
+			return;
+		}
+		String explicitAnnotation = explicit.get();
+
+		Optional<String> bare = renderAnnotationApplication(ann, true);
+		String annotationForSimpleSites = bare.orElse(explicitAnnotation);
+
+		boolean emittedAny = false;
+		Set<java.lang.annotation.ElementType> targets = ann.getTargets();
+
+		if (targets.contains(java.lang.annotation.ElementType.LOCAL_VARIABLE)) {
+			block.line(annotationForSimpleSites + " int " + nextLocal("annotatedLocal") + " = 0;");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.TYPE_USE)) {
+			block.line(annotationForSimpleSites + " java.lang.Object " + nextLocal("annotatedTypeUse") + " = null;");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.TYPE)) {
+			String name = nextLocalType("AnnotatedType");
+			block.line(annotationForSimpleSites + " class " + name + " {");
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.TYPE_PARAMETER)) {
+			String name = nextLocalType("AnnotatedTypeParam");
+			block.line("class " + name + "<" + annotationForSimpleSites + " T> {");
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.FIELD)) {
+			String name = nextLocalType("AnnotatedFieldHolder");
+			block.line("class " + name + " {");
+			block.indent();
+			block.line(annotationForSimpleSites + " int value;");
+			block.outdent();
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.METHOD)) {
+			String name = nextLocalType("AnnotatedMethodHolder");
+			block.line("class " + name + " {");
+			block.indent();
+			block.line(annotationForSimpleSites + " void m() {");
+			block.line("}");
+			block.outdent();
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.PARAMETER)) {
+			String name = nextLocalType("AnnotatedParameterHolder");
+			block.line("class " + name + " {");
+			block.indent();
+			block.line("void m(" + annotationForSimpleSites + " int p) {");
+			block.line("}");
+			block.outdent();
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.CONSTRUCTOR)) {
+			String name = nextLocalType("AnnotatedConstructorHolder");
+			block.line("class " + name + " {");
+			block.indent();
+			block.line(annotationForSimpleSites + " " + name + "() {");
+			block.line("}");
+			block.outdent();
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.RECORD_COMPONENT)) {
+			String name = nextLocalType("AnnotatedRecord");
+			block.line("record " + name + "(" + annotationForSimpleSites + " int value) {");
+			block.line("}");
+			emittedAny = true;
+		}
+		if (targets.contains(java.lang.annotation.ElementType.ANNOTATION_TYPE)) {
+			block.line("// ANNOTATION_TYPE target requires class-scope annotation declaration emission");
+		}
+
+		if (ann.isRepeatable()) {
+			String repeated = explicitAnnotation + " " + explicitAnnotation;
+			if (targets.contains(java.lang.annotation.ElementType.LOCAL_VARIABLE)) {
+				block.line(repeated + " int " + nextLocal("repeatedAnnotationLocal") + " = 0;");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.TYPE_USE)) {
+				block.line(repeated + " java.lang.Object " + nextLocal("repeatedAnnotationTypeUse") + " = null;");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.TYPE)) {
+				String name = nextLocalType("RepeatedAnnotatedType");
+				block.line(repeated + " class " + name + " {");
+				block.line("}");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.FIELD)) {
+				String name = nextLocalType("RepeatedAnnotationFieldHolder");
+				block.line("class " + name + " {");
+				block.indent();
+				block.line(repeated + " int value;");
+				block.outdent();
+				block.line("}");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.METHOD)) {
+				String name = nextLocalType("RepeatedAnnotationMethodHolder");
+				block.line("class " + name + " {");
+				block.indent();
+				block.line(repeated + " void m() {");
+				block.line("}");
+				block.outdent();
+				block.line("}");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.PARAMETER)) {
+				String name = nextLocalType("RepeatedAnnotationParameterHolder");
+				block.line("class " + name + " {");
+				block.indent();
+				block.line("void m(" + repeated + " int p) {");
+				block.line("}");
+				block.outdent();
+				block.line("}");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.CONSTRUCTOR)) {
+				String name = nextLocalType("RepeatedAnnotationConstructorHolder");
+				block.line("class " + name + " {");
+				block.indent();
+				block.line(repeated + " " + name + "() {");
+				block.line("}");
+				block.outdent();
+				block.line("}");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.RECORD_COMPONENT)) {
+				String name = nextLocalType("RepeatedAnnotatedRecord");
+				block.line("record " + name + "(" + repeated + " int value) {");
+				block.line("}");
+				emittedAny = true;
+			}
+			if (targets.contains(java.lang.annotation.ElementType.ANNOTATION_TYPE)) {
+				block.line("// Repeated ANNOTATION_TYPE target requires class-scope annotation declaration emission");
+			}
+		}
+
+		if (targets.contains(java.lang.annotation.ElementType.PACKAGE)) {
+			block.line("// PACKAGE target requires a generated package-info.java companion source");
+		}
+		if (targets.contains(java.lang.annotation.ElementType.MODULE)) {
+			block.line("// MODULE target requires a generated module-info.java in a modular compilation");
+		}
+
+		if (!emittedAny) {
+			block.line("// No supported annotation target usage site for: " + ann.getQualifiedName());
+		}
+	}
+
+	private Optional<String> renderAnnotationApplication(AnnotationDecl ann, boolean useBareForm) {
+		String annotationName = "@" + renderTypeName(ann);
+		if (useBareForm) {
+			boolean allDefault = ann.getAnnotationMethods().stream().allMatch(AnnotationMethodDecl::hasDefault);
+			return allDefault ? Optional.of(annotationName) : Optional.empty();
+		}
+
+		List<AnnotationMethodDecl> requiredMethods = ann.getAnnotationMethods().stream()
+			.filter(method -> !method.hasDefault())
+			.sorted(METHOD_COMPARATOR)
+			.toList();
+		if (requiredMethods.isEmpty()) {
+			return Optional.of(annotationName);
+		}
+		if (requiredMethods.size() == 1 && "value".equals(requiredMethods.getFirst().getSimpleName())) {
+			return renderAnnotationElementValue(requiredMethods.getFirst().getType(), new HashSet<>())
+				.map(value -> annotationName + "(" + value + ")");
+		}
+
+		List<String> rendered = new ArrayList<>(requiredMethods.size());
+		for (AnnotationMethodDecl method : requiredMethods) {
+			Optional<String> value = renderAnnotationElementValue(method.getType(), new HashSet<>());
+			if (value.isEmpty()) {
+				return Optional.empty();
+			}
+			rendered.add(method.getSimpleName() + " = " + value.get());
+		}
+		return Optional.of(annotationName + "(" + String.join(", ", rendered) + ")");
+	}
+
+	private Optional<String> renderAnnotationElementValue(ITypeReference type, Set<String> visitedAnnotations) {
+		return switch (type) {
+			case PrimitiveTypeReference primitive -> Optional.of(switch (primitive.name()) {
+				case "boolean" -> "false";
+				case "char" -> "'x'";
+				case "byte", "short", "int" -> "0";
+				case "long" -> "0L";
+				case "float" -> "0f";
+				case "double" -> "0d";
+				default -> "0";
+			});
+			case ArrayTypeReference array -> renderAnnotationElementValue(array.componentType(), visitedAnnotations)
+				.map(component -> "{ " + component + " }");
+			case TypeReference<?> reference -> {
+				String qn = reference.getQualifiedName();
+				if (String.class.getCanonicalName().equals(qn)) {
+					yield Optional.of("\"value\"");
+				}
+				if (Class.class.getCanonicalName().equals(qn)) {
+					yield renderAnnotationClassLiteral(reference);
+				}
+				Optional<TypeDecl> resolved = api.resolver().resolve(reference);
+				if (resolved.isEmpty()) {
+					yield Optional.empty();
+				}
+				TypeDecl resolvedType = resolved.get();
+					if (resolvedType.isEnum() && resolvedType instanceof EnumDecl enumDecl) {
+						Optional<String> constant = enumDecl.getValues().stream()
+							.sorted(Comparator.comparing(EnumValueDecl::getSimpleName))
+							.map(value -> renderTypeName(enumDecl) + "." + value.getSimpleName())
+							.findFirst();
+						yield constant;
+					}
+				if (resolvedType.isAnnotation() && resolvedType instanceof AnnotationDecl nestedAnnotation) {
+					if (!visitedAnnotations.add(nestedAnnotation.getQualifiedName())) {
+						yield Optional.empty();
+					}
+					Optional<String> nested = renderAnnotationApplication(nestedAnnotation, false);
+					visitedAnnotations.remove(nestedAnnotation.getQualifiedName());
+					yield nested;
+				}
+				yield Optional.empty();
+			}
+			default -> Optional.empty();
+		};
+	}
+
+	private Optional<String> renderAnnotationClassLiteral(TypeReference<?> classReference) {
+		if (classReference.typeArguments().isEmpty()) {
+			return Optional.of("java.lang.Object.class");
+		}
+		ITypeReference argument = classReference.typeArguments().getFirst();
+		return switch (argument) {
+			case PrimitiveTypeReference primitive -> Optional.of(primitive.name() + ".class");
+			case ArrayTypeReference array -> Optional.of(renderRawType(array) + ".class");
+			case TypeReference<?> reference -> Optional.of(toSourceQualifiedName(reference.getQualifiedName()) + ".class");
+			case TypeParameterReference _ -> Optional.of("java.lang.Object.class");
+			case WildcardTypeReference wildcard -> {
+				if (wildcard.isUnbounded()) {
+					yield Optional.of("java.lang.Object.class");
+				}
+				if (!wildcard.upper()) {
+					yield Optional.of("java.lang.Object.class");
+				}
+				Optional<String> boundLiteral = wildcard.bounds().stream()
+					.map(bound -> switch (bound) {
+						case TypeReference<?> tr -> Optional.of(toSourceQualifiedName(tr.getQualifiedName()) + ".class");
+						case ArrayTypeReference array -> Optional.of(renderRawType(array) + ".class");
+						default -> Optional.<String>empty();
+					})
+					.filter(Optional::isPresent)
+					.map(Optional::get)
+					.findFirst();
+				yield boundLiteral.or(() -> Optional.of("java.lang.Object.class"));
+			}
+		};
 	}
 
 	private void emitConstructorReference(CodeBlock block, ClassDecl cls, ConstructorDecl constructor,
@@ -981,7 +1531,10 @@ public final class FootprintGenerator {
 			return false;
 		}
 		if (isNonStaticNestedClass(cls)) {
-			return false;
+			Optional<TypeDecl> enclosing = cls.getEnclosingType().flatMap(api.resolver()::resolve);
+			if (enclosing.isEmpty() || !isDirectlyAccessible(enclosing.get())) {
+				return false;
+			}
 		}
 		return !findSubclassAccessibleConstructors(cls).isEmpty();
 	}
@@ -1214,6 +1767,9 @@ public final class FootprintGenerator {
 		}
 
 		Map<String, String> bindings = new LinkedHashMap<>(enclosingBindings);
+		for (FormalTypeParameter parameter : formalTypeParameters) {
+			bindings.putIfAbsent(parameter.name(), parameter.name());
+		}
 		List<String> rendered = new ArrayList<>(formalTypeParameters.size());
 		for (FormalTypeParameter parameter : formalTypeParameters) {
 			Map<String, String> localBindings = new LinkedHashMap<>(bindings);
@@ -1297,6 +1853,9 @@ public final class FootprintGenerator {
 	}
 
 	private void addTypeParameterErasures(List<FormalTypeParameter> formalTypeParameters, Map<String, String> erasures) {
+		for (FormalTypeParameter parameter : formalTypeParameters) {
+			erasures.putIfAbsent(parameter.name(), parameter.name());
+		}
 		for (FormalTypeParameter parameter : formalTypeParameters) {
 			ITypeReference erasureBound = selectErasureBound(parameter.bounds());
 			erasures.put(parameter.name(), resolveTypeParameterErasure(erasureBound, erasures, new HashSet<>()));

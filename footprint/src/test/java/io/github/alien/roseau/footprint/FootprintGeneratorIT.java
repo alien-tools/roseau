@@ -38,12 +38,17 @@ class FootprintGeneratorIT {
 			Path generatedSource = tempDir.resolve("Footprint.java");
 			FootprintService service = new FootprintService();
 			service.generateToFile(sourceTree, generatedSource, "test.footprint", "Footprint");
+			Path packageInfo = generatedSource.getParent().resolve("package-info.java");
+			assertTrue(Files.exists(packageInfo), "Expected package-info companion for PACKAGE-target annotations");
+			String packageInfoContent = Files.readString(packageInfo);
+			assertTrue(packageInfoContent.contains("@fixture.full.PackageOnlyMarker"),
+				"Expected PACKAGE-target annotation usages in package-info companion");
 
 			Path apiBin = tempDir.resolve("api-bin");
 			compileSources(allJavaSources(sourceTree), apiBin, List.of());
 
 			Path clientBin = tempDir.resolve("client-bin");
-			compileSources(List.of(generatedSource), clientBin, List.of("-classpath", apiBin.toString()));
+			compileSources(generatedClientSources(generatedSource), clientBin, List.of("-classpath", apiBin.toString()));
 
 			RunResult run = runMain(
 				"test.footprint.Footprint",
@@ -71,9 +76,11 @@ class FootprintGeneratorIT {
 		assertTrue(generated.contains("throw (fixture.full.CheckedProblem) null;"), "Expected throw usages for exception types");
 		assertTrue(generated.contains("fixture.full.BaseApi"), "Expected core type references");
 		assertTrue(generated.contains("fixture.full.DerivedApi"), "Expected subtype references");
-		assertTrue(generated.contains("fixture.full.GenericHolder<?>"), "Expected generic parameterized type usages");
-		assertTrue(generated.contains("fixture.full.GenericContract<?>"), "Expected generic interface parameterized usages");
-		assertTrue(generated.contains("fixture.full.BoundedContract<? extends java.lang.Number>"),
+		assertTrue(Pattern.compile("fixture\\.full\\.GenericHolder<[^>]+>").matcher(generated).find(),
+			"Expected generic parameterized type usages");
+		assertTrue(Pattern.compile("fixture\\.full\\.GenericContract<[^>]+>").matcher(generated).find(),
+			"Expected generic interface parameterized usages");
+		assertTrue(Pattern.compile("fixture\\.full\\.BoundedContract<[^>]+>").matcher(generated).find(),
 			"Expected bounded-generic parameterized type usages");
 		assertTrue(Pattern.compile(
 			"private abstract static class BoundWitness\\d+ extends java\\.lang\\.Number implements java\\.lang\\.Comparable<BoundWitness\\d+> \\{")
@@ -89,9 +96,73 @@ class FootprintGeneratorIT {
 		assertTrue(Pattern.compile("\\.<BoundWitness\\d+>pick\\(")
 				.matcher(generated).find(),
 			"Expected explicit intersection-bound method type-argument invocations");
+		assertTrue(Pattern.compile("fixture\\.full\\.BaseApi\\s+upcastRef\\d+\\s*=\\s*\\(fixture\\.full\\.DerivedApi\\)\\s*null;")
+				.matcher(generated).find(),
+			"Expected explicit supertype upcast compatibility probes");
+		assertTrue(generated.contains("throw (fixture.full.UncheckedProblem) null;"),
+			"Expected uncaught throw probes for unchecked exceptions");
+		assertTrue(Pattern.compile("@fixture\\.full\\.FullMarker")
+				.matcher(generated).find(),
+			"Expected annotation application usages");
+		assertTrue(Pattern.compile("@fixture\\.full\\.RepeatableMarker\\s+@fixture\\.full\\.RepeatableMarker\\s+int\\s+repeatedAnnotationLocal\\d+\\s*=\\s*0;")
+				.matcher(generated).find(),
+			"Expected repeated annotation usages for repeatable annotations");
+		assertTrue(Pattern.compile("@fixture\\.full\\.RepeatableMarker\\s+@fixture\\.full\\.RepeatableMarker\\s+void\\s+m\\(\\)\\s*\\{")
+				.matcher(generated).find(),
+			"Expected repeated annotation usages on non-field targets");
+		assertTrue(generated.contains("@fixture.full.BoundedClassMarker(java.lang.Number.class)"),
+			"Expected bounded Class<?> annotation value synthesis");
+		assertTrue(Pattern.compile("fixture\\.full\\.BaseApi::getValue")
+				.matcher(generated).find(),
+			"Expected unbound instance method references");
+		assertTrue(generated.contains("outer.super("),
+			"Expected non-static inner-class subclass constructors using outer.super(...)");
+		assertTrue(generated.contains("ANNOTATION_TYPE target requires class-scope annotation declaration emission"),
+			"Expected explicit note for annotation-type target coverage gap");
+		assertTrue(Pattern.compile("class GenericTypeProbe\\d+<")
+				.matcher(generated).find(),
+			"Expected generic type-parameter probes");
+		assertTrue(Pattern.compile("class GenericMethodProbe\\d+ \\{")
+				.matcher(generated).find(),
+			"Expected generic method-parameter probes");
+		assertTrue(Pattern.compile("class NestedTypeAccess\\d+ extends fixture\\.full\\.BaseApi")
+				.matcher(generated).find(),
+			"Expected protected nested-type subclass-access probes");
+		assertTrue(Pattern.compile("ProtectedNested\\s+nestedTypeRef\\d+\\s*=\\s*\\(ProtectedNested\\) null;")
+				.matcher(generated).find(),
+			"Expected first-class protected nested-type references in subclass context");
 		assertFalse(generated.contains("// Parameterized use not representable for fixture.full.IntersectionGeneric"),
 			"Intersection-bounded generic type should now be representable");
 		assertFalse(generated.contains("fixture.full.HiddenPackageType"), "Package-private top-level types should be ignored");
+	}
+
+	@Test
+	void generated_footprint_preserves_forward_type_parameter_bounds() throws Exception {
+		Path tempDir = Files.createTempDirectory("roseau-footprint-forward-bounds");
+		try {
+			Path sourceTree = tempDir.resolve("src");
+			Path apiType = sourceTree.resolve("forward/bounds/A.java");
+			Files.createDirectories(apiType.getParent());
+			Files.writeString(
+				apiType,
+				"""
+					package forward.bounds;
+					public class A<T extends U, U> {}
+					"""
+			);
+
+			String generated = new FootprintService().generate(sourceTree, "test.footprint", "Footprint");
+			assertTrue(
+				Pattern.compile("class GenericTypeProbe\\d+<T extends U, U>").matcher(generated).find(),
+				"Expected forward bound reference to be preserved in generated formal type parameters"
+			);
+			assertFalse(
+				Pattern.compile("class GenericTypeProbe\\d+<T extends java\\.lang\\.Object, U>").matcher(generated).find(),
+				"Forward bound must not degrade to java.lang.Object"
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
 	}
 
 	@Test
@@ -116,7 +187,7 @@ class FootprintGeneratorIT {
 
 			Path clientBin = tempDir.resolve("client-bin");
 			CompilationResult compilation = compileSourcesWithDiagnostics(
-				List.of(generatedSource),
+				generatedClientSources(generatedSource),
 				clientBin,
 				List.of("-classpath", v2ApiBin.toString())
 			);
@@ -125,6 +196,62 @@ class FootprintGeneratorIT {
 				compilation.diagnostics().contains("unreported exception") ||
 					compilation.diagnostics().contains("incompatible thrown types"),
 				"Expected checked-exception compilation failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_when_supertype_is_removed() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-supertype");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/DerivedApi.java"),
+				"public class DerivedApi extends BaseApi implements Service, ThrowingOps, AutoCloseable {",
+				"public class DerivedApi implements Service, ThrowingOps, AutoCloseable {"
+			);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/DerivedApi.java"),
+				"super();",
+				""
+			);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/DerivedApi.java"),
+				"super(seed);",
+				""
+			);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/DerivedApi.java"),
+				"super(name);",
+				""
+			);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/DerivedApi.java"),
+				"@Override\n\tprotected void protectedMethod() throws CheckedProblem {\n\t\tsuper.protectedMethod();\n\t}\n\n",
+				""
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when a public supertype is removed");
+			assertTrue(
+				compilation.diagnostics().contains("incompatible types"),
+				"Expected supertype-compatibility compilation failure, got:\n" + compilation.diagnostics()
 			);
 		} finally {
 			deleteRecursively(tempDir);
@@ -144,7 +271,7 @@ class FootprintGeneratorIT {
 			compileSources(allJavaSources(v1SourceTree), v1ApiBin, List.of());
 
 			Path clientBin = tempDir.resolve("client-bin");
-			compileSources(List.of(generatedSource), clientBin, List.of("-classpath", v1ApiBin.toString()));
+			compileSources(generatedClientSources(generatedSource), clientBin, List.of("-classpath", v1ApiBin.toString()));
 
 			Path v2SourceTree = tempDir.resolve("v2-source");
 			copyRecursively(v1SourceTree, v2SourceTree);
@@ -172,6 +299,237 @@ class FootprintGeneratorIT {
 		}
 	}
 
+	@Test
+	void v1_generated_footprint_fails_to_compile_when_unchecked_exception_becomes_checked() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-checked-ex");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/UncheckedProblem.java"),
+				"extends RuntimeException",
+				"extends Exception"
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when an unchecked exception becomes checked");
+			assertTrue(
+				compilation.diagnostics().contains("unreported exception") ||
+					compilation.diagnostics().contains("incompatible types"),
+				"Expected unreported checked exception failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_annotation_method_default_removal() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-ann-default");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/FullMarker.java"),
+				"String value() default \"marker\";",
+				"String value();"
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when an annotation method loses its default");
+			assertTrue(
+				compilation.diagnostics().contains("missing a default value for the element") ||
+					compilation.diagnostics().contains("missing element value"),
+				"Expected annotation default-related compilation failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_new_annotation_method_without_default() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-ann-new-required");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/FullMarker.java"),
+				"int[] codes() default {1, 2, 3};",
+				"int[] codes() default {1, 2, 3};\n\n\tString required();"
+			);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/BaseApi.java"),
+				"@FullMarker(\"base\")\n",
+				""
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when a required annotation method is added");
+			assertTrue(
+				compilation.diagnostics().contains("missing element value") ||
+					compilation.diagnostics().contains("missing a default value for the element"),
+				"Expected missing annotation element compilation failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_annotation_target_reduction() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-ann-target");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/FullMarker.java"),
+				"ElementType.TYPE,\n\tElementType.METHOD,\n\tElementType.FIELD,\n\tElementType.PARAMETER,\n\tElementType.CONSTRUCTOR",
+				"ElementType.FIELD"
+			);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/BaseApi.java"),
+				"@FullMarker(\"base\")\n",
+				""
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when annotation targets are reduced");
+			assertTrue(
+				compilation.diagnostics().contains("not applicable to this kind of declaration"),
+				"Expected annotation target applicability failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_package_annotation_target_reduction() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-ann-package-target");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/PackageOnlyMarker.java"),
+				"@java.lang.annotation.Target(java.lang.annotation.ElementType.PACKAGE)",
+				"@java.lang.annotation.Target(java.lang.annotation.ElementType.FIELD)"
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when package annotation targets are reduced");
+			assertTrue(
+				compilation.diagnostics().contains("package annotations should be in file package-info.java") ||
+					compilation.diagnostics().contains("not applicable to this kind of declaration"),
+				"Expected package annotation target applicability failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_when_annotation_is_no_longer_repeatable() throws Exception {
+		Path v1SourceTree = fixtureSourceTree();
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-ann-repeatable");
+		try {
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			copyRecursively(v1SourceTree, v2SourceTree);
+			replaceInFile(
+				v2SourceTree.resolve("fixture/full/RepeatableMarker.java"),
+				"@java.lang.annotation.Repeatable(RepeatableMarker.Container.class)\n",
+				""
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when repeatable annotation support is removed");
+			assertTrue(
+				compilation.diagnostics().contains("not a repeatable annotation type") ||
+					compilation.diagnostics().contains("not a repeatable annotation interface"),
+				"Expected repeatable-annotation compilation failure, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
 	private static Path fixtureSourceTree() throws URISyntaxException {
 		return Path.of(
 			Objects.requireNonNull(
@@ -185,6 +543,21 @@ class FootprintGeneratorIT {
 		try (Stream<Path> stream = Files.walk(sourceTree)) {
 			return stream
 				.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".java"))
+				.sorted()
+				.toList();
+		}
+	}
+
+	private static List<Path> generatedClientSources(Path generatedSource) throws IOException {
+		Path parent = generatedSource.getParent();
+		String mainName = generatedSource.getFileName().toString();
+		try (Stream<Path> stream = Files.list(parent)) {
+			return stream
+				.filter(path -> Files.isRegularFile(path) && path.toString().endsWith(".java"))
+				.filter(path -> {
+					String name = path.getFileName().toString();
+					return name.equals(mainName) || name.equals("package-info.java") || name.equals("module-info.java");
+				})
 				.sorted()
 				.toList();
 		}

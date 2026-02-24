@@ -3,9 +3,12 @@ package io.github.alien.roseau.footprint;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 /**
  * Regenerates client sources under {@code jezek-dataset/client/src}.
@@ -26,8 +29,8 @@ public final class JezekDatasetClientGeneratorMain {
 			: locateDatasetRoot(Path.of("").toAbsolutePath().normalize());
 
 		Path clientRoot = datasetRoot.resolve("client").resolve("src");
-		Path v1Root = datasetRoot.resolve("v1").resolve("src").resolve("testing_lib");
-		Path v2Root = datasetRoot.resolve("v2").resolve("src").resolve("testing_lib");
+		Path v1Root = resolveVersionRoot(datasetRoot.resolve("v1").resolve("src"));
+		Path v2Root = resolveVersionRoot(datasetRoot.resolve("v2").resolve("src"));
 
 		if (!Files.isDirectory(clientRoot)) {
 			throw new IllegalArgumentException("Missing client root: " + clientRoot);
@@ -45,10 +48,7 @@ public final class JezekDatasetClientGeneratorMain {
 		int generated = 0;
 		int emptyFallbacks = 0;
 		try {
-			List<Path> cases;
-			try (Stream<Path> stream = Files.list(clientRoot)) {
-				cases = stream.filter(Files::isDirectory).sorted().toList();
-			}
+			List<Path> cases = findCaseDirectories(clientRoot, v1Root, v2Root);
 
 			for (Path caseDir : cases) {
 				String caseName = caseDir.getFileName().toString();
@@ -66,7 +66,8 @@ public final class JezekDatasetClientGeneratorMain {
 				}
 
 				Path output = caseDir.resolve("Main.java");
-				service.generateToFile(sourceTree, output, caseName, "Main");
+				String packageName = toPackageName(clientRoot.relativize(caseDir));
+				service.generateToFile(sourceTree, output, packageName, "Main");
 				generated++;
 			}
 		} finally {
@@ -80,17 +81,58 @@ public final class JezekDatasetClientGeneratorMain {
 	}
 
 	private static Path locateDatasetRoot(Path cwd) {
-		Path direct = cwd.resolve("jezek-dataset");
-		if (Files.isDirectory(direct)) {
-			return direct;
+		Path normalizedCwd = cwd.toAbsolutePath().normalize();
+		List<Path> candidates = new ArrayList<>();
+		candidates.add(normalizedCwd);
+		candidates.add(normalizedCwd.resolve("..").normalize());
+
+		for (Path candidate : candidates) {
+			if (hasDatasetLayout(candidate)) {
+				return candidate;
+			}
+			try (Stream<Path> stream = Files.list(candidate)) {
+				for (Path child : stream.filter(Files::isDirectory).toList()) {
+					if (hasDatasetLayout(child)) {
+						return child;
+					}
+				}
+			} catch (IOException _) {
+				// Ignore unreadable candidates and continue searching.
+			}
 		}
 
-		Path parent = cwd.resolve("..").resolve("jezek-dataset").normalize();
-		if (Files.isDirectory(parent)) {
-			return parent;
-		}
+		throw new IllegalArgumentException("Cannot locate dataset root with expected layout from " + cwd);
+	}
 
-		throw new IllegalArgumentException("Cannot locate jezek-dataset from " + cwd);
+	private static boolean hasDatasetLayout(Path root) {
+		return Files.isDirectory(root.resolve("client").resolve("src")) &&
+			Files.isDirectory(root.resolve("v1").resolve("src")) &&
+			Files.isDirectory(root.resolve("v2").resolve("src"));
+	}
+
+	private static List<Path> findCaseDirectories(Path clientRoot, Path v1Root, Path v2Root) throws IOException {
+		try (Stream<Path> stream = Files.walk(clientRoot)) {
+			return stream
+				.filter(Files::isDirectory)
+				.filter(path -> !path.equals(clientRoot))
+				.filter(path -> {
+					String caseName = path.getFileName().toString();
+					return Files.isDirectory(v1Root.resolve(caseName)) || Files.isDirectory(v2Root.resolve(caseName));
+				})
+				.sorted()
+				.toList();
+		}
+	}
+
+	private static String toPackageName(Path relativePath) {
+		return StreamSupport.stream(relativePath.spliterator(), false)
+			.map(Path::toString)
+			.collect(Collectors.joining("."));
+	}
+
+	private static Path resolveVersionRoot(Path srcRoot) {
+		Path testingLib = srcRoot.resolve("testing_lib");
+		return Files.isDirectory(testingLib) ? testingLib : srcRoot;
 	}
 
 	private static void deleteRecursively(Path root) throws IOException {
