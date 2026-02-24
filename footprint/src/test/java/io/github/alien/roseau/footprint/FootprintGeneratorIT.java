@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Objects;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -74,8 +75,22 @@ class FootprintGeneratorIT {
 		assertTrue(generated.contains("fixture.full.GenericContract<?>"), "Expected generic interface parameterized usages");
 		assertTrue(generated.contains("fixture.full.BoundedContract<? extends java.lang.Number>"),
 			"Expected bounded-generic parameterized type usages");
-		assertTrue(generated.contains("fixture.full.IntersectionGeneric<? extends java.lang.Number>"),
+		assertTrue(Pattern.compile(
+			"private abstract static class BoundWitness\\d+ extends java\\.lang\\.Number implements java\\.lang\\.Comparable<BoundWitness\\d+> \\{")
+				.matcher(generated).find(),
+			"Expected class+interface intersection witness declarations");
+		assertTrue(Pattern.compile(
+			"private interface BoundWitness\\d+ extends java\\.lang\\.Runnable, java\\.lang\\.AutoCloseable \\{")
+				.matcher(generated).find(),
+			"Expected interface-only intersection witness declarations");
+		assertTrue(Pattern.compile("fixture\\.full\\.IntersectionGeneric<BoundWitness\\d+>")
+				.matcher(generated).find(),
 			"Expected intersection-bound generic parameterized type usages");
+		assertTrue(Pattern.compile("\\.<BoundWitness\\d+>pick\\(")
+				.matcher(generated).find(),
+			"Expected explicit intersection-bound method type-argument invocations");
+		assertFalse(generated.contains("// Parameterized use not representable for fixture.full.IntersectionGeneric"),
+			"Intersection-bounded generic type should now be representable");
 		assertFalse(generated.contains("fixture.full.HiddenPackageType"), "Package-private top-level types should be ignored");
 	}
 

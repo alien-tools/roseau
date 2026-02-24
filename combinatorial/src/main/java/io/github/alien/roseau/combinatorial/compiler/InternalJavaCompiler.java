@@ -60,10 +60,14 @@ public final class InternalJavaCompiler {
 
 			File clientFile = clientPath.resolve("%s.java".formatted(clientFilename)).toFile();
 			Iterable<? extends JavaFileObject> compilationUnits = fileManager.getJavaFileObjectsFromFiles(List.of(clientFile));
-			List<String> options = List.of("-source", "21", "-cp", apiJarPath.toString());
-			JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
-			task.call();
-		} catch (Exception e) {
+				var runtimeClasspath = System.getProperty("java.class.path", "");
+				var compileClasspath = runtimeClasspath.isBlank()
+					? apiJarPath.toString()
+					: "%s%s%s".formatted(apiJarPath, File.pathSeparator, runtimeClasspath);
+				List<String> options = List.of("-source", "21", "-cp", compileClasspath);
+				JavaCompiler.CompilationTask task = compiler.getTask(null, fileManager, diagnostics, options, null, compilationUnits);
+				task.call();
+			} catch (Exception e) {
 			return List.of(new InternalDiagnostic("Unknown error while compiling client"));
 		}
 
@@ -73,7 +77,7 @@ public final class InternalJavaCompiler {
 	}
 
 	public List<Diagnostic<? extends JavaFileObject>> linkClientWithApi(Path clientBinPath, Path apiJarPath, String clientFilename, String packageName) {
-		var classPaths = "%s:%s".formatted(clientBinPath, apiJarPath);
+		var classPaths = "%s%s%s".formatted(clientBinPath, File.pathSeparator, apiJarPath);
 
 		ProcessBuilder pb = new ProcessBuilder("java", "-cp", classPaths, "%s.%s".formatted(packageName, clientFilename));
 		pb.redirectErrorStream(true);
