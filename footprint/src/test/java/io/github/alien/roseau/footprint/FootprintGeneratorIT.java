@@ -166,6 +166,226 @@ class FootprintGeneratorIT {
 	}
 
 	@Test
+	void v1_generated_footprint_fails_to_compile_on_incompatible_field_type_parameter_change() throws Exception {
+		assertFieldTypeParameterFootprintCompileFailure(
+			"""
+				package fixture.generic;
+				public class A<T, U> {
+					public T f;
+				}
+				""",
+			"""
+				package fixture.generic;
+				public class A<T, U> {
+					public U f;
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_subtype_field_type_parameter_change() throws Exception {
+		assertFieldTypeParameterFootprintCompileFailure(
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public T f;
+				}
+				""",
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public U f;
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_supertype_field_type_parameter_change() throws Exception {
+		assertFieldTypeParameterFootprintCompileFailure(
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public U f;
+				}
+				""",
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public T f;
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_incompatible_method_return_type_parameter_change() throws Exception {
+		assertMethodReturnTypeParameterFootprintCompileFailure(
+			"""
+				package fixture.generic;
+				public class A<T, U> {
+					public T m() { return null; }
+				}
+				""",
+			"""
+				package fixture.generic;
+				public class A<T, U> {
+					public U m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_primitive_method_return_type_change() throws Exception {
+		assertMethodReturnTypeFootprintCompileFailure(
+			"""
+				package fixture.returns;
+				public class A {
+					public int m() { return 0; }
+				}
+				""",
+			"""
+				package fixture.returns;
+				public class A {
+					public long m() { return 0L; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_object_method_return_type_change() throws Exception {
+		assertMethodReturnTypeFootprintCompileFailure(
+			"""
+				package fixture.returns;
+				public class A {
+					public java.io.InputStream m() { return null; }
+				}
+				""",
+			"""
+				package fixture.returns;
+				public class A {
+					public java.io.File m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_generic_method_return_type_change() throws Exception {
+		assertMethodReturnTypeFootprintCompileFailure(
+			"""
+				package fixture.returns;
+				public class A {
+					public java.util.List<java.lang.Integer> m() { return null; }
+				}
+				""",
+			"""
+				package fixture.returns;
+				public class A {
+					public java.util.List<java.lang.String> m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_wildcard_method_return_type_change() throws Exception {
+		assertMethodReturnTypeFootprintCompileFailure(
+			"""
+				package fixture.returns;
+				public class A {
+					public java.util.List<? extends java.lang.Number> m() { return null; }
+				}
+				""",
+			"""
+				package fixture.returns;
+				public class A {
+					public java.util.List<? super java.lang.Number> m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_array_method_return_type_change() throws Exception {
+		assertMethodReturnTypeFootprintCompileFailure(
+			"""
+				package fixture.returns;
+				public class A {
+					public java.lang.String[] m() { return null; }
+				}
+				""",
+			"""
+				package fixture.returns;
+				public class A {
+					public java.lang.Object[] m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_subtype_method_return_type_parameter_change() throws Exception {
+		assertMethodReturnTypeParameterFootprintCompileFailure(
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public T m() { return null; }
+				}
+				""",
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public U m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_supertype_method_return_type_parameter_change() throws Exception {
+		assertMethodReturnTypeParameterFootprintCompileFailure(
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public U m() { return null; }
+				}
+				""",
+			"""
+				package fixture.generic;
+				public class A<T, U extends T> {
+					public T m() { return null; }
+				}
+				"""
+		);
+	}
+
+	@Test
+	void v1_generated_footprint_fails_to_compile_on_inherited_static_method_return_type_change() throws Exception {
+		assertInheritedStaticMethodReturnTypeFootprintCompileFailure(
+			"""
+				package fixture.inherited;
+				class A {
+					public static int m() { return 0; }
+				}
+				""",
+			"""
+				package fixture.inherited;
+				class A {
+					public static String m() { return null; }
+				}
+				""",
+			"""
+				package fixture.inherited;
+				public class B extends A {}
+				"""
+		);
+	}
+
+	@Test
 	void v1_generated_footprint_fails_to_compile_on_source_breaking_v2() throws Exception {
 		Path v1SourceTree = fixtureSourceTree();
 		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-source");
@@ -537,6 +757,149 @@ class FootprintGeneratorIT {
 				"Missing full-api fixture"
 			).toURI()
 		);
+	}
+
+	private static void assertFieldTypeParameterFootprintCompileFailure(String v1Source, String v2Source) throws Exception {
+		Path tempDir = Files.createTempDirectory("roseau-footprint-type-params");
+		try {
+			Path v1SourceTree = tempDir.resolve("v1-source");
+			writeJavaSource(v1SourceTree, "fixture/generic/A.java", v1Source);
+
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			writeJavaSource(v2SourceTree, "fixture/generic/A.java", v2Source);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when generic field type changes");
+			assertTrue(
+				compilation.diagnostics().contains("incompatible types"),
+				"Expected generic field type-parameter incompatibility, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	private static void assertMethodReturnTypeParameterFootprintCompileFailure(String v1Source, String v2Source)
+		throws Exception {
+		Path tempDir = Files.createTempDirectory("roseau-footprint-method-type-params");
+		try {
+			Path v1SourceTree = tempDir.resolve("v1-source");
+			writeJavaSource(v1SourceTree, "fixture/generic/A.java", v1Source);
+
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			writeJavaSource(v2SourceTree, "fixture/generic/A.java", v2Source);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when generic method return type changes");
+			assertTrue(
+				compilation.diagnostics().contains("incompatible types") ||
+					compilation.diagnostics().contains("does not override") ||
+					compilation.diagnostics().contains("return type"),
+				"Expected generic method return-type incompatibility, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	private static void assertMethodReturnTypeFootprintCompileFailure(String v1Source, String v2Source)
+		throws Exception {
+		Path tempDir = Files.createTempDirectory("roseau-footprint-return-types");
+		try {
+			Path v1SourceTree = tempDir.resolve("v1-source");
+			writeJavaSource(v1SourceTree, "fixture/returns/A.java", v1Source);
+
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			writeJavaSource(v2SourceTree, "fixture/returns/A.java", v2Source);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(), "Compilation should fail when method return type changes");
+			assertTrue(
+				compilation.diagnostics().contains("incompatible types"),
+				"Expected return-type incompatibility, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	private static void assertInheritedStaticMethodReturnTypeFootprintCompileFailure(String v1ASource, String v2ASource,
+	                                                                                String bSource)
+		throws Exception {
+		Path tempDir = Files.createTempDirectory("roseau-footprint-inherited-static");
+		try {
+			Path v1SourceTree = tempDir.resolve("v1-source");
+			writeJavaSource(v1SourceTree, "fixture/inherited/A.java", v1ASource);
+			writeJavaSource(v1SourceTree, "fixture/inherited/B.java", bSource);
+
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			writeJavaSource(v2SourceTree, "fixture/inherited/A.java", v2ASource);
+			writeJavaSource(v2SourceTree, "fixture/inherited/B.java", bSource);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			CompilationResult compilation = compileSourcesWithDiagnostics(
+				generatedClientSources(generatedSource),
+				clientBin,
+				List.of("-classpath", v2ApiBin.toString())
+			);
+			assertFalse(compilation.success(),
+				"Compilation should fail when inherited static method return type changes");
+			assertTrue(
+				compilation.diagnostics().contains("incompatible types"),
+				"Expected inherited static method return-type incompatibility, got:\n" + compilation.diagnostics()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	private static void writeJavaSource(Path root, String relativePath, String content) throws IOException {
+		Path source = root.resolve(relativePath);
+		Files.createDirectories(source.getParent());
+		Files.writeString(source, content);
 	}
 
 	private static List<Path> allJavaSources(Path sourceTree) throws IOException {

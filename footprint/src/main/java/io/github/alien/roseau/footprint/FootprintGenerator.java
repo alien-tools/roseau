@@ -437,6 +437,7 @@ public final class FootprintGenerator {
 				List<InvocationForm> invocations = invocationForms(method, receiver, superTypeBindings);
 				for (InvocationForm invocation : invocations) {
 					emitInvocation(block, invocation.statement(), method);
+					emitMethodReturnTypeUse(block, method, invocation);
 				}
 				if (invocations.isEmpty() && !method.getFormalTypeParameters().isEmpty()) {
 					block.line("// Explicit type arguments unrepresentable for " + method.getQualifiedName());
@@ -517,6 +518,10 @@ public final class FootprintGenerator {
 		TypeInstantiation typeInstantiation = resolveTypeInstantiation(type);
 		Map<String, String> typeBindings = typeInstantiation.typeBindings();
 		String instanceReceiver = "((" + typeInstantiation.typeExpression() + ") null)";
+		boolean canEmitGenericProbe = !type.getFormalTypeParameters().isEmpty();
+		Set<String> typeParameterNames = type.getFormalTypeParameters().stream()
+			.map(FormalTypeParameter::name)
+			.collect(Collectors.toSet());
 
 		for (FieldDecl field : sortedFields(type.getDeclaredFields())) {
 			if (!isRepresentable(field.getType())) {
@@ -537,11 +542,45 @@ public final class FootprintGenerator {
 						emitRuntimeStatement(block, instanceReceiver + "." + field.getSimpleName() + " = " +
 							typedDefaultValueExpression(field.getType(), typeBindings) + ";");
 					}
+					if (canEmitGenericProbe && hasAnyTypeParameterReference(field.getType(), typeParameterNames)) {
+						emitGenericFieldProbe(block, type, field);
+					}
 				}
 			} else if (field.isProtected() && !canExtendClass(type)) {
 				block.line("// Protected field cannot be accessed without a legal subclass: " + field.getQualifiedName());
 			}
 		}
+	}
+
+	private void emitGenericFieldProbe(CodeBlock block, TypeDecl type, FieldDecl field) {
+		Map<String, String> declarationBindings = new LinkedHashMap<>();
+		for (FormalTypeParameter parameter : type.getFormalTypeParameters()) {
+			declarationBindings.put(parameter.name(), parameter.name());
+		}
+		String probeName = nextLocalType("GenericFieldProbe");
+		String formalTypeParameters = renderFormalTypeParameters(type.getFormalTypeParameters(), Map.of());
+		String typeArguments = type.getFormalTypeParameters().stream()
+			.map(FormalTypeParameter::name)
+			.collect(Collectors.joining(", "));
+		String genericReceiverType = renderTypeName(type) + "<" + typeArguments + ">";
+		String fieldType = renderType(field.getType(), declarationBindings);
+
+		block.line("class " + probeName + formalTypeParameters + "{");
+		block.indent();
+		block.line(fieldType + " read(" + genericReceiverType + " receiver) {");
+		block.indent();
+		block.line("return receiver." + field.getSimpleName() + ";");
+		block.outdent();
+		block.line("}");
+		if (!field.isFinal()) {
+			block.line("void write(" + genericReceiverType + " receiver, " + fieldType + " value) {");
+			block.indent();
+			block.line("receiver." + field.getSimpleName() + " = value;");
+			block.outdent();
+			block.line("}");
+		}
+		block.outdent();
+		block.line("}");
 	}
 
 	private void emitMethodUsages(CodeBlock block, TypeDecl type) {
@@ -552,6 +591,10 @@ public final class FootprintGenerator {
 		TypeInstantiation typeInstantiation = resolveTypeInstantiation(type);
 		Map<String, String> typeBindings = typeInstantiation.typeBindings();
 		String instanceReceiver = "((" + typeInstantiation.typeExpression() + ") null)";
+		boolean canEmitGenericProbe = !type.getFormalTypeParameters().isEmpty();
+		Set<String> typeParameterNames = type.getFormalTypeParameters().stream()
+			.map(FormalTypeParameter::name)
+			.collect(Collectors.toSet());
 
 		for (MethodDecl method : sortedMethods(type.getDeclaredMethods())) {
 			if (!isRepresentable(method)) {
@@ -563,6 +606,7 @@ public final class FootprintGenerator {
 				List<InvocationForm> invocations = invocationForms(method, receiver, typeBindings);
 				for (InvocationForm invocation : invocations) {
 					emitInvocation(block, invocation.statement(), method);
+					emitMethodReturnTypeUse(block, method, invocation);
 				}
 				if (invocations.isEmpty() && !method.getFormalTypeParameters().isEmpty()) {
 					block.line("// Explicit type arguments unrepresentable for " + method.getQualifiedName());
@@ -572,10 +616,189 @@ public final class FootprintGenerator {
 					(typeInstantiation.parameterized() || type.getFormalTypeParameters().isEmpty())) {
 					emitGenericMethodProbe(block, type, method, typeBindings, typeInstantiation.typeExpression());
 				}
+				if (canEmitGenericProbe &&
+					hasAnyTypeParameterReference(method.getType(), typeParameterNames) &&
+					!method.getFormalTypeParameters().isEmpty()) {
+					emitGenericMethodProbe(block, type, method, typeParameterIdentityBindings(type),
+						renderGenericTypeExpression(type));
+				}
+				if (canEmitGenericProbe &&
+					!method.isStatic() &&
+					hasAnyTypeParameterReference(method.getType(), typeParameterNames)) {
+					emitGenericMethodCallProbe(block, type, method);
+				}
+				if (canEmitGenericProbe &&
+					!method.isStatic() &&
+					hasAnyTypeParameterReference(method.getType(), typeParameterNames)) {
+					emitGenericMethodReturnProbe(block, type, method);
+				}
 			} else if (method.isProtected() && !canExtendClass(type)) {
 				block.line("// Protected method cannot be accessed without a legal subclass: " + method.getQualifiedName());
 			}
 		}
+		emitInheritedStaticMethodUsages(block, type, typeName, typeBindings);
+	}
+
+	private void emitGenericMethodCallProbe(CodeBlock block, TypeDecl type, MethodDecl method) {
+		if (!method.getFormalTypeParameters().isEmpty()) {
+			return;
+		}
+		Map<String, String> bindings = typeParameterIdentityBindings(type);
+		String probeName = nextLocalType("GenericMethodCallProbe");
+		String probeTypeParameters = renderFormalTypeParameters(type.getFormalTypeParameters(), Map.of());
+		String receiverType = renderGenericTypeExpression(type);
+		String returnType = renderType(method.getType(), bindings);
+		String throwsClause = renderThrowsClause(method);
+		List<String> signatureParams = new ArrayList<>();
+		List<String> args = new ArrayList<>();
+		signatureParams.add(receiverType + " receiver");
+		for (int i = 0; i < method.getParameters().size(); i++) {
+			ParameterDecl parameter = method.getParameters().get(i);
+			String parameterType = renderType(parameter.type(), bindings);
+			if (parameter.isVarargs()) {
+				parameterType += "...";
+			}
+			String parameterName = "p" + i;
+			signatureParams.add(parameterType + " " + parameterName);
+			args.add(parameterName);
+		}
+
+		String callTarget = "receiver." + method.getSimpleName() + "(" + String.join(", ", args) + ")";
+		block.line("class " + probeName + probeTypeParameters + "{");
+		block.indent();
+		block.line(returnType + " invoke(" + String.join(", ", signatureParams) + ")" + throwsClause + " {");
+		block.indent();
+		block.line("return " + callTarget + ";");
+		block.outdent();
+		block.line("}");
+		block.outdent();
+		block.line("}");
+	}
+
+	private void emitMethodReturnTypeUse(CodeBlock block, MethodDecl method, InvocationForm invocation) {
+		String returnType = renderType(method.getType(), invocation.bindings());
+		if ("void".equals(returnType)) {
+			return;
+		}
+		String expression = invocation.statement().endsWith(";")
+			? invocation.statement().substring(0, invocation.statement().length() - 1)
+			: invocation.statement();
+		emitInvocation(block, returnType + " " + nextLocal("readReturn") + " = " + expression + ";", method);
+	}
+
+	private void emitGenericMethodReturnProbe(CodeBlock block, TypeDecl type, MethodDecl method) {
+		if (!(type instanceof ClassDecl cls) || !canExtendClass(type) || !isOverridable(method) || method.isFinal()) {
+			return;
+		}
+		List<ConstructorDecl> constructors = findSubclassAccessibleConstructors(cls);
+		if (constructors.isEmpty()) {
+			block.line("// Generic method return probe skipped due inaccessible subclass constructor: " + cls.getQualifiedName());
+			return;
+		}
+		ConstructorDecl constructor = constructors.getFirst();
+		Map<String, String> classBindings = typeParameterIdentityBindings(type);
+		Optional<Map<String, String>> constructorBindings = resolveTypeParameterBindings(
+			constructor.getFormalTypeParameters(), classBindings);
+		if (!constructor.getFormalTypeParameters().isEmpty() && constructorBindings.isEmpty()) {
+			block.line("// Generic method return probe skipped due unrepresentable constructor type arguments: "
+				+ constructor.getQualifiedName());
+			return;
+		}
+		Map<String, String> effectiveConstructorBindings = constructorBindings
+			.orElseGet(() -> new LinkedHashMap<>(classBindings));
+
+		String probeName = nextLocalType("GenericOverrideProbe");
+		String probeTypeParameters = renderFormalTypeParameters(type.getFormalTypeParameters(), Map.of());
+		String superTypeExpression = renderGenericTypeExpression(type);
+		block.line("abstract class " + probeName + probeTypeParameters + " extends " + superTypeExpression + " {");
+		block.indent();
+		block.line(probeName + "()" + renderThrowsClause(constructor) + " {");
+		block.indent();
+		String args = renderArguments(constructor.getParameters(), false, effectiveConstructorBindings);
+		String superCall = "super(" + args + ");";
+		if (!constructor.getFormalTypeParameters().isEmpty()) {
+			String explicitTypeArgs = constructor.getFormalTypeParameters().stream()
+				.map(parameter -> effectiveConstructorBindings.get(parameter.name()))
+				.collect(Collectors.joining(", "));
+			superCall = "<" + explicitTypeArgs + ">super(" + args + ");";
+		}
+		block.line(superCall);
+		block.outdent();
+		block.line("}");
+		emitOverrideMethod(block, method, classBindings, true);
+		block.outdent();
+		block.line("}");
+	}
+
+	private void emitInheritedStaticMethodUsages(CodeBlock block, TypeDecl type, String typeName,
+	                                             Map<String, String> typeBindings) {
+		Set<String> declaredStaticSignatures = type.getDeclaredMethods().stream()
+			.filter(MethodDecl::isStatic)
+			.map(MethodDecl::getSignature)
+			.collect(Collectors.toSet());
+		Set<String> emitted = new HashSet<>();
+
+		for (TypeReference<TypeDecl> superTypeRef : api.getAllSuperTypes(type)) {
+			Optional<TypeDecl> resolvedSuper = api.resolver().resolve(superTypeRef);
+			if (resolvedSuper.isEmpty() || !resolvedSuper.get().isClass()) {
+				continue;
+			}
+			Map<String, String> superBindings = resolveSuperTypeBindings(superTypeRef, resolvedSuper.get(), typeBindings);
+			for (MethodDecl method : sortedMethods(resolvedSuper.get().getDeclaredMethods())) {
+				if (!method.isPublic() || !method.isStatic() || !isRepresentable(method)) {
+					continue;
+				}
+				if (declaredStaticSignatures.contains(method.getSignature())) {
+					continue;
+				}
+				String emissionKey = method.getQualifiedName() + "#" + method.getSignature();
+				if (!emitted.add(emissionKey)) {
+					continue;
+				}
+				List<InvocationForm> invocations = invocationForms(method, typeName, superBindings);
+				for (InvocationForm invocation : invocations) {
+					emitInvocation(block, invocation.statement(), method);
+					emitMethodReturnTypeUse(block, method, invocation);
+				}
+				if (invocations.isEmpty() && !method.getFormalTypeParameters().isEmpty()) {
+					block.line("// Explicit type arguments unrepresentable for inherited static method: "
+						+ method.getQualifiedName());
+				}
+			}
+		}
+	}
+
+	private Map<String, String> resolveSuperTypeBindings(TypeReference<TypeDecl> superTypeRef, TypeDecl superType,
+	                                                     Map<String, String> containingBindings) {
+		Map<String, String> bindings = new LinkedHashMap<>();
+		List<FormalTypeParameter> superTypeParameters = superType.getFormalTypeParameters();
+		if (superTypeRef.typeArguments().size() == superTypeParameters.size()) {
+			for (int i = 0; i < superTypeParameters.size(); i++) {
+				bindings.put(superTypeParameters.get(i).name(),
+					renderType(superTypeRef.typeArguments().get(i), containingBindings));
+			}
+			return bindings;
+		}
+		addTypeParameterErasures(superTypeParameters, bindings);
+		return bindings;
+	}
+
+	private Map<String, String> typeParameterIdentityBindings(TypeDecl type) {
+		Map<String, String> bindings = new LinkedHashMap<>();
+		for (FormalTypeParameter parameter : type.getFormalTypeParameters()) {
+			bindings.put(parameter.name(), parameter.name());
+		}
+		return bindings;
+	}
+
+	private String renderGenericTypeExpression(TypeDecl type) {
+		if (type.getFormalTypeParameters().isEmpty()) {
+			return renderTypeName(type);
+		}
+		String typeArguments = type.getFormalTypeParameters().stream()
+			.map(FormalTypeParameter::name)
+			.collect(Collectors.joining(", "));
+		return renderTypeName(type) + "<" + typeArguments + ">";
 	}
 
 	private void emitEnumValueUsages(CodeBlock block, EnumDecl enm) {
@@ -597,6 +820,7 @@ public final class FootprintGenerator {
 			List<InvocationForm> invocations = invocationForms(method, receiver, typeParameterErasures);
 			for (InvocationForm invocation : invocations) {
 				emitInvocation(block, invocation.statement(), method);
+				emitMethodReturnTypeUse(block, method, invocation);
 			}
 			if (invocations.isEmpty() && !method.getFormalTypeParameters().isEmpty()) {
 				block.line("// Explicit type arguments unrepresentable for " + method.getQualifiedName());
@@ -1995,6 +2219,15 @@ public final class FootprintGenerator {
 			case TypeReference<?> typeReference ->
 				typeReference.typeArguments().stream().anyMatch(argument -> containsTypeParameter(argument, typeParameterName));
 		};
+	}
+
+	private boolean hasAnyTypeParameterReference(ITypeReference reference, Set<String> typeParameterNames) {
+		for (String typeParameterName : typeParameterNames) {
+			if (containsTypeParameter(reference, typeParameterName)) {
+				return true;
+			}
+		}
+		return false;
 	}
 
 	private Optional<TypeDecl> resolveRawBoundType(ITypeReference bound, String selfParameterName,
