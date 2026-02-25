@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.alien-tools</groupId>
+    <artifactId>invalid-maven-baseline-test</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <properties>
+        <maven.compiler.source>21</maven.compiler.source>
+        <maven.compiler.target>21</maven.compiler.target>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.github.alien-tools</groupId>
+                <artifactId>roseau-maven-plugin</artifactId>
+                <version>0.5.0-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <baselineVersion>
+                        <groupId>io.github.alien-tools</groupId>
+                        <artifactId>roseau-core</artifactId>
+                        <version>0.0.0-nope</version>
+                    </baselineVersion>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+
+</project>

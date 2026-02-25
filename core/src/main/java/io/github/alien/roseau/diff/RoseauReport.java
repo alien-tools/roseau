@@ -2,6 +2,7 @@ package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
@@ -9,7 +10,15 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
+import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.options.IgnoredCsvFile;
+import io.github.alien.roseau.options.RoseauOptions;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -115,6 +124,37 @@ public final class RoseauReport {
 			));
 	}
 
+	public RoseauReport filterReport(RoseauOptions.Diff diffOptions) {
+		List<BreakingChange> bcs = diffOptions.sourceOnly()
+			? getSourceBreakingChanges()
+			: diffOptions.binaryOnly()
+			? getBinaryBreakingChanges()
+			: getBreakingChanges();
+
+		Path ignorePath = diffOptions.ignore();
+		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
+			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
+			bcs = bcs.stream()
+				.filter(bc -> !ignoredFile.isIgnored(bc))
+				.toList();
+		}
+
+		return new RoseauReport(v1(), v2(), bcs);
+	}
+
+	public void writeReport(BreakingChangesFormatterFactory format, Path path) {
+		try {
+			if (path.getParent() != null) {
+				Files.createDirectories(path.getParent());
+			}
+
+			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
+			Files.writeString(path, fmt.format(this), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new RoseauException("Error writing report to %s".formatted(path), e);
+		}
+	}
+
 	public static Builder builder(API v1, API v2) {
 		return new Builder(v1, v2);
 	}
@@ -145,12 +185,12 @@ public final class RoseauReport {
 		}
 
 		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
-		              TypeMemberDecl newMember) {
+		                     TypeMemberDecl newMember) {
 			memberBC(kind, impactedType, impactedMember, newMember, new BreakingChangeDetails.None());
 		}
 
 		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
-		              TypeMemberDecl newMember, BreakingChangeDetails details) {
+		                     TypeMemberDecl newMember, BreakingChangeDetails details) {
 			// java.lang.Object methods are an absolute pain to handle. Many rules
 			// do not apply to them as they're implicitly provided to any class.
 			if (impactedMember.getContainingType().equals(TypeReference.OBJECT)) {

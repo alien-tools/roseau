@@ -1,0 +1,10 @@
+common:
+  excludes:
+    names: [pkg.C]
+diff:
+  ignore: ignore.csv
+reports:
+  - file: report.csv
+    format: CSV
+  - file: report.html
+    format: HTML

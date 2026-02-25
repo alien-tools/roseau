@@ -1,4 +1,4 @@
-package io.github.alien.roseau;
+package io.github.alien.roseau.options;
 
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import org.junit.jupiter.api.Test;

@@ -1,0 +1,5 @@
+diff:
+  ignore: ignore.csv
+reports:
+  - file: report.csv
+    format: CSV
