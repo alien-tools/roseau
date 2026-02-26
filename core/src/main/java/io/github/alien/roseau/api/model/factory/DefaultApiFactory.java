@@ -138,8 +138,9 @@ public final class DefaultApiFactory implements ApiFactory {
 	                             Set<Annotation> annotations,
 	                             SourceLocation location,
 	                             TypeReference<TypeDecl> containingType,
-	                             ITypeReference type) {
-		return new FieldDecl(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
+	                             ITypeReference type,
+	                             boolean compileTimeConstant) {
+		return new FieldDecl(qualifiedName, visibility, modifiers, annotations, location, containingType, type, compileTimeConstant);
 	}
 
 	@Override

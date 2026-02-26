@@ -17,6 +17,7 @@ import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import org.objectweb.asm.AnnotationVisitor;
@@ -151,7 +152,7 @@ public final class AsmClassVisitor extends ClassVisitor {
 
 			@Override
 			public void visitEnd() {
-				fields.add(convertField(access, name, descriptor, signature, annotations));
+				fields.add(convertField(access, name, descriptor, signature, value, annotations));
 			}
 		};
 	}
@@ -291,7 +292,7 @@ public final class AsmClassVisitor extends ClassVisitor {
 		}
 	}
 
-	private FieldDecl convertField(int access, String name, String descriptor, String signature,
+	private FieldDecl convertField(int access, String name, String descriptor, String signature, Object value,
 	                               Set<AsmAnnotationVisitor.Data> annotations) {
 		ITypeReference fieldType;
 		if (signature != null) {
@@ -302,8 +303,11 @@ public final class AsmClassVisitor extends ClassVisitor {
 			fieldType = convertType(descriptor);
 		}
 		SourceLocation location = factory.location(sourceFile, -1);
+		boolean compileTimeConstant = value != null &&
+			(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING));
 		return factory.createField(className + "." + name, convertVisibility(access), convertFieldModifiers(access),
-			convertAnnotations(annotations), location, factory.references().createTypeReference(className), fieldType);
+			convertAnnotations(annotations), location, factory.references().createTypeReference(className), fieldType,
+			compileTimeConstant);
 	}
 
 	private ConstructorDecl convertConstructor(int access, String descriptor, String signature, String[] exceptions,
