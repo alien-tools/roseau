@@ -26,6 +26,21 @@ public interface SubtypingProvider {
 	TypeParameterProvider typeParameter();
 
 	/**
+	 * Checks nominal subtyping (fqn-only) between two type references, ignoring generic arguments.
+	 *
+	 * @param reference the potential subtype
+	 * @param other     the potential supertype
+	 * @return true if {@code reference} is nominally a subtype of {@code other}
+	 */
+	default boolean isNominalSubtypeOf(TypeReference<?> reference, TypeReference<?> other) {
+		Preconditions.checkNotNull(reference);
+		Preconditions.checkNotNull(other);
+		return Objects.equals(reference.getQualifiedName(), other.getQualifiedName()) ||
+			hierarchy().getAllSuperTypes(reference).stream()
+				.anyMatch(sup -> Objects.equals(sup.getQualifiedName(), other.getQualifiedName()));
+	}
+
+	/**
 	 * Checks subtyping between two references in a given member scope. Resolves type-variable bounds using the supplied
 	 * scope and applies wildcard containment rules.
 	 *
