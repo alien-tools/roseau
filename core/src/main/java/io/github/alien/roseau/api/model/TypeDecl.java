@@ -16,7 +16,7 @@ import java.util.Set;
  * contain fields and methods, and be nested within other type declarations.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.CLASS, property = "typeKind")
-public abstract sealed class TypeDecl extends Symbol permits ClassDecl, InterfaceDecl {
+public abstract sealed class TypeDecl extends Symbol implements TypeParameterScope permits ClassDecl, InterfaceDecl {
 	protected final Set<TypeReference<InterfaceDecl>> implementedInterfaces;
 	protected final List<FormalTypeParameter> formalTypeParameters;
 	protected final Set<FieldDecl> fields;

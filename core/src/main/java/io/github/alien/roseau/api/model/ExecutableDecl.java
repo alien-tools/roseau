@@ -6,13 +6,15 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.Optional;
 import java.util.Set;
 
 /**
  * An abstract executable is either a {@link MethodDecl} or a {@link ConstructorDecl}. Executables can declare a list of
  * parameters, formal type parameters, and potentially thrown exceptions.
  */
-public abstract sealed class ExecutableDecl extends TypeMemberDecl permits MethodDecl, ConstructorDecl {
+public abstract sealed class ExecutableDecl extends TypeMemberDecl implements TypeParameterScope
+	permits MethodDecl, ConstructorDecl {
 	protected final List<ParameterDecl> parameters;
 	protected final List<FormalTypeParameter> formalTypeParameters;
 	// Thrown exceptions aren't necessarily TypeReference<ClassDecl>
@@ -94,6 +96,11 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl permits Metho
 
 	public List<FormalTypeParameter> getFormalTypeParameters() {
 		return formalTypeParameters;
+	}
+
+	@Override
+	public Optional<TypeReference<TypeDecl>> getEnclosingType() {
+		return Optional.of(getContainingType());
 	}
 
 	public Set<ITypeReference> getThrownExceptions() {
