@@ -1,367 +1,361 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
-import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
-/*
- * To be refined once we distinguish binary vs source compatibility
- */
 class FieldTypeChangedTest {
-	@Client("int i = new A().f;")
-	@Test
-	void boxing() {
-		var v1 = """
-			public class A {
-				public int f;
-			}""";
-		var v2 = """
-			public class A {
-				public Integer f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	private static void assertBinaryOnly(String type, String field, int line, String v1, String v2) {
+		assertBCs(buildDiff(v1, v2), bc(type, field, BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, line));
 	}
 
-	@Client("Integer i = new A().f;")
-	@Test
-	void unboxing() {
-		var v1 = """
-			public class A {
-				public Integer f;
-			}""";
-		var v2 = """
-			public class A {
-				public int f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	private static void assertSourceOnly(String type, String field, int line, String v1, String v2) {
+		assertBCs(buildDiff(v1, v2), bc(type, field, BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, line));
 	}
 
-	@Client("int i = new A().f;")
-	@Test
-	void widening() {
-		var v1 = """
-			public class A {
-				public int f;
-			}""";
-		var v2 = """
-			public class A {
-				public long f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	private static void assertBinaryAndSource(String type, String field, int line, String v1, String v2) {
+		assertBCs(buildDiff(v1, v2),
+			bc(type, field, BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, line),
+			bc(type, field, BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, line));
 	}
 
-	@Client("long l = new A().f;")
 	@Test
-	void narrowing() {
-		var v1 = """
-			public class A {
-				public long f;
-			}""";
-		var v2 = """
-			public class A {
-				public int f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void boxing_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public int f;
+				}""",
+			"""
+				public class A {
+					public Integer f;
+				}"""
+		);
 	}
 
-	@Client("""
-		new A().f = new java.io.InputStream() {
-			@Override public int read() {
-				return 0;
-			}
-		};""")
 	@Test
-	void subtype_jdk() {
-		var v1 = """
-			public class A {
-				public java.io.InputStream f;
-			}""";
-		var v2 = """
-			public class A {
-				public java.io.FileInputStream f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void unboxing_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public Integer f;
+				}""",
+			"""
+				public class A {
+					public int f;
+				}"""
+		);
 	}
 
-	@Client("java.io.FileInputStream fis = new A().f;")
 	@Test
-	void supertype_jdk() {
-		var v1 = """
-			public class A {
-				public java.io.FileInputStream f;
-			}""";
-		var v2 = """
-			public class A {
-				public java.io.InputStream f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void primitive_widening_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public int f;
+				}""",
+			"""
+				public class A {
+					public long f;
+				}"""
+		);
 	}
 
-	@Client("new A().f = new I() {};")
 	@Test
-	void subtype_api() {
-		var v1 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public I f;
-			}""";
-		var v2 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public J f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void primitive_narrowing_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public long f;
+				}""",
+			"""
+				public class A {
+					public int f;
+				}"""
+		);
 	}
 
-	@Client("J j = new A().f;")
 	@Test
-	void supertype_api() {
-		var v1 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public J f;
-			}""";
-		var v2 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public I f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void reference_subtype_non_final_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public java.io.InputStream f;
+				}""",
+			"""
+				public class A {
+					public java.io.FileInputStream f;
+				}"""
+		);
 	}
 
-	@Client("I i = new A().f;")
 	@Test
-	void incompatible_api() {
-		var v1 = """
-			public interface I {}
-			public interface J {}
-			public class A {
-				public I f;
-			}""";
-		var v2 = """
-			public interface I {}
-			public interface J {}
-			public class A {
-				public J f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void reference_subtype_final_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public final java.io.InputStream f = null;
+				}""",
+			"""
+				public class A {
+					public final java.io.FileInputStream f = null;
+				}"""
+		);
 	}
 
-	@Client("Integer i = new A<Integer, String>().f;")
 	@Test
-	void incompatible_type_parameter() {
-		var v1 = """
-			public class A<T, U> {
-				public T f;
-			}""";
-		var v2 = """
-			public class A<T, U> {
-				public U f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void reference_supertype_non_final_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public java.io.FileInputStream f;
+				}""",
+			"""
+				public class A {
+					public java.io.InputStream f;
+				}"""
+		);
 	}
 
-	@Client("new A<java.util.HashMap, java.util.LinkedHashMap>().f = new java.util.HashMap<>();")
 	@Test
-	void subtype_type_parameter() {
-		var v1 = """
-			public class A<T, U extends T> {
-				public T f;
-			}""";
-		var v2 = """
-			public class A<T, U extends T> {
-				public U f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void array_subtype_non_final_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public java.io.InputStream[] f;
+				}""",
+			"""
+				public class A {
+					public java.io.FileInputStream[] f;
+				}"""
+		);
 	}
 
-	@Client("java.util.LinkedHashMap m = new A<java.util.HashMap, java.util.LinkedHashMap>().f;")
 	@Test
-	void supertype_type_parameter() {
-		var v1 = """
-			public class A<T, U extends T> {
-				public U f;
-			}""";
-		var v2 = """
-			public class A<T, U extends T> {
-				public T f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void array_subtype_final_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public final java.io.InputStream[] f = null;
+				}""",
+			"""
+				public class A {
+					public final java.io.FileInputStream[] f = null;
+				}"""
+		);
 	}
 
-	@Client("java.util.List<Integer> l = new A().f;")
 	@Test
-	void incompatible_generic() {
-		var v1 = """
-			public class A {
-				public java.util.List<Integer> f;
-			}""";
-		var v2 = """
-			public class A {
-				public java.util.List<String> f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void array_primitive_component_change_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public int[] f;
+				}""",
+			"""
+				public class A {
+					public long[] f;
+				}"""
+		);
 	}
 
-	@Client("java.util.List<I> l = new A().f;")
 	@Test
-	void subtype_generic() {
-		var v1 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public java.util.List<I> f;
-			}""";
-		var v2 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public java.util.List<J> f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void array_to_object_final_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public final Object f = null;
+				}""",
+			"""
+				public class A {
+					public final String[] f = null;
+				}"""
+		);
 	}
 
-	@Client("java.util.List<J> l = new A().f;")
 	@Test
-	void supertype_generic() {
-		var v1 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public java.util.List<J> f;
-			}""";
-		var v2 = """
-			public interface I {}
-			public interface J extends I {}
-			public class A {
-				public java.util.List<I> f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void generic_invariant_argument_change_source_only() {
+		assertSourceOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public java.util.List<String> f;
+				}""",
+			"""
+				public class A {
+					public java.util.List<Integer> f;
+				}"""
+		);
 	}
 
-	@Client("int[] a = new A().f;")
 	@Test
-	void incompatible_array() {
-		var v1 = """
-			public class A {
-				public int[] f;
-			}""";
-		var v2 = """
-			public class A {
-				public String[] f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void generic_wildcard_non_final_source_only() {
+		assertSourceOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public java.util.List<? extends Number> f;
+				}""",
+			"""
+				public class A {
+					public java.util.List<Integer> f;
+				}"""
+		);
 	}
 
-	@Client("java.io.InputStream[] a = new A().f;")
 	@Test
-	void subtype_array() {
+	void generic_wildcard_final_no_break() {
 		var v1 = """
 			public class A {
-				public java.io.InputStream[] f;
+				public final java.util.List<? extends Number> f = null;
 			}""";
 		var v2 = """
 			public class A {
-				public java.io.FileInputStream[] f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
-	}
-
-	@Client("java.io.FileInputStream[] a = new A().f;")
-	@Test
-	void supertype_array() {
-		var v1 = """
-			public class A {
-				public java.io.FileInputStream[] f;
-			}""";
-		var v2 = """
-			public class A {
-				public java.io.InputStream[] f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
-	}
-
-	@Client("""
-		int i = I.f;
-		Object o = new C().f;
-		String s = new X().f;""")
-	@Test
-	void subtype_shadowing() {
-		var v1 = """
-			public interface I {
-				public int f = 0;
-			}
-			public class C {
-				public Object f = null;
-			}
-			public class X extends C implements I {
-				public String f = "";
-			}""";
-		var v2 = """
-			public interface I {
-				public int f = 0;
-			}
-			public class C {
-				public Object f = null;
-			}
-			public class X extends C implements I {
-				public String f = "";
+				public final java.util.List<Integer> f = null;
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
-	void to_unknown() {
-		var v1 = """
-			public class A {
-				public A f;
-			}""";
-		var v2 = """
-			public class A {
-				public Unknown f;
-			}""";
-
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+	void generic_erasure_change_non_final_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public java.util.List<String> f;
+				}""",
+			"""
+				public class A {
+					public java.util.ArrayList<String> f;
+				}"""
+		);
 	}
 
 	@Test
-	void from_unknown() {
+	void generic_erasure_change_final_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public final java.util.List<String> f = null;
+				}""",
+			"""
+				public class A {
+					public final java.util.ArrayList<String> f = null;
+				}"""
+		);
+	}
+
+	@Test
+	void raw_to_parameterized_non_final_no_break() {
 		var v1 = """
 			public class A {
-				public Unknown f;
+				public java.util.List f;
 			}""";
 		var v2 = """
 			public class A {
-				public A f;
+				public java.util.List<String> f;
 			}""";
 
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void parameterized_to_raw_non_final_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List<String> f;
+			}""";
+		var v2 = """
+			public class A {
+				public java.util.List f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void type_parameter_bound_refinement_non_final_source_only() {
+		assertSourceOnly("A", "A.f", 2,
+			"""
+				public class A<T, U extends T> {
+					public T f;
+				}""",
+			"""
+				public class A<T, U extends T> {
+					public U f;
+				}"""
+		);
+	}
+
+	@Test
+	void type_parameter_bound_refinement_final_no_break() {
+		var v1 = """
+			public class A<T, U extends T> {
+				public final T f = null;
+			}""";
+		var v2 = """
+			public class A<T, U extends T> {
+				public final U f = null;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Test
+	void unrelated_type_parameters_source_only() {
+		assertSourceOnly("A", "A.f", 2,
+			"""
+				public class A<T, U> {
+					public T f;
+				}""",
+			"""
+				public class A<T, U> {
+					public U f;
+				}"""
+		);
+	}
+
+	@Test
+	void interface_constant_type_change_source_only() {
+		assertSourceOnly("I", "I.f", 2,
+			"""
+				public interface I {
+					int f = 0;
+				}""",
+			"""
+				public interface I {
+					double f = 0;
+				}"""
+		);
+	}
+
+	@Test
+	void class_constant_type_change_source_only() {
+		assertSourceOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public static final int f = 0;
+				}""",
+			"""
+				public class A {
+					public static final double f = 0;
+				}"""
+		);
+	}
+
+	@Test
+	void non_constant_static_final_type_change_binary_and_source() {
+		assertBinaryAndSource("A", "A.f", 2,
+			"""
+				public class A {
+					public static final int f = Integer.getInteger("x", 0);
+				}""",
+			"""
+				public class A {
+					public static final double f = Integer.getInteger("x", 0);
+				}"""
+		);
 	}
 }

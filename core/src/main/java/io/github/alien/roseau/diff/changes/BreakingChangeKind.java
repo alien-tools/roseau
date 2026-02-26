@@ -39,7 +39,8 @@ public enum BreakingChangeKind {
 	// Field-related BCs
 	FIELD_REMOVED(DELETION, true, true),
 	FIELD_NOW_PROTECTED(MUTATION, true, true),
-	FIELD_TYPE_CHANGED(MUTATION, true, true),
+	FIELD_TYPE_ERASURE_CHANGED(MUTATION, true, false),
+	FIELD_TYPE_CHANGED_INCOMPATIBLE(MUTATION, false, true),
 	FIELD_NOW_FINAL(MUTATION, true, true),
 	FIELD_NOW_STATIC(MUTATION, true, false),
 	FIELD_NO_LONGER_STATIC(MUTATION, true, true),

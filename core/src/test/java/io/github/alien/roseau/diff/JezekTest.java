@@ -4,7 +4,9 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 /**
@@ -50,7 +52,9 @@ class JezekTest {
 			  public int f;
 			}""";
 
-		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
 	@Test
@@ -64,7 +68,7 @@ class JezekTest {
 			  public int f = 5;
 			}""";
 
-		assertBC("I", "I.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2, buildDiff(v1, v2));
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test
