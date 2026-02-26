@@ -14,8 +14,7 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 			return;
 		}
 
-		BreakingChangeDetails.FieldTypeChanged details =
-			new BreakingChangeDetails.FieldTypeChanged(oldField.getType(), newField.getType());
+		BreakingChangeDetails details = new BreakingChangeDetails.FieldTypeChanged(oldField.getType(), newField.getType());
 
 		ITypeReference oldErased = ctx.v1().erasure().getErasedType(ctx.oldType(), oldField.getType());
 		ITypeReference newErased = ctx.v2().erasure().getErasedType(ctx.newType(), newField.getType());
