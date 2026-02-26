@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff.rules.breaking;
 
 import io.github.alien.roseau.api.model.ExecutableDecl;
+import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
@@ -29,14 +30,16 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 
 		thrown1.stream()
 			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
-				effectivelyFinal ? ctx.v2().isSubtypeOf(exc2, exc1) : ctx.v2().isSubtypeOf(exc1, exc2)
+				effectivelyFinal
+					? ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)
+					: ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)
 			))
 			.forEach(exc1 ->
 				ctx.builder().memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
 		thrown2.stream()
-			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> ctx.v2().isSubtypeOf(exc2, exc1)))
+			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)))
 			.forEach(exc2 ->
 				ctx.builder().memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc2)));

@@ -1,7 +1,7 @@
 package io.github.alien.roseau.api.analysis;
 
-public interface ApiAnalyzer
-	extends ErasureProvider, HierarchyProvider, PropertiesProvider, SubtypingProvider, TypeParameterProvider {
+public interface ApiAnalyzer extends AssignabilityProvider, ErasureProvider, HierarchyProvider,
+	PropertiesProvider, SubtypingProvider, TypeParameterProvider {
 	@Override
 	default ErasureProvider erasure() {
 		return this;

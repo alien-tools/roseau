@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
@@ -12,105 +13,52 @@ import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.List;
 import java.util.Objects;
-import java.util.stream.IntStream;
-import java.util.stream.Stream;
 
+/**
+ * Evaluates Java subtype/containment relations over type references.
+ */
 public interface SubtypingProvider {
 	// Dependencies
 	TypeResolver resolver();
 
 	HierarchyProvider hierarchy();
 
-	/**
-	 * Checks whether the provided type is a subtype of the supplied type reference. Types are subtypes of themselves,
-	 * {@link TypeReference#OBJECT}, and all types they implement or extend.
-	 *
-	 * @param type      the type to check
-	 * @param reference the type reference to check for subtyping
-	 * @return true if the type is a subtype of the referenced type
-	 */
-	default boolean isSubtypeOf(TypeDecl type, ITypeReference reference) {
-		Preconditions.checkNotNull(type);
-		Preconditions.checkNotNull(reference);
-		return reference.equals(TypeReference.OBJECT) ||
-			Objects.equals(type.getQualifiedName(), reference.getQualifiedName()) ||
-			hierarchy().getAllSuperTypes(type).stream()
-				.anyMatch(sup -> Objects.equals(sup.getQualifiedName(), reference.getQualifiedName()));
-	}
+	TypeParameterProvider typeParameter();
 
 	/**
-	 * Checks whether the referenced type is a subtype of another referenced type. Types are subtypes of themselves,
-	 * {@link TypeReference#OBJECT}, and all types they implement or extend.
+	 * Checks subtyping between two references in a given member scope. Resolves type-variable bounds using the supplied
+	 * scope and applies wildcard containment rules.
 	 *
-	 * @param reference the referenced type
-	 * @param other     the referenced type to check for subtyping
-	 * @return true if the referenced types are subtypes of each other
+	 * @param scope     the scope in which to resolve type variable bounds
+	 * @param reference the first type reference
+	 * @param other     the second type reference
+	 * @return true if the first reference is a subtype of the second
 	 */
-	default boolean isSubtypeOf(ITypeReference reference, ITypeReference other) {
+	default boolean isSubtypeOf(TypeParameterScope scope, ITypeReference reference, ITypeReference other) {
+		Preconditions.checkNotNull(scope);
 		Preconditions.checkNotNull(reference);
 		Preconditions.checkNotNull(other);
 
-		// FIXME: are primitive/array/wildcard actually subtypes of OBJECT?
-		if (reference.equals(other) || other.equals(TypeReference.OBJECT)) {
+		if (reference.equals(other)) {
 			return true;
+		}
+
+		if (reference instanceof TypeParameterReference fromTp) {
+			ITypeReference bound = resolveTypeVariableForSubtyping(scope, fromTp);
+			return !bound.equals(reference) && isSubtypeOf(scope, bound, other);
+		}
+
+		if (other instanceof TypeParameterReference toTp) {
+			ITypeReference bound = resolveTypeVariableForSubtyping(scope, toTp);
+			return !bound.equals(other) && isSubtypeOf(scope, reference, bound);
 		}
 
 		return switch (reference) {
-			case ArrayTypeReference atr ->
-				other instanceof ArrayTypeReference otherAtr && checkArrayTypeSubtyping(atr, otherAtr);
-			case PrimitiveTypeReference ptr ->
-				other instanceof PrimitiveTypeReference otherPtr && checkPrimitiveTypeSubtyping(ptr, otherPtr);
-			case TypeParameterReference tpr ->
-				other instanceof TypeParameterReference otherTpr && checkTypeParameterSubtyping(tpr, otherTpr);
-			case WildcardTypeReference wtr ->
-				other instanceof WildcardTypeReference otherWtr && checkWildcardTypeSubtyping(wtr, otherWtr);
-			case TypeReference<?> tr -> checkTypeSubtyping(tr, other);
-		};
-	}
-
-	private boolean checkArrayTypeSubtyping(ArrayTypeReference reference, ArrayTypeReference other) {
-		return reference.dimension() == other.dimension() &&
-			isSubtypeOf(reference.componentType(), other.componentType());
-	}
-
-	private boolean checkPrimitiveTypeSubtyping(PrimitiveTypeReference reference, PrimitiveTypeReference other) {
-		// Narrowing is fine, widening isn't
-		return switch (reference.name()) {
-			case "byte" -> List.of("short", "int", "long", "float", "double").contains(other.name());
-			case "short", "char" -> List.of("int", "long", "float", "double").contains(other.name());
-			case "int" -> List.of("long", "float", "double").contains(other.name());
-			case "long" -> List.of("float", "double").contains(other.name());
-			case "float" -> "double".equals(other.name());
-			default -> false;
-		};
-	}
-
-	private boolean checkTypeParameterSubtyping(TypeParameterReference reference, TypeParameterReference other) {
-		return Objects.equals(reference.name(), other.name());
-	}
-
-	private boolean checkWildcardTypeSubtyping(WildcardTypeReference reference, WildcardTypeReference other) {
-		// Always subtype of unbounded wildcard
-		if (other.isUnbounded()) {
-			return true;
-		}
-
-		if (reference.upper()) {
-			// Upper bounds can be made weaker
-			return other.upper() && hasStricterBoundsThan(reference, other);
-		} else {
-			// Changing the (one) lower bound to a subtype is fine
-			return !other.upper() && isSubtypeOf(other.bounds().getFirst(), reference.bounds().getFirst());
-		}
-	}
-
-	private boolean checkTypeSubtyping(TypeReference<?> reference, ITypeReference other) {
-		return switch (other) {
-			// FIXME: what if upper() or !upper()?
-			case WildcardTypeReference wtr -> wtr.bounds().stream().allMatch(b -> isSubtypeOf(reference, b));
-			case TypeReference<?> tr -> Stream.concat(Stream.of(reference), hierarchy().getAllSuperTypes(reference).stream())
-				.anyMatch(sup -> Objects.equals(sup.getQualifiedName(), tr.getQualifiedName()) &&
-					hasCompatibleTypeParameters(reference, tr));
+			case PrimitiveTypeReference fromPrimitive ->
+				other instanceof PrimitiveTypeReference toPrimitive && fromPrimitive.equals(toPrimitive);
+			case ArrayTypeReference fromArray -> isArraySubtype(scope, fromArray, other);
+			case TypeReference<?> fromRef -> isReferenceSubtype(scope, fromRef, other);
+			case WildcardTypeReference fromWildcard -> isWildcardSubtype(scope, fromWildcard, other);
 			default -> false;
 		};
 	}
@@ -133,7 +81,9 @@ public interface SubtypingProvider {
 	 * @return whether the current class is a checked exception
 	 */
 	default boolean isCheckedException(TypeDecl type) {
-		return type.isClass() && isSubtypeOf(type, TypeReference.THROWABLE) && !isUncheckedException(type);
+		return type.isClass() &&
+			isSubtypeOf(type, new TypeReference<>(type.getQualifiedName()), TypeReference.THROWABLE) &&
+			!isUncheckedException(type);
 	}
 
 	/**
@@ -144,25 +94,145 @@ public interface SubtypingProvider {
 	 */
 	default boolean isUncheckedException(TypeDecl type) {
 		return type.isClass() &&
-			(isSubtypeOf(type, TypeReference.RUNTIME_EXCEPTION) || isSubtypeOf(type, TypeReference.ERROR));
+			(isSubtypeOf(type, new TypeReference<>(type.getQualifiedName()), TypeReference.RUNTIME_EXCEPTION) ||
+				isSubtypeOf(type, new TypeReference<>(type.getQualifiedName()), TypeReference.ERROR));
 	}
 
-	/**
-	 * Checks whether these bounds are stricter than the bounds of another wildcard
-	 */
-	private boolean hasStricterBoundsThan(WildcardTypeReference reference, WildcardTypeReference other) {
-		return other.bounds().stream()
-			.allMatch(otherBound ->
-				reference.bounds().stream()
-					.anyMatch(refBound -> isSubtypeOf(refBound, otherBound)));
+	private boolean isArraySubtype(TypeParameterScope scope, ArrayTypeReference reference, ITypeReference other) {
+		return switch (other) {
+			case TypeReference<?> tr -> isArraySuperType(tr);
+			case ArrayTypeReference otherArray -> {
+				ITypeReference fromComponent = arrayElementType(reference);
+				ITypeReference toComponent = arrayElementType(otherArray);
+
+				if (fromComponent instanceof PrimitiveTypeReference || toComponent instanceof PrimitiveTypeReference) {
+					yield fromComponent instanceof PrimitiveTypeReference fromPrimitive &&
+						toComponent instanceof PrimitiveTypeReference toPrimitive &&
+						fromPrimitive.equals(toPrimitive);
+				}
+
+				yield isSubtypeOf(scope, fromComponent, toComponent);
+			}
+			default -> false;
+		};
 	}
 
-	private boolean hasCompatibleTypeParameters(TypeReference<?> reference, TypeReference<?> other) {
-		if (reference.typeArguments().size() != other.typeArguments().size()) {
+	private static ITypeReference arrayElementType(ArrayTypeReference array) {
+		return array.dimension() == 1
+			? array.componentType()
+			: new ArrayTypeReference(array.componentType(), array.dimension() - 1);
+	}
+
+	private static boolean isArraySuperType(TypeReference<?> reference) {
+		String fqn = reference.getQualifiedName();
+		return Objects.equals(fqn, Object.class.getCanonicalName()) ||
+			Objects.equals(fqn, Cloneable.class.getCanonicalName()) ||
+			Objects.equals(fqn, java.io.Serializable.class.getCanonicalName());
+	}
+
+	private boolean isReferenceSubtype(TypeParameterScope scope, TypeReference<?> reference, ITypeReference other) {
+		return switch (other) {
+			case TypeReference<?> otherRef -> {
+				if (Objects.equals(reference.getQualifiedName(), otherRef.getQualifiedName())) {
+					yield areTypeArgumentsContained(scope, reference.typeArguments(), otherRef.typeArguments());
+				}
+
+				yield hierarchy().getAllInstantiatedSuperTypes(reference).stream()
+					.filter(sup -> Objects.equals(sup.getQualifiedName(), otherRef.getQualifiedName()))
+					.anyMatch(sup -> areTypeArgumentsContained(scope, sup.typeArguments(), otherRef.typeArguments()));
+			}
+			case WildcardTypeReference wildcard -> isTypeArgumentContained(scope, reference, wildcard);
+			default -> false;
+		};
+	}
+
+	private boolean isWildcardSubtype(TypeParameterScope scope, WildcardTypeReference reference, ITypeReference other) {
+		if (other instanceof WildcardTypeReference otherWildcard) {
+			return isWildcardContained(scope, reference, otherWildcard);
+		}
+		return false;
+	}
+
+	private boolean areTypeArgumentsContained(TypeParameterScope scope,
+	                                          List<ITypeReference> fromArgs, List<ITypeReference> toArgs) {
+		if (toArgs.isEmpty()) {
+			return true;
+		}
+
+		if (fromArgs.isEmpty()) {
 			return false;
 		}
 
-		return IntStream.range(0, reference.typeArguments().size())
-			.allMatch(i -> isSubtypeOf(reference.typeArguments().get(i), other.typeArguments().get(i)));
+		if (fromArgs.size() != toArgs.size()) {
+			return false;
+		}
+
+		for (int i = 0; i < fromArgs.size(); i++) {
+			if (!isTypeArgumentContained(scope, fromArgs.get(i), toArgs.get(i))) {
+				return false;
+			}
+		}
+
+		return true;
+	}
+
+	private boolean isTypeArgumentContained(TypeParameterScope scope, ITypeReference fromArg, ITypeReference toArg) {
+		return switch (toArg) {
+			case WildcardTypeReference toWildcard -> fromArg instanceof WildcardTypeReference fromWildcard
+				? isWildcardContained(scope, fromWildcard, toWildcard)
+				: isAssignableToWildcardBound(scope, fromArg, toWildcard);
+			default -> fromArg.equals(toArg);
+		};
+	}
+
+	private boolean isAssignableToWildcardBound(TypeParameterScope scope,
+	                                            ITypeReference fromArg, WildcardTypeReference toWildcard) {
+		if (toWildcard.isUnbounded()) {
+			return true;
+		}
+
+		if (toWildcard.upper()) {
+			return toWildcard.bounds().stream().allMatch(bound -> isSubtypeOf(scope, fromArg, bound));
+		}
+
+		ITypeReference lowerBound = toWildcard.bounds().getFirst();
+		return isSubtypeOf(scope, lowerBound, fromArg);
+	}
+
+	private boolean isWildcardContained(TypeParameterScope scope,
+	                                    WildcardTypeReference reference, WildcardTypeReference other) {
+		if (other.isUnbounded()) {
+			return true;
+		}
+
+		if (reference.isUnbounded()) {
+			return false;
+		}
+
+		if (reference.upper() != other.upper()) {
+			return false;
+		}
+
+		if (reference.upper()) {
+			return other.bounds().stream()
+				.allMatch(otherBound ->
+					reference.bounds().stream().anyMatch(refBound -> isSubtypeOf(scope, refBound, otherBound)));
+		}
+
+		return isSubtypeOf(scope, other.bounds().getFirst(), reference.bounds().getFirst());
+	}
+
+	private ITypeReference resolveTypeVariableForSubtyping(TypeParameterScope scope, TypeParameterReference reference) {
+		return typeParameter().resolveTypeParameter(scope, reference)
+			.map(tp -> {
+				ITypeReference directBound = tp.bounds().getFirst();
+				if (directBound.equals(TypeReference.OBJECT)) {
+					return reference;
+				}
+				return directBound instanceof TypeParameterReference tpr
+					? resolveTypeVariableForSubtyping(scope, tpr)
+					: directBound;
+			})
+			.orElse(reference);
 	}
 }

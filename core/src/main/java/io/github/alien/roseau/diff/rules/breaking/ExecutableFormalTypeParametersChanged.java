@@ -2,6 +2,7 @@ package io.github.alien.roseau.diff.rules.breaking;
 
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
+import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
@@ -57,7 +58,7 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 					if (bounds2.stream()
 						// We can safely ignore this bound
 						.filter(b2 -> !b2.equals(TypeReference.OBJECT))
-						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> ctx.v1().isSubtypeOf(b1, b2)))) {
+						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> ctx.v1().isSubtypeOf(TypeParameterScope.EMPTY, b1, b2)))) {
 						ctx.builder().memberBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, ctx.oldType(), oldExecutable, newExecutable,
 							new BreakingChangeDetails.FormalTypeParametersChanged(ftp1, ftp2));
 					}

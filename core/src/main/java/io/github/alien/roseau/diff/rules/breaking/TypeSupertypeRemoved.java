@@ -16,12 +16,13 @@ public class TypeSupertypeRemoved implements TypeRule<TypeDecl> {
 	public void onMatched(TypeDecl oldType, TypeDecl newType, TypeRuleContext ctx) {
 		List<TypeReference<TypeDecl>> candidates = ctx.v1().getAllSuperTypes(oldType).stream()
 			.filter(sup -> ctx.v1().isExported(sup))
-			.filter(sup -> !ctx.v2().isSubtypeOf(newType, sup))
+			.filter(sup -> !ctx.v2().isSubtypeOf(newType, new TypeReference<>(newType.getQualifiedName()), sup))
 			.toList();
 
 		// Only report the closest super type
 		candidates.stream()
-			.filter(sup -> candidates.stream().noneMatch(other -> !other.equals(sup) && ctx.v1().isSubtypeOf(other, sup)))
+			.filter(sup -> candidates.stream()
+				.noneMatch(other -> !other.equals(sup) && ctx.v1().isSubtypeOf(oldType, other, sup)))
 			.forEach(sup ->
 				ctx.builder().typeBC(BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, oldType,
 					new BreakingChangeDetails.TypeSupertypeRemoved(sup)));
