@@ -8,7 +8,6 @@ import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.utils.TestUtils;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -31,11 +30,6 @@ class ClasspathTypeProviderTest {
 	void setUp() {
 		extractor = new AsmTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
 		provider = new ClasspathTypeProvider(extractor, List.of());
-	}
-
-	@AfterEach
-	void tearDown() throws IOException {
-		provider.close();
 	}
 
 	@Test
@@ -141,6 +135,18 @@ class ClasspathTypeProviderTest {
 			assertThat(c1).isInstanceOf(ClassDecl.class);
 			assertThat(c2).isInstanceOf(ClassDecl.class);
 		}
+	}
+
+	@Test
+	void classpath_multi_release_jar_uses_versioned_entry() {
+		provider = new ClasspathTypeProvider(extractor, List.of(Path.of("src/test/resources/multi-release.jar")));
+		var result = provider.findType("pkg.C").orElseThrow();
+
+		assertThat(result).isInstanceOf(ClassDecl.class);
+		assertThat(result.getDeclaredMethods())
+			.extracting(MethodDecl::getSimpleName)
+			.containsExactly("foo");
+		assertThat(result.getAnnotations()).isNotEmpty();
 	}
 
 	@Test
