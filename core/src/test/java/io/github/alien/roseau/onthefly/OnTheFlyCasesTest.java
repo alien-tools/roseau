@@ -29,7 +29,7 @@ class OnTheFlyCasesTest {
 			}""", """
 				int i = A.f;
 				System.out.println("i="+i);""",
-			"A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED, 2);
+			"A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2);
 	}
 
 	// Source-compatible, binary-breaking

@@ -3,7 +3,7 @@ package pkg;
 import java.util.List;
 
 public class MethodsClass {
-    // METHOD_NOW_PROTECTED and METHOD_RETURN_TYPE_CHANGED in v2
+    // METHOD_NOW_PROTECTED and METHOD_RETURN_TYPE_ERASURE_CHANGED / METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE in v2
     public int m1() { return 0; }
 
     // METHOD_REMOVED in v2

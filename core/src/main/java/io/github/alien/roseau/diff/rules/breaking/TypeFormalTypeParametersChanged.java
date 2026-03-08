@@ -40,7 +40,7 @@ public class TypeFormalTypeParametersChanged implements TypeRule<TypeDecl> {
 			// so that the type constraints imposed by p1 are stricter than those imposed by p2
 			if (p2.bounds().stream()
 				.anyMatch(b2 -> !b2.equals(TypeReference.OBJECT) &&
-					p1.bounds().stream().noneMatch(b1 -> ctx.v2().isSubtypeOf(b1, b2)))) {
+					p1.bounds().stream().noneMatch(b1 -> ctx.v2().isSubtypeOf(newType, b1, b2)))) {
 				ctx.builder().typeBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, oldType,
 					new BreakingChangeDetails.FormalTypeParametersChanged(p1, p2));
 			}

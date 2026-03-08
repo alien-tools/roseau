@@ -37,7 +37,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 				}
 
 				// Can't = variance
-				if (isFinalExecutable && !ctx.v1().isSubtypeOf(pt1, pt2)) {
+				if (isFinalExecutable && !ctx.v1().isSubtypeOf(oldExecutable, pt1, pt2)) {
 					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, ctx.oldType(), oldExecutable, newExecutable, details);
 				}
 			}

@@ -57,7 +57,7 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 					if (bounds2.stream()
 						// We can safely ignore this bound
 						.filter(b2 -> !b2.equals(TypeReference.OBJECT))
-						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> ctx.v1().isSubtypeOf(b1, b2)))) {
+						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 -> ctx.v1().isSubtypeOf(oldExecutable, b1, b2)))) {
 						ctx.builder().memberBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, ctx.oldType(), oldExecutable, newExecutable,
 							new BreakingChangeDetails.FormalTypeParametersChanged(ftp1, ftp2));
 					}

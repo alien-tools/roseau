@@ -105,7 +105,8 @@ public interface ApiFactory {
 		Set<Annotation> annotations,
 		SourceLocation location,
 		TypeReference<TypeDecl> containingType,
-		ITypeReference type);
+		ITypeReference type,
+		boolean compileTimeConstant);
 
 	MethodDecl createMethod(
 		String qualifiedName,

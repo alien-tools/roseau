@@ -16,6 +16,7 @@ import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import org.apache.logging.log4j.LogManager;
@@ -268,9 +269,11 @@ final class JdtApiVisitor extends ASTVisitor {
 		int line = lineNumbersMapping.getOrDefault(binding.getKey(), -1);
 		SourceLocation location = factory.location(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = createTypeReference(enclosingType);
+		boolean compileTimeConstant = binding.getConstantValue() != null &&
+			(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING));
 
 		return factory.createField(makeMemberFqn(enclosingType, binding), visibility, mods,
-			anns, location, enclosingTypeRef, fieldType);
+			anns, location, enclosingTypeRef, fieldType, compileTimeConstant);
 	}
 
 	private ConstructorDecl convertConstructor(IMethodBinding binding, ITypeBinding enclosingType) {

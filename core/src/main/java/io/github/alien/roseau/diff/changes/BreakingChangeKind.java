@@ -5,22 +5,16 @@ import static io.github.alien.roseau.diff.changes.BreakingChangeNature.DELETION;
 import static io.github.alien.roseau.diff.changes.BreakingChangeNature.MUTATION;
 
 /**
- * Kinds of breaking changes that can be detected when comparing two libraries.
+ * Kinds of breaking changes that can be detected when comparing two APIs.
  * <br>
  * These mostly align with the JLS' §13, with additional source-incompatible changes related to generics.
- *
- * <p>
- * Some breaking changes should be refined in the future (e.g., METHOD_RETURN_TYPE_CHANGED is too broad: every return
- * type change is binary-incompatible, only some are source-incompatible). Also, it might make sense at some point to
- * merge some breaking change kinds regardless of the declaration they apply to (e.g., *
- * TYPE/METHOD_FORMAL_TYPE_PARAMETERS_*, *_REMOVED, or *_PROTECTED).
  */
 public enum BreakingChangeKind {
 	// Type-related BCs
 	TYPE_REMOVED(DELETION, true, true),
 	TYPE_NOW_PROTECTED(MUTATION, true, true),
 	TYPE_KIND_CHANGED(MUTATION, true, true),
-	TYPE_SUPERTYPE_REMOVED(MUTATION, false, true),
+	TYPE_SUPERTYPE_REMOVED(MUTATION, true, true),
 	TYPE_NEW_ABSTRACT_METHOD(ADDITION, false, true),
 
 	// Class-related BCs,
@@ -39,7 +33,8 @@ public enum BreakingChangeKind {
 	// Field-related BCs
 	FIELD_REMOVED(DELETION, true, true),
 	FIELD_NOW_PROTECTED(MUTATION, true, true),
-	FIELD_TYPE_CHANGED(MUTATION, true, true),
+	FIELD_TYPE_ERASURE_CHANGED(MUTATION, true, false),
+	FIELD_TYPE_CHANGED_INCOMPATIBLE(MUTATION, false, true),
 	FIELD_NOW_FINAL(MUTATION, true, true),
 	FIELD_NOW_STATIC(MUTATION, true, false),
 	FIELD_NO_LONGER_STATIC(MUTATION, true, true),
@@ -47,10 +42,12 @@ public enum BreakingChangeKind {
 	// Method-related BCs
 	METHOD_REMOVED(DELETION, true, true),
 	METHOD_NOW_PROTECTED(MUTATION, true, true),
-	METHOD_RETURN_TYPE_CHANGED(MUTATION, true, true),
+	METHOD_RETURN_TYPE_ERASURE_CHANGED(MUTATION, true, false),
+	METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE(MUTATION, false, true),
 	METHOD_NOW_ABSTRACT(MUTATION, true, true),
 	METHOD_NOW_FINAL(MUTATION, true, true),
 	METHOD_NOW_STATIC(MUTATION, true, false),
+	METHOD_OVERRIDABLE_NOW_STATIC(MUTATION, false, true),
 	METHOD_NO_LONGER_STATIC(MUTATION, true, true),
 	METHOD_NOW_THROWS_CHECKED_EXCEPTION(MUTATION, false, true),
 	METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION(MUTATION, false, true),
