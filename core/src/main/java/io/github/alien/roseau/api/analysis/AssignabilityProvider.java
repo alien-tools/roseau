@@ -77,6 +77,27 @@ public interface AssignabilityProvider {
 		};
 	}
 
+	/**
+	 * Checks whether replacing an expression of type {@code oldType} by one of type {@code newType} preserves
+	 * assignment-compatibility for previously valid clients.
+	 */
+	default boolean isSourceCompatibleExpression(TypeParameterScope scope, ITypeReference oldType, ITypeReference newType) {
+		Preconditions.checkNotNull(scope);
+		Preconditions.checkNotNull(oldType);
+		Preconditions.checkNotNull(newType);
+
+		if (!isAssignable(scope, newType, oldType)) {
+			return false;
+		}
+
+		if (oldType instanceof PrimitiveTypeReference oldPrimitive) {
+			TypeReference<?> boxed = box(oldPrimitive);
+			return boxed == null || isAssignable(scope, newType, boxed);
+		}
+
+		return true;
+	}
+
 	private static boolean isPrimitiveWidening(PrimitiveTypeReference from, PrimitiveTypeReference to) {
 		// JLS 5.1.2
 		return switch (from.name()) {
@@ -123,7 +144,7 @@ public interface AssignabilityProvider {
 	private boolean isReferenceAssignable(TypeParameterScope scope, TypeReference<?> from, TypeReference<?> to) {
 		if (from.typeArguments().isEmpty() || to.typeArguments().isEmpty()) {
 			// Raw/parameterized assignment is allowed via unchecked conversion in either direction.
-			return from.getQualifiedName().equals(to.getQualifiedName()) || subtyping().isSubtypeOf(scope, from, to);
+			return from.getQualifiedName().equals(to.getQualifiedName()) || subtyping().isNominalSubtypeOf(from, to);
 		}
 
 		return subtyping().isSubtypeOf(scope, from, to);

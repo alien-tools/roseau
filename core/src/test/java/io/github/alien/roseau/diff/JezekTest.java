@@ -68,7 +68,7 @@ class JezekTest {
 			  public int f = 5;
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("I", "I.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 
 	@Test

@@ -59,13 +59,19 @@ public interface SubtypingProvider {
 		}
 
 		if (reference instanceof TypeParameterReference fromTp) {
-			ITypeReference bound = resolveTypeVariableForSubtyping(scope, fromTp);
-			return !bound.equals(reference) && isSubtypeOf(scope, bound, other);
+			if (other instanceof TypeParameterReference toTp) {
+				return isTypeVariableSubtypeOf(scope, fromTp, toTp);
+			}
+
+			return typeParameter().resolveTypeParameter(scope, fromTp)
+				.map(tp -> tp.bounds().getFirst())
+				.filter(bound -> !bound.equals(reference))
+				.map(bound -> isSubtypeOf(scope, bound, other))
+				.orElse(false);
 		}
 
-		if (other instanceof TypeParameterReference toTp) {
-			ITypeReference bound = resolveTypeVariableForSubtyping(scope, toTp);
-			return !bound.equals(other) && isSubtypeOf(scope, reference, bound);
+		if (other instanceof TypeParameterReference) {
+			return false;
 		}
 
 		return switch (reference) {
@@ -237,17 +243,18 @@ public interface SubtypingProvider {
 		return isSubtypeOf(scope, other.bounds().getFirst(), reference.bounds().getFirst());
 	}
 
-	private ITypeReference resolveTypeVariableForSubtyping(TypeParameterScope scope, TypeParameterReference reference) {
+	private boolean isTypeVariableSubtypeOf(TypeParameterScope scope,
+	                                        TypeParameterReference reference,
+	                                        TypeParameterReference other) {
+		if (reference.equals(other)) {
+			return true;
+		}
+
 		return typeParameter().resolveTypeParameter(scope, reference)
 			.map(tp -> {
 				ITypeReference directBound = tp.bounds().getFirst();
-				if (directBound.equals(TypeReference.OBJECT)) {
-					return reference;
-				}
-				return directBound instanceof TypeParameterReference tpr
-					? resolveTypeVariableForSubtyping(scope, tpr)
-					: directBound;
+				return directBound instanceof TypeParameterReference tpr && isTypeVariableSubtypeOf(scope, tpr, other);
 			})
-			.orElse(reference);
+			.orElse(false);
 	}
 }

@@ -132,6 +132,7 @@ class RoseauCLITest {
 		assertThat(out.toString())
 			.contains("METHOD_REMOVED")
 			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
+			.doesNotContain("METHOD_NOW_STATIC")
 			.contains("METHOD_OVERRIDABLE_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}

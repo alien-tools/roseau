@@ -248,6 +248,20 @@ class FieldTypeChangedTest {
 	}
 
 	@Test
+	void raw_subtype_to_parameterized_supertype_final_binary_only() {
+		assertBinaryOnly("A", "A.f", 2,
+			"""
+				public class A {
+					public final java.util.List<String> f = null;
+				}""",
+			"""
+				public class A {
+					public final java.util.ArrayList f = null;
+				}"""
+		);
+	}
+
+	@Test
 	void raw_to_parameterized_non_final_no_break() {
 		var v1 = """
 			public class A {
@@ -327,6 +341,20 @@ class FieldTypeChangedTest {
 			"""
 				public interface I {
 					double f = 0;
+				}"""
+		);
+	}
+
+	@Test
+	void interface_constant_narrowing_type_change_source_only() {
+		assertSourceOnly("I", "I.f", 2,
+			"""
+				public interface I {
+					double f = 0;
+				}""",
+			"""
+				public interface I {
+					int f = 0;
 				}"""
 		);
 	}

@@ -95,10 +95,13 @@ class SubtypingProviderTest {
 
 		var a = assertClass(api, "A");
 		var m = assertMethod(api, a, "m(java.lang.Number,java.lang.Number)");
+		var t = new TypeParameterReference("T");
 		var u = new TypeParameterReference("U");
 		var number = new TypeReference<>("java.lang.Number");
 
+		assertThat(api.isSubtypeOf(a, t, TypeReference.OBJECT)).isTrue();
 		assertThat(api.isSubtypeOf(m, u, number)).isTrue();
+		assertThat(api.isSubtypeOf(m, u, TypeReference.OBJECT)).isTrue();
 		assertThat(api.isSubtypeOf(a, u, TypeReference.OBJECT)).isFalse();
 	}
 }

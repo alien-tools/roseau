@@ -73,4 +73,23 @@ class MethodNowStaticTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("I i = null; i.m();")
+	@Test
+	void sealed_interface_method_now_static() {
+		var v1 = """
+			public sealed interface I permits A {
+				default void m() {}
+			}
+			final class A implements I {}""";
+		var v2 = """
+			public sealed interface I permits A {
+				static void m() {}
+			}
+			final class A implements I {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("I", "I.m()", BreakingChangeKind.METHOD_NOW_STATIC, 2),
+			bc("I", "I.m()", BreakingChangeKind.METHOD_OVERRIDABLE_NOW_STATIC, 2));
+	}
 }

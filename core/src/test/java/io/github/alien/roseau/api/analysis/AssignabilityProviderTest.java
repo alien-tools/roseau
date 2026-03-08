@@ -74,6 +74,7 @@ class AssignabilityProviderTest {
 
 		var listOfString = new TypeReference<>("java.util.List", List.of(TypeReference.STRING));
 		var rawList = new TypeReference<>("java.util.List");
+		var rawArrayList = new TypeReference<>("java.util.ArrayList");
 		var listOfExtendsCharSequence = new TypeReference<>("java.util.List",
 			List.of(new WildcardTypeReference(List.of(new TypeReference<>("java.lang.CharSequence")), true)));
 		var listOfSuperInteger = new TypeReference<>("java.util.List",
@@ -83,6 +84,7 @@ class AssignabilityProviderTest {
 
 		assertThat(api.isAssignable(m, listOfString, rawList)).isTrue();
 		assertThat(api.isAssignable(m, rawList, listOfString)).isTrue();
+		assertThat(api.isAssignable(m, rawArrayList, listOfString)).isTrue();
 		assertThat(api.isAssignable(m, listOfString, listOfExtendsCharSequence)).isTrue();
 		assertThat(api.isAssignable(m, listOfNumber, listOfSuperInteger)).isTrue();
 		assertThat(api.isAssignable(m, listOfExtendsCharSequence, listOfString)).isFalse();

@@ -129,6 +129,21 @@ class MethodReturnTypeChangedTest {
 		);
 	}
 
+	@Client("Double d = new A().m();")
+	@Test
+	void primitive_narrowing_boxing_context_binary_and_source() {
+		assertBinaryAndSource("A", "A.m()", 2,
+			"""
+				public class A {
+					public final double m() { return 0D; }
+				}""",
+			"""
+				public class A {
+					public final int m() { return 0; }
+				}"""
+		);
+	}
+
 	@Client("java.io.InputStream is = new A().m();")
 	@Test
 	void reference_subtype_non_final_binary_and_source() {
@@ -260,6 +275,21 @@ class MethodReturnTypeChangedTest {
 			"""
 				public class A {
 					public final java.util.ArrayList<String> m() { return null; }
+				}"""
+		);
+	}
+
+	@Client("java.util.List<String> l = new A().m();")
+	@Test
+	void raw_subtype_to_parameterized_supertype_final_binary_only() {
+		assertBinaryOnly("A", "A.m()", 2,
+			"""
+				public class A {
+					public final java.util.List<String> m() { return null; }
+				}""",
+			"""
+				public class A {
+					public final java.util.ArrayList m() { return null; }
 				}"""
 		);
 	}

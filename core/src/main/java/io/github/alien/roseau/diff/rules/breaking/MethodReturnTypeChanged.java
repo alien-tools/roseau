@@ -24,7 +24,7 @@ public class MethodReturnTypeChanged implements MemberRule<MethodDecl> {
 				ctx.oldType(), oldMethod, newMethod, details);
 		}
 
-		boolean invokerCompatible = ctx.v2().isAssignable(newMethod, newMethod.getType(), oldMethod.getType());
+		boolean invokerCompatible = ctx.v2().isSourceCompatibleExpression(newMethod, oldMethod.getType(), newMethod.getType());
 		boolean overriderCompatible = ctx.v1().isEffectivelyFinal(ctx.oldType(), oldMethod) ||
 			ctx.v2().isSubtypeOf(newMethod, oldMethod.getType(), newMethod.getType());
 		if (!invokerCompatible || !overriderCompatible) {

@@ -23,7 +23,7 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 				ctx.oldType(), oldField, newField, details);
 		}
 
-		boolean readCompatible = ctx.v2().isAssignable(ctx.newType(), newField.getType(), oldField.getType());
+		boolean readCompatible = ctx.v2().isSourceCompatibleExpression(ctx.newType(), oldField.getType(), newField.getType());
 		boolean writeCompatible = oldField.isFinal() ||
 			ctx.v2().isAssignable(ctx.newType(), oldField.getType(), newField.getType());
 
