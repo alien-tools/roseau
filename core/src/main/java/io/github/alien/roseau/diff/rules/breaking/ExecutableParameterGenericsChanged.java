@@ -2,7 +2,6 @@ package io.github.alien.roseau.diff.rules.breaking;
 
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
-import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
@@ -38,7 +37,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 				}
 
 				// Can't = variance
-				if (isFinalExecutable && !ctx.v1().isSubtypeOf(TypeParameterScope.EMPTY, pt1, pt2)) {
+				if (isFinalExecutable && !ctx.v1().isSubtypeOf(oldExecutable, pt1, pt2)) {
 					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, ctx.oldType(), oldExecutable, newExecutable, details);
 				}
 			}
