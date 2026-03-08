@@ -2,7 +2,7 @@
 
 Use this page to make Roseau fail a build when breaking changes are detected.
 
-Basic CI-friendly command:
+## Basic Command
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -15,11 +15,11 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 This returns:
 
-- `0` when the command succeeds and no breaking changes are found
-- `1` when `--fail-on-bc` is set and breaking changes are found
-- `2` on errors
+- `0`: the command succeeded and no breaking changes were found
+- `1`: `--fail-on-bc` was set and breaking changes were found
+- `2`: an error occurred
 
-Write a machine-readable artifact:
+## Write an Artifact
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -34,6 +34,12 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 Typical CI choices:
 
-- Use `--plain` for log output without ANSI escapes.
-- Use `--report` with `CSV` or `JSON` when you want to archive results.
-- Use `--ignored` when some breaking changes are already accepted.
+- use `--plain` for log output without ANSI escapes
+- use `--report` with `CSV` or `JSON` when you want to archive results
+- use `--ignored` when some breaking changes are already accepted
+
+## Next
+
+- [Check Breaking Changes](compare.md)
+- [Ignore Accepted Breaking Changes](ignored.md)
+- [Report Formats](reports.md)

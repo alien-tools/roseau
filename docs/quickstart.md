@@ -2,9 +2,10 @@
 
 Use this page to build Roseau and run your first Java library compatibility check.
 
-Roseau requires Java 25.
+!!! info
+    Roseau requires Java 25.
 
-Build the CLI:
+## 1. Build the CLI
 
 ```bash
 git clone https://github.com/alien-tools/roseau.git
@@ -12,7 +13,7 @@ cd roseau
 ./mvnw --batch-mode package
 ```
 
-Run a breaking change check between two versions of a Java library:
+## 2. Run a First Check
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -21,9 +22,11 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/v2.jar
 ```
 
-This command compares two versions of a library and reports the breaking changes Roseau finds. `--v1` and `--v2` can each be a JAR file or a source directory.
+`--v1` and `--v2` can each be a JAR file or a source directory.
 
-Fail CI when breaking changes are found:
+## 3. Common Next Steps
+
+**Fail CI on breaking changes**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -34,7 +37,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --plain
 ```
 
-Write a report file:
+**Write a CSV report**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -44,3 +47,20 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --report reports/breaking-changes.csv \
   --format CSV
 ```
+
+**Write an HTML report**
+
+```bash
+java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
+  --diff \
+  --v1 path/to/v1.jar \
+  --v2 path/to/v2.jar \
+  --report reports/breaking-changes.html \
+  --format HTML
+```
+
+## Next
+
+- [Check Breaking Changes](guides/compare.md)
+- [Breaking Change Kinds](breaking-change-kinds.md)
+- [CLI Options](reference/cli.md)

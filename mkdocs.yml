@@ -4,10 +4,32 @@ site_description: Roseau checks breaking changes and binary or source compatibil
 
 theme:
   name: material
+  features:
+    - navigation.instant
+    - navigation.top
+    - content.code.copy
+
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji ''
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg ''
+  - pymdownx.highlight:
+      anchor_linenums: true
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
 
 nav:
   - Home: index.md
   - Quickstart: quickstart.md
+  - Breaking Change Kinds: breaking-change-kinds.md
   - CLI Options: reference/cli.md
   - Guides:
       - Check Breaking Changes: guides/compare.md

@@ -1,4 +1,4 @@
-name: Build and deploy MkDocs
+name: Build and deploy docs
 on:
   push:
     branches:
@@ -6,7 +6,10 @@ on:
     paths:
       - 'docs/**'
       - 'mkdocs.yml'
+      - 'requirements-docs.in'
+      - 'requirements-docs.txt'
       - '.github/workflows/docs.yml'
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -16,15 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.21"
+          enable-cache: true
       - uses: actions/setup-python@v6
         with:
-          python-version: 3.x
-      - run: echo "cache_id=$(date --utc '+%V')" >> $GITHUB_ENV
-      - uses: actions/cache@v5
-        with:
-          key: mkdocs-material-${{ env.cache_id }}
-          path: ~/.cache
-          restore-keys: |
-            mkdocs-material-
-      - run: pip install mkdocs-material
-      - run: mkdocs gh-deploy --force
+          python-version: "3.12"
+      - name: Create docs virtual environment
+        run: uv venv
+      - name: Install docs dependencies
+        run: uv pip sync requirements-docs.txt
+      - name: Validate docs
+        run: .venv/bin/mkdocs build --strict
+      - name: Deploy docs
+        run: .venv/bin/mkdocs gh-deploy --force

@@ -2,9 +2,11 @@
 
 Use this page to check breaking changes and compatibility between any two versions of a Java library.
 
-Roseau can compare two JARs, two source trees, or one JAR against one source tree. `--v1` and `--v2` can each point to either a JAR file or a source directory.
+Roseau can compare two JARs, two source trees, or one JAR against one source tree.
 
-JAR vs JAR:
+## Choose Your Input Pair
+
+**JAR vs JAR**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -13,7 +15,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/library-2.0.0.jar
 ```
 
-Source vs source:
+**Source vs source**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -22,7 +24,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/project-v2/src
 ```
 
-JAR vs source:
+**JAR vs source**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -31,15 +33,17 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/project-v2/src
 ```
 
-Useful flags:
+## Useful Flags
 
-- `--plain`: disable ANSI colors, useful for logs and CI.
-- `--binary-only`: only report binary-breaking changes.
-- `--source-only`: only report source-breaking changes.
-- `--report` with `--format`: write the report to a file.
-- `--classpath` or `--pom`: provide dependencies when they matter for analysis.
+- `--plain`: disable ANSI colors, useful for logs and CI
+- `--binary-only`: only report binary-breaking changes
+- `--source-only`: only report source-breaking changes
+- `--report` with `--format`: write the report to a file
+- `--classpath` or `--pom`: provide dependencies when they matter for analysis
 
-Write a report:
+## Common Variants
+
+**Write an HTML report**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -50,7 +54,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --format HTML
 ```
 
-Binary-only report:
+**Only binary-breaking changes**
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -60,3 +64,23 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --binary-only \
   --plain
 ```
+
+**Only source-breaking changes**
+
+```bash
+java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
+  --diff \
+  --v1 path/to/v1.jar \
+  --v2 path/to/v2.jar \
+  --source-only \
+  --plain
+```
+
+!!! note
+    `--report` requires `--format`, and `--source-only` cannot be combined with `--binary-only`.
+
+## Next
+
+- [Report Formats](reports.md)
+- [Use in CI](ci.md)
+- [CLI Options](../reference/cli.md)

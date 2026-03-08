@@ -2,6 +2,8 @@
 
 Use this page when running Roseau with a `roseau.yaml` file is simpler than passing many CLI options.
 
+## Load a Config File
+
 Load a config file with:
 
 ```bash
@@ -9,6 +11,8 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --diff \
   --config roseau.yaml
 ```
+
+## Example
 
 Practical example:
 
@@ -46,3 +50,9 @@ What the main sections do:
 - `reports`: output files to generate
 
 CLI options override config file values.
+
+## Next
+
+- [Check Breaking Changes](compare.md)
+- [Report Formats](reports.md)
+- [CLI Options](../reference/cli.md)

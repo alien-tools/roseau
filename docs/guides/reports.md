@@ -2,7 +2,7 @@
 
 Use this page to write Roseau results to files.
 
-Single report from the CLI:
+## Single Report from the CLI
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -13,7 +13,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --format JSON
 ```
 
-Available formats:
+## Formats
 
 - `CLI`: terminal-style text
 - `CSV`: easy to review, diff, and reuse with `--ignored`
@@ -21,7 +21,7 @@ Available formats:
 - `JSON`: structured output for automation
 - `MD`: Markdown report
 
-Use multiple reports from `roseau.yaml`:
+## Multiple Reports from `roseau.yaml`
 
 ```yaml
 reports:
@@ -32,3 +32,9 @@ reports:
   - file: reports/breaking-changes.json
     format: JSON
 ```
+
+## Next
+
+- [Check Breaking Changes](compare.md)
+- [Use in CI](ci.md)
+- [Ignore Accepted Breaking Changes](ignored.md)
