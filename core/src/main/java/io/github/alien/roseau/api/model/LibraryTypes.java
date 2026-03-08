@@ -11,14 +11,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.api.model.factory.ApiFactory;
-import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.api.resolution.CachingTypeResolver;
-import io.github.alien.roseau.api.resolution.ClasspathTypeProvider;
 import io.github.alien.roseau.api.resolution.TypeProvider;
-import io.github.alien.roseau.api.resolution.TypeResolver;
-import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -26,7 +19,6 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
@@ -37,8 +29,8 @@ import java.util.function.Function;
  * Holds a set of {@link Symbol} extracted from a library and provides convenience methods to access type declarations.
  * All types are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, library types
  * contain <strong>all</strong> the types declared in a library, including non-exported ones. {@link LibraryTypes}
- * instances have limited analysis capabilities and must be transformed into {@link API} to enable type resolution and
- * most analyses ({@link #toAPI(TypeResolver)}).
+ * instances are a pure extracted snapshot; type resolution and semantic analysis are added separately by
+ * {@link API}.
  */
 public final class LibraryTypes implements TypeProvider {
 	/**
@@ -106,28 +98,6 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Creates a new resolved API using the given resolver.
-	 *
-	 * @param resolver the resolver used for type resolution
-	 * @return the new resolved API
-	 */
-	public API toAPI(TypeResolver resolver) {
-		return new API(this, resolver);
-	}
-
-	/**
-	 * Creates a new resolved API using a default resolver.
-	 *
-	 * @return the new resolved API
-	 */
-	public API toAPI() {
-		ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
-		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
-		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
-		return toAPI(new CachingTypeResolver(List.of(this, classpathProvider)));
-	}
-
-	/**
 	 * The analyzed library.
 	 *
 	 * @return the library
@@ -188,10 +158,10 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Parses the given Json file as a new API
+	 * Parses the given Json file as extracted library types.
 	 *
 	 * @param jsonFile the {@link Path} to read Json from
-	 * @return the API generated from the Json file
+	 * @return the library types generated from the Json file
 	 * @throws IOException If the file cannot be parsed
 	 */
 	public static LibraryTypes fromJson(Path jsonFile) throws IOException {

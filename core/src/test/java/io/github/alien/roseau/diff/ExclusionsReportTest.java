@@ -57,6 +57,31 @@ class ExclusionsReportTest {
 	}
 
 	@Test
+	void name_exclusions_propagate_to_nested_symbols() {
+		var v1src = """
+			module m { exports p.api; }
+			package p.api;
+			public class Excluded {
+				public static class Inner { public void m() {} }
+				public void x() {}
+			}""";
+		var v2src = """
+			module m { exports p.api; }
+			package p.api;
+			public class Excluded {
+				public static class Inner {}
+			}""";
+
+		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.Excluded"), List.of());
+		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
+		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getAllBreakingChanges()).hasSize(2);
+		assertThat(report.getBreakingChanges()).isEmpty();
+	}
+
+	@Test
 	void annotation_exclusions_propagate() {
 		var v1src = """
 			@Deprecated

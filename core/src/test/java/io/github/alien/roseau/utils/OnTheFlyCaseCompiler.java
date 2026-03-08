@@ -5,13 +5,8 @@ import com.google.common.io.RecursiveDeleteOption;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.factory.ApiFactory;
-import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.TypesExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.Diagnostic;
@@ -209,10 +204,8 @@ public class OnTheFlyCaseCompiler {
 				}""".formatted(clientSnippet));
 
 			// --- Extract APIs and compute diff ---
-			ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
-			TypesExtractor extractor = new JdtTypesExtractor(factory);
-			API v1 = extractor.extractTypes(Library.of(srcDir1)).toAPI();
-			API v2 = extractor.extractTypes(Library.of(srcDir2)).toAPI();
+			API v1 = Roseau.buildAPI(Library.of(srcDir1));
+			API v2 = Roseau.buildAPI(Library.of(srcDir2));
 			List<BreakingChange> bcs = Roseau.diff(v1, v2).getAllBreakingChanges();
 
 			// --- Compile client against API v1 (sanity check) ---

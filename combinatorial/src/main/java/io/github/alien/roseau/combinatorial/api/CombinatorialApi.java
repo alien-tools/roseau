@@ -2,6 +2,7 @@ package io.github.alien.roseau.combinatorial.api;
 
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.FieldDecl;
@@ -245,7 +246,7 @@ public final class CombinatorialApi {
 	private API getAPI() {
 		var types = new LibraryTypes(Library.of(Path.of("v1")),
 			typeStore.values().stream().map(TypeBuilder::make).collect(Collectors.toSet()));
-		return types.toAPI();
+		return Roseau.buildAPI(types);
 	}
 
 	private void createInterfaces() {

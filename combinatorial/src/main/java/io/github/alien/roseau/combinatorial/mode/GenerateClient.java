@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.mode;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.combinatorial.AbstractStep;
@@ -45,7 +46,7 @@ public final class GenerateClient extends AbstractStep {
 		var apiName = apiPath.toFile().getName();
 		var clientSourcePath = outputPath.resolve(apiName);
 
-		new GenerateApiClient(types.toAPI(), clientSourcePath).run();
+		new GenerateApiClient(Roseau.buildAPI(types), clientSourcePath).run();
 
 		try {
 			ExplorerUtils.cleanOrCreateDirectory(tmpOutputPath);

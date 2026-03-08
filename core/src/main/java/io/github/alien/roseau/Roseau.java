@@ -13,8 +13,8 @@ import io.github.alien.roseau.api.resolution.TypeProvider;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 import io.github.alien.roseau.diff.ApiDiffer;
 import io.github.alien.roseau.diff.ApiWalker;
-import io.github.alien.roseau.diff.DefaultSymbolMatcher;
 import io.github.alien.roseau.diff.BreakingChangeAnalyzer;
+import io.github.alien.roseau.diff.DefaultSymbolMatcher;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
@@ -52,7 +52,31 @@ public final class Roseau {
 	public static API buildAPI(Library library) {
 		Preconditions.checkNotNull(library);
 		ApiFactory factory = defaultApiFactory();
-		return toAPI(library, extractTypes(library, factory), factory);
+		return buildAPI(extractTypes(library, factory), factory);
+	}
+
+	/**
+	 * Builds an {@link API} model from the given extracted library types using the default resolver.
+	 *
+	 * @param types the extracted library types (must not be null)
+	 * @return the built API model
+	 */
+	public static API buildAPI(LibraryTypes types) {
+		Preconditions.checkNotNull(types);
+		return buildAPI(types, defaultApiFactory());
+	}
+
+	/**
+	 * Builds an {@link API} model from the given extracted library types and resolver.
+	 *
+	 * @param types    the extracted library types (must not be null)
+	 * @param resolver the resolver used for type resolution (must not be null)
+	 * @return the built API model
+	 */
+	public static API buildAPI(LibraryTypes types, TypeResolver resolver) {
+		Preconditions.checkNotNull(types);
+		Preconditions.checkNotNull(resolver);
+		return new API(types, resolver);
 	}
 
 	/**
@@ -137,7 +161,7 @@ public final class Roseau {
 			ApiFactory factory = defaultApiFactory();
 			JdtTypesExtractor jdtExtractor = new JdtTypesExtractor(factory);
 			IncrementalTypesExtractor incremental = new IncrementalJdtTypesExtractor(jdtExtractor);
-			return toAPI(v2, incremental.incrementalUpdate(api.getLibraryTypes(), v2, changes), factory);
+			return buildAPI(incremental.incrementalUpdate(api.getLibraryTypes(), v2, changes), factory);
 		});
 
 		try {
@@ -163,11 +187,11 @@ public final class Roseau {
 		return types;
 	}
 
-	private static API toAPI(Library library, LibraryTypes types, ApiFactory factory) {
+	private static API buildAPI(LibraryTypes types, ApiFactory factory) {
 		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
-		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath());
+		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, types.getLibrary().getClasspath());
 		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, classpathProvider));
-		return new API(types, cachingTypeResolver);
+		return buildAPI(types, cachingTypeResolver);
 	}
 
 	private static ApiFactory defaultApiFactory() {

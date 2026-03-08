@@ -3,17 +3,10 @@ package io.github.alien.roseau.api.model;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
-import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 /**
@@ -25,26 +18,12 @@ public final class API extends CachingApiAnalyzer {
 	 */
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver typeResolver;
-	private final Set<Pattern> namePatterns;
-
-	private static final Logger LOGGER = LogManager.getLogger(API.class);
 
 	public API(LibraryTypes libraryTypes, TypeResolver typeResolver) {
 		Preconditions.checkNotNull(libraryTypes);
 		Preconditions.checkNotNull(typeResolver);
 		this.libraryTypes = libraryTypes;
 		this.typeResolver = typeResolver;
-		this.namePatterns = getLibrary().getExclusions().names().stream()
-			.map(name -> {
-				try {
-					return Pattern.compile(name);
-				} catch (PatternSyntaxException e) {
-					LOGGER.warn("Invalid exclusion pattern {}", name, e);
-					return null;
-				}
-			})
-			.filter(Objects::nonNull)
-			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	public LibraryTypes getLibraryTypes() {
@@ -63,20 +42,6 @@ public final class API extends CachingApiAnalyzer {
 
 	public boolean isModuleExported(TypeDecl type) {
 		return libraryTypes.getModule().isExporting(type.getPackageName());
-	}
-
-	public boolean isExcluded(Symbol symbol) {
-		boolean isAnnotationExcluded = libraryTypes.getLibrary().getExclusions().annotations().stream()
-			.anyMatch(ann -> symbol.hasAnnotation(new TypeReference<>(ann.name()), ann.args()));
-		boolean isNameExcluded = namePatterns.stream()
-			.anyMatch(pattern -> pattern.matcher(symbol.getQualifiedName()).matches());
-
-		return switch (symbol) {
-			case TypeDecl type -> isAnnotationExcluded || isNameExcluded ||
-				type.getEnclosingType().map(t -> resolver().resolve(t).map(this::isExcluded).orElse(false)).orElse(false);
-			case TypeMemberDecl member -> isAnnotationExcluded || isNameExcluded ||
-				resolver().resolve(member.getContainingType()).map(this::isExcluded).orElse(false);
-		};
 	}
 
 	/**
