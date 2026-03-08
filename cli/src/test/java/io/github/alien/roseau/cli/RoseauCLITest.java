@@ -86,6 +86,17 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void non_local_members_show_containing_type() {
+		var exitCode = cmd.execute("--v1=src/test/resources/inheritance-v1/src",
+			"--v2=src/test/resources/inheritance-v2/src",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("pkg.Base.removed() in pkg.Child");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void no_breaking_changes() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v1/test-project-v1.jar",
@@ -123,6 +134,18 @@ class RoseauCLITest {
 			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
 			.doesNotContain("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void both_source_and_binary_only() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--source-only",
+			"--binary-only");
+
+		assertThat(err.toString()).contains("Specify either --source-only or --binary-only");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -177,7 +200,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api");
 
-		assertThat(err.toString()).contains("Path to a JSON file required in --api mode");
+		assertThat(err.toString()).contains("--api-json option required with --api mode");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
@@ -284,7 +307,7 @@ class RoseauCLITest {
 			"--diff",
 			"--report=" + reportFile);
 
-		assertThat(err.toString()).contains("--format required with --report");
+		assertThat(err.toString()).contains("--format option required with --report");
 		assertThat(reportFile).doesNotExist();
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
@@ -497,6 +520,27 @@ class RoseauCLITest {
 			.contains("Cannot find v1:")
 			.contains("io.github.alien.roseau.RoseauException");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	void cli_flags_override_config(@TempDir Path tempDir) throws IOException {
+		var config = tempDir.resolve("roseau.yaml");
+		Files.writeString(config, """
+			diff:
+			  sourceOnly: true
+			""");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--binary-only",
+			"--config=" + config,
+			"--plain");
+
+		assertThat(out.toString())
+			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
+			.contains("METHOD_NOW_STATIC");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test

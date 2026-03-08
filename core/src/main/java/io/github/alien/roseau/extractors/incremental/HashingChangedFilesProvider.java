@@ -24,6 +24,7 @@ import java.util.stream.Collectors;
  */
 public class HashingChangedFilesProvider {
 	private final HashFunction hashFunction;
+	private static final long HASH_ERROR = -1L;
 
 	public HashingChangedFilesProvider(HashFunction hashFunction) {
 		this.hashFunction = hashFunction;
@@ -52,7 +53,7 @@ public class HashingChangedFilesProvider {
 				Long rightHash = rightHashes.remove(file);
 				if (rightHash == null) {
 					deleted.add(file);
-				} else if (!leftHash.equals(rightHash)) {
+				} else if (leftHash == HASH_ERROR || rightHash == HASH_ERROR || !leftHash.equals(rightHash)) {
 					updated.add(file);
 				}
 			});
@@ -85,7 +86,7 @@ public class HashingChangedFilesProvider {
 					return entry.getValue().get();
 				} catch (InterruptedException | ExecutionException e) {
 					Thread.currentThread().interrupt();
-					return -1L;
+					return HASH_ERROR;
 				}
 			}
 		));

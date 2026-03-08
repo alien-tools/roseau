@@ -161,7 +161,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			console.printlnErr("Warning: ignoring missing configuration file %s".formatted(config));
 		}
 
-		if (sourceOnly != null && binaryOnly != null) {
+		if (options.diff().sourceOnly() && options.diff().binaryOnly()) {
 			throw new RoseauException("Specify either --source-only or --binary-only");
 		}
 
@@ -170,7 +170,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (mode.api && options.v1().apiReport() == null) {
-			throw new RoseauException("Path to a JSON file required in --api mode");
+			throw new RoseauException("--api-json option required with --api mode");
 		}
 
 		Path v2Path = options.v2().location();
@@ -179,7 +179,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (reportPath != null && format == null) {
-			throw new RoseauException("--format required with --report");
+			throw new RoseauException("--format option required with --report");
 		}
 
 		Path v1PomPath = options.v1().classpath().pom();
@@ -212,7 +212,9 @@ public final class RoseauCLI implements Callable<Integer> {
 			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
 			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
-		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, sourceOnly, binaryOnly);
+		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
+		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
+		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
 		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
 			? List.of(new RoseauOptions.Report(reportPath, format))
 			: List.of();
@@ -332,7 +334,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	static final class VersionProvider implements CommandLine.IVersionProvider {
 		@Override
 		public String[] getVersion() {
-			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.5.0-SNAPSHOT");
+			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.6.0-SNAPSHOT");
 			return new String[]{"Roseau " + impl};
 		}
 	}

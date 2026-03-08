@@ -189,7 +189,9 @@ class MethodNowThrowsCheckedExceptionTest {
 				public final void m() throws java.io.IOException {}
 			}""";
 
-		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2));
 	}
 
 	@Client("""
@@ -207,7 +209,9 @@ class MethodNowThrowsCheckedExceptionTest {
 				public A() throws java.io.IOException {}
 			}""";
 
-		assertBC("A", "A.<init>()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.<init>()", BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2),
+			bc("A", "A.<init>()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2));
 	}
 
 	@Client("""
@@ -238,6 +242,99 @@ class MethodNowThrowsCheckedExceptionTest {
 		var v2 = """
 			public class A {
 				public void m() throws OutOfMemoryError {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void method_now_throws_additional() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException, java.sql.SQLException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 3, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m();")
+	@Test
+	void method_now_throws_multiple_from_none() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public void m() throws java.io.IOException, java.sql.SQLException {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 3),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 3));
+	}
+
+	@Client("A.m();")
+	@Test
+	void static_method_now_throws() {
+		var v1 = """
+			public class A {
+				public A() {}
+				public static void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() {}
+				public static void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 3, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		A a = null;
+		a.m();""")
+	@Test
+	void interface_default_method_now_throws() {
+		var v1 = """
+			public interface A {
+				default void m() {}
+			}""";
+		var v2 = """
+			public interface A {
+				default void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void final_class_method_now_throws_subtype() {
+		var v1 = """
+			public final class A {
+				public A() {}
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public final class A {
+				public A() {}
+				public void m() throws java.io.ObjectStreamException {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
