@@ -84,7 +84,57 @@ Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
   -v, --verbose           Increase verbosity (-v, -vv).
 ```
 
-### Configuration
+### As a Java library
+
+The main programmatic entry points live in `Roseau`. In most cases, you configure two `Library` instances, build their APIs, and diff them:
+
+```java
+Library v1 = Library.of(Path.of("/path/to/library-v1.jar"));
+Library v2 = Library.builder()
+  .location(Path.of("/path/to/library-v2.jar"))
+  .classpath(List.of(Path.of("/path/to/dependency.jar")))
+  .pom(Path.of("/path/to/pom.xml"))
+  .build();
+
+API apiV1 = Roseau.buildAPI(v1);
+API apiV2 = Roseau.buildAPI(v2);
+
+RoseauReport report = Roseau.diff(apiV1, apiV2);
+report.getBreakingChanges().forEach(System.out::println);
+```
+
+### As a Maven plug-in
+
+Roseau also provides a Maven plug-in that compares the current artifact against a baseline during the `verify` phase.
+The minimal setup is to bind the `check` goal and provide a baseline:
+
+```xml
+<plugin>
+  <groupId>io.github.alien-tools</groupId>
+  <artifactId>roseau-maven-plugin</artifactId>
+  <version>0.6.0-SNAPSHOT</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>check</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <!-- Compare against a baseline JAR -->
+    <baselineJar>${project.basedir}/old.jar</baselineJar>
+    <!-- Compare against a previous version -->
+    <baselineVersion>
+      <groupId>com.group</groupId>
+      <artifactId>my-artifact</artifactId>
+      <version>1.0.1</version>
+    </baselineVersion>
+    <failOnIncompatibility>true</failOnIncompatibility>
+  </configuration>
+</plugin>
+```
+
+## Configuration
 Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence. Example:
 
 ```yaml
@@ -106,7 +156,7 @@ reports:
     format: CSV
 ```
 
-#### Ignoring breaking changes on specific types and symbols
+### Ignoring breaking changes on specific types and symbols
 Roseau can be configured to ignore breaking changes on symbols matching a given regular expression or annotated with a specific annotation:
 
 ```yaml
@@ -119,7 +169,7 @@ common:
         args: { status: org.apiguardian.api.API$Status.INTERNAL }
 ```
 
-#### Ignoring specific breaking changes
+### Ignoring specific breaking changes
 Breaking changes are sometimes necessary and intended. To avoid reporting the same breaking changes over and over against a given baseline, Roseau can be configured to ignore/accept specific breaking changes and stop reporting them using a dedicated CSV file supplied using the `--ignored` option:
 
 ```csv

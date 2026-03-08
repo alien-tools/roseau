@@ -30,11 +30,12 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
 
 /**
- * Entry point utilities for building APIs and computing breaking changes between versions.
+ * Entry point for extracting library snapshots, building resolved APIs, and computing diffs.
  */
 public final class Roseau {
 	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
@@ -44,21 +45,31 @@ public final class Roseau {
 	}
 
 	/**
-	 * Builds an {@link API} model from the given {@link Library}.
+	 * Extracts the immutable snapshot of a library.
 	 *
-	 * @param library the library to analyze (must not be null)
+	 * @param library the library to analyze
+	 * @return the extracted library types
+	 */
+	public static LibraryTypes buildLibraryTypes(Library library) {
+		Preconditions.checkNotNull(library);
+		return extractTypes(library, defaultApiFactory());
+	}
+
+	/**
+	 * Builds a resolved {@link API} from the given {@link Library}.
+	 *
+	 * @param library the library to analyze
 	 * @return the built API model
 	 */
 	public static API buildAPI(Library library) {
 		Preconditions.checkNotNull(library);
-		ApiFactory factory = defaultApiFactory();
-		return buildAPI(extractTypes(library, factory), factory);
+		return buildAPI(buildLibraryTypes(library));
 	}
 
 	/**
-	 * Builds an {@link API} model from the given extracted library types using the default resolver.
+	 * Builds a resolved {@link API} from the given extracted library types using the default resolver.
 	 *
-	 * @param types the extracted library types (must not be null)
+	 * @param types the extracted library types
 	 * @return the built API model
 	 */
 	public static API buildAPI(LibraryTypes types) {
@@ -67,10 +78,10 @@ public final class Roseau {
 	}
 
 	/**
-	 * Builds an {@link API} model from the given extracted library types and resolver.
+	 * Builds a resolved {@link API} from the given extracted library types and resolver.
 	 *
-	 * @param types    the extracted library types (must not be null)
-	 * @param resolver the resolver used for type resolution (must not be null)
+	 * @param types    the extracted library types
+	 * @param resolver the resolver used for type resolution
 	 * @return the built API model
 	 */
 	public static API buildAPI(LibraryTypes types, TypeResolver resolver) {
@@ -82,8 +93,8 @@ public final class Roseau {
 	/**
 	 * Computes a diff between two API versions.
 	 *
-	 * @param v1 the baseline API (must not be null)
-	 * @param v2 the target API to compare against (must not be null)
+	 * @param v1 the baseline API
+	 * @param v2 the target API
 	 * @return a {@link RoseauReport} containing the list of breaking changes
 	 */
 	public static RoseauReport diff(API v1, API v2) {
@@ -103,14 +114,15 @@ public final class Roseau {
 	/**
 	 * Builds both APIs in parallel using the provided {@link Executor} and computes their diff.
 	 *
-	 * @param v1       the baseline library (must not be null)
-	 * @param v2       the target library (must not be null)
+	 * @param v1       the baseline library
+	 * @param v2       the target library
 	 * @param executor the executor to use
 	 * @return a {@link RoseauReport} containing the list of breaking changes
 	 */
 	public static RoseauReport diff(Library v1, Library v2, Executor executor) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
+		Preconditions.checkNotNull(executor);
 
 		Stopwatch sw = Stopwatch.createStarted();
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1), executor);
@@ -122,16 +134,16 @@ public final class Roseau {
 			LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
 				() -> sw.elapsed().toMillis(), () -> api1.getExportedTypes().size(), () -> api2.getExportedTypes().size());
 			return diff(api1, api2);
-		} catch (RuntimeException e) {
-			throw new RoseauException("Failed to build diff", e);
+		} catch (CompletionException e) {
+			throw new RoseauException("Failed to build diff", e.getCause() != null ? e.getCause() : e);
 		}
 	}
 
 	/**
 	 * Builds both APIs in parallel using the default {@link ForkJoinPool#commonPool()} and computes their diff.
 	 *
-	 * @param v1 the baseline library (must not be null)
-	 * @param v2 the target library (must not be null)
+	 * @param v1 the baseline library
+	 * @param v2 the target library
 	 * @return a {@link RoseauReport} containing the list of breaking changes
 	 */
 	public static RoseauReport diff(Library v1, Library v2) {
@@ -139,40 +151,73 @@ public final class Roseau {
 	}
 
 	/**
-	 * Performs an incremental build of the target API when possible and computes the diff. The baseline API is fully
-	 * built. The target API is incrementally built from the baseline based on changed files.
+	 * Incrementally updates a previously extracted source snapshot.
 	 *
-	 * @param v1 the baseline library (must not be null)
-	 * @param v2 the target library (must not be null and use {@link ExtractorType#JDT})
-	 * @return a {@link RoseauReport} containing the list of breaking changes
-	 * @throws IllegalArgumentException if {@code v2} is not using the JDT extractor
+	 * @param previousTypes the previously extracted source snapshot
+	 * @param newVersion    the new source library version
+	 * @param changedFiles  the changed source files, relative to the library root
+	 * @return the updated library types
 	 */
-	public static RoseauReport incrementalDiff(Library v1, Library v2) {
+	public static LibraryTypes incrementalBuild(LibraryTypes previousTypes, Library newVersion,
+	                                            ChangedFiles changedFiles) {
+		Preconditions.checkNotNull(previousTypes);
+		Preconditions.checkNotNull(newVersion);
+		Preconditions.checkNotNull(changedFiles);
+		Preconditions.checkArgument(previousTypes.getLibrary().getExtractorType() == ExtractorType.JDT);
+		Preconditions.checkArgument(newVersion.getExtractorType() == ExtractorType.JDT);
+
+		ApiFactory factory = defaultApiFactory();
+		IncrementalTypesExtractor incremental = new IncrementalJdtTypesExtractor(new JdtTypesExtractor(factory));
+		return incremental.incrementalUpdate(previousTypes, newVersion, changedFiles);
+	}
+
+	/**
+	 * Incrementally computes the diff between two source libraries using the provided {@link Executor}.
+	 *
+	 * @param v1       the baseline source library
+	 * @param v2       the target source library
+	 * @param executor the executor to use
+	 * @return a {@link RoseauReport} containing the list of breaking changes
+	 */
+	public static RoseauReport incrementalDiff(Library v1, Library v2, Executor executor) {
 		Preconditions.checkNotNull(v1);
-		Preconditions.checkArgument(v2 != null && v2.getExtractorType() == ExtractorType.JDT,
-			"Incremental building is only available with JDT");
+		Preconditions.checkNotNull(v2);
+		Preconditions.checkNotNull(executor);
+		Preconditions.checkArgument(v1.getExtractorType() == ExtractorType.JDT);
+		Preconditions.checkArgument(v2.getExtractorType() == ExtractorType.JDT);
 		HashingChangedFilesProvider provider = new HashingChangedFilesProvider(HashFunction.XXHASH);
 
 		Stopwatch sw = Stopwatch.createStarted();
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1));
+		CompletableFuture<LibraryTypes> futureV1 = CompletableFuture.supplyAsync(() -> buildLibraryTypes(v1), executor);
 		CompletableFuture<ChangedFiles> futureChanges = CompletableFuture.supplyAsync(
-			() -> provider.getChangedFiles(v1.getLocation(), v2.getLocation()));
-		CompletableFuture<API> futureV2 = futureV1.thenCombineAsync(futureChanges, (api, changes) -> {
-			ApiFactory factory = defaultApiFactory();
-			JdtTypesExtractor jdtExtractor = new JdtTypesExtractor(factory);
-			IncrementalTypesExtractor incremental = new IncrementalJdtTypesExtractor(jdtExtractor);
-			return buildAPI(incremental.incrementalUpdate(api.getLibraryTypes(), v2, changes), factory);
-		});
+			() -> provider.getChangedFiles(v1.getLocation(), v2.getLocation()), executor);
+		CompletableFuture<LibraryTypes> futureV2 = futureV1.thenCombineAsync(
+			futureChanges,
+			(types, changes) -> incrementalBuild(types, v2, changes),
+			executor);
 
 		try {
-			API api1 = futureV1.join();
-			API api2 = futureV2.join();
+			LibraryTypes types1 = futureV1.join();
+			LibraryTypes types2 = futureV2.join();
+			API api1 = buildAPI(types1);
+			API api2 = buildAPI(types2);
 			LOGGER.debug("Building APIs incrementally took {}ms ({} vs {} types)",
 				() -> sw.elapsed().toMillis(), () -> api1.getExportedTypes().size(), () -> api2.getExportedTypes().size());
 			return diff(api1, api2);
-		} catch (RuntimeException e) {
-			throw new RoseauException("Failed to incrementally update APIs", e);
+		} catch (CompletionException e) {
+			throw new RoseauException("Failed to incrementally update APIs", e.getCause() != null ? e.getCause() : e);
 		}
+	}
+
+	/**
+	 * Incrementally computes the diff between two source libraries.
+	 *
+	 * @param v1 the baseline source library
+	 * @param v2 the target source library
+	 * @return a {@link RoseauReport} containing the list of breaking changes
+	 */
+	public static RoseauReport incrementalDiff(Library v1, Library v2) {
+		return incrementalDiff(v1, v2, ForkJoinPool.commonPool());
 	}
 
 	private static LibraryTypes extractTypes(Library library, ApiFactory factory) {

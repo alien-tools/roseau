@@ -5,6 +5,7 @@ import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
@@ -142,12 +143,12 @@ public final class RoseauCLI implements Callable<Integer> {
 			.toList();
 	}
 
-	private void writeApiReport(API api, Path apiPath) {
+	private void writeApiReport(LibraryTypes types, Path apiPath) {
 		try {
 			if (apiPath.getParent() != null) {
 				Files.createDirectories(apiPath.getParent());
 			}
-			api.getLibraryTypes().writeJson(apiPath);
+			types.writeJson(apiPath);
 			console.printlnVerbose("API has been written to %s".formatted(apiPath));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing API to %s".formatted(apiPath), e);
@@ -238,12 +239,12 @@ public final class RoseauCLI implements Callable<Integer> {
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
 		buildClasspath(library);
 		Stopwatch sw = Stopwatch.createStarted();
-		console.printVerbose("Building API... ");
-		API api = Roseau.buildAPI(library);
-		console.printlnVerbose(" %d types (%d ms)".formatted(api.getLibraryTypes().getAllTypes().size(),
+		console.printVerbose("Extracting API... ");
+		LibraryTypes types = Roseau.buildLibraryTypes(library);
+		console.printlnVerbose(" %d types (%d ms)".formatted(types.getAllTypes().size(),
 			sw.elapsed().toMillis()));
 		if (libraryOptions.apiReport() != null) {
-			writeApiReport(api, libraryOptions.apiReport());
+			writeApiReport(types, libraryOptions.apiReport());
 		}
 	}
 
@@ -254,10 +255,10 @@ public final class RoseauCLI implements Callable<Integer> {
 		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {
-			writeApiReport(report.v1(), options.v1().apiReport());
+			writeApiReport(report.v1().getLibraryTypes(), options.v1().apiReport());
 		}
 		if (options.v2().apiReport() != null) {
-			writeApiReport(report.v2(), options.v2().apiReport());
+			writeApiReport(report.v2().getLibraryTypes(), options.v2().apiReport());
 		}
 		options.reports().forEach(reportOption ->
 			report.writeReport(reportOption.format(), reportOption.file())
