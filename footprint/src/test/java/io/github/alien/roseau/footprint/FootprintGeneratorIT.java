@@ -520,6 +520,62 @@ class FootprintGeneratorIT {
 	}
 
 	@Test
+	void v1_compiled_footprint_fails_to_link_when_interface_default_method_becomes_abstract() throws Exception {
+		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-default-abstract");
+		try {
+			Path v1SourceTree = tempDir.resolve("v1-source");
+			writeJavaSource(
+				v1SourceTree,
+				"fixture/linkage/Service.java",
+				"""
+					package fixture.linkage;
+					public interface Service {
+						default int ping() { return 1; }
+					}
+					"""
+			);
+
+			Path generatedSource = tempDir.resolve("Footprint.java");
+			FootprintService service = new FootprintService();
+			service.generateToFile(v1SourceTree, generatedSource, "test.footprint", "Footprint");
+
+			Path v1ApiBin = tempDir.resolve("v1-api-bin");
+			compileSources(allJavaSources(v1SourceTree), v1ApiBin, List.of());
+
+			Path clientBin = tempDir.resolve("client-bin");
+			compileSources(generatedClientSources(generatedSource), clientBin, List.of("-classpath", v1ApiBin.toString()));
+
+			Path v2SourceTree = tempDir.resolve("v2-source");
+			writeJavaSource(
+				v2SourceTree,
+				"fixture/linkage/Service.java",
+				"""
+					package fixture.linkage;
+					public interface Service {
+						int ping();
+					}
+					"""
+			);
+
+			Path v2ApiBin = tempDir.resolve("v2-api-bin");
+			compileSources(allJavaSources(v2SourceTree), v2ApiBin, List.of());
+
+			RunResult run = runMain(
+				"test.footprint.Footprint",
+				clientBin + System.getProperty("path.separator") + v2ApiBin
+			);
+
+			assertNotEquals(0, run.exitCode(), "Expected binary linkage failure when default method becomes abstract");
+			assertTrue(
+				run.output().contains("AbstractMethodError") || run.output().contains("LinkageError"),
+				"Expected AbstractMethodError/LinkageError output, got:\n" + run.output()
+			);
+		} finally {
+			deleteRecursively(tempDir);
+		}
+	}
+
+	@Test
 	void v1_generated_footprint_fails_to_compile_when_unchecked_exception_becomes_checked() throws Exception {
 		Path v1SourceTree = fixtureSourceTree();
 		Path tempDir = Files.createTempDirectory("roseau-footprint-v2-checked-ex");

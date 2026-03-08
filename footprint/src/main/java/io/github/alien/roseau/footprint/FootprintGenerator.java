@@ -69,6 +69,12 @@ public final class FootprintGenerator {
 	) {
 	}
 
+	private record ConstructorInvocation(
+		ConstructorDecl constructor,
+		String expression
+	) {
+	}
+
 	public FootprintGenerator(String packageName, String className) {
 		this.packageName = Objects.requireNonNull(packageName);
 		this.className = Objects.requireNonNull(className);
@@ -239,6 +245,7 @@ public final class FootprintGenerator {
 				}
 				block.outdent();
 				block.line("};");
+				emitInstanceMethodInvocations(block, itf, implVar, typeInstantiation.typeBindings());
 				block.outdent();
 				block.line("} catch (java.lang.RuntimeException ignored) {");
 				block.line("}");
@@ -290,34 +297,35 @@ public final class FootprintGenerator {
 		if (cls.isAbstract() && canExtendClass(cls)) {
 			List<MethodDecl> toImplement = sortedMethods(api.getAllMethodsToImplement(cls));
 			ConstructorDecl baseCtor = findSubclassAccessibleConstructors(cls).stream().findFirst().orElse(null);
-				if (baseCtor != null && toImplement.stream().allMatch(method ->
-					isRepresentable(method) && canRenderMethodInSubclassContext(method, classInstantiation.typeBindings()))) {
-					List<String> invocations = directConstructorInvocations(cls, instantiatedType, baseCtor,
-						classInstantiation.typeBindings());
-					if (!invocations.isEmpty()) {
-						String invocation = invocations.getFirst();
-						String anonVar = nextLocal("anonImpl");
-						block.line("try {");
-						block.indent();
-						block.line(instantiatedType + " " + anonVar + " = " + invocation.replace(";", "") + " {");
-						block.indent();
-						for (MethodDecl method : toImplement) {
-							emitMethodImplementation(block, method, classInstantiation.typeBindings(), preserveMethodTypeParameters);
-						}
-						block.outdent();
-						block.line("};");
-						block.outdent();
-						block.line("}");
-						for (TypeReference<?> checkedType : checkedExceptionTypes(baseCtor)) {
-							block.line("catch (" + renderRawType(checkedType) + " ignored) {");
-							block.line("}");
-						}
-						block.line("catch (java.lang.RuntimeException ignored) {");
-						block.line("}");
-					} else {
-						block.line("// Cannot build anonymous implementation for " + cls.getQualifiedName());
+			if (baseCtor != null && toImplement.stream().allMatch(method ->
+				isRepresentable(method) && canRenderMethodInSubclassContext(method, classInstantiation.typeBindings()))) {
+				List<String> invocations = directConstructorInvocations(cls, instantiatedType, baseCtor,
+					classInstantiation.typeBindings());
+				if (!invocations.isEmpty()) {
+					String invocation = invocations.getFirst();
+					String anonVar = nextLocal("anonImpl");
+					block.line("try {");
+					block.indent();
+					block.line(instantiatedType + " " + anonVar + " = " + stripTrailingSemicolon(invocation) + " {");
+					block.indent();
+					for (MethodDecl method : toImplement) {
+						emitMethodImplementation(block, method, classInstantiation.typeBindings(), preserveMethodTypeParameters);
 					}
-				} else if (baseCtor != null) {
+					block.outdent();
+					block.line("};");
+					emitInstanceMethodInvocations(block, cls, anonVar, classInstantiation.typeBindings());
+					block.outdent();
+					block.line("}");
+					for (TypeReference<?> checkedType : checkedExceptionTypes(baseCtor)) {
+						block.line("catch (" + renderRawType(checkedType) + " ignored) {");
+						block.line("}");
+					}
+					block.line("catch (java.lang.RuntimeException ignored) {");
+					block.line("}");
+				} else {
+					block.line("// Cannot build anonymous implementation for " + cls.getQualifiedName());
+				}
+			} else if (baseCtor != null) {
 				block.line("// Anonymous implementation is unrepresentable due to inaccessible method types: "
 					+ cls.getQualifiedName());
 			}
@@ -484,23 +492,22 @@ public final class FootprintGenerator {
 				String invocation = invocationArgs.isBlank()
 					? "new " + subclassName + "();"
 					: "new " + subclassName + "(" + invocationArgs + ");";
+				String instanceVar = nextLocal("extendedInstance");
+				block.line("try {");
+				block.indent();
+				block.line(subclassName + " " + instanceVar + " = " + stripTrailingSemicolon(invocation) + ";");
 				if (hasProtectedMemberProbe) {
-					String instanceVar = nextLocal("extendedInstance");
-					block.line("try {");
-					block.indent();
-					block.line(subclassName + " " + instanceVar + " = " + invocation.replace(";", "") + ";");
 					block.line(instanceVar + ".useProtectedMembers();");
-					block.outdent();
-					block.line("}");
-					for (TypeReference<?> checkedType : checkedExceptionTypes(constructor)) {
-						block.line("catch (" + renderRawType(checkedType) + " ignored) {");
-						block.line("}");
-					}
-					block.line("catch (java.lang.RuntimeException ignored) {");
-					block.line("}");
-				} else {
-					emitInvocation(block, invocation, constructor);
 				}
+				emitInstanceMethodInvocations(block, cls, instanceVar, superTypeBindings);
+				block.outdent();
+				block.line("}");
+				for (TypeReference<?> checkedType : checkedExceptionTypes(constructor)) {
+					block.line("catch (" + renderRawType(checkedType) + " ignored) {");
+					block.line("}");
+				}
+				block.line("catch (java.lang.RuntimeException ignored) {");
+				block.line("}");
 			}
 			if (emittedConstructors.isEmpty()) {
 				block.line("// No constructible subclass constructor could be emitted for " + cls.getQualifiedName());
@@ -517,7 +524,7 @@ public final class FootprintGenerator {
 		String typeName = renderTypeName(type);
 		TypeInstantiation typeInstantiation = resolveTypeInstantiation(type);
 		Map<String, String> typeBindings = typeInstantiation.typeBindings();
-		String instanceReceiver = "((" + typeInstantiation.typeExpression() + ") null)";
+		String instanceReceiver = resolveInstanceReceiver(block, type, typeInstantiation, typeBindings);
 		boolean canEmitGenericProbe = !type.getFormalTypeParameters().isEmpty();
 		Set<String> typeParameterNames = type.getFormalTypeParameters().stream()
 			.map(FormalTypeParameter::name)
@@ -590,7 +597,7 @@ public final class FootprintGenerator {
 		String typeName = renderTypeName(type);
 		TypeInstantiation typeInstantiation = resolveTypeInstantiation(type);
 		Map<String, String> typeBindings = typeInstantiation.typeBindings();
-		String instanceReceiver = "((" + typeInstantiation.typeExpression() + ") null)";
+		String instanceReceiver = resolveInstanceReceiver(block, type, typeInstantiation, typeBindings);
 		boolean canEmitGenericProbe = !type.getFormalTypeParameters().isEmpty();
 		Set<String> typeParameterNames = type.getFormalTypeParameters().stream()
 			.map(FormalTypeParameter::name)
@@ -637,6 +644,55 @@ public final class FootprintGenerator {
 			}
 		}
 		emitInheritedStaticMethodUsages(block, type, typeName, typeBindings);
+	}
+
+	private String resolveInstanceReceiver(CodeBlock block, TypeDecl type, TypeInstantiation typeInstantiation,
+	                                      Map<String, String> typeBindings) {
+		String nullReceiver = "((" + typeInstantiation.typeExpression() + ") null)";
+		if (!(type instanceof ClassDecl cls) || cls.isEffectivelyAbstract() || isNonStaticNestedClass(cls)) {
+			return nullReceiver;
+		}
+
+		List<ConstructorInvocation> constructorInvocations = new ArrayList<>();
+		for (ConstructorDecl constructor : sortedConstructors(cls.getDeclaredConstructors())) {
+			if (!constructor.isPublic() || !isRepresentable(constructor)) {
+				continue;
+			}
+			for (String invocation : directConstructorInvocations(cls, typeInstantiation.typeExpression(), constructor, typeBindings)) {
+				constructorInvocations.add(new ConstructorInvocation(constructor, stripTrailingSemicolon(invocation)));
+			}
+		}
+		if (constructorInvocations.isEmpty()) {
+			return nullReceiver;
+		}
+
+		String receiverVar = nextLocal("instanceReceiver");
+		block.line(typeInstantiation.typeExpression() + " " + receiverVar + " = null;");
+		for (ConstructorInvocation invocation : constructorInvocations) {
+			block.line("if (" + receiverVar + " == null) {");
+			block.indent();
+			emitInvocation(block, receiverVar + " = " + invocation.expression() + ";", invocation.constructor());
+			block.outdent();
+			block.line("}");
+		}
+		return receiverVar;
+	}
+
+	private void emitInstanceMethodInvocations(CodeBlock block, TypeDecl type, String receiver,
+	                                           Map<String, String> typeBindings) {
+		for (MethodDecl method : sortedMethods(type.getDeclaredMethods())) {
+			if (!method.isPublic() || method.isStatic() || !isRepresentable(method)) {
+				continue;
+			}
+			List<InvocationForm> invocations = invocationForms(method, receiver, typeBindings);
+			for (InvocationForm invocation : invocations) {
+				emitInvocation(block, invocation.statement(), method);
+				emitMethodReturnTypeUse(block, method, invocation);
+			}
+			if (invocations.isEmpty() && !method.getFormalTypeParameters().isEmpty()) {
+				block.line("// Explicit type arguments unrepresentable for " + method.getQualifiedName());
+			}
+		}
 	}
 
 	private void emitGenericMethodCallProbe(CodeBlock block, TypeDecl type, MethodDecl method) {
@@ -1866,6 +1922,12 @@ public final class FootprintGenerator {
 			}
 		}
 		return invocations.stream().distinct().toList();
+	}
+
+	private String stripTrailingSemicolon(String statement) {
+		return statement.endsWith(";")
+			? statement.substring(0, statement.length() - 1)
+			: statement;
 	}
 
 	private String renderArguments(List<ParameterDecl> parameters, boolean varargsAsArray, Map<String, String> typeParameterErasures) {
