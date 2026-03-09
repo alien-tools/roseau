@@ -49,6 +49,12 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
   [Open the Guide](guides/compare.md)
 
+- :material-puzzle: __Maven Plug-in__
+
+  Run compatibility checks during your Maven build.
+
+  [Open the Guide](guides/maven-plugin.md)
+
 </div>
 
 ## Common Use Cases
@@ -84,6 +90,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 ## Learn More
 
+- [Maven Plug-in](guides/maven-plugin.md)
 - [Use in CI](guides/ci.md)
 - [Ignore Accepted Breaking Changes](guides/ignored.md)
 - [Configuration File](guides/config.md)
