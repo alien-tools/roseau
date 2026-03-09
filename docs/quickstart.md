@@ -24,6 +24,8 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 `--v1` and `--v2` can each be a JAR file or a source directory.
 
+Roseau compares the library API surface, not every declaration in the input. For the exact rules, see [What Counts as API](guides/api-surface.md).
+
 ## 3. Common Next Steps
 
 **Fail CI on breaking changes**
@@ -62,5 +64,6 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 ## Next
 
 - [Check Breaking Changes](guides/compare.md)
+- [What Counts as API](guides/api-surface.md)
 - [Breaking Change Kinds](breaking-change-kinds.md)
 - [CLI Options](reference/cli.md)

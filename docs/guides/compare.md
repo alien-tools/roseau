@@ -4,6 +4,8 @@ Use this page to check breaking changes and compatibility between any two versio
 
 Roseau can compare two JARs, two source trees, or one JAR against one source tree.
 
+Roseau compares the API surface of each input, not every declaration it can parse. For the exact rules, see [What Counts as API](api-surface.md).
+
 ## Choose Your Input Pair
 
 **JAR vs JAR**
@@ -81,6 +83,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 ## Next
 
+- [What Counts as API](api-surface.md)
 - [Report Formats](reports.md)
 - [Use in CI](ci.md)
 - [CLI Options](../reference/cli.md)

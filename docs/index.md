@@ -37,6 +37,12 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
   [Open the Catalog](breaking-change-kinds.md)
 
+- :material-shape-outline: __What Counts as API__
+
+  Understand which declarations Roseau compares and which ones it ignores.
+
+  [Open the Guide](guides/api-surface.md)
+
 - :material-console: __CLI Options__
 
   Look up the exact meaning of each flag.
@@ -91,6 +97,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 ## Learn More
 
 - [Maven Plug-in](guides/maven-plugin.md)
+- [What Counts as API](guides/api-surface.md)
 - [Use in CI](guides/ci.md)
 - [Ignore Accepted Breaking Changes](guides/ignored.md)
 - [Configuration File](guides/config.md)

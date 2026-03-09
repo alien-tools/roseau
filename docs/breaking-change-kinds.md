@@ -13,6 +13,9 @@ These examples are intentionally minimal. One library change can trigger more th
 !!! note
     Each entry shows the smallest library change that triggers the breaking change, plus a small example of client code affected by it.
 
+!!! note
+    "Exported" and "visible" on this page mean "part of the API surface Roseau compares". For the exact rules, see [What Counts as API](guides/api-surface.md).
+
 Jump to:
 
 - [Summary](#summary)

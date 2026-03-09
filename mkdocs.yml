@@ -32,6 +32,7 @@ nav:
   - Breaking Change Kinds: breaking-change-kinds.md
   - CLI Options: reference/cli.md
   - Guides:
+      - What Counts as API: guides/api-surface.md
       - Check Breaking Changes: guides/compare.md
       - Maven Plug-in: guides/maven-plugin.md
       - Use in CI: guides/ci.md
