@@ -13,6 +13,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.options.IgnoredCsvFile;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
@@ -168,7 +169,9 @@ public final class RoseauReport {
 				Files.createDirectories(path.getParent());
 			}
 
-			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
+			BreakingChangesFormatter fmt = format == BreakingChangesFormatterFactory.CLI
+				? new CliFormatter(CliFormatter.Mode.PLAIN)
+				: BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
 			Files.writeString(path, fmt.format(this), StandardCharsets.UTF_8);
 		} catch (IOException e) {
 			throw new RoseauException("Error writing report to %s".formatted(path), e);

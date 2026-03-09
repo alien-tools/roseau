@@ -22,6 +22,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -64,12 +65,11 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
-	@Option(names = "--report", paramLabel = "<path>",
-		description = "Where to write the breaking changes report in --diff mode")
-	private Path reportPath;
-	@Option(names = "--format",
-		description = "Format of the report: ${COMPLETION-CANDIDATES}")
-	private BreakingChangesFormatterFactory format;
+	@Option(names = "--report", paramLabel = "<format=path>",
+		description = "Write a breaking changes report in the given format to the given path; repeatable " +
+			"(formats: CLI, CSV, HTML, JSON, MD)",
+		converter = ReportOptionConverter.class)
+	private List<RoseauOptions.Report> reports;
 	@Option(names = "--classpath", paramLabel = "<path>[,<path>...]",
 		description = "A colon-separated list of JARs to include in the classpath (Windows: semi-colon), " +
 			"shared by --v1 and --v2")
@@ -97,7 +97,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	private Boolean sourceOnly;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
-			"this CSV file shares the same structure as the one produced by --format CSV")
+			"this CSV file shares the same structure as a CSV report")
 	private Path ignoredCsv;
 	@Option(names = "--config", paramLabel = "<path>",
 		description = "A roseau.yaml config file; CLI options take precedence over these options")
@@ -143,6 +143,30 @@ public final class RoseauCLI implements Callable<Integer> {
 			.toList();
 	}
 
+	private static final class ReportOptionConverter implements CommandLine.ITypeConverter<RoseauOptions.Report> {
+		@Override
+		public RoseauOptions.Report convert(String value) {
+			int separator = value.indexOf('=');
+			if (separator <= 0 || separator == value.length() - 1) {
+				throw new CommandLine.TypeConversionException("Expected FORMAT=PATH");
+			}
+
+			String formatValue = value.substring(0, separator).trim();
+			String pathValue = value.substring(separator + 1).trim();
+			if (formatValue.isEmpty() || pathValue.isEmpty()) {
+				throw new CommandLine.TypeConversionException("Expected FORMAT=PATH");
+			}
+
+			try {
+				BreakingChangesFormatterFactory format = BreakingChangesFormatterFactory.valueOf(
+					formatValue.toUpperCase(Locale.ROOT));
+				return new RoseauOptions.Report(Path.of(pathValue), format);
+			} catch (IllegalArgumentException e) {
+				throw new CommandLine.TypeConversionException("Unknown report format: " + formatValue);
+			}
+		}
+	}
+
 	private void writeApiReport(LibraryTypes types, Path apiPath) {
 		try {
 			if (apiPath.getParent() != null) {
@@ -179,10 +203,6 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("Cannot find v2: %s".formatted(v2Path));
 		}
 
-		if (reportPath != null && format == null) {
-			throw new RoseauException("--format option required with --report");
-		}
-
 		Path v1PomPath = options.v1().classpath().pom();
 		if (v1PomPath != null && !Files.isRegularFile(v1PomPath)) {
 			throw new RoseauException("Cannot find pom: %s".formatted(v1PomPath));
@@ -216,9 +236,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
 		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
-		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
-			? List.of(new RoseauOptions.Report(reportPath, format))
-			: List.of();
+		List<RoseauOptions.Report> reportsCli = reports == null ? List.of() : List.copyOf(reports);
 		return new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
 	}
 
