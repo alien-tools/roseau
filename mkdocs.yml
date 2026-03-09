@@ -1,6 +1,9 @@
 site_name: Roseau
 site_url: https://alien-tools.github.io/roseau
 site_description: Roseau checks breaking changes and binary or source compatibility between two versions of a Java library.
+exclude_docs: |
+  requirements-docs.in
+  requirements-docs.txt
 
 theme:
   name: material
