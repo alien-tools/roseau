@@ -78,8 +78,15 @@ assemble:
       stereotype: CLI
       executable: roseau
       imageName: roseau-{{projectVersion}}
+      jdeps:
+        multiRelease: "25"
+        ignoreMissingDeps: true
+        targets:
+          - cli/target/roseau-cli-{{projectVersion}}.jar
       mainJar:
-        path: cli/target/roseau-{{projectVersion}}.jar
+        path: cli/target/roseau-cli-{{projectVersion}}.jar
+      jars:
+        - pattern: cli/target/jlink-jars/*.jar
       targetJdks:
         - path: '{{Env.ROSEAU_JLINK_LINUX_X86_64_JDK}}'
           platform: linux-x86_64
