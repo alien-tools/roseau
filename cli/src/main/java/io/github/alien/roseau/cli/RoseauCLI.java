@@ -18,6 +18,8 @@ import picocli.CommandLine.Model.CommandSpec;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -351,10 +353,30 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	static final class VersionProvider implements CommandLine.IVersionProvider {
+		private static final String VERSION_RESOURCE = "/roseau-version.txt";
+
 		@Override
 		public String[] getVersion() {
-			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.6.0-SNAPSHOT");
-			return new String[]{"Roseau " + impl};
+			return new String[]{"Roseau " + resolveVersion()};
+		}
+
+		static String resolveVersion() {
+			return Optional.ofNullable(RoseauCLI.class.getPackage().getImplementationVersion())
+				.or(VersionProvider::readVersionResource)
+				.orElse("unknown");
+		}
+
+		private static Optional<String> readVersionResource() {
+			try (InputStream in = RoseauCLI.class.getResourceAsStream(VERSION_RESOURCE)) {
+				if (in == null) {
+					return Optional.empty();
+				}
+
+				String version = new String(in.readAllBytes(), StandardCharsets.UTF_8).trim();
+				return version.isEmpty() ? Optional.empty() : Optional.of(version);
+			} catch (IOException e) {
+				return Optional.empty();
+			}
 		}
 	}
 }

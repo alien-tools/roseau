@@ -36,6 +36,14 @@ class RoseauCLITest {
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
+	@Test
+	void version_uses_build_version() {
+		var exitCode = cmd.execute("--version");
+
+		assertThat(out.toString()).contains("Roseau 0.6.0-SNAPSHOT");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
 	// --- Diffs --- //
 	@Test
 	void simple_source_diff() {
