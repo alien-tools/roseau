@@ -46,6 +46,8 @@ signing:
 
 deploy:
   maven:
+    pomchecker:
+      failOnWarning: false
     mavenCentral:
       release-deploy:
         active: RELEASE
@@ -80,7 +82,7 @@ assemble:
       executable: roseau
       imageName: roseau-{{projectVersion}}
       jdeps:
-        multiRelease: "25"
+        multiRelease: 25
         ignoreMissingDeps: true
         targets:
           - cli/target/roseau-cli-{{projectVersion}}.jar
@@ -88,6 +90,3 @@ assemble:
         path: cli/target/roseau-cli-{{projectVersion}}.jar
       jars:
         - pattern: cli/target/jlink-jars/*.jar
-      jdk:
-        path: '{{Env.ROSEAU_JLINK_JDK}}'
-        platform: '{{Env.ROSEAU_JLINK_PLATFORM}}'

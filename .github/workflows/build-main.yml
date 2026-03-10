@@ -29,9 +29,7 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
-      - name: Run tests
-        id: verify
-        continue-on-error: true
+      - name: Verify build
         run: ./mvnw --batch-mode verify
       - name: Build tests report
         uses: dorny/test-reporter@v2
@@ -43,11 +41,8 @@ jobs:
             **/target/failsafe-reports/*.xml
           reporter: java-junit
           fail-on-error: true
-      - name: Fail if tests failed
-        if: steps.verify.outcome == 'failure'
-        run: exit 1
       - name: Stage Maven artifacts
-        run: ./mvnw --batch-mode -DskipTests deploy -DaltDeploymentRepository=local::default::file:target/staging-deploy
+        run: ./mvnw --batch-mode -DskipTests deploy -DaltDeploymentRepository=local::file:target/staging-deploy
       - name: Archive Maven staging repository
         run: tar -C target -czf target/maven-staging.tar.gz staging-deploy
       - name: Upload Maven staging repository
@@ -98,14 +93,9 @@ jobs:
         run: ./mvnw --batch-mode -pl cli -am -DskipTests clean package
       - name: Assemble jlink archive
         shell: bash
-        run: ROSEAU_JLINK_JDK="$JAVA_HOME" ROSEAU_JLINK_PLATFORM="${{ matrix.platform }}" ./mvnw --batch-mode -N org.jreleaser:jreleaser-maven-plugin:1.22.0:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.git.root.search=true -Djreleaser.yolo=true
+        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.git.root.search=true -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
         env:
-          JRELEASER_GITHUB_TOKEN: dummy
-          JRELEASER_GPG_SECRET_KEY: dummy
-          JRELEASER_GPG_PASSPHRASE: dummy
-          JRELEASER_MAVENCENTRAL_USERNAME: dummy
-          JRELEASER_MAVENCENTRAL_TOKEN: dummy
-          JRELEASER_MAVENCENTRAL_NAMESPACE: io.github.alien-tools
+          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
       - name: Upload jlink archive
         uses: actions/upload-artifact@v4
         with:
@@ -152,9 +142,9 @@ jobs:
           merge-multiple: true
           path: target/jreleaser/assemble/roseau-standalone/jlink
       - name: Publish snapshots with JReleaser
-        run: ROSEAU_JLINK_JDK="$JAVA_HOME" ROSEAU_JLINK_PLATFORM=linux-x86_64 ./mvnw --batch-mode -N org.jreleaser:jreleaser-maven-plugin:1.22.0:release -Djreleaser.config.file=jreleaser.yml -Djreleaser.git.root.search=true -Djreleaser.yolo=true
+        run: ./mvnw --batch-mode -N jreleaser:release -Djreleaser.config.file=jreleaser.yml -Djreleaser.git.root.search=true
         env:
-          JRELEASER_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
