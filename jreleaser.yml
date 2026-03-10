@@ -42,6 +42,7 @@ signing:
   pgp:
     active: ALWAYS
     armored: true
+    verify: true
 
 deploy:
   maven:
@@ -87,12 +88,6 @@ assemble:
         path: cli/target/roseau-cli-{{projectVersion}}.jar
       jars:
         - pattern: cli/target/jlink-jars/*.jar
-      targetJdks:
-        - path: '{{Env.ROSEAU_JLINK_LINUX_X86_64_JDK}}'
-          platform: linux-x86_64
-        - path: '{{Env.ROSEAU_JLINK_OSX_X86_64_JDK}}'
-          platform: osx-x86_64
-        - path: '{{Env.ROSEAU_JLINK_OSX_AARCH64_JDK}}'
-          platform: osx-aarch_64
-        - path: '{{Env.ROSEAU_JLINK_WINDOWS_X86_64_JDK}}'
-          platform: windows-x86_64
+      jdk:
+        path: '{{Env.ROSEAU_JLINK_JDK}}'
+        platform: '{{Env.ROSEAU_JLINK_PLATFORM}}'
