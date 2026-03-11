@@ -2,6 +2,8 @@
 
 This page covers the `--diff` workflow flags exposed by the CLI.
 
+Most runs only need `--diff`, `--v1`, and `--v2`. The remaining options refine dependency resolution, filtering, reporting, and CI behavior.
+
 ## Modes
 
 !!! note

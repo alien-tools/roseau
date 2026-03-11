@@ -4,46 +4,36 @@ Roseau compares the API surface of two library versions. The inputs can be JAR f
 
 For the exact API-surface rules, see [API Surface](api-surface.md).
 
-## Choose an Input Pair
+## Choose the Input Pair
 
-| Input pair | Typical use |
+| Input pair | Best fit |
 | --- | --- |
 | JAR vs JAR | release-to-release compatibility checks |
 | source vs source | branch, commit, or pull-request validation |
 | JAR vs source | compare a published baseline against local changes |
 
-## JAR vs JAR
+## Base Command
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --diff \
-  --v1 path/to/library-1.0.0.jar \
-  --v2 path/to/library-2.0.0.jar
+  --v1 <old-version> \
+  --v2 <new-version>
 ```
 
-## Source vs Source
+Then replace the inputs according to the workflow:
 
-```bash
-java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
-  --diff \
-  --v1 path/to/project-v1/src \
-  --v2 path/to/project-v2/src
-```
+| Workflow | Example |
+| --- | --- |
+| JAR vs JAR | `--v1 library-1.0.0.jar --v2 library-2.0.0.jar` |
+| source vs source | `--v1 project-v1/src --v2 project-v2/src` |
+| JAR vs source | `--v1 library-1.0.0.jar --v2 project-v2/src` |
 
-## JAR vs Source
+## Add Dependencies When Resolution Matters
 
-```bash
-java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
-  --diff \
-  --v1 path/to/library-1.0.0.jar \
-  --v2 path/to/project-v2/src
-```
+Dependency information matters when signatures, supertypes, annotations, or generic types refer to external types that are not present in the analyzed inputs.
 
-## Add Dependencies When Needed
-
-Roseau can require dependency types to resolve signatures, supertypes, and annotations correctly.
-
-Use a shared classpath:
+Use a shared classpath when both versions need the same dependencies:
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -53,7 +43,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --classpath libs/dependency-a.jar:libs/dependency-b.jar
 ```
 
-Or derive the classpath from a `pom.xml`:
+Use a shared `pom.xml` when the classpath should be derived from Maven metadata:
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -63,15 +53,36 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --pom path/to/pom.xml
 ```
 
-## Common Flags
+Use per-version options when the baseline and current version do not share the same dependency set:
 
-| Flag | Effect |
+```bash
+java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
+  --diff \
+  --v1 path/to/v1.jar \
+  --v2 path/to/v2.jar \
+  --v1-classpath libs/old-dependency.jar \
+  --v2-classpath libs/new-dependency.jar
+```
+
+## Common Variants
+
+| Goal | Option |
 | --- | --- |
-| `--plain` | disables ANSI colors for logs and CI |
-| `--binary-only` | keeps only binary-breaking changes |
-| `--source-only` | keeps only source-breaking changes |
-| `--ignored` | removes accepted changes listed in a CSV file |
-| `--report=FORMAT=PATH` | writes one report file; repeatable |
+| plain log output | `--plain` |
+| only binary-breaking changes | `--binary-only` |
+| only source-breaking changes | `--source-only` |
+| accepted-change baseline | `--ignored accepted.csv` |
+| report artifacts | `--report=FORMAT=PATH` |
 
 !!! note
     `--binary-only` and `--source-only` are mutually exclusive.
+
+## A Practical Reading of the Result
+
+In most runs, the first questions are:
+
+1. Which symbol changed?
+2. Which breaking change kind was reported?
+3. Is the change source-breaking, binary-breaking, or both?
+
+The [Breaking Change Kinds](../breaking-change-kinds.md) page answers the third question. The [Report Formats](reports.md) page covers the best output format for review, automation, or accepted-change baselines.

@@ -17,6 +17,15 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --plain
 ```
 
+## What Roseau Does
+
+Roseau works in two steps:
+
+1. It extracts the API surface of each input version.
+2. It compares those two API models and reports the breaking changes it finds.
+
+This distinction matters because Roseau does not diff every declaration it can parse. It compares the declarations that belong to the exposed API surface after visibility, module, and exclusion rules are applied.
+
 ## Documentation Map
 
 <div class="grid cards" markdown>
@@ -53,7 +62,18 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 </div>
 
-## Common Tasks
+## Common Starting Points
+
+| If the goal is... | Start here |
+| --- | --- |
+| run a first diff locally | [Quickstart](quickstart.md) |
+| compare two released JARs or two source trees | [Compare Two Versions](guides/compare.md) |
+| fail CI when compatibility breaks | [Use in CI](guides/ci.md) |
+| define shared settings in `roseau.yaml` | [Configuration File](guides/config.md) |
+| generate HTML, JSON, CSV, or Markdown artifacts | [Report Formats](guides/reports.md) |
+| understand why a declaration is or is not compared | [API Surface](guides/api-surface.md) |
+
+## Common Commands
 
 | Task | Command |
 | --- | --- |

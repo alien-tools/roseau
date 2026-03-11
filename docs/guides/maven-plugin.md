@@ -34,6 +34,10 @@ mvn verify
 
 The plug-in runs during the `verify` phase. It compares the JAR produced by the current build against the baseline and prints any breaking changes to the Maven log.
 
+## When the Plug-in Fits Best
+
+The plug-in is the best fit when the current artifact is already built by Maven and the compatibility check belongs in the normal `verify` lifecycle. The CLI remains more convenient for source-tree comparisons and ad hoc local checks.
+
 ## Choose a Baseline
 
 The baseline can be a local JAR file or Maven coordinates resolved from repositories.
@@ -61,7 +65,7 @@ The baseline can be a local JAR file or Maven coordinates resolved from reposito
 !!! note
     When both `baselineJar` and `baselineVersion` are provided, `baselineVersion` takes precedence.
 
-## Fail the Build on Breaking Changes
+## Choose the Failure Policy
 
 By default, the plug-in reports breaking changes but does not fail the build.
 
@@ -81,7 +85,7 @@ For finer control:
 | `failOnBinaryIncompatibility` | a binary-breaking change is found |
 | `failOnSourceIncompatibility` | a source-breaking change is found |
 
-## Filter by Compatibility Kind
+## Narrow the Scope
 
 Report only binary-breaking or only source-breaking changes:
 
@@ -97,11 +101,11 @@ Or:
 ```xml
 <configuration>
   <baselineJar>${project.basedir}/old.jar</baselineJar>
-  <sourceOnly>true</sourceOnly>
+<sourceOnly>true</sourceOnly>
 </configuration>
 ```
 
-## Generate Reports
+## Write Report Artifacts
 
 Report files are written under `reportDirectory`, which defaults to `${project.build.directory}/roseau`.
 
@@ -123,7 +127,7 @@ Report files are written under `reportDirectory`, which defaults to `${project.b
 
 Available formats: `CSV`, `HTML`, `JSON`, `MD`.
 
-## Provide a Classpath or YAML Config
+## Reuse Classpath or YAML Configuration
 
 The plug-in automatically includes the current project's compile-scope dependencies in the classpath.
 
@@ -193,7 +197,7 @@ Or in the POM:
 
 ```xml
 <configuration>
-  <skip>true</skip>
+<skip>true</skip>
 </configuration>
 ```
 

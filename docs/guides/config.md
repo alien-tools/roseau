@@ -4,7 +4,16 @@
 
 Configuration can also refine what Roseau considers part of the API surface. For the baseline accessibility rules, see [What Counts as API](api-surface.md).
 
-## Load a Config File
+## When a Config File Helps
+
+`roseau.yaml` is useful when one of these patterns appears repeatedly:
+
+- the same classpath or `pom.xml` is supplied on every run
+- the same exclusions define the supported API surface
+- the same report files are generated in CI or release workflows
+- the same ignored-change baseline is reused against a fixed reference version
+
+## Load the File
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -14,7 +23,9 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/v2.jar
 ```
 
-## Example
+CLI options override config file values.
+
+## A Typical File
 
 ```yaml
 common:
@@ -49,9 +60,9 @@ reports:
     format: HTML
 ```
 
-## Sections
+## How the File Is Read
 
-| Section | Purpose |
+| Section | Meaning |
 | --- | --- |
 | `common` | shared classpath and exclusion rules |
 | `v1` | input path and overrides for the baseline version |
@@ -59,9 +70,21 @@ reports:
 | `diff` | filtering options such as `ignore`, `binaryOnly`, and `sourceOnly` |
 | `reports` | report files to generate |
 
-CLI options override config file values.
+## Typical Patterns
 
-## Exclude Declarations from the API Surface
+### Reuse the Same Baseline and Reports
+
+```yaml
+v1:
+  location: /path/to/library-1.0.0.jar
+v2:
+  location: /path/to/library-1.1.0.jar
+reports:
+  - file: reports/breaking-changes.html
+    format: HTML
+```
+
+### Define the Supported API Surface
 
 Use `excludes` when some declarations are technically accessible but should not be treated as supported API.
 
@@ -71,4 +94,23 @@ Common examples:
 - stability annotations such as `com.google.common.annotations.Beta`
 - status annotations such as `org.apiguardian.api.API` with `status = INTERNAL`
 
+```yaml
+common:
+  excludes:
+    names:
+      - com\.example\.internal\..*
+    annotations:
+      - name: com.google.common.annotations.Beta
+      - name: org.apiguardian.api.API
+        args:
+          status: org.apiguardian.api.API$Status.INTERNAL
+```
+
 Roseau applies these exclusions before diffing. If a type is excluded, its nested declarations and members are excluded as well.
+
+### Keep an Accepted-Change Baseline
+
+```yaml
+diff:
+  ignore: reports/accepted.csv
+```

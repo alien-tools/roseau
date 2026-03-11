@@ -4,6 +4,8 @@ This page is the exhaustive reference for the `roseau:check` goal configuration.
 
 The setup guide, baseline strategies, and report examples live in [Maven Plug-in](../guides/maven-plugin.md).
 
+Most configurations only need a baseline plus an optional failure policy. The table below covers the full parameter set when a build requires more control.
+
 ## Goal
 
 - Goal: `roseau:check`

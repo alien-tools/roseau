@@ -32,7 +32,18 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 
 Roseau compares the library API surface, not every declaration in the input. For the exact rules, see [What Counts as API](guides/api-surface.md).
 
-## 3. Write Report Files
+## 3. Read the Result
+
+Typical CLI output looks like this:
+
+```text
+METHOD_REMOVED com.example.Library.m(int)
+  com/example/Library.java:18
+```
+
+The first line identifies the breaking change kind and the impacted symbol. The second line points to the declaration location in the newer version when location data is available.
+
+## 4. Write Report Files
 
 `--report=FORMAT=PATH` can be repeated in a single run.
 
@@ -45,7 +56,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --report=HTML=reports/breaking-changes.html
 ```
 
-## 4. Gate a Build or Script
+## 5. Gate a Build or Script
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -55,3 +66,12 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --fail-on-bc \
   --plain
 ```
+
+## After the First Run
+
+| Next question | Page |
+| --- | --- |
+| Which input pair fits the workflow? | [Compare Two Versions](guides/compare.md) |
+| Which declarations are considered API? | [What Counts as API](guides/api-surface.md) |
+| Which report format fits the workflow? | [Report Formats](guides/reports.md) |
+| Which change kinds can appear? | [Breaking Change Kinds](breaking-change-kinds.md) |

@@ -2,7 +2,7 @@
 
 Roseau can write one or more report files during the same diff run.
 
-## CLI Syntax
+## Report Syntax
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -12,15 +12,26 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --report=JSON=reports/breaking-changes.json
 ```
 
-## Formats
+`--report=FORMAT=PATH` can be repeated to produce several artifacts in one pass.
 
-| Format | Typical use |
+## Choose a Format
+
+| Format | Best fit |
 | --- | --- |
 | `CLI` | terminal-style text written to a file |
 | `CSV` | review, diffing, and reuse with `--ignored` |
 | `HTML` | human-readable report artifacts |
 | `JSON` | automation and post-processing |
 | `MD` | Markdown reports for release notes or pull requests |
+
+## Recommended Combinations
+
+| Workflow | Recommended reports |
+| --- | --- |
+| local review | `HTML` or `CLI` |
+| CI artifact retention | `JSON` or `CSV` |
+| accepted-change baseline | `CSV` |
+| lightweight sharing in issue trackers or changelogs | `MD` |
 
 ## Multiple Reports from the CLI
 
@@ -35,6 +46,8 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
 ```
 
 ## Multiple Reports from `roseau.yaml`
+
+For repeated workflows, the same report list can live in configuration:
 
 ```yaml
 reports:
