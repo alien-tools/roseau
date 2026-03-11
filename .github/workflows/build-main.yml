@@ -1,11 +1,9 @@
-name: Maven Build & Test (main)
+name: Publish snapshots from main
 
 on:
   push:
     branches:
       - main
-  schedule:
-    - cron: '0 0 * * *'
   workflow_dispatch:
 
 concurrency:
@@ -13,46 +11,140 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  build:
+  stage:
+    name: Build, test, and stage Maven artifacts
+    if: github.ref == 'refs/heads/main'
     runs-on: ubuntu-latest
     permissions:
       contents: read
       checks: write
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
       - name: Set up JDK 25
         uses: actions/setup-java@v5
         with:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
-          server-id: central
-          server-username: MAVEN_USERNAME
-          server-password: MAVEN_CENTRAL_TOKEN
-          gpg-private-key: ${{ secrets.GPG_PRIVATE_KEY }}
-          gpg-passphrase: MAVEN_GPG_PASSPHRASE
-      - name: Build with Maven
-        run: ./mvnw --batch-mode -DskipTests package
-      - name: Run tests
-        id: tests
-        continue-on-error: true
+      - name: Verify build
         run: ./mvnw --batch-mode verify
       - name: Build tests report
         uses: dorny/test-reporter@v2
         if: always()
         with:
           name: Maven Tests
-          path: '**/target/surefire-reports/*.xml'
+          path: |
+            **/target/surefire-reports/*.xml
+            **/target/failsafe-reports/*.xml
           reporter: java-junit
           fail-on-error: true
-      - name: Fail if tests failed
-        if: steps.tests.outcome == 'failure'
-        run: exit 1
-      - name: Publish SNAPSHOT
-        if: ${{ success() && github.event_name == 'push' }}
-        run: ./mvnw --batch-mode -DskipTests -Ppublish-sonatype deploy
+      - name: Stage Maven artifacts
+        run: ./mvnw --batch-mode -DskipTests deploy -DaltDeploymentRepository=local::file:target/staging-deploy
+      - name: Archive Maven staging repository
+        run: tar -C target -czf target/maven-staging.tar.gz staging-deploy
+      - name: Upload Maven staging repository
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: maven-staging
+          path: target/maven-staging.tar.gz
+          if-no-files-found: error
+      - name: Upload shaded CLI JAR
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: single-jar
+          path: cli/target/roseau-[0-9]*.jar
+          if-no-files-found: error
+
+  assemble-jlink:
+    name: Assemble jlink ${{ matrix.platform }}
+    needs: stage
+    if: github.ref == 'refs/heads/main'
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+    timeout-minutes: 30
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - runner: ubuntu-latest
+            platform: linux-x86_64
+          - runner: macos-15-intel
+            platform: osx-x86_64
+          - runner: macos-latest
+            platform: osx-aarch_64
+          - runner: windows-latest
+            platform: windows-x86_64
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Build CLI artifacts
+        shell: bash
+        run: ./mvnw --batch-mode -pl cli -am -DskipTests clean package
+      - name: Assemble jlink archive
+        shell: bash
+        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
+      - name: Upload jlink archive
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          name: jlink-${{ matrix.platform }}
+          path: target/jreleaser/assemble/roseau-standalone/jlink/*.zip
+          if-no-files-found: error
+
+  publish:
+    name: Publish Maven snapshots and rolling prerelease
+    needs:
+      - stage
+      - assemble-jlink
+    if: github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 25
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Download Maven staging repository
+        uses: actions/download-artifact@v5
+        with:
+          name: maven-staging
+          path: target
+      - name: Restore Maven staging repository
+        run: tar -C target -xzf target/maven-staging.tar.gz
+      - name: Download shaded CLI JAR
+        uses: actions/download-artifact@v5
+        with:
+          name: single-jar
+          path: cli/target
+      - name: Download jlink archives
+        uses: actions/download-artifact@v5
+        with:
+          pattern: jlink-*
+          merge-multiple: true
+          path: target/jreleaser/assemble/roseau-standalone/jlink
+      - name: Publish snapshots with JReleaser
+        run: ./mvnw --batch-mode -N jreleaser:full-release -Djreleaser.config.file=jreleaser.yml
         env:
-          MAVEN_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          MAVEN_CENTRAL_TOKEN: ${{ secrets.NEXUS_PASSWORD }}
-          MAVEN_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          JRELEASER_NEXUS2_SNAPSHOT_DEPLOY_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          JRELEASER_NEXUS2_SNAPSHOT_DEPLOY_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
