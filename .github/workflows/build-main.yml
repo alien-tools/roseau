@@ -46,13 +46,13 @@ jobs:
       - name: Archive Maven staging repository
         run: tar -C target -czf target/maven-staging.tar.gz staging-deploy
       - name: Upload Maven staging repository
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: maven-staging
           path: target/maven-staging.tar.gz
           if-no-files-found: error
       - name: Upload shaded CLI JAR
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: single-jar
           path: cli/target/roseau-[0-9]*.jar
@@ -95,7 +95,7 @@ jobs:
         shell: bash
         run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
       - name: Upload jlink archive
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7.0.0
         with:
           name: jlink-${{ matrix.platform }}
           path: target/jreleaser/assemble/roseau-standalone/jlink/*.zip

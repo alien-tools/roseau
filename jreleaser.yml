@@ -13,8 +13,7 @@ project:
   inceptionYear: 2023
   stereotype: CLI
   snapshot:
-    label: early-access
-    fullChangelog: true
+    label: v{{projectVersion}}
   links:
     homepage: https://github.com/alien-tools/roseau
     documentation: https://alien-tools.github.io/roseau/
@@ -46,10 +45,13 @@ signing:
 
 deploy:
   maven:
+    pomchecker:
+      failOnWarning: false
     mavenCentral:
       release-deploy:
         active: RELEASE
         url: https://central.sonatype.com/api/v1/publisher
+        applyMavenCentralRules: true
         stagingRepositories:
           - target/staging-deploy
     nexus2:
