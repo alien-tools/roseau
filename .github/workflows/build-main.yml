@@ -55,7 +55,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: single-jar
-          path: cli/target/roseau-*.jar
+          path: cli/target/roseau-[0-9]*.jar
           if-no-files-found: error
 
   assemble-jlink:
@@ -93,9 +93,7 @@ jobs:
         run: ./mvnw --batch-mode -pl cli -am -DskipTests clean package
       - name: Assemble jlink archive
         shell: bash
-        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.git.root.search=true -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
-        env:
-          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
+        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
       - name: Upload jlink archive
         uses: actions/upload-artifact@v4
         with:
@@ -142,12 +140,11 @@ jobs:
           merge-multiple: true
           path: target/jreleaser/assemble/roseau-standalone/jlink
       - name: Publish snapshots with JReleaser
-        run: ./mvnw --batch-mode -N jreleaser:release -Djreleaser.config.file=jreleaser.yml -Djreleaser.git.root.search=true
+        run: ./mvnw --batch-mode -N jreleaser:full-release
         env:
           JRELEASER_GITHUB_TOKEN: ${{ github.token }}
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
           JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
-          JRELEASER_MAVENCENTRAL_USERNAME: ${{ secrets.NEXUS_USERNAME }}
-          JRELEASER_MAVENCENTRAL_TOKEN: ${{ secrets.NEXUS_PASSWORD }}
-          JRELEASER_MAVENCENTRAL_NAMESPACE: io.github.alien-tools
+          JRELEASER_NEXUS2_SNAPSHOT_DEPLOY_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          JRELEASER_NEXUS2_SNAPSHOT_DEPLOY_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
