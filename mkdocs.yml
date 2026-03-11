@@ -9,6 +9,7 @@ theme:
   name: material
   features:
     - navigation.instant
+    - navigation.sections
     - navigation.top
     - content.code.copy
 
@@ -30,15 +31,19 @@ markdown_extensions:
   - pymdownx.superfences
 
 nav:
-  - Home: index.md
-  - Quickstart: quickstart.md
-  - Breaking Change Kinds: breaking-change-kinds.md
-  - CLI Options: reference/cli.md
+  - Getting Started:
+      - Overview: index.md
+      - Quickstart: quickstart.md
   - Guides:
-      - What Counts as API: guides/api-surface.md
-      - Check Breaking Changes: guides/compare.md
-      - Maven Plug-in: guides/maven-plugin.md
+      - Compare Two Versions: guides/compare.md
       - Use in CI: guides/ci.md
       - Ignore Accepted Breaking Changes: guides/ignored.md
       - Configuration File: guides/config.md
       - Report Formats: guides/reports.md
+      - Maven Plug-in: guides/maven-plugin.md
+  - Concepts:
+      - API Surface: guides/api-surface.md
+      - Breaking Change Kinds: breaking-change-kinds.md
+  - Reference:
+      - CLI Options: reference/cli.md
+      - Maven Plug-in Options: reference/maven-plugin.md

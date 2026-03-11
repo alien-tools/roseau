@@ -1,6 +1,6 @@
 # Breaking Change Kinds
 
-Use this page when you need the full list of breaking changes Roseau detects.
+This catalog lists every breaking change kind Roseau reports.
 
 Compatibility labels:
 

@@ -1,25 +1,38 @@
 # Reports
 
-Use this page to write Roseau results to files.
+Roseau can write one or more report files during the same diff run.
 
-## Single Report from the CLI
+## CLI Syntax
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --diff \
   --v1 path/to/v1.jar \
   --v2 path/to/v2.jar \
-  --report reports/breaking-changes.json \
-  --format JSON
+  --report=JSON=reports/breaking-changes.json
 ```
 
 ## Formats
 
-- `CLI`: terminal-style text
-- `CSV`: easy to review, diff, and reuse with `--ignored`
-- `HTML`: readable report for people
-- `JSON`: structured output for automation
-- `MD`: Markdown report
+| Format | Typical use |
+| --- | --- |
+| `CLI` | terminal-style text written to a file |
+| `CSV` | review, diffing, and reuse with `--ignored` |
+| `HTML` | human-readable report artifacts |
+| `JSON` | automation and post-processing |
+| `MD` | Markdown reports for release notes or pull requests |
+
+## Multiple Reports from the CLI
+
+```bash
+java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
+  --diff \
+  --v1 path/to/v1.jar \
+  --v2 path/to/v2.jar \
+  --report=CSV=reports/breaking-changes.csv \
+  --report=HTML=reports/breaking-changes.html \
+  --report=JSON=reports/breaking-changes.json
+```
 
 ## Multiple Reports from `roseau.yaml`
 
@@ -32,9 +45,3 @@ reports:
   - file: reports/breaking-changes.json
     format: JSON
 ```
-
-## Next
-
-- [Check Breaking Changes](compare.md)
-- [Use in CI](ci.md)
-- [Ignore Accepted Breaking Changes](ignored.md)

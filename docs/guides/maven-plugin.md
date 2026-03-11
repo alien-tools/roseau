@@ -1,18 +1,18 @@
 # Maven Plug-in
 
-Use this page to check breaking changes automatically during your Maven build.
+The Maven plug-in runs Roseau during `verify` and compares the current artifact against a baseline.
 
-The Roseau Maven plug-in compares the current artifact against a baseline during the `verify` phase and can fail the build when breaking changes are detected.
+This guide covers setup and the most common configurations. The exhaustive parameter list lives in [Maven Plug-in Options](../reference/maven-plugin.md).
 
 ## Minimal Setup
 
-Add the plug-in to your `pom.xml` and provide a baseline to compare against:
+Add the plug-in to `pom.xml` and provide a baseline:
 
 ```xml
 <plugin>
   <groupId>io.github.alien-tools</groupId>
   <artifactId>roseau-maven-plugin</artifactId>
-  <version>0.6.0-SNAPSHOT</version>
+  <version>&lt;version&gt;</version>
   <executions>
     <execution>
       <goals>
@@ -36,7 +36,7 @@ The plug-in runs during the `verify` phase. It compares the JAR produced by the 
 
 ## Choose a Baseline
 
-You can specify a baseline as a local JAR file or as Maven coordinates that are resolved from your repositories.
+The baseline can be a local JAR file or Maven coordinates resolved from repositories.
 
 **Local JAR file**
 
@@ -58,11 +58,12 @@ You can specify a baseline as a local JAR file or as Maven coordinates that are 
 </configuration>
 ```
 
-When both are provided, `baselineVersion` takes precedence.
+!!! note
+    When both `baselineJar` and `baselineVersion` are provided, `baselineVersion` takes precedence.
 
 ## Fail the Build on Breaking Changes
 
-By default, the plug-in reports breaking changes but does not fail the build. Use one of the following options to gate your build:
+By default, the plug-in reports breaking changes but does not fail the build.
 
 ```xml
 <configuration>
@@ -102,7 +103,7 @@ Or:
 
 ## Generate Reports
 
-Write reports to files. Relative paths are resolved against `reportDirectory`, which defaults to `${project.build.directory}/roseau`.
+Report files are written under `reportDirectory`, which defaults to `${project.build.directory}/roseau`.
 
 ```xml
 <configuration>
@@ -122,7 +123,7 @@ Write reports to files. Relative paths are resolved against `reportDirectory`, w
 
 Available formats: `CSV`, `HTML`, `JSON`, `MD`.
 
-## Provide a Classpath
+## Provide a Classpath or YAML Config
 
 The plug-in automatically includes the current project's compile-scope dependencies in the classpath.
 
@@ -157,6 +158,17 @@ You can also use a POM file to derive classpath entries:
 </configuration>
 ```
 
+Supply a `roseau.yaml` file when the same exclusions or report definitions already exist for the CLI:
+
+```xml
+<configuration>
+  <baselineJar>${project.basedir}/old.jar</baselineJar>
+  <configFile>roseau.yaml</configFile>
+</configuration>
+```
+
+Maven parameters override YAML values.
+
 ## Export API Models
 
 Export the API models as JSON for archival or further analysis:
@@ -168,19 +180,6 @@ Export the API models as JSON for archival or further analysis:
   <exportCurrentApi>${project.build.directory}/roseau/current-api.json</exportCurrentApi>
 </configuration>
 ```
-
-## Use a Configuration File
-
-Supply a `roseau.yaml` file. Maven parameters take precedence over YAML options.
-
-```xml
-<configuration>
-  <baselineJar>${project.basedir}/old.jar</baselineJar>
-  <configFile>roseau.yaml</configFile>
-</configuration>
-```
-
-See [Configuration File](config.md) for the YAML format.
 
 ## Skip Execution
 
@@ -200,34 +199,3 @@ Or in the POM:
 
 !!! note
     The plug-in automatically skips projects with `pom` packaging.
-
-## Configuration Reference
-
-All parameters can be set as Maven properties on the command line using `-D`.
-
-| Parameter | Property | Default | Description |
-| --- | --- | --- | --- |
-| `baselineVersion` | `roseau.baselineVersion` | — | Baseline Maven coordinates (groupId, artifactId, version) |
-| `baselineJar` | `roseau.baselineJar` | — | Path to a baseline JAR file |
-| `failOnIncompatibility` | `roseau.failOnIncompatibility` | `false` | Fail on any breaking change |
-| `failOnBinaryIncompatibility` | `roseau.failOnBinaryIncompatibility` | `false` | Fail on binary-breaking changes |
-| `failOnSourceIncompatibility` | `roseau.failOnSourceIncompatibility` | `false` | Fail on source-breaking changes |
-| `binaryOnly` | `roseau.binaryOnly` | — | Report only binary-breaking changes |
-| `sourceOnly` | `roseau.sourceOnly` | — | Report only source-breaking changes |
-| `reports` | — | — | List of report files to generate |
-| `reportDirectory` | `roseau.reportDirectory` | `${project.build.directory}/roseau` | Output directory for relative report paths |
-| `classpath` | — | — | Extra classpath entries for both versions |
-| `classpathPom` | — | — | POM for deriving shared classpath |
-| `baselineClasspath` | — | — | Extra classpath entries for the baseline |
-| `baselineClasspathPom` | — | — | POM for deriving baseline classpath |
-| `exportBaselineApi` | `roseau.exportBaselineApi` | — | Export baseline API as JSON |
-| `exportCurrentApi` | `roseau.exportCurrentApi` | — | Export current API as JSON |
-| `configFile` | `roseau.configFile` | — | Path to a `roseau.yaml` file |
-| `verbosity` | `roseau.verbosity` | — | Logging level: QUIET, NORMAL, VERBOSE, DEBUG |
-| `skip` | `roseau.skip` | `false` | Skip execution |
-
-## Next
-
-- [Use in CI](ci.md)
-- [Report Formats](reports.md)
-- [Configuration File](config.md)

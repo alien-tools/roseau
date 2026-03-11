@@ -1,8 +1,8 @@
 # Use in CI
 
-Use this page to make Roseau fail a build when breaking changes are detected.
+This workflow turns Roseau into a build gate.
 
-## Basic Command
+## Basic Gate
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -13,13 +13,15 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --plain
 ```
 
-This returns:
+## Exit Codes
 
-- `0`: the command succeeded and no breaking changes were found
-- `1`: `--fail-on-bc` was set and breaking changes were found
-- `2`: an error occurred
+| Code | Meaning |
+| --- | --- |
+| `0` | the check completed and no breaking changes were found |
+| `1` | `--fail-on-bc` was set and breaking changes were found |
+| `2` | the command failed before producing a result |
 
-## Write an Artifact
+## Store an Artifact
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -28,18 +30,11 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/v2.jar \
   --fail-on-bc \
   --plain \
-  --report reports/breaking-changes.json \
-  --format JSON
+  --report=JSON=reports/breaking-changes.json
 ```
 
 Typical CI choices:
 
-- use `--plain` for log output without ANSI escapes
-- use `--report` with `CSV` or `JSON` when you want to archive results
-- use `--ignored` when some breaking changes are already accepted
-
-## Next
-
-- [Check Breaking Changes](compare.md)
-- [Ignore Accepted Breaking Changes](ignored.md)
-- [Report Formats](reports.md)
+- `--plain` for log output without ANSI escapes
+- `--report=CSV=...` or `--report=JSON=...` for archived artifacts
+- `--ignored` when accepted changes already exist in a baseline CSV

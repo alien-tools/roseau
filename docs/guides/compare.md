@@ -1,14 +1,18 @@
-# Check Breaking Changes
+# Compare Two Versions
 
-Use this page to check breaking changes and compatibility between any two versions of a Java library.
+Roseau compares the API surface of two library versions. The inputs can be JAR files, source trees, or one of each.
 
-Roseau can compare two JARs, two source trees, or one JAR against one source tree.
+For the exact API-surface rules, see [API Surface](api-surface.md).
 
-Roseau compares the API surface of each input, not every declaration it can parse. For the exact rules, see [What Counts as API](api-surface.md).
+## Choose an Input Pair
 
-## Choose Your Input Pair
+| Input pair | Typical use |
+| --- | --- |
+| JAR vs JAR | release-to-release compatibility checks |
+| source vs source | branch, commit, or pull-request validation |
+| JAR vs source | compare a published baseline against local changes |
 
-**JAR vs JAR**
+## JAR vs JAR
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -17,7 +21,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/library-2.0.0.jar
 ```
 
-**Source vs source**
+## Source vs Source
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -26,7 +30,7 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/project-v2/src
 ```
 
-**JAR vs source**
+## JAR vs Source
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
@@ -35,55 +39,39 @@ java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --v2 path/to/project-v2/src
 ```
 
-## Useful Flags
+## Add Dependencies When Needed
 
-- `--plain`: disable ANSI colors, useful for logs and CI
-- `--binary-only`: only report binary-breaking changes
-- `--source-only`: only report source-breaking changes
-- `--report` with `--format`: write the report to a file
-- `--classpath` or `--pom`: provide dependencies when they matter for analysis
+Roseau can require dependency types to resolve signatures, supertypes, and annotations correctly.
 
-## Common Variants
-
-**Write an HTML report**
+Use a shared classpath:
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --diff \
   --v1 path/to/v1.jar \
   --v2 path/to/v2.jar \
-  --report reports/report.html \
-  --format HTML
+  --classpath libs/dependency-a.jar:libs/dependency-b.jar
 ```
 
-**Only binary-breaking changes**
+Or derive the classpath from a `pom.xml`:
 
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --diff \
   --v1 path/to/v1.jar \
   --v2 path/to/v2.jar \
-  --binary-only \
-  --plain
+  --pom path/to/pom.xml
 ```
 
-**Only source-breaking changes**
+## Common Flags
 
-```bash
-java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
-  --diff \
-  --v1 path/to/v1.jar \
-  --v2 path/to/v2.jar \
-  --source-only \
-  --plain
-```
+| Flag | Effect |
+| --- | --- |
+| `--plain` | disables ANSI colors for logs and CI |
+| `--binary-only` | keeps only binary-breaking changes |
+| `--source-only` | keeps only source-breaking changes |
+| `--ignored` | removes accepted changes listed in a CSV file |
+| `--report=FORMAT=PATH` | writes one report file; repeatable |
 
 !!! note
-    `--report` requires `--format`, and `--source-only` cannot be combined with `--binary-only`.
-
-## Next
-
-- [What Counts as API](api-surface.md)
-- [Report Formats](reports.md)
-- [Use in CI](ci.md)
-- [CLI Options](../reference/cli.md)
+    `--binary-only` and `--source-only` are mutually exclusive.

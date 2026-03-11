@@ -1,22 +1,20 @@
 # Configuration File
 
-Use this page when running Roseau with a `roseau.yaml` file is simpler than passing many CLI options.
+`roseau.yaml` keeps repeated diff settings in one file.
 
 Configuration can also refine what Roseau considers part of the API surface. For the baseline accessibility rules, see [What Counts as API](api-surface.md).
 
 ## Load a Config File
 
-Load a config file with:
-
 ```bash
 java -jar cli/target/roseau-cli-<version>-jar-with-dependencies.jar \
   --diff \
-  --config roseau.yaml
+  --config roseau.yaml \
+  --v1 path/to/v1.jar \
+  --v2 path/to/v2.jar
 ```
 
 ## Example
-
-Practical example:
 
 ```yaml
 common:
@@ -33,6 +31,12 @@ common:
         args:
           status: org.apiguardian.api.API$Status.INTERNAL
 
+v1:
+  location: /path/to/library-1.0.0.jar
+
+v2:
+  location: /path/to/library-2.0.0.jar
+
 diff:
   ignore: /path/to/ignored.csv
   binaryOnly: false
@@ -45,12 +49,15 @@ reports:
     format: HTML
 ```
 
-What the main sections do:
+## Sections
 
-- `common`: shared settings for both versions
-- `v1` and `v2`: per-version inputs and overrides
-- `diff`: diff filters such as `ignore`, `binaryOnly`, and `sourceOnly`
-- `reports`: output files to generate
+| Section | Purpose |
+| --- | --- |
+| `common` | shared classpath and exclusion rules |
+| `v1` | input path and overrides for the baseline version |
+| `v2` | input path and overrides for the current version |
+| `diff` | filtering options such as `ignore`, `binaryOnly`, and `sourceOnly` |
+| `reports` | report files to generate |
 
 CLI options override config file values.
 
@@ -65,10 +72,3 @@ Common examples:
 - status annotations such as `org.apiguardian.api.API` with `status = INTERNAL`
 
 Roseau applies these exclusions before diffing. If a type is excluded, its nested declarations and members are excluded as well.
-
-## Next
-
-- [What Counts as API](api-surface.md)
-- [Check Breaking Changes](compare.md)
-- [Report Formats](reports.md)
-- [CLI Options](../reference/cli.md)

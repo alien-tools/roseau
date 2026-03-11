@@ -116,7 +116,7 @@ This matches how protected members are used in practice: they matter only when c
 
 After applying the baseline Java visibility and module rules, Roseau applies the exclusions configured by the user.
 
-This lets you remove declarations that are technically accessible but should not be treated as supported API, such as:
+This removes declarations that are technically accessible but should not be treated as supported API, such as:
 
 - stability annotations like `@Beta`
 - API status annotations like `@API(status = INTERNAL)`
