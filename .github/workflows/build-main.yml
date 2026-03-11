@@ -93,7 +93,7 @@ jobs:
         run: ./mvnw --batch-mode -pl cli -am -DskipTests clean package
       - name: Assemble jlink archive
         shell: bash
-        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
+        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
       - name: Upload jlink archive
         uses: actions/upload-artifact@v4
         with:
@@ -140,7 +140,7 @@ jobs:
           merge-multiple: true
           path: target/jreleaser/assemble/roseau-standalone/jlink
       - name: Publish snapshots with JReleaser
-        run: ./mvnw --batch-mode -N jreleaser:full-release
+        run: ./mvnw --batch-mode -N jreleaser:full-release -Djreleaser.config.file=jreleaser.yml
         env:
           JRELEASER_GITHUB_TOKEN: ${{ github.token }}
           JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
