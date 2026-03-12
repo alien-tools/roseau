@@ -37,16 +37,16 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ ./mvnw package
-$ java -jar cli/target/roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help 
+$ java -jar cli/target/roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --help 
 ```
 
 Identify breaking changes between two versions, either from compiled JARs or source trees:
 
 ```
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
   CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
     com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
+$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
   METHOD_REMOVED com.pkg.Interface.m(int)
     com/pkg/Interface.java:18
 ```
@@ -54,35 +54,87 @@ $ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /pat
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.5.0-SNAPSHOT-jar-with-dependencies.jar --help
-Usage: roseau [-hVv] [--fail-on-bc] [--plain] [--api-json=<path>]
-              [--classpath=<path>[,<path>...]] [--config=<path>] [--format=<format>]
-              [--ignored=<path>] [--pom=<path>] [--report=<path>]
-              [--v1=<path>] [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
-              [--v2=<path>] [--v2-classpath=<path>[,<path>...]] [--v2-pom=<path>]
-              (--api | --diff)
+$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --help
+Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
+              [--api-json=<path>] [--classpath=<path>[,<path>...]]
+              [--config=<path>] [--ignored=<path>] [--pom=<path>]
+              [--report=<format=path>]... [--v1=<path>]
+              [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
+              [--v2=<path>] [--v2-classpath=<path>[,<path>...]]
+              [--v2-pom=<path>] (--api | --diff)
       --api               Serialize the API model of --v1; see --api-json
       --diff              Compute breaking changes between versions --v1 and --v2
       --v1=<path>         Path to the first version of the library; either a source directory or a JAR
       --v2=<path>         Path to the second version of the library; either a source directory or a JAR
       --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
-      --report=<path>     Where to write the breaking changes report in --diff mode
-      --format=<format>   Format of the report: CLI, CSV, HTML, JSON, MD
+      --report=<format=path> Write a breaking changes report in the given format to the given path; repeatable (formats: CLI, CSV, HTML, JSON, MD)
       --classpath=<path>[,<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
       --pom=<path>        A pom.xml file to extract the classpath from, shared by --v1 and --v2
       --v1-classpath=<path>[,<path>...] A --classpath for --v1
       --v2-classpath=<path>[,<path>...] A --classpath for --v2
       --v1-pom=<path>     A --pom for --v1
       --v2-pom=<path>     A --pom for --v2
-      --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as the one produced by --format CSV
+      --binary-only       Only report binary-breaking changes
+      --source-only       Only report source-breaking changes
+      --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as a CSV report
       --config=<path>     A roseau.yaml config file; CLI options take precedence over these options
       --fail-on-bc        Return with exit code 1 if breaking changes are detected
       --plain             Disable ANSI colors, output plain text
   -v, --verbose           Increase verbosity (-v, -vv).
 ```
 
-### Configuration
-Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence.
+### As a Java library
+
+The main programmatic entry points live in `Roseau`. In most cases, you configure two `Library` instances, build their APIs, and diff them:
+
+```java
+Library v1 = Library.of(Path.of("/path/to/library-v1.jar"));
+Library v2 = Library.builder()
+  .location(Path.of("/path/to/library-v2.jar"))
+  .classpath(List.of(Path.of("/path/to/dependency.jar")))
+  .pom(Path.of("/path/to/pom.xml"))
+  .build();
+
+API apiV1 = Roseau.buildAPI(v1);
+API apiV2 = Roseau.buildAPI(v2);
+
+RoseauReport report = Roseau.diff(apiV1, apiV2);
+report.getBreakingChanges().forEach(System.out::println);
+```
+
+### As a Maven plug-in
+
+Roseau also provides a Maven plug-in that compares the current artifact against a baseline during the `verify` phase.
+The minimal setup is to bind the `check` goal and provide a baseline:
+
+```xml
+<plugin>
+  <groupId>io.github.alien-tools</groupId>
+  <artifactId>roseau-maven-plugin</artifactId>
+  <version>0.6.0-SNAPSHOT</version>
+  <executions>
+    <execution>
+      <goals>
+        <goal>check</goal>
+      </goals>
+    </execution>
+  </executions>
+  <configuration>
+    <!-- Compare against a baseline JAR -->
+    <baselineJar>${project.basedir}/old.jar</baselineJar>
+    <!-- Compare against a previous version -->
+    <baselineVersion>
+      <groupId>com.group</groupId>
+      <artifactId>my-artifact</artifactId>
+      <version>1.0.1</version>
+    </baselineVersion>
+    <failOnIncompatibility>true</failOnIncompatibility>
+  </configuration>
+</plugin>
+```
+
+## Configuration
+Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence. Example:
 
 ```yaml
 common:
@@ -93,7 +145,9 @@ v1:
   apiReport: ./reports/v1.json
 v2:
   apiReport: ./reports/v2.json
-ignore: ignored-breaking-changes.csv
+diff:
+  ignore: ignored-breaking-changes.csv
+  binaryOnly: true
 reports:
   - file: ./reports/guava.html
     format: HTML
@@ -101,7 +155,7 @@ reports:
     format: CSV
 ```
 
-#### Ignoring breaking changes on specific types and symbols
+### Ignoring breaking changes on specific types and symbols
 Roseau can be configured to ignore breaking changes on symbols matching a given regular expression or annotated with a specific annotation:
 
 ```yaml
@@ -114,7 +168,7 @@ common:
         args: { status: org.apiguardian.api.API$Status.INTERNAL }
 ```
 
-#### Ignoring specific breaking changes
+### Ignoring specific breaking changes
 Breaking changes are sometimes necessary and intended. To avoid reporting the same breaking changes over and over against a given baseline, Roseau can be configured to ignore/accept specific breaking changes and stop reporting them using a dedicated CSV file supplied using the `--ignored` option:
 
 ```csv

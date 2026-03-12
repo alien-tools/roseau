@@ -1,6 +1,7 @@
 package io.github.alien.roseau.combinatorial.builder;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
@@ -29,7 +30,7 @@ public final class ApiBuilder implements Builder<API> {
 	public API make() {
 		var types = new LibraryTypes(Library.of(Path.of("api")),
 			allTypes.values().stream().map(TypeBuilder::make).collect(Collectors.toSet()));
-		return types.toAPI();
+		return Roseau.buildAPI(types);
 	}
 
 	public static ApiBuilder from(API api) {

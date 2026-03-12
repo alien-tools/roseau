@@ -1,6 +1,7 @@
 package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -84,17 +85,18 @@ class JdtTypesExtractorTest {
 			}""");
 
 		var types = extractor.extractTypes(Library.of(wd));
+		var api = Roseau.buildAPI(types);
 
 		assertThat(types).isNotNull();
 		assertThat(types.getAllTypes()).hasSize(1);
 
-		var cls = assertClass(types.toAPI(), "pkg.A");
+		var cls = assertClass(api, "pkg.A");
 		assertThat(cls.getSuperClass()).isEqualTo(new TypeReference<>("unknown.A"));
 		assertThat(cls.getImplementedInterfaces().iterator().next()).isEqualTo(new TypeReference<>("unknown.B"));
 		assertThat(cls.getDeclaredFields().iterator().next().getType()).isEqualTo(
 			new TypeReference<>("java.util.List", List.of(new TypeReference<>("unknown.C"))));
 		assertThat(cls.getDeclaredMethods().iterator().next().getType()).isEqualTo(new TypeReference<>("unknown.D"));
-		assertThat(types.toAPI().getErasure(cls.getDeclaredMethods().iterator().next())).isEqualTo("m(unknown.E[],pkg.F)");
+		assertThat(api.getErasure(cls.getDeclaredMethods().iterator().next())).isEqualTo("m(unknown.E[],pkg.F)");
 
 		// JDT can't parse public <U> B<U> n(unknown.C<U> p1, B<T> p2)
 		assertThat(cls.getDeclaredMethods()).hasSize(1);
@@ -133,10 +135,11 @@ class JdtTypesExtractorTest {
 			}""");
 
 		var types = extractor.extractTypes(Library.of(wd));
+		var api = Roseau.buildAPI(types);
 
 		assertThat(types.getAllTypes()).hasSize(7);
 
-		var cls = assertClass(types.toAPI(), "pkg.A");
+		var cls = assertClass(api, "pkg.A");
 		assertThat(cls.getSuperClass()).isEqualTo(new TypeReference<>("unknown.A"));
 		assertThat(cls.getImplementedInterfaces().iterator().next()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("T"))));
@@ -145,7 +148,7 @@ class JdtTypesExtractorTest {
 		var m = cls.getDeclaredMethods().stream().filter(mt -> "m".equals(mt.getSimpleName())).findFirst().get();
 		var n = cls.getDeclaredMethods().stream().filter(mt -> "n".equals(mt.getSimpleName())).findFirst().get();
 		assertThat(m.getType()).isEqualTo(new TypeReference<>("unknown.D"));
-		assertThat(types.toAPI().getErasure(m)).isEqualTo("m(unknown.E[],pkg.F)");
+		assertThat(api.getErasure(m)).isEqualTo("m(unknown.E[],pkg.F)");
 		assertThat(n.getType()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("U"))));
 		assertThat(n.getParameters().getFirst().type()).isEqualTo(

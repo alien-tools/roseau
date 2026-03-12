@@ -1,6 +1,7 @@
 package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
@@ -39,13 +40,13 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(wd.resolve("R.java"), "public record R() {}");
 
 		var types1 = extractor.extractTypes(library1);
-		var api1 = types1.toAPI();
+		var api1 = Roseau.buildAPI(types1);
 
 		Files.writeString(i, "public interface I { void m(); }");
 		var changedFiles = new ChangedFiles(Set.of(wd.relativize(i)), Set.of(), Set.of());
 
 		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
-		var api2 = types2.toAPI();
+		var api2 = Roseau.buildAPI(types2);
 
 		var i1 = assertInterface(api1, "I");
 		var i2 = assertInterface(api2, "I");
@@ -89,11 +90,11 @@ class IncrementalJdtTypesExtractorTest {
 		Files.writeString(a, "public class A {}");
 		Files.writeString(b, "public class B {}");
 
-		var api1 = extractor.extractTypes(Library.of(wd)).toAPI();
+		var api1 = Roseau.buildAPI(extractor.extractTypes(Library.of(wd)));
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(wd.relativize(a)), Set.of());
-		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd),
-			changedFiles).toAPI();
+		var api2 = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd),
+			changedFiles));
 
 		assertClass(api1, "A");
 		var b1 = assertClass(api1, "B");
@@ -110,13 +111,13 @@ class IncrementalJdtTypesExtractorTest {
 		var a = wd.resolve("A.java");
 		Files.writeString(a, "public class A {}");
 
-		var api1 = extractor.extractTypes(Library.of(wd)).toAPI();
+		var api1 = Roseau.buildAPI(extractor.extractTypes(Library.of(wd)));
 
 		var b = wd.resolve("B.java");
 		Files.writeString(b, "public class B {}");
 
 		var changedFiles = new ChangedFiles(Set.of(), Set.of(), Set.of(wd.relativize(b)));
-		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd), changedFiles).toAPI();
+		var api2 = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(wd), changedFiles));
 
 		var a1 = assertClass(api1, "A");
 		var a2 = assertClass(api2, "A");
@@ -157,7 +158,7 @@ class IncrementalJdtTypesExtractorTest {
 			package pkg2;
 			class D {}""");
 
-		var api1 = extractor.extractTypes(Library.of(root)).toAPI();
+		var api1 = Roseau.buildAPI(extractor.extractTypes(Library.of(root)));
 		assertThat(api1.getExportedTypes()).hasSize(3);
 
 		Files.writeString(b, """
@@ -170,7 +171,7 @@ class IncrementalJdtTypesExtractorTest {
 
 		var changedFiles = new ChangedFiles(Set.of(root.relativize(b)), Set.of(), Set.of());
 
-		var api2 = incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(root), changedFiles).toAPI();
+		var api2 = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(api1.getLibraryTypes(), Library.of(root), changedFiles));
 		assertThat(api2.getExportedTypes()).hasSize(2);
 
 		var clsB = assertClass(api2, "pkg2.B");

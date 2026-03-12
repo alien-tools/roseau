@@ -3,9 +3,11 @@ package io.github.alien.roseau.api.analysis;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
+import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Objects;
 
@@ -51,12 +53,20 @@ public interface ErasureProvider {
 		return Objects.equals(getErasure(e1), getErasure(e2));
 	}
 
-	private ITypeReference getErasedType(ExecutableDecl executable, ITypeReference reference) {
-		Preconditions.checkNotNull(executable);
+	/**
+	 * Returns the erased form of the given type reference within the context of the specified scope.
+	 *
+	 * @param scope     the scope defining the resolution context for type parameters
+	 * @param reference the type reference to be erased
+	 * @return the erased form of the supplied type reference
+	 */
+	default ITypeReference getErasedType(TypeParameterScope scope, ITypeReference reference) {
+		Preconditions.checkNotNull(scope);
 		Preconditions.checkNotNull(reference);
 		return switch (reference) {
-			case TypeParameterReference tpr -> typeParameter().resolveTypeParameterBound(executable, tpr);
-			case ArrayTypeReference(var t, var dimension) -> new ArrayTypeReference(getErasedType(executable, t), dimension);
+			case TypeParameterReference tpr -> typeParameter().resolveTypeParameterBound(scope, tpr);
+			case ArrayTypeReference(var t, var dimension) -> new ArrayTypeReference(getErasedType(scope, t), dimension);
+			case TypeReference<?>(var fqn, _) -> new TypeReference<>(fqn);
 			default -> reference;
 		};
 	}

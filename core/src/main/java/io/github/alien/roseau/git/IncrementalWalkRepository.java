@@ -3,7 +3,6 @@ package io.github.alien.roseau.git;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
@@ -15,6 +14,7 @@ import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.IncrementalJdtTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
@@ -175,7 +175,7 @@ public class IncrementalWalkRepository {
 									.build();
 								LibraryTypes updatedTypes = incrementalExtractor.incrementalUpdate(
 									oldApi.getLibraryTypes(), currentLibrary, changedFiles);
-								currentApi = updatedTypes.toAPI();
+								currentApi = Roseau.buildAPI(updatedTypes);
 							} catch (RuntimeException e) {
 								LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", sha, e);
 								currentApi = RepositoryWalkerUtils.buildApi(sourceRoot, classpath, exclusions);
@@ -197,19 +197,19 @@ public class IncrementalWalkRepository {
 				}
 
 				long diffTime;
-				List<BreakingChange> bcs;
+				RoseauReport diff = null;
 				if (oldApi == null || currentApi == oldApi) {
 					diffTime = 0;
-					bcs = List.of();
+					diff = new RoseauReport(oldApi, currentApi, List.of());
 				} else {
 					sw.reset().start();
-					RoseauReport diff = Roseau.diff(oldApi, currentApi);
+					diff = Roseau.diff(oldApi, currentApi);
 					diffTime = sw.elapsed().toMillis();
-					bcs = diff.getAllBreakingChanges();
 				}
+				List<BreakingChange> bcs = diff.getAllBreakingChanges();
 				if (oldApi != null) {
 					LOGGER.info("Found {} breaking changes", bcs.size());
-					RepositoryWalkerUtils.writeBreakingChangesRows(bcsWriter, library, sha, oldApi, bcs, exclusionMatcher);
+					RepositoryWalkerUtils.writeBreakingChangesRows(bcsWriter, library, sha, diff, exclusionMatcher);
 				}
 				int binaryBreakingChangesCount = (int) bcs.stream().map(BreakingChange::kind).filter(BreakingChangeKind::isBinaryBreaking).count();
 				int sourceBreakingChangesCount = (int) bcs.stream().map(BreakingChange::kind).filter(BreakingChangeKind::isSourceBreaking).count();

@@ -51,7 +51,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(bold("Breaking Changes Found: ")).append(changes.size());
+		sb.append(bold("Breaking Changes found: ")).append(changes.size());
 		sb.append(" (").append(binaryBreaking).append(" binary-breaking, ");
 		sb.append(sourceBreaking).append(" source-breaking)");
 		sb.append(System.lineSeparator());

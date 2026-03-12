@@ -2,11 +2,11 @@ package io.github.alien.roseau.git;
 
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
@@ -139,15 +139,16 @@ public class WalkRepository {
 				RepositoryWalkerUtils.ApiStats currentStats = RepositoryWalkerUtils.computeApiStats(currentApi, exclusionMatcher);
 				long statsTime = sw.elapsed().toMillis();
 
+				RoseauReport diff = new RoseauReport(oldApi, currentApi, List.of());
 				List<BreakingChange> bcs = List.of();
 				long diffTime = 0;
 				if (oldApi != null) {
 					sw.reset().start();
-					RoseauReport diff = Roseau.diff(oldApi, currentApi);
-					diffTime = sw.elapsed().toMillis();
+					diff = Roseau.diff(oldApi, currentApi);
 					bcs = diff.getAllBreakingChanges();
+					diffTime = sw.elapsed().toMillis();
 					LOGGER.info("Found {} breaking changes", bcs.size());
-					RepositoryWalkerUtils.writeBreakingChangesRows(bcsWriter, library, sha, oldApi, bcs, exclusionMatcher);
+					RepositoryWalkerUtils.writeBreakingChangesRows(bcsWriter, library, sha, diff, exclusionMatcher);
 				}
 				int binaryBreakingChangesCount = (int) bcs.stream().map(BreakingChange::kind).filter(BreakingChangeKind::isBinaryBreaking).count();
 				int sourceBreakingChangesCount = (int) bcs.stream().map(BreakingChange::kind).filter(BreakingChangeKind::isSourceBreaking).count();

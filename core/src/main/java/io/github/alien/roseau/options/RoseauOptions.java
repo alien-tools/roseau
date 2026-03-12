@@ -1,9 +1,10 @@
-package io.github.alien.roseau;
+package io.github.alien.roseau.options;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 
 import java.io.IOException;

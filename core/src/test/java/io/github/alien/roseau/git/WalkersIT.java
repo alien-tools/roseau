@@ -12,8 +12,8 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class WalkersIT {
-	private static final io.github.alien.roseau.RoseauOptions.Exclude NO_EXCLUSIONS =
-		new io.github.alien.roseau.RoseauOptions.Exclude(List.of(), List.of());
+	private static final io.github.alien.roseau.options.RoseauOptions.Exclude NO_EXCLUSIONS =
+		new io.github.alien.roseau.options.RoseauOptions.Exclude(List.of(), List.of());
 
 	@Test
 	void incremental_and_regular_walkers_match_on_simple_history(@TempDir Path wd) throws Exception {
@@ -207,7 +207,7 @@ class WalkersIT {
 		Path bcsCsv = outputDir.resolve("name-case-bcs.csv");
 		Path cloneRoot = wd.resolve("name-clone");
 		String url = remoteDir.toUri().toString();
-		var exclusions = new io.github.alien.roseau.RoseauOptions.Exclude(List.of(".*\\.internal\\..*"), List.of());
+		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(List.of(".*\\.internal\\..*"), List.of());
 		WalkRepository.walk("name-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
 			List.of(), outputDir, exclusions);
 
@@ -245,9 +245,9 @@ class WalkersIT {
 		Path bcsCsv = outputDir.resolve("ann-fqn-case-bcs.csv");
 		Path cloneRoot = wd.resolve("ann-fqn-clone");
 		String url = remoteDir.toUri().toString();
-		var exclusions = new io.github.alien.roseau.RoseauOptions.Exclude(
+		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
 			List.of(),
-			List.of(new io.github.alien.roseau.RoseauOptions.AnnotationExclusion(
+			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion(
 				"com.google.common.annotations.Beta", Map.of()))
 		);
 		WalkRepository.walk("ann-fqn-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
@@ -287,9 +287,9 @@ class WalkersIT {
 		Path bcsCsv = outputDir.resolve("ann-simple-case-bcs.csv");
 		Path cloneRoot = wd.resolve("ann-simple-clone");
 		String url = remoteDir.toUri().toString();
-		var exclusions = new io.github.alien.roseau.RoseauOptions.Exclude(
+		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
 			List.of(),
-			List.of(new io.github.alien.roseau.RoseauOptions.AnnotationExclusion("Internal", Map.of()))
+			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion("Internal", Map.of()))
 		);
 		WalkRepository.walk("ann-simple-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
 			List.of(), outputDir, exclusions);

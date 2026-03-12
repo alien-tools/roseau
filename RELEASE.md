@@ -42,6 +42,7 @@ $ git push origin v<x.y.z>
   $ mvn versions:set -DnewVersion=<x.y.z>-SNAPSHOT
   $ mvn versions:commit
   ```
+- In CLI: update `VersionProvider`
 2. Commit
 ```bash
 $ git add <...>

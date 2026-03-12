@@ -132,8 +132,21 @@ class RoseauCLITest {
 		assertThat(out.toString())
 			.contains("METHOD_REMOVED")
 			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
-			.doesNotContain("METHOD_NOW_STATIC");
+			.doesNotContain("METHOD_NOW_STATIC")
+			.contains("METHOD_OVERRIDABLE_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void both_source_and_binary_only() {
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
+			"--diff",
+			"--source-only",
+			"--binary-only");
+
+		assertThat(err.toString()).contains("Specify either --source-only or --binary-only");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -188,7 +201,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api");
 
-		assertThat(err.toString()).contains("Path to a JSON file required in --api mode");
+		assertThat(err.toString()).contains("--api-json option required with --api mode");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
@@ -288,14 +301,14 @@ class RoseauCLITest {
 	}
 
 	@Test
-	void write_report_without_format(@TempDir Path tempDir) {
+	void write_report_invalid_syntax(@TempDir Path tempDir) {
 		var reportFile = tempDir.resolve("custom.csv");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
 			"--report=" + reportFile);
 
-		assertThat(err.toString()).contains("--format required with --report");
+		assertThat(err.toString()).contains("Expected FORMAT=PATH");
 		assertThat(reportFile).doesNotExist();
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
@@ -306,8 +319,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--report=" + reportFile,
-			"--format=CSV");
+			"--report=CSV=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -319,8 +331,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--format=HTML",
-			"--report=" + reportFile);
+			"--report=HTML=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -332,8 +343,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--format=JSON",
-			"--report=" + reportFile);
+			"--report=JSON=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -345,11 +355,43 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--format=MD",
-			"--report=" + reportFile);
+			"--report=MD=" + reportFile);
 
 		assertThat(reportFile).isNotEmptyFile();
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void write_multiple_reports(@TempDir Path tempDir) throws IOException {
+		var csvReport = tempDir.resolve("report.csv");
+		var jsonReport = tempDir.resolve("report.json");
+		var cliReport = tempDir.resolve("report.txt");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--report=CSV=" + csvReport,
+			"--report=JSON=" + jsonReport,
+			"--report=CLI=" + cliReport);
+
+		assertThat(csvReport).isNotEmptyFile();
+		assertThat(jsonReport).isNotEmptyFile();
+		assertThat(Files.readString(jsonReport)).contains("\"kind\": \"METHOD_REMOVED\"", "\"nature\": \"DELETION\"");
+		assertThat(Files.readString(cliReport)).contains("Breaking Changes found:");
+		assertThat(Files.readString(cliReport)).doesNotContain("\u001B[");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void write_report_unknown_format(@TempDir Path tempDir) {
+		var reportFile = tempDir.resolve("report.unknown");
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--report=UNKNOWN=" + reportFile);
+
+		assertThat(err.toString()).contains("Unknown report format: UNKNOWN");
+		assertThat(reportFile).doesNotExist();
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test
@@ -361,8 +403,7 @@ class RoseauCLITest {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff",
-			"--report=" + reportFile,
-			"--format=CSV");
+			"--report=CSV=" + reportFile);
 
 		assertThat(err.toString()).contains("Error writing report to " + reportFile);
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
@@ -407,8 +448,7 @@ class RoseauCLITest {
 		cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
-			"--report=" + ignored,
-			"--format=CSV");
+			"--report=CSV=" + ignored);
 
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",

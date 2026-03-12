@@ -8,9 +8,15 @@ import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
+import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -20,6 +26,9 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
+/**
+ * Provides hierarchy navigation utilities (supertypes, inherited members, overriding/shadowing).
+ */
 public interface HierarchyProvider {
 	// Dependencies
 	TypeResolver resolver();
@@ -47,7 +56,7 @@ public interface HierarchyProvider {
 	 * Finds a {@link MethodDecl} by erasure, declared (or inherited) by this type.
 	 *
 	 * @param typeDecl the type to search in
-	 * @param erasure the erasure of the method to find
+	 * @param erasure  the erasure of the method to find
 	 * @return an {@link Optional} indicating whether the matching method was found
 	 * @see ErasureProvider#getErasure(ExecutableDecl)
 	 */
@@ -85,7 +94,9 @@ public interface HierarchyProvider {
 			return true;
 		}
 		if (erasure().haveSameErasure(method, other)) {
-			if (subtyping().isSubtypeOf(method.getContainingType(), other.getContainingType())) {
+			if (resolver().resolve(method.getContainingType())
+				.map(scope -> subtyping().isSubtypeOf(scope, method.getContainingType(), other.getContainingType()))
+				.orElse(false)) {
 				return true;
 			}
 			if (!method.isAbstract() && other.isAbstract()) {
@@ -145,6 +156,12 @@ public interface HierarchyProvider {
 			.toList();
 	}
 
+	/**
+	 * Returns the direct supertypes of {@code type} (superclass when present, plus implemented interfaces).
+	 *
+	 * @param type the base type
+	 * @return the direct supertypes of {@code type}
+	 */
 	default List<TypeReference<TypeDecl>> getSuperTypes(TypeDecl type) {
 		return Stream.concat(
 				// Interfaces technically do not extend java.lang.Object but the compiler still assumes they do
@@ -169,6 +186,57 @@ public interface HierarchyProvider {
 		return resolver().resolve(reference)
 			.map(this::getAllSuperTypes)
 			.orElseGet(List::of);
+	}
+
+	/**
+	 * Returns all supertypes of the given reference with generic arguments instantiated through the hierarchy.
+	 * For instance, {@code ArrayList<String> -> List<String> -> Collection<String>}, etc.
+	 */
+	default Set<TypeReference<TypeDecl>> getAllInstantiatedSuperTypes(TypeReference<?> reference) {
+		Preconditions.checkNotNull(reference);
+		Set<TypeReference<TypeDecl>> result = new LinkedHashSet<>();
+		collectInstantiatedSuperTypes(reference, result);
+		return result;
+	}
+
+	private void collectInstantiatedSuperTypes(TypeReference<?> reference, Set<TypeReference<TypeDecl>> accumulator) {
+		Optional<TypeDecl> resolved = resolver().resolve(reference);
+		if (resolved.isEmpty()) {
+			accumulator.addAll(getAllSuperTypes(reference));
+			return;
+		}
+
+		TypeDecl typeDecl = resolved.get();
+		Map<String, ITypeReference> substitutions = new HashMap<>();
+		for (int i = 0; i < Math.min(typeDecl.getFormalTypeParameters().size(), reference.typeArguments().size()); i++) {
+			substitutions.put(typeDecl.getFormalTypeParameters().get(i).name(), reference.typeArguments().get(i));
+		}
+
+		for (TypeReference<TypeDecl> superType : getSuperTypes(typeDecl)) {
+			TypeReference<TypeDecl> instantiated = substituteTypeReference(superType, substitutions);
+			if (accumulator.add(instantiated)) {
+				collectInstantiatedSuperTypes(instantiated, accumulator);
+			}
+		}
+	}
+
+	private static TypeReference<TypeDecl> substituteTypeReference(TypeReference<TypeDecl> reference,
+	                                                               Map<String, ITypeReference> substitutions) {
+		return new TypeReference<>(reference.getQualifiedName(),
+			reference.typeArguments().stream().map(arg -> substituteType(arg, substitutions)).toList());
+	}
+
+	private static ITypeReference substituteType(ITypeReference reference, Map<String, ITypeReference> substitutions) {
+		return switch (reference) {
+			case TypeParameterReference tp -> substitutions.getOrDefault(tp.name(), tp);
+			case ArrayTypeReference(var componentType, var dimension) ->
+				new ArrayTypeReference(substituteType(componentType, substitutions), dimension);
+			case WildcardTypeReference(var bounds, var upper) ->
+				new WildcardTypeReference(bounds.stream().map(bound -> substituteType(bound, substitutions)).toList(), upper);
+			case TypeReference<?> tr -> new TypeReference<>(tr.getQualifiedName(),
+				tr.typeArguments().stream().map(arg -> substituteType(arg, substitutions)).toList());
+			default -> reference;
+		};
 	}
 
 	/**
@@ -281,8 +349,10 @@ public interface HierarchyProvider {
 	 */
 	default boolean isSameHierarchy(TypeReference<?> reference, TypeReference<?> other) {
 		return reference.equals(other) ||
-			subtyping().isSubtypeOf(reference, other) ||
-			subtyping().isSubtypeOf(other, reference);
+			resolveSubtypeScope(reference, other)
+				.map(scope -> subtyping().isSubtypeOf(scope, reference, other) ||
+					subtyping().isSubtypeOf(scope, other, reference))
+				.orElse(false);
 	}
 
 	/**
@@ -294,6 +364,12 @@ public interface HierarchyProvider {
 	 */
 	default boolean isShadowing(FieldDecl field, FieldDecl other) {
 		return field.getSimpleName().equals(other.getSimpleName()) &&
-			subtyping().isSubtypeOf(field.getContainingType(), other.getContainingType());
+			resolver().resolve(field.getContainingType())
+				.map(scope -> subtyping().isSubtypeOf(scope, field.getContainingType(), other.getContainingType()))
+				.orElse(false);
+	}
+
+	private Optional<TypeDecl> resolveSubtypeScope(TypeReference<?> first, TypeReference<?> second) {
+		return resolver().resolve(first).or(() -> resolver().resolve(second));
 	}
 }

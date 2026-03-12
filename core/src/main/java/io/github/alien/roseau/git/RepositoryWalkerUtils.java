@@ -6,7 +6,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.RoseauOptions;
+import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
@@ -15,12 +15,14 @@ import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.changes.BreakingChangeNature;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
@@ -418,7 +420,7 @@ final class RepositoryWalkerUtils {
 			.build();
 		TypesExtractor extractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
 		LibraryTypes types = extractor.extractTypes(library);
-		return types.toAPI();
+		return Roseau.buildAPI(types);
 	}
 
 	static ApiStats computeApiStats(API api, ExclusionMatcher exclusionMatcher) {
@@ -533,16 +535,15 @@ final class RepositoryWalkerUtils {
 		Writer writer,
 		String library,
 		String commitSha,
-		API baselineApi,
-		List<BreakingChange> breakingChanges,
+		RoseauReport report,
 		ExclusionMatcher internalMatcher
 	) throws IOException {
-		for (BreakingChange bc : breakingChanges) {
+		for (BreakingChange bc : report.getAllBreakingChanges()) {
 			SourceLocation location = bc.getLocation();
 			Symbol impactedSymbol = bc.impactedSymbol();
 			BreakingChangeKind kind = bc.kind();
-			boolean isExcludedSymbol = baselineApi.isExcluded(impactedSymbol)
-				|| baselineApi.isExcluded(bc.impactedType())
+			boolean isExcludedSymbol = report.isExcluded(impactedSymbol)
+				|| report.isExcluded(bc.impactedType())
 				|| internalMatcher.isInternal(impactedSymbol)
 				|| internalMatcher.isInternal(bc.impactedType());
 			boolean isRemoval = kind.getNature() == BreakingChangeNature.DELETION;

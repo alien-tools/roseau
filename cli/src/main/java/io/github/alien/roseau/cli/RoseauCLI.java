@@ -4,13 +4,12 @@ import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.RoseauOptions;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
@@ -19,11 +18,11 @@ import picocli.CommandLine.Model.CommandSpec;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
@@ -66,12 +65,11 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
-	@Option(names = "--report", paramLabel = "<path>",
-		description = "Where to write the breaking changes report in --diff mode")
-	private Path reportPath;
-	@Option(names = "--format",
-		description = "Format of the report: ${COMPLETION-CANDIDATES}")
-	private BreakingChangesFormatterFactory format;
+	@Option(names = "--report", paramLabel = "<format=path>",
+		description = "Write a breaking changes report in the given format to the given path; repeatable " +
+			"(formats: CLI, CSV, HTML, JSON, MD)",
+		converter = ReportOptionConverter.class)
+	private List<RoseauOptions.Report> reports;
 	@Option(names = "--classpath", paramLabel = "<path>[,<path>...]",
 		description = "A colon-separated list of JARs to include in the classpath (Windows: semi-colon), " +
 			"shared by --v1 and --v2")
@@ -99,7 +97,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	private Boolean sourceOnly;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
-			"this CSV file shares the same structure as the one produced by --format CSV")
+			"this CSV file shares the same structure as a CSV report")
 	private Path ignoredCsv;
 	@Option(names = "--config", paramLabel = "<path>",
 		description = "A roseau.yaml config file; CLI options take precedence over these options")
@@ -145,47 +143,40 @@ public final class RoseauCLI implements Callable<Integer> {
 			.toList();
 	}
 
-	private void writeReport(RoseauReport report, BreakingChangesFormatterFactory format, Path path) {
-		try {
-			if (path.getParent() != null) {
-				Files.createDirectories(path.getParent());
+	private static final class ReportOptionConverter implements CommandLine.ITypeConverter<RoseauOptions.Report> {
+		@Override
+		public RoseauOptions.Report convert(String value) {
+			int separator = value.indexOf('=');
+			if (separator <= 0 || separator == value.length() - 1) {
+				throw new CommandLine.TypeConversionException("Expected FORMAT=PATH");
 			}
-			BreakingChangesFormatter fmt = BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
-			Files.writeString(path, fmt.format(report), StandardCharsets.UTF_8);
-			console.printlnVerbose("Report has been written to %s".formatted(path));
-		} catch (IOException e) {
-			throw new RoseauException("Error writing report to %s".formatted(path), e);
+
+			String formatValue = value.substring(0, separator).trim();
+			String pathValue = value.substring(separator + 1).trim();
+			if (formatValue.isEmpty() || pathValue.isEmpty()) {
+				throw new CommandLine.TypeConversionException("Expected FORMAT=PATH");
+			}
+
+			try {
+				BreakingChangesFormatterFactory format = BreakingChangesFormatterFactory.valueOf(
+					formatValue.toUpperCase(Locale.ROOT));
+				return new RoseauOptions.Report(Path.of(pathValue), format);
+			} catch (IllegalArgumentException e) {
+				throw new CommandLine.TypeConversionException("Unknown report format: " + formatValue);
+			}
 		}
 	}
 
-	private void writeApiReport(API api, Path apiPath) {
+	private void writeApiReport(LibraryTypes types, Path apiPath) {
 		try {
 			if (apiPath.getParent() != null) {
 				Files.createDirectories(apiPath.getParent());
 			}
-			api.getLibraryTypes().writeJson(apiPath);
+			types.writeJson(apiPath);
 			console.printlnVerbose("API has been written to %s".formatted(apiPath));
 		} catch (IOException e) {
 			throw new RoseauException("Error writing API to %s".formatted(apiPath), e);
 		}
-	}
-
-	private RoseauReport filterReport(RoseauReport report, RoseauOptions.Diff diffOptions) {
-		List<BreakingChange> bcs = diffOptions.sourceOnly()
-			? report.getSourceBreakingChanges()
-			: diffOptions.binaryOnly()
-				? report.getBinaryBreakingChanges()
-				: report.getBreakingChanges();
-
-		Path ignorePath = diffOptions.ignore();
-		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
-			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
-			bcs = bcs.stream()
-				.filter(bc -> !ignoredFile.isIgnored(bc))
-				.toList();
-		}
-
-		return new RoseauReport(report.v1(), report.v2(), bcs);
 	}
 
 	private void checkOptions(RoseauOptions options) {
@@ -204,16 +195,12 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		if (mode.api && options.v1().apiReport() == null) {
-			throw new RoseauException("Path to a JSON file required in --api mode");
+			throw new RoseauException("--api-json option required with --api mode");
 		}
 
 		Path v2Path = options.v2().location();
 		if (mode.diff && (v2Path == null || !Files.exists(v2Path))) {
 			throw new RoseauException("Cannot find v2: %s".formatted(v2Path));
-		}
-
-		if (reportPath != null && format == null) {
-			throw new RoseauException("--format required with --report");
 		}
 
 		Path v1PomPath = options.v1().classpath().pom();
@@ -246,18 +233,10 @@ public final class RoseauCLI implements Callable<Integer> {
 			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
 			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
-		Boolean cliSourceOnly = sourceOnly;
-		Boolean cliBinaryOnly = binaryOnly;
-		if (Boolean.TRUE.equals(cliBinaryOnly)) {
-			cliSourceOnly = Boolean.FALSE;
-		}
-		if (Boolean.TRUE.equals(cliSourceOnly)) {
-			cliBinaryOnly = Boolean.FALSE;
-		}
+		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
+		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
-		List<RoseauOptions.Report> reportsCli = (reportPath != null && format != null)
-			? List.of(new RoseauOptions.Report(reportPath, format))
-			: List.of();
+		List<RoseauOptions.Report> reportsCli = reports == null ? List.of() : List.copyOf(reports);
 		return new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
 	}
 
@@ -278,29 +257,29 @@ public final class RoseauCLI implements Callable<Integer> {
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
 		buildClasspath(library);
 		Stopwatch sw = Stopwatch.createStarted();
-		console.printVerbose("Building API... ");
-		API api = Roseau.buildAPI(library);
-		console.printlnVerbose(" %d types (%d ms)".formatted(api.getLibraryTypes().getAllTypes().size(),
+		console.printVerbose("Extracting API... ");
+		LibraryTypes types = Roseau.buildLibraryTypes(library);
+		console.printlnVerbose(" %d types (%d ms)".formatted(types.getAllTypes().size(),
 			sw.elapsed().toMillis()));
 		if (libraryOptions.apiReport() != null) {
-			writeApiReport(api, libraryOptions.apiReport());
+			writeApiReport(types, libraryOptions.apiReport());
 		}
 	}
 
 	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
 		buildClasspath(v1);
 		buildClasspath(v2);
-		RoseauReport report = filterReport(diff(v1, v2), options.diff());
+		RoseauReport report = diff(v1, v2).filterReport(options.diff());
 		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {
-			writeApiReport(report.v1(), options.v1().apiReport());
+			writeApiReport(report.v1().getLibraryTypes(), options.v1().apiReport());
 		}
 		if (options.v2().apiReport() != null) {
-			writeApiReport(report.v2(), options.v2().apiReport());
+			writeApiReport(report.v2().getLibraryTypes(), options.v2().apiReport());
 		}
 		options.reports().forEach(reportOption ->
-			writeReport(report, reportOption.format(), reportOption.file())
+			report.writeReport(reportOption.format(), reportOption.file())
 		);
 
 		return !report.getBreakingChanges().isEmpty();
@@ -374,7 +353,7 @@ public final class RoseauCLI implements Callable<Integer> {
 	static final class VersionProvider implements CommandLine.IVersionProvider {
 		@Override
 		public String[] getVersion() {
-			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.5.0-SNAPSHOT");
+			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.6.0-SNAPSHOT");
 			return new String[]{"Roseau " + impl};
 		}
 	}

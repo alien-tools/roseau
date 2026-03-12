@@ -7,7 +7,7 @@ import java.util.Set;
 public final class FieldBuilder extends TypeMemberBuilder {
 	public FieldDecl make() {
 		return new FieldDecl(qualifiedName, visibility, modifiers, Set.copyOf(annotations), location,
-				containingType, type);
+				containingType, type, false);
 	}
 
 	public static FieldBuilder from(FieldDecl decl) {

@@ -2,26 +2,45 @@ package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
+import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.diff.formatter.CliFormatter;
+import io.github.alien.roseau.options.IgnoredCsvFile;
+import io.github.alien.roseau.options.RoseauOptions;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 public final class RoseauReport {
+	private static final Logger LOGGER = LogManager.getLogger(RoseauReport.class);
+
 	private final API v1;
 	private final API v2;
 	private final List<BreakingChange> breakingChanges;
+	private final Set<Pattern> excludedNamePatterns;
 
 	public RoseauReport(API v1, API v2, Collection<BreakingChange> breakingChanges) {
 		Preconditions.checkNotNull(v1);
@@ -36,6 +55,17 @@ public final class RoseauReport {
 						.thenComparing(bc -> bc.impactedSymbol().getQualifiedName())
 						.thenComparing(BreakingChange::kind))
 				.toList());
+		this.excludedNamePatterns = v1.getLibrary().getExclusions().names().stream()
+			.map(name -> {
+				try {
+					return Pattern.compile(name);
+				} catch (PatternSyntaxException e) {
+					LOGGER.warn("Invalid exclusion pattern {}", name, e);
+					return null;
+				}
+			})
+			.filter(Objects::nonNull)
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	public API v1() {
@@ -48,8 +78,8 @@ public final class RoseauReport {
 
 	public List<BreakingChange> getBreakingChanges() {
 		return breakingChanges.stream()
-			.filter(bc -> !v1.isExcluded(bc.impactedSymbol()))
-			.filter(bc -> !v1.isExcluded(bc.impactedType()))
+			.filter(bc -> !isExcluded(bc.impactedSymbol()))
+			.filter(bc -> !isExcluded(bc.impactedType()))
 			.toList();
 	}
 
@@ -115,8 +145,55 @@ public final class RoseauReport {
 			));
 	}
 
+	public RoseauReport filterReport(RoseauOptions.Diff diffOptions) {
+		List<BreakingChange> bcs = diffOptions.sourceOnly()
+			? getSourceBreakingChanges()
+			: diffOptions.binaryOnly()
+			? getBinaryBreakingChanges()
+			: getBreakingChanges();
+
+		Path ignorePath = diffOptions.ignore();
+		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
+			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
+			bcs = bcs.stream()
+				.filter(bc -> !ignoredFile.isIgnored(bc))
+				.toList();
+		}
+
+		return new RoseauReport(v1(), v2(), bcs);
+	}
+
+	public void writeReport(BreakingChangesFormatterFactory format, Path path) {
+		try {
+			if (path.getParent() != null) {
+				Files.createDirectories(path.getParent());
+			}
+
+			BreakingChangesFormatter fmt = format == BreakingChangesFormatterFactory.CLI
+				? new CliFormatter(CliFormatter.Mode.PLAIN)
+				: BreakingChangesFormatterFactory.newBreakingChangesFormatter(format);
+			Files.writeString(path, fmt.format(this), StandardCharsets.UTF_8);
+		} catch (IOException e) {
+			throw new RoseauException("Error writing report to %s".formatted(path), e);
+		}
+	}
+
 	public static Builder builder(API v1, API v2) {
 		return new Builder(v1, v2);
+	}
+
+	public boolean isExcluded(Symbol symbol) {
+		boolean isAnnotationExcluded = v1.getLibrary().getExclusions().annotations().stream()
+			.anyMatch(ann -> symbol.hasAnnotation(new TypeReference<>(ann.name()), ann.args()));
+		boolean isNameExcluded = excludedNamePatterns.stream()
+			.anyMatch(pattern -> pattern.matcher(symbol.getQualifiedName()).matches());
+
+		return switch (symbol) {
+			case TypeDecl type -> isAnnotationExcluded || isNameExcluded ||
+				type.getEnclosingType().map(t -> v1.resolver().resolve(t).map(this::isExcluded).orElse(false)).orElse(false);
+			case TypeMemberDecl member -> isAnnotationExcluded || isNameExcluded ||
+				v1.resolver().resolve(member.getContainingType()).map(this::isExcluded).orElse(false);
+		};
 	}
 
 	// FIXME: Do the exclusion/java.lang.Object here, through another class
@@ -145,12 +222,12 @@ public final class RoseauReport {
 		}
 
 		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
-		              TypeMemberDecl newMember) {
+		                     TypeMemberDecl newMember) {
 			memberBC(kind, impactedType, impactedMember, newMember, new BreakingChangeDetails.None());
 		}
 
 		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember,
-		              TypeMemberDecl newMember, BreakingChangeDetails details) {
+		                     TypeMemberDecl newMember, BreakingChangeDetails details) {
 			// java.lang.Object methods are an absolute pain to handle. Many rules
 			// do not apply to them as they're implicitly provided to any class.
 			if (impactedMember.getContainingType().equals(TypeReference.OBJECT)) {

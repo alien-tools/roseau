@@ -93,6 +93,15 @@ class FormalTypeParameterChangedTest {
 		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
+	@Client("A<Integer, Number> a = new A<>();")
+	@Test
+	void bound_param_replaced_with_equivalent_resolved_bound() {
+		var v1 = "public class A<T extends Number, U extends T> {}";
+		var v2 = "public class A<T extends Number, U extends Number> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("A<String> a = new A<>();")
 	@Test
 	void bound_modified_compatible() {
