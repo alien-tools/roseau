@@ -139,12 +139,11 @@ public class WalkRepository {
 				RepositoryWalkerUtils.ApiStats currentStats = RepositoryWalkerUtils.computeApiStats(currentApi, exclusionMatcher);
 				long statsTime = sw.elapsed().toMillis();
 
-				RoseauReport diff = new RoseauReport(oldApi, currentApi, List.of());
 				List<BreakingChange> bcs = List.of();
 				long diffTime = 0;
 				if (oldApi != null) {
 					sw.reset().start();
-					diff = Roseau.diff(oldApi, currentApi);
+					RoseauReport diff = Roseau.diff(oldApi, currentApi);
 					bcs = diff.getAllBreakingChanges();
 					diffTime = sw.elapsed().toMillis();
 					LOGGER.info("Found {} breaking changes", bcs.size());

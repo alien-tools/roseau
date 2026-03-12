@@ -200,7 +200,7 @@ public class IncrementalWalkRepository {
 				RoseauReport diff = null;
 				if (oldApi == null || currentApi == oldApi) {
 					diffTime = 0;
-					diff = new RoseauReport(oldApi, currentApi, List.of());
+					diff = new RoseauReport(currentApi, currentApi, List.of());
 				} else {
 					sw.reset().start();
 					diff = Roseau.diff(oldApi, currentApi);
