@@ -101,7 +101,8 @@ final class RepositoryWalkerUtils {
 		"classpath_time_ms",
 		"api_time_ms",
 		"diff_time_ms",
-		"stats_time_ms"
+		"stats_time_ms",
+		"error"
 	);
 	static final List<String> BCS_HEADER = List.of(
 		"library",
@@ -170,7 +171,8 @@ final class RepositoryWalkerUtils {
 		long classpathTimeMs,
 		long apiTimeMs,
 		long diffTimeMs,
-		long statsTimeMs
+		long statsTimeMs,
+		String error
 	) {
 	}
 
@@ -387,7 +389,8 @@ final class RepositoryWalkerUtils {
 				Set.copyOf(deleted),
 				Set.copyOf(created)
 			);
-		} catch (Exception _) {
+		} catch (Exception e) {
+			LOGGER.warn("Failed to compute commit diff for {}", commit.getName(), e);
 			return new CommitDiff(true, true, 0, 0, 0, Set.of(), Set.of(), Set.of());
 		}
 	}
@@ -412,13 +415,12 @@ final class RepositoryWalkerUtils {
 		return new ChangedFiles(updated, deleted, created);
 	}
 
-	static API buildApi(Path sources, List<Path> classpath, RoseauOptions.Exclude exclusions) {
+	static API buildApi(Path sources, List<Path> classpath, RoseauOptions.Exclude exclusions, TypesExtractor extractor) {
 		Library library = Library.builder()
 			.location(sources)
 			.classpath(classpath)
 			.exclusions(exclusions)
 			.build();
-		TypesExtractor extractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
 		LibraryTypes types = extractor.extractTypes(library);
 		return Roseau.buildAPI(types);
 	}
@@ -519,7 +521,8 @@ final class RepositoryWalkerUtils {
 			analysis.classpathTimeMs(),
 			analysis.apiTimeMs(),
 			analysis.diffTimeMs(),
-			analysis.statsTimeMs()
+			analysis.statsTimeMs(),
+			analysis.error()
 		));
 	}
 

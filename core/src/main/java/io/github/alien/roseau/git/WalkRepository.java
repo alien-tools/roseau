@@ -3,9 +3,12 @@ package io.github.alien.roseau.git;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
+import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
@@ -103,7 +106,7 @@ public class WalkRepository {
 							tags,
 							tags,
 							daysSincePrevCommit,
-							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, 0, 0, 0, 0, 0)
+							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, 0, 0, 0, 0, 0, "")
 						);
 						previousWrittenCommit = commit;
 						LOGGER.info("Skipping commit {} (no Java source changes), reusing previous API stats", sha);
@@ -112,6 +115,8 @@ public class WalkRepository {
 					}
 					continue;
 				}
+
+				String error = "";
 
 				sw.reset().start();
 				RepositoryWalkerUtils.makePristine(git);
@@ -133,7 +138,8 @@ public class WalkRepository {
 
 				Path src = sources.stream().filter(Files::exists).findFirst().orElseThrow();
 				sw.reset().start();
-				API currentApi = RepositoryWalkerUtils.buildApi(src, classpath, exclusions);
+				JdtTypesExtractor jdtExtractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
+				API currentApi = RepositoryWalkerUtils.buildApi(src, classpath, exclusions, jdtExtractor);
 				long apiTime = sw.elapsed().toMillis();
 				sw.reset().start();
 				RepositoryWalkerUtils.ApiStats currentStats = RepositoryWalkerUtils.computeApiStats(currentApi, exclusionMatcher);
@@ -173,7 +179,8 @@ public class WalkRepository {
 						classpathTime,
 						apiTime,
 						diffTime,
-						statsTime
+						statsTime,
+						error
 					)
 				);
 				previousWrittenCommit = commit;
