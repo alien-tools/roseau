@@ -178,6 +178,11 @@ class PopularLibrariesTestIT {
 		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
 		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
 
+		// Equality
+		sw.reset().start();
+		boolean apiEquals = asmApi.equals(jdtApi);
+		long apiEqualityTime = sw.elapsed().toMillis();
+
 		// Stats
 		long loc = countLinesOfCode(sourcesDir);
 		int numTypes = jdtTypes.getAllTypes().size();
@@ -191,10 +196,12 @@ class PopularLibrariesTestIT {
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
 				"\tASM: %dms; %dms diff%n" +
 				"\tJDT: %dms%n" +
-				"\tBCs: %s%n",
+				"\tBCs: %s%n" +
+				"\tEquals: %dms%n",
 			libraryGAV, loc, numTypes, numMethods, numFields,
 			asmApiTime, diffTime, jdtApiTime,
-			asmToAsmBCs.size());
+			asmToAsmBCs.size(),
+			apiEqualityTime);
 
 		if (!jdtTypes.getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
 			jdtTypes.getAllTypes().forEach(jdtType -> {
@@ -216,6 +223,7 @@ class PopularLibrariesTestIT {
 		// Equal APIs
 		assertThat(asmTypes.getAllTypes()).isEqualTo(jdtTypes.getAllTypes());
 		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
+		assertThat(apiEquals).isTrue();
 
 		// No BCs
 		assertThat(jdtToJdtBCs).isEmpty();

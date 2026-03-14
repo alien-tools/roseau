@@ -6,7 +6,9 @@ import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -75,5 +77,23 @@ public final class API extends CachingApiAnalyzer {
 		return getExportedTypes().stream()
 			.map(TypeDecl::toString)
 			.collect(Collectors.joining(System.lineSeparator()));
+	}
+
+	@Override
+	public boolean equals(Object obj) {
+		// FIXME: This structural equality check isn't fully accurate.
+		// If classpaths are different between the two APIs, the fully resolved API model might
+		// be different and the API might not be equal.
+		if (this == obj) {
+			return true;
+		}
+		return obj instanceof API other
+			&& Objects.equals(libraryTypes.getModule(), other.libraryTypes.getModule())
+			&& Objects.equals(Set.copyOf(getExportedTypes()), Set.copyOf(other.getExportedTypes()));
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(libraryTypes.getModule(), Set.copyOf(getExportedTypes()));
 	}
 }

@@ -8,7 +8,7 @@ import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-class EqualityTest {
+class LibraryTypesEqualityTest {
 	@Test
 	void api_order_doesnt_matter() {
 		var sources1 = """
