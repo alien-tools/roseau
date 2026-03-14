@@ -59,15 +59,27 @@ class WalkersIT {
 		for (String sha : regular.keySet()) {
 			var r = regular.get(sha);
 			var i = incremental.get(sha);
+			assertThat(i.updatedJavaFilesCount()).isEqualTo(r.updatedJavaFilesCount());
+			assertThat(i.deletedJavaFilesCount()).isEqualTo(r.deletedJavaFilesCount());
+			assertThat(i.createdJavaFilesCount()).isEqualTo(r.createdJavaFilesCount());
 			assertThat(i.exportedTypesCount()).isEqualTo(r.exportedTypesCount());
 			assertThat(i.exportedMethodsCount()).isEqualTo(r.exportedMethodsCount());
 			assertThat(i.exportedFieldsCount()).isEqualTo(r.exportedFieldsCount());
+			assertThat(i.apiChanged()).isEqualTo(r.apiChanged());
 			assertThat(i.breakingChangesCount()).isEqualTo(r.breakingChangesCount());
 		}
 		assertThat(incrementalBcsCount).isEqualTo(regularBcsCount);
 
+		assertThat(regular.get(c2.getName()).updatedJavaFilesCount()).isZero();
+		assertThat(regular.get(c2.getName()).deletedJavaFilesCount()).isZero();
+		assertThat(regular.get(c2.getName()).createdJavaFilesCount()).isZero();
+		assertThat(regular.get(c2.getName()).apiChanged()).isFalse();
 		assertThat(regular.get(c2.getName()).breakingChangesCount()).isZero();
 		assertThat(regular.get(c2.getName()).apiTimeMs()).isZero();
+		assertThat(regular.get(c3.getName()).updatedJavaFilesCount()).isEqualTo(1);
+		assertThat(regular.get(c3.getName()).deletedJavaFilesCount()).isZero();
+		assertThat(regular.get(c3.getName()).createdJavaFilesCount()).isZero();
+		assertThat(regular.get(c3.getName()).apiChanged()).isTrue();
 		assertThat(regular.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
 		assertThat(regularBcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
 	}
@@ -125,9 +137,13 @@ class WalkersIT {
 		for (String sha : regular.keySet()) {
 			var r = regular.get(sha);
 			var i = incremental.get(sha);
+			assertThat(i.updatedJavaFilesCount()).isEqualTo(r.updatedJavaFilesCount());
+			assertThat(i.deletedJavaFilesCount()).isEqualTo(r.deletedJavaFilesCount());
+			assertThat(i.createdJavaFilesCount()).isEqualTo(r.createdJavaFilesCount());
 			assertThat(i.exportedTypesCount()).isEqualTo(r.exportedTypesCount());
 			assertThat(i.exportedMethodsCount()).isEqualTo(r.exportedMethodsCount());
 			assertThat(i.exportedFieldsCount()).isEqualTo(r.exportedFieldsCount());
+			assertThat(i.apiChanged()).isEqualTo(r.apiChanged());
 			assertThat(i.breakingChangesCount()).isEqualTo(r.breakingChangesCount());
 		}
 		assertThat(incrementalBcsCount).isEqualTo(regularBcsCount);

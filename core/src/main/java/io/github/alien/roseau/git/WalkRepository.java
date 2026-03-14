@@ -106,7 +106,7 @@ public class WalkRepository {
 							tags,
 							tags,
 							daysSincePrevCommit,
-							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, 0, 0, 0, 0, 0, "")
+							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, false, 0, 0, 0, 0, 0, "")
 						);
 						previousWrittenCommit = commit;
 						LOGGER.info("Skipping commit {} (no Java source changes), reusing previous API stats", sha);
@@ -175,6 +175,7 @@ public class WalkRepository {
 						bcs.size(),
 						binaryBreakingChangesCount,
 						sourceBreakingChangesCount,
+						true,
 						checkoutTime,
 						classpathTime,
 						apiTime,

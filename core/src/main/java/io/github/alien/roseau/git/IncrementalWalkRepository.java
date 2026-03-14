@@ -116,7 +116,7 @@ public class IncrementalWalkRepository {
 							tags,
 							tags,
 							daysSincePrevCommit,
-							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, 0, 0, 0, 0, 0, "")
+							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, false, 0, 0, 0, 0, 0, "")
 						);
 						previousWrittenCommit = commit;
 						LOGGER.info("Skipping commit {} (no Java source changes), reusing previous API stats", sha);
@@ -206,8 +206,10 @@ public class IncrementalWalkRepository {
 
 				long diffTime;
 				List<BreakingChange> bcs = List.of();
+				boolean apiChanged = true;
 				if (oldApi == null || currentApi == oldApi || currentApi.equals(oldApi)) {
 					diffTime = 0;
+					apiChanged = false;
 				} else {
 					sw.reset().start();
 					RoseauReport diff = Roseau.diff(oldApi, currentApi);
@@ -237,6 +239,7 @@ public class IncrementalWalkRepository {
 						bcs.size(),
 						binaryBreakingChangesCount,
 						sourceBreakingChangesCount,
+						apiChanged,
 						checkoutTime,
 						classpathTime,
 						apiTime,
