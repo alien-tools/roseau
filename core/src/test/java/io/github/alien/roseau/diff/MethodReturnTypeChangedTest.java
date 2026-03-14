@@ -189,6 +189,81 @@ class MethodReturnTypeChangedTest {
 		);
 	}
 
+	@Client("Object o = new A().m();")
+	@Test
+	void method_first_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public Object m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public <T> T m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<Object> l = new A().m();")
+	@Test
+	void method_first_param_added_and_used_as_nested_return_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List<Object> m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public <T> java.util.List<T> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("Number n = new A().m();")
+	@Test
+	void method_bounded_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public Number m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends Number> T m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A().<String>m();")
+	@Test
+	void method_formal_type_parameter_renamed_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public <T> T m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public <U> U m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<String> l = new A().<String>m();")
+	@Test
+	void method_formal_type_parameter_renamed_nested_return_no_break() {
+		var v1 = """
+			public class A {
+				public <T> java.util.List<T> m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public <U> java.util.List<U> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("Integer i = new A<Integer, String>().m();")
 	@Test
 	void unrelated_type_parameters_source_only() {
@@ -202,6 +277,81 @@ class MethodReturnTypeChangedTest {
 					public U m() { return null; }
 				}"""
 		);
+	}
+
+	@Client("String s = new A<String>().m();")
+	@Test
+	void type_formal_type_parameter_renamed_direct_return_no_break() {
+		var v1 = """
+			public class A<T> {
+				public T m() { return null; }
+			}""";
+		var v2 = """
+			public class A<U> {
+				public U m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("Object o = new A().m();")
+	@Test
+	void type_first_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public Object m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public T m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<String> l = new A<String>().m();")
+	@Test
+	void type_formal_type_parameter_renamed_nested_return_no_break() {
+		var v1 = """
+			public class A<T> {
+				public java.util.List<T> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<U> {
+				public java.util.List<U> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<Object> l = new A().m();")
+	@Test
+	void type_first_param_added_and_used_as_nested_return_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List<Object> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("Number n = new A().m();")
+	@Test
+	void type_bounded_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public Number m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T extends Number> {
+				public T m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Client("new A<CharSequence, String>().m();")
@@ -420,5 +570,35 @@ class MethodReturnTypeChangedTest {
 					public A m() { return null; }
 				}"""
 		);
+	}
+
+	@Client("java.util.Map<String, java.util.List<String>> m = new A<String>().m();")
+	@Test
+	void return_type_deeply_nested_type_param_renamed_no_break() {
+		var v1 = """
+			public class A<T> {
+				public java.util.Map<T, java.util.List<T>> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<U> {
+				public java.util.Map<U, java.util.List<U>> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.Map<String, Integer> m = new A<String>().<Integer>m();")
+	@Test
+	void return_type_both_type_and_exec_params_renamed_no_break() {
+		var v1 = """
+			public class A<T> {
+				public <U> java.util.Map<T, U> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<V> {
+				public <W> java.util.Map<V, W> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 }

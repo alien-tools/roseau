@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
@@ -119,6 +120,81 @@ class FieldTypeChangedTest {
 					public java.io.InputStream f;
 				}"""
 		);
+	}
+
+	@Client("Object f = new A().f;")
+	@Test
+	void type_first_param_added_and_used_as_direct_field_type_no_break() {
+		var v1 = """
+			public class A {
+				public Object f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<Object> f = new A().f;")
+	@Test
+	void type_first_param_added_and_used_as_nested_field_type_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List<Object> f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T> f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("Number f = new A().f;")
+	@Test
+	void type_bounded_param_added_and_used_as_direct_field_type_no_break() {
+		var v1 = """
+			public class A {
+				public Number f;
+			}""";
+		var v2 = """
+			public class A<T extends Number> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String f = new A<String>().f;")
+	@Test
+	void type_formal_type_parameter_renamed_direct_field_type_no_break() {
+		var v1 = """
+			public class A<T> {
+				public T f;
+			}""";
+		var v2 = """
+			public class A<U> {
+				public U f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<String> f = new A<String>().f;")
+	@Test
+	void type_formal_type_parameter_renamed_nested_field_type_no_break() {
+		var v1 = """
+			public class A<T> {
+				public java.util.List<T> f;
+			}""";
+		var v2 = """
+			public class A<U> {
+				public java.util.List<U> f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Test

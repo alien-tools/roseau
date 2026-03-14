@@ -27,6 +27,66 @@ class FormalTypeParameterChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("new A().<String>m(\"\");")
+	@Test
+	void method_param_renamed_used_as_parameter_type() {
+		var v1 = """
+			public class A {
+				public <T> void m(T t) {}
+			}""";
+		var v2 = """
+			public class A {
+				public <U> void m(U u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().m(\"\");")
+	@Test
+	void type_param_renamed_used_as_method_parameter_type() {
+		var v1 = """
+			public class A<T> {
+				public void m(T t) {}
+			}""";
+		var v2 = """
+			public class A<U> {
+				public void m(U u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().<String>m(java.util.List.of(\"\"));")
+	@Test
+	void method_param_renamed_used_as_part_of_parameter_type() {
+		var v1 = """
+			public class A {
+				public <T> void m(java.util.List<T> t) {}
+			}""";
+		var v2 = """
+			public class A {
+				public <U> void m(java.util.List<U> u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().m(java.util.List.of(\"\"));")
+	@Test
+	void type_param_renamed_used_as_part_of_method_parameter_type() {
+		var v1 = """
+			public class A<T> {
+				public void m(java.util.List<T> t) {}
+			}""";
+		var v2 = """
+			public class A<U> {
+				public void m(java.util.List<U> u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("A<String, CharSequence> a = new A<>();")
 	@Test
 	void bounded_param_swapped() {
@@ -93,7 +153,7 @@ class FormalTypeParameterChangedTest {
 		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("A<Integer, Number> a = new A<>();")
+	@Client("A<Number, Number> a = new A<>();")
 	@Test
 	void bound_param_replaced_with_equivalent_resolved_bound() {
 		var v1 = "public class A<T extends Number, U extends T> {}";
@@ -297,6 +357,162 @@ class FormalTypeParameterChangedTest {
 	void unchanged_type_params_bounds() {
 		var v1 = "public class A<T extends java.util.List<? super U>, U> {}";
 		var v2 = "public class A<T extends java.util.List<? super U>, U> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("A<String> a = new A<>();")
+	@Test
+	void self_referencing_bound_renamed() {
+		var v1 = "public class A<T extends Comparable<T>> {}";
+		var v2 = "public class A<U extends Comparable<U>> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("A<Number> a = new A<>();")
+	@Test
+	void self_referencing_bound_tightened() {
+		var v1 = "public class A<T extends Number> {}";
+		var v2 = "public class A<T extends Integer> {}";
+
+		assertBC("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Client("new A().<String>m();")
+	@Test
+	void method_self_referencing_bound_renamed() {
+		var v1 = """
+			public class A {
+				public <T extends Comparable<T>> void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public <U extends Comparable<U>> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().<String>m();")
+	@Test
+	void final_method_self_referencing_bound_renamed() {
+		var v1 = """
+			public class A {
+				public final <T extends Comparable<T>> void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public final <U extends Comparable<U>> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().<Number>m();")
+	@Test
+	void method_self_referencing_bound_tightened() {
+		var v1 = """
+			public class A {
+				public <T extends Number> void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends Integer> void m() {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("A<String, String> a = new A<>();")
+	@Test
+	void cross_referencing_type_params_renamed() {
+		var v1 = "public class A<T, U extends Comparable<T>> {}";
+		var v2 = "public class A<X, Y extends Comparable<X>> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("A<Integer> a = new A<>();")
+	@Test
+	void multi_bound_intersection_renamed() {
+		var v1 = "public class A<T extends Number & Comparable<T>> {}";
+		var v2 = "public class A<U extends Number & Comparable<U>> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().<String>m();")
+	@Test
+	void simultaneous_type_and_exec_rename() {
+		var v1 = """
+			public class A<T> {
+				public <U extends T> void m() {}
+			}""";
+		var v2 = """
+			public class A<V> {
+				public <W extends V> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().<String>m();")
+	@Test
+	void simultaneous_type_and_exec_rename_final() {
+		var v1 = """
+			public class A<T> {
+				public final <U extends T> void m() {}
+			}""";
+		var v2 = """
+			public class A<V> {
+				public final <W extends V> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().<Integer>m();")
+	@Test
+	void multi_bound_intersection_renamed_method() {
+		var v1 = """
+			public class A {
+				public <T extends Number & Comparable<T>> void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public <U extends Number & Comparable<U>> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().<Integer>m();")
+	@Test
+	void multi_bound_intersection_renamed_final_method() {
+		var v1 = """
+			public class A {
+				public final <T extends Number & Comparable<T>> void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public final <U extends Number & Comparable<U>> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().m(java.util.List.of(\"\"));")
+	@Test
+	void param_generics_wildcard_bounds_type_param_renamed() {
+		var v1 = """
+			public class A<T> {
+				public void m(java.util.List<? extends T> l) {}
+			}""";
+		var v2 = """
+			public class A<U> {
+				public void m(java.util.List<? extends U> l) {}
+			}""";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
