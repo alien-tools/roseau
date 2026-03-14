@@ -18,10 +18,14 @@ TEST_METHOD_PATTERN = re.compile(
     re.MULTILINE,
 )
 
+# Java string literals may contain escaped quotes and backslashes.
+JAVA_STRING_LITERAL = r'"(?:\\.|[^"\\])*"'
+JAVA_TEXT_BLOCK_LITERAL = r'""".*?"""'
+
 # Non-greedy extraction of a Java 21 text block assigned to var v1 / v2.
 # We intentionally allow optional types/var and whitespace.
 V_PATTERN = re.compile(
-    r"(?P<var>v1|v2)\s*=\s*(?P<value>\"\"\".*?\"\"\"|\".*?\"|null)\s*;",
+    rf"(?P<var>v1|v2)\s*=\s*(?P<value>{JAVA_TEXT_BLOCK_LITERAL}|{JAVA_STRING_LITERAL}|null)\s*;",
     re.DOTALL,
 )
 
@@ -86,7 +90,10 @@ def _extract_v1_v2(method_body: str) -> Tuple[str, str]:
 
 
 # Matches @Client annotation with a string or text block payload placed on the test method
-CLIENT_PATTERN = re.compile(r"@Client\s*\(\s*(\"\"\".*?\"\"\"|\".*?\"|null)\s*\)", re.DOTALL)
+CLIENT_PATTERN = re.compile(
+    rf"@Client\s*\(\s*({JAVA_TEXT_BLOCK_LITERAL}|{JAVA_STRING_LITERAL}|null)\s*\)",
+    re.DOTALL,
+)
 
 def _iter_test_methods(content: str) -> Iterable[Tuple[str, str, str]]:
     """
