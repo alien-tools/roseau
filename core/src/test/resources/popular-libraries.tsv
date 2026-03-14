@@ -1,0 +1,59 @@
+# enabled	gav	reason
+true	io.github.alien-tools:roseau-core:0.4.0
+true	org.assertj:assertj-core:3.27.3	
+true	com.google.guava:guava:32.1.3-jre	
+true	org.eclipse.collections:eclipse-collections:13.0.0	
+true	io.dropwizard:dropwizard-core:4.0.1	
+true	org.reactivestreams:reactive-streams:1.0.4	
+true	com.google.code.gson:gson:2.10.1	
+true	org.junit.jupiter:junit-jupiter-api:5.14.0	
+true	org.junit.jupiter:junit-jupiter-engine:5.14.0	
+true	org.junit.jupiter:junit-jupiter-api:6.0.0	
+true	org.junit.jupiter:junit-jupiter-engine:6.0.0	
+true	com.squareup:javapoet:1.13.0	
+true	org.jooq:joor-java-8:0.9.15	
+true	joda-time:joda-time:2.12.5	
+true	com.google.dagger:dagger:2.55	
+true	ch.qos.logback:logback-classic:1.5.16	
+true	org.slf4j:slf4j-simple:2.0.16	
+true	org.slf4j:slf4j-api:2.0.16	
+true	tools.jackson.core:jackson-databind:3.0.0	
+true	org.apache.httpcomponents.client5:httpclient5:5.4.2	
+true	fr.inria.gforge.spoon:spoon-core:11.2.0	
+true	org.apache.commons:commons-lang3:3.17.0	
+true	commons-codec:commons-codec:1.18.0	
+true	commons-io:commons-io:2.18.0	
+true	commons-logging:commons-logging:1.3.5	
+true	commons-beanutils:commons-beanutils:1.10.0	
+true	org.hamcrest:hamcrest:3.0	
+true	com.alibaba:fastjson:2.0.54	
+true	org.json:json:20250107	
+true	org.apache.maven:maven-plugin-api:3.9.11	
+true	org.ow2.asm:asm:9.9	
+true	com.google.auto.service:auto-service:1.1.1	
+true	io.reactivex.rxjava3:rxjava:3.1.12	
+true	org.openjdk.jmh:jmh-core:1.37	
+true	org.glassfish.jersey.core:jersey-server:3.1.11	
+true	org.glassfish.jersey.core:jersey-client:3.1.11	
+false	org.osgi:org.osgi.core:6.0.0	Missing dependencies
+false	org.mapstruct:mapstruct:1.6.3	repeatable annotation difference between ASM and JDT
+false	org.eclipse.collections:eclipse-collections-api:13.0.0	interface diamond conflict
+false	commons-collections:commons-collections:3.2.2	interface diamond conflict
+false	org.apache.commons:commons-collections4:4.5.0	interface diamond conflict
+false	io.micrometer:micrometer-core:1.15.5	sources and JARs do not match (!= version?)
+false	com.fasterxml.jackson.core:jackson-core:2.20.0	shaded
+false	ch.qos.logback:logback-core:1.5.16	Multi-release JAR with different API
+false	org.apache.logging.log4j:log4j-api:2.24.3	Multi-release JAR with different API
+false	org.apache.logging.log4j:log4j-core:2.24.3	Multi-release JAR with different API
+false	org.hibernate.orm:hibernate-core:7.1.4.Final	Missing dependencies
+false	io.vertx:vertx-core:5.0.4	Missing dependencies
+false	org.quartz-scheduler:quartz:2.5.0	jakarta/JBoss missing
+false	org.immutables:value:2.11.6	Missing dependencies
+false	org.mockito:mockito-core:5.20.0	Missing dependencies
+false	org.projectlombok:lombok:1.18.42	Missing dependencies
+false	com.h2database:h2:2.3.232	javax
+false	org.springframework:spring-core:6.1.5	Missing dependencies
+false	org.springframework:spring-context:6.2.12	Missing dependencies
+false	org.springframework:spring-web:6.2.2	Missing dependencies
+false	io.projectreactor:reactor-core:3.6.3	Missing dependencies
+false	org.apache.kafka:kafka-clients:4.1.0	Missing dependencies

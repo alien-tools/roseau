@@ -25,6 +25,13 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+      - name: Restore popular library fixtures
+        uses: actions/cache@v5
+        with:
+          path: core/target/popular-libraries-fixtures
+          key: popular-libraries-${{ runner.os }}-jdk25-${{ hashFiles('core/src/test/resources/popular-libraries.tsv') }}
+          restore-keys: |
+            popular-libraries-${{ runner.os }}-jdk25-
       - name: Build with Maven
         run: ./mvnw --batch-mode -DskipTests package
       - name: Run tests
