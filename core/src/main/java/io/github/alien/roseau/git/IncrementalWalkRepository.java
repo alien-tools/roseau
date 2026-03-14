@@ -206,7 +206,7 @@ public class IncrementalWalkRepository {
 
 				long diffTime;
 				List<BreakingChange> bcs = List.of();
-				if (oldApi == null || currentApi == oldApi) {
+				if (oldApi == null || currentApi == oldApi || currentApi.equals(oldApi)) {
 					diffTime = 0;
 				} else {
 					sw.reset().start();
