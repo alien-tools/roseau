@@ -13,7 +13,6 @@ import io.github.alien.roseau.api.visit.Visit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
@@ -32,13 +31,13 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,8 +45,11 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopularLibrariesTestIT {
-	@TempDir
-	static Path tempDir;
+	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+		.followRedirects(HttpClient.Redirect.NORMAL)
+		.build();
+	private static final Path FIXTURE_CACHE_DIR = Path.of("target", "popular-libraries-fixtures");
+	private static final int SETUP_CONCURRENCY = Math.max(1, Runtime.getRuntime().availableProcessors());
 
 	static Stream<String> libraries() {
 		return Stream.of(
@@ -113,6 +115,40 @@ class PopularLibrariesTestIT {
 	}
 
 	record Lib(Path binary, Path sources, List<Path> classpath) {
+	}
+
+	record Coordinates(String groupId, String artifactId, String version) {
+		static Coordinates parse(String libraryGAV) {
+			var parts = libraryGAV.split(":");
+			return new Coordinates(parts[0], parts[1], parts[2]);
+		}
+
+		Path cacheDir() {
+			return FIXTURE_CACHE_DIR
+				.resolve(groupId.replace('.', '/'))
+				.resolve(artifactId)
+				.resolve(version);
+		}
+
+		Path binaryJar() {
+			return cacheDir().resolve(artifactId + "-" + version + ".jar");
+		}
+
+		Path sourcesJar() {
+			return cacheDir().resolve(artifactId + "-" + version + "-sources.jar");
+		}
+
+		Path extractedSourcesDir() {
+			return cacheDir().resolve(artifactId + "-" + version + "-sources");
+		}
+
+		Path pomFile() {
+			return cacheDir().resolve(artifactId + "-" + version + ".pom");
+		}
+
+		Path classpathFile() {
+			return cacheDir().resolve(artifactId + "-" + version + ".classpath");
+		}
 	}
 
 	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
@@ -232,45 +268,72 @@ class PopularLibrariesTestIT {
 		assertThat(asmToJdtBCs).isEmpty();
 	}
 
-	private static Path downloadSourcesJar(String groupId, String artifactId, String version) {
+	private static Path downloadSourcesJar(Coordinates coordinates) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s-sources.jar",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+			coordinates.groupId().replace('.', '/'),
+			coordinates.artifactId(),
+			coordinates.version(),
+			coordinates.artifactId(),
+			coordinates.version()), coordinates.sourcesJar());
 	}
 
-	private static Path downloadBinaryJar(String groupId, String artifactId, String version) {
+	private static Path downloadBinaryJar(Coordinates coordinates) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+			coordinates.groupId().replace('.', '/'),
+			coordinates.artifactId(),
+			coordinates.version(),
+			coordinates.artifactId(),
+			coordinates.version()), coordinates.binaryJar());
 	}
 
-	private static Path downloadPom(String groupId, String artifactId, String version) {
+	private static Path downloadPom(Coordinates coordinates) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.pom",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+			coordinates.groupId().replace('.', '/'),
+			coordinates.artifactId(),
+			coordinates.version(),
+			coordinates.artifactId(),
+			coordinates.version()), coordinates.pomFile());
 	}
 
-	private static Path download(String url) {
-		try (HttpClient client = HttpClient.newHttpClient()) {
+	private static Path download(String url, Path destination) {
+		if (Files.isRegularFile(destination)) {
+			return destination;
+		}
+
+		try {
+			Files.createDirectories(destination.getParent());
+			Path tempFile = Files.createTempFile(destination.getParent(), destination.getFileName().toString(), ".part");
 			HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.build();
-
-			String file = Long.toHexString(Double.doubleToLongBits(Math.random()));
-			Path tempFile = tempDir.resolve(file);
-			HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
+			HttpResponse<Path> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
 
 			if (response.statusCode() != 200) {
 				Files.deleteIfExists(tempFile);
 				throw new IOException("Failed to download JAR: HTTP " + response.statusCode());
 			}
 
-			return tempFile;
+			Files.move(tempFile, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			return destination;
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private Path extractSourcesJar(Path jarPath) {
+	private Path prepareSources(Coordinates coordinates) {
+		var sourceJar = downloadSourcesJar(coordinates);
+		return extractSourcesJar(sourceJar, coordinates.extractedSourcesDir());
+	}
+
+	private Path extractSourcesJar(Path jarPath, Path outputDir) {
+		var readyMarker = outputDir.resolve(".ready");
+		if (Files.isRegularFile(readyMarker)) {
+			return outputDir;
+		}
+
 		try {
-			Path outputDir = jarPath.resolveSibling(jarPath.getFileName() + "-extracted");
+			deleteRecursively(outputDir);
+			Files.createDirectories(outputDir);
 			try (JarFile jar = new JarFile(jarPath.toFile())) {
 				Enumeration<JarEntry> entries = jar.entries();
 				while (entries.hasMoreElements()) {
@@ -286,10 +349,64 @@ class PopularLibrariesTestIT {
 					}
 				}
 			}
+			Files.writeString(readyMarker, "ok");
 			return outputDir;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	private static List<Path> prepareClasspath(Coordinates coordinates) {
+		if (Files.isRegularFile(coordinates.classpathFile())) {
+			try {
+				return Files.readAllLines(coordinates.classpathFile()).stream()
+					.filter(line -> !line.isBlank())
+					.map(Path::of)
+					.filter(Files::isRegularFile)
+					.toList();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
+		var pom = downloadPom(coordinates);
+		var classpath = new MavenClasspathBuilder().buildClasspath(pom);
+		try {
+			Files.createDirectories(coordinates.classpathFile().getParent());
+			Files.write(coordinates.classpathFile(), classpath.stream()
+				.map(Path::toString)
+				.toList());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return classpath;
+	}
+
+	private static void deleteRecursively(Path root) throws IOException {
+		if (!Files.exists(root)) {
+			return;
+		}
+
+		try (var paths = Files.walk(root)) {
+			paths.sorted((left, right) -> right.getNameCount() - left.getNameCount())
+				.forEach(path -> {
+					try {
+						Files.deleteIfExists(path);
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
+	}
+
+	private Lib prepareLibrary(String libraryGAV) {
+		var coordinates = Coordinates.parse(libraryGAV);
+		var binary = downloadBinaryJar(coordinates);
+		var sources = prepareSources(coordinates);
+		var classpath = prepareClasspath(coordinates);
+		return new Lib(binary, sources, classpath);
 	}
 
 	private long countLinesOfCode(Path sourcesDir) {
@@ -331,34 +448,35 @@ class PopularLibrariesTestIT {
 
 	@BeforeAll
 	void setUp() {
-		try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-			var futures = libraries()
-				.collect(Collectors.toMap(
-					libraryGAV -> libraryGAV,
-					libraryGAV -> {
-						var parts = libraryGAV.split(":");
-						var groupId = parts[0];
-						var artifactId = parts[1];
-						var version = parts[2];
+		var libraries = libraries().toList();
+		var total = libraries.size();
 
-						var binaryFuture = CompletableFuture
-							.supplyAsync(() -> downloadBinaryJar(groupId, artifactId, version), executor);
-						var sourcesFuture = CompletableFuture
-							.supplyAsync(() -> downloadSourcesJar(groupId, artifactId, version), executor)
-							.thenApplyAsync(this::extractSourcesJar, executor);
-						var classpathFuture = CompletableFuture
-							.supplyAsync(() -> downloadPom(groupId, artifactId, version), executor)
-							.thenApplyAsync(pom -> new MavenClasspathBuilder().buildClasspath(pom), executor);
-						return CompletableFuture.allOf(binaryFuture, sourcesFuture, classpathFuture)
-							.thenApply(_ -> new Lib(binaryFuture.join(), sourcesFuture.join(), classpathFuture.join()));
-					}
-				));
+		System.out.printf("Preparing %d smoke-test fixtures using %d concurrent setup slots%n", total, SETUP_CONCURRENCY);
+		try (var executor = Executors.newFixedThreadPool(SETUP_CONCURRENCY)) {
+			var futures = IntStream.range(0, total)
+				.mapToObj(index -> executor.submit(() -> {
+					var libraryGAV = libraries.get(index);
+					var sw = Stopwatch.createStarted();
+					System.out.printf("[setup %d/%d] Preparing %s%n", index + 1, total, libraryGAV);
+					var prepared = prepareLibrary(libraryGAV);
+					System.out.printf("[setup %d/%d] Ready %s in %dms%n",
+						index + 1,
+						total,
+						libraryGAV,
+						sw.elapsed().toMillis());
+					return Map.entry(libraryGAV, prepared);
+				}))
+				.toList();
 
-			downloaded.putAll(futures.entrySet().stream()
-				.collect(Collectors.toMap(
-					Map.Entry::getKey,
-					e -> e.getValue().join()
-				)));
+			for (var future : futures) {
+				var entry = future.get();
+				downloaded.put(entry.getKey(), entry.getValue());
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e.getCause() != null ? e.getCause() : e);
 		}
 	}
 }
