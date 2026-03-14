@@ -24,6 +24,7 @@ class FieldTypeChangedTest {
 			bc(type, field, BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, line));
 	}
 
+	@Client("int i = new A().f;")
 	@Test
 	void boxing_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -38,6 +39,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("Integer i = new A().f;")
 	@Test
 	void unboxing_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -52,6 +54,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("int i = new A().f;")
 	@Test
 	void primitive_widening_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -66,6 +69,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("long l = new A().f;")
 	@Test
 	void primitive_narrowing_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -80,6 +84,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.io.InputStream is = new A().f;")
 	@Test
 	void reference_subtype_non_final_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -94,6 +99,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.io.InputStream is = new A().f;")
 	@Test
 	void reference_subtype_final_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -108,6 +114,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.io.FileInputStream fis = new A().f;")
 	@Test
 	void reference_supertype_non_final_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -197,6 +204,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("java.io.InputStream[] a = new A().f;")
 	@Test
 	void array_subtype_non_final_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -211,6 +219,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.io.InputStream[] a = new A().f;")
 	@Test
 	void array_subtype_final_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -225,6 +234,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("int[] a = new A().f;")
 	@Test
 	void array_primitive_component_change_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -239,6 +249,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("Object o = new A().f;")
 	@Test
 	void array_to_object_final_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -253,6 +264,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.util.List<String> l = new A().f;")
 	@Test
 	void generic_invariant_argument_change_source_only() {
 		assertSourceOnly("A", "A.f", 2,
@@ -267,6 +279,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("new A().f = java.util.List.of(1D);")
 	@Test
 	void generic_wildcard_non_final_source_only() {
 		assertSourceOnly("A", "A.f", 2,
@@ -281,6 +294,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.util.List<? extends Number> l = new A().f;")
 	@Test
 	void generic_wildcard_final_no_break() {
 		var v1 = """
@@ -295,6 +309,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("new A().f = java.util.List.of(\"\");")
 	@Test
 	void generic_erasure_change_non_final_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
@@ -309,6 +324,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.util.List<String> l = new A().f;")
 	@Test
 	void generic_erasure_change_final_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -323,6 +339,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.util.List<String> l = new A().f;")
 	@Test
 	void raw_subtype_to_parameterized_supertype_final_binary_only() {
 		assertBinaryOnly("A", "A.f", 2,
@@ -337,6 +354,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("java.util.List l = new A().f;")
 	@Test
 	void raw_to_parameterized_non_final_no_break() {
 		var v1 = """
@@ -351,6 +369,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("java.util.List<String> l = new A().f;")
 	@Test
 	void parameterized_to_raw_non_final_no_break() {
 		var v1 = """
@@ -365,6 +384,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("new A<CharSequence, String>().f = new StringBuilder();")
 	@Test
 	void type_parameter_bound_refinement_non_final_source_only() {
 		assertSourceOnly("A", "A.f", 2,
@@ -379,6 +399,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("CharSequence cs = new A<CharSequence, String>().f;")
 	@Test
 	void type_parameter_bound_refinement_final_no_break() {
 		var v1 = """
@@ -393,6 +414,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("Integer i = new A<Integer, String>().f;")
 	@Test
 	void unrelated_type_parameters_source_only() {
 		assertSourceOnly("A", "A.f", 2,
@@ -407,6 +429,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("int i = I.f;")
 	@Test
 	void interface_constant_type_change_source_only() {
 		assertSourceOnly("I", "I.f", 2,
@@ -421,6 +444,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("Double d = I.f;")
 	@Test
 	void interface_constant_narrowing_type_change_source_only() {
 		assertSourceOnly("I", "I.f", 2,
@@ -435,6 +459,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("int i = A.f;")
 	@Test
 	void class_constant_type_change_source_only() {
 		assertSourceOnly("A", "A.f", 2,
@@ -449,6 +474,7 @@ class FieldTypeChangedTest {
 		);
 	}
 
+	@Client("int i = A.f;")
 	@Test
 	void non_constant_static_final_type_change_binary_and_source() {
 		assertBinaryAndSource("A", "A.f", 2,
