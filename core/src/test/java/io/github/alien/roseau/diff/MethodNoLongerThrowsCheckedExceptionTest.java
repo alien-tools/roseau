@@ -186,7 +186,10 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 	@Client("""
 		try {
 			new A().m();
-		} catch (Throwable e) {}""")
+		} catch (Throwable e) {}
+		new A() {
+			@Override public void m() throws Throwable {}
+		};""")
 	@Test
 	void method_no_longer_throws_throwable() {
 		var v1 = """
@@ -325,7 +328,7 @@ class MethodNoLongerThrowsCheckedExceptionTest {
 
 	@Client("""
 		try {
-			A a = null;
+			A a = new A() {};
 			a.m();
 		} catch (java.io.IOException e) {}""")
 	@Test

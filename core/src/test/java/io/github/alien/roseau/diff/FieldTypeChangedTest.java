@@ -59,7 +59,7 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("long l = new A().f;")
+	@Client("new A().f = 0L;")
 	@Test
 	void primitive_narrowing_binary_and_source() {
 		var v1 = """
@@ -76,7 +76,7 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("java.io.InputStream is = new A().f;")
+	@Client("new A().f = new java.io.DataInputStream(null);")
 	@Test
 	void reference_subtype_non_final_binary_and_source() {
 		var v1 = """
@@ -201,7 +201,7 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("java.io.InputStream[] a = new A().f;")
+	@Client("new A().f = new java.io.InputStream[0];")
 	@Test
 	void array_subtype_non_final_binary_and_source() {
 		var v1 = """
@@ -347,7 +347,7 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("java.util.List<String> l = new A().f;")
+	@Client("String s = new A().f.get(0);")
 	@Test
 	void raw_subtype_to_parameterized_supertype_final_binary_only() {
 		var v1 = """
@@ -363,9 +363,9 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("java.util.List l = new A().f;")
+	@Client("new A().f.add(1);")
 	@Test
-	void raw_to_parameterized_non_final_no_break() {
+	void raw_to_parameterized() {
 		var v1 = """
 			public class A {
 				public java.util.List f;
@@ -378,9 +378,9 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("java.util.List<String> l = new A().f;")
+	@Client("String s = new A().f.get(0);")
 	@Test
-	void parameterized_to_raw_non_final_no_break() {
+	void parameterized_to_raw() {
 		var v1 = """
 			public class A {
 				public java.util.List<String> f;
@@ -456,7 +456,7 @@ class FieldTypeChangedTest {
 			bc("I", "I.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("double d = I.f;")
+	@Client("Double d = I.f;")
 	@Test
 	void interface_constant_narrowing_type_change_source_only() {
 		var v1 = """

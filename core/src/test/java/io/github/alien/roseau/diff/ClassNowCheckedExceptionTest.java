@@ -30,8 +30,10 @@ class ClassNowCheckedExceptionTest {
 	}
 
 	@Client("""
-		RuntimeException e = new A();
-		throw new A();""")
+		class X {
+			void consume(RuntimeException e) {}
+		}
+		new X().consume(new A());""")
 	@Test
 	void unchecked_exception_becomes_checked_exception() {
 		var v1 = "public class A extends RuntimeException {}";
@@ -56,8 +58,12 @@ class ClassNowCheckedExceptionTest {
 	}
 
 	@Client("""
-		Error e = new A();
-		throw new A();""")
+		class X {
+			Error make() {
+				return new A();
+			}
+		}
+		new X().make();""")
 	@Test
 	void error_becomes_checked_exception() {
 		var v1 = "public class A extends Error {}";
@@ -69,8 +75,10 @@ class ClassNowCheckedExceptionTest {
 	}
 
 	@Client("""
-		IllegalArgumentException e = new A();
-		throw new A();""")
+		class X {
+			void consume(IllegalArgumentException e) {}
+		}
+		new X().consume(new A());""")
 	@Test
 	void specific_unchecked_exception_becomes_specific_checked_exception() {
 		var v1 = "public class A extends IllegalArgumentException {}";
@@ -98,10 +106,12 @@ class ClassNowCheckedExceptionTest {
 	}
 
 	@Client("""
-		try {
-			java.io.IOException e = new A();
-			throw new A();
-		} catch (java.io.IOException e) {}""")
+		class X {
+			java.io.IOException make() {
+				return new A();
+			}
+		}
+		new X().make();""")
 	@Test
 	void specific_exception_becomes_generic() {
 		var v1 = "public class A extends java.io.IOException {}";
@@ -138,10 +148,12 @@ class ClassNowCheckedExceptionTest {
 	}
 
 	@Client("""
-		try {
-			Exception e = new A();
-			throw new A();
-		} catch (Exception e) {}""")
+		class X {
+			Exception make() {
+				return new A();
+			}
+		}
+		new X().make();""")
 	@Test
 	void exception_becomes_throwable() {
 		var v1 = "public class A extends Exception {}";
@@ -151,10 +163,12 @@ class ClassNowCheckedExceptionTest {
 	}
 
 	@Client("""
-		try {
-			Exception e = new A();
-			throw new A();
-		} catch (Exception e) {}""")
+		class X {
+			Exception make() {
+				return new A();
+			}
+		}
+		new X().make();""")
 	@Test
 	void exception_becomes_error() {
 		var v1 = "public class A extends Exception {}";

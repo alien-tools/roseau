@@ -22,7 +22,12 @@ class TypeSupertypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A b = new B();")
+	@Client("""
+		A b = new B();
+		class X {
+			A make() { return new B(); }
+		}
+		new X().make();""")
 	@Test
 	void public_superclass_removed() {
 		var v1 = """
@@ -50,7 +55,12 @@ class TypeSupertypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A c = new C();")
+	@Client("""
+		A c = new C();
+		class X {
+			A make() { return new C(); }
+		}
+		new X().make();""")
 	@Test
 	void public_superclass_removed_indirect() {
 		var v1 = """

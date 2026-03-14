@@ -60,7 +60,7 @@ class MethodNowThrowsCheckedExceptionTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 2));
 	}
 
-	@Client("new B().m();")
+	@Client("new A().m();")
 	@Test
 	void method_now_throws_indirect_with_override_without_throws() {
 		var v1 = """
@@ -304,7 +304,7 @@ class MethodNowThrowsCheckedExceptionTest {
 	}
 
 	@Client("""
-		A a = null;
+		A a = new A() {};
 		a.m();""")
 	@Test
 	void interface_default_method_now_throws() {

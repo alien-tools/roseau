@@ -29,7 +29,7 @@ class ImplicitObjectTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A a = new A() {};")
+	@Client("A a = new A() {}; a.hashCode();")
 	@Test
 	void object_methods_now_abstract() {
 		var v1 = """

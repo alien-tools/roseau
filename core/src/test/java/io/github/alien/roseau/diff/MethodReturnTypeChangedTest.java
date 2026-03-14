@@ -10,7 +10,9 @@ import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodReturnTypeChangedTest {
-	@Client("new A().m();")
+	@Client("""
+		new A().m();
+		new A() { @Override public void m() {} };""")
 	@Test
 	void void_to_non_void_binary_and_source() {
 		var v1 = """
@@ -44,7 +46,9 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("int i = new A().m();")
+	@Client("""
+		int i = new A().m();
+		new A() { @Override public int m() { return 0; } };""")
 	@Test
 	void boxing_non_final_binary_and_source() {
 		var v1 = """
@@ -77,7 +81,9 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("Integer i = new A().m();")
+	@Client("""
+		Integer i = new A().m();
+		new A() { @Override public Integer m() { return 0; } };""")
 	@Test
 	void unboxing_non_final_binary_and_source() {
 		var v1 = """
@@ -111,7 +117,9 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("long l = new A().m();")
+	@Client("""
+		long l = new A().m();
+		new A() { @Override public long m() { return 0L; } };""")
 	@Test
 	void primitive_narrowing_binary_and_source() {
 		var v1 = """
@@ -145,7 +153,9 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("java.io.InputStream is = new A().m();")
+	@Client("""
+		java.io.InputStream is = new A().m();
+		new A() { @Override public java.io.InputStream m() { return null; } };""")
 	@Test
 	void reference_subtype_non_final_binary_and_source() {
 		var v1 = """
@@ -361,7 +371,9 @@ class MethodReturnTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new A<CharSequence, String>().m();")
+	@Client("""
+		new A<CharSequence, String>().m();
+		new A<CharSequence, String>() { @Override public CharSequence m() { return null; } };""")
 	@Test
 	void subtype_type_parameter_non_final_source_only() {
 		var v1 = """
@@ -440,7 +452,7 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("java.util.List<String> l = new A().m();")
+	@Client("String s = new A().m().get(0);")
 	@Test
 	void raw_subtype_to_parameterized_supertype_final_binary_only() {
 		var v1 = """
@@ -473,7 +485,10 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("java.io.InputStream[] a = new A().m();")
+	@Client("""
+		java.io.InputStream[] a = new A().m();
+		new A() { @Override public java.io.InputStream[] m() { return new java.io.InputStream[] { null }; } };
+		""")
 	@Test
 	void array_subtype_non_final_binary_and_source() {
 		var v1 = """
@@ -545,7 +560,7 @@ class MethodReturnTypeChangedTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("B.m();")
+	@Client("int i = B.m();")
 	@Test
 	void inherited_static_method_changed_binary_and_source() {
 		var v1 = """

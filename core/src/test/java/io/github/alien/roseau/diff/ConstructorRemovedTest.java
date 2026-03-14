@@ -111,7 +111,8 @@ class ConstructorRemovedTest {
 			B(int i) {
 				super(i);
 			}
-		};""")
+		};
+		new B(0);""")
 	@Test
 	void protected_constructor_removed() {
 		var v1 = """
