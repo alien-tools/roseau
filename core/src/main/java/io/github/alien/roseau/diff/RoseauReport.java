@@ -4,6 +4,7 @@ import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
@@ -214,7 +215,7 @@ public final class RoseauReport {
 		}
 
 		public void typeBC(BreakingChangeKind kind, TypeDecl impactedType, BreakingChangeDetails details) {
-			bcs.add(new BreakingChange(kind, impactedType, impactedType, null, details));
+			bcs.add(new BreakingChange(kind, impactedType, impactedType, null, details, impactedType.getLocation()));
 		}
 
 		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember) {
@@ -233,7 +234,18 @@ public final class RoseauReport {
 			if (impactedMember.getContainingType().equals(TypeReference.OBJECT)) {
 				return;
 			}
-			bcs.add(new BreakingChange(kind, impactedType, impactedMember, newMember, details));
+			bcs.add(new BreakingChange(kind, impactedType, impactedMember, newMember, details,
+				reportLocation(impactedType, impactedMember)));
+		}
+
+		private SourceLocation reportLocation(TypeDecl impactedType, TypeMemberDecl impactedMember) {
+			return isLibraryType(impactedMember.getContainingType())
+				? impactedMember.getLocation()
+				: impactedType.getLocation();
+		}
+
+		private boolean isLibraryType(TypeReference<TypeDecl> type) {
+			return v1.getLibraryTypes().findType(type.getQualifiedName()).isPresent();
 		}
 
 		public RoseauReport build() {
