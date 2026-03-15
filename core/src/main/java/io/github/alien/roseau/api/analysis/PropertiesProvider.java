@@ -50,7 +50,8 @@ public interface PropertiesProvider {
 	 */
 	default boolean isExported(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		boolean isExported = type.isPublic() || (type.isProtected() && !isEffectivelyFinal(type));
+		boolean enclosingIsSubclassable = type.getEnclosingType().map(enc -> !isEffectivelyFinal(enc)).orElse(true);
+		boolean isExported = type.isPublic() || (type.isProtected() && enclosingIsSubclassable);
 		boolean isParentExported = type.getEnclosingType().map(this::isExported).orElse(true);
 
 		return isExported && isParentExported;

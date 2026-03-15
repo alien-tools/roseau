@@ -222,6 +222,78 @@ class NestedTypesExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
+	void protected_final_class_in_public_class(ApiBuilder builder) {
+		var api = builder.build("public class A { protected final class B {} }");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "A$B");
+
+		assertFalse(a.isNested());
+		assertTrue(api.isExported(a));
+		assertTrue(a.isPublic());
+		assertTrue(b.isNested());
+		assertTrue(api.isExported(b));
+		assertTrue(b.isProtected());
+		assertTrue(b.isFinal());
+		assertFalse(b.isStatic());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void protected_final_static_class_in_public_class(ApiBuilder builder) {
+		var api = builder.build("public class A { protected static final class B {} }");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "A$B");
+
+		assertFalse(a.isNested());
+		assertTrue(api.isExported(a));
+		assertTrue(a.isPublic());
+		assertTrue(b.isNested());
+		assertTrue(api.isExported(b));
+		assertTrue(b.isProtected());
+		assertTrue(b.isFinal());
+		assertTrue(b.isStatic());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void protected_class_in_public_final_class(ApiBuilder builder) {
+		var api = builder.build("public final class A { protected class B {} }");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "A$B");
+
+		assertFalse(a.isNested());
+		assertTrue(api.isExported(a));
+		assertTrue(a.isPublic());
+		assertTrue(a.isFinal());
+		assertTrue(b.isNested());
+		assertFalse(api.isExported(b));
+		assertTrue(b.isProtected());
+		assertFalse(b.isStatic());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void protected_static_class_in_public_final_class(ApiBuilder builder) {
+		var api = builder.build("public final class A { protected static class B {} }");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "A$B");
+
+		assertFalse(a.isNested());
+		assertTrue(api.isExported(a));
+		assertTrue(a.isPublic());
+		assertTrue(a.isFinal());
+		assertTrue(b.isNested());
+		assertFalse(api.isExported(b));
+		assertTrue(b.isProtected());
+		assertTrue(b.isStatic());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
 	void public_class_in_public_class(ApiBuilder builder) {
 		var api = builder.build("public class A { public class B {} }");
 
