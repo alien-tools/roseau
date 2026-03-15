@@ -1,5 +1,55 @@
 site_name: Roseau
 site_url: https://alien-tools.github.io/roseau
+site_description: Roseau checks breaking changes and binary or source compatibility between two versions of a Java library.
+site_author: alien-tools
+repo_url: https://github.com/alien-tools/roseau
+repo_name: alien-tools/roseau
+exclude_docs: |
+  requirements-docs.in
+  requirements-docs.txt
+
 theme:
   name: material
+  features:
+    - navigation.instant
+    - navigation.sections
+    - navigation.top
+    - content.code.copy
+    - content.tabs.link
 
+markdown_extensions:
+  - admonition
+  - attr_list
+  - md_in_html
+  - tables
+  - toc:
+      permalink: true
+  - pymdownx.details
+  - pymdownx.emoji:
+      emoji_index: !!python/name:material.extensions.emoji.twemoji ''
+      emoji_generator: !!python/name:material.extensions.emoji.to_svg ''
+  - pymdownx.highlight:
+      anchor_linenums: true
+      pygments_lang_class: true
+  - pymdownx.inlinehilite
+  - pymdownx.superfences
+  - pymdownx.tabbed:
+      alternate_style: true
+
+nav:
+  - Getting Started:
+      - Overview: index.md
+      - Quickstart: quickstart.md
+  - Guides:
+      - Comparing two versions: guides/compare.md
+      - Use in CI: guides/ci.md
+      - Ignoring known breaking changes: guides/ignored.md
+      - YAML configuration: guides/config.md
+      - Reports: guides/reports.md
+      - Maven plug-in: guides/maven-plugin.md
+  - Concepts:
+      - API surface: api-surface.md
+      - Kinds of breaking changes: breaking-change-kinds.md
+  - Reference:
+      - CLI options: reference/cli.md
+      - Maven plug-in options: reference/maven-plugin.md

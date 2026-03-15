@@ -41,7 +41,11 @@ import static picocli.CommandLine.Spec;
 	versionProvider = RoseauCLI.VersionProvider.class,
 	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
 		"--v1 and --v2 can point to either JAR files or source code directories. " +
-		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
+		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar",
+	footer = {
+		"",
+		"Output symbols: ✗ removal  ⚠ modification  ★ addition"
+	})
 public final class RoseauCLI implements Callable<Integer> {
 	private Console console;
 	@Spec
@@ -59,10 +63,10 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	@Option(names = "--v1", paramLabel = "<path>",
-		description = "Path to the first version of the library; either a source directory or a JAR")
+		description = "Path to the first version of the library; a JAR file or a source directory (e.g., src/main/java)")
 	private Path v1;
 	@Option(names = "--v2", paramLabel = "<path>",
-		description = "Path to the second version of the library; either a source directory or a JAR")
+		description = "Path to the second version of the library; a JAR file or a source directory (e.g., src/main/java)")
 	private Path v2;
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
