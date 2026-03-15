@@ -33,13 +33,13 @@ jobs:
       - name: Archive Maven staging repository
         run: tar -C target -czf target/maven-staging.tar.gz staging-deploy
       - name: Upload Maven staging repository
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7
         with:
           name: maven-staging
           path: target/maven-staging.tar.gz
           if-no-files-found: error
       - name: Upload shaded CLI JAR
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7
         with:
           name: single-jar
           path: cli/target/roseau-[0-9]*.jar
@@ -58,6 +58,8 @@ jobs:
         include:
           - runner: ubuntu-latest
             platform: linux-x86_64
+          - runner: ubuntu-24.04-arm
+            platform: linux-aarch_64
           - runner: macos-15-intel
             platform: osx-x86_64
           - runner: macos-latest
@@ -81,7 +83,7 @@ jobs:
         shell: bash
         run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
       - name: Upload jlink archive
-        uses: actions/upload-artifact@v7.0.0
+        uses: actions/upload-artifact@v7
         with:
           name: jlink-${{ matrix.platform }}
           path: target/jreleaser/assemble/roseau-standalone/jlink/*.zip
@@ -107,19 +109,19 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Download Maven staging repository
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8
         with:
           name: maven-staging
           path: target
       - name: Restore Maven staging repository
         run: tar -C target -xzf target/maven-staging.tar.gz
       - name: Download shaded CLI JAR
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8
         with:
           name: single-jar
           path: cli/target
       - name: Download jlink archives
-        uses: actions/download-artifact@v7.0.0
+        uses: actions/download-artifact@v8
         with:
           pattern: jlink-*
           merge-multiple: true

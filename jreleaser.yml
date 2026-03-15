@@ -13,7 +13,9 @@ project:
   inceptionYear: 2023
   stereotype: CLI
   snapshot:
-    label: v{{projectVersion}}
+    pattern: .*-SNAPSHOT
+    label: early-access
+    fullChangelog: true
   links:
     homepage: https://github.com/alien-tools/roseau
     documentation: https://alien-tools.github.io/roseau/
