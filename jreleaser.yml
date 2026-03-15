@@ -37,6 +37,29 @@ release:
       formatted: ALWAYS
       preset: conventional-commits
       format: '- {{commitShortHash}} {{commitTitle}}'
+      contributors:
+        enabled: false
+      hide:
+        categories:
+          - 'merge'
+      labelers:
+        - label: 'dependencies'
+          title: 'regex:^Bump '
+          order: 120
+        - label: 'others'
+          title: 'regex:.*'
+          order: 999
+      categories:
+        - key: 'dependencies'
+          title: 'Dependencies'
+          order: 70
+          labels:
+            - 'dependencies'
+        - key: 'others'
+          title: 'Others'
+          order: 80
+          labels:
+            - 'others'
 
 checksum:
   algorithms:
