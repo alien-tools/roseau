@@ -51,7 +51,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private static class Mode {
 		@Option(names = "--api",
-			description = "Serialize the API model of --v1; see --api-json")
+			description = "Serialize the API model of --v1 as JSON; prints to stdout if --api-json is not provided")
 		boolean api;
 		@Option(names = "--diff",
 			description = "Compute breaking changes between versions --v1 and --v2")
@@ -196,10 +196,6 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("Cannot find v1: %s".formatted(v1Path));
 		}
 
-		if (mode.api && options.v1().apiReport() == null) {
-			throw new RoseauException("--api-json option required with --api mode");
-		}
-
 		Path v2Path = options.v2().location();
 		if (mode.diff && (v2Path == null || !Files.exists(v2Path))) {
 			throw new RoseauException("Cannot find v2: %s".formatted(v2Path));
@@ -265,6 +261,12 @@ public final class RoseauCLI implements Callable<Integer> {
 			sw.elapsed().toMillis()));
 		if (libraryOptions.apiReport() != null) {
 			writeApiReport(types, libraryOptions.apiReport());
+		} else {
+			try {
+				console.println(types.toJson());
+			} catch (IOException e) {
+				throw new RoseauException("Error printing the API", e);
+			}
 		}
 	}
 

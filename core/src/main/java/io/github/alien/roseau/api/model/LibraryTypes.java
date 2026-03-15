@@ -158,6 +158,16 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
+	 * Serializes the API as a Json string.
+	 *
+	 * @return the Json representation of the API
+	 * @throws IOException if serialization fails
+	 */
+	public String toJson() throws IOException {
+		return MAPPER.writerWithDefaultPrettyPrinter().writeValueAsString(this);
+	}
+
+	/**
 	 * Parses the given Json file as extracted library types.
 	 *
 	 * @param jsonFile the {@link Path} to read Json from

@@ -205,12 +205,12 @@ class RoseauCLITest {
 
 	// --- APIs --- //
 	@Test
-	void write_api_no_file() {
+	void write_api_no_file_prints_to_stdout() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api");
 
-		assertThat(err.toString()).contains("--api-json option required with --api mode");
-		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+		assertThat(out.toString()).contains("allTypes");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
