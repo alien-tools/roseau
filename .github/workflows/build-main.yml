@@ -33,8 +33,7 @@ jobs:
         with:
           path: core/target/popular-libraries-fixtures
           key: popular-libraries-${{ runner.os }}-jdk25-${{ hashFiles('core/src/test/resources/popular-libraries.tsv') }}
-          restore-keys: |
-            popular-libraries-${{ runner.os }}-jdk25-
+          restore-keys: popular-libraries-${{ runner.os }}-jdk25-
       - name: Verify build
         run: ./mvnw --batch-mode verify
       - name: Build tests report
@@ -42,9 +41,7 @@ jobs:
         if: always()
         with:
           name: Maven Tests
-          path: |
-            **/target/surefire-reports/*.xml
-            **/target/failsafe-reports/*.xml
+          path: '**/target/surefire-reports/*.xml'
           reporter: java-junit
           fail-on-error: true
       - name: Stage Maven artifacts
