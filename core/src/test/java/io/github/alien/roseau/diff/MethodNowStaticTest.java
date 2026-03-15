@@ -12,7 +12,9 @@ import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 // §13.4.19
 class MethodNowStaticTest {
-	@Client("new A().m();")
+	@Client("""
+		new A().m();
+		new A() { @Override public void m() {} };""")
 	@Test
 	void overridable_method_now_static() {
 		var v1 = """

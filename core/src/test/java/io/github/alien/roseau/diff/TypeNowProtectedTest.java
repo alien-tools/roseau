@@ -10,7 +10,7 @@ import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class TypeNowProtectedTest {
-	@Client("A.B b;")
+	@Client("A.B b; new A().new B();")
 	@Test
 	void public_nested_type_now_protected() {
 		var v1 = "public class A { public class B {} }";

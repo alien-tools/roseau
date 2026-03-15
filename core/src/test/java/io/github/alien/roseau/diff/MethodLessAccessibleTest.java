@@ -26,8 +26,10 @@ class MethodLessAccessibleTest {
 
 	@Client("""
 		new A() {
-			@Override protected void m() {}
-		};""")
+			@Override protected void m() {
+				super.m();
+			}
+		}.m();""")
 	@Test
 	void protected_to_package_private() {
 		var v1 = """

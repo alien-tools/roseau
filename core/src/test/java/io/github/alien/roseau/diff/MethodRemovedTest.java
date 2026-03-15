@@ -30,8 +30,10 @@ class MethodRemovedTest {
 
 	@Client("""
 		new B() {
-			@Override protected void m() {}
-		};""")
+			@Override protected void m() {
+				super.m();
+			}
+		}.m();""")
 	@Test
 	void leaked_protected_method_now_private() {
 		var v1 = """
@@ -227,8 +229,10 @@ class MethodRemovedTest {
 
 	@Client("""
 		new A() {
-			@Override protected void m1() {}
-		};""")
+			@Override protected void m1() {
+				super.m1();
+			}
+		}.m1();""")
 	@Test
 	void method_visibility_protected_to_private() {
 		var v1 = """
@@ -243,7 +247,10 @@ class MethodRemovedTest {
 		assertBC("A", "A.m1()", BreakingChangeKind.METHOD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("new A().m(null, 1);")
+	@Client("""
+		new A().m(null, 1);
+		new A() { @Override public void m(Object o, int i) {} };
+		""")
 	@Test
 	void method_now_varargs() {
 		var v1 = """

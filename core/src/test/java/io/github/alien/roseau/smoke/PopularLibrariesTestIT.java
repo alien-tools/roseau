@@ -13,13 +13,13 @@ import io.github.alien.roseau.api.visit.Visit;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
-import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.UncheckedIOException;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -27,18 +27,19 @@ import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,76 +47,93 @@ import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class PopularLibrariesTestIT {
-	@TempDir
-	static Path tempDir;
+	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
+		.followRedirects(HttpClient.Redirect.NORMAL)
+		.build();
+	private static final Path FIXTURE_CACHE_DIR = Path.of("target", "popular-libraries-fixtures");
+	private static final String LIBRARIES_RESOURCE = "/popular-libraries.tsv";
+	private static final int SETUP_CONCURRENCY = Math.max(1, Runtime.getRuntime().availableProcessors());
 
 	static Stream<String> libraries() {
-		return Stream.of(
-			"io.github.alien-tools:roseau-core:0.4.0", // ;)
-			"org.assertj:assertj-core:3.27.3",
-			"com.google.guava:guava:32.1.3-jre",
-			"org.eclipse.collections:eclipse-collections:13.0.0",
-			"io.dropwizard:dropwizard-core:4.0.1",
-			"org.reactivestreams:reactive-streams:1.0.4",
-			"com.google.code.gson:gson:2.10.1",
-			"org.junit.jupiter:junit-jupiter-api:5.14.0",
-			"org.junit.jupiter:junit-jupiter-engine:5.14.0",
-			"org.junit.jupiter:junit-jupiter-api:6.0.0",
-			"org.junit.jupiter:junit-jupiter-engine:6.0.0",
-			"com.squareup:javapoet:1.13.0",
-			"org.jooq:joor-java-8:0.9.15",
-			"joda-time:joda-time:2.12.5",
-			"com.google.dagger:dagger:2.55",
-			"ch.qos.logback:logback-classic:1.5.16",
-			"org.slf4j:slf4j-simple:2.0.16",
-			"org.slf4j:slf4j-api:2.0.16",
-			"tools.jackson.core:jackson-databind:3.0.0",
-			"org.apache.httpcomponents.client5:httpclient5:5.4.2",
-			"fr.inria.gforge.spoon:spoon-core:11.2.0",
-			"org.apache.commons:commons-lang3:3.17.0",
-			"commons-codec:commons-codec:1.18.0",
-			"commons-io:commons-io:2.18.0",
-			"commons-logging:commons-logging:1.3.5",
-			"commons-beanutils:commons-beanutils:1.10.0",
-			"org.hamcrest:hamcrest:3.0",
-			"com.alibaba:fastjson:2.0.54",
-			"org.json:json:20250107",
-			"org.apache.maven:maven-plugin-api:3.9.11",
-			"org.ow2.asm:asm:9.9",
-			"com.google.auto.service:auto-service:1.1.1",
-			"io.reactivex.rxjava3:rxjava:3.1.12",
-			"org.openjdk.jmh:jmh-core:1.37",
-			"org.glassfish.jersey.core:jersey-server:3.1.11",
-			"org.glassfish.jersey.core:jersey-client:3.1.11"
-			//"org.osgi:org.osgi.core:6.0.0", // Missing dependencies
-			//"org.mapstruct:mapstruct:1.6.3", // repeatable annotation difference between ASM and JDT
-			//"org.eclipse.collections:eclipse-collections-api:13.0.0", // interface diamond conflict
-			//"commons-collections:commons-collections:3.2.2", // interface diamond conflict
-			//"org.apache.commons:commons-collections4:4.5.0", // interface diamond conflict
-			//"io.micrometer:micrometer-core:1.15.5", // sources and JARs do not match (!= version?)
-			//"com.fasterxml.jackson.core:jackson-core:2.20.0", // shaded
-			//"ch.qos.logback:logback-core:1.5.16", // Multi-release JAR with different API
-			//"org.apache.logging.log4j:log4j-api:2.24.3", // Multi-release JAR with different API
-			//"org.apache.logging.log4j:log4j-core:2.24.3", // Multi-release JAR with different API
-			//"org.hibernate.orm:hibernate-core:7.1.4.Final", // Missing dependencies
-			//"io.vertx:vertx-core:5.0.4", // Missing dependencies
-			//"org.quartz-scheduler:quartz:2.5.0", // jakarta/JBoss missing
-			//"org.immutables:value:2.11.6", // Missing dependencies
-			//"org.mockito:mockito-core:5.20.0", // Missing dependencies
-			//"org.projectlombok:lombok:1.18.42", // Missing dependencies
-			//"com.h2database:h2:2.3.232", // javax
-			//"org.springframework:spring-core:6.1.5", // Missing dependencies
-			//"org.springframework:spring-context:6.2.12", // Missing dependencies
-			//"org.springframework:spring-web:6.2.2", // Missing dependencies
-			//"io.projectreactor:reactor-core:3.6.3", // Missing dependencies
-			//"org.apache.kafka:kafka-clients:4.1.0", // Missing dependencies
-		);
+		return loadLibrarySpecs().stream()
+			.filter(LibrarySpec::enabled)
+			.map(LibrarySpec::gav);
 	}
 
 	record Lib(Path binary, Path sources, List<Path> classpath) {
 	}
 
+	record LibrarySpec(boolean enabled, String gav, String reason) {
+	}
+
+	record Coordinates(String groupId, String artifactId, String version) {
+		static Coordinates parse(String libraryGAV) {
+			var parts = libraryGAV.split(":");
+			return new Coordinates(parts[0], parts[1], parts[2]);
+		}
+
+		Path cacheDir() {
+			return FIXTURE_CACHE_DIR
+				.resolve(groupId.replace('.', '/'))
+				.resolve(artifactId)
+				.resolve(version);
+		}
+
+		Path binaryJar() {
+			return cacheDir().resolve(artifactId + "-" + version + ".jar");
+		}
+
+		Path sourcesJar() {
+			return cacheDir().resolve(artifactId + "-" + version + "-sources.jar");
+		}
+
+		Path extractedSourcesDir() {
+			return cacheDir().resolve(artifactId + "-" + version + "-sources");
+		}
+
+		Path pomFile() {
+			return cacheDir().resolve(artifactId + "-" + version + ".pom");
+		}
+
+		Path classpathFile() {
+			return cacheDir().resolve(artifactId + "-" + version + ".classpath");
+		}
+	}
+
 	static Map<String, Lib> downloaded = new ConcurrentHashMap<>();
+
+	private static List<LibrarySpec> loadLibrarySpecs() {
+		try (InputStream is = PopularLibrariesTestIT.class.getResourceAsStream(LIBRARIES_RESOURCE)) {
+			if (is == null) {
+				throw new IllegalStateException("Missing resource " + LIBRARIES_RESOURCE);
+			}
+
+			try (BufferedReader reader = new BufferedReader(new InputStreamReader(is, StandardCharsets.UTF_8))) {
+				return reader.lines()
+					.map(String::strip)
+					.filter(line -> !line.isEmpty())
+					.filter(line -> !line.startsWith("#"))
+					.map(PopularLibrariesTestIT::parseLibrarySpec)
+					.toList();
+			}
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+	}
+
+	private static LibrarySpec parseLibrarySpec(String line) {
+		var parts = line.split("\t", 3);
+		if (parts.length < 2) {
+			throw new IllegalArgumentException("Invalid popular library entry: " + line);
+		}
+		var enabled = switch (parts[0]) {
+			case "true" -> true;
+			case "false" -> false;
+			default -> throw new IllegalArgumentException("Invalid enabled flag in entry: " + line);
+		};
+		var reason = parts.length == 3 ? parts[2] : "";
+		return new LibrarySpec(enabled, parts[1], reason);
+	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("libraries")
@@ -178,6 +196,11 @@ class PopularLibrariesTestIT {
 		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
 		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
 
+		// Equality
+		sw.reset().start();
+		boolean apiEquals = asmApi.equals(jdtApi);
+		long apiEqualityTime = sw.elapsed().toMillis();
+
 		// Stats
 		long loc = countLinesOfCode(sourcesDir);
 		int numTypes = jdtTypes.getAllTypes().size();
@@ -191,10 +214,12 @@ class PopularLibrariesTestIT {
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
 				"\tASM: %dms; %dms diff%n" +
 				"\tJDT: %dms%n" +
-				"\tBCs: %s%n",
+				"\tBCs: %s%n" +
+				"\tEquals: %dms%n",
 			libraryGAV, loc, numTypes, numMethods, numFields,
 			asmApiTime, diffTime, jdtApiTime,
-			asmToAsmBCs.size());
+			asmToAsmBCs.size(),
+			apiEqualityTime);
 
 		if (!jdtTypes.getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
 			jdtTypes.getAllTypes().forEach(jdtType -> {
@@ -216,6 +241,7 @@ class PopularLibrariesTestIT {
 		// Equal APIs
 		assertThat(asmTypes.getAllTypes()).isEqualTo(jdtTypes.getAllTypes());
 		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
+		assertThat(apiEquals).isTrue();
 
 		// No BCs
 		assertThat(jdtToJdtBCs).isEmpty();
@@ -224,45 +250,72 @@ class PopularLibrariesTestIT {
 		assertThat(asmToJdtBCs).isEmpty();
 	}
 
-	private static Path downloadSourcesJar(String groupId, String artifactId, String version) {
+	private static Path downloadSourcesJar(Coordinates coordinates) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s-sources.jar",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+			coordinates.groupId().replace('.', '/'),
+			coordinates.artifactId(),
+			coordinates.version(),
+			coordinates.artifactId(),
+			coordinates.version()), coordinates.sourcesJar());
 	}
 
-	private static Path downloadBinaryJar(String groupId, String artifactId, String version) {
+	private static Path downloadBinaryJar(Coordinates coordinates) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.jar",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+			coordinates.groupId().replace('.', '/'),
+			coordinates.artifactId(),
+			coordinates.version(),
+			coordinates.artifactId(),
+			coordinates.version()), coordinates.binaryJar());
 	}
 
-	private static Path downloadPom(String groupId, String artifactId, String version) {
+	private static Path downloadPom(Coordinates coordinates) {
 		return download(String.format("https://repo1.maven.org/maven2/%s/%s/%s/%s-%s.pom",
-			groupId.replace('.', '/'), artifactId, version, artifactId, version));
+			coordinates.groupId().replace('.', '/'),
+			coordinates.artifactId(),
+			coordinates.version(),
+			coordinates.artifactId(),
+			coordinates.version()), coordinates.pomFile());
 	}
 
-	private static Path download(String url) {
-		try (HttpClient client = HttpClient.newHttpClient()) {
+	private static Path download(String url, Path destination) {
+		if (Files.isRegularFile(destination)) {
+			return destination;
+		}
+
+		try {
+			Files.createDirectories(destination.getParent());
+			Path tempFile = Files.createTempFile(destination.getParent(), destination.getFileName().toString(), ".part");
 			HttpRequest request = HttpRequest.newBuilder()
 				.uri(URI.create(url))
 				.build();
-
-			String file = Long.toHexString(Double.doubleToLongBits(Math.random()));
-			Path tempFile = tempDir.resolve(file);
-			HttpResponse<Path> response = client.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
+			HttpResponse<Path> response = HTTP_CLIENT.send(request, HttpResponse.BodyHandlers.ofFile(tempFile));
 
 			if (response.statusCode() != 200) {
 				Files.deleteIfExists(tempFile);
 				throw new IOException("Failed to download JAR: HTTP " + response.statusCode());
 			}
 
-			return tempFile;
+			Files.move(tempFile, destination, java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+			return destination;
 		} catch (IOException | InterruptedException e) {
 			throw new RuntimeException(e);
 		}
 	}
 
-	private Path extractSourcesJar(Path jarPath) {
+	private Path prepareSources(Coordinates coordinates) {
+		var sourceJar = downloadSourcesJar(coordinates);
+		return extractSourcesJar(sourceJar, coordinates.extractedSourcesDir());
+	}
+
+	private Path extractSourcesJar(Path jarPath, Path outputDir) {
+		var readyMarker = outputDir.resolve(".ready");
+		if (Files.isRegularFile(readyMarker)) {
+			return outputDir;
+		}
+
 		try {
-			Path outputDir = jarPath.resolveSibling(jarPath.getFileName() + "-extracted");
+			deleteRecursively(outputDir);
+			Files.createDirectories(outputDir);
 			try (JarFile jar = new JarFile(jarPath.toFile())) {
 				Enumeration<JarEntry> entries = jar.entries();
 				while (entries.hasMoreElements()) {
@@ -278,10 +331,64 @@ class PopularLibrariesTestIT {
 					}
 				}
 			}
+			Files.writeString(readyMarker, "ok");
 			return outputDir;
 		} catch (IOException e) {
 			throw new UncheckedIOException(e);
 		}
+	}
+
+	private static List<Path> prepareClasspath(Coordinates coordinates) {
+		if (Files.isRegularFile(coordinates.classpathFile())) {
+			try {
+				return Files.readAllLines(coordinates.classpathFile()).stream()
+					.filter(line -> !line.isBlank())
+					.map(Path::of)
+					.filter(Files::isRegularFile)
+					.toList();
+			} catch (IOException e) {
+				throw new UncheckedIOException(e);
+			}
+		}
+
+		var pom = downloadPom(coordinates);
+		var classpath = new MavenClasspathBuilder().buildClasspath(pom);
+		try {
+			Files.createDirectories(coordinates.classpathFile().getParent());
+			Files.write(coordinates.classpathFile(), classpath.stream()
+				.map(Path::toString)
+				.toList());
+		} catch (IOException e) {
+			throw new UncheckedIOException(e);
+		}
+		return classpath;
+	}
+
+	private static void deleteRecursively(Path root) throws IOException {
+		if (!Files.exists(root)) {
+			return;
+		}
+
+		try (var paths = Files.walk(root)) {
+			paths.sorted((left, right) -> right.getNameCount() - left.getNameCount())
+				.forEach(path -> {
+					try {
+						Files.deleteIfExists(path);
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				});
+		} catch (UncheckedIOException e) {
+			throw e.getCause();
+		}
+	}
+
+	private Lib prepareLibrary(String libraryGAV) {
+		var coordinates = Coordinates.parse(libraryGAV);
+		var binary = downloadBinaryJar(coordinates);
+		var sources = prepareSources(coordinates);
+		var classpath = prepareClasspath(coordinates);
+		return new Lib(binary, sources, classpath);
 	}
 
 	private long countLinesOfCode(Path sourcesDir) {
@@ -323,34 +430,35 @@ class PopularLibrariesTestIT {
 
 	@BeforeAll
 	void setUp() {
-		try (var executor = Executors.newVirtualThreadPerTaskExecutor()) {
-			var futures = libraries()
-				.collect(Collectors.toMap(
-					libraryGAV -> libraryGAV,
-					libraryGAV -> {
-						var parts = libraryGAV.split(":");
-						var groupId = parts[0];
-						var artifactId = parts[1];
-						var version = parts[2];
+		var libraries = libraries().toList();
+		var total = libraries.size();
 
-						var binaryFuture = CompletableFuture
-							.supplyAsync(() -> downloadBinaryJar(groupId, artifactId, version), executor);
-						var sourcesFuture = CompletableFuture
-							.supplyAsync(() -> downloadSourcesJar(groupId, artifactId, version), executor)
-							.thenApplyAsync(this::extractSourcesJar, executor);
-						var classpathFuture = CompletableFuture
-							.supplyAsync(() -> downloadPom(groupId, artifactId, version), executor)
-							.thenApplyAsync(pom -> new MavenClasspathBuilder().buildClasspath(pom), executor);
-						return CompletableFuture.allOf(binaryFuture, sourcesFuture, classpathFuture)
-							.thenApply(_ -> new Lib(binaryFuture.join(), sourcesFuture.join(), classpathFuture.join()));
-					}
-				));
+		System.out.printf("Preparing %d smoke-test fixtures using %d concurrent setup slots%n", total, SETUP_CONCURRENCY);
+		try (var executor = Executors.newFixedThreadPool(SETUP_CONCURRENCY)) {
+			var futures = IntStream.range(0, total)
+				.mapToObj(index -> executor.submit(() -> {
+					var libraryGAV = libraries.get(index);
+					var sw = Stopwatch.createStarted();
+					System.out.printf("[setup %d/%d] Preparing %s%n", index + 1, total, libraryGAV);
+					var prepared = prepareLibrary(libraryGAV);
+					System.out.printf("[setup %d/%d] Ready %s in %dms%n",
+						index + 1,
+						total,
+						libraryGAV,
+						sw.elapsed().toMillis());
+					return Map.entry(libraryGAV, prepared);
+				}))
+				.toList();
 
-			downloaded.putAll(futures.entrySet().stream()
-				.collect(Collectors.toMap(
-					Map.Entry::getKey,
-					e -> e.getValue().join()
-				)));
+			for (var future : futures) {
+				var entry = future.get();
+				downloaded.put(entry.getKey(), entry.getValue());
+			}
+		} catch (InterruptedException e) {
+			Thread.currentThread().interrupt();
+			throw new RuntimeException(e);
+		} catch (ExecutionException e) {
+			throw new RuntimeException(e.getCause() != null ? e.getCause() : e);
 		}
 	}
 }

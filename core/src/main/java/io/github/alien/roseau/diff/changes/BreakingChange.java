@@ -22,7 +22,8 @@ public record BreakingChange(
 	TypeDecl impactedType,
 	Symbol impactedSymbol,
 	Symbol newSymbol,
-	BreakingChangeDetails details
+	BreakingChangeDetails details,
+	SourceLocation location
 ) {
 	public BreakingChange {
 		Preconditions.checkNotNull(kind);
@@ -30,6 +31,11 @@ public record BreakingChange(
 		Preconditions.checkNotNull(impactedSymbol);
 		if (details == null) {
 			details = new BreakingChangeDetails.None();
+		}
+		if (location == null) {
+			location = impactedSymbol.getLocation() == SourceLocation.NO_LOCATION
+				? impactedType.getLocation()
+				: impactedSymbol.getLocation();
 		}
 	}
 
@@ -52,9 +58,7 @@ public record BreakingChange(
 	 * @return the location
 	 */
 	public SourceLocation getLocation() {
-		return impactedSymbol.getLocation() == SourceLocation.NO_LOCATION
-			? impactedType.getLocation()
-			: impactedSymbol.getLocation();
+		return location;
 	}
 
 	private static String printSymbol(Symbol s) {

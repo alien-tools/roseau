@@ -4,7 +4,6 @@ import com.google.common.io.MoreFiles;
 import com.google.common.io.RecursiveDeleteOption;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.options.RoseauOptions.Exclude;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
@@ -18,6 +17,7 @@ import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
+import io.github.alien.roseau.options.RoseauOptions.Exclude;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.FileObject;
@@ -67,7 +67,7 @@ public class TestUtils {
 	public static void assertBCs(List<BreakingChange> actualBCs, BC... expectedVar) {
 		var expected = Arrays.asList(expectedVar);
 		var actual = actualBCs.stream().map(bc -> bc(bc.impactedType().getQualifiedName(),
-				bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.impactedSymbol().getLocation().line()))
+				bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.getLocation().line()))
 			.toList();
 		if (expected.size() != actual.size() || !actual.containsAll(expected) || !expected.containsAll(actual)) {
 			String desc = expected.stream().map(expectedBC ->
@@ -84,7 +84,7 @@ public class TestUtils {
 		if (!bcs.isEmpty()) {
 			String found = bcs.stream()
 				.map(bc -> "[%s, %s, %s, %d]".formatted(bc.impactedType().getQualifiedName(), bc.impactedSymbol().getQualifiedName(),
-					bc.kind(), bc.impactedSymbol().getLocation().line()))
+					bc.kind(), bc.getLocation().line()))
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);
 		}
@@ -283,11 +283,16 @@ public class TestUtils {
 	}
 
 	public static API buildSourcesAPI(String sources) {
+		return buildSourcesAPI(sources, List.of());
+	}
+
+	public static API buildSourcesAPI(String sources, List<Path> classpath) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
 			Library library = Library.builder()
 				.location(sourcesPath)
+				.classpath(classpath)
 				.build();
 			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
@@ -360,6 +365,13 @@ public class TestUtils {
 		} catch (Exception e) {
 			System.out.println("JApiCmp comparison failed: " + e.getMessage());
 		}*/
+	}
+
+	public static List<BreakingChange> buildDiff(String sourcesV1, List<Path> classpathV1,
+	                                             String sourcesV2, List<Path> classpathV2) {
+		API v1 = buildSourcesAPI(sourcesV1, classpathV1);
+		API v2 = buildSourcesAPI(sourcesV2, classpathV2);
+		return Roseau.diff(v1, v2).getBreakingChanges();
 	}
 
 	/*public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.rules.breaking;
 
+import io.github.alien.roseau.api.analysis.TypeParameterMapping;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -26,19 +27,32 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 					new BreakingChangeDetails.MethodParameterGenericsChanged(pt1, pt2);
 
 				if (pt1.typeArguments().size() != pt2.typeArguments().size()) {
-					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, ctx.oldType(), oldExecutable, newExecutable, details);
+					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED,
+						ctx.oldType(), oldExecutable, newExecutable, details);
 					return;
 				}
 
+				TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forExecutable(
+					ctx.oldType(), ctx.newType(), oldExecutable, newExecutable);
+				TypeReference<?> normalizedPt1 = (TypeReference<?>) normalizer.normalizeOld(pt1);
+
 				boolean isFinalExecutable = ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);
-				// Can be overridden = invariant
-				if (!isFinalExecutable && !pt1.equals(pt2)) {
-					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, ctx.oldType(), oldExecutable, newExecutable, details);
+
+				// Can be overridden = invariant: only rename old type params (do NOT erase new type params, since
+				// generizing a type argument like List<Object> → List<T> IS a source break due to name clashes
+				// in overriding subclasses)
+				if (!isFinalExecutable && !normalizedPt1.equals(pt2)) {
+					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED,
+						ctx.oldType(), oldExecutable, newExecutable, details);
 				}
 
-				// Can't = variance
-				if (isFinalExecutable && !ctx.v1().isSubtypeOf(oldExecutable, pt1, pt2)) {
-					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, ctx.oldType(), oldExecutable, newExecutable, details);
+				// Can't be overridden = variance: also erase newly added type params
+				if (isFinalExecutable) {
+					TypeReference<?> normalizedPt2 = (TypeReference<?>) normalizer.normalizeNew(pt2);
+					if (!ctx.v2().isSubtypeOf(newExecutable, normalizedPt1, normalizedPt2)) {
+						ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED,
+							ctx.oldType(), oldExecutable, newExecutable, details);
+					}
 				}
 			}
 		}

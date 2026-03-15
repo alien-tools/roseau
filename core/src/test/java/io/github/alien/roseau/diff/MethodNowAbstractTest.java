@@ -9,7 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodNowAbstractTest {
-	@Client("new A(){};")
+	@Client("new A(){}.m();")
 	@Test
 	void method_now_abstract() {
 		var v1 = """
@@ -24,7 +24,7 @@ class MethodNowAbstractTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("new I(){};")
+	@Client("new I(){}.m();")
 	@Test
 	void default_now_abstract() {
 		var v1 = """
@@ -57,7 +57,7 @@ class MethodNowAbstractTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new A(){};")
+	@Client("new A(){}.m();")
 	@Test
 	void method_becomes_abstract_in_superclass_affecting_subclass() {
 		var v1 = """
@@ -77,7 +77,7 @@ class MethodNowAbstractTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("new A(){};")
+	@Client("new A(){}.m();")
 	@Test
 	void abstract_class_implements_interface_method_as_abstract() {
 		var v1 = """
@@ -99,7 +99,7 @@ class MethodNowAbstractTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("B b = new B() {};")
+	@Client("new B(){}.m();")
 	@Test
 	void super_concrete_method_becomes_abstract_explicit() {
 		var v1 = """
@@ -120,7 +120,7 @@ class MethodNowAbstractTest {
 		assertBC("B", "B.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("B b = new B() {};")
+	@Client("new B(){}.m();")
 	@Test
 	void super_concrete_method_becomes_abstract_implicit() {
 		var v1 = """

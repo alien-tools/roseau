@@ -17,7 +17,7 @@ jobs:
     permissions:
       contents: read
       checks: write
-    timeout-minutes: 45
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
         with:
@@ -28,6 +28,13 @@ jobs:
           java-version: '25'
           distribution: 'temurin'
           cache: 'maven'
+      - name: Restore popular library fixtures
+        uses: actions/cache@v5
+        with:
+          path: core/target/popular-libraries-fixtures
+          key: popular-libraries-${{ runner.os }}-jdk25-${{ hashFiles('core/src/test/resources/popular-libraries.tsv') }}
+          restore-keys: |
+            popular-libraries-${{ runner.os }}-jdk25-
       - name: Verify build
         run: ./mvnw --batch-mode verify
       - name: Build tests report
@@ -89,10 +96,8 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Build CLI artifacts
-        shell: bash
         run: ./mvnw --batch-mode -pl cli -am -DskipTests clean package
       - name: Assemble jlink archive
-        shell: bash
         run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
       - name: Upload jlink archive
         uses: actions/upload-artifact@v7

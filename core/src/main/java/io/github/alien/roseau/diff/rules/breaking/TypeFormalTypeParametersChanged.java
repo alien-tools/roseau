@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.rules.breaking;
 
+import io.github.alien.roseau.api.analysis.TypeParameterMapping;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -32,15 +33,18 @@ public class TypeFormalTypeParametersChanged implements TypeRule<TypeDecl> {
 			return;
 		}
 
+		var normalizer = TypeParameterMapping.Normalizer.forType(oldType, newType);
+
 		for (int i = 0; i < paramsCount1; i++) {
 			FormalTypeParameter p1 = oldType.getFormalTypeParameters().get(i);
 			FormalTypeParameter p2 = newType.getFormalTypeParameters().get(i);
 
 			// Each bound in the new version should be a supertype (inclusive) of an existing one
-			// so that the type constraints imposed by p1 are stricter than those imposed by p2
+			// so that the type constraints imposed by p1 are stricter than those imposed by p2.
+			// We normalize b1 from v1's namespace to v2's namespace before comparing.
 			if (p2.bounds().stream()
 				.anyMatch(b2 -> !b2.equals(TypeReference.OBJECT) &&
-					p1.bounds().stream().noneMatch(b1 -> ctx.v2().isSubtypeOf(newType, b1, b2)))) {
+					p1.bounds().stream().noneMatch(b1 -> ctx.v2().isSubtypeOf(newType, normalizer.normalizeOld(b1), b2)))) {
 				ctx.builder().typeBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, oldType,
 					new BreakingChangeDetails.FormalTypeParametersChanged(p1, p2));
 			}
