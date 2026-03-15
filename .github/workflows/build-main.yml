@@ -96,9 +96,9 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Build CLI artifacts
-        run: ./mvnw --batch-mode -pl cli -am -DskipTests clean package
+        run: ./mvnw --batch-mode ${{ runner.os == 'Windows' && '-Dmvnd.noDaemon=true' || '' }} -pl cli -am -DskipTests clean package
       - name: Assemble jlink archive
-        run: ./mvnw --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
+        run: ./mvnw --batch-mode ${{ runner.os == 'Windows' && '-Dmvnd.noDaemon=true' || '' }} -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
       - name: Upload jlink archive
         uses: actions/upload-artifact@v7
         with:
