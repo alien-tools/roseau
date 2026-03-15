@@ -1,262 +1,123 @@
 package io.github.alien.roseau.git;
 
-import com.google.common.base.Stopwatch;
-import io.github.alien.roseau.Library;
-import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.LibraryTypes;
-import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
-import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
-import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.diff.changes.BreakingChange;
-import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.extractors.incremental.ChangedFiles;
-import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
-import io.github.alien.roseau.extractors.jdt.IncrementalJdtTypesExtractor;
-import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.module.SimpleModule;
+import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
-import org.eclipse.jgit.api.Git;
-import org.eclipse.jgit.revwalk.RevCommit;
-import org.eclipse.jgit.revwalk.RevWalk;
-import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
 
-import java.io.BufferedWriter;
-import java.nio.file.Files;
+import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Map;
-import java.util.Optional;
 
 /**
- * Incremental commit walker: builds APIs incrementally from one commit to the next.
+ * Entry point for batch repository analysis. Loads configuration from a YAML file
+ * and delegates to {@link GitWalker} for each configured repository.
  */
 public final class IncrementalWalkRepository {
 	private static final Logger LOGGER = LogManager.getLogger(IncrementalWalkRepository.class);
+	private static final RoseauOptions.Exclude EMPTY_EXCLUDE = new RoseauOptions.Exclude(List.of(), List.of());
+	private static final ObjectMapper MAPPER = createMapper();
+
+	record Repository(
+		String id,
+		String url,
+		Path gitDir,
+		List<Path> sourceRoots,
+		Path outputDir,
+		RoseauOptions.Exclude exclusions
+	) {
+	}
 
 	private IncrementalWalkRepository() {
 	}
 
 	static void main() throws Exception {
 		Path config = Path.of("walk.yaml");
-		List<RepositoryWalkerUtils.Repository> repos = RepositoryWalkerUtils.loadConfig(config);
+		List<Repository> repos = loadConfig(config);
 		repos.parallelStream().forEach(repo -> {
 			try {
-				walk(repo.id(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.outputDir(), repo.exclusions());
+				new GitWalker(new GitWalker.Config(
+					repo.id(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.exclusions()
+				)).walkToCsv(repo.outputDir());
 			} catch (Exception e) {
-				LOGGER.error("Incremental analysis of {} failed", repo.url(), e);
+				LOGGER.error("Analysis of {} failed", repo.url(), e);
 			}
 		});
 	}
 
-	static void walk(String library, String url, Path gitDir, List<Path> sourceRoots, Path outputDir,
-	                 RoseauOptions.Exclude exclusions) throws Exception {
-		try {
-			walkOnce(library, url, gitDir, sourceRoots, outputDir, exclusions);
-		} catch (Exception e) {
-			if (!RepositoryWalkerUtils.isMissingObjectFailure(e)) {
-				throw e;
-			}
-			LOGGER.warn("Repository {} is missing objects during checkout, re-cloning and retrying once", gitDir, e);
-			RepositoryWalkerUtils.recloneRepository(url, gitDir);
-			walkOnce(library, url, gitDir, sourceRoots, outputDir, exclusions);
+	// --- YAML config loading ---
+
+	static List<Repository> loadConfig(Path yamlFile) throws IOException {
+		JsonNode root = MAPPER.readTree(yamlFile.toFile());
+		if (root.isArray()) {
+			List<Repository> repositories = MAPPER.convertValue(root, new TypeReference<>() {
+			});
+			return repositories.stream().map(IncrementalWalkRepository::withDefaults).toList();
 		}
+
+		JsonNode defaultsNode = root.path("defaults");
+		RoseauOptions.Exclude defaultExclusions = defaultsNode.has("exclusions")
+			? MAPPER.convertValue(defaultsNode.get("exclusions"), RoseauOptions.Exclude.class)
+			: EMPTY_EXCLUDE;
+		List<Repository> repositories = MAPPER.convertValue(root.path("repositories"), new TypeReference<>() {
+		});
+
+		return repositories.stream()
+			.map(IncrementalWalkRepository::withDefaults)
+			.map(repo -> repoWithMergedExclusions(repo, defaultExclusions))
+			.toList();
 	}
 
-	private static void walkOnce(String library, String url, Path gitDir, List<Path> sourceRoots, Path outputDir,
-	                             RoseauOptions.Exclude exclusions) throws Exception {
-		RepositoryWalkerUtils.prepareRepository(url, gitDir);
-		Stopwatch sw = Stopwatch.createUnstarted();
-		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();
-		RepositoryWalkerUtils.OutputFiles outputFiles = RepositoryWalkerUtils.resolveOutputFiles(library, outputDir);
-		try (BufferedWriter commitsWriter = RepositoryWalkerUtils.openCsvWriter(outputFiles.commitsCsv());
-		     BufferedWriter bcsWriter = RepositoryWalkerUtils.openCsvWriter(outputFiles.bcsCsv());
-		     org.eclipse.jgit.lib.Repository repo = builder.build();
-		     Git git = new Git(repo);
-		     RevWalk rw = new RevWalk(repo)) {
-			LOGGER.info("Writing commit data to {}", outputFiles.commitsCsv().toAbsolutePath().normalize());
-			LOGGER.info("Writing breaking changes data to {}", outputFiles.bcsCsv().toAbsolutePath().normalize());
-			RepositoryWalkerUtils.writeCsvHeader(commitsWriter, RepositoryWalkerUtils.COMMITS_HEADER);
-			RepositoryWalkerUtils.writeCsvHeader(bcsWriter, RepositoryWalkerUtils.BCS_HEADER);
+	private static Repository withDefaults(Repository repo) {
+		RoseauOptions.Exclude exclusions = sanitizeExclude(repo.exclusions());
+		Path outputDir = repo.outputDir() == null ? Path.of(".") : repo.outputDir();
+		return new Repository(repo.id(), repo.url(), repo.gitDir(), repo.sourceRoots(), outputDir, exclusions);
+	}
 
-			List<RevCommit> chain = RepositoryWalkerUtils.firstParentChain(repo, rw);
-			LOGGER.info("Incrementally walking {} commits", chain.size());
+	private static Repository repoWithMergedExclusions(Repository repo, RoseauOptions.Exclude defaults) {
+		RoseauOptions.Exclude merged = mergeExclusions(defaults, repo.exclusions());
+		return new Repository(repo.id(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.outputDir(), merged);
+	}
 
-			API oldApi = null;
-			RepositoryWalkerUtils.ApiStats oldStats = null;
-			RepositoryWalkerUtils.ExclusionMatcher exclusionMatcher =
-				RepositoryWalkerUtils.exclusionMatcher(exclusions);
-			Path oldSourceRoot = null;
-			RevCommit previousWrittenCommit = null;
-			Map<String, List<String>> tagsByCommit = RepositoryWalkerUtils.tagsByCommit(repo);
-			String branch = RepositoryWalkerUtils.defaultBranchName(repo);
-			List<Path> classpath = List.of();
+	private static RoseauOptions.Exclude mergeExclusions(RoseauOptions.Exclude defaults, RoseauOptions.Exclude local) {
+		RoseauOptions.Exclude safeDefaults = sanitizeExclude(defaults);
+		RoseauOptions.Exclude safeLocal = sanitizeExclude(local);
+		List<String> mergedNames = new ArrayList<>();
+		mergedNames.addAll(safeDefaults.names());
+		mergedNames.addAll(safeLocal.names());
+		List<RoseauOptions.AnnotationExclusion> mergedAnnotations = new ArrayList<>();
+		mergedAnnotations.addAll(safeDefaults.annotations());
+		mergedAnnotations.addAll(safeLocal.annotations());
+		return new RoseauOptions.Exclude(List.copyOf(mergedNames), List.copyOf(mergedAnnotations));
+	}
 
-			JdtTypesExtractor jdtExtractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
-			IncrementalTypesExtractor incrementalExtractor = new IncrementalJdtTypesExtractor(jdtExtractor);
-
-			for (RevCommit commit : chain) {
-				String sha = commit.getName();
-				String msg = commit.getShortMessage();
-				String conventionalCommitTag = RepositoryWalkerUtils.conventionalCommitTag(msg);
-				String parentCommit = RepositoryWalkerUtils.parentCommit(commit);
-				String tags = RepositoryWalkerUtils.joinedTags(tagsByCommit, sha);
-
-				RepositoryWalkerUtils.CommitDiff commitDiff = RepositoryWalkerUtils.computeCommitDiff(repo, commit);
-				if (!commitDiff.javaChanged()) {
-					if (oldStats != null) {
-						long daysSincePrevCommit = RepositoryWalkerUtils.daysSincePreviousCommit(previousWrittenCommit, commit);
-						RepositoryWalkerUtils.writeCommitRow(
-							commitsWriter,
-							library,
-							url,
-							commit,
-							conventionalCommitTag,
-							parentCommit,
-							branch,
-							tags,
-							tags,
-							daysSincePrevCommit,
-							new RepositoryWalkerUtils.CommitAnalysis(commitDiff, oldStats, 0, 0, 0, false, 0, 0, 0, 0, 0, "")
-						);
-						previousWrittenCommit = commit;
-						LOGGER.info("Skipping commit {} (no Java source changes), reusing previous API stats", sha);
-					} else {
-						LOGGER.info("Skipping commit {} (no Java source changes), no previous API stats to reuse", sha);
-					}
-					continue;
-				}
-
-				List<String> errors = new ArrayList<>();
-
-				sw.reset().start();
-				RepositoryWalkerUtils.makePristine(git);
-				LOGGER.debug("Checking out commit {}", sha);
-				git.checkout()
-					.setName(sha)
-					.setForced(true)
-					.call();
-				long checkoutTime = sw.elapsed().toMillis();
-
-				Optional<Path> srcOpt = sourceRoots.stream().filter(Files::exists).findFirst();
-				if (srcOpt.isEmpty()) {
-					LOGGER.info("Skipping commit {} (no configured source root exists)", sha);
-					continue;
-				}
-				Path sourceRoot = srcOpt.get();
-				LOGGER.info("Commit {}: {} (source root {})", sha, msg, sourceRoot);
-
-				long classpathTime = 0L;
-				boolean canIncremental = oldApi != null && oldSourceRoot != null && oldSourceRoot.equals(sourceRoot);
-				boolean diffUnknown = commitDiff.updatedJavaFiles().isEmpty()
-					&& commitDiff.deletedJavaFiles().isEmpty()
-					&& commitDiff.createdJavaFiles().isEmpty();
-
-				sw.reset().start();
-				API currentApi;
-				if (!canIncremental || diffUnknown) {
-					if (diffUnknown) {
-						String warnMsg = "Could not compute changed Java files for commit " + sha + "; falling back to full rebuild";
-						LOGGER.warn(warnMsg);
-						errors.add(warnMsg);
-					}
-					currentApi = RepositoryWalkerUtils.buildApi(sourceRoot, classpath, exclusions, jdtExtractor);
-				} else {
-					Optional<Path> sourceRootRelative = RepositoryWalkerUtils.sourceRootRelativeToWorkTree(
-						repo.getWorkTree().toPath(), sourceRoot);
-					if (sourceRootRelative.isEmpty()) {
-						String warnMsg = "Source root " + sourceRoot + " is outside repository root " + repo.getWorkTree() + "; falling back to full rebuild";
-						LOGGER.warn(warnMsg);
-						errors.add(warnMsg);
-						currentApi = RepositoryWalkerUtils.buildApi(sourceRoot, classpath, exclusions, jdtExtractor);
-					} else {
-						ChangedFiles changedFiles = RepositoryWalkerUtils.changedFilesForSourceRoot(commitDiff, sourceRootRelative.get());
-						if (changedFiles.hasNoChanges()) {
-							currentApi = oldApi;
-						} else {
-							try {
-								Library currentLibrary = Library.builder()
-									.location(sourceRoot)
-									.classpath(classpath)
-									.exclusions(exclusions)
-									.build();
-								LibraryTypes updatedTypes = incrementalExtractor.incrementalUpdate(
-									oldApi.getLibraryTypes(), currentLibrary, changedFiles);
-								currentApi = Roseau.buildAPI(updatedTypes);
-							} catch (RuntimeException e) {
-								String warnMsg = "Incremental update failed for commit " + sha + "; falling back to full rebuild: " + e.getMessage();
-								LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", sha, e);
-								errors.add(warnMsg);
-								currentApi = RepositoryWalkerUtils.buildApi(sourceRoot, classpath, exclusions, jdtExtractor);
-							}
-						}
-					}
-				}
-				long apiTime = sw.elapsed().toMillis();
-
-				RepositoryWalkerUtils.ApiStats currentStats;
-				long statsTime;
-				if (currentApi == oldApi && oldStats != null) {
-					currentStats = oldStats;
-					statsTime = 0;
-				} else {
-					sw.reset().start();
-					currentStats = RepositoryWalkerUtils.computeApiStats(currentApi, exclusionMatcher);
-					statsTime = sw.elapsed().toMillis();
-				}
-
-				long diffTime;
-				List<BreakingChange> bcs = List.of();
-				boolean apiChanged = true;
-				if (oldApi == null || currentApi == oldApi || currentApi.equals(oldApi)) {
-					diffTime = 0;
-					apiChanged = false;
-				} else {
-					sw.reset().start();
-					RoseauReport diff = Roseau.diff(oldApi, currentApi);
-					bcs = diff.getAllBreakingChanges();
-					diffTime = sw.elapsed().toMillis();
-					LOGGER.info("Found {} breaking changes", bcs.size());
-					RepositoryWalkerUtils.writeBreakingChangesRows(bcsWriter, library, sha, diff, exclusionMatcher);
-				}
-				int binaryBreakingChangesCount = (int) bcs.stream().map(BreakingChange::kind).filter(BreakingChangeKind::isBinaryBreaking).count();
-				int sourceBreakingChangesCount = (int) bcs.stream().map(BreakingChange::kind).filter(BreakingChangeKind::isSourceBreaking).count();
-				long daysSincePrevCommit = RepositoryWalkerUtils.daysSincePreviousCommit(previousWrittenCommit, commit);
-				String error = String.join("; ", errors);
-				RepositoryWalkerUtils.writeCommitRow(
-					commitsWriter,
-					library,
-					url,
-					commit,
-					conventionalCommitTag,
-					parentCommit,
-					branch,
-					tags,
-					tags,
-					daysSincePrevCommit,
-					new RepositoryWalkerUtils.CommitAnalysis(
-						commitDiff,
-						currentStats,
-						bcs.size(),
-						binaryBreakingChangesCount,
-						sourceBreakingChangesCount,
-						apiChanged,
-						checkoutTime,
-						classpathTime,
-						apiTime,
-						diffTime,
-						statsTime,
-						error
-					)
-				);
-				previousWrittenCommit = commit;
-
-				oldApi = currentApi;
-				oldStats = currentStats;
-				oldSourceRoot = sourceRoot;
-			}
+	private static RoseauOptions.Exclude sanitizeExclude(RoseauOptions.Exclude exclude) {
+		if (exclude == null) {
+			return EMPTY_EXCLUDE;
 		}
+		List<String> names = exclude.names() == null ? List.of() : exclude.names();
+		List<RoseauOptions.AnnotationExclusion> annotations = exclude.annotations() == null ? List.of() : exclude.annotations();
+		return new RoseauOptions.Exclude(names, annotations);
+	}
+
+	private static ObjectMapper createMapper() {
+		ObjectMapper om = new ObjectMapper(new YAMLFactory());
+		SimpleModule pathModule = new SimpleModule();
+		pathModule.addDeserializer(Path.class,
+			new com.fasterxml.jackson.databind.JsonDeserializer<>() {
+				@Override
+				public Path deserialize(com.fasterxml.jackson.core.JsonParser p,
+				                        com.fasterxml.jackson.databind.DeserializationContext ctxt)
+					throws IOException {
+					return Path.of(p.getValueAsString());
+				}
+			});
+		om.registerModule(pathModule);
+		return om;
 	}
 }

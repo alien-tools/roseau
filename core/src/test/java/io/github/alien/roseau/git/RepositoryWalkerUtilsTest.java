@@ -39,10 +39,10 @@ class RepositoryWalkerUtilsTest {
 			          args: {}
 			""".formatted(wd, wd, wd));
 
-		List<RepositoryWalkerUtils.Repository> repositories = RepositoryWalkerUtils.loadConfig(yaml);
+		List<IncrementalWalkRepository.Repository> repositories = IncrementalWalkRepository.loadConfig(yaml);
 
 		assertThat(repositories).hasSize(1);
-		RepositoryWalkerUtils.Repository repo = repositories.getFirst();
+		IncrementalWalkRepository.Repository repo = repositories.getFirst();
 		assertThat(repo.id()).isEqualTo("lib");
 		assertThat(repo.exclusions().names()).containsExactly(".*\\.internal\\..*");
 		assertThat(repo.exclusions().annotations()).extracting(a -> a.name())
