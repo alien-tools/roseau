@@ -33,6 +33,10 @@ release:
     owner: alien-tools
     name: roseau
     overwrite: true
+    changelog:
+      formatted: ALWAYS
+      preset: conventional-commits
+      format: '- {{commitShortHash}} {{commitTitle}}'
 
 checksum:
   algorithms:
