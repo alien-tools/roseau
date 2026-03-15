@@ -87,6 +87,7 @@ assemble:
       jdeps:
         multiRelease: 25
         ignoreMissingDeps: true
+        useWildcardInPath: false
         targets:
           - cli/target/roseau-cli-{{projectVersion}}.jar
       mainJar:
