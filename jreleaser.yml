@@ -98,12 +98,26 @@ distributions:
     stereotype: CLI
     artifacts:
       - path: cli/target/roseau-{{projectVersion}}.jar
+  roseau-standalone:
+    type: JLINK
+    stereotype: CLI
+    artifacts:
+      - path: target/jreleaser/assemble/roseau-standalone/jlink/roseau-{{projectVersion}}-linux-x86_64.zip
+        platform: linux-x86_64
+      - path: target/jreleaser/assemble/roseau-standalone/jlink/roseau-{{projectVersion}}-linux-aarch_64.zip
+        platform: linux-aarch_64
+      - path: target/jreleaser/assemble/roseau-standalone/jlink/roseau-{{projectVersion}}-osx-x86_64.zip
+        platform: osx-x86_64
+      - path: target/jreleaser/assemble/roseau-standalone/jlink/roseau-{{projectVersion}}-osx-aarch_64.zip
+        platform: osx-aarch_64
+      - path: target/jreleaser/assemble/roseau-standalone/jlink/roseau-{{projectVersion}}-windows-x86_64.zip
+        platform: windows-x86_64
 
 assemble:
   jlink:
     roseau-standalone:
       active: ALWAYS
-      exported: true
+      exported: false
       stereotype: CLI
       executable: roseau
       imageName: roseau-{{projectVersion}}
