@@ -49,6 +49,9 @@ jobs:
     name: Assemble jlink ${{ matrix.platform }}
     needs: stage
     runs-on: ${{ matrix.runner }}
+    defaults:
+      run:
+        shell: bash
     permissions:
       contents: read
     timeout-minutes: 30
