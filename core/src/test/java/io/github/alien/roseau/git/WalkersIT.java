@@ -16,7 +16,7 @@ class WalkersIT {
 		new io.github.alien.roseau.options.RoseauOptions.Exclude(List.of(), List.of());
 
 	@Test
-	void incremental_and_regular_walkers_match_on_simple_history(@TempDir Path wd) throws Exception {
+	void walker_produces_correct_output_on_simple_history(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote");
 		RevCommit c2;
 		RevCommit c3;
@@ -32,60 +32,37 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path regularOutputDir = wd.resolve("regular-out");
-		Path incrementalOutputDir = wd.resolve("incremental-out");
-		Path regularCommits = regularOutputDir.resolve("regular-commits.csv");
-		Path regularBcs = regularOutputDir.resolve("regular-bcs.csv");
-		Path incrementalCommits = incrementalOutputDir.resolve("incremental-commits.csv");
-		Path incrementalBcs = incrementalOutputDir.resolve("incremental-bcs.csv");
-
-		Path regularRoot = wd.resolve("regular-clone");
-		Path incrementalRoot = wd.resolve("incremental-clone");
+		Path outputDir = wd.resolve("out");
+		Path commitsCsv = outputDir.resolve("lib-commits.csv");
+		Path bcsCsv = outputDir.resolve("lib-bcs.csv");
+		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
-		WalkRepository.walk("regular", url, regularRoot.resolve(".git"), List.of(regularRoot.resolve("src/main/java")),
-			List.of(), regularOutputDir, NO_EXCLUSIONS);
-		IncrementalWalkRepository.walk("incremental", url, incrementalRoot.resolve(".git"),
-			List.of(incrementalRoot.resolve("src/main/java")), incrementalOutputDir, NO_EXCLUSIONS);
 
-		Map<String, GitWalkTestUtils.CommitCsvRow> regular = GitWalkTestUtils.readCommitCsvRows(regularCommits);
-		Map<String, GitWalkTestUtils.CommitCsvRow> incremental = GitWalkTestUtils.readCommitCsvRows(incrementalCommits);
-		Map<String, Integer> regularBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(regularBcs);
-		Map<String, Integer> incrementalBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(incrementalBcs);
+		IncrementalWalkRepository.walk("lib", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), outputDir, NO_EXCLUSIONS);
 
-		assertThat(incremental.keySet()).isEqualTo(regular.keySet());
-		assertThat(regular).containsKeys(c2.getName(), c3.getName());
-		assertThat(incremental).containsKeys(c2.getName(), c3.getName());
+		Map<String, GitWalkTestUtils.CommitCsvRow> commits = GitWalkTestUtils.readCommitCsvRows(commitsCsv);
+		Map<String, Integer> bcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(bcsCsv);
 
-		for (String sha : regular.keySet()) {
-			var r = regular.get(sha);
-			var i = incremental.get(sha);
-			assertThat(i.updatedJavaFilesCount()).isEqualTo(r.updatedJavaFilesCount());
-			assertThat(i.deletedJavaFilesCount()).isEqualTo(r.deletedJavaFilesCount());
-			assertThat(i.createdJavaFilesCount()).isEqualTo(r.createdJavaFilesCount());
-			assertThat(i.exportedTypesCount()).isEqualTo(r.exportedTypesCount());
-			assertThat(i.exportedMethodsCount()).isEqualTo(r.exportedMethodsCount());
-			assertThat(i.exportedFieldsCount()).isEqualTo(r.exportedFieldsCount());
-			assertThat(i.apiChanged()).isEqualTo(r.apiChanged());
-			assertThat(i.breakingChangesCount()).isEqualTo(r.breakingChangesCount());
-		}
-		assertThat(incrementalBcsCount).isEqualTo(regularBcsCount);
+		assertThat(commits).containsKeys(c2.getName(), c3.getName());
 
-		assertThat(regular.get(c2.getName()).updatedJavaFilesCount()).isZero();
-		assertThat(regular.get(c2.getName()).deletedJavaFilesCount()).isZero();
-		assertThat(regular.get(c2.getName()).createdJavaFilesCount()).isZero();
-		assertThat(regular.get(c2.getName()).apiChanged()).isFalse();
-		assertThat(regular.get(c2.getName()).breakingChangesCount()).isZero();
-		assertThat(regular.get(c2.getName()).apiTimeMs()).isZero();
-		assertThat(regular.get(c3.getName()).updatedJavaFilesCount()).isEqualTo(1);
-		assertThat(regular.get(c3.getName()).deletedJavaFilesCount()).isZero();
-		assertThat(regular.get(c3.getName()).createdJavaFilesCount()).isZero();
-		assertThat(regular.get(c3.getName()).apiChanged()).isTrue();
-		assertThat(regular.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
-		assertThat(regularBcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
+		assertThat(commits.get(c2.getName()).updatedJavaFilesCount()).isZero();
+		assertThat(commits.get(c2.getName()).deletedJavaFilesCount()).isZero();
+		assertThat(commits.get(c2.getName()).createdJavaFilesCount()).isZero();
+		assertThat(commits.get(c2.getName()).apiChanged()).isFalse();
+		assertThat(commits.get(c2.getName()).breakingChangesCount()).isZero();
+		assertThat(commits.get(c2.getName()).apiTimeMs()).isZero();
+
+		assertThat(commits.get(c3.getName()).updatedJavaFilesCount()).isEqualTo(1);
+		assertThat(commits.get(c3.getName()).deletedJavaFilesCount()).isZero();
+		assertThat(commits.get(c3.getName()).createdJavaFilesCount()).isZero();
+		assertThat(commits.get(c3.getName()).apiChanged()).isTrue();
+		assertThat(commits.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
+		assertThat(bcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
 	}
 
 	@Test
-	void incremental_and_regular_walkers_match_when_source_root_changes(@TempDir Path wd) throws Exception {
+	void walker_handles_source_root_changes(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote");
 		RevCommit c2;
 		RevCommit c3;
@@ -101,56 +78,34 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path regularOutputDir = wd.resolve("regular-root-switch-out");
-		Path incrementalOutputDir = wd.resolve("incremental-root-switch-out");
-		Path regularCommits = regularOutputDir.resolve("regular-root-switch-commits.csv");
-		Path incrementalCommits = incrementalOutputDir.resolve("incremental-root-switch-commits.csv");
-		Path regularBcs = regularOutputDir.resolve("regular-root-switch-bcs.csv");
-		Path incrementalBcs = incrementalOutputDir.resolve("incremental-root-switch-bcs.csv");
-
-		Path regularRoot = wd.resolve("regular-clone");
-		Path incrementalRoot = wd.resolve("incremental-clone");
-		List<Path> sourceRootsRegular = List.of(
-			regularRoot.resolve("src/main/java"),
-			regularRoot.resolve("core/src/main/java")
-		);
-		List<Path> sourceRootsIncremental = List.of(
-			incrementalRoot.resolve("src/main/java"),
-			incrementalRoot.resolve("core/src/main/java")
+		Path outputDir = wd.resolve("out");
+		Path commitsCsv = outputDir.resolve("lib-commits.csv");
+		Path bcsCsv = outputDir.resolve("lib-bcs.csv");
+		Path cloneRoot = wd.resolve("clone");
+		List<Path> sourceRoots = List.of(
+			cloneRoot.resolve("src/main/java"),
+			cloneRoot.resolve("core/src/main/java")
 		);
 
 		String url = remoteDir.toUri().toString();
-		WalkRepository.walk("regular-root-switch", url, regularRoot.resolve(".git"), sourceRootsRegular, List.of(),
-			regularOutputDir, NO_EXCLUSIONS);
-		IncrementalWalkRepository.walk("incremental-root-switch", url, incrementalRoot.resolve(".git"),
-			sourceRootsIncremental, incrementalOutputDir, NO_EXCLUSIONS);
+		IncrementalWalkRepository.walk("lib", url, cloneRoot.resolve(".git"),
+			sourceRoots, outputDir, NO_EXCLUSIONS);
 
-		Map<String, GitWalkTestUtils.CommitCsvRow> regular = GitWalkTestUtils.readCommitCsvRows(regularCommits);
-		Map<String, GitWalkTestUtils.CommitCsvRow> incremental = GitWalkTestUtils.readCommitCsvRows(incrementalCommits);
-		Map<String, Integer> regularBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(regularBcs);
-		Map<String, Integer> incrementalBcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(incrementalBcs);
+		Map<String, GitWalkTestUtils.CommitCsvRow> commits = GitWalkTestUtils.readCommitCsvRows(commitsCsv);
+		Map<String, Integer> bcsCount = GitWalkTestUtils.readBreakingChangesCountByCommit(bcsCsv);
 
-		assertThat(regular).containsKeys(c2.getName(), c3.getName());
-		assertThat(incremental).containsKeys(c2.getName(), c3.getName());
+		assertThat(commits).containsKeys(c2.getName(), c3.getName());
 
-		assertThat(incremental.keySet()).isEqualTo(regular.keySet());
-		for (String sha : regular.keySet()) {
-			var r = regular.get(sha);
-			var i = incremental.get(sha);
-			assertThat(i.updatedJavaFilesCount()).isEqualTo(r.updatedJavaFilesCount());
-			assertThat(i.deletedJavaFilesCount()).isEqualTo(r.deletedJavaFilesCount());
-			assertThat(i.createdJavaFilesCount()).isEqualTo(r.createdJavaFilesCount());
-			assertThat(i.exportedTypesCount()).isEqualTo(r.exportedTypesCount());
-			assertThat(i.exportedMethodsCount()).isEqualTo(r.exportedMethodsCount());
-			assertThat(i.exportedFieldsCount()).isEqualTo(r.exportedFieldsCount());
-			assertThat(i.apiChanged()).isEqualTo(r.apiChanged());
-			assertThat(i.breakingChangesCount()).isEqualTo(r.breakingChangesCount());
-		}
-		assertThat(incrementalBcsCount).isEqualTo(regularBcsCount);
+		// c2 moves the source root; the file is recreated at the new path
+		assertThat(commits.get(c2.getName()).exportedTypesCount()).isEqualTo(1);
+
+		assertThat(commits.get(c3.getName()).apiChanged()).isTrue();
+		assertThat(commits.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
+		assertThat(bcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
 	}
 
 	@Test
-	void walkers_emit_all_tags_and_versions_for_each_commit(@TempDir Path wd) throws Exception {
+	void walker_emits_all_tags_and_versions_for_each_commit(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote-tags");
 		RevCommit c1;
 		RevCommit c2;
@@ -174,36 +129,23 @@ class WalkersIT {
 			remote.tag().setName("release").setObjectId(c3).call();
 		}
 
-		Path regularOutputDir = wd.resolve("regular-tags-out");
-		Path incrementalOutputDir = wd.resolve("incremental-tags-out");
-		Path regularCommits = regularOutputDir.resolve("regular-tags-commits.csv");
-		Path incrementalCommits = incrementalOutputDir.resolve("incremental-tags-commits.csv");
-		Path regularRoot = wd.resolve("regular-tags-clone");
-		Path incrementalRoot = wd.resolve("incremental-tags-clone");
+		Path outputDir = wd.resolve("out");
+		Path commitsCsv = outputDir.resolve("lib-tags-commits.csv");
+		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 
-		WalkRepository.walk("regular-tags", url, regularRoot.resolve(".git"), List.of(regularRoot.resolve("src/main/java")),
-			List.of(), regularOutputDir, NO_EXCLUSIONS);
-		IncrementalWalkRepository.walk("incremental-tags", url, incrementalRoot.resolve(".git"),
-			List.of(incrementalRoot.resolve("src/main/java")), incrementalOutputDir, NO_EXCLUSIONS);
+		IncrementalWalkRepository.walk("lib-tags", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), outputDir, NO_EXCLUSIONS);
 
-		Map<String, Map<String, String>> regularRows = GitWalkTestUtils.readCsvRows(regularCommits).stream()
-			.collect(java.util.stream.Collectors.toMap(r -> r.get("commit_sha"), r -> r));
-		Map<String, Map<String, String>> incrementalRows = GitWalkTestUtils.readCsvRows(incrementalCommits).stream()
+		Map<String, Map<String, String>> rows = GitWalkTestUtils.readCsvRows(commitsCsv).stream()
 			.collect(java.util.stream.Collectors.toMap(r -> r.get("commit_sha"), r -> r));
 
-		assertThat(regularRows).containsKeys(c1.getName(), c2.getName(), c3.getName());
-		assertThat(incrementalRows).containsKeys(c1.getName(), c2.getName(), c3.getName());
+		assertThat(rows).containsKeys(c1.getName(), c2.getName(), c3.getName());
 
-		assertThat(regularRows.get(c2.getName()).get("tag")).isEqualTo("1.0.0;latest;v1.0.0");
-		assertThat(regularRows.get(c2.getName()).get("version")).isEqualTo("1.0.0;latest;v1.0.0");
-		assertThat(regularRows.get(c3.getName()).get("tag")).isEqualTo("release");
-		assertThat(regularRows.get(c3.getName()).get("version")).isEqualTo("release");
-
-		assertThat(incrementalRows.get(c2.getName()).get("tag")).isEqualTo("1.0.0;latest;v1.0.0");
-		assertThat(incrementalRows.get(c2.getName()).get("version")).isEqualTo("1.0.0;latest;v1.0.0");
-		assertThat(incrementalRows.get(c3.getName()).get("tag")).isEqualTo("release");
-		assertThat(incrementalRows.get(c3.getName()).get("version")).isEqualTo("release");
+		assertThat(rows.get(c2.getName()).get("tag")).isEqualTo("1.0.0;latest;v1.0.0");
+		assertThat(rows.get(c2.getName()).get("version")).isEqualTo("1.0.0;latest;v1.0.0");
+		assertThat(rows.get(c3.getName()).get("tag")).isEqualTo("release");
+		assertThat(rows.get(c3.getName()).get("version")).isEqualTo("release");
 	}
 
 	@Test
@@ -219,13 +161,13 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path outputDir = wd.resolve("name-out");
+		Path outputDir = wd.resolve("out");
 		Path bcsCsv = outputDir.resolve("name-case-bcs.csv");
-		Path cloneRoot = wd.resolve("name-clone");
+		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(List.of(".*\\.internal\\..*"), List.of());
-		WalkRepository.walk("name-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
-			List.of(), outputDir, exclusions);
+		IncrementalWalkRepository.walk("name-case", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), outputDir, exclusions);
 
 		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
 		assertThat(rows).isNotEmpty();
@@ -257,17 +199,17 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path outputDir = wd.resolve("ann-fqn-out");
+		Path outputDir = wd.resolve("out");
 		Path bcsCsv = outputDir.resolve("ann-fqn-case-bcs.csv");
-		Path cloneRoot = wd.resolve("ann-fqn-clone");
+		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
 			List.of(),
 			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion(
 				"com.google.common.annotations.Beta", Map.of()))
 		);
-		WalkRepository.walk("ann-fqn-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
-			List.of(), outputDir, exclusions);
+		IncrementalWalkRepository.walk("ann-fqn-case", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), outputDir, exclusions);
 
 		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
 		assertThat(rows).isNotEmpty();
@@ -299,16 +241,16 @@ class WalkersIT {
 				List.of());
 		}
 
-		Path outputDir = wd.resolve("ann-simple-out");
+		Path outputDir = wd.resolve("out");
 		Path bcsCsv = outputDir.resolve("ann-simple-case-bcs.csv");
-		Path cloneRoot = wd.resolve("ann-simple-clone");
+		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
 			List.of(),
 			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion("Internal", Map.of()))
 		);
-		WalkRepository.walk("ann-simple-case", url, cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")),
-			List.of(), outputDir, exclusions);
+		IncrementalWalkRepository.walk("ann-simple-case", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), outputDir, exclusions);
 
 		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
 		assertThat(rows).isNotEmpty();

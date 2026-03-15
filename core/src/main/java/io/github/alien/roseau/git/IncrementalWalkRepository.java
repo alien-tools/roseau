@@ -33,8 +33,11 @@ import java.util.Optional;
 /**
  * Incremental commit walker: builds APIs incrementally from one commit to the next.
  */
-public class IncrementalWalkRepository {
+public final class IncrementalWalkRepository {
 	private static final Logger LOGGER = LogManager.getLogger(IncrementalWalkRepository.class);
+
+	private IncrementalWalkRepository() {
+	}
 
 	static void main() throws Exception {
 		Path config = Path.of("walk.yaml");
