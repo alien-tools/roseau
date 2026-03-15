@@ -1,51 +1,57 @@
-## Release checklist
+## Release process
 
-### Remove -SNAPSHOT qualifier and commit
+Roseau uses [JReleaser](https://jreleaser.org/) for release automation. Releases are published to Maven Central and GitHub Releases, including platform-specific `jlink` archives.
 
-- In `pom.xml`:
-  ```bash
-  $ mvn versions:set -DnewVersion=<x.y.z>
-  $ mvn versions:commit
-  ```
-- In CLI: update `VersionProvider`
+### Snapshot releases
 
-### Confirm we're all good
+Every push to `main` triggers [build-main.yml](.github/workflows/build-main.yml), which:
 
-1. `mvn clean verify`
-2. Check Javadoc and README
+1. Builds and tests the project
+2. Stages Maven artifacts to a local repository
+3. Assembles jlink archives for all platforms (Linux x86_64/aarch64, macOS x86_64/aarch64, Windows x86_64)
+4. Publishes SNAPSHOT artifacts to Maven Central's snapshot repository
+5. Creates/updates a rolling `early-access` prerelease on GitHub with the shaded CLI JAR and `jlink` archives
 
-### Commit, tag, and push
+### Stable releases
+
+#### 1. Remove the -SNAPSHOT qualifier
+
 ```bash
-$ git add <...>
-$ git commit -m "Release v<x.y.z>"
-$ git tag v<x.y.z>
-$ git push
-$ git push origin v<x.y.z>
+mvn versions:set -DnewVersion=<x.y.z>
+mvn versions:commit
 ```
 
-### Publish to Sonatype Central
-[.github/workflows/release.yml](.github/workflows/release.yml) takes care of that with the appropriate credentials.
+#### 2. Verify the build
 
-  1. [Draft a release](https://github.com/alien-tools/roseau/releases/new)
-     - Document changes
-  2. Publish the release and wait for `release.yml` to finish
-  3. For whatever reason, `release.yml` doesn't trigger if the release is created with attachments.
-     Publish first, then add them:
-     - Attach `v<x.y.z>-v<x.y.z>-breaking-changes-report.html`
-     - Attach `roseau-cli-<x.y.z>.jar`
-  4. Manually publish the release on https://central.sonatype.com/publishing 
-
-### Prepare next development iteration
-
-1. In `pom.xml`:
-  ```
-  $ mvn versions:set -DnewVersion=<x.y.z>-SNAPSHOT
-  $ mvn versions:commit
-  ```
-- In CLI: update `VersionProvider`
-2. Commit
 ```bash
-$ git add <...>
-$ git commit -m "Prepare next iteration v<x.y.z>"
-$ git push
+./mvnw --batch-mode verify
+```
+
+Check Javadoc and update `CHANGELOG.md` with release notes.
+
+#### 3. Commit, tag, and push
+
+```bash
+git add -A
+git commit -m "Release v<x.y.z>"
+git tag v<x.y.z>
+git push
+git push origin v<x.y.z>
+```
+
+Pushing the `v*` tag triggers [release.yml](.github/workflows/release.yml), which:
+
+1. Builds, tests, and stages Maven artifacts
+2. Assembles `jlink` archives for all platforms
+3. Publishes release artifacts to Maven Central via JReleaser
+4. Creates a GitHub Release with the shaded CLI JAR and `jlink` archives
+
+#### 4. Prepare next development iteration
+
+```bash
+mvn versions:set -DnewVersion=<next.version>-SNAPSHOT
+mvn versions:commit
+git add -A
+git commit -m "Prepare next iteration v<next.version>"
+git push
 ```

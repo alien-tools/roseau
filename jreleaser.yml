@@ -1,0 +1,91 @@
+project:
+  name: roseau
+  description: Fast and accurate API breaking change analysis of Java libraries
+  longDescription: |
+    Roseau detects binary and source breaking changes between two versions of a
+    Java library. It can compare JAR files or source trees and publish reports
+    suitable for local use, CI, and release automation.
+  authors:
+    - Thomas Degueule
+    - Jean-Remy Falleri
+    - Corentin Latappy
+  license: MIT
+  inceptionYear: 2023
+  stereotype: CLI
+  snapshot:
+    pattern: .*-SNAPSHOT
+    label: early-access
+    fullChangelog: true
+  links:
+    homepage: https://github.com/alien-tools/roseau
+    documentation: https://alien-tools.github.io/roseau/
+    bugTracker: https://github.com/alien-tools/roseau/issues
+  languages:
+    java:
+      groupId: io.github.alien-tools
+      artifactId: roseau-cli
+      version: 25
+      mainClass: io.github.alien.roseau.cli.RoseauCLI
+      multiProject: true
+
+release:
+  github:
+    owner: alien-tools
+    name: roseau
+    overwrite: true
+
+checksum:
+  algorithms:
+    - SHA-256
+
+signing:
+  active: ALWAYS
+  pgp:
+    active: ALWAYS
+    armored: true
+    verify: true
+
+deploy:
+  maven:
+    pomchecker:
+      failOnWarning: false
+    mavenCentral:
+      release-deploy:
+        active: RELEASE
+        url: https://central.sonatype.com/api/v1/publisher
+        applyMavenCentralRules: true
+        stagingRepositories:
+          - target/staging-deploy
+    nexus2:
+      snapshot-deploy:
+        active: SNAPSHOT
+        snapshotUrl: https://central.sonatype.com/repository/maven-snapshots/
+        applyMavenCentralRules: true
+        snapshotSupported: true
+        stagingRepositories:
+          - target/staging-deploy
+
+distributions:
+  roseau:
+    type: SINGLE_JAR
+    stereotype: CLI
+    artifacts:
+      - path: cli/target/roseau-{{projectVersion}}.jar
+
+assemble:
+  jlink:
+    roseau-standalone:
+      active: ALWAYS
+      exported: true
+      stereotype: CLI
+      executable: roseau
+      imageName: roseau-{{projectVersion}}
+      jdeps:
+        multiRelease: 25
+        ignoreMissingDeps: true
+        targets:
+          - cli/target/roseau-cli-{{projectVersion}}.jar
+      mainJar:
+        path: cli/target/roseau-cli-{{projectVersion}}.jar
+      jars:
+        - pattern: cli/target/jlink-jars/*.jar
