@@ -32,7 +32,7 @@ import java.util.stream.Stream;
  * Writes {@link CommitAnalysis} results to two CSV files: one for commit-level data
  * and one for individual breaking changes.
  */
-final class CsvReporter implements GitWalker.CommitSink, AutoCloseable {
+final class CsvReporter implements CommitSink, AutoCloseable {
 	private static final Logger LOGGER = LogManager.getLogger(CsvReporter.class);
 
 	private static final List<String> COMMITS_HEADER = List.of(
@@ -47,7 +47,6 @@ final class CsvReporter implements GitWalker.CommitSink, AutoCloseable {
 		"is_merge_commit",
 		"branch",
 		"tag",
-		"version",
 		"days_since_prev_commit",
 		"files_changed",
 		"loc_added",
@@ -292,7 +291,6 @@ final class CsvReporter implements GitWalker.CommitSink, AutoCloseable {
 			c.commitTime().toString(),
 			c.isMergeCommit(),
 			c.branch(),
-			tags,
 			tags,
 			daysSincePrev,
 			c.filesChanged(),

@@ -16,6 +16,7 @@ import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -51,14 +52,6 @@ public final class GitWalker {
 	) {
 	}
 
-	/**
-	 * Receives {@link CommitAnalysis} results during a walk.
-	 */
-	@FunctionalInterface
-	public interface CommitSink {
-		void accept(CommitAnalysis analysis) throws Exception;
-	}
-
 	private final Config config;
 
 	public GitWalker(Config config) {
@@ -83,21 +76,12 @@ public final class GitWalker {
 		}
 	}
 
-	/**
-	 * Walks and writes the standard two-CSV output to {@code outputDir}.
-	 */
-	public void walkToCsv(Path outputDir) throws Exception {
-		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
-			walk(reporter);
-		}
-	}
-
 	// --- Walk orchestration ---
 
 	private void walkOnce(CommitSink sink) throws Exception {
 		RepositoryWalkerUtils.prepareRepository(config.url(), config.gitDir());
 		var repoBuilder = new FileRepositoryBuilder().setGitDir(config.gitDir().toFile()).readEnvironment();
-		try (org.eclipse.jgit.lib.Repository repo = repoBuilder.build();
+		try (Repository repo = repoBuilder.build();
 		     Git git = new Git(repo);
 		     RevWalk rw = new RevWalk(repo)) {
 			List<RevCommit> chain = RepositoryWalkerUtils.firstParentChain(repo, rw);
@@ -112,7 +96,8 @@ public final class GitWalker {
 			API previousApi = null;
 			Path previousSourceRoot = null;
 			for (RevCommit revCommit : chain) {
-				CommitInfo info = buildCommitInfo(revCommit, repo, tagsByCommit, branch);
+				RepositoryWalkerUtils.CommitDiff diff = RepositoryWalkerUtils.computeCommitDiff(repo, revCommit, rw);
+				CommitInfo info = buildCommitInfo(diff, revCommit, tagsByCommit, branch);
 
 				if (!info.javaChanged()) {
 					if (previousApi != null) {
@@ -131,7 +116,7 @@ public final class GitWalker {
 				}
 				LOGGER.info("Commit {}: {} (source root {})", info.sha(), info.shortMessage(), sourceRoot.get());
 
-				ApiResult apiResult = buildApi(info, sourceRoot.get(), previousApi, previousSourceRoot,
+				ApiResult apiResult = buildApi(info, diff, sourceRoot.get(), previousApi, previousSourceRoot,
 					workTree, jdtExtractor, incrementalExtractor);
 				DiffResult diffResult = diffApis(previousApi, apiResult.api());
 
@@ -147,9 +132,8 @@ public final class GitWalker {
 
 	// --- Commit info ---
 
-	private CommitInfo buildCommitInfo(RevCommit commit, org.eclipse.jgit.lib.Repository repo,
-	                                   Map<String, List<String>> tagsByCommit, String branch) {
-		RepositoryWalkerUtils.CommitDiff diff = RepositoryWalkerUtils.computeCommitDiff(repo, commit);
+	private static CommitInfo buildCommitInfo(RepositoryWalkerUtils.CommitDiff diff, RevCommit commit,
+	                                          Map<String, List<String>> tagsByCommit, String branch) {
 		return new CommitInfo(
 			commit.getName(),
 			commit.getShortMessage(),
@@ -193,7 +177,8 @@ public final class GitWalker {
 	private record ApiResult(API api, long timeMs, List<Exception> errors) {
 	}
 
-	private ApiResult buildApi(CommitInfo info, Path sourceRoot, API previousApi, Path previousSourceRoot,
+	private ApiResult buildApi(CommitInfo info, RepositoryWalkerUtils.CommitDiff diff, Path sourceRoot,
+	                           API previousApi, Path previousSourceRoot,
 	                           Path workTree, JdtTypesExtractor extractor,
 	                           IncrementalTypesExtractor incrementalExtractor) {
 		Stopwatch sw = Stopwatch.createStarted();
@@ -209,10 +194,11 @@ public final class GitWalker {
 			return new ApiResult(fullBuild(sourceRoot, extractor), sw.elapsed().toMillis(), List.of(e));
 		}
 
-		return incrementalBuild(info, sourceRoot, previousApi, workTree, extractor, incrementalExtractor, sw);
+		return incrementalBuild(info, diff, sourceRoot, previousApi, workTree, extractor, incrementalExtractor, sw);
 	}
 
-	private ApiResult incrementalBuild(CommitInfo info, Path sourceRoot, API previousApi, Path workTree,
+	private ApiResult incrementalBuild(CommitInfo info, RepositoryWalkerUtils.CommitDiff diff,
+	                                   Path sourceRoot, API previousApi, Path workTree,
 	                                   JdtTypesExtractor extractor,
 	                                   IncrementalTypesExtractor incrementalExtractor, Stopwatch sw) {
 		List<Exception> errors = new ArrayList<>();
@@ -226,7 +212,7 @@ public final class GitWalker {
 			return new ApiResult(fullBuild(sourceRoot, extractor), sw.elapsed().toMillis(), errors);
 		}
 
-		ChangedFiles changedFiles = RepositoryWalkerUtils.changedFilesForSourceRoot(info, relativeRoot.get());
+		ChangedFiles changedFiles = RepositoryWalkerUtils.changedFilesForSourceRoot(diff, relativeRoot.get());
 		if (changedFiles.hasNoChanges()) {
 			return new ApiResult(previousApi, sw.elapsed().toMillis(), errors);
 		}

@@ -27,23 +27,22 @@ class RepositoryWalkerUtilsTest {
 			      - name: Internal
 			        args: {}
 			repositories:
-			  - id: lib
+			  - libraryId: lib
 			    url: "https://example.org/repo.git"
 			    gitDir: "%s/.git"
 			    sourceRoots:
 			      - "%s/src/main/java"
-			    outputDir: "%s"
 			    exclusions:
 			      annotations:
 			        - name: com.google.common.annotations.Beta
 			          args: {}
 			""".formatted(wd, wd, wd));
 
-		List<IncrementalWalkRepository.Repository> repositories = IncrementalWalkRepository.loadConfig(yaml);
+		List<GitWalker.Config> repositories = BatchGitWalker.loadConfig(yaml);
 
 		assertThat(repositories).hasSize(1);
-		IncrementalWalkRepository.Repository repo = repositories.getFirst();
-		assertThat(repo.id()).isEqualTo("lib");
+		GitWalker.Config repo = repositories.getFirst();
+		assertThat(repo.libraryId()).isEqualTo("lib");
 		assertThat(repo.exclusions().names()).containsExactly(".*\\.internal\\..*");
 		assertThat(repo.exclusions().annotations()).extracting(a -> a.name())
 			.containsExactly("Internal", "com.google.common.annotations.Beta");
@@ -145,7 +144,8 @@ class RepositoryWalkerUtilsTest {
 	@Test
 	void compute_commit_diff_and_root_mapping(@TempDir Path wd) throws Exception {
 		Path repoDir = wd.resolve("repo");
-		try (Git git = GitWalkTestUtils.initRepo(repoDir)) {
+		try (Git git = GitWalkTestUtils.initRepo(repoDir);
+		     RevWalk rw = new RevWalk(git.getRepository())) {
 			GitWalkTestUtils.commit(git, "base",
 				Map.of(
 					"src/main/java/pkg/A.java", "package pkg; public class A {}",
@@ -161,7 +161,7 @@ class RepositoryWalkerUtilsTest {
 				),
 				List.of("src/main/java/pkg/C.java"));
 
-			RepositoryWalkerUtils.CommitDiff diff = RepositoryWalkerUtils.computeCommitDiff(git.getRepository(), second);
+			RepositoryWalkerUtils.CommitDiff diff = RepositoryWalkerUtils.computeCommitDiff(git.getRepository(), second, rw);
 
 			assertThat(diff.javaChanged()).isTrue();
 			assertThat(diff.pomChanged()).isTrue();
@@ -206,19 +206,4 @@ class RepositoryWalkerUtilsTest {
 		assertThat(commitUrl).isEmpty();
 	}
 
-	@Test
-	void joined_tags_returns_all_tags_without_filtering() {
-		Map<String, List<String>> tagsByCommit = Map.of(
-			"c1", List.of("latest", "v1.0.0", "1.0.1"),
-			"c2", List.of("release", "stable"),
-			"c3", List.of()
-		);
-
-		assertThat(RepositoryWalkerUtils.joinedTags(tagsByCommit, "c1"))
-			.isEqualTo("latest;v1.0.0;1.0.1");
-		assertThat(RepositoryWalkerUtils.joinedTags(tagsByCommit, "c2"))
-			.isEqualTo("release;stable");
-		assertThat(RepositoryWalkerUtils.joinedTags(tagsByCommit, "c3"))
-			.isEmpty();
-	}
 }

@@ -14,6 +14,7 @@ import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
 import org.eclipse.jgit.lib.Ref;
+import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
@@ -24,9 +25,9 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Comparator;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -70,7 +71,7 @@ final class RepositoryWalkerUtils {
 
 		LOGGER.info("Preparing existing clone at {} (remote {})", gitDir, url);
 		FileRepositoryBuilder builder = new FileRepositoryBuilder().setGitDir(gitDir.toFile()).readEnvironment();
-		try (org.eclipse.jgit.lib.Repository repo = builder.build(); Git git = new Git(repo)) {
+		try (Repository repo = builder.build(); Git git = new Git(repo)) {
 			fetchAndAlignRepository(git, repo);
 			makePristine(git);
 		} catch (Exception e) {
@@ -104,7 +105,7 @@ final class RepositoryWalkerUtils {
 
 	// --- Commit chain ---
 
-	static List<RevCommit> firstParentChain(org.eclipse.jgit.lib.Repository repo, RevWalk rw) throws IOException {
+	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw) throws IOException {
 		ObjectId headId = repo.resolve("HEAD");
 		if (headId == null) {
 			throw new IllegalStateException("Cannot resolve HEAD");
@@ -123,9 +124,8 @@ final class RepositoryWalkerUtils {
 
 	// --- Commit diff ---
 
-	static CommitDiff computeCommitDiff(org.eclipse.jgit.lib.Repository repo, RevCommit commit) {
-		try (RevWalk rw = new RevWalk(repo);
-		     ObjectReader reader = repo.newObjectReader();
+	static CommitDiff computeCommitDiff(Repository repo, RevCommit commit, RevWalk rw) {
+		try (ObjectReader reader = repo.newObjectReader();
 		     DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
 
 			df.setRepository(repo);
@@ -139,8 +139,7 @@ final class RepositoryWalkerUtils {
 				RevCommit parent = rw.parseCommit(commit.getParent(0).getId());
 				oldTree.reset(reader, parent.getTree().getId());
 			} else {
-				ObjectId emptyTreeId = repo.resolve(Constants.EMPTY_TREE_ID.name());
-				oldTree.reset(reader, emptyTreeId);
+				oldTree.reset(reader, Constants.EMPTY_TREE_ID);
 			}
 
 			List<DiffEntry> diffs = df.scan(oldTree, newTree);
@@ -205,17 +204,9 @@ final class RepositoryWalkerUtils {
 		);
 	}
 
-	static ChangedFiles changedFilesForSourceRoot(CommitInfo info, Path sourceRootRelative) {
-		return new ChangedFiles(
-			relativizeUnderRoot(info.updatedJavaFiles(), sourceRootRelative),
-			relativizeUnderRoot(info.deletedJavaFiles(), sourceRootRelative),
-			relativizeUnderRoot(info.createdJavaFiles(), sourceRootRelative)
-		);
-	}
-
 	// --- Tags and branch ---
 
-	static Map<String, List<String>> tagsByCommit(org.eclipse.jgit.lib.Repository repo) throws IOException {
+	static Map<String, List<String>> tagsByCommit(Repository repo) throws IOException {
 		Map<String, List<String>> tagsByCommit = new HashMap<>();
 		try (RevWalk rw = new RevWalk(repo)) {
 			for (Ref ref : repo.getRefDatabase().getRefsByPrefix(Constants.R_TAGS)) {
@@ -237,11 +228,7 @@ final class RepositoryWalkerUtils {
 		return tagsByCommit;
 	}
 
-	static String joinedTags(Map<String, List<String>> tagsByCommit, String commitSha) {
-		return String.join(";", tagsByCommit.getOrDefault(commitSha, List.of()));
-	}
-
-	static String defaultBranchName(org.eclipse.jgit.lib.Repository repo) throws Exception {
+	static String defaultBranchName(Repository repo) throws Exception {
 		return Optional.ofNullable(resolveRemoteBranchName(repo)).orElse("");
 	}
 
@@ -292,7 +279,7 @@ final class RepositoryWalkerUtils {
 		Git.cloneRepository().setURI(url).setDirectory(workTree.toFile()).call().close();
 	}
 
-	private static void fetchAndAlignRepository(Git git, org.eclipse.jgit.lib.Repository repo) throws Exception {
+	private static void fetchAndAlignRepository(Git git, Repository repo) throws Exception {
 		LOGGER.info("Fetching updates from origin for {}", repo.getDirectory());
 		var fetch = git.fetch().setRemote("origin");
 		if (isShallowRepository(repo)) {
@@ -303,7 +290,7 @@ final class RepositoryWalkerUtils {
 		alignToRemoteDefaultBranch(git, repo);
 	}
 
-	private static void alignToRemoteDefaultBranch(Git git, org.eclipse.jgit.lib.Repository repo) throws Exception {
+	private static void alignToRemoteDefaultBranch(Git git, Repository repo) throws Exception {
 		String branchName = resolveRemoteBranchName(repo);
 		if (branchName == null) {
 			LOGGER.warn("Could not resolve default remote branch for {}", repo.getDirectory());
@@ -322,7 +309,7 @@ final class RepositoryWalkerUtils {
 		git.reset().setMode(ResetCommand.ResetType.HARD).setRef("origin/" + branchName).call();
 	}
 
-	private static String resolveRemoteBranchName(org.eclipse.jgit.lib.Repository repo) throws Exception {
+	private static String resolveRemoteBranchName(Repository repo) throws Exception {
 		final String prefix = "refs/remotes/origin/";
 
 		Ref remoteHead = repo.exactRef("refs/remotes/origin/HEAD");
@@ -351,7 +338,7 @@ final class RepositoryWalkerUtils {
 			.orElse(null);
 	}
 
-	private static boolean isShallowRepository(org.eclipse.jgit.lib.Repository repo) throws IOException {
+	private static boolean isShallowRepository(Repository repo) throws IOException {
 		return !repo.getObjectDatabase().getShallowCommits().isEmpty();
 	}
 
