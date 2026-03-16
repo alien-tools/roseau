@@ -183,9 +183,9 @@ final class JdtApiVisitor extends ASTVisitor {
 		SourceLocation location = factory.location(filePath, cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		Set<TypeReference<InterfaceDecl>> implemented = convertImplementedInterfaces(binding);
-		Set<FieldDecl> fields = convertFields(binding, type);
-		Set<MethodDecl> methods = convertMethods(binding, type);
-		Set<ConstructorDecl> constructors = convertConstructors(binding, type);
+		Set<FieldDecl> fields = convertFields(binding);
+		Set<MethodDecl> methods = convertMethods(binding);
+		Set<ConstructorDecl> constructors = convertConstructors(binding);
 		TypeReference<TypeDecl> enclosingType = createTypeReference(binding.getDeclaringClass());
 
 		TypeDecl typeDecl = switch (type) {
@@ -233,23 +233,23 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(toSet());
 	}
 
-	private Set<FieldDecl> convertFields(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private Set<FieldDecl> convertFields(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredFields())
-			.filter(field -> isExported(field, type))
+			.filter(JdtApiVisitor::isExported)
 			.map(field -> convertField(field, binding))
 			.collect(toSet());
 	}
 
-	private Set<MethodDecl> convertMethods(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private Set<MethodDecl> convertMethods(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method, type))
+			.filter(method -> !method.isConstructor() && isExported(method))
 			.map(method -> convertMethod(method, binding))
 			.collect(toSet());
 	}
 
-	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> method.isConstructor() && isExported(method, type))
+			.filter(method -> method.isConstructor() && isExported(method))
 			.map(cons -> convertConstructor(cons, binding))
 			.collect(toSet());
 	}
@@ -468,18 +468,16 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(ElementType.class)));
 	}
 
-	// We need to carry the AbstractTypeDeclaration in the utilities below to account for
-	// https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
-	private static boolean isExported(IVariableBinding field, AbstractTypeDeclaration containingType) {
+	private static boolean isExported(IVariableBinding field) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(field.getModifiers()) ||
 			(org.eclipse.jdt.core.dom.Modifier.isProtected(field.getModifiers()) &&
-				!isEffectivelyFinal(field.getDeclaringClass(), containingType));
+				!isEffectivelyFinal(field.getDeclaringClass()));
 	}
 
-	private static boolean isExported(IMethodBinding method, AbstractTypeDeclaration containingType) {
+	private static boolean isExported(IMethodBinding method) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(method.getModifiers()) ||
 			(org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers()) &&
-				!isEffectivelyFinal(method.getDeclaringClass(), containingType));
+				!isEffectivelyFinal(method.getDeclaringClass()));
 	}
 
 	private static boolean isSourceAnnotation(IAnnotationBinding ann) {
@@ -512,7 +510,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		};
 	}
 
-	private static boolean isEffectivelyFinal(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private static boolean isEffectivelyFinal(ITypeBinding binding) {
 		if (binding.isEnum() || binding.isRecord()) {
 			return true;
 		}
@@ -528,9 +526,9 @@ final class JdtApiVisitor extends ASTVisitor {
 			}
 		}
 
-		var isFinal = org.eclipse.jdt.core.dom.Modifier.isFinal(type.getModifiers());
-		var isSealed = org.eclipse.jdt.core.dom.Modifier.isSealed(type.getModifiers());
-		var isNonSealed = org.eclipse.jdt.core.dom.Modifier.isNonSealed(type.getModifiers());
+		var isFinal = org.eclipse.jdt.core.dom.Modifier.isFinal(binding.getModifiers());
+		var isSealed = org.eclipse.jdt.core.dom.Modifier.isSealed(binding.getModifiers());
+		var isNonSealed = org.eclipse.jdt.core.dom.Modifier.isNonSealed(binding.getModifiers());
 
 		return (isFinal || isSealed) && !isNonSealed;
 	}

@@ -307,7 +307,7 @@ class TypesExtractionTest {
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
 		assertFalse(api.isEffectivelyFinal(e));
-		// FIXME: No support for NON_SEALED in ASM yet
+		// FIXME: No support for NON_SEALED in ASM
 		if (builder != ApiBuilderType.ASM) {
 			assertTrue(e.isNonSealed());
 		}
@@ -350,7 +350,10 @@ class TypesExtractionTest {
 		var d = assertInterface(api, "D");
 		assertFalse(d.isFinal());
 		assertFalse(d.isSealed());
-		//assertTrue(d.isNonSealed()); // No such information in ASM yet
+		// FIXME: No support for NON_SEALED in ASM
+		if (builder != ApiBuilderType.ASM) {
+			assertTrue(d.isNonSealed());
+		}
 		assertFalse(api.isEffectivelyFinal(d));
 
 		var e = assertClass(api, "E");
@@ -360,7 +363,7 @@ class TypesExtractionTest {
 	}
 
 	@ParameterizedTest
-	@EnumSource(value = ApiBuilderType.class, names = {"JDT"}, mode = EnumSource.Mode.EXCLUDE)
+	@EnumSource(ApiBuilderType.class)
 	void implicit_permits(ApiBuilder builder) {
 		var api = builder.build("""
 			public sealed interface I {
