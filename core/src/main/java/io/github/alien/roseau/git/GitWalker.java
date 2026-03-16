@@ -16,33 +16,44 @@ import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
+import org.eclipse.jgit.api.ResetCommand;
+import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.diff.DiffEntry;
+import org.eclipse.jgit.diff.DiffFormatter;
+import org.eclipse.jgit.diff.Edit;
+import org.eclipse.jgit.lib.Constants;
+import org.eclipse.jgit.lib.ObjectId;
+import org.eclipse.jgit.lib.ObjectReader;
+import org.eclipse.jgit.lib.Ref;
 import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.util.io.DisabledOutputStream;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Walks a Git repository's first-parent commit chain, building APIs incrementally and
  * computing breaking changes between consecutive commits. Results are emitted to a
  * {@link CommitSink} for each processed commit.
- *
- * <p>Configured once at construction; all walk state is local to {@link #walk}, so a
- * single instance can be reused across multiple calls.</p>
  */
 public final class GitWalker {
 	private static final Logger LOGGER = LogManager.getLogger(GitWalker.class);
 
-	/**
-	 * Configuration for a repository walk.
-	 */
 	public record Config(
 		String libraryId,
 		String url,
@@ -50,6 +61,9 @@ public final class GitWalker {
 		List<Path> sourceRoots,
 		RoseauOptions.Exclude exclusions
 	) {
+		public Config {
+			sourceRoots = List.copyOf(sourceRoots);
+		}
 	}
 
 	private final Config config;
@@ -59,51 +73,40 @@ public final class GitWalker {
 	}
 
 	/**
-	 * Walks the first-parent commit chain, calling {@code sink} for every commit that
-	 * can be associated with an API. Automatically retries once if the repository has
-	 * missing objects (re-clones and restarts the walk).
+	 * Analyzes a Git repository's first-parent commit chain, processes API changes, and delivers
+	 * the analysis results through the provided {@code CommitSink}.
+	 *
+	 * @param sink the recipient of the {@link CommitAnalysis} results for the processed commits
+	 * @throws Exception if any error occurs
 	 */
 	public void walk(CommitSink sink) throws Exception {
-		try {
-			walkOnce(sink);
-		} catch (Exception e) {
-			if (!RepositoryWalkerUtils.isMissingObjectFailure(e)) {
-				throw e;
-			}
-			LOGGER.warn("Repository {} has missing objects, re-cloning and retrying", config.gitDir(), e);
-			RepositoryWalkerUtils.recloneRepository(config.url(), config.gitDir());
-			walkOnce(sink);
-		}
-	}
-
-	// --- Walk orchestration ---
-
-	private void walkOnce(CommitSink sink) throws Exception {
-		RepositoryWalkerUtils.prepareRepository(config.url(), config.gitDir());
-		var repoBuilder = new FileRepositoryBuilder().setGitDir(config.gitDir().toFile()).readEnvironment();
+		prepareRepository(config.url(), config.gitDir());
+		FileRepositoryBuilder repoBuilder = new FileRepositoryBuilder().setGitDir(
+			config.gitDir().toFile()).readEnvironment();
 		try (Repository repo = repoBuilder.build();
 		     Git git = new Git(repo);
 		     RevWalk rw = new RevWalk(repo)) {
-			List<RevCommit> chain = RepositoryWalkerUtils.firstParentChain(repo, rw);
-			Map<String, List<String>> tagsByCommit = RepositoryWalkerUtils.tagsByCommit(repo);
-			String branch = RepositoryWalkerUtils.defaultBranchName(repo);
+			List<RevCommit> chain = firstParentChain(repo, rw);
+			Map<String, List<String>> tagsByCommit = tagsByCommit(repo);
+			String branch = defaultBranchName(repo);
 			Path workTree = repo.getWorkTree().toPath();
 			LOGGER.info("Walking {} commits", chain.size());
 
-			var jdtExtractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
-			var incrementalExtractor = new IncrementalJdtTypesExtractor(jdtExtractor);
+			JdtTypesExtractor jdtExtractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
+			IncrementalTypesExtractor incrementalExtractor = new IncrementalJdtTypesExtractor(jdtExtractor);
 
 			API previousApi = null;
 			Path previousSourceRoot = null;
 			for (RevCommit revCommit : chain) {
-				RepositoryWalkerUtils.CommitDiff diff = RepositoryWalkerUtils.computeCommitDiff(repo, revCommit, rw);
+				CommitDiff diff = buildCommitDiff(repo, revCommit, rw);
 				CommitInfo info = buildCommitInfo(diff, revCommit, tagsByCommit, branch);
 
+				// FIXME: only correct because we don't care about classpath yet
 				if (!info.javaChanged()) {
 					if (previousApi != null) {
 						sink.accept(unchangedAnalysis(info, previousApi));
 					} else {
-						LOGGER.info("Skipping commit {} (no Java changes, no prior API)", info.sha());
+						sink.accept(emptyAnalysis(info));
 					}
 					continue;
 				}
@@ -130,16 +133,14 @@ public final class GitWalker {
 		}
 	}
 
-	// --- Commit info ---
-
-	private static CommitInfo buildCommitInfo(RepositoryWalkerUtils.CommitDiff diff, RevCommit commit,
+	private static CommitInfo buildCommitInfo(CommitDiff diff, RevCommit commit,
 	                                          Map<String, List<String>> tagsByCommit, String branch) {
 		return new CommitInfo(
 			commit.getName(),
 			commit.getShortMessage(),
 			Instant.ofEpochSecond(commit.getCommitTime()),
 			commit.getParentCount() > 1,
-			RepositoryWalkerUtils.parentCommit(commit),
+			parentCommit(commit),
 			tagsByCommit.getOrDefault(commit.getName(), List.of()),
 			branch,
 			diff.javaChanged(),
@@ -154,16 +155,16 @@ public final class GitWalker {
 	}
 
 	private static CommitAnalysis unchangedAnalysis(CommitInfo info, API previousApi) {
-		LOGGER.info("Commit {} has no Java changes, reusing previous API", info.sha());
 		return new CommitAnalysis(info, Optional.of(previousApi), Optional.empty(), false, 0, 0, 0, List.of());
 	}
 
-	// --- Checkout ---
+	private static CommitAnalysis emptyAnalysis(CommitInfo info) {
+		return new CommitAnalysis(info, Optional.empty(), Optional.empty(), false, 0, 0, 0, List.of());
+	}
 
-	private long checkoutCommit(Git git, RevCommit commit) throws Exception {
+	private static long checkoutCommit(Git git, RevCommit commit) throws Exception {
 		Stopwatch sw = Stopwatch.createStarted();
-		RepositoryWalkerUtils.makePristine(git);
-		LOGGER.debug("Checking out commit {}", commit.getName());
+		makePristine(git);
 		git.checkout().setName(commit.getName()).setForced(true).call();
 		return sw.elapsed().toMillis();
 	}
@@ -172,64 +173,44 @@ public final class GitWalker {
 		return config.sourceRoots().stream().filter(Files::exists).findFirst();
 	}
 
-	// --- API building ---
-
 	private record ApiResult(API api, long timeMs, List<Exception> errors) {
 	}
 
-	private ApiResult buildApi(CommitInfo info, RepositoryWalkerUtils.CommitDiff diff, Path sourceRoot,
+	private ApiResult buildApi(CommitInfo info, CommitDiff diff, Path sourceRoot,
 	                           API previousApi, Path previousSourceRoot,
 	                           Path workTree, JdtTypesExtractor extractor,
 	                           IncrementalTypesExtractor incrementalExtractor) {
-		Stopwatch sw = Stopwatch.createStarted();
-
-		if (!canIncrementalUpdate(previousApi, previousSourceRoot, sourceRoot)) {
-			return new ApiResult(fullBuild(sourceRoot, extractor), sw.elapsed().toMillis(), List.of());
-		}
-
-		if (isDiffUnknown(info)) {
-			var e = new IllegalStateException(
-				"Could not compute changed Java files for commit " + info.sha() + "; falling back to full rebuild");
-			LOGGER.warn(e.getMessage());
-			return new ApiResult(fullBuild(sourceRoot, extractor), sw.elapsed().toMillis(), List.of(e));
-		}
-
-		return incrementalBuild(info, diff, sourceRoot, previousApi, workTree, extractor, incrementalExtractor, sw);
+		return canIncrementalUpdate(previousApi, previousSourceRoot, sourceRoot)
+			? buildApiIncremental(info, diff, sourceRoot, previousApi, workTree, extractor, incrementalExtractor)
+			: buildApiFull(sourceRoot, extractor);
 	}
 
-	private ApiResult incrementalBuild(CommitInfo info, RepositoryWalkerUtils.CommitDiff diff,
-	                                   Path sourceRoot, API previousApi, Path workTree,
-	                                   JdtTypesExtractor extractor,
-	                                   IncrementalTypesExtractor incrementalExtractor, Stopwatch sw) {
-		List<Exception> errors = new ArrayList<>();
+	private ApiResult buildApiFull(Path sourceRoot, JdtTypesExtractor extractor) {
+		Library library = buildLibrary(sourceRoot);
+		Stopwatch sw = Stopwatch.createStarted();
+		API api = Roseau.buildAPI(extractor.extractTypes(library));
+		return new ApiResult(api, sw.elapsed().toMillis(), List.of());
+	}
 
-		Optional<Path> relativeRoot = RepositoryWalkerUtils.sourceRootRelativeToWorkTree(workTree, sourceRoot);
-		if (relativeRoot.isEmpty()) {
-			var e = new IllegalStateException(
-				"Source root " + sourceRoot + " is outside repository root " + workTree + "; falling back to full rebuild");
-			LOGGER.warn(e.getMessage());
-			errors.add(e);
-			return new ApiResult(fullBuild(sourceRoot, extractor), sw.elapsed().toMillis(), errors);
-		}
-
-		ChangedFiles changedFiles = RepositoryWalkerUtils.changedFilesForSourceRoot(diff, relativeRoot.get());
+	private ApiResult buildApiIncremental(CommitInfo info, CommitDiff diff,
+	                                      Path sourceRoot, API previousApi, Path workTree,
+	                                      JdtTypesExtractor extractor,
+	                                      IncrementalTypesExtractor incrementalExtractor) {
+		Path relativeRoot = workTree.relativize(sourceRoot);
+		Stopwatch sw = Stopwatch.createStarted();
+		ChangedFiles changedFiles = changedFilesForSourceRoot(diff, relativeRoot);
 		if (changedFiles.hasNoChanges()) {
-			return new ApiResult(previousApi, sw.elapsed().toMillis(), errors);
+			return new ApiResult(previousApi, sw.elapsed().toMillis(), List.of());
 		}
 
 		try {
 			LibraryTypes updatedTypes = incrementalExtractor.incrementalUpdate(
 				previousApi.getLibraryTypes(), buildLibrary(sourceRoot), changedFiles);
-			return new ApiResult(Roseau.buildAPI(updatedTypes), sw.elapsed().toMillis(), errors);
+			return new ApiResult(Roseau.buildAPI(updatedTypes), sw.elapsed().toMillis(), List.of());
 		} catch (RuntimeException e) {
 			LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", info.sha(), e);
-			errors.add(e);
-			return new ApiResult(fullBuild(sourceRoot, extractor), sw.elapsed().toMillis(), errors);
+			return new ApiResult(buildApiFull(sourceRoot, extractor).api(), sw.elapsed().toMillis(), List.of(e));
 		}
-	}
-
-	private API fullBuild(Path sourceRoot, JdtTypesExtractor extractor) {
-		return Roseau.buildAPI(extractor.extractTypes(buildLibrary(sourceRoot)));
 	}
 
 	private Library buildLibrary(Path sourceRoot) {
@@ -244,14 +225,6 @@ public final class GitWalker {
 		return previousApi != null && previousSourceRoot != null && previousSourceRoot.equals(sourceRoot);
 	}
 
-	private static boolean isDiffUnknown(CommitInfo info) {
-		return info.updatedJavaFiles().isEmpty()
-			&& info.deletedJavaFiles().isEmpty()
-			&& info.createdJavaFiles().isEmpty();
-	}
-
-	// --- API diffing ---
-
 	private record DiffResult(Optional<RoseauReport> report, boolean apiChanged, long timeMs) {
 	}
 
@@ -261,7 +234,235 @@ public final class GitWalker {
 		}
 		Stopwatch sw = Stopwatch.createStarted();
 		RoseauReport report = Roseau.diff(previousApi, currentApi);
-		LOGGER.info("Found {} breaking changes", report.getAllBreakingChanges().size());
 		return new DiffResult(Optional.of(report), true, sw.elapsed().toMillis());
+	}
+
+	record CommitDiff(
+		boolean javaChanged,
+		boolean pomChanged,
+		int filesChanged,
+		int locAdded,
+		int locDeleted,
+		Set<Path> updatedJavaFiles,
+		Set<Path> deletedJavaFiles,
+		Set<Path> createdJavaFiles
+	) {
+	}
+
+	static void prepareRepository(String url, Path gitDir) throws Exception {
+		if (!Files.exists(gitDir)) {
+			Path workTree = gitDir.getParent();
+			LOGGER.info("Local clone not found for {}, cloning into {}", url, workTree);
+			cloneRepository(url, gitDir.getParent());
+		}
+
+		LOGGER.info("Preparing existing clone at {} (remote {})", gitDir, url);
+		FileRepositoryBuilder builder = new FileRepositoryBuilder()
+			.setGitDir(gitDir.toFile())
+			.readEnvironment();
+		try (Repository repo = builder.build(); Git git = new Git(repo)) {
+			fetchDefaultBranch(git, repo);
+			makePristine(git);
+		}
+	}
+
+	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw) throws IOException {
+		ObjectId headId = repo.resolve("HEAD");
+		if (headId == null) {
+			throw new IllegalStateException("Cannot resolve HEAD");
+		}
+
+		List<RevCommit> chain = new ArrayList<>();
+		RevCommit cur = rw.parseCommit(headId);
+		while (true) {
+			chain.add(cur);
+			if (cur.getParentCount() == 0) {
+				break;
+			}
+			cur = rw.parseCommit(cur.getParent(0));
+		}
+		Collections.reverse(chain);
+		return chain;
+	}
+
+	static CommitDiff buildCommitDiff(Repository repo, RevCommit commit, RevWalk rw) {
+		try (ObjectReader reader = repo.newObjectReader();
+		     DiffFormatter df = new DiffFormatter(DisabledOutputStream.INSTANCE)) {
+			df.setRepository(repo);
+			df.setDetectRenames(false);
+
+			CanonicalTreeParser newTree = new CanonicalTreeParser();
+			newTree.reset(reader, commit.getTree().getId());
+
+			CanonicalTreeParser oldTree = new CanonicalTreeParser();
+			if (commit.getParentCount() > 0) {
+				RevCommit parent = rw.parseCommit(commit.getParent(0).getId());
+				oldTree.reset(reader, parent.getTree().getId());
+			} else {
+				oldTree.reset(reader, Constants.EMPTY_TREE_ID);
+			}
+
+			List<DiffEntry> diffs = df.scan(oldTree, newTree);
+
+			Set<Path> updated = new HashSet<>();
+			Set<Path> deleted = new HashSet<>();
+			Set<Path> created = new HashSet<>();
+			boolean pomChanged = false;
+			int locAdded = 0;
+			int locDeleted = 0;
+
+			for (DiffEntry e : diffs) {
+				Path oldPath = pathOf(e.getOldPath());
+				Path newPath = pathOf(e.getNewPath());
+
+				if (isPomPath(oldPath) || isPomPath(newPath)) {
+					pomChanged = true;
+				}
+
+				switch (e.getChangeType()) {
+					case ADD -> addIfJava(created, newPath);
+					case MODIFY -> addIfJava(updated, newPath);
+					case DELETE -> addIfJava(deleted, oldPath);
+					case RENAME -> {
+						addIfJava(deleted, oldPath);
+						addIfJava(created, newPath);
+					}
+					case COPY -> addIfJava(created, newPath);
+				}
+
+				for (Edit edit : df.toFileHeader(e).toEditList()) {
+					locAdded += edit.getLengthB();
+					locDeleted += edit.getLengthA();
+				}
+			}
+
+			boolean javaChanged = !updated.isEmpty() || !deleted.isEmpty() || !created.isEmpty();
+			return new CommitDiff(javaChanged, pomChanged, diffs.size(), locAdded, locDeleted, updated, deleted, created);
+		} catch (IOException e) {
+			LOGGER.warn("Failed to compute commit diff for {}", commit.getName(), e);
+			return new CommitDiff(true, true, 0, 0, 0, Set.of(), Set.of(), Set.of());
+		}
+	}
+
+	static ChangedFiles changedFilesForSourceRoot(CommitDiff diff, Path sourceRootRelative) {
+		return new ChangedFiles(
+			relativizeUnderRoot(diff.updatedJavaFiles(), sourceRootRelative),
+			relativizeUnderRoot(diff.deletedJavaFiles(), sourceRootRelative),
+			relativizeUnderRoot(diff.createdJavaFiles(), sourceRootRelative)
+		);
+	}
+
+	static Map<String, List<String>> tagsByCommit(Repository repo) throws IOException {
+		Map<String, List<String>> tagsByCommit = new HashMap<>();
+		try (RevWalk rw = new RevWalk(repo)) {
+			for (Ref ref : repo.getRefDatabase().getRefsByPrefix(Constants.R_TAGS)) {
+				Ref peeled = repo.getRefDatabase().peel(ref);
+				ObjectId objectId = peeled.getPeeledObjectId() != null ? peeled.getPeeledObjectId() : ref.getObjectId();
+				if (objectId == null) {
+					continue;
+				}
+				try {
+					RevCommit commit = rw.parseCommit(objectId);
+					String tag = ref.getName().substring(Constants.R_TAGS.length());
+					tagsByCommit.computeIfAbsent(commit.getName(), _ -> new ArrayList<>()).add(tag);
+				} catch (Exception ignored) {
+					// Ignore tags not pointing to commits
+				}
+			}
+		}
+		tagsByCommit.values().forEach(Collections::sort);
+		return tagsByCommit;
+	}
+
+	static String defaultBranchName(Repository repo) throws Exception {
+		return Optional.ofNullable(resolveRemoteBranchName(repo)).orElse("");
+	}
+
+	static String parentCommit(RevCommit commit) {
+		return commit.getParentCount() > 0 ? commit.getParent(0).getName() : "";
+	}
+
+	static void makePristine(Git git) throws Exception {
+		git.reset().setMode(ResetCommand.ResetType.HARD).call();
+		git.clean().setCleanDirectories(true).setIgnore(false).call();
+	}
+
+	private static void cloneRepository(String url, Path workTree) throws GitAPIException, IOException {
+		if (workTree == null) {
+			throw new IOException("Cannot resolve repository work tree");
+		}
+		Path parent = workTree.getParent();
+		if (parent != null) {
+			Files.createDirectories(parent);
+		}
+		LOGGER.info("Cloning {} into {}", url, workTree);
+		Git.cloneRepository().setURI(url).setDirectory(workTree.toFile()).call().close();
+	}
+
+	private static void fetchDefaultBranch(Git git, Repository repo) throws Exception {
+		LOGGER.info("Fetching updates from origin for {}", repo.getDirectory());
+		var fetch = git.fetch().setRemote("origin");
+		fetch.call();
+
+		String branchName = resolveRemoteBranchName(repo);
+		LOGGER.info("Aligning local repository to origin/{}", branchName);
+		if (repo.findRef("refs/heads/" + branchName) == null) {
+			git.checkout().setCreateBranch(true).setName(branchName).setStartPoint("origin/" + branchName).call();
+		} else {
+			git.checkout().setName(branchName).setForced(true).call();
+		}
+		git.reset().setMode(ResetCommand.ResetType.HARD).setRef("origin/" + branchName).call();
+	}
+
+	private static String resolveRemoteBranchName(Repository repo) throws Exception {
+		final String prefix = "refs/remotes/origin/";
+
+		Ref remoteHead = repo.exactRef("refs/remotes/origin/HEAD");
+		if (remoteHead != null) {
+			String remoteRefName = remoteHead.getTarget().getName();
+			if (remoteRefName.startsWith(prefix)) {
+				return remoteRefName.substring(prefix.length());
+			}
+		}
+
+		for (String candidate : List.of("main", "master", repo.getBranch())) {
+			if (repo.findRef(prefix + candidate) != null) {
+				return candidate;
+			}
+		}
+
+		throw new IllegalStateException("Could not resolve default branch for " + repo.getDirectory());
+	}
+
+	private static Set<Path> relativizeUnderRoot(Set<Path> paths, Path sourceRootRelative) {
+		return paths.stream()
+			.filter(p -> p.startsWith(sourceRootRelative))
+			.map(sourceRootRelative::relativize)
+			.collect(Collectors.toSet());
+	}
+
+	private static void addIfJava(Set<Path> set, Path path) {
+		if (isJavaPath(path)) {
+			set.add(path);
+		}
+	}
+
+	private static boolean isJavaPath(Path path) {
+		return path != null && path.toString().endsWith(".java");
+	}
+
+	private static boolean isPomPath(Path path) {
+		if (path == null) {
+			return false;
+		}
+		String str = path.toString();
+		return str.equals("pom.xml") || str.endsWith("/pom.xml");
+	}
+
+	private static Path pathOf(String path) {
+		if (path == null || DiffEntry.DEV_NULL.equals(path)) {
+			return null;
+		}
+		return Path.of(path);
 	}
 }

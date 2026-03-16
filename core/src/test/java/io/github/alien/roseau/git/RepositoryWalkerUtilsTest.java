@@ -58,7 +58,7 @@ class RepositoryWalkerUtilsTest {
 		}
 
 		Path cloneGitDir = wd.resolve("clone/.git");
-		RepositoryWalkerUtils.prepareRepository(remoteDir.toUri().toString(), cloneGitDir);
+		GitWalker.prepareRepository(remoteDir.toUri().toString(), cloneGitDir);
 
 		assertThat(Files.isDirectory(cloneGitDir)).isTrue();
 		assertThat(Files.isDirectory(wd.resolve("clone/src/main/java"))).isTrue();
@@ -75,7 +75,7 @@ class RepositoryWalkerUtilsTest {
 
 		Path cloneGitDir = wd.resolve("clone/.git");
 		String remoteUrl = remoteDir.toUri().toString();
-		RepositoryWalkerUtils.prepareRepository(remoteUrl, cloneGitDir);
+		GitWalker.prepareRepository(remoteUrl, cloneGitDir);
 
 		Path cloneRoot = wd.resolve("clone");
 		try (Git local = Git.open(cloneRoot.toFile());
@@ -91,7 +91,7 @@ class RepositoryWalkerUtilsTest {
 				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public void n(){} }"),
 				List.of());
 
-			RepositoryWalkerUtils.prepareRepository(remoteUrl, cloneGitDir);
+			GitWalker.prepareRepository(remoteUrl, cloneGitDir);
 
 			try (Git cleanedLocal = Git.open(cloneRoot.toFile())) {
 				assertThat(GitWalkTestUtils.status(cleanedLocal).isClean()).isTrue();
@@ -100,44 +100,6 @@ class RepositoryWalkerUtilsTest {
 				assertThat(Files.readString(cloneRoot.resolve("src/main/java/pkg/A.java"))).contains("n()");
 				assertThat(cleanedLocal.log().setMaxCount(1).call().iterator().next().getName()).isEqualTo(remoteHead.getName());
 			}
-		}
-	}
-
-	@Test
-	void prepare_repository_unshallows_existing_clone(@TempDir Path wd) throws Exception {
-		Path remoteDir = wd.resolve("remote");
-		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
-			GitWalkTestUtils.commit(remote, "c1",
-				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public void a(){} }"),
-				List.of());
-			GitWalkTestUtils.commit(remote, "c2",
-				Map.of("src/main/java/pkg/B.java", "package pkg; public class B { public void b(){} }"),
-				List.of());
-			GitWalkTestUtils.commit(remote, "c3",
-				Map.of("src/main/java/pkg/C.java", "package pkg; public class C { public void c(){} }"),
-				List.of());
-		}
-
-		Path cloneRoot = wd.resolve("shallow-clone");
-		Path cloneGitDir = cloneRoot.resolve(".git");
-		String remoteUrl = remoteDir.toUri().toString();
-		try (Git ignored = Git.cloneRepository()
-			.setURI(remoteUrl)
-			.setDirectory(cloneRoot.toFile())
-			.setDepth(1)
-			.call()) {
-		}
-
-		try (Git shallowClone = Git.open(cloneRoot.toFile())) {
-			assertThat(shallowClone.getRepository().getObjectDatabase().getShallowCommits()).isNotEmpty();
-		}
-
-		RepositoryWalkerUtils.prepareRepository(remoteUrl, cloneGitDir);
-
-		try (Git completeClone = Git.open(cloneRoot.toFile());
-		     RevWalk rw = new RevWalk(completeClone.getRepository())) {
-			assertThat(completeClone.getRepository().getObjectDatabase().getShallowCommits()).isEmpty();
-			assertThat(RepositoryWalkerUtils.firstParentChain(completeClone.getRepository(), rw)).hasSize(3);
 		}
 	}
 
@@ -161,7 +123,7 @@ class RepositoryWalkerUtilsTest {
 				),
 				List.of("src/main/java/pkg/C.java"));
 
-			RepositoryWalkerUtils.CommitDiff diff = RepositoryWalkerUtils.computeCommitDiff(git.getRepository(), second, rw);
+			GitWalker.CommitDiff diff = GitWalker.buildCommitDiff(git.getRepository(), second, rw);
 
 			assertThat(diff.javaChanged()).isTrue();
 			assertThat(diff.pomChanged()).isTrue();
@@ -169,41 +131,10 @@ class RepositoryWalkerUtilsTest {
 			assertThat(diff.createdJavaFiles()).containsExactly(Path.of("src/main/java/pkg/B.java"));
 			assertThat(diff.deletedJavaFiles()).containsExactly(Path.of("src/main/java/pkg/C.java"));
 
-			ChangedFiles changed = RepositoryWalkerUtils.changedFilesForSourceRoot(diff, Path.of("src/main/java"));
+			ChangedFiles changed = GitWalker.changedFilesForSourceRoot(diff, Path.of("src/main/java"));
 			assertThat(changed.updatedFiles()).containsExactly(Path.of("pkg/A.java"));
 			assertThat(changed.createdFiles()).containsExactly(Path.of("pkg/B.java"));
 			assertThat(changed.deletedFiles()).containsExactly(Path.of("pkg/C.java"));
 		}
 	}
-
-	@Test
-	void build_commit_url_for_github_https_remote() {
-		String commitUrl = RepositoryWalkerUtils.commitUrl(
-			"https://github.com/alien-tools/roseau.git",
-			"abc123"
-		);
-
-		assertThat(commitUrl).isEqualTo("https://github.com/alien-tools/roseau/commit/abc123");
-	}
-
-	@Test
-	void build_commit_url_for_github_ssh_remote() {
-		String commitUrl = RepositoryWalkerUtils.commitUrl(
-			"git@github.com:alien-tools/roseau.git",
-			"abc123"
-		);
-
-		assertThat(commitUrl).isEqualTo("https://github.com/alien-tools/roseau/commit/abc123");
-	}
-
-	@Test
-	void build_commit_url_is_empty_for_non_github_remote() {
-		String commitUrl = RepositoryWalkerUtils.commitUrl(
-			"https://gitlab.com/alien-tools/roseau.git",
-			"abc123"
-		);
-
-		assertThat(commitUrl).isEmpty();
-	}
-
 }

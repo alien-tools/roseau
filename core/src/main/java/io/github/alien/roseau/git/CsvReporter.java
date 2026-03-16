@@ -18,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.Serializable;
 import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.file.Files;
@@ -297,7 +298,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		writeCsvRow(commitsWriter, List.of(
 			libraryId,
 			c.sha(),
-			RepositoryWalkerUtils.commitUrl(url, c.sha()),
+			commitUrl(url, c.sha()),
 			c.shortMessage(),
 			c.conventionalCommitTag(),
 			c.isConventionalBreakingChange(),
@@ -336,6 +337,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			stats.timeMs(),
 			error
 		));
+	}
+
+	private String commitUrl(String url, String sha) {
+		return url + "/commit/" + sha;
 	}
 
 	private void writeBreakingChangesRows(String commitSha, RoseauReport report, API api) throws IOException {

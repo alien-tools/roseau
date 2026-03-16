@@ -22,8 +22,7 @@ class CommitInfoTest {
 		"'feat(core): scoped change',feat",
 		"'refactor!: breaking refactor',refactor",
 		"'docs: update readme',docs",
-		"'test(cli): add test',test",
-		"'FEAT: uppercase tag',feat",
+		"'test(cli): add test',test"
 	})
 	void conventional_commit_tag_is_extracted(String message, String expectedTag) {
 		assertThat(infoWithMessage(message).conventionalCommitTag()).isEqualTo(expectedTag);

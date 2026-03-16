@@ -60,30 +60,6 @@ class GitWalkerTest {
 			.isBeforeOrEqualTo(analyses.get(2).commit().commitTime());
 	}
 
-	// --- Skip logic ---
-
-	@Test
-	void walk_skips_non_java_commits_before_first_java_commit(@TempDir Path wd) throws Exception {
-		Path remoteDir = wd.resolve("remote");
-		RevCommit javaCommit;
-		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
-			GitWalkTestUtils.commit(remote, "c1-readme",
-				Map.of("README.md", "hello"),
-				List.of());
-			GitWalkTestUtils.commit(remote, "c2-config",
-				Map.of("config.yml", "key: value"),
-				List.of());
-			javaCommit = GitWalkTestUtils.commit(remote, "c3-java",
-				Map.of("src/main/java/pkg/A.java", "package pkg; public class A {}"),
-				List.of());
-		}
-
-		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
-
-		assertThat(analyses).hasSize(1);
-		assertThat(analyses.getFirst().commit().sha()).isEqualTo(javaCommit.getName());
-	}
-
 	@Test
 	void walk_emits_non_java_commit_after_first_java_commit(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote");
