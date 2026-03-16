@@ -1,32 +1,38 @@
 defaults:
   exclusions:
     names:
-    - ".*(\\.)?(internal|example|examples)(\\.)?.*"
+      - ".*(\\.)?(internal|example|examples)(\\.)?.*"
     annotations:
-    - name: Internal
-      args: {}
-    - name: Beta
-      args: {}
-    - name: Test
-      args: {}
+      - name: Internal
+        args: { }
+      - name: Beta
+        args: { }
+      - name: Test
+        args: { }
 
 repositories:
-- libraryId: guava
-  url: "https://github.com/google/guava"
-  gitDir: "/data/guava/.git"
-  sourceRoots:
-  - /data/guava/guava/src  # 2abfb185dc directory reorganization in preparation for deeper maven integration
-  - /data/guava/src # initial root on first-parent history
-  exclusions:
-    annotations:
-    - name: com.google.common.annotations.Beta
-      args: {}
-    -  # inferred from HEAD (158 hits)
-      name: com.google.common.annotations.VisibleForTesting
-      args: {}
-    - # inferred from HEAD (127 hits)
-      name: com.google.errorprone.annotations.DoNotCall
-      args: {}
-    - # inferred from HEAD (2 hits)
-      name: com.google.errorprone.annotations.RestrictedApi
-      args: {}
+  - libraryId: guava
+    url: "https://github.com/google/guava"
+    gitDir: "/data/guava/.git"
+    sourceRoots:
+      - /data/guava/guava/src  # 2abfb185dc directory reorganization in preparation for deeper maven integration
+      - /data/guava/src # initial root on first-parent history
+    exclusions:
+      annotations:
+        - name: com.google.common.annotations.Beta
+          args: { }
+        - # inferred from HEAD (158 hits)
+          name: com.google.common.annotations.VisibleForTesting
+          args: { }
+        - # inferred from HEAD (127 hits)
+          name: com.google.errorprone.annotations.DoNotCall
+          args: { }
+        - # inferred from HEAD (2 hits)
+          name: com.google.errorprone.annotations.RestrictedApi
+          args: { }
+  - libraryId: roseau
+    url: "https://github.com/alien-tools/roseau"
+    gitDir: "/data/roseau/.git"
+    sourceRoots:
+      - /data/roseau/core/src/main/java
+      - /data/roseau/src/main/java

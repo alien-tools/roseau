@@ -27,8 +27,15 @@ public record CommitInfo(
 	Set<Path> deletedJavaFiles,
 	Set<Path> createdJavaFiles
 ) {
+	public CommitInfo {
+		tags = List.copyOf(tags);
+		updatedJavaFiles = Set.copyOf(updatedJavaFiles);
+		deletedJavaFiles = Set.copyOf(deletedJavaFiles);
+		createdJavaFiles = Set.copyOf(createdJavaFiles);
+	}
+
 	private static final Pattern CONVENTIONAL_COMMIT =
-		Pattern.compile("^([a-zA-Z]+)(?:\\([^)]*\\))?(!)?:\\s+.+$");
+		Pattern.compile("^(feat|fix|docs|style|refactor|perf|test|build|ci|chore|revert)(?:\\([^)]*\\))?(!)?:\\s+.+$");
 
 	/**
 	 * Extracts the conventional commit type tag (e.g. "feat", "fix") from the short message,

@@ -6,6 +6,8 @@ import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
@@ -16,6 +18,7 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
+import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -61,6 +64,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"exported_types_count",
 		"exported_methods_count",
 		"exported_fields_count",
+		"exported_symbols_count",
 		"deprecated_count",
 		"internal_count",
 		"breaking_changes_count",
@@ -95,8 +99,6 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"source_line"
 	);
 
-	// --- Instance state ---
-
 	private final String libraryId;
 	private final String url;
 	private final BufferedWriter commitsWriter;
@@ -112,29 +114,39 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		this.url = config.url();
 		this.exclusionMatcher = ExclusionMatcher.of(config.exclusions());
 
-		Path parent = outputDir == null ? Path.of(".") : outputDir;
-		Files.createDirectories(parent);
+		Files.createDirectories(outputDir);
 
-		Path commitsCsv = parent.resolve(config.libraryId() + "-commits.csv");
-		Path bcsCsv = parent.resolve(config.libraryId() + "-bcs.csv");
+		Path commitsCsv = outputDir.resolve(config.libraryId() + "-commits.csv");
+		Path bcsCsv = outputDir.resolve(config.libraryId() + "-bcs.csv");
 		LOGGER.info("Writing commit data to {}", commitsCsv.toAbsolutePath().normalize());
 		LOGGER.info("Writing breaking changes data to {}", bcsCsv.toAbsolutePath().normalize());
 
 		this.commitsWriter = openWriter(commitsCsv);
 		this.bcsWriter = openWriter(bcsCsv);
-		writeCsvHeader(commitsWriter, COMMITS_HEADER);
-		writeCsvHeader(bcsWriter, BCS_HEADER);
+		writeCsvRow(commitsWriter, COMMITS_HEADER);
+		writeCsvRow(bcsWriter, BCS_HEADER);
 	}
 
 	@Override
-	public void accept(CommitAnalysis analysis) throws IOException {
-		StatsResult stats = resolveApiStats(analysis);
-		long daysSincePrev = daysSincePreviousCommit(previousCommitTime, analysis.commit().commitTime());
-		writeCommitRow(analysis, stats, daysSincePrev);
-		if (analysis.report().isPresent()) {
-			writeBreakingChangesRows(analysis.commit().sha(), analysis.report().get());
+	public void accept(CommitAnalysis analysis) {
+		StatsResult stats = computeApiStats(analysis);
+		long daysSincePrev = daysBetweenInstants(previousCommitTime, analysis.commit().commitTime());
+
+		try {
+			writeCommitRow(analysis, stats, daysSincePrev);
+			analysis.report().ifPresent(report -> {
+				if (analysis.api().isPresent()) {
+					try {
+						writeBreakingChangesRows(analysis.commit().sha(), report, analysis.api().get());
+					} catch (IOException e) {
+						throw new UncheckedIOException(e);
+					}
+				}
+			});
+			previousCommitTime = analysis.commit().commitTime();
+		} catch (IOException e) {
+			LOGGER.error("Error writing commit data", e);
 		}
-		previousCommitTime = analysis.commit().commitTime();
 	}
 
 	@Override
@@ -142,8 +154,6 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		commitsWriter.close();
 		bcsWriter.close();
 	}
-
-	// --- API stats ---
 
 	private record ApiStats(
 		int allApiTypesCount,
@@ -158,6 +168,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		int allApiSymbolsCount() {
 			return allApiTypesCount + allApiMethodsCount + allApiFieldsCount;
 		}
+
+		int exportedSymbolsCount() {
+			return exportedTypesCount + exportedMethodsCount + exportedFieldsCount;
+		}
 	}
 
 	private static final ApiStats EMPTY_STATS = new ApiStats(0, 0, 0, 0, 0, 0, 0, 0);
@@ -165,13 +179,13 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 	private record StatsResult(ApiStats stats, long timeMs) {
 	}
 
-	private StatsResult resolveApiStats(CommitAnalysis analysis) {
+	private StatsResult computeApiStats(CommitAnalysis analysis) {
 		if (analysis.api().isEmpty()) {
-			return new StatsResult(EMPTY_STATS, 0);
+			return new StatsResult(EMPTY_STATS, 0L);
 		}
 		API api = analysis.api().get();
 		if (api == cachedApi && cachedStats != null) {
-			return new StatsResult(cachedStats, 0);
+			return new StatsResult(cachedStats, 0L);
 		}
 		Stopwatch sw = Stopwatch.createStarted();
 		cachedStats = computeApiStats(api);
@@ -189,10 +203,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			.sum();
 		int exportedTypesCount = api.getExportedTypes().size();
 		int exportedMethodsCount = api.getExportedTypes().stream()
-			.mapToInt(type -> type.getDeclaredMethods().size())
+			.mapToInt(type -> api.getDeclaredExportedMethods(type).size())
 			.sum();
 		int exportedFieldsCount = api.getExportedTypes().stream()
-			.mapToInt(type -> type.getDeclaredFields().size())
+			.mapToInt(type -> api.getDeclaredExportedFields(type).size())
 			.sum();
 		return new ApiStats(
 			allTypesCount,
@@ -201,21 +215,21 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			exportedTypesCount,
 			exportedMethodsCount,
 			exportedFieldsCount,
-			countAnnotated(api, "java.lang.Deprecated"),
+			countAnnotated(api, Deprecated.class.getCanonicalName()),
 			countInternal(api)
 		);
 	}
 
-	private long countAnnotated(API api, String fqn) {
+	private static long countAnnotated(API api, String fqn) {
 		return api.getExportedTypes().stream()
 			.mapToLong(type -> {
 				long typeCount = type.getAnnotations().stream()
 					.filter(a -> a.actualAnnotation().getQualifiedName().equals(fqn))
 					.count();
-				long fieldCount = type.getDeclaredFields().stream()
+				long fieldCount = api.getDeclaredExportedFields(type).stream()
 					.filter(f -> f.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals(fqn)))
 					.count();
-				long methodCount = type.getDeclaredMethods().stream()
+				long methodCount = api.getDeclaredExportedMethods(type).stream()
 					.filter(m -> m.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals(fqn)))
 					.count();
 				return typeCount + fieldCount + methodCount;
@@ -227,14 +241,13 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		return api.getExportedTypes().stream()
 			.flatMap(type -> Stream.concat(
 				Stream.of(type),
-				Stream.concat(type.getDeclaredFields().stream(), type.getDeclaredMethods().stream())))
-			.filter(exclusionMatcher::isInternal)
+				Stream.concat(api.getDeclaredExportedFields(type).stream(), api.getDeclaredExportedMethods(type).stream())))
+			.filter(symbol -> exclusionMatcher.isInternal(symbol, api))
 			.count();
 	}
 
-	// --- Exclusion matching ---
-
-	private record ExclusionMatcher(List<Pattern> namePatterns, List<RoseauOptions.AnnotationExclusion> annotationExclusions) {
+	private record ExclusionMatcher(List<Pattern> namePatterns,
+	                                List<RoseauOptions.AnnotationExclusion> annotationExclusions) {
 		static ExclusionMatcher of(RoseauOptions.Exclude exclusions) {
 			List<Pattern> patterns = exclusions.names().stream()
 				.map(Pattern::compile)
@@ -242,15 +255,21 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			return new ExclusionMatcher(patterns, exclusions.annotations());
 		}
 
-		boolean isInternal(Symbol symbol) {
+		boolean isInternal(Symbol symbol, API api) {
 			if (symbol == null) {
 				return false;
 			}
 			if (namePatterns.stream().anyMatch(p -> p.matcher(symbol.getQualifiedName()).matches())) {
 				return true;
 			}
-			return annotationExclusions.stream()
-				.anyMatch(excl -> symbol.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)));
+			return switch (symbol) {
+				case TypeDecl type -> annotationExclusions.stream()
+					.anyMatch(excl -> type.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)));
+				case TypeMemberDecl member -> api.resolver().resolve(member.getContainingType())
+					.map(type -> isInternal(type, api)).orElse(false)
+					|| annotationExclusions.stream()
+					.anyMatch(excl -> member.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)));
+			};
 		}
 
 		private static boolean annotationMatches(Annotation annotation, RoseauOptions.AnnotationExclusion exclusion) {
@@ -264,21 +283,16 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		}
 	}
 
-	// --- Commit row ---
-
 	private void writeCommitRow(CommitAnalysis analysis, StatsResult stats, long daysSincePrev) throws IOException {
 		CommitInfo c = analysis.commit();
 		String tags = String.join(";", c.tags());
 		String error = analysis.errors().stream()
 			.map(Exception::getMessage)
 			.collect(Collectors.joining("; "));
-		int bcCount = analysis.report().map(r -> r.getAllBreakingChanges().size()).orElse(0);
-		int binaryBcCount = analysis.report()
-			.map(r -> (int) r.getAllBreakingChanges().stream().map(BreakingChange::kind).filter(BreakingChangeKind::isBinaryBreaking).count())
-			.orElse(0);
-		int sourceBcCount = analysis.report()
-			.map(r -> (int) r.getAllBreakingChanges().stream().map(BreakingChange::kind).filter(BreakingChangeKind::isSourceBreaking).count())
-			.orElse(0);
+		List<BreakingChange> bcs = analysis.report().map(RoseauReport::getAllBreakingChanges).orElse(List.of());
+		int bcCount = bcs.size();
+		long binaryBcCount = bcs.stream().filter(bc -> bc.kind().isBinaryBreaking()).count();
+		long sourceBcCount = bcs.stream().filter(bc -> bc.kind().isSourceBreaking()).count();
 
 		writeCsvRow(commitsWriter, List.of(
 			libraryId,
@@ -306,6 +320,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			stats.stats().exportedTypesCount(),
 			stats.stats().exportedMethodsCount(),
 			stats.stats().exportedFieldsCount(),
+			stats.stats().exportedSymbolsCount(),
 			stats.stats().deprecatedCount(),
 			stats.stats().internalCount(),
 			bcCount,
@@ -323,20 +338,16 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		));
 	}
 
-	// --- Breaking changes rows ---
-
-	private void writeBreakingChangesRows(String commitSha, RoseauReport report) throws IOException {
+	private void writeBreakingChangesRows(String commitSha, RoseauReport report, API api) throws IOException {
 		for (BreakingChange bc : report.getAllBreakingChanges()) {
 			SourceLocation location = bc.getLocation();
 			Symbol impactedSymbol = bc.impactedSymbol();
 			BreakingChangeKind kind = bc.kind();
-			boolean isExcludedSymbol = report.isExcluded(impactedSymbol)
-				|| report.isExcluded(bc.impactedType())
-				|| exclusionMatcher.isInternal(impactedSymbol)
-				|| exclusionMatcher.isInternal(bc.impactedType());
+			boolean isExcludedSymbol = exclusionMatcher.isInternal(impactedSymbol, api)
+				|| exclusionMatcher.isInternal(bc.impactedType(), api);
 			boolean isRemoval = kind.getNature() == BreakingChangeNature.DELETION;
-			boolean isDeprecatedRemoval = isRemoval && hasAnnotation(impactedSymbol, "java.lang.Deprecated");
-			boolean isInternalRemoval = isRemoval && exclusionMatcher.isInternal(impactedSymbol);
+			boolean isDeprecatedRemoval = isRemoval && hasAnnotation(impactedSymbol, Deprecated.class.getCanonicalName());
+			boolean isInternalRemoval = isRemoval && isExcludedSymbol;
 			writeCsvRow(bcsWriter, List.of(
 				libraryId,
 				commitSha,
@@ -357,15 +368,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		}
 	}
 
-	// --- CSV utilities ---
-
 	private static BufferedWriter openWriter(Path file) throws IOException {
 		return Files.newBufferedWriter(file,
 			StandardOpenOption.WRITE, StandardOpenOption.CREATE, StandardOpenOption.TRUNCATE_EXISTING);
-	}
-
-	private static void writeCsvHeader(Writer writer, List<String> header) throws IOException {
-		writeCsvRow(writer, header);
 	}
 
 	private static void writeCsvRow(Writer writer, List<?> values) throws IOException {
@@ -385,9 +390,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		return "\"" + raw.replace("\"", "\"\"") + "\"";
 	}
 
-	private static long daysSincePreviousCommit(Instant previous, Instant current) {
+	private static long daysBetweenInstants(Instant previous, Instant current) {
 		if (previous == null) {
-			return 0;
+			return 0L;
 		}
 		return ChronoUnit.DAYS.between(previous, current);
 	}

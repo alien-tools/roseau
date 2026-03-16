@@ -236,7 +236,7 @@ public final class GitWalker {
 		return Library.builder()
 			.location(sourceRoot)
 			.classpath(List.of())
-			.exclusions(config.exclusions())
+			//.exclusions(config.exclusions()) we still want BCs on them and filter them later
 			.build();
 	}
 

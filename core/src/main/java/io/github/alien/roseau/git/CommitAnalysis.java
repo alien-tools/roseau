@@ -7,15 +7,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * Result of analyzing a single commit: combines git-level {@link CommitInfo} with
- * Roseau API extraction and diff results.
- *
- * <p>{@code api} is empty only before any Java commit has been processed. Once the first
- * Java commit is analyzed, all subsequent commits carry an API (even those that do not
- * touch Java — they reuse the previous API).</p>
- *
- * <p>{@code report} is empty when there is nothing to diff against (first commit) or
- * when the API was determined to be identical to the previous one.</p>
+ * Result of analyzing a single commit.
  */
 public record CommitAnalysis(
 	CommitInfo commit,
@@ -27,4 +19,7 @@ public record CommitAnalysis(
 	long diffTimeMs,
 	List<Exception> errors
 ) {
+	public CommitAnalysis {
+		errors = List.copyOf(errors);
+	}
 }
