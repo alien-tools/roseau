@@ -10,7 +10,7 @@ public class TypeNewAbstractMethod implements MemberRule<MethodDecl> {
 	@Override
 	public void onAdded(MethodDecl method, MemberRuleContext ctx) {
 		if (method.isAbstract()) {
-			ctx.builder().typeBC(BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, ctx.oldType(),
+			ctx.builder().typeBC(BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, ctx.oldType(), method,
 				new BreakingChangeDetails.TypeNewAbstractMethod(method));
 		}
 	}

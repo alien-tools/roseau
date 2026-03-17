@@ -218,6 +218,11 @@ public final class RoseauReport {
 			bcs.add(new BreakingChange(kind, impactedType, impactedType, null, details, impactedType.getLocation()));
 		}
 
+		public void typeBC(BreakingChangeKind kind, TypeDecl impactedType, Symbol newSymbol,
+		                   BreakingChangeDetails details) {
+			bcs.add(new BreakingChange(kind, impactedType, impactedType, newSymbol, details, impactedType.getLocation()));
+		}
+
 		public void memberBC(BreakingChangeKind kind, TypeDecl impactedType, TypeMemberDecl impactedMember) {
 			memberBC(kind, impactedType, impactedMember, null, new BreakingChangeDetails.None());
 		}

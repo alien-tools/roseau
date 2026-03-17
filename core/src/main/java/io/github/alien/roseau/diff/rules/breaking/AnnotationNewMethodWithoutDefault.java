@@ -10,7 +10,7 @@ public class AnnotationNewMethodWithoutDefault implements MemberRule<AnnotationM
 	@Override
 	public void onAdded(AnnotationMethodDecl method, MemberRuleContext ctx) {
 		if (!method.hasDefault()) {
-			ctx.builder().typeBC(BreakingChangeKind.ANNOTATION_NEW_METHOD_WITHOUT_DEFAULT, ctx.oldType(),
+			ctx.builder().typeBC(BreakingChangeKind.ANNOTATION_NEW_METHOD_WITHOUT_DEFAULT, ctx.oldType(), method,
 				new BreakingChangeDetails.AnnotationNewMethodWithoutDefault(method));
 		}
 	}

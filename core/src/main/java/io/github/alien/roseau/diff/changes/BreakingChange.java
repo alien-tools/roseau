@@ -61,7 +61,7 @@ public record BreakingChange(
 		return location;
 	}
 
-	private static String printSymbol(Symbol s) {
+	public static String printSymbol(Symbol s) {
 		if (s == null) {
 			return "";
 		} else if (s instanceof ExecutableDecl e) {
