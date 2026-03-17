@@ -2,6 +2,7 @@ package io.github.alien.roseau.cli;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
@@ -11,6 +12,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -608,5 +612,106 @@ class RoseauCLITest {
 
 		assertThat(err.toString()).contains("Invalid path to library");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	// --- Maven coordinates --- //
+	@Test
+	void single_colon_is_treated_as_path_not_coordinates() {
+		// A string with only one colon is NOT interpreted as Maven coordinates (which need at
+		// least two); it is passed through as a local path.
+		var exitCode = cmd.execute("--v1=not-coordinates:path",
+			"--api");
+
+		assertThat(err.toString()).contains("Cannot find v1:");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	void path_with_separators_and_colons_is_treated_as_path() {
+		// A string with path separators is always a local path, even if it also contains colons.
+		var exitCode = cmd.execute("--v1=target/lib:v1:debug.jar",
+			"--api");
+
+		assertThat(err.toString()).contains("Cannot find v1:");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	void invalid_coordinate_format_gives_clear_error() {
+		// Six colon-separated parts exceed the maximum supported Maven coordinate format.
+		var exitCode = cmd.execute("--v1=too:many:colons:in:this:input",
+			"--api");
+
+		assertThat(err.toString()).contains("Invalid Maven coordinates");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	@Timeout(value = 60, unit = TimeUnit.SECONDS)
+	void api_mode_with_maven_coordinates() {
+		var exitCode = cmd.execute("--v1=junit:junit:4.13.2", "--api");
+
+		assertThat(out.toString()).contains("allTypes");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 120, unit = TimeUnit.SECONDS)
+	void diff_mode_with_maven_coordinates() {
+		var exitCode = cmd.execute(
+			"--v1=junit:junit:4.12",
+			"--v2=junit:junit:4.13.2",
+			"--diff",
+			"--plain");
+
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 120, unit = TimeUnit.SECONDS)
+	void mixed_mode_jar_and_coordinates() {
+		var exitCode = cmd.execute(
+			"--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=junit:junit:4.13.2",
+			"--diff",
+			"--plain");
+
+		// Unrelated libraries: breaking changes will be reported (pkg.T is absent in junit), but
+		// without --fail-on-bc the exit code is still SUCCESS.
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 60, unit = TimeUnit.SECONDS)
+	void nonexistent_artifact_gives_clear_error() {
+		var exitCode = cmd.execute("--v1=io.example.nonexistent:no-such-artifact:99.99.99", "--api");
+
+		assertThat(err.toString()).contains("Failed to download io.example.nonexistent:no-such-artifact:99.99.99");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	@Timeout(value = 60, unit = TimeUnit.SECONDS)
+	void no_leftover_maven_repo_dirs_after_download() throws IOException {
+		Path systemTempDir = Path.of(System.getProperty("java.io.tmpdir"));
+
+		Set<Path> before;
+		try (var stream = Files.list(systemTempDir)) {
+			before = stream
+				.filter(p -> p.getFileName().toString().startsWith("roseau-m2-"))
+				.collect(Collectors.toSet());
+		}
+
+		cmd.execute("--v1=junit:junit:4.13.2", "--api");
+
+		try (var stream = Files.list(systemTempDir)) {
+			Set<Path> after = stream
+				.filter(p -> p.getFileName().toString().startsWith("roseau-m2-"))
+				.collect(Collectors.toSet());
+			assertThat(after).as("roseau-m2- temp dirs left over after download").isEqualTo(before);
+		}
 	}
 }
