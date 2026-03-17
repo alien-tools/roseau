@@ -341,11 +341,13 @@ class PopularLibrariesTestIT {
 	private static List<Path> prepareClasspath(Coordinates coordinates) {
 		if (Files.isRegularFile(coordinates.classpathFile())) {
 			try {
-				return Files.readAllLines(coordinates.classpathFile()).stream()
+				var paths = Files.readAllLines(coordinates.classpathFile()).stream()
 					.filter(line -> !line.isBlank())
 					.map(Path::of)
-					.filter(Files::isRegularFile)
 					.toList();
+				if (paths.stream().allMatch(Files::isRegularFile)) {
+					return paths;
+				}
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
