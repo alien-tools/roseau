@@ -51,8 +51,10 @@ import java.util.Optional;
 /**
  * Compares the current module artifact with a baseline artifact and reports API breaking changes.
  * <p>
- * The baseline can be provided either as Maven coordinates ({@code baselineVersion}) or as a local file
- * ({@code baselineJar}). When reports are configured, report files are written under {@code reportDirectory}.
+ * The baseline can be provided as Maven coordinates ({@code baselineCoordinates} or {@code baselineDependency})
+ * or as a local file ({@code baselineJar}). {@code baselineCoordinates} takes precedence over
+ * {@code baselineDependency}, which in turn takes precedence over {@code baselineJar}.
+ * When reports are configured, report files are written under {@code reportDirectory}.
  */
 @Mojo(
 	name = "check",
@@ -105,13 +107,21 @@ public final class RoseauMojo extends AbstractMojo {
 	private boolean failOnSourceIncompatibility;
 
 	/**
-	 * Baseline artifact coordinates ({@code groupId:artifactId:version}) resolved from Maven repositories.
+	 * Baseline artifact coordinates as a string ({@code groupId:artifactId:version[:extension[:classifier]]})
+	 * resolved from Maven repositories. Takes precedence over {@code baselineDependency} when set.
 	 */
-	@Parameter(property = "roseau.baselineVersion")
-	private Dependency baselineVersion;
+	@Parameter(property = "roseau.baselineCoordinates")
+	private String baselineCoordinates;
 
 	/**
-	 * Baseline artifact file path, used when {@code baselineVersion} is not provided.
+	 * Baseline artifact coordinates as structured Maven dependency resolved from Maven repositories.
+	 */
+	@Parameter
+	private Dependency baselineDependency;
+
+	/**
+	 * Baseline artifact file path, used when neither {@code baselineCoordinates} nor
+	 * {@code baselineDependency} is provided.
 	 */
 	@Parameter(property = "roseau.baselineJar")
 	private Path baselineJar;
@@ -385,14 +395,12 @@ public final class RoseauMojo extends AbstractMojo {
 	 * @return a list of paths to the baseline dependency JARs, or an empty list if resolution fails
 	 */
 	private List<Path> resolveBaselineClasspath() {
-		if (baselineVersion == null || baselineVersion.getArtifactId() == null) {
+		if (baselineDependency == null || baselineDependency.getArtifactId() == null) {
 			return List.of();
 		}
 
 		try {
-			String coordinates = "%s:%s:%s".formatted(
-				baselineVersion.getGroupId(), baselineVersion.getArtifactId(), baselineVersion.getVersion());
-			Artifact artifact = new DefaultArtifact(coordinates);
+			Artifact artifact = new DefaultArtifact(toCoordinates(baselineDependency));
 
 			// Create a dependency request with transitive resolution
 			DependencyFilter filter = DependencyFilterUtils.classpathFilter(JavaScopes.COMPILE);
@@ -430,8 +438,13 @@ public final class RoseauMojo extends AbstractMojo {
 			return;
 		}
 
-		if ((baselineVersion == null || baselineVersion.getArtifactId() == null) && baselineJar == null) {
-			throw new MojoExecutionException("No baseline specified; configure baselineVersion or baselineJar.");
+		if (baselineCoordinates != null && !baselineCoordinates.isBlank()) {
+			baselineDependency = parseBaselineCoordinates(baselineCoordinates);
+		}
+
+		if ((baselineDependency == null || baselineDependency.getArtifactId() == null) && baselineJar == null) {
+			throw new MojoExecutionException(
+				"No baseline specified; configure baselineCoordinates, baselineDependency, or baselineJar.");
 		}
 
 		Optional<Path> maybeJar = resolveArtifactJar();
@@ -440,13 +453,13 @@ public final class RoseauMojo extends AbstractMojo {
 				"Run 'mvn package roseau:check' or bind roseau to the verify phase.");
 		}
 
-		if (isBaselineVersionConfigured()) {
-			if (!isBaselineVersionValid()) {
+		if (isBaselineDependencyConfigured()) {
+			if (!isBaselineDependencyValid()) {
 				throw new MojoExecutionException("Invalid baseline version coordinates; " +
 					"groupId, artifactId and version are required.");
 			}
 
-			Optional<Path> maybeBaseline = resolveBaselineVersion();
+			Optional<Path> maybeBaseline = resolveBaselineDependency();
 			if (maybeBaseline.isPresent()) {
 				check(maybeBaseline.get(), maybeJar.get());
 			} else {
@@ -523,11 +536,9 @@ public final class RoseauMojo extends AbstractMojo {
 		}
 	}
 
-	private Optional<Path> resolveBaselineVersion() {
+	private Optional<Path> resolveBaselineDependency() {
 		try {
-			String coordinates = "%s:%s:%s".formatted(
-				baselineVersion.getGroupId(), baselineVersion.getArtifactId(), baselineVersion.getVersion());
-			Artifact artifact = new DefaultArtifact(coordinates);
+			Artifact artifact = new DefaultArtifact(toCoordinates(baselineDependency));
 			ArtifactRequest request = new ArtifactRequest()
 				.setArtifact(artifact)
 				.setRepositories(remoteRepositories);
@@ -544,15 +555,64 @@ public final class RoseauMojo extends AbstractMojo {
 		return Optional.empty();
 	}
 
-	private boolean isBaselineVersionConfigured() {
-		return baselineVersion != null && baselineVersion.getArtifactId() != null;
+	private static Dependency parseBaselineCoordinates(String coordinates) throws MojoExecutionException {
+		String[] parts = coordinates.split(":");
+		if (parts.length < 3 || parts.length > 5) {
+			throw new MojoExecutionException(
+				"Invalid baseline coordinates '" + coordinates +
+					"'; expected groupId:artifactId:version[:extension[:classifier]].");
+		}
+
+		Dependency dep = new Dependency();
+		dep.setGroupId(parts[0]);
+		dep.setArtifactId(parts[1]);
+
+		switch (parts.length) {
+			case 3 -> dep.setVersion(parts[2]);
+			case 4 -> {
+				dep.setType(parts[2]);
+				dep.setVersion(parts[3]);
+			}
+			case 5 -> {
+				dep.setType(parts[2]);
+				dep.setClassifier(parts[3]);
+				dep.setVersion(parts[4]);
+			}
+		}
+
+		if (isBlank(dep.getGroupId()) || isBlank(dep.getArtifactId()) || isBlank(dep.getVersion())) {
+			throw new MojoExecutionException(
+				"Invalid baseline coordinates '" + coordinates +
+					"'; groupId, artifactId, and version must not be blank.");
+		}
+
+		return dep;
 	}
 
-	private boolean isBaselineVersionValid() {
-		return baselineVersion != null
-			&& !isBlank(baselineVersion.getGroupId())
-			&& !isBlank(baselineVersion.getArtifactId())
-			&& !isBlank(baselineVersion.getVersion());
+	private static String toCoordinates(Dependency dep) {
+		String type = dep.getType();
+		String classifier = dep.getClassifier();
+		boolean hasType = !isBlank(type);
+		boolean hasClassifier = !isBlank(classifier);
+
+		if (hasType && hasClassifier) {
+			return "%s:%s:%s:%s:%s".formatted(dep.getGroupId(), dep.getArtifactId(), type, classifier, dep.getVersion());
+		} else if (hasType) {
+			return "%s:%s:%s:%s".formatted(dep.getGroupId(), dep.getArtifactId(), type, dep.getVersion());
+		} else {
+			return "%s:%s:%s".formatted(dep.getGroupId(), dep.getArtifactId(), dep.getVersion());
+		}
+	}
+
+	private boolean isBaselineDependencyConfigured() {
+		return baselineDependency != null && baselineDependency.getArtifactId() != null;
+	}
+
+	private boolean isBaselineDependencyValid() {
+		return baselineDependency != null
+			&& !isBlank(baselineDependency.getGroupId())
+			&& !isBlank(baselineDependency.getArtifactId())
+			&& !isBlank(baselineDependency.getVersion());
 	}
 
 	private static boolean isBlank(String value) {

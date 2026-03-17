@@ -1,6 +1,7 @@
 # Maven plug-in
 
-Roseau's Maven plug-in runs during the `verify` phase and compares the currently built artifact against a user-defined basline.
+Roseau's Maven plug-in runs during the `verify` phase and compares the currently built artifact against a user-defined baseline.
+It can also be invoked directly after the artifact is built: `mvn package roseau:check`.
 This guide covers setup and the most common configurations. The exhaustive parameter list lives in [Maven plug-in options](../reference/maven-plugin.md).
 
 ## Minimal Setup
@@ -20,11 +21,11 @@ Find the latest released version on [Maven Central](https://central.sonatype.com
     </execution>
   </executions>
   <configuration>
-    <baselineVersion>
+    <baselineDependency>
       <groupId>com.example.project</groupId>
       <artifactId>example-core</artifactId>
       <version>2.1.4</version>
-    </baselineVersion>
+    </baselineDependency>
   </configuration>
 </plugin>
 ```
@@ -37,9 +38,40 @@ mvn verify
 
 The plug-in runs during the `verify` phase. It compares the JAR produced by the current build against the baseline and prints any breaking changes to the Maven log.
 
+!!! note
+    The plug-in automatically skips projects with `pom` packaging.
+
 ## Choose a Baseline
 
 The baseline can be a local JAR file or Maven coordinates resolved from remote repositories.
+
+**Maven coordinates**
+
+Use `baselineCoordinates` to pass coordinates as a single string. This is the recommended form for CI/CD pipelines where the baseline version changes between releases and should not be hard-coded in the POM.
+
+```xml
+<configuration>
+  <baselineCoordinates>com.example.project:example-core:2.1.4</baselineCoordinates>
+</configuration>
+```
+
+It can also be passed on the command line without modifying the POM:
+
+```bash
+mvn verify -Droseau.baselineCoordinates=com.example.project:example-core:2.1.4
+```
+
+Use `baselineDependency` for structured XML configuration:
+
+```xml
+<configuration>
+  <baselineDependency>
+    <groupId>com.example.project</groupId>
+    <artifactId>example-core</artifactId>
+    <version>2.1.4</version>
+  </baselineDependency>
+</configuration>
+```
 
 **Local JAR file**
 
@@ -49,16 +81,52 @@ The baseline can be a local JAR file or Maven coordinates resolved from remote r
 </configuration>
 ```
 
-**Maven coordinates**
+When multiple baseline parameters are set, `baselineCoordinates` takes precedence over `baselineDependency`, which takes precedence over `baselineJar`.
+
+## Multi-module projects
+
+In a multi-module build, the plug-in configuration can be placed once in the parent POM and reused across all modules.
+
+The key is that Maven interpolates `${project.groupId}` and `${project.artifactId}` at the level of each module, not the parent. Combined with a shared `previous.version` property, a single configuration covers every module automatically.
+For instance, using `baselineDependency`:
 
 ```xml
-<configuration>
-  <baselineVersion>
-    <groupId>com.example.project</groupId>
-    <artifactId>example-core</artifactId>
-    <version>2.1.4</version>
-  </baselineVersion>
-</configuration>
+<!-- Parent POM -->
+<properties>
+  <previous.version>1.2.3</previous.version>
+</properties>
+
+<build>
+  <plugins>
+    <plugin>
+      <groupId>io.github.alien-tools</groupId>
+      <artifactId>roseau-maven-plugin</artifactId>
+      <version>${roseau.version}</version>
+      <executions>
+        <execution>
+          <goals>
+            <goal>check</goal>
+          </goals>
+        </execution>
+      </executions>
+      <configuration>
+        <baselineDependency>
+          <groupId>${project.groupId}</groupId>
+          <artifactId>${project.artifactId}</artifactId>
+          <version>${previous.version}</version>
+        </baselineDependency>
+      </configuration>
+    </plugin>
+  </plugins>
+</build>
+```
+New modules that have no previously published version will fail to resolve the baseline. Exclude them individually with `roseau.skip`:
+
+```xml
+<!-- In the new module's POM -->
+<properties>
+  <roseau.skip>true</roseau.skip>
+</properties>
 ```
 
 ## Fail on incompatible changes
@@ -154,6 +222,3 @@ Export the API models as JSON for archival or further analysis:
   <exportCurrentApi>${project.build.directory}/roseau/current-api.json</exportCurrentApi>
 </configuration>
 ```
-
-!!! note
-    The plug-in automatically skips projects with `pom` packaging.

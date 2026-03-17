@@ -28,11 +28,11 @@
                     </execution>
                 </executions>
                 <configuration>
-                    <baselineVersion>
+                    <baselineDependency>
                         <groupId>io.github.alien-tools</groupId>
                         <artifactId>roseau-core</artifactId>
                         <version>0.4.0</version>
-                    </baselineVersion>
+                    </baselineDependency>
                 </configuration>
             </plugin>
         </plugins>

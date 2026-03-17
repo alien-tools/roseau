@@ -22,7 +22,8 @@ Parameters with a Maven property can be overridden on the command line with `-D<
 | `failOnIncompatibility` | `roseau.failOnIncompatibility` | `boolean`            | `false`                             | Fail the build on any breaking change |
 | `failOnBinaryIncompatibility` | `roseau.failOnBinaryIncompatibility` | `boolean`            | `false`                             | Fail the build on binary-breaking changes |
 | `failOnSourceIncompatibility` | `roseau.failOnSourceIncompatibility` | `boolean`            | `false`                             | Fail the build on source-breaking changes |
-| `baselineVersion` | `roseau.baselineVersion` | `Dependency`         | —                                   | Baseline Maven coordinates |
+| `baselineCoordinates` | `roseau.baselineCoordinates` | `String`             | —                                   | Baseline as `groupId:artifactId:version[:extension[:classifier]]`; takes precedence over `baselineDependency` |
+| `baselineDependency` | —                    | `Dependency`         | —                                   | Baseline Maven coordinates as structured XML; use `baselineCoordinates` for CLI overrides |
 | `baselineJar` | `roseau.baselineJar` | `Path`               | —                                   | Path to a baseline JAR file |
 | `classpath` | — | `List<Path>`         | —                                   | Extra classpath entries shared by both versions |
 | `classpathPom` | — | `Path`               | —                                   | POM used to derive the shared classpath |

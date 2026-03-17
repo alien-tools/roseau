@@ -132,11 +132,11 @@ The minimal setup is to bind the `check` goal and provide a baseline:
     <!-- Compare against a baseline JAR -->
     <baselineJar>${project.basedir}/old.jar</baselineJar>
     <!-- Compare against a previous version -->
-    <baselineVersion>
+    <baselineDependency>
       <groupId>com.group</groupId>
       <artifactId>my-artifact</artifactId>
       <version>1.0.1</version>
-    </baselineVersion>
+    </baselineDependency>
     <failOnIncompatibility>true</failOnIncompatibility>
   </configuration>
 </plugin>

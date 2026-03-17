@@ -101,6 +101,13 @@ class RoseauPluginIT {
 				.out().error().anyMatch(m -> m.contains("Could not load configuration file"));
 		}
 
+		@SystemProperty(value = "roseau.baselineCoordinates", content = "nope")
+		@MavenTest
+		void invalid_baseline_coordinates_fail(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Invalid baseline coordinates 'nope'"));
+		}
+
 		@SystemProperty(value = "roseau.exportBaselineApi", content = "target/apis/v1.json")
 		@SystemProperty(value = "roseau.exportCurrentApi", content = "target/apis/v2.json")
 		@MavenTest
@@ -195,6 +202,13 @@ class RoseauPluginIT {
 				.out().warn().anyMatch(m -> m.contains("io.github.alien.roseau.Library TYPE_REMOVED"));
 			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
 		}
+
+		@SystemProperty(value = "roseau.baselineCoordinates", content = "io.github.alien-tools:roseau-core:0.0.0-nope")
+		@MavenTest
+		void baseline_coordinates_take_precedence_over_baseline_version(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
+		}
 	}
 
 	@Nested
@@ -204,6 +218,13 @@ class RoseauPluginIT {
 		void missing_baseline_is_reported_and_check_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isFailure()
 				.out().error().anyMatch(m -> m.contains("No baseline specified"));
+		}
+
+		@SystemProperty(value = "roseau.baselineCoordinates", content = "io.github.alien-tools:roseau-core:0.4.0")
+		@MavenTest
+		void baseline_coordinates_can_be_passed_from_cli(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().error().isEmpty();
 		}
 	}
 
