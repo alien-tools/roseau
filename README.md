@@ -41,7 +41,7 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ cd roseau && ./mvnw package -DskipTests
-$ alias roseau='java -jar $PWD/cli/target/roseau-cli-<version>-jar-with-dependencies.jar --help' 
+$ alias roseau='java -jar $PWD/cli/target/roseau-<version>.jar --help' 
 ```
 
 Identify breaking changes between two versions, passed as local JARs or source trees, or fetched remotely:

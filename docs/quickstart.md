@@ -35,9 +35,8 @@
     git clone https://github.com/alien-tools/roseau.git
     cd roseau
     ./mvnw --batch-mode package
+    alias roseau='java -jar $PWD/cli/target/roseau-<version>.jar'
     ```
-
-    The fat JAR is at `cli/target/roseau-cli-<version>-jar-with-dependencies.jar`.
 
 ## 2. Run a First Diff
 
