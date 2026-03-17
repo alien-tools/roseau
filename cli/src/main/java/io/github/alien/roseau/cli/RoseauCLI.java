@@ -28,6 +28,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -40,8 +41,8 @@ import static picocli.CommandLine.Spec;
 @Command(name = "roseau", sortOptions = false, mixinStandardHelpOptions = true,
 	versionProvider = RoseauCLI.VersionProvider.class,
 	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
-		"--v1 and --v2 can point to either JAR files or source code directories. " +
-		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar",
+		"--v1 and --v2 accept JAR files, source code directories, or Maven coordinates (groupId:artifactId:version). " +
+		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 com.example:library:2.0.0",
 	footer = {
 		"",
 		"Output symbols: ✗ removal  ⚠ modification  ★ addition"
@@ -62,12 +63,16 @@ public final class RoseauCLI implements Callable<Integer> {
 		boolean diff;
 	}
 
-	@Option(names = "--v1", paramLabel = "<path>",
-		description = "Path to the first version of the library; a JAR file or a source directory (e.g., src/main/java)")
-	private Path v1;
-	@Option(names = "--v2", paramLabel = "<path>",
-		description = "Path to the second version of the library; a JAR file or a source directory (e.g., src/main/java)")
-	private Path v2;
+	@Option(names = "--v1", paramLabel = "<path|coordinates>",
+		converter = LibraryVersionConverter.class,
+		description = "First version of the library: a JAR file, source directory (e.g., src/main/java), " +
+			"or Maven coordinates (e.g., com.example:lib:1.0.0)")
+	private LibraryVersion v1;
+	@Option(names = "--v2", paramLabel = "<path|coordinates>",
+		converter = LibraryVersionConverter.class,
+		description = "Second version of the library: a JAR file, source directory (e.g., src/main/java), " +
+			"or Maven coordinates (e.g., com.example:lib:2.0.0)")
+	private LibraryVersion v2;
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
@@ -149,6 +154,23 @@ public final class RoseauCLI implements Callable<Integer> {
 			.toList();
 	}
 
+	private static final class LibraryVersionConverter implements CommandLine.ITypeConverter<LibraryVersion> {
+		private static final Pattern MAVEN_COORDINATES =
+			Pattern.compile("[A-Za-z0-9._-]+:[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)+");
+
+		@Override
+		public LibraryVersion convert(String value) {
+			if (MAVEN_COORDINATES.matcher(value).matches()) {
+				try {
+					return new LibraryVersion.MavenCoordinates(ArtifactCoordinates.parse(value));
+				} catch (IllegalArgumentException e) {
+					throw new CommandLine.TypeConversionException(e.getMessage());
+				}
+			}
+			return new LibraryVersion.LocalPath(Path.of(value));
+		}
+	}
+
 	private static final class ReportOptionConverter implements CommandLine.ITypeConverter<RoseauOptions.Report> {
 		@Override
 		public RoseauOptions.Report convert(String value) {
@@ -226,15 +248,31 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
+	private Path resolveToPath(LibraryVersion version) {
+		if (version == null) {
+			return null;
+		}
+		return switch (version) {
+			case LibraryVersion.LocalPath(var path) -> path;
+			case LibraryVersion.MavenCoordinates(var coords) -> {
+				console.printVerbose("Downloading %s:%s:%s... ".formatted(
+					coords.groupId(), coords.artifactId(), coords.version()));
+				Path path = ArtifactDownloader.downloadArtifact(coords);
+				console.printlnVerbose("done");
+				yield path;
+			}
+		};
+	}
+
 	private RoseauOptions makeCliOptions() {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
 			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
+			resolveToPath(v1), new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
+			resolveToPath(v2), new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
 		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
 		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);

@@ -2,6 +2,7 @@ package io.github.alien.roseau.cli;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
@@ -11,6 +12,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -607,6 +611,63 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Invalid path to library");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	// --- Maven coordinates --- //
+	@Test
+	void path_with_separators_and_colons_is_treated_as_path() {
+		var exitCode = cmd.execute("--v1=target/lib:v1:debug.jar",
+			"--api");
+
+		assertThat(err.toString()).contains("Cannot find v1:");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void api_mode_with_maven_coordinates() {
+		var exitCode = cmd.execute("--v1=io.github.alien-tools:roseau-core:0.5.0", "--api");
+
+		assertThat(out.toString()).contains("allTypes");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void diff_mode_with_maven_coordinates() {
+		var exitCode = cmd.execute(
+			"--v1=io.github.alien-tools:roseau-core:0.4.0",
+			"--v2=io.github.alien-tools:roseau-core:0.5.0",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("TYPE_REMOVED");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void mixed_mode_jar_and_coordinates() {
+		var exitCode = cmd.execute(
+			"--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=junit:junit:4.13.2",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("TYPE_REMOVED");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void nonexistent_artifact_gives_clear_error() {
+		var exitCode = cmd.execute("--v1=no-group:no-artifact:0.0.1", "--api");
+
+		assertThat(err.toString()).contains("Failed to download no-group:no-artifact:0.0.1");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 }
