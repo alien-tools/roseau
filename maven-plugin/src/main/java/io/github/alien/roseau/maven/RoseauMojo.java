@@ -436,8 +436,8 @@ public final class RoseauMojo extends AbstractMojo {
 
 		Optional<Path> maybeJar = resolveArtifactJar();
 		if (maybeJar.isEmpty()) {
-			throw new MojoExecutionException("Current artifact not found. " +
-				"Make sure the artifact was built in the 'package' phase.");
+			throw new MojoExecutionException("Current artifact JAR not found. " +
+				"Run 'mvn package roseau:check' or bind roseau to the verify phase.");
 		}
 
 		if (isBaselineVersionConfigured()) {
