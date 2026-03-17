@@ -8,7 +8,6 @@ import io.github.alien.roseau.api.resolution.TypeResolver;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -20,12 +19,16 @@ public final class API extends CachingApiAnalyzer {
 	 */
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver typeResolver;
+	private final List<TypeDecl> exportedTypes;
 
 	public API(LibraryTypes libraryTypes, TypeResolver typeResolver) {
 		Preconditions.checkNotNull(libraryTypes);
 		Preconditions.checkNotNull(typeResolver);
 		this.libraryTypes = libraryTypes;
 		this.typeResolver = typeResolver;
+		this.exportedTypes = libraryTypes.getAllTypes().stream()
+			.filter(this::isExported)
+			.toList();
 	}
 
 	public LibraryTypes getLibraryTypes() {
@@ -52,9 +55,7 @@ public final class API extends CachingApiAnalyzer {
 	 * @return The list of exported {@link TypeDecl}
 	 */
 	public List<TypeDecl> getExportedTypes() {
-		return libraryTypes.getAllTypes().stream()
-			.filter(this::isExported)
-			.toList();
+		return List.copyOf(exportedTypes);
 	}
 
 	/**
@@ -64,8 +65,9 @@ public final class API extends CachingApiAnalyzer {
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
-		return libraryTypes.findType(qualifiedName)
-			.filter(this::isExported);
+		return exportedTypes.stream()
+			.filter(type -> type.getQualifiedName().equals(qualifiedName))
+			.findAny();
 	}
 
 	public Library getLibrary() {
@@ -89,11 +91,11 @@ public final class API extends CachingApiAnalyzer {
 		}
 		return obj instanceof API other
 			&& Objects.equals(libraryTypes.getModule(), other.libraryTypes.getModule())
-			&& Objects.equals(Set.copyOf(getExportedTypes()), Set.copyOf(other.getExportedTypes()));
+			&& Objects.equals(getExportedTypes(), other.getExportedTypes());
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(libraryTypes.getModule(), Set.copyOf(getExportedTypes()));
+		return Objects.hash(libraryTypes.getModule(), getExportedTypes());
 	}
 }
