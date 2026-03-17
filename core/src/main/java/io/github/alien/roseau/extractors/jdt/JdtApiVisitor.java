@@ -40,7 +40,6 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -287,14 +286,6 @@ final class JdtApiVisitor extends ASTVisitor {
 		TypeReference<TypeDecl> enclosingTypeRef = createTypeReference(enclosingType);
 		List<ParameterDecl> params = convertParameters(binding.getParameterNames(), binding.getParameterTypes(),
 			binding.isVarargs());
-
-		if (binding.isCompactConstructor() && enclosingType instanceof RecordDeclaration rec) {
-			params.addAll(
-				stream(rec.recordComponents(), SingleVariableDeclaration.class)
-					.map(variable -> factory.createParameter(variable.getName().getIdentifier(),
-						createITypeReference(variable.getType().resolveBinding()), false))
-					.toList());
-		}
 
 		return factory.createConstructor(makeMemberFqn(enclosingType, "<init>"), visibility, mods, anns, location,
 			enclosingTypeRef, enclosingTypeRef, params, typeParams, thrownExceptions);
