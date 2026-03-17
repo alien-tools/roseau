@@ -205,7 +205,7 @@ class RoseauPluginIT {
 
 		@SystemProperty(value = "roseau.baselineCoordinates", content = "io.github.alien-tools:roseau-core:0.0.0-nope")
 		@MavenTest
-		void baseline_coordinates_take_precedence_over_baseline_version(MavenExecutionResult result) {
+		void baseline_coordinates_take_precedence_over_baseline_dependency(MavenExecutionResult result) {
 			assertThat(result).isFailure()
 				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
 		}
@@ -234,7 +234,16 @@ class RoseauPluginIT {
 		@MavenTest
 		void invalid_baseline_version_is_reported_and_check_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isFailure()
-				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
+				.out().error()
+				.anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
+		}
+
+		@SystemProperty("roseau.skipIfBaselineUnresolvable")
+		@MavenTest
+		void unresolvable_baseline_is_skipped_when_configured(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().warn()
+				.anyMatch(m -> m.contains("Baseline could not be resolved; skipping check."));
 		}
 	}
 

@@ -17,6 +17,7 @@ Parameters with a Maven property can be overridden on the command line with `-D<
 | Parameter | Property | Type                 | Default                             | Description |
 | --- | --- |----------------------|-------------------------------------| --- |
 | `skip` | `roseau.skip` | `boolean`            | `false`                             | Skip plug-in execution |
+| `skipIfBaselineUnresolvable` | `roseau.skipIfBaselineUnresolvable` | `boolean` | `false` | Skip the check when the baseline artifact cannot be resolved from Maven repositories |
 | `binaryOnly` | `roseau.binaryOnly` | `boolean`            | false                               | Report only binary-breaking changes |
 | `sourceOnly` | `roseau.sourceOnly` | `boolean`            | false                               | Report only source-breaking changes |
 | `failOnIncompatibility` | `roseau.failOnIncompatibility` | `boolean`            | `false`                             | Fail the build on any breaking change |

@@ -77,6 +77,12 @@ public final class RoseauMojo extends AbstractMojo {
 	private boolean skip;
 
 	/**
+	 * Skips the check when the baseline artifact cannot be resolved from Maven repositories.
+	 */
+	@Parameter(property = "roseau.skipIfBaselineUnresolvable", defaultValue = "false")
+	private boolean skipIfBaselineUnresolvable;
+
+	/**
 	 * Reports only binary-breaking changes.
 	 */
 	@Parameter(property = "roseau.binaryOnly")
@@ -462,8 +468,11 @@ public final class RoseauMojo extends AbstractMojo {
 			Optional<Path> maybeBaseline = resolveBaselineDependency();
 			if (maybeBaseline.isPresent()) {
 				check(maybeBaseline.get(), maybeJar.get());
+			} else if (skipIfBaselineUnresolvable) {
+				getLog().warn("Baseline could not be resolved; skipping check.");
 			} else {
-				throw new MojoExecutionException("Couldn't resolve the baseline version.");
+				throw new MojoExecutionException("Couldn't resolve the baseline version. " +
+					"Set roseau.skipIfBaselineUnresolvable=true to skip the check instead of failing ");
 			}
 		} else if (baselineJar != null) {
 			Path resolvedBaselineJar = resolvePath(baselineJar);
