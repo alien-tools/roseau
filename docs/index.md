@@ -10,6 +10,7 @@ Roseau analyzes both [JAR files and source code](guides/compare.md), is [highly 
 ## Quick Example
 
 When invoked, Roseau extracts the [API surface](api-surface.md) of each version and diffs them to identify breaking changes following a set of well-defined [detection rules](breaking-change-kinds.md).
+Library versions can be passed as local JAR files or source directories, or can be fetched remotely from Maven:
 
 ```bash
 $ roseau --diff --v1 library-1.0.0.jar --v2 library-2.0.0.jar
@@ -23,6 +24,8 @@ Breaking changes found: 3 (2 binary-breaking, 2 source-breaking)
 ★ com.pkg.C TYPE_NEW_ABSTRACT_METHOD [toOverride()]
   ✓ binary-compatible ✗ source-breaking
   → com/pkg/C.java:210
+$ roseau --diff --v1 com.example:lib:1.0.0 --v2 /path/to/v2/src/main/java
+[...]
 ```
 
 An example HTML report is available [here](example-report.html).

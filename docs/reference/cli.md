@@ -20,8 +20,8 @@ Exactly one mode must be specified.
 
 | Option | Meaning |
 | --- | --- |
-| `--v1=<path>` | Path to the first version of the library; either a source directory or a JAR |
-| `--v2=<path>` | Path to the second version of the library; either a source directory or a JAR (`--diff` mode only) |
+| `--v1=<path\|coordinates>` | First version of the library: a JAR file, a source directory, or Maven coordinates (e.g., `com.example:lib:1.0.0`) |
+| `--v2=<path\|coordinates>` | Second version of the library: a JAR file, a source directory, or Maven coordinates (`--diff` mode only) |
 | `--api-json=<path>` | Output path for the JSON API model (`--api` mode only) |
 
 ## Dependencies

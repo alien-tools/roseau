@@ -44,7 +44,7 @@ $ cd roseau && ./mvnw package -DskipTests
 $ alias roseau='java -jar $PWD/cli/target/roseau-cli-<version>-jar-with-dependencies.jar --help' 
 ```
 
-Identify breaking changes between two versions, either from compiled JARs or source trees:
+Identify breaking changes between two versions, passed as local JARs or source trees, or fetched remotely:
 
 ```
 $ roseau --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
@@ -58,6 +58,8 @@ Breaking changes found: 3 (2 binary-breaking, 2 source-breaking)
 ★ com.pkg.C TYPE_NEW_ABSTRACT_METHOD [toOverride()]
   ✓ binary-compatible ✗ source-breaking
   → com/pkg/C.java:210
+$ roseau --diff --v1 com.example:lib:1.0.0 --v2 /path/to/v2/src/main/java
+[...]
 ```
 
 Roseau supports different modes, output formats, and options:
@@ -72,8 +74,8 @@ Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
               [--v2-pom=<path>] [--report=<format=path>]... (--api | --diff)
       --api               Serialize the API model of --v1; see --api-json
       --diff              Compute breaking changes between versions --v1 and --v2
-      --v1=<path>         Path to the first version of the library; a JAR file or a source directory (e.g., src/main/java)
-      --v2=<path>         Path to the second version of the library; a JAR file or a source directory (e.g., src/main/java)
+      --v1=<path|coordinates> First version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:1.0.0)
+      --v2=<path|coordinates> Second version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:2.0.0)
       --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
       --report=<format=path> Write a breaking changes report in the given format to the given path; repeatable (formats: CLI, CSV, HTML, JSON, MD)
       --classpath=<path>[,<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2

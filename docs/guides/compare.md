@@ -8,13 +8,14 @@ Roseau compares the API surface of two library versions. The inputs can be JAR f
 roseau --diff --v1 <old-version> --v2 <new-version>
 ```
 
-The old and new versions can be either JAR files or source trees (e.g., `src/main/java`):
+The old and new versions can be JAR files, source trees (e.g., `src/main/java`), or Maven coordinates (`groupId:artifactId:version`):
 
 | Workflow | Example |
 | --- | --- |
 | JAR vs JAR | `--v1 library-1.0.0.jar --v2 library-2.0.0.jar` |
 | source vs source | `--v1 project-v1/src --v2 project-v2/src` |
 | JAR vs source | `--v1 library-1.0.0.jar --v2 project-v2/src` |
+| Maven coordinates | `--v1 com.example:lib:1.0.0 --v2 com.example:lib:2.0.0` |
 
 ## Add Dependencies When Resolution Matters
 
@@ -30,14 +31,14 @@ roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar \
 Use a shared `pom.xml` when the classpath should be derived from Maven metadata:
 
 ```bash
-roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar \
+roseau --v1 com.example:lib:1.0.0 --v2 com.example:lib:2.0.0 \
   --pom path/to/pom.xml
 ```
 
 Use per-version options when the baseline and current version do not share the same dependency set:
 
 ```bash
-roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar \
+roseau --diff --v1 path/to/v1/src --v2 path/to/v2/src \
   --v1-classpath libs/old-dependency.jar --v2-classpath libs/new-dependency.jar
 ```
 
