@@ -52,14 +52,14 @@ class WalkersIT {
 		assertThat(commits.get(c2.getName()).deletedJavaFilesCount()).isZero();
 		assertThat(commits.get(c2.getName()).createdJavaFilesCount()).isZero();
 		assertThat(commits.get(c2.getName()).apiChanged()).isFalse();
-		assertThat(commits.get(c2.getName()).breakingChangesCount()).isZero();
+		assertThat(commits.get(c2.getName()).allBreakingChangesCount()).isZero();
 		assertThat(commits.get(c2.getName()).apiTimeMs()).isZero();
 
 		assertThat(commits.get(c3.getName()).updatedJavaFilesCount()).isEqualTo(1);
 		assertThat(commits.get(c3.getName()).deletedJavaFilesCount()).isZero();
 		assertThat(commits.get(c3.getName()).createdJavaFilesCount()).isZero();
 		assertThat(commits.get(c3.getName()).apiChanged()).isTrue();
-		assertThat(commits.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
+		assertThat(commits.get(c3.getName()).allBreakingChangesCount()).isGreaterThan(0);
 		assertThat(bcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
 	}
 
@@ -140,7 +140,7 @@ class WalkersIT {
 		assertThat(commits.get(c2.getName()).exportedTypesCount()).isEqualTo(1);
 
 		assertThat(commits.get(c3.getName()).apiChanged()).isTrue();
-		assertThat(commits.get(c3.getName()).breakingChangesCount()).isGreaterThan(0);
+		assertThat(commits.get(c3.getName()).allBreakingChangesCount()).isGreaterThan(0);
 		assertThat(bcsCount.getOrDefault(c3.getName(), 0)).isGreaterThan(0);
 	}
 
@@ -186,6 +186,122 @@ class WalkersIT {
 
 		assertThat(rows.get(c2.getName()).get("tag")).isEqualTo("1.0.0;latest;v1.0.0");
 		assertThat(rows.get(c3.getName()).get("tag")).isEqualTo("release");
+	}
+
+	// --- Exclusion classification in commits CSV ---
+
+	@Test
+	void excluded_bcs_are_counted_separately_from_api_bcs(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-counts");
+		RevCommit breaking;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of(
+					"src/main/java/pkg/A.java", "package pkg; public class A { public void m(){} }",
+					"src/main/java/pkg/internal/B.java", "package pkg.internal; public class B { public void m(){} }"
+				),
+				List.of());
+			breaking = GitWalkTestUtils.commit(remote, "c2-breaking",
+				Map.of(
+					"src/main/java/pkg/A.java", "package pkg; public class A {}",
+					"src/main/java/pkg/internal/B.java", "package pkg.internal; public class B {}"
+				),
+				List.of());
+		}
+
+		Path outputDir = wd.resolve("out");
+		Path commitsCsv = outputDir.resolve("counts-case-commits.csv");
+		Path cloneRoot = wd.resolve("clone");
+		String url = remoteDir.toUri().toString();
+		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
+			List.of("pkg\\.internal\\..*"), List.of());
+		GitWalker.Config config = new GitWalker.Config("counts-case", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
+			new GitWalker(config).walk(reporter);
+		}
+
+		Map<String, GitWalkTestUtils.CommitCsvRow> commits = GitWalkTestUtils.readCommitCsvRows(commitsCsv);
+		GitWalkTestUtils.CommitCsvRow row = commits.get(breaking.getName());
+
+		assertThat(row.apiBreakingChangesCount()).isGreaterThan(0);
+		assertThat(row.excludedBreakingChangesCount()).isGreaterThan(0);
+		assertThat(row.allBreakingChangesCount())
+			.isEqualTo(row.apiBreakingChangesCount() + row.excludedBreakingChangesCount());
+	}
+
+	@Test
+	void nested_type_inherits_excluded_status_from_enclosing_type(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-nested");
+		RevCommit breaking;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of("src/main/java/pkg/Outer.java",
+					"package pkg; public class Outer { public static class Inner { public void m(){} } }"),
+				List.of());
+			breaking = GitWalkTestUtils.commit(remote, "c2-breaking",
+				Map.of("src/main/java/pkg/Outer.java",
+					"package pkg; public class Outer { public static class Inner {} }"),
+				List.of());
+		}
+
+		Path outputDir = wd.resolve("out");
+		Path bcsCsv = outputDir.resolve("nested-case-bcs.csv");
+		Path cloneRoot = wd.resolve("clone");
+		String url = remoteDir.toUri().toString();
+		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
+			List.of("pkg\\.Outer"), List.of());
+		GitWalker.Config config = new GitWalker.Config("nested-case", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
+			new GitWalker(config).walk(reporter);
+		}
+
+		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
+		assertThat(rows).isNotEmpty();
+		assertThat(rows.stream()
+			.filter(r -> r.get("commit").equals(breaking.getName()))
+			.allMatch(r -> Boolean.parseBoolean(r.get("is_excluded_symbol")))).isTrue();
+	}
+
+	@Test
+	void annotation_on_type_excludes_type_and_its_members(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote-ann-type");
+		RevCommit breaking;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1-initial",
+				Map.of(
+					"src/main/java/pkg/Internal.java", "package pkg; public @interface Internal {}",
+					"src/main/java/pkg/A.java",
+					"package pkg; @Internal public class A { public void m(){} public int f; }"
+				),
+				List.of());
+			breaking = GitWalkTestUtils.commit(remote, "c2-breaking",
+				Map.of(
+					"src/main/java/pkg/Internal.java", "package pkg; public @interface Internal {}",
+					"src/main/java/pkg/A.java", "package pkg; @Internal public class A {}"
+				),
+				List.of());
+		}
+
+		Path outputDir = wd.resolve("out");
+		Path bcsCsv = outputDir.resolve("ann-type-case-bcs.csv");
+		Path cloneRoot = wd.resolve("clone");
+		String url = remoteDir.toUri().toString();
+		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
+			List.of(),
+			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion("Internal", Map.of())));
+		GitWalker.Config config = new GitWalker.Config("ann-type-case", url, cloneRoot.resolve(".git"),
+			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
+			new GitWalker(config).walk(reporter);
+		}
+
+		List<Map<String, String>> rows = GitWalkTestUtils.readCsvRows(bcsCsv);
+		assertThat(rows).isNotEmpty();
+		assertThat(rows.stream()
+			.filter(r -> r.get("commit").equals(breaking.getName()))
+			.allMatch(r -> Boolean.parseBoolean(r.get("is_excluded_symbol")))).isTrue();
 	}
 
 	@Test

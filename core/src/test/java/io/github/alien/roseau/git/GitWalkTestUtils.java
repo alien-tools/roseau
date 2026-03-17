@@ -31,7 +31,9 @@ final class GitWalkTestUtils {
 		long apiTimeMs,
 		long diffTimeMs,
 		long statsTimeMs,
-		int breakingChangesCount,
+		int allBreakingChangesCount,
+		int apiBreakingChangesCount,
+		int excludedBreakingChangesCount,
 		String error
 	) {
 	}
@@ -87,7 +89,9 @@ final class GitWalkTestUtils {
 				Long.parseLong(row.get("api_time_ms")),
 				Long.parseLong(row.get("diff_time_ms")),
 				Long.parseLong(row.get("stats_time_ms")),
-				Integer.parseInt(row.get("breaking_changes_count")),
+				Integer.parseInt(row.get("all_breaking_changes_count")),
+				Integer.parseInt(row.get("api_breaking_changes_count")),
+				Integer.parseInt(row.get("excluded_breaking_changes_count")),
 				row.getOrDefault("error", "")
 			));
 		}

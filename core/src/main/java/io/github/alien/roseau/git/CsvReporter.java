@@ -68,7 +68,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"exported_symbols_count",
 		"deprecated_count",
 		"internal_count",
-		"breaking_changes_count",
+		"all_breaking_changes_count",
+		"api_breaking_changes_count",
+		"excluded_breaking_changes_count",
 		"binary_breaking_changes_count",
 		"source_breaking_changes_count",
 		"api_changed",
@@ -265,7 +267,11 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			}
 			return switch (symbol) {
 				case TypeDecl type -> annotationExclusions.stream()
-					.anyMatch(excl -> type.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)));
+					.anyMatch(excl -> type.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)))
+					|| type.getEnclosingType()
+					.flatMap(api.resolver()::resolve)
+					.map(enclosing -> isInternal(enclosing, api))
+					.orElse(false);
 				case TypeMemberDecl member -> api.resolver().resolve(member.getContainingType())
 					.map(type -> isInternal(type, api)).orElse(false)
 					|| annotationExclusions.stream()
@@ -291,9 +297,16 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			.map(Exception::getMessage)
 			.collect(Collectors.joining("; "));
 		List<BreakingChange> bcs = analysis.report().map(RoseauReport::getAllBreakingChanges).orElse(List.of());
-		int bcCount = bcs.size();
+		int allBcCount = bcs.size();
 		long binaryBcCount = bcs.stream().filter(bc -> bc.kind().isBinaryBreaking()).count();
 		long sourceBcCount = bcs.stream().filter(bc -> bc.kind().isSourceBreaking()).count();
+		long excludedBcCount = analysis.api()
+			.map(api -> bcs.stream()
+				.filter(bc -> exclusionMatcher.isInternal(bc.impactedSymbol(), api)
+					|| exclusionMatcher.isInternal(bc.impactedType(), api))
+				.count())
+			.orElse(0L);
+		long apiBcCount = allBcCount - excludedBcCount;
 
 		writeCsvRow(commitsWriter, List.of(
 			libraryId,
@@ -324,7 +337,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			stats.stats().exportedSymbolsCount(),
 			stats.stats().deprecatedCount(),
 			stats.stats().internalCount(),
-			bcCount,
+			allBcCount,
+			apiBcCount,
+			excludedBcCount,
 			binaryBcCount,
 			sourceBcCount,
 			analysis.apiChanged(),
