@@ -120,14 +120,10 @@ For instance, using `baselineDependency`:
   </plugins>
 </build>
 ```
-New modules that have no previously published version will fail to resolve the baseline. Exclude them individually with `roseau.skip`:
 
-```xml
-<!-- In the new module's POM -->
-<properties>
-  <roseau.skip>true</roseau.skip>
-</properties>
-```
+The plug-in will automatically resolve the baseline version for each module.
+New modules that have no previously published version will fail to resolve the baseline.
+Exclude them individually with `roseau.skip` or configure Roseau to skip modules with unresolved baselines with `roseau.skipIfBaselineUnresolvable`.
 
 ## Fail on incompatible changes
 
