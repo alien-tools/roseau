@@ -249,7 +249,7 @@ public final class GitWalker {
 	) {
 	}
 
-	static void prepareRepository(String url, Path gitDir) throws Exception {
+	public static void prepareRepository(String url, Path gitDir) throws Exception {
 		if (!Files.exists(gitDir)) {
 			Path workTree = gitDir.getParent();
 			LOGGER.info("Local clone not found for {}, cloning into {}", url, workTree);
