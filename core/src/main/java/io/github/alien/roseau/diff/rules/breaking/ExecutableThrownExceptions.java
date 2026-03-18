@@ -35,13 +35,13 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 					: ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)
 			))
 			.forEach(exc1 ->
-				ctx.builder().memberBC(BreakingChangeKind.METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
+				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
 		thrown2.stream()
 			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)))
 			.forEach(exc2 ->
-				ctx.builder().memberBC(BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
+				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc2)));
 	}
 }

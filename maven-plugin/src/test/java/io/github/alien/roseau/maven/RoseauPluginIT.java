@@ -23,7 +23,7 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().error().isEmpty();
 			assertThat(result).out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 		}
@@ -33,7 +33,7 @@ class RoseauPluginIT {
 		void can_filter_binary_changes(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
 				.noneMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"));
 		}
@@ -43,7 +43,7 @@ class RoseauPluginIT {
 		void can_filter_source_changes(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 		}
@@ -77,7 +77,7 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().error().isEmpty();
 			assertThat(result).out().warn()
-				.noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.noneMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.noneMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 			assertThat(result).out().info().anyMatch(m -> m.contains("Skipping."));
@@ -88,7 +88,7 @@ class RoseauPluginIT {
 		void baseline_jar_from_pom_configuration_takes_precedence_over_system_property(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
@@ -146,7 +146,7 @@ class RoseauPluginIT {
 			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
-				.noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
+				.noneMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"));
 			assertThat(baseDir.resolve("report.csv")).doesNotExist();
 			assertThat(baseDir.resolve("report.html")).doesNotExist();
 			assertThat(baseDir.resolve("target/roseau/report.csv")).exists();
@@ -167,7 +167,7 @@ class RoseauPluginIT {
 		void yaml_properties_are_applied(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 		}

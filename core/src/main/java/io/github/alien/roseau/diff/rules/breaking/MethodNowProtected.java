@@ -9,7 +9,7 @@ public class MethodNowProtected implements MemberRule<MethodDecl> {
 	@Override
 	public void onMatched(MethodDecl oldMethod, MethodDecl newMethod, MemberRuleContext ctx) {
 		if (oldMethod.isPublic() && newMethod.isProtected()) {
-			ctx.builder().memberBC(BreakingChangeKind.METHOD_NOW_PROTECTED, ctx.oldType(), oldMethod, newMethod);
+			ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_PROTECTED, ctx.oldType(), oldMethod, newMethod);
 		}
 	}
 }

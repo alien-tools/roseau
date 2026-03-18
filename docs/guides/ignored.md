@@ -14,7 +14,7 @@ The generated CSV file looks as follows and can be reused to ignore the listed c
 
 ```csv
 type;symbol;kind
-pkg.T;pkg.T.m();METHOD_REMOVED
+pkg.T;pkg.T.m();EXECUTABLE_REMOVED
 ```
 
 ## 2. Reuse the Baseline

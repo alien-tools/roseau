@@ -9,6 +9,8 @@ This catalog lists every breaking change kind Roseau reports.
 
 **Breaking changes are expressed at the API level, not the code level.** Roseau works with the [API surface](api-surface.md) it extracted, not the raw source code or bytecode is analyzes. For example, a `public` type that becomes `package-private` is treated the same as a type that is removed from the codebase: it is reported as `TYPE_REMOVED`. From Roseau's perspective the type isn't API anymore. Likewise, changes to declarations that are not part of the API surface are ignored and not checked for breaking changes. This includes, for instance, `protected` members of effectively-final types.
 
+In the following, a breaking change on an *executable* applies to both methods and constructors.
+
 Each entry shows the smallest library change that triggers the kind, and a minimal example of client code affected by it. One library edit can trigger multiple kinds, so a real diff may report several related findings for the same change.
 
 **Compatibility icons used throughout this page:**
@@ -21,52 +23,50 @@ An absent icon means the change does not affect compatibility in that category.
 
 ---
 
-Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [Annotation-Related](#annotation-related) · [Field-Related](#field-related) · [Method-Related](#method-related) · [Constructor-Related](#constructor-related) · [Formal Type Parameters](#formal-type-parameters)
+Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [Annotation-Related](#annotation-related) · [Field-Related](#field-related) · [Executable-Related](#executable-related) · [Method-Related](#method-related) · [Formal Type Parameters](#formal-type-parameters)
 
 ---
 
 ## Summary
 
-| Kind | :material-package-variant-closed: | :material-code-braces: | Trigger                                                                     |
-| --- | :---: | :---: |-----------------------------------------------------------------------------|
-| [`TYPE_REMOVED`](#type_removed) | :material-package-variant-closed: | :material-code-braces: | A visible type is removed from the API                                      |
-| [`TYPE_NOW_PROTECTED`](#type_now_protected) | :material-package-variant-closed: | :material-code-braces: | A public nested type becomes protected                                      |
-| [`TYPE_KIND_CHANGED`](#type_kind_changed) | :material-package-variant-closed: | :material-code-braces: | A type changes its kind (e.g., changing a class to an enum or a record)     |
-| [`TYPE_SUPERTYPE_REMOVED`](#type_supertype_removed) | :material-package-variant-closed: | :material-code-braces: | A visible supertype is removed from a type's hierarchy                      |
-| [`TYPE_NEW_ABSTRACT_METHOD`](#type_new_abstract_method) | | :material-code-braces: | An abstract class or interface gains a new abstract method                  |
-| [`CLASS_NOW_ABSTRACT`](#class_now_abstract) | :material-package-variant-closed: | :material-code-braces: | A concrete class becomes abstract                                           |
-| [`CLASS_NOW_FINAL`](#class_now_final) | :material-package-variant-closed: | :material-code-braces: | A class becomes effectively final                                           |
-| [`CLASS_NOW_CHECKED_EXCEPTION`](#class_now_checked_exception) | | :material-code-braces: | An unchecked exception becomes checked                                      |
-| [`CLASS_NOW_STATIC`](#class_now_static) | :material-package-variant-closed: | :material-code-braces: | A nested inner class becomes static                                         |
-| [`CLASS_NO_LONGER_STATIC`](#class_no_longer_static) | :material-package-variant-closed: | :material-code-braces: | A nested static class becomes inner                                         |
-| [`ANNOTATION_TARGET_REMOVED`](#annotation_target_removed) | | :material-code-braces: | An annotation loses one or more legal targets                               |
-| [`ANNOTATION_NEW_METHOD_WITHOUT_DEFAULT`](#annotation_new_method_without_default) | | :material-code-braces: | An annotation gains an element with no default value                        |
-| [`ANNOTATION_NO_LONGER_REPEATABLE`](#annotation_no_longer_repeatable) | | :material-code-braces: | An annotation stops being repeatable                                        |
-| [`ANNOTATION_METHOD_NO_LONGER_DEFAULT`](#annotation_method_no_longer_default) | | :material-code-braces: | An annotation element loses its default value                               |
-| [`FIELD_REMOVED`](#field_removed) | :material-package-variant-closed: | :material-code-braces: | A visible field is removed from the API                                     |
-| [`FIELD_NOW_PROTECTED`](#field_now_protected) | :material-package-variant-closed: | :material-code-braces: | A public field becomes protected                                            |
-| [`FIELD_TYPE_ERASURE_CHANGED`](#field_type_erasure_changed) | :material-package-variant-closed: | | A field type change alters the erased field descriptor                      |
-| [`FIELD_TYPE_CHANGED_INCOMPATIBLE`](#field_type_changed_incompatible) | | :material-code-braces: | A field type change breaks reads or writes                                  |
-| [`FIELD_NOW_FINAL`](#field_now_final) | :material-package-variant-closed: | :material-code-braces: | A writable field becomes final                                              |
-| [`FIELD_NOW_STATIC`](#field_now_static) | :material-package-variant-closed: | | An instance field becomes static                                            |
-| [`FIELD_NO_LONGER_STATIC`](#field_no_longer_static) | :material-package-variant-closed: | :material-code-braces: | A static field becomes an instance field                                    |
-| [`METHOD_REMOVED`](#method_removed) | :material-package-variant-closed: | :material-code-braces: | A visible method is removed from the API                                    |
-| [`METHOD_NOW_PROTECTED`](#method_now_protected) | :material-package-variant-closed: | :material-code-braces: | A public method becomes protected                                           |
-| [`METHOD_RETURN_TYPE_ERASURE_CHANGED`](#method_return_type_erasure_changed) | :material-package-variant-closed: | | A return type change alters the erased method signature                     |
-| [`METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE`](#method_return_type_changed_incompatible) | | :material-code-braces: | A return type change breaks callers or overriders                           |
-| [`METHOD_NOW_ABSTRACT`](#method_now_abstract) | :material-package-variant-closed: | :material-code-braces: | A concrete method becomes abstract                                          |
-| [`METHOD_NOW_FINAL`](#method_now_final) | :material-package-variant-closed: | :material-code-braces: | An overridable method becomes final                                         |
-| [`METHOD_NOW_STATIC`](#method_now_static) | :material-package-variant-closed: | | An instance method becomes static                                           |
-| [`METHOD_OVERRIDABLE_NOW_STATIC`](#method_overridable_now_static) | | :material-code-braces: | An overridable or interface method becomes static                           |
-| [`METHOD_NO_LONGER_STATIC`](#method_no_longer_static) | :material-package-variant-closed: | :material-code-braces: | A static method becomes an instance method                                  |
-| [`METHOD_NOW_THROWS_CHECKED_EXCEPTION`](#method_now_throws_checked_exception) | | :material-code-braces: | A method adds or widens a checked exception                                 |
-| [`METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION`](#method_no_longer_throws_checked_exception) | | :material-code-braces: | A method removes or narrows a checked exception                             |
-| [`METHOD_PARAMETER_GENERICS_CHANGED`](#method_parameter_generics_changed) | | :material-code-braces: | Parameter generic arguments change while erasure stays the same             |
-| [`CONSTRUCTOR_REMOVED`](#constructor_removed) | :material-package-variant-closed: | :material-code-braces: | A visible constructor disappears                                            |
-| [`CONSTRUCTOR_NOW_PROTECTED`](#constructor_now_protected) | :material-package-variant-closed: | :material-code-braces: | A public constructor becomes protected                                      |
-| [`FORMAL_TYPE_PARAMETER_ADDED`](#formal_type_parameter_added) | | :material-code-braces: | A formal type parameter is added to a declaration                           |
-| [`FORMAL_TYPE_PARAMETER_REMOVED`](#formal_type_parameter_removed) | | :material-code-braces: | A formal type parameter is removed from a declaration                       |
-| [`FORMAL_TYPE_PARAMETER_CHANGED`](#formal_type_parameter_changed) | | :material-code-braces: | A declaration's formal type parameter changes bounds in an incompatible way |
+| Kind                                                                                              | :material-package-variant-closed: | :material-code-braces: | Trigger                                                                     |
+|---------------------------------------------------------------------------------------------------| :---: | :---: |-----------------------------------------------------------------------------|
+| [`TYPE_REMOVED`](#type_removed)                                                                   | :material-package-variant-closed: | :material-code-braces: | A visible type is removed from the API                                      |
+| [`TYPE_NOW_PROTECTED`](#type_now_protected)                                                       | :material-package-variant-closed: | :material-code-braces: | A public nested type becomes protected                                      |
+| [`TYPE_KIND_CHANGED`](#type_kind_changed)                                                         | :material-package-variant-closed: | :material-code-braces: | A type changes its kind (e.g., changing a class to an enum or a record)     |
+| [`TYPE_SUPERTYPE_REMOVED`](#type_supertype_removed)                                               | :material-package-variant-closed: | :material-code-braces: | A visible supertype is removed from a type's hierarchy                      |
+| [`TYPE_NEW_ABSTRACT_METHOD`](#type_new_abstract_method)                                           | | :material-code-braces: | An abstract class or interface gains a new abstract method                  |
+| [`CLASS_NOW_ABSTRACT`](#class_now_abstract)                                                       | :material-package-variant-closed: | :material-code-braces: | A concrete class becomes abstract                                           |
+| [`CLASS_NOW_FINAL`](#class_now_final)                                                             | :material-package-variant-closed: | :material-code-braces: | A class becomes effectively final                                           |
+| [`CLASS_NOW_CHECKED_EXCEPTION`](#class_now_checked_exception)                                     | | :material-code-braces: | An unchecked exception becomes checked                                      |
+| [`CLASS_NOW_STATIC`](#class_now_static)                                                           | :material-package-variant-closed: | :material-code-braces: | A nested inner class becomes static                                         |
+| [`CLASS_NO_LONGER_STATIC`](#class_no_longer_static)                                               | :material-package-variant-closed: | :material-code-braces: | A nested static class becomes inner                                         |
+| [`ANNOTATION_TARGET_REMOVED`](#annotation_target_removed)                                         | | :material-code-braces: | An annotation loses one or more legal targets                               |
+| [`ANNOTATION_NEW_METHOD_WITHOUT_DEFAULT`](#annotation_new_method_without_default)                 | | :material-code-braces: | An annotation gains an element with no default value                        |
+| [`ANNOTATION_NO_LONGER_REPEATABLE`](#annotation_no_longer_repeatable)                             | | :material-code-braces: | An annotation stops being repeatable                                        |
+| [`ANNOTATION_METHOD_NO_LONGER_DEFAULT`](#annotation_method_no_longer_default)                     | | :material-code-braces: | An annotation element loses its default value                               |
+| [`FIELD_REMOVED`](#field_removed)                                                                 | :material-package-variant-closed: | :material-code-braces: | A visible field is removed from the API                                     |
+| [`FIELD_NOW_PROTECTED`](#field_now_protected)                                                     | :material-package-variant-closed: | :material-code-braces: | A public field becomes protected                                            |
+| [`FIELD_TYPE_ERASURE_CHANGED`](#field_type_erasure_changed)                                       | :material-package-variant-closed: | | A field type change alters the erased field descriptor                      |
+| [`FIELD_TYPE_CHANGED_INCOMPATIBLE`](#field_type_changed_incompatible)                             | | :material-code-braces: | A field type change breaks reads or writes                                  |
+| [`FIELD_NOW_FINAL`](#field_now_final)                                                             | :material-package-variant-closed: | :material-code-braces: | A writable field becomes final                                              |
+| [`FIELD_NOW_STATIC`](#field_now_static)                                                           | :material-package-variant-closed: | | An instance field becomes static                                            |
+| [`FIELD_NO_LONGER_STATIC`](#field_no_longer_static)                                               | :material-package-variant-closed: | :material-code-braces: | A static field becomes an instance field                                    |
+| [`EXECUTABLE_REMOVED`](#executable_removed)                                                       | :material-package-variant-closed: | :material-code-braces: | An executable is removed from the API                                       |
+| [`EXECUTABLE_NOW_PROTECTED`](#executable_now_protected)                                           | :material-package-variant-closed: | :material-code-braces: | A public executable becomes protected                                       |
+| [`EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION`](#executable_now_throws_checked_exception)             | | :material-code-braces: | An executable adds or widens a checked exception                            |
+| [`EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION`](#executable_no_longer_throws_checked_exception) | | :material-code-braces: | An executable removes or narrows a checked exception                        |
+| [`EXECUTABLE_PARAMETER_GENERICS_CHANGED`](#executable_parameter_generics_changed)                           | | :material-code-braces: | Parameter generic arguments change while erasure stays the same             |
+| [`METHOD_RETURN_TYPE_ERASURE_CHANGED`](#method_return_type_erasure_changed)                       | :material-package-variant-closed: | | A return type change alters the erased method signature                     |
+| [`METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE`](#method_return_type_changed_incompatible)             | | :material-code-braces: | A return type change breaks callers or overriders                           |
+| [`METHOD_NOW_ABSTRACT`](#method_now_abstract)                                                     | :material-package-variant-closed: | :material-code-braces: | A concrete method becomes abstract                                          |
+| [`METHOD_NOW_FINAL`](#method_now_final)                                                           | :material-package-variant-closed: | :material-code-braces: | An overridable method becomes final                                         |
+| [`METHOD_NOW_STATIC`](#method_now_static)                                                         | :material-package-variant-closed: | | An instance method becomes static                                           |
+| [`METHOD_OVERRIDABLE_NOW_STATIC`](#method_overridable_now_static)                                 | | :material-code-braces: | An overridable or interface method becomes static                           |
+| [`METHOD_NO_LONGER_STATIC`](#method_no_longer_static)                                             | :material-package-variant-closed: | :material-code-braces: | A static method becomes an instance method                                  |
+| [`FORMAL_TYPE_PARAMETER_ADDED`](#formal_type_parameter_added)                                     | | :material-code-braces: | A formal type parameter is added to a declaration                           |
+| [`FORMAL_TYPE_PARAMETER_REMOVED`](#formal_type_parameter_removed)                                 | | :material-code-braces: | A formal type parameter is removed from a declaration                       |
+| [`FORMAL_TYPE_PARAMETER_CHANGED`](#formal_type_parameter_changed)                                 | | :material-code-braces: | A declaration's formal type parameter changes bounds in an incompatible way |
 
 ---
 
@@ -558,13 +558,13 @@ int x = A.f;
 
 ---
 
-## Method-Related
+## Executable-Related
 
-### `METHOD_REMOVED`
+### `EXECUTABLE_REMOVED`
 
 :material-package-variant-closed: :material-code-braces:
 
-A visible method disappears from the API.
+A visible method or constructor disappears from the API.
 
 **Library**
 
@@ -582,11 +582,11 @@ new A().m();
 
 ---
 
-### `METHOD_NOW_PROTECTED`
+### `EXECUTABLE_NOW_PROTECTED`
 
 :material-package-variant-closed: :material-code-braces:
 
-A public method becomes protected. Callers outside the allowed inheritance context lose access.
+A public method or constructor becomes protected. Callers outside the allowed inheritance context lose access.
 
 **Library**
 
@@ -604,6 +604,88 @@ new A().m();
 ```
 
 ---
+
+### `EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION`
+
+:material-code-braces:
+
+A method or constructor adds a checked exception that is not already covered by an existing entry in the throws clause. Callers must catch or declare it.
+
+**Library**
+
+```diff
+ public class A {
+-  public void m() {}
++  public void m() throws java.io.IOException {}
+ }
+```
+
+**Client**
+
+```java
+new A().m();
+```
+
+---
+
+### `EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION`
+
+:material-code-braces:
+
+A checked exception is removed or narrowed in a way that breaks overriders or callers.
+
+- For **non-final** methods: every old checked exception must still be covered by the same or a broader exception in the new signature. Narrowing to a subtype (e.g., `IOException → FileNotFoundException`) counts as a breaking removal because subclasses that declared the old exception can no longer do so.
+- For **final** methods or constructors: narrowing to a subtype is allowed; only complete removal breaks callers.
+
+**Library**
+
+```diff
+ public class A {
+-  public void m() throws java.io.IOException {}
++  public void m() {}
+ }
+```
+
+**Client**
+
+```java
+try {
+  new A().m();
+} catch (java.io.IOException e) {}
+```
+
+!!! note "Removing an exception is a source break"
+Removing a checked exception from a non-final method is a source break for two reasons. First, subclasses that override the method may declare the same exception in their `throws` clause — once the parent removes it, those overrides no longer compile. Second, callers that catch the exception are also broken: Java makes it a compile error (not just a warning) to have a `catch` block for a checked exception that the callee can no longer throw.
+
+---
+
+### `EXECUTABLE_PARAMETER_GENERICS_CHANGED`
+
+:material-code-braces:
+
+Parameter generic arguments change while the erased signature stays the same.
+
+- For **overridable** methods, any change to generic arguments is a source break: subclasses overriding with the old signature would have mismatched parameter types.
+- For **effectively final** methods or constructors, Roseau applies a variance check: the new parameter type must be a supertype of the old to be compatible.
+
+**Library**
+
+```diff
+ public class A {
+-  public final void m(java.util.List<String> xs) {}
++  public final void m(java.util.List<Integer> xs) {}
+ }
+```
+
+**Client**
+
+```java
+new A().m(java.util.List.of("x"));
+```
+
+---
+
+## Method-Related
 
 ### `METHOD_RETURN_TYPE_ERASURE_CHANGED`
 
@@ -772,134 +854,6 @@ A static method becomes an instance method. Static calls no longer compile, and 
 
 ```java
 A.m();
-```
-
----
-
-### `METHOD_NOW_THROWS_CHECKED_EXCEPTION`
-
-:material-code-braces:
-
-A method or constructor adds a checked exception that is not already covered by an existing entry in the throws clause. Callers must catch or declare it.
-
-**Library**
-
-```diff
- public class A {
--  public void m() {}
-+  public void m() throws java.io.IOException {}
- }
-```
-
-**Client**
-
-```java
-new A().m();
-```
-
----
-
-### `METHOD_NO_LONGER_THROWS_CHECKED_EXCEPTION`
-
-:material-code-braces:
-
-A checked exception is removed or narrowed in a way that breaks overriders or callers.
-
-- For **non-final** methods: every old checked exception must still be covered by the same or a broader exception in the new signature. Narrowing to a subtype (e.g., `IOException → FileNotFoundException`) counts as a breaking removal because subclasses that declared the old exception can no longer do so.
-- For **final** methods: narrowing to a subtype is allowed; only complete removal breaks callers.
-
-**Library**
-
-```diff
- public class A {
--  public void m() throws java.io.IOException {}
-+  public void m() {}
- }
-```
-
-**Client**
-
-```java
-try {
-  new A().m();
-} catch (java.io.IOException e) {}
-```
-
-!!! note "Removing an exception is a source break"
-    Removing a checked exception from a non-final method is a source break for two reasons. First, subclasses that override the method may declare the same exception in their `throws` clause — once the parent removes it, those overrides no longer compile. Second, callers that catch the exception are also broken: Java makes it a compile error (not just a warning) to have a `catch` block for a checked exception that the callee can no longer throw.
-
----
-
-### `METHOD_PARAMETER_GENERICS_CHANGED`
-
-:material-code-braces:
-
-Parameter generic arguments change while the erased signature stays the same.
-
-- For **overridable** methods, any change to generic arguments is a source break: subclasses overriding with the old signature would have mismatched parameter types.
-- For **effectively final** executables, Roseau applies a variance check: the new parameter type must be a supertype of the old to be compatible.
-
-**Library**
-
-```diff
- public class A {
--  public final void m(java.util.List<String> xs) {}
-+  public final void m(java.util.List<Integer> xs) {}
- }
-```
-
-**Client**
-
-```java
-new A().m(java.util.List.of("x"));
-```
-
----
-
-## Constructor-Related
-
-### `CONSTRUCTOR_REMOVED`
-
-:material-package-variant-closed: :material-code-braces:
-
-A visible constructor disappears from the API.
-
-**Library**
-
-```diff
- public class A {
--  public A() {}
-+  public A(int i) {}
- }
-```
-
-**Client**
-
-```java
-new A();
-```
-
----
-
-### `CONSTRUCTOR_NOW_PROTECTED`
-
-:material-package-variant-closed: :material-code-braces:
-
-A public constructor becomes protected. Callers outside the allowed inheritance context can no longer invoke it.
-
-**Library**
-
-```diff
- public class A {
--  public A() {}
-+  protected A() {}
- }
-```
-
-**Client**
-
-```java
-new A();
 ```
 
 ---

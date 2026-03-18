@@ -1,8 +1,8 @@
 package pkg;
 
 public class Ctors {
-    // CONSTRUCTOR_NOW_PROTECTED
+    // EXECUTABLE_NOW_PROTECTED
     protected Ctors() {}
 
-    // CONSTRUCTOR_REMOVED: int constructor removed in v2
+    // EXECUTABLE_REMOVED: int constructor removed in v2
 }

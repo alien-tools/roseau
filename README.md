@@ -184,7 +184,7 @@ Breaking changes are sometimes necessary and intended. To avoid reporting the sa
 
 ```csv
 type;symbol;kind
-pkg.T;pkg.T.m();METHOD_REMOVED
+pkg.T;pkg.T.m();EXECUTABLE_REMOVED
 ```
 
 ## Citing Roseau

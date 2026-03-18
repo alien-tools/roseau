@@ -80,7 +80,7 @@ class ClassNowFinalTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1),
 			bc("A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1),
-			bc("A", "A.<init>()", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1));
+			bc("A", "A.<init>()", BreakingChangeKind.EXECUTABLE_REMOVED, -1));
 	}
 
 	@Client("new A.B(){};")

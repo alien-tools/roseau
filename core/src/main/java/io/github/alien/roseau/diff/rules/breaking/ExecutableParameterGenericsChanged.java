@@ -27,7 +27,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 					new BreakingChangeDetails.MethodParameterGenericsChanged(pt1, pt2);
 
 				if (pt1.typeArguments().size() != pt2.typeArguments().size()) {
-					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED,
+					ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED,
 						ctx.oldType(), oldExecutable, newExecutable, details);
 					return;
 				}
@@ -42,7 +42,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 				// generizing a type argument like List<Object> → List<T> IS a source break due to name clashes
 				// in overriding subclasses)
 				if (!isFinalExecutable && !normalizedPt1.equals(pt2)) {
-					ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED,
+					ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED,
 						ctx.oldType(), oldExecutable, newExecutable, details);
 				}
 
@@ -50,7 +50,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 				if (isFinalExecutable) {
 					TypeReference<?> normalizedPt2 = (TypeReference<?>) normalizer.normalizeNew(pt2);
 					if (!ctx.v2().isSubtypeOf(newExecutable, normalizedPt1, normalizedPt2)) {
-						ctx.builder().memberBC(BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED,
+						ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED,
 							ctx.oldType(), oldExecutable, newExecutable, details);
 					}
 				}

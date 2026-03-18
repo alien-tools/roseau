@@ -56,7 +56,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -68,7 +68,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -80,7 +80,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -92,7 +92,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -127,7 +127,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString())
-			.contains("METHOD_REMOVED")
+			.contains("EXECUTABLE_REMOVED")
 			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -142,7 +142,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString())
-			.contains("METHOD_REMOVED")
+			.contains("EXECUTABLE_REMOVED")
 			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
 			.doesNotContain("METHOD_NOW_STATIC")
 			.contains("METHOD_OVERRIDABLE_NOW_STATIC");
@@ -387,7 +387,7 @@ class RoseauCLITest {
 
 		assertThat(csvReport).isNotEmptyFile();
 		assertThat(jsonReport).isNotEmptyFile();
-		assertThat(Files.readString(jsonReport)).contains("\"kind\": \"METHOD_REMOVED\"", "\"nature\": \"DELETION\"");
+		assertThat(Files.readString(jsonReport)).contains("\"kind\": \"EXECUTABLE_REMOVED\"", "\"nature\": \"DELETION\"");
 		assertThat(Files.readString(cliReport)).contains("Breaking Changes found:");
 		assertThat(Files.readString(cliReport)).doesNotContain("\u001B[");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -427,14 +427,14 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind;nature;location
-			pkg.T;pkg.T.m();METHOD_REMOVED;DELETION;pkg/T.java:10""");
+			pkg.T;pkg.T.m();EXECUTABLE_REMOVED;DELETION;pkg/T.java:10""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).doesNotContain("EXECUTABLE_REMOVED pkg.T.m");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -443,14 +443,14 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind;nature;location
-			pkg.T;pkg.T.m2();METHOD_REMOVED;DELETION;pkg/T.java:10""");
+			pkg.T;pkg.T.m2();EXECUTABLE_REMOVED;DELETION;pkg/T.java:10""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -477,7 +477,7 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind
-			pkg.T;pkg.T.m();METHOD_REMOVED
+			pkg.T;pkg.T.m();EXECUTABLE_REMOVED
 			pkg.T;pkg.T;FORMAL_TYPE_PARAMETER_REMOVED""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
@@ -486,7 +486,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString())
-			.doesNotContain("METHOD_REMOVED")
+			.doesNotContain("EXECUTABLE_REMOVED")
 			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());

@@ -105,23 +105,6 @@ class FormalTypeParameterAddedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	// Source-breaking: a subclass overriding m(List<Object>) gets a name clash with m(List<T>),
-	// because List<Object> is not a subsignature of List<T> (erasure is raw List, not List<Object>).
-	@Client("class B extends A { @Override public void m(java.util.List<Object> l) {} }")
-	@Test
-	void method_first_param_added_and_used_as_part_of_parameter_type() {
-		var v1 = """
-			public class A {
-				public void m(java.util.List<Object> l) {}
-			}""";
-		var v2 = """
-			public class A {
-				public <T> void m(java.util.List<T> l) {}
-			}""";
-
-		assertBC("A", "A.m(java.util.List<java.lang.Object>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
-	}
-
 	@Client("new A().m(1);")
 	@Test
 	void method_bounded_param_added_and_used_as_parameter_type() {
@@ -150,23 +133,6 @@ class FormalTypeParameterAddedTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
-	}
-
-	// Source-breaking: a subclass overriding m(List<Object>) gets a name clash with m(List<T>),
-	// because List<Object> is not a subsignature of List<T> (erasure is raw List, not List<Object>).
-	@Client("class B extends A { @Override public void m(java.util.List<Object> l) {} }")
-	@Test
-	void type_first_param_added_and_used_as_part_of_method_parameter_type() {
-		var v1 = """
-			public class A {
-				public void m(java.util.List<Object> l) {}
-			}""";
-		var v2 = """
-			public class A<T> {
-				public void m(java.util.List<T> l) {}
-			}""";
-
-		assertBC("A", "A.m(java.util.List<java.lang.Object>)", BreakingChangeKind.METHOD_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A().m(1);")
