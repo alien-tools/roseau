@@ -40,6 +40,53 @@ class ExecutableParameterGenericsChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("new A().m(java.util.List.<Integer>of());")
+	@Test
+	void raw_to_parameterized_final_source_only() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m(java.util.List<String> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A() { @Override public void m(java.util.List<String> l) {} };")
+	@Test
+	void parameterized_to_raw_source_only() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<String>of());")
+	@Test
+	void parameterized_to_raw_final_no_break() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m(java.util.List l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("new A().m(java.util.List.<String>of(), java.util.List.<String>of());")
 	@Test
 	void second_parameter_changed() {

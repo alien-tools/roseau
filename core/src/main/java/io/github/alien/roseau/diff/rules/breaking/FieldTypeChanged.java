@@ -11,20 +11,12 @@ import io.github.alien.roseau.diff.rules.MemberRuleContext;
 public class FieldTypeChanged implements MemberRule<FieldDecl> {
 	@Override
 	public void onMatched(FieldDecl oldField, FieldDecl newField, MemberRuleContext ctx) {
-		if (oldField.getType().equals(newField.getType())) {
-			return;
-		}
-
 		// Normalize type references across versions to handle type parameter renaming (T→U) and generization
 		// (Object→T). The forward mapping renames old type params to v2's names; the eraseAdded mapping replaces
 		// newly added type params with their erasure (raw-type semantics for existing clients).
 		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forType(ctx.oldType(), ctx.newType());
 		ITypeReference normalizedOld = normalizer.normalizeOld(oldField.getType());
 		ITypeReference normalizedNew = normalizer.normalizeNew(newField.getType());
-
-		if (normalizedOld.equals(normalizedNew)) {
-			return;
-		}
 
 		BreakingChangeDetails details = new BreakingChangeDetails.FieldTypeChanged(oldField.getType(), newField.getType());
 
@@ -35,9 +27,9 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 				ctx.oldType(), oldField, newField, details);
 		}
 
-		boolean readCompatible = ctx.v2().isSubtypeOf(ctx.newType(), normalizedNew, normalizedOld);
+		boolean readCompatible = ctx.v2().isExpressionCompatible(ctx.newType(), normalizedOld, normalizedNew);
 		boolean writeCompatible = oldField.isFinal() ||
-			ctx.v2().isSubtypeOf(ctx.newType(), normalizedOld, normalizedNew);
+			ctx.v2().isAssignmentCompatible(ctx.newType(), normalizedOld, normalizedNew);
 
 		if (!readCompatible || !writeCompatible) {
 			ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE,

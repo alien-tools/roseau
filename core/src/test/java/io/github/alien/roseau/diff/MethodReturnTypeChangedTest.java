@@ -100,6 +100,23 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
+	@Client("new A().m().toString();")
+	@Test
+	void unboxing_final_expression_use_binary_and_source() {
+		var v1 = """
+			public class A {
+				public final Integer m() { return 0; }
+			}""";
+		var v2 = """
+			public class A {
+				public final int m() { return 0; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
 	@Client("int i = new A().m();")
 	@Test
 	void primitive_widening_binary_and_source() {
@@ -117,9 +134,7 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("""
-		long l = new A().m();
-		new A() { @Override public long m() { return 0L; } };""")
+	@Client("Long l = new A().m();")
 	@Test
 	void primitive_narrowing_binary_and_source() {
 		var v1 = """
@@ -371,9 +386,7 @@ class MethodReturnTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("""
-		new A<CharSequence, String>().m();
-		new A<CharSequence, String>() { @Override public CharSequence m() { return null; } };""")
+	@Client("new A<CharSequence, String>() { @Override public CharSequence m() { return null; } };")
 	@Test
 	void subtype_type_parameter_non_final_source_only() {
 		var v1 = """
@@ -454,7 +467,7 @@ class MethodReturnTypeChangedTest {
 
 	@Client("String s = new A().m().get(0);")
 	@Test
-	void raw_subtype_to_parameterized_supertype_final_binary_only() {
+	void raw_subtype_to_parameterized_supertype_final_binary_and_source() {
 		var v1 = """
 			public class A {
 				public final java.util.List<String> m() { return null; }
@@ -466,6 +479,38 @@ class MethodReturnTypeChangedTest {
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("new A().m().add(0);")
+	@Test
+	void raw_to_parameterized_final_source_only() {
+		var v1 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.List<String> m() { return null; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("String s = new A().m().get(0);")
+	@Test
+	void parameterized_to_raw_final_source_only() {
+		var v1 = """
+			public class A {
+				public final java.util.List<String> m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
@@ -488,8 +533,7 @@ class MethodReturnTypeChangedTest {
 
 	@Client("""
 		java.io.InputStream[] a = new A().m();
-		new A() { @Override public java.io.InputStream[] m() { return new java.io.InputStream[] { null }; } };
-		""")
+		new A() { @Override public java.io.InputStream[] m() { return new java.io.InputStream[] { null }; } };""")
 	@Test
 	void array_subtype_non_final_binary_and_source() {
 		var v1 = """

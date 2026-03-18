@@ -10,9 +10,9 @@ import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class FieldTypeChangedTest {
-	@Client("int i = new A().f;")
+	@Client("short s = 1; new A().f = s;")
 	@Test
-	void boxing_binary_only() {
+	void boxing_non_final_binary_and_source() {
 		var v1 = """
 			public class A {
 				public int f;
@@ -20,15 +20,32 @@ class FieldTypeChangedTest {
 		var v2 = """
 			public class A {
 				public Integer f;
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("int i = new A().f;")
+	@Test
+	void boxing_final_binary_only() {
+		var v1 = """
+			public class A {
+				public final int f = Integer.getInteger("x", 0);
+			}""";
+		var v2 = """
+			public class A {
+				public final Integer f = Integer.getInteger("x", 0);
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("Integer i = new A().f;")
+	@Client("new A().f = null;")
 	@Test
-	void unboxing_binary_only() {
+	void unboxing_non_final_binary_and_source() {
 		var v1 = """
 			public class A {
 				public Integer f;
@@ -39,7 +56,25 @@ class FieldTypeChangedTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("new A().f.toString();")
+	@Test
+	void unboxing_final_expression_use_binary_and_source() {
+		var v1 = """
+			public class A {
+				public final Integer f = 0;
+			}""";
+		var v2 = """
+			public class A {
+				public final int f = 0;
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
 	@Client("int i = new A().f;")
@@ -349,7 +384,7 @@ class FieldTypeChangedTest {
 
 	@Client("String s = new A().f.get(0);")
 	@Test
-	void raw_subtype_to_parameterized_supertype_final_binary_only() {
+	void raw_subtype_to_parameterized_supertype_final_binary_and_source() {
 		var v1 = """
 			public class A {
 				public final java.util.List<String> f = new java.util.ArrayList<>(java.util.Arrays.asList(""));
@@ -508,12 +543,6 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	/**
-	 *
-	 * TO CHECK
-	 *
-	 *
-	 */
 	@Client("C1 c = new A().f;")
 	@Test
 	void type_changed_indirect() {
