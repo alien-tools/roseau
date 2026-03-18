@@ -22,8 +22,8 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 		boolean isOverridable = !ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);
 
 		// Removing a type parameter is breaking if:
-		//  - it's a method (due to @Override)
-		//  - it's a constructor and there was more than one
+		//  - it's an overridable method
+		//  - it's a final executable and there was more than one
 		if (paramsCount1 > paramsCount2 && (isOverridable || paramsCount1 > 1)) {
 			oldExecutable.getFormalTypeParameters().subList(paramsCount2, paramsCount1)
 				.forEach(ftp ->

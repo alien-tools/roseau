@@ -465,7 +465,8 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
 	@Client("int[] a = new A().m();")

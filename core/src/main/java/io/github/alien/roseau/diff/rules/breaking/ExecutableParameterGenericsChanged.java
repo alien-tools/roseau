@@ -12,15 +12,16 @@ import io.github.alien.roseau.diff.rules.MemberRuleContext;
 public class ExecutableParameterGenericsChanged implements MemberRule<ExecutableDecl> {
 	@Override
 	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
-		// We checked executable erasures, so we know parameter types are equals modulo type arguments
+		// We matched erasures, so we know parameter types are equals modulo type arguments
 		for (int i = 0; i < oldExecutable.getParameters().size(); i++) {
 			ParameterDecl p1 = oldExecutable.getParameters().get(i);
 			ParameterDecl p2 = newExecutable.getParameters().get(i);
 
 			/*
-			 * In general, we need to distinguish how formal type parameters and parameter generics are handled between methods
-			 * and constructors: the former can be overridden (thus parameters are immutable so that signatures in
-			 * sub/super-classes match), and the latter cannot (thus parameters can follow variance rules).
+			 * In general, we need to distinguish how formal type parameters and parameter generics are handled between
+			 * overridable methods and final methods/constructors: the former can be overridden (thus parameters are
+			 * immutable so that signatures in sub/super-classes match), and the latter cannot (thus parameters can
+			 * follow variance rules).
 			 */
 			if (p1.type() instanceof TypeReference<?> pt1 && p2.type() instanceof TypeReference<?> pt2) {
 				BreakingChangeDetails details =

@@ -352,30 +352,32 @@ class FieldTypeChangedTest {
 	void raw_subtype_to_parameterized_supertype_final_binary_only() {
 		var v1 = """
 			public class A {
-				public final java.util.List<String> f = null;
+				public final java.util.List<String> f = new java.util.ArrayList<>(java.util.Arrays.asList(""));
 			}""";
 		var v2 = """
 			public class A {
-				public final java.util.ArrayList f = null;
+				public final java.util.ArrayList f = new java.util.ArrayList<>(java.util.Arrays.asList(""));
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("new A().f.add(1);")
+	@Client("new A().f.add(0);")
 	@Test
 	void raw_to_parameterized() {
 		var v1 = """
 			public class A {
-				public java.util.List f;
+				public java.util.List f = new java.util.ArrayList();
 			}""";
 		var v2 = """
 			public class A {
-				public java.util.List<String> f;
+				public java.util.List<String> f = new java.util.ArrayList<>();
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
 	@Client("String s = new A().f.get(0);")
@@ -383,14 +385,15 @@ class FieldTypeChangedTest {
 	void parameterized_to_raw() {
 		var v1 = """
 			public class A {
-				public java.util.List<String> f;
+				public java.util.List<String> f = java.util.List.of("");
 			}""";
 		var v2 = """
 			public class A {
-				public java.util.List f;
+				public java.util.List f = java.util.List.of("");
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
 	@Client("new A<CharSequence, String>().f = new StringBuilder();")
@@ -503,5 +506,32 @@ class FieldTypeChangedTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	/**
+	 *
+	 * TO CHECK
+	 *
+	 *
+	 */
+	@Client("C1 c = new A().f;")
+	@Test
+	void type_changed_indirect() {
+		var v1 = """
+			public class C1 {}
+			public class C2 extends C1 {}
+			public class A {
+				public C2 f;
+			}""";
+		var v2 = """
+			public class C1 {}
+			public class C2 {}
+			public class A {
+				public C2 f;
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("C2", "C2", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 4));
 	}
 }

@@ -257,4 +257,47 @@ public interface SubtypingProvider {
 			})
 			.orElse(false);
 	}
+
+	private static boolean isPrimitiveWidening(PrimitiveTypeReference from, PrimitiveTypeReference to) {
+		// JLS 5.1.2
+		return switch (from.name()) {
+			case "byte" -> List.of("short", "int", "long", "float", "double").contains(to.name());
+			case "short" -> List.of("int", "long", "float", "double").contains(to.name());
+			case "char" -> List.of("int", "long", "float", "double").contains(to.name());
+			case "int" -> List.of("long", "float", "double").contains(to.name());
+			case "long" -> List.of("float", "double").contains(to.name());
+			case "float" -> "double".equals(to.name());
+			default -> false;
+		};
+	}
+
+	private static TypeReference<?> box(PrimitiveTypeReference primitive) {
+		// JLS 5.1.7
+		return switch (primitive.name()) {
+			case "boolean" -> new TypeReference<>(Boolean.class.getCanonicalName());
+			case "byte" -> new TypeReference<>(Byte.class.getCanonicalName());
+			case "short" -> new TypeReference<>(Short.class.getCanonicalName());
+			case "char" -> new TypeReference<>(Character.class.getCanonicalName());
+			case "int" -> new TypeReference<>(Integer.class.getCanonicalName());
+			case "long" -> new TypeReference<>(Long.class.getCanonicalName());
+			case "float" -> new TypeReference<>(Float.class.getCanonicalName());
+			case "double" -> new TypeReference<>(Double.class.getCanonicalName());
+			default -> null;
+		};
+	}
+
+	private static PrimitiveTypeReference unbox(TypeReference<?> reference) {
+		// JLS 5.1.8
+		return switch (reference.getQualifiedName()) {
+			case "java.lang.Boolean" -> PrimitiveTypeReference.BOOLEAN;
+			case "java.lang.Byte" -> PrimitiveTypeReference.BYTE;
+			case "java.lang.Short" -> PrimitiveTypeReference.SHORT;
+			case "java.lang.Character" -> PrimitiveTypeReference.CHAR;
+			case "java.lang.Integer" -> PrimitiveTypeReference.INT;
+			case "java.lang.Long" -> PrimitiveTypeReference.LONG;
+			case "java.lang.Float" -> PrimitiveTypeReference.FLOAT;
+			case "java.lang.Double" -> PrimitiveTypeReference.DOUBLE;
+			default -> null;
+		};
+	}
 }

@@ -35,9 +35,9 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 				ctx.oldType(), oldField, newField, details);
 		}
 
-		boolean readCompatible = ctx.v2().isSourceCompatibleExpression(ctx.newType(), normalizedOld, normalizedNew);
+		boolean readCompatible = ctx.v2().isSubtypeOf(ctx.newType(), normalizedNew, normalizedOld);
 		boolean writeCompatible = oldField.isFinal() ||
-			ctx.v2().isAssignable(ctx.newType(), normalizedOld, normalizedNew);
+			ctx.v2().isSubtypeOf(ctx.newType(), normalizedOld, normalizedNew);
 
 		if (!readCompatible || !writeCompatible) {
 			ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE,
