@@ -50,6 +50,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -594,8 +595,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		return makeFqn(containingType) + "." + simpleName;
 	}
 
-	@SuppressWarnings("unchecked")
-	private static <T> Stream<T> stream(List raw, Class<T> cls) {
-		return raw.stream().filter(cls::isInstance);
+	private static <T> Stream<T> stream(Collection<?> list, Class<T> cls) {
+		return list.stream().filter(cls::isInstance).map(cls::cast);
 	}
 }
