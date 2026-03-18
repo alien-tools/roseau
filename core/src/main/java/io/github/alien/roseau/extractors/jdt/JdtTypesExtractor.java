@@ -79,7 +79,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
 
-		ASTParser parser = ASTParser.newParser(AST.JLS24);
+		ASTParser parser = ASTParser.newParser(AST.JLS25);
 		parser.setKind(ASTParser.K_COMPILATION_UNIT);
 		parser.setResolveBindings(true);
 		// Bindings recovery allows us to resolve incomplete bindings
