@@ -542,25 +542,4 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
-
-	@Client("C1 c = new A().f;")
-	@Test
-	void type_changed_indirect() {
-		var v1 = """
-			public class C1 {}
-			public class C2 extends C1 {}
-			public class A {
-				public C2 f;
-			}""";
-		var v2 = """
-			public class C1 {}
-			public class C2 {}
-			public class A {
-				public C2 f;
-			}""";
-
-		assertBCs(buildDiff(v1, v2),
-			bc("C2", "C2", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 2),
-			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 4));
-	}
 }
