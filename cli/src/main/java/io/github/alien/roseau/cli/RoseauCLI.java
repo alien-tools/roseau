@@ -1,7 +1,10 @@
 package io.github.alien.roseau.cli;
 
 import com.google.common.base.Stopwatch;
+import io.github.alien.roseau.DiffPolicy;
+import io.github.alien.roseau.DiffRequest;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.LibraryResolver;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
@@ -9,6 +12,7 @@ import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
+import io.github.alien.roseau.options.IgnoredCsvFile;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -29,6 +33,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -123,12 +128,12 @@ public final class RoseauCLI implements Callable<Integer> {
 		description = "Increase verbosity (-v, -vv).")
 	private boolean[] verbosityLevel;
 
-	private RoseauReport diff(Library libraryV1, Library libraryV2) {
+	private RoseauReport diff(DiffRequest request) {
 		Stopwatch sw = Stopwatch.createStarted();
 
 		console.printVerbose("Building APIs...  ");
-		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(libraryV1));
-		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(libraryV2));
+		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(request.v1()));
+		CompletableFuture<API> futureV2 = CompletableFuture.supplyAsync(() -> Roseau.buildAPI(request.v2()));
 		API apiV1 = futureV1.join();
 		API apiV2 = futureV2.join();
 		console.printlnVerbose("%d types → %d types (%d ms)".formatted(apiV1.getLibraryTypes().getAllTypes().size(),
@@ -136,8 +141,8 @@ public final class RoseauCLI implements Callable<Integer> {
 
 		sw.reset().start();
 		console.printVerbose("Comparing APIs... ");
-		RoseauReport report = Roseau.diff(apiV1, apiV2);
-		console.printlnVerbose("%d breaking changes (%d ms)".formatted(report.getBreakingChanges().size(),
+		RoseauReport report = Roseau.diff(apiV1, apiV2).filter(request.policy());
+		console.printlnVerbose("%d breaking changes (%d ms)".formatted(report.breakingChanges().size(),
 			sw.elapsed().toMillis()));
 
 		return report;
@@ -281,13 +286,8 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	private void buildClasspath(Library library) {
-		Stopwatch sw = Stopwatch.createStarted();
-		if (library.getPom() != null && Files.isRegularFile(library.getPom())) {
-			console.printVerbose("Building classpath... ");
-		}
-		List<Path> classpath = library.getClasspath();
-		console.printlnVerbose("%d classpath entries for %s (%d ms)".formatted(classpath.size(), library.getLocation(),
-			sw.elapsed().toMillis()));
+		List<Path> classpath = library.classpath();
+		console.printlnVerbose("%d classpath entries for %s".formatted(classpath.size(), library.location()));
 
 		if (classpath.isEmpty()) {
 			console.printlnErr("Warning: no classpath provided, results may be inaccurate");
@@ -312,10 +312,10 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private boolean doDiff(Library v1, Library v2, RoseauOptions options) {
-		buildClasspath(v1);
-		buildClasspath(v2);
-		RoseauReport report = diff(v1, v2).filterReport(options.diff());
+	private boolean doDiff(DiffRequest request, RoseauOptions options) {
+		buildClasspath(request.v1());
+		buildClasspath(request.v2());
+		RoseauReport report = diff(request);
 		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {
@@ -328,7 +328,53 @@ public final class RoseauCLI implements Callable<Integer> {
 			report.writeReport(reportOption.format(), reportOption.file())
 		);
 
-		return !report.getBreakingChanges().isEmpty();
+		return !report.breakingChanges().isEmpty();
+	}
+
+	private Library buildLibrary(RoseauOptions.Library libraryOptions, RoseauOptions.Common common) {
+		RoseauOptions.Library merged = libraryOptions.mergeWith(common);
+		return new LibraryResolver().resolve(
+			merged.location(),
+			merged.classpath().jars(),
+			merged.classpath().pom()
+		);
+	}
+
+	private DiffPolicy buildDiffPolicy(RoseauOptions options) {
+		RoseauOptions.Library baselineOptions = options.v1().mergeWith(options.common());
+		List<Pattern> namePatterns = baselineOptions.excludes().names().stream()
+			.<Pattern>mapMulti((name, downstream) -> {
+				try {
+					downstream.accept(Pattern.compile(name));
+				} catch (PatternSyntaxException e) {
+					console.printlnErr("Invalid name exclusion: %s (%s)".formatted(name, e.getMessage()));
+				}
+			})
+			.toList();
+
+		DiffPolicy.Builder builder = DiffPolicy.builder()
+			.scope(toScope(options.diff()))
+			.excludeNames(namePatterns)
+			.excludeAnnotations(baselineOptions.excludes().annotations().stream()
+				.map(ann -> new DiffPolicy.AnnotationExclusion(ann.name(), ann.args()))
+				.toList());
+
+		Path ignoredPath = options.diff().ignore();
+		if (ignoredPath != null && Files.isRegularFile(ignoredPath)) {
+			builder.ignoreBreakingChanges(new IgnoredCsvFile(ignoredPath).ignoredBreakingChanges());
+		}
+
+		return builder.build();
+	}
+
+	private static DiffPolicy.Scope toScope(RoseauOptions.Diff diff) {
+		if (Boolean.TRUE.equals(diff.sourceOnly())) {
+			return DiffPolicy.Scope.SOURCE_ONLY;
+		}
+		if (Boolean.TRUE.equals(diff.binaryOnly())) {
+			return DiffPolicy.Scope.BINARY_ONLY;
+		}
+		return DiffPolicy.Scope.ALL;
 	}
 
 	@Override
@@ -359,17 +405,19 @@ public final class RoseauCLI implements Callable<Integer> {
 			console.printlnDebug("Options are " + options);
 
 			if (mode.api) {
-				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
+				Library libraryV1 = buildLibrary(options.v1(), options.common());
 				console.printlnDebug("v1 = " + libraryV1);
 				doApi(libraryV1, options.v1());
 			}
 
 			if (mode.diff) {
-				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
-				Library libraryV2 = options.v2().mergeWith(options.common()).toLibrary();
+				Library libraryV1 = buildLibrary(options.v1(), options.common());
+				Library libraryV2 = buildLibrary(options.v2(), options.common());
+				DiffPolicy policy = buildDiffPolicy(options);
 				console.printlnDebug("v1 = " + libraryV1);
 				console.printlnDebug("v2 = " + libraryV2);
-				boolean breaking = doDiff(libraryV1, libraryV2, options);
+				console.printlnDebug("diff policy = " + policy.scope());
+				boolean breaking = doDiff(new DiffRequest(libraryV1, libraryV2, policy), options);
 
 				if (breaking && failMode) {
 					return ExitCode.BREAKING.code();

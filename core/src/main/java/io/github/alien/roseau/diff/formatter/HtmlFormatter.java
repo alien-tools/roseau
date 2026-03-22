@@ -29,9 +29,9 @@ import java.util.TreeMap;
 public final class HtmlFormatter implements BreakingChangesFormatter {
 	@Override
 	public String format(RoseauReport report) {
-		StringBuilder sb = new StringBuilder(8_500 + 1_000 * report.getBreakingChanges().size());
+		StringBuilder sb = new StringBuilder(8_500 + 1_000 * report.breakingChanges().size());
 
-		List<BreakingChange> changes = report.getBreakingChanges();
+		List<BreakingChange> changes = report.breakingChanges();
 		List<TypeDecl> impactedTypes = report.getImpactedTypes();
 		DateTimeFormatter human = DateTimeFormatter.ofPattern("MMMM d, uuuu 'at' h:mm a", Locale.ENGLISH);
 		String generatedAt = ZonedDateTime.now(ZoneId.systemDefault()).format(human);
@@ -64,8 +64,8 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		sb.append("<section class=\"summary\">\n");
 		// API info
 		sb.append("<div class=\"card\">\n<h2>Compared APIs</h2>\n<div class=\"libgrid\">\n");
-		sb.append(apiCard("Baseline: " + report.v1().getLibraryTypes().getLibrary().getLocation(), report.v1()));
-		sb.append(apiCard("New: " + report.v2().getLibraryTypes().getLibrary().getLocation(), report.v2()));
+		sb.append(apiCard("Baseline: " + report.v1().getLibraryTypes().getLibrary().location(), report.v1()));
+		sb.append(apiCard("New: " + report.v2().getLibraryTypes().getLibrary().location(), report.v2()));
 		sb.append("</div>\n</div>\n");
 		// Metrics
 		sb.append("<div class=\"card metrics\">\n<h2>Summary</h2>\n<div class=\"metrics-grid\">\n");

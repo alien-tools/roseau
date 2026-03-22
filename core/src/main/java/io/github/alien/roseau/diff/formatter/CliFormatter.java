@@ -41,7 +41,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 
 	@Override
 	public String format(RoseauReport report) {
-		List<BreakingChange> changes = report.getBreakingChanges();
+		List<BreakingChange> changes = report.breakingChanges();
 		if (changes.isEmpty()) {
 			return "No breaking changes found.";
 		}
@@ -56,7 +56,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 		sb.append(sourceBreaking).append(" source-breaking)");
 		sb.append(System.lineSeparator());
 
-		report.getBreakingChanges().forEach(bc -> formatBreakingChange(bc, sb));
+		report.breakingChanges().forEach(bc -> formatBreakingChange(bc, sb));
 
 		return sb.toString();
 	}

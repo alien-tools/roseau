@@ -25,9 +25,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -145,15 +145,8 @@ class PopularLibrariesTestIT {
 		var classpath = lib.classpath();
 
 		var sw = Stopwatch.createUnstarted();
-		var asmLibrary = Library.builder()
-			.location(binaryJar)
-			.classpath(classpath)
-			.build();
-		var jdtLibrary = Library
-			.builder()
-			.location(sourcesDir)
-			.classpath(classpath)
-			.build();
+		var asmLibrary = Library.of(binaryJar, classpath);
+		var jdtLibrary = Library.of(sourcesDir, classpath);
 
 		// ASM API
 		sw.reset().start();
@@ -190,11 +183,11 @@ class PopularLibrariesTestIT {
 
 		// Diffs
 		sw.reset().start();
-		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
+		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).breakingChanges();
 		long diffTime = sw.elapsed().toMillis();
-		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
-		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
-		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
+		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).breakingChanges();
+		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).breakingChanges();
+		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).breakingChanges();
 
 		// Equality
 		sw.reset().start();

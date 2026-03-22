@@ -61,15 +61,6 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 				common.excludes().mergeWith(excludes), apiReport)
 				: this;
 		}
-
-		public io.github.alien.roseau.Library toLibrary() {
-			return io.github.alien.roseau.Library.builder()
-				.location(location)
-				.classpath(classpath.jars())
-				.pom(classpath.pom())
-				.exclusions(excludes)
-				.build();
-		}
 	}
 
 	/**
@@ -178,7 +169,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	 * Merges the current instance with another one, overriding any value with those present in {@code other}.
 	 *
 	 * @param other the {@code RoseauOptions} instance to merge with; may be null
-	 * @return a new {@code RoseauOptions} instance that represents the merged result, or the current instance if the
+	 * @return a new {@code RoseauOptions} instance that represents the merged result, or the v2 instance if the
 	 * other instance is null
 	 */
 	public RoseauOptions mergeWith(RoseauOptions other) {

@@ -48,7 +48,7 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 
 		// Collect files to be parsed
 		Set<Path> filesToParse = Sets.union(changedFiles.updatedFiles(), changedFiles.createdFiles()).stream()
-			.map(newVersion.getLocation()::resolve)
+			.map(newVersion.location()::resolve)
 			.collect(Collectors.toSet());
 
 		Set<TypeDecl> unchanged = previousTypes.getAllTypes().stream()

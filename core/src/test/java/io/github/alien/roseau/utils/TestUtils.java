@@ -17,7 +17,6 @@ import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
-import io.github.alien.roseau.options.RoseauOptions.Exclude;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.FileObject;
@@ -266,22 +265,6 @@ public class TestUtils {
 		return sourcesMap;
 	}
 
-	public static API buildSourcesAPI(String sources, Exclude exclusions) {
-		try {
-			Map<String, String> sourcesMap = buildSourcesMap(sources);
-			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.builder()
-				.location(sourcesPath)
-				.exclusions(exclusions)
-				.build();
-			API api = Roseau.buildAPI(library);
-			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
-			return api;
-		} catch (IOException e) {
-			throw new RuntimeException(e);
-		}
-	}
-
 	public static API buildSourcesAPI(String sources) {
 		return buildSourcesAPI(sources, List.of());
 	}
@@ -290,10 +273,7 @@ public class TestUtils {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
-			Library library = Library.builder()
-				.location(sourcesPath)
-				.classpath(classpath)
-				.build();
+			Library library = Library.of(sourcesPath, classpath);
 			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
 			return api;
@@ -308,9 +288,7 @@ public class TestUtils {
 			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
 			tempJarFile.deleteOnExit();
 			buildJar(sourcesMap, tempJarFile.toPath());
-			Library library = Library.builder()
-				.location(tempJarFile.toPath())
-				.build();
+			Library library = Library.of(tempJarFile.toPath());
 			return Roseau.buildAPI(library);
 		} catch (IOException e) {
 			throw new RuntimeException(e);
@@ -338,7 +316,7 @@ public class TestUtils {
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		API v1 = buildSourcesAPI(sourcesV1);
 		API v2 = buildSourcesAPI(sourcesV2);
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		return Roseau.diff(v1, v2).breakingChanges();
 
 		// Simple differential testing with japicmp
 		/*try {
@@ -371,7 +349,7 @@ public class TestUtils {
 	                                             String sourcesV2, List<Path> classpathV2) {
 		API v1 = buildSourcesAPI(sourcesV1, classpathV1);
 		API v2 = buildSourcesAPI(sourcesV2, classpathV2);
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		return Roseau.diff(v1, v2).breakingChanges();
 	}
 
 	/*public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {
@@ -429,7 +407,7 @@ public class TestUtils {
 				bcs.addAll(jApiSuperclass.getCompatibilityChanges());
 			}
 		});
-		return bcs.stream().filter(bc -> !bc.isSourceCompatible() || !bc.isBinaryCompatible()).toList();
+		return bcs.stream().filter(breakingChanges -> !breakingChanges.isSourceCompatible() || !breakingChanges.isBinaryCompatible()).toList();
 	}*/
 
 	public static JarFile buildJar(Map<String, String> sourcesMap, Path jar) {

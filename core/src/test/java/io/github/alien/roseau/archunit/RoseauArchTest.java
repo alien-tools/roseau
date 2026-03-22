@@ -18,4 +18,9 @@ class RoseauArchTest {
 	static final ArchRule jdt_is_only_used_for_parsing =
 		noClasses().that().resideOutsideOfPackage("..roseau.extractors.jdt..")
 			.should().accessClassesThat().resideInAPackage("org.eclipse.jdt..");
+
+	@ArchTest
+	static final ArchRule options_do_not_leak_into_domain_and_analysis =
+		noClasses().that().resideOutsideOfPackage("..roseau.options..")
+			.should().accessClassesThat().resideInAPackage("..roseau.options..");
 }

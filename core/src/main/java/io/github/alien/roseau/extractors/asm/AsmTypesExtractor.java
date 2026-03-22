@@ -40,7 +40,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
+		try (JarFile jar = new JarFile(library.location().toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Failed to process JAR file", e);

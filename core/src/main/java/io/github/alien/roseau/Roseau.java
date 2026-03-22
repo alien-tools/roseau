@@ -16,7 +16,6 @@ import io.github.alien.roseau.diff.ApiWalker;
 import io.github.alien.roseau.diff.BreakingChangeAnalyzer;
 import io.github.alien.roseau.diff.DefaultSymbolMatcher;
 import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.extractors.TypesExtractor;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
@@ -106,9 +105,20 @@ public final class Roseau {
 		ApiDiffer<RoseauReport> differ = new BreakingChangeAnalyzer(v1, v2);
 		RoseauReport report = walker.walk(differ);
 		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
-			() -> sw.elapsed().toMillis(), () -> report.getBreakingChanges().size());
+			() -> sw.elapsed().toMillis(), () -> report.breakingChanges().size());
 
 		return report;
+	}
+
+	/**
+	 * Computes a diff between two libraries and applies the supplied {@link DiffPolicy}.
+	 *
+	 * @param request the diff request
+	 * @return a filtered {@link RoseauReport}
+	 */
+	public static RoseauReport diff(DiffRequest request) {
+		Preconditions.checkNotNull(request);
+		return diff(request.v1(), request.v2()).filter(request.policy());
 	}
 
 	/**
@@ -163,8 +173,8 @@ public final class Roseau {
 		Preconditions.checkNotNull(previousTypes);
 		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
-		Preconditions.checkArgument(previousTypes.getLibrary().getExtractorType() == ExtractorType.JDT);
-		Preconditions.checkArgument(newVersion.getExtractorType() == ExtractorType.JDT);
+		Preconditions.checkArgument(previousTypes.getLibrary().isSources());
+		Preconditions.checkArgument(newVersion.isSources());
 
 		ApiFactory factory = defaultApiFactory();
 		IncrementalTypesExtractor incremental = new IncrementalJdtTypesExtractor(new JdtTypesExtractor(factory));
@@ -183,14 +193,14 @@ public final class Roseau {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
 		Preconditions.checkNotNull(executor);
-		Preconditions.checkArgument(v1.getExtractorType() == ExtractorType.JDT);
-		Preconditions.checkArgument(v2.getExtractorType() == ExtractorType.JDT);
+		Preconditions.checkArgument(v1.isSources());
+		Preconditions.checkArgument(v2.isSources());
 		HashingChangedFilesProvider provider = new HashingChangedFilesProvider(HashFunction.XXHASH);
 
 		Stopwatch sw = Stopwatch.createStarted();
 		CompletableFuture<LibraryTypes> futureV1 = CompletableFuture.supplyAsync(() -> buildLibraryTypes(v1), executor);
 		CompletableFuture<ChangedFiles> futureChanges = CompletableFuture.supplyAsync(
-			() -> provider.getChangedFiles(v1.getLocation(), v2.getLocation()), executor);
+			() -> provider.getChangedFiles(v1.location(), v2.location()), executor);
 		CompletableFuture<LibraryTypes> futureV2 = futureV1.thenCombineAsync(
 			futureChanges,
 			(types, changes) -> incrementalBuild(types, v2, changes),
@@ -221,12 +231,14 @@ public final class Roseau {
 	}
 
 	private static LibraryTypes extractTypes(Library library, ApiFactory factory) {
-		TypesExtractor extractor = library.getExtractorType().newExtractor(factory);
+		TypesExtractor extractor = library.isSources()
+			? new JdtTypesExtractor(factory)
+			: new AsmTypesExtractor(factory);
 
 		Stopwatch sw = Stopwatch.createStarted();
 		LibraryTypes types = extractor.extractTypes(library);
 		LOGGER.debug("Extracting types from library {} using {} took {}ms ({} types)",
-			library::getLocation, library::getExtractorType, () -> sw.elapsed().toMillis(),
+			library::location, () -> library.isSources() ? "JDT" : "ASM", () -> sw.elapsed().toMillis(),
 			() -> types.getAllTypes().size());
 
 		return types;
@@ -234,7 +246,7 @@ public final class Roseau {
 
 	private static API buildAPI(LibraryTypes types, ApiFactory factory) {
 		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
-		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, types.getLibrary().getClasspath());
+		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, types.getLibrary().classpath());
 		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, classpathProvider));
 		return buildAPI(types, cachingTypeResolver);
 	}

@@ -2,6 +2,7 @@ package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
+import io.github.alien.roseau.DiffPolicy;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -15,35 +16,20 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
-import io.github.alien.roseau.options.IgnoredCsvFile;
-import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.TreeMap;
-import java.util.regex.Pattern;
-import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
-public final class RoseauReport {
-	private static final Logger LOGGER = LogManager.getLogger(RoseauReport.class);
-
-	private final API v1;
-	private final API v2;
-	private final List<BreakingChange> breakingChanges;
-	private final Set<Pattern> excludedNamePatterns;
-
-	public RoseauReport(API v1, API v2, Collection<BreakingChange> breakingChanges) {
+public record RoseauReport(API v1, API v2, List<BreakingChange> breakingChanges) {
+	public RoseauReport(API v1, API v2, List<BreakingChange> breakingChanges) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
 		Preconditions.checkNotNull(breakingChanges);
@@ -56,48 +42,18 @@ public final class RoseauReport {
 						.thenComparing(bc -> bc.impactedSymbol().getQualifiedName())
 						.thenComparing(BreakingChange::kind))
 				.toList());
-		this.excludedNamePatterns = v1.getLibrary().getExclusions().names().stream()
-			.map(name -> {
-				try {
-					return Pattern.compile(name);
-				} catch (PatternSyntaxException e) {
-					LOGGER.warn("Invalid exclusion pattern {}", name, e);
-					return null;
-				}
-			})
-			.filter(Objects::nonNull)
-			.collect(Collectors.toUnmodifiableSet());
-	}
-
-	public API v1() {
-		return v1;
-	}
-
-	public API v2() {
-		return v2;
-	}
-
-	public List<BreakingChange> getBreakingChanges() {
-		return breakingChanges.stream()
-			.filter(bc -> !isExcluded(bc.impactedSymbol()))
-			.filter(bc -> !isExcluded(bc.impactedType()))
-			.toList();
 	}
 
 	public List<BreakingChange> getBinaryBreakingChanges() {
-		return getBreakingChanges().stream()
+		return breakingChanges.stream()
 			.filter(bc -> bc.kind().isBinaryBreaking())
 			.toList();
 	}
 
 	public List<BreakingChange> getSourceBreakingChanges() {
-		return getBreakingChanges().stream()
+		return breakingChanges.stream()
 			.filter(bc -> bc.kind().isSourceBreaking())
 			.toList();
-	}
-
-	public List<BreakingChange> getAllBreakingChanges() {
-		return breakingChanges;
 	}
 
 	public boolean isBinaryBreaking() {
@@ -109,20 +65,20 @@ public final class RoseauReport {
 	}
 
 	public List<TypeDecl> getImpactedTypes() {
-		return getBreakingChanges().stream()
+		return breakingChanges.stream()
 			.map(BreakingChange::impactedType)
 			.distinct()
 			.toList();
 	}
 
 	public List<BreakingChange> getBreakingChanges(TypeDecl type) {
-		return getBreakingChanges().stream()
+		return breakingChanges.stream()
 			.filter(bc -> bc.impactedType().equals(type))
 			.toList();
 	}
 
 	public List<BreakingChange> getTypeBreakingChanges(TypeDecl type) {
-		return getBreakingChanges().stream()
+		return breakingChanges.stream()
 			.filter(bc -> bc.impactedSymbol().equals(type))
 			.toList();
 	}
@@ -136,7 +92,7 @@ public final class RoseauReport {
 	}
 
 	public Map<TypeMemberDecl, List<BreakingChange>> getBreakingChangesPerMember(TypeDecl type) {
-		return getBreakingChanges().stream()
+		return breakingChanges.stream()
 			.filter(bc -> type.equals(bc.impactedType()))
 			.filter(bc -> bc.impactedSymbol() instanceof TypeMemberDecl)
 			.collect(Collectors.groupingBy(
@@ -146,27 +102,14 @@ public final class RoseauReport {
 			));
 	}
 
-	public RoseauReport filterReport(RoseauOptions.Diff diffOptions) {
-		List<BreakingChange> bcs = diffOptions.sourceOnly()
-			? getSourceBreakingChanges()
-			: diffOptions.binaryOnly()
-			? getBinaryBreakingChanges()
-			: getBreakingChanges();
-
-		Path ignorePath = diffOptions.ignore();
-		if (ignorePath != null && Files.isRegularFile(ignorePath)) {
-			IgnoredCsvFile ignoredFile = new IgnoredCsvFile(ignorePath);
-			bcs = bcs.stream()
-				.filter(bc -> !ignoredFile.isIgnored(bc))
-				.toList();
-		}
-
-		return new RoseauReport(v1(), v2(), bcs);
+	public RoseauReport filter(DiffPolicy policy) {
+		Preconditions.checkNotNull(policy);
+		return new RoseauReport(v1, v2, policy.filter(breakingChanges, v1));
 	}
 
 	public void writeReport(BreakingChangesFormatterFactory format, Path path) {
 		try {
-			if (path.getParent() != null) {
+			if (path.toAbsolutePath().normalize().getParent() != null) {
 				Files.createDirectories(path.getParent());
 			}
 
@@ -183,21 +126,6 @@ public final class RoseauReport {
 		return new Builder(v1, v2);
 	}
 
-	private boolean isExcluded(Symbol symbol) {
-		boolean isAnnotationExcluded = v1.getLibrary().getExclusions().annotations().stream()
-			.anyMatch(ann -> symbol.hasAnnotation(new TypeReference<>(ann.name()), ann.args()));
-		boolean isNameExcluded = excludedNamePatterns.stream()
-			.anyMatch(pattern -> pattern.matcher(symbol.getQualifiedName()).matches());
-
-		return switch (symbol) {
-			case TypeDecl type -> isAnnotationExcluded || isNameExcluded ||
-				type.getEnclosingType().map(t -> v1.resolver().resolve(t).map(this::isExcluded).orElse(false)).orElse(false);
-			case TypeMemberDecl member -> isAnnotationExcluded || isNameExcluded ||
-				v1.resolver().resolve(member.getContainingType()).map(this::isExcluded).orElse(false);
-		};
-	}
-
-	// FIXME: Do the exclusion/java.lang.Object here, through another class
 	public static final class Builder {
 		private final API v1;
 		private final API v2;

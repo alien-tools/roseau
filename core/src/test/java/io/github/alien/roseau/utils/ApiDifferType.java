@@ -21,6 +21,6 @@ public enum ApiDifferType implements ApiDiffer {
 	};
 
 	List<BreakingChange> diff(API v1, API v2) {
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		return Roseau.diff(v1, v2).breakingChanges();
 	}
 }

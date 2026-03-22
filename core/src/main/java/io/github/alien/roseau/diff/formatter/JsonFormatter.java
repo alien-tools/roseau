@@ -18,7 +18,7 @@ public class JsonFormatter implements BreakingChangesFormatter {
 	@Override
 	public String format(RoseauReport report) {
 		return new JSONArray().putAll(
-			report.getBreakingChanges().stream()
+			report.breakingChanges().stream()
 				.map(bc -> {
 					JSONObject jsonObject = new JSONObject();
 					jsonObject.put("impactedType", bc.impactedType().getQualifiedName());

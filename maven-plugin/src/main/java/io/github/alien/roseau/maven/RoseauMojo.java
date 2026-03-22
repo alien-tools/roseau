@@ -1,6 +1,9 @@
 package io.github.alien.roseau.maven;
 
+import io.github.alien.roseau.DiffPolicy;
+import io.github.alien.roseau.DiffRequest;
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.MavenClasspathBuilder;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
@@ -8,6 +11,7 @@ import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
+import io.github.alien.roseau.options.IgnoredCsvFile;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
 import org.apache.logging.log4j.LogManager;
@@ -47,6 +51,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Pattern;
+import java.util.regex.PatternSyntaxException;
 
 /**
  * Compares the current module artifact with a baseline artifact and reports API breaking changes.
@@ -491,34 +497,32 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions options = loadConfiguration(oldJar, newJar);
 
 		// Build libraries with configuration
-		Library oldLibrary = options.v1().mergeWith(options.common()).toLibrary();
-		Library newLibrary = options.v2().mergeWith(options.common()).toLibrary();
+		Library oldLibrary = buildLibrary(options.v1(), options.common());
+		Library newLibrary = buildLibrary(options.v2(), options.common());
+		DiffPolicy diffPolicy = buildDiffPolicy(options);
 
 		// Debug
-		getLog().debug("v1 classpath is: " + oldLibrary.getClasspath());
-		getLog().debug("v2 classpath is: " + newLibrary.getClasspath());
+		getLog().debug("v1 classpath is: " + oldLibrary.classpath());
+		getLog().debug("v2 classpath is: " + newLibrary.classpath());
 
 		// Run diff
-		RoseauReport report = Roseau.diff(oldLibrary, newLibrary);
+		RoseauReport report = Roseau.diff(new DiffRequest(oldLibrary, newLibrary, diffPolicy));
 
 		// Export APIs if configured
 		exportApis(report);
 
-		// Filter report based on configuration
-		RoseauReport filteredReport = report.filterReport(options.diff());
-
 		// Write reports to files if configured
-		writeReports(filteredReport, options.reports());
+		writeReports(report, options.reports());
 
 		// Get breaking changes for display and fail checks
-		List<BreakingChange> bcs = filteredReport.getBreakingChanges();
+		List<BreakingChange> bcs = report.breakingChanges();
 
 		if (bcs.isEmpty()) {
 			getLog().info("No breaking changes found.");
 			return;
 		} else {
 			BreakingChangesFormatter formatter = new MavenFormatter(getLog());
-			formatter.format(filteredReport);
+			formatter.format(report);
 		}
 
 		// Fail checks
@@ -526,11 +530,11 @@ public final class RoseauMojo extends AbstractMojo {
 			throw new MojoExecutionException("Breaking changes found; failing.");
 		}
 
-		if (failOnBinaryIncompatibility && filteredReport.isBinaryBreaking()) {
+		if (failOnBinaryIncompatibility && report.isBinaryBreaking()) {
 			throw new MojoExecutionException("Binary incompatible changes found; failing.");
 		}
 
-		if (failOnSourceIncompatibility && filteredReport.isSourceBreaking()) {
+		if (failOnSourceIncompatibility && report.isSourceBreaking()) {
 			throw new MojoExecutionException("Source incompatible changes found; failing.");
 		}
 	}
@@ -680,6 +684,56 @@ public final class RoseauMojo extends AbstractMojo {
 		);
 
 		return new RoseauOptions(common, v1, v2, diff, options.reports());
+	}
+
+	private Library buildLibrary(RoseauOptions.Library libraryOptions, RoseauOptions.Common common) {
+		RoseauOptions.Library merged = libraryOptions.mergeWith(common);
+		return new Library(merged.location(), resolveClasspath(merged.classpath()));
+	}
+
+	private DiffPolicy buildDiffPolicy(RoseauOptions options) {
+		RoseauOptions.Library baselineOptions = options.v1().mergeWith(options.common());
+		List<Pattern> namePatterns = baselineOptions.excludes().names().stream()
+			.<Pattern>mapMulti((name, downstream) -> {
+				try {
+					downstream.accept(Pattern.compile(name));
+				} catch (PatternSyntaxException e) {
+					getLog().warn("Invalid name exclusion: " + name + " (" + e.getMessage() + ")");
+				}
+			})
+			.toList();
+
+		DiffPolicy.Builder builder = DiffPolicy.builder()
+			.scope(toScope(options.diff()))
+			.excludeNames(namePatterns)
+			.excludeAnnotations(baselineOptions.excludes().annotations().stream()
+				.map(ann -> new DiffPolicy.AnnotationExclusion(ann.name(), ann.args()))
+				.toList());
+
+		Path ignoredPath = options.diff().ignore();
+		if (ignoredPath != null && Files.isRegularFile(ignoredPath)) {
+			builder.ignoreBreakingChanges(new IgnoredCsvFile(ignoredPath).ignoredBreakingChanges());
+		}
+
+		return builder.build();
+	}
+
+	private static DiffPolicy.Scope toScope(RoseauOptions.Diff diff) {
+		if (Boolean.TRUE.equals(diff.sourceOnly())) {
+			return DiffPolicy.Scope.SOURCE_ONLY;
+		}
+		if (Boolean.TRUE.equals(diff.binaryOnly())) {
+			return DiffPolicy.Scope.BINARY_ONLY;
+		}
+		return DiffPolicy.Scope.ALL;
+	}
+
+	private List<Path> resolveClasspath(RoseauOptions.Classpath classpath) {
+		List<Path> resolved = new ArrayList<>(classpath.jars());
+		if (classpath.pom() != null) {
+			resolved.addAll(new MavenClasspathBuilder().buildClasspath(classpath.pom()));
+		}
+		return resolved;
 	}
 
 	private Path resolveReportPath(Path reportPath) {

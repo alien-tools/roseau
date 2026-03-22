@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -46,7 +45,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (Stream<Path> files = Files.walk(library.getLocation())) {
+		try (Stream<Path> files = Files.walk(library.location())) {
 			Set<Path> sourceFiles = files
 				.filter(JdtTypesExtractor::isRegularJavaFile)
 				.collect(Collectors.toSet());
@@ -74,8 +73,8 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		options.put(JavaCore.COMPILER_SOURCE, JavaCore.VERSION_25);
 		options.put(JavaCore.COMPILER_COMPLIANCE, JavaCore.VERSION_25);
 
-		String[] sourcesRootArray = {library.getLocation().toAbsolutePath().toString()};
-		String[] classpathEntries = library.getClasspath().stream()
+		String[] sourcesRootArray = {library.location().toAbsolutePath().toString()};
+		String[] classpathEntries = library.classpath().stream()
 			.map(p -> p.toAbsolutePath().toString())
 			.toArray(String[]::new);
 
@@ -95,7 +94,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
-				Path filePath = library.getLocation().relativize(Path.of(sourceFilePath));
+				Path filePath = library.location().relativize(Path.of(sourceFilePath));
 				IProblem[] problems = ast.getProblems();
 				if (problems != null) {
 					// Actual parsing errors are just warnings for us
@@ -115,7 +114,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 			return new ParsingResult(sink.getTypes(), sink.getModules());
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
-			throw new RoseauException("JDT failed to parse code from " + library.getLocation(), e);
+			throw new RoseauException("JDT failed to parse code from " + library.location(), e);
 		}
 	}
 

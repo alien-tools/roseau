@@ -50,7 +50,7 @@ class RoseauTest {
 
 		Library v2 = Library.of(v2Dir);
 		var changedFiles = new HashingChangedFilesProvider(HashFunction.XXHASH)
-			.getChangedFiles(v1.getLocation(), v2.getLocation());
+			.getChangedFiles(v1.location(), v2.location());
 
 		var incrementalTypes = Roseau.incrementalBuild(previousTypes, v2, changedFiles);
 		var rebuiltTypes = Roseau.buildLibraryTypes(v2);

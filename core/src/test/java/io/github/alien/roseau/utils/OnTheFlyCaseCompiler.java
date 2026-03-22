@@ -206,7 +206,7 @@ public class OnTheFlyCaseCompiler {
 			// --- Extract APIs and compute diff ---
 			API v1 = Roseau.buildAPI(Library.of(srcDir1));
 			API v2 = Roseau.buildAPI(Library.of(srcDir2));
-			List<BreakingChange> bcs = Roseau.diff(v1, v2).getAllBreakingChanges();
+			List<BreakingChange> bcs = Roseau.diff(v1, v2).breakingChanges();
 
 			// --- Compile client against API v1 (sanity check) ---
 			List<Diagnostic<? extends JavaFileObject>> compilationErrors1 = otf.compileClient(clientFile, clsDir1);

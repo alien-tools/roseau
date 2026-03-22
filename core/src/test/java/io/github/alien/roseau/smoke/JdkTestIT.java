@@ -3,7 +3,6 @@ package io.github.alien.roseau.smoke;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.extractors.ExtractorType;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -43,10 +42,7 @@ class JdkTestIT {
 
 		var sw = Stopwatch.createUnstarted();
 		var classpath = jmods().filter(mod -> !mod.equals(jmod)).toList();
-		var srcLibrary = Library.builder()
-			.location(src)
-			.classpath(classpath)
-			.build();
+		var srcLibrary = Library.of(src, classpath);
 
 		sw.reset().start();
 		var api = Roseau.buildAPI(srcLibrary);
@@ -58,9 +54,9 @@ class JdkTestIT {
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
 		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime,
-			report.getAllBreakingChanges().size());
+			report.breakingChanges().size());
 
-		assertThat(report.getAllBreakingChanges()).isEmpty();
+		assertThat(report.breakingChanges()).isEmpty();
 	}
 
 	@ParameterizedTest(name = "{0}")
@@ -69,10 +65,7 @@ class JdkTestIT {
 	void jdk21Asm(Path jmod) {
 		var sw = Stopwatch.createUnstarted();
 		var classpath = jmods().filter(mod -> !mod.equals(jmod)).toList();
-		var jarLibrary = Library.builder()
-			.location(jmod)
-			.classpath(classpath)
-			.build();
+		var jarLibrary = Library.of(jmod, classpath);
 
 		sw.reset().start();
 		var api = Roseau.buildAPI(jarLibrary);
@@ -83,8 +76,8 @@ class JdkTestIT {
 		sw.reset().start();
 		var report = Roseau.diff(api, api);
 		var diffTime = sw.elapsed().toMillis();
-		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime, report.getAllBreakingChanges().size());
+		System.out.printf("[%s] Diff took %dms (%d BCs)%n", jmod.getFileName(), diffTime, report.breakingChanges().size());
 
-		assertThat(report.getAllBreakingChanges()).isEmpty();
+		assertThat(report.breakingChanges()).isEmpty();
 	}
 }

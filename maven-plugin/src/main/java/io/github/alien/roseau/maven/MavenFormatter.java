@@ -24,7 +24,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 
 	@Override
 	public String format(RoseauReport report) {
-		List<BreakingChange> changes = report.getBreakingChanges();
+		List<BreakingChange> changes = report.breakingChanges();
 		if (changes.isEmpty()) {
 			log.info("No breaking changes found.");
 		}
@@ -35,7 +35,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 		log.warn(String.format("Breaking Changes found: %d (%d binary-breaking, %d source-breaking)",
 			changes.size(), binaryBreaking, sourceBreaking));
 
-		report.getBreakingChanges().forEach(this::formatBreakingChange);
+		report.breakingChanges().forEach(this::formatBreakingChange);
 
 		return "";
 	}

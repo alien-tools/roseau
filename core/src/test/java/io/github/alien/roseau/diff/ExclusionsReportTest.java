@@ -1,12 +1,13 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.DiffPolicy;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.options.RoseauOptions;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
 import java.util.Map;
+import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -22,13 +23,14 @@ class ExclusionsReportTest {
 			package p.api;
 			public class C {}""";
 
-		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.C*"), List.of());
-		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
-		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var names = List.of("p\\.api\\.C*");
+		var v1 = TestUtils.buildSourcesAPI(v1src);
+		var v2 = TestUtils.buildSourcesAPI(v2src);
 		var report = Roseau.diff(v1, v2);
+		var filteredReport = report.filter(toPolicy(names, List.of()));
 
-		assertThat(report.getAllBreakingChanges()).hasSize(1);
-		assertThat(report.getBreakingChanges()).isEmpty();
+		assertThat(report.breakingChanges()).hasSize(1);
+		assertThat(filteredReport.breakingChanges()).isEmpty();
 	}
 
 	@Test
@@ -46,14 +48,15 @@ class ExclusionsReportTest {
 			public class A { }
 			public class B { }""";
 
-		var exclude = new RoseauOptions.Exclude(List.of(),
-			List.of(new RoseauOptions.AnnotationExclusion("p.api.Internal", Map.of("value", "alpha"))));
-		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
-		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var exclude = List.of(new DiffPolicy.AnnotationExclusion(
+			"p.api.Internal", Map.of("value", "alpha")));
+		var v1 = TestUtils.buildSourcesAPI(v1src);
+		var v2 = TestUtils.buildSourcesAPI(v2src);
 		var report = Roseau.diff(v1, v2);
+		var filteredReport = report.filter(toPolicy(List.of(), exclude));
 
-		assertThat(report.getAllBreakingChanges()).hasSize(2);
-		assertThat(report.getBreakingChanges()).hasSize(1);
+		assertThat(report.breakingChanges()).hasSize(2);
+		assertThat(filteredReport.breakingChanges()).hasSize(1);
 	}
 
 	@Test
@@ -72,13 +75,14 @@ class ExclusionsReportTest {
 				public static class Inner {}
 			}""";
 
-		var exclude = new RoseauOptions.Exclude(List.of("p\\.api\\.Excluded"), List.of());
-		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
-		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var exclude = List.of("p\\.api\\.Excluded");
+		var v1 = TestUtils.buildSourcesAPI(v1src);
+		var v2 = TestUtils.buildSourcesAPI(v2src);
 		var report = Roseau.diff(v1, v2);
+		var filteredReport = report.filter(toPolicy(exclude, List.of()));
 
-		assertThat(report.getAllBreakingChanges()).hasSize(2);
-		assertThat(report.getBreakingChanges()).isEmpty();
+		assertThat(report.breakingChanges()).hasSize(2);
+		assertThat(filteredReport.breakingChanges()).isEmpty();
 	}
 
 	@Test
@@ -102,13 +106,21 @@ class ExclusionsReportTest {
 				}
 			}""";
 
-		var exclude = new RoseauOptions.Exclude(List.of(),
-			List.of(new RoseauOptions.AnnotationExclusion("java.lang.Deprecated", Map.of())));
-		var v1 = TestUtils.buildSourcesAPI(v1src, exclude);
-		var v2 = TestUtils.buildSourcesAPI(v2src, exclude);
+		var exclude = List.of(new DiffPolicy.AnnotationExclusion(
+			"java.lang.Deprecated", Map.of()));
+		var v1 = TestUtils.buildSourcesAPI(v1src);
+		var v2 = TestUtils.buildSourcesAPI(v2src);
 		var report = Roseau.diff(v1, v2);
+		var filteredReport = report.filter(toPolicy(List.of(), exclude));
 
-		assertThat(report.getAllBreakingChanges()).hasSize(1);
-		assertThat(report.getBreakingChanges()).isEmpty();
+		assertThat(report.breakingChanges()).hasSize(1);
+		assertThat(filteredReport.breakingChanges()).isEmpty();
+	}
+
+	private static DiffPolicy toPolicy(List<String> names, List<DiffPolicy.AnnotationExclusion> annotations) {
+		return DiffPolicy.builder()
+			.excludeNames(names.stream().map(Pattern::compile).toList())
+			.excludeAnnotations(annotations)
+			.build();
 	}
 }

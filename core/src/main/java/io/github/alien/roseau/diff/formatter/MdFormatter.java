@@ -15,10 +15,10 @@ public class MdFormatter implements BreakingChangesFormatter {
 	public String format(RoseauReport report) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("## Breaking Changes Report\n");
-		if (report.getBreakingChanges().isEmpty()) {
+		if (report.breakingChanges().isEmpty()) {
 			sb.append("No breaking changes detected.");
 		} else {
-			int total = report.getBreakingChanges().size();
+			int total = report.breakingChanges().size();
 			int binaryBreaking = report.getBinaryBreakingChanges().size();
 			int sourceBreaking = report.getSourceBreakingChanges().size();
 			sb.append(total).append(" breaking changes detected");
@@ -27,7 +27,7 @@ public class MdFormatter implements BreakingChangesFormatter {
 			sb.append("| Type | Symbol | Kind | Nature | Location | New symbol | Binary | Source |\n");
 			sb.append("|------|--------|------|--------|----------|------------|--------|--------|\n");
 
-			for (BreakingChange bc : report.getBreakingChanges()) {
+			for (BreakingChange bc : report.breakingChanges()) {
 				sb.append("| ").append(bc.impactedType().getQualifiedName()).append(" | ")
 					.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
 					.append(bc.kind()).append(" | ")

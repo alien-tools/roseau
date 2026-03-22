@@ -87,7 +87,7 @@ class LibraryTypesTest {
 		Path sources = Path.of("src/main/java");
 		MavenClasspathBuilder builder = new MavenClasspathBuilder();
 		List<Path> classpath = builder.buildClasspath(Path.of("pom.xml"));
-		Library library = Library.builder().location(sources).classpath(classpath).build();
+		Library library = Library.of(sources, classpath);
 		ApiFactory factory = new DefaultApiFactory(new CachingTypeReferenceFactory());
 		TypesExtractor extractor = new JdtTypesExtractor(factory);
 		LibraryTypes orig = extractor.extractTypes(library);

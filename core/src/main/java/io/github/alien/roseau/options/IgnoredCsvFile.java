@@ -1,7 +1,7 @@
 package io.github.alien.roseau.options;
 
+import io.github.alien.roseau.DiffPolicy;
 import io.github.alien.roseau.RoseauException;
-import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 
 import java.io.IOException;
@@ -11,9 +11,7 @@ import java.util.List;
 import java.util.stream.Stream;
 
 public class IgnoredCsvFile {
-	private final List<Ignored> ignoredBCs;
-
-	private record Ignored(String type, String symbol, BreakingChangeKind kind) {}
+	private final List<DiffPolicy.IgnoredBreakingChange> ignoredBCs;
 
 	public IgnoredCsvFile(Path csv) {
 		try (Stream<String> lines = Files.lines(csv)) {
@@ -29,7 +27,11 @@ public class IgnoredCsvFile {
 							.formatted(String.join(";", fields), csv));
 					}
 					try {
-						return new Ignored(fields[0].trim(), fields[1].trim(), BreakingChangeKind.valueOf(fields[2].trim()));
+						return new DiffPolicy.IgnoredBreakingChange(
+							fields[0].trim(),
+							fields[1].trim(),
+							BreakingChangeKind.valueOf(fields[2].trim())
+						);
 					} catch (IllegalArgumentException ignored) {
 						throw new RoseauException("Malformed kind '%s' in %s".formatted(fields[2], csv));
 					}
@@ -40,9 +42,7 @@ public class IgnoredCsvFile {
 		}
 	}
 
-	public boolean isIgnored(BreakingChange bc) {
-		return ignoredBCs.stream().anyMatch(ign -> bc.impactedType().getQualifiedName().equals(ign.type()) &&
-			bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
-			bc.kind() == ign.kind());
+	public List<DiffPolicy.IgnoredBreakingChange> ignoredBreakingChanges() {
+		return ignoredBCs;
 	}
 }

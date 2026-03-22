@@ -24,7 +24,7 @@ public final class RoseauTool extends AbstractTool {
 			.extractTypes(Library.of(v2Path));
 
 		var report = Roseau.diff(Roseau.buildAPI(types1), Roseau.buildAPI(types2));
-		var breakingChanges = report.getBreakingChanges();
+		var breakingChanges = report.breakingChanges();
 		var isBinaryBreaking = breakingChanges.stream().anyMatch(bC -> bC.kind().isBinaryBreaking());
 		var isSourceBreaking = breakingChanges.stream().anyMatch(bC -> bC.kind().isSourceBreaking());
 
