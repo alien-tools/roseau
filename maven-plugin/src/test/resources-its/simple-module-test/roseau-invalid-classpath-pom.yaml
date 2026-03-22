@@ -1,0 +1,3 @@
+common:
+  classpath:
+    pom: missing-pom.xml

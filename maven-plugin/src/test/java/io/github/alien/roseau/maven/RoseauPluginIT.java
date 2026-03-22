@@ -136,6 +136,13 @@ class RoseauPluginIT {
 				.anyMatch(m -> m.contains("v1 classpath is: ") && m.contains("manual-baseline.jar"));
 		}
 
+		@SystemProperty(value = "roseau.configFile", content = "roseau-invalid-classpath-pom.yaml")
+		@MavenTest
+		void invalid_classpath_pom_in_configuration_fails_fast(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Invalid path to POM file"));
+		}
+
 		@SystemProperty(value = "roseau.configFile", content = "roseau-yaml-config.yaml")
 		@MavenTest
 		void yaml_is_loaded(MavenExecutionResult result) {

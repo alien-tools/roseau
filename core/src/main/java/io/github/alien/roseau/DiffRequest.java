@@ -13,10 +13,6 @@ public record DiffRequest(Library v1, Library v2, DiffPolicy policy) {
 	public DiffRequest {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
-		policy = policy == null ? DiffPolicy.none() : policy;
-	}
-
-	public DiffRequest(Library v1, Library v2) {
-		this(v1, v2, DiffPolicy.none());
+		Preconditions.checkNotNull(policy);
 	}
 }

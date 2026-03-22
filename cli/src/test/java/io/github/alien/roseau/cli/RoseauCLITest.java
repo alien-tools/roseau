@@ -12,9 +12,8 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.Set;
+import java.util.Map;
 import java.util.concurrent.TimeUnit;
-import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -584,6 +583,79 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void config_name_exclusions_are_applied(@TempDir Path tempDir) throws IOException {
+		var config = tempDir.resolve("roseau.yaml");
+		Files.writeString(config, """
+			common:
+			  excludes:
+			    names: [pkg\\.T]
+			""");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--config=" + config,
+			"--plain");
+
+		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void config_annotation_exclusions_with_arguments_are_applied(@TempDir Path tempDir) throws IOException {
+		Path v1 = tempDir.resolve("v1");
+		Path v2 = tempDir.resolve("v2");
+		writeSources(v1, Map.of(
+			"p/Internal.java", """
+				package p;
+				public @interface Internal { String value(); }
+				""",
+			"p/A.java", """
+				package p;
+				public class A { @Internal("alpha") public void m() {} }
+				""",
+			"p/B.java", """
+				package p;
+				public class B { @Internal("beta") public void m() {} }
+				"""
+		));
+		writeSources(v2, Map.of(
+			"p/Internal.java", """
+				package p;
+				public @interface Internal { String value(); }
+				""",
+			"p/A.java", """
+				package p;
+				public class A { }
+				""",
+			"p/B.java", """
+				package p;
+				public class B { }
+				"""
+		));
+		var config = tempDir.resolve("roseau.yaml");
+		Files.writeString(config, """
+			common:
+			  excludes:
+			    annotations:
+			      - name: p.Internal
+			        args:
+			          value: alpha
+			""");
+
+		var exitCode = cmd.execute("--v1=" + v1,
+			"--v2=" + v2,
+			"--diff",
+			"--config=" + config,
+			"--plain");
+
+		assertThat(out.toString())
+			.contains("p.B.m() EXECUTABLE_REMOVED")
+			.doesNotContain("p.A.m() EXECUTABLE_REMOVED");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void plain_mode_formatting() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--v2=src/test/resources/test-project-v2/src",
@@ -669,5 +741,13 @@ class RoseauCLITest {
 
 		assertThat(err.toString()).contains("Failed to download no-group:no-artifact:0.0.1");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	private static void writeSources(Path root, Map<String, String> files) throws IOException {
+		for (var entry : files.entrySet()) {
+			Path file = root.resolve(entry.getKey());
+			Files.createDirectories(file.getParent());
+			Files.writeString(file, entry.getValue());
+		}
 	}
 }

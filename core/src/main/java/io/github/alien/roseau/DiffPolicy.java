@@ -110,7 +110,7 @@ public final class DiffPolicy {
 		this.ignoredBreakingChanges = Set.copyOf(ignored);
 	}
 
-	public static DiffPolicy none() {
+	public static DiffPolicy empty() {
 		return NONE;
 	}
 

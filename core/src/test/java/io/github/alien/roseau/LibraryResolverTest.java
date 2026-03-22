@@ -58,4 +58,25 @@ class LibraryResolverTest {
 			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("Invalid path to POM file");
 	}
+
+	@Test
+	void resolve_normalizes_and_deduplicates_merged_classpath(@TempDir Path tempDir) throws IOException {
+		var pom = tempDir.resolve("pom.xml");
+		var cp = Files.createFile(tempDir.resolve("cp.jar"));
+		Files.createFile(pom);
+
+		var resolver = new LibraryResolver(new MavenClasspathBuilder() {
+			@Override
+			public List<Path> buildClasspath(Path ignoredPom) {
+				return List.of(
+					cp,
+					tempDir.resolve("nested").resolve("..").resolve("cp.jar")
+				);
+			}
+		});
+
+		var lib = resolver.resolve(validJar, null, pom);
+
+		assertThat(lib.classpath()).containsExactly(cp.toAbsolutePath().normalize());
+	}
 }

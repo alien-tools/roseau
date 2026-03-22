@@ -108,9 +108,12 @@ public record RoseauReport(API v1, API v2, List<BreakingChange> breakingChanges)
 	}
 
 	public void writeReport(BreakingChangesFormatterFactory format, Path path) {
+		Preconditions.checkNotNull(format);
+		Preconditions.checkNotNull(path);
 		try {
-			if (path.toAbsolutePath().normalize().getParent() != null) {
-				Files.createDirectories(path.getParent());
+			Path parent = path.toAbsolutePath().normalize().getParent();
+			if (parent != null) {
+				Files.createDirectories(parent);
 			}
 
 			BreakingChangesFormatter fmt = format == BreakingChangesFormatterFactory.CLI
