@@ -97,20 +97,17 @@ Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
 
 ### As a Java library
 
-The main programmatic entry points live in `Roseau`. In most cases, you configure two `Library` instances, build their APIs, and diff them:
+The main programmatic entry points live in `Roseau`. In most cases, you configure two `Library` instances and diff them:
 
 ```java
 Library v1 = Library.of(Path.of("/path/to/library-v1.jar"));
-Library v2 = Library.builder()
-  .location(Path.of("/path/to/library-v2.jar"))
-  .classpath(List.of(Path.of("/path/to/dependency.jar")))
-  .pom(Path.of("/path/to/pom.xml"))
-  .build();
+Library v2 = Library.of(
+  Path.of("/path/to/library-v2.jar"),
+  List.of(Path.of("/path/to/dependency.jar")) // classpath
+);
 
-API apiV1 = Roseau.buildAPI(v1);
-API apiV2 = Roseau.buildAPI(v2);
-RoseauReport report = Roseau.diff(apiV1, apiV2);
-report.getBreakingChanges().forEach(System.out::println);
+RoseauReport report = Roseau.diff(v1, v2);
+report.breakingChanges().forEach(System.out::println);
 ```
 
 ### As a Maven plug-in

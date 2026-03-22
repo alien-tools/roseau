@@ -88,6 +88,24 @@ class RoseauTest {
 	}
 
 	@Test
+	void diff_library_overload_uses_empty_policy(@TempDir Path wd) throws IOException {
+		Path v1Dir = Files.createDirectory(wd.resolve("v1"));
+		Path v2Dir = Files.createDirectory(wd.resolve("v2"));
+		Files.writeString(v1Dir.resolve("A.java"), """
+			package pkg;
+			public class A { public void m() {} }""");
+		Files.writeString(v2Dir.resolve("A.java"), """
+			package pkg;
+			public class A {}""");
+
+		Library v1 = Library.of(v1Dir);
+		Library v2 = Library.of(v2Dir);
+
+		assertThat(Roseau.diff(v1, v2))
+			.isEqualTo(Roseau.diff(new DiffRequest(v1, v2, DiffPolicy.empty())));
+	}
+
+	@Test
 	void incrementalDiff_matches_full_diff(@TempDir Path wd) throws IOException {
 		Path v1Dir = Files.createDirectory(wd.resolve("v1"));
 		Path v2Dir = Files.createDirectory(wd.resolve("v2"));

@@ -150,14 +150,43 @@ public final class Roseau {
 	}
 
 	/**
-	 * Builds both APIs in parallel using the default {@link ForkJoinPool#commonPool()} and computes their diff.
+	 * Builds both APIs in parallel using the provided {@link Executor}, computes their diff, and applies the supplied
+	 * {@link DiffPolicy}.
+	 *
+	 * @param v1       the baseline library
+	 * @param v2       the target library
+	 * @param policy   the diff policy to apply
+	 * @param executor the executor to use
+	 * @return a filtered {@link RoseauReport}
+	 */
+	public static RoseauReport diff(Library v1, Library v2, DiffPolicy policy, Executor executor) {
+		Preconditions.checkNotNull(policy);
+		return diff(v1, v2, executor).filter(policy);
+	}
+
+	/**
+	 * Builds both APIs in parallel using the default {@link ForkJoinPool#commonPool()}, computes their diff, and
+	 * applies the default empty {@link DiffPolicy}.
 	 *
 	 * @param v1 the baseline library
 	 * @param v2 the target library
 	 * @return a {@link RoseauReport} containing the list of breaking changes
 	 */
 	public static RoseauReport diff(Library v1, Library v2) {
-		return diff(v1, v2, ForkJoinPool.commonPool());
+		return diff(v1, v2, DiffPolicy.empty(), ForkJoinPool.commonPool());
+	}
+
+	/**
+	 * Builds both APIs in parallel using the default {@link ForkJoinPool#commonPool()}, computes their diff, and
+	 * applies the supplied {@link DiffPolicy}.
+	 *
+	 * @param v1     the baseline library
+	 * @param v2     the target library
+	 * @param policy the diff policy to apply
+	 * @return a filtered {@link RoseauReport}
+	 */
+	public static RoseauReport diff(Library v1, Library v2, DiffPolicy policy) {
+		return diff(v1, v2, policy, ForkJoinPool.commonPool());
 	}
 
 	/**
