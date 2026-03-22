@@ -1,10 +1,10 @@
 package io.github.alien.roseau.cli;
 
 import com.google.common.base.Stopwatch;
+import io.github.alien.roseau.ClasspathResolver;
 import io.github.alien.roseau.DiffPolicy;
 import io.github.alien.roseau.DiffRequest;
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.LibraryResolver;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
@@ -53,6 +53,7 @@ import static picocli.CommandLine.Spec;
 		"Output symbols: ✗ removal  ⚠ modification  ★ addition"
 	})
 public final class RoseauCLI implements Callable<Integer> {
+	private final ClasspathResolver classpathResolver = new ClasspathResolver();
 	private Console console;
 	@Spec
 	private CommandSpec spec;
@@ -333,11 +334,8 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private Library buildLibrary(RoseauOptions.Library libraryOptions, RoseauOptions.Common common) {
 		RoseauOptions.Library merged = libraryOptions.mergeWith(common);
-		return new LibraryResolver().resolve(
-			merged.location(),
-			merged.classpath().jars(),
-			merged.classpath().pom()
-		);
+		List<Path> classpath = classpathResolver.resolve(merged.classpath().jars(), merged.classpath().pom());
+		return new Library(merged.location(), classpath);
 	}
 
 	private DiffPolicy buildDiffPolicy(RoseauOptions options) {

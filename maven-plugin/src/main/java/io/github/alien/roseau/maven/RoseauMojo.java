@@ -1,9 +1,9 @@
 package io.github.alien.roseau.maven;
 
+import io.github.alien.roseau.ClasspathResolver;
 import io.github.alien.roseau.DiffPolicy;
 import io.github.alien.roseau.DiffRequest;
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.MavenClasspathBuilder;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
@@ -70,6 +70,8 @@ import java.util.regex.PatternSyntaxException;
 	requiresDependencyResolution = ResolutionScope.COMPILE
 )
 public final class RoseauMojo extends AbstractMojo {
+	private final ClasspathResolver classpathResolver = new ClasspathResolver();
+
 	/**
 	 * Current Maven project.
 	 */
@@ -688,7 +690,8 @@ public final class RoseauMojo extends AbstractMojo {
 
 	private Library buildLibrary(RoseauOptions.Library libraryOptions, RoseauOptions.Common common) {
 		RoseauOptions.Library merged = libraryOptions.mergeWith(common);
-		return new Library(merged.location(), resolveClasspath(merged.classpath()));
+		List<Path> classpath = classpathResolver.resolve(merged.classpath().jars(), merged.classpath().pom());
+		return new Library(merged.location(), classpath);
 	}
 
 	private DiffPolicy buildDiffPolicy(RoseauOptions options) {
@@ -726,14 +729,6 @@ public final class RoseauMojo extends AbstractMojo {
 			return DiffPolicy.Scope.BINARY_ONLY;
 		}
 		return DiffPolicy.Scope.ALL;
-	}
-
-	private List<Path> resolveClasspath(RoseauOptions.Classpath classpath) {
-		List<Path> resolved = new ArrayList<>(classpath.jars());
-		if (classpath.pom() != null) {
-			resolved.addAll(new MavenClasspathBuilder().buildClasspath(classpath.pom()));
-		}
-		return resolved;
 	}
 
 	private Path resolveReportPath(Path reportPath) {
