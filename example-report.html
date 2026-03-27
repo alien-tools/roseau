@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Roseau Breaking Changes Report</title>
+<style>
+:root{--bg:#0b1020;--text:#e6e9f5;--muted:#9aa4d6;--header-start:#111736;--header-end:#0b1020;
+--header-title:#ffffff;--subtitle:#9aa4d6;--card-bg:#0f1531;--card-border:#1b2452;--card-shadow:#1a2147;
+--chip-bg:#0c1127;--chip-border:#1a2147;--link:#d7dbf2;--pill-bg:#202a61;--pill-text:#b8c1ff;--metric-bg:#0c1127;
+--metric-border:#1a2147;--danger-bg:#3a0f19;--danger-border:#5a1a28;--danger-text:#ffb3c0;--member-border:#1b2452;
+--change-bg:#0c1127;--change-border:#1b2452;--detail:#d0d4f7;--del-bg:#3a0f19;--del-text:#ffb3c0;
+--del-border:#5a1a28;--mut-bg:#2a1e05;--mut-text:#ffd88a;--mut-border:#4b370c;--add-bg:#0f2a1a;
+--add-text:#a6f2c3;--add-border:#1b5a39;--compat-src-bg:#20315b;--compat-src-text:#bcd0ff;
+--compat-src-border:#2a3d77;--compat-bin-bg:#19422e;--compat-bin-text:#b6f5d5;--compat-bin-border:#1f5b3c;
+--loc-bg:#202a61;--loc-text:#b8c1ff;--loc-border:#2a3d77;--arrow:#9aa4d6;--code-bg:#0c1127;
+--code-border:#1a2147;--footer:#9aa4d6}[data-theme=light]{--bg:#ffffff;--text:#0f1230;--muted:#556083;
+--header-start:#f5f7ff;--header-end:#ffffff;--header-title:#111111;--subtitle:#556083;--card-bg:#ffffff;
+--card-border:#dfe5fb;--card-shadow:#e6e9f5;--chip-bg:#f6f8ff;--chip-border:#dfe5fb;--link:#0f1230;
+--pill-bg:#e9edff;--pill-text:#1f3bb3;--metric-bg:#f6f8ff;--metric-border:#dfe5fb;--danger-bg:#ffe8ec;
+--danger-border:#ffc2cd;--danger-text:#8a1f2b;--member-border:#e3e8ff;--change-bg:#f6f8ff;--change-border:#dfe5fb;
+--detail:#333a5f;--del-bg:#ffe8ec;--del-text:#8a1f2b;--del-border:#ffc2cd;--mut-bg:#fff5db;--mut-text:#7a5a0a;
+--mut-border:#ffe2a6;--add-bg:#e8fff3;--add-text:#116e3b;--add-border:#bdeed3;--compat-src-bg:#e9edff;
+--compat-src-text:#1f3bb3;--compat-src-border:#d2dbff;--compat-bin-bg:#e8fff3;--compat-bin-text:#116e3b;
+--compat-bin-border:#bdeed3;--loc-bg:#e9edff;--loc-text:#1f3bb3;--loc-border:#d2dbff;--arrow:#556083;
+--code-bg:#f6f8ff;--code-border:#e6e9f5;--footer:#556083}
+body{font-family:Inter,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;line-height:1.5;margin:0;
+background:var(--bg);color:var(--text)}.page{max-width:1100px;margin:0 auto;padding:0 16px}.header{padding:16px 0;
+background:linear-gradient(180deg,var(--header-start),var(--header-end));}.header .page{display:flex;gap:12px;
+align-items:center;justify-content:space-between}.header h1{margin:0;font-size:28px;color:var(--header-title)}
+.header .subtitle{color:var(--subtitle);margin-top:6px}.theme-toggle{border:1px solid var(--card-border);
+background:var(--chip-bg);color:var(--text);border-radius:999px;padding:6px 10px;cursor:pointer;font-size:14px}.summary{display:grid;gap:16px;padding:16px} .card{background:var(--card-bg);border:1px solid var(--card-border);
+border-radius:12px;padding:16px;box-shadow:0 1px 0 var(--card-shadow)}.libgrid{display:grid;
+grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}.lib-label{font-weight:600;color:var(--muted);
+margin-bottom:6px} .lib-meta{color:var(--text);opacity:.9;margin-top:6px} .lib-meta span{display:inline-block;
+margin-right:10px}.metrics-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px}
+.metric{background:var(--metric-bg);border:1px solid var(--metric-border);border-radius:10px;padding:12px;
+text-align:center}.metric-value{font-size:24px;font-weight:700} .metric-label{font-size:12px;color:var(--muted)}
+.toc{margin:0 16px 8px} .toc-list{list-style:none;padding-left:0;margin:0;display:flex;flex-wrap:wrap;gap:8px}
+.toc-list li{background:var(--chip-bg);border:1px solid var(--chip-border);border-radius:999px;padding:6px 10px}
+.toc-list a{color:var(--link);text-decoration:none}.pill{background:var(--pill-bg);color:var(--pill-text);
+border-radius:999px;padding:2px 8px;margin-left:6px;font-size:12px}.pkg-name{margin:8px 0 6px;font-size:16px;
+color:var(--muted)}.details{display:grid;gap:16px;padding:16px} .type h2{margin:0 0 6px}
+.badge{background:var(--pill-bg);color:var(--pill-text);border-radius:999px;padding:2px 8px;font-size:12px}
+.type-level{margin-top:6px} .danger-banner{background:var(--danger-bg);border:1px solid var(--danger-border);
+color:var(--danger-text);padding:8px 10px;border-radius:8px;margin:8px 0}.member{margin-top:8px;padding-top:8px;
+border-top:1px solid var(--member-border)} .member h3{margin:0 0 6px;font-size:15px} .muted{color:var(--muted)}
+.changes{list-style:none;margin:0;padding-left:0} .changes li{margin:8px 0;padding:8px 10px;
+border-left:3px solid var(--change-border);background:var(--change-bg);border-radius:8px}
+.kind{font-weight:600;border-radius:6px;padding:2px 6px} .detail{color:var(--detail)}
+.kind-deletion{background:var(--del-bg);color:var(--del-text);border:1px solid var(--del-border)}
+.kind-mutation{background:var(--mut-bg);color:var(--mut-text);border:1px solid var(--mut-border)}
+.kind-addition{background:var(--add-bg);color:var(--add-text);border:1px solid var(--add-border)}.compat{font-size:11px;border-radius:999px;padding:2px 6px;border:1px solid transparent}
+.compat-source{background:var(--compat-src-bg);color:var(--compat-src-text);border-color:var(--compat-src-border)}
+.compat-binary{background:var(--compat-bin-bg);color:var(--compat-bin-text);border-color:var(--compat-bin-border)}
+.loc{font-size:11px;color:var(--loc-text);background:var(--loc-bg);border:1px solid var(--loc-border);
+border-radius:999px;padding:2px 6px;vertical-align:middle;white-space:nowrap;display:inline-block;max-width:100%;overflow:hidden;text-overflow:ellipsis}.arrow{color:var(--arrow);margin:0 6px}
+code{background:var(--code-bg);border:1px solid var(--code-border);border-radius:6px;padding:2px 4px}
+.footer{color:var(--footer);text-align:center;padding:24px} .heart{color:#ff6b9a}</style>
+<script>(function(){try{var s=localStorage.getItem('roseau_theme');if(s){document.documentElement.setAttribute
+('data-theme',s);}else{var prefers=matchMedia('(prefers-color-scheme: dark)').matches?'dark':'light';document.
+documentElement.setAttribute('data-theme',prefers);}}catch(e){}})();</script></head>
+<body>
+<header class="header">
+<div class="page"><div class="titles"><h1>Roseau Report</h1>
+<div class="subtitle">Generated March 15, 2026 at 9:16 PM</div></div>
+<button id="theme-toggle" class="theme-toggle" title="Toggle theme">🌙</button></div></header>
+<main class="page">
+<section class="summary">
+<div class="card">
+<h2>Compared APIs</h2>
+<div class="libgrid">
+<div class="lib"><div class="lib-label">Baseline: example-api/v1</div><div class="lib-meta"><span><span class="muted">Exported types:</span> 20 / 20</span><span><span class="muted">Methods:</span> 16</span><span><span class="muted">Fields:</span> 7</span></div></div><div class="lib"><div class="lib-label">New: example-api/v2</div><div class="lib-meta"><span><span class="muted">Exported types:</span> 19 / 19</span><span><span class="muted">Methods:</span> 16</span><span><span class="muted">Fields:</span> 6</span></div></div></div>
+</div>
+<div class="card metrics">
+<h2>Summary</h2>
+<div class="metrics-grid">
+<div class="metric" data-tone="danger"><div class="metric-value">41</div><div class="metric-label">Breaking changes</div></div><div class="metric" data-tone="warn"><div class="metric-value">18</div><div class="metric-label">Impacted types</div></div><div class="metric" data-tone="danger"><div class="metric-value">No</div><div class="metric-label">Source-compatible</div></div><div class="metric" data-tone="danger"><div class="metric-value">No</div><div class="metric-label">Binary-compatible</div></div></div>
+</div>
+</section>
+<section class="toc card">
+<h2>Contents</h2>
+<h3 class="pkg-name">pkg</h3>
+<ul class="toc-list">
+<li><a href="#pkg-abstractadded">AbstractAdded</a> <span class="pill">1</span> <span class="compat compat-source">Source</span></li>
+<li><a href="#pkg-abstractadded">AbstractAdded</a> <span class="pill">1</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-accessandnesting-innera">InnerA</a> <span class="pill">1</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-accessandnesting-innerb">InnerB</a> <span class="pill">1</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-accessandnesting-publicnested">PublicNested</a> <span class="pill">2</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-classnowabstract">ClassNowAbstract</a> <span class="pill">2</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-classnowfinal">ClassNowFinal</a> <span class="pill">2</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-ctors">Ctors</a> <span class="pill">2</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-fieldsclass">FieldsClass</a> <span class="pill">7</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-genericchanged">GenericChanged</a> <span class="pill">1</span> <span class="compat compat-source">Source</span></li>
+<li><a href="#pkg-genericremoved">GenericRemoved</a> <span class="pill">1</span> <span class="compat compat-source">Source</span></li>
+<li><a href="#pkg-hierarchy">Hierarchy</a> <span class="pill">2</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-methodtypeparameters">MethodTypeParameters</a> <span class="pill">2</span> <span class="compat compat-source">Source</span></li>
+<li><a href="#pkg-methodsclass">MethodsClass</a> <span class="pill">11</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-myproblem">MyProblem</a> <span class="pill">2</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-simplei">SimpleI</a> <span class="pill">1</span> <span class="compat compat-source">Source</span></li>
+<li><a href="#pkg-toberemoved">ToBeRemoved</a> <span class="pill">1</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><a href="#pkg-typekind">TypeKind</a> <span class="pill">1</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</section>
+<section class="details">
+<article class="card type" id="pkg-abstractadded">
+<h2>pkg.AbstractAdded <span class="badge">1</span> <span class="loc" title="pkg/AbstractAdded.java:4">📍 pkg/AbstractAdded.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-addition">TYPE_NEW_ABSTRACT_METHOD</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>newly()</code></span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-abstractadded">
+<h2>pkg.AbstractAdded <span class="badge">1</span> <span class="loc" title="pkg/AbstractAdded.java:4">📍 pkg/AbstractAdded.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">CLASS_NOW_ABSTRACT</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-accessandnesting-innera">
+<h2>pkg.AccessAndNesting$InnerA <span class="badge">1</span> <span class="loc" title="pkg/AccessAndNesting.java:9">📍 pkg/AccessAndNesting.java:9</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">CLASS_NOW_STATIC</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-accessandnesting-innerb">
+<h2>pkg.AccessAndNesting$InnerB <span class="badge">1</span> <span class="loc" title="pkg/AccessAndNesting.java:13">📍 pkg/AccessAndNesting.java:13</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">CLASS_NO_LONGER_STATIC</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-accessandnesting-publicnested">
+<h2>pkg.AccessAndNesting$PublicNested <span class="badge">2</span> <span class="loc" title="pkg/AccessAndNesting.java:5">📍 pkg/AccessAndNesting.java:5</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">TYPE_NOW_PROTECTED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.AccessAndNesting$PublicNested.&lt;init&gt;() <small class="muted">Constructor</small> <span class="loc" title="pkg/AccessAndNesting.java:-1">📍 pkg/AccessAndNesting.java:-1</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">EXECUTABLE_NOW_PROTECTED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-classnowabstract">
+<h2>pkg.ClassNowAbstract <span class="badge">2</span> <span class="loc" title="pkg/ClassNowAbstract.java:4">📍 pkg/ClassNowAbstract.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">CLASS_NOW_ABSTRACT</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.ClassNowAbstract.m() <small class="muted">Method</small> <span class="loc" title="pkg/ClassNowAbstract.java:5">📍 pkg/ClassNowAbstract.java:5</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">METHOD_NOW_ABSTRACT</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-classnowfinal">
+<h2>pkg.ClassNowFinal <span class="badge">2</span> <span class="loc" title="pkg/ClassNowFinal.java:4">📍 pkg/ClassNowFinal.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">CLASS_NOW_FINAL</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.ClassNowFinal.x() <small class="muted">Method</small> <span class="loc" title="pkg/ClassNowFinal.java:5">📍 pkg/ClassNowFinal.java:5</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">METHOD_NOW_FINAL</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-ctors">
+<h2>pkg.Ctors <span class="badge">2</span> <span class="loc" title="pkg/Ctors.java:3">📍 pkg/Ctors.java:3</span></h2>
+<div class="member">
+<h3>pkg.Ctors.&lt;init&gt;() <small class="muted">Constructor</small> <span class="loc" title="pkg/Ctors.java:5">📍 pkg/Ctors.java:5</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">EXECUTABLE_NOW_PROTECTED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.Ctors.&lt;init&gt;(int) <small class="muted">Constructor</small> <span class="loc" title="pkg/Ctors.java:8">📍 pkg/Ctors.java:8</span></h3>
+<ul class="changes">
+<li><span class="kind kind-deletion">EXECUTABLE_REMOVED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-fieldsclass">
+<h2>pkg.FieldsClass <span class="badge">7</span> <span class="loc" title="pkg/FieldsClass.java:3">📍 pkg/FieldsClass.java:3</span></h2>
+<div class="member">
+<h3>pkg.FieldsClass.a <small class="muted">Field</small> <span class="loc" title="pkg/FieldsClass.java:5">📍 pkg/FieldsClass.java:5</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FIELD_NOW_FINAL</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.FieldsClass.b <small class="muted">Field</small> <span class="loc" title="pkg/FieldsClass.java:8">📍 pkg/FieldsClass.java:8</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FIELD_NOW_STATIC</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.FieldsClass.c <small class="muted">Field</small> <span class="loc" title="pkg/FieldsClass.java:11">📍 pkg/FieldsClass.java:11</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FIELD_NO_LONGER_STATIC</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.FieldsClass.d <small class="muted">Field</small> <span class="loc" title="pkg/FieldsClass.java:14">📍 pkg/FieldsClass.java:14</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FIELD_TYPE_ERASURE_CHANGED</span> <span class="compat compat-binary">Binary</span> <span class="detail">— <code>java.lang.String</code> → <code>java.lang.CharSequence</code></span></li>
+<li><span class="kind kind-mutation">FIELD_TYPE_CHANGED_INCOMPATIBLE</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>java.lang.String</code> → <code>java.lang.CharSequence</code></span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.FieldsClass.e <small class="muted">Field</small> <span class="loc" title="pkg/FieldsClass.java:17">📍 pkg/FieldsClass.java:17</span></h3>
+<ul class="changes">
+<li><span class="kind kind-deletion">FIELD_REMOVED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.FieldsClass.f <small class="muted">Field</small> <span class="loc" title="pkg/FieldsClass.java:20">📍 pkg/FieldsClass.java:20</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FIELD_NOW_PROTECTED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-genericchanged">
+<h2>pkg.GenericChanged <span class="badge">1</span> <span class="loc" title="pkg/GenericChanged.java:4">📍 pkg/GenericChanged.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">FORMAL_TYPE_PARAMETER_CHANGED</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>T extends java.lang.Number</code> → <code>T extends java.lang.CharSequence</code></span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-genericremoved">
+<h2>pkg.GenericRemoved <span class="badge">1</span> <span class="loc" title="pkg/GenericRemoved.java:4">📍 pkg/GenericRemoved.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">FORMAL_TYPE_PARAMETER_REMOVED</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>T extends java.lang.Object</code></span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-hierarchy">
+<h2>pkg.Hierarchy <span class="badge">2</span> <span class="loc" title="pkg/Hierarchy.java:3">📍 pkg/Hierarchy.java:3</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">TYPE_SUPERTYPE_REMOVED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span> <span class="detail">— <code>java.lang.Runnable</code></span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.Hierarchy.run() <small class="muted">Method</small> <span class="loc" title="pkg/Hierarchy.java:4">📍 pkg/Hierarchy.java:4</span></h3>
+<ul class="changes">
+<li><span class="kind kind-deletion">EXECUTABLE_REMOVED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-methodtypeparameters">
+<h2>pkg.MethodTypeParameters <span class="badge">2</span> <span class="loc" title="pkg/MethodTypeParameters.java:3">📍 pkg/MethodTypeParameters.java:3</span></h2>
+<div class="member">
+<h3>pkg.MethodTypeParameters.changedTP(java.lang.String) <small class="muted">Method</small> <span class="loc" title="pkg/MethodTypeParameters.java:11">📍 pkg/MethodTypeParameters.java:11</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FORMAL_TYPE_PARAMETER_CHANGED</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>T extends java.lang.Number</code> → <code>T extends java.lang.CharSequence</code></span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.MethodTypeParameters.removedTP(java.lang.String) <small class="muted">Method</small> <span class="loc" title="pkg/MethodTypeParameters.java:5">📍 pkg/MethodTypeParameters.java:5</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">FORMAL_TYPE_PARAMETER_REMOVED</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>T extends java.lang.Object</code></span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-methodsclass">
+<h2>pkg.MethodsClass <span class="badge">11</span> <span class="loc" title="pkg/MethodsClass.java:5">📍 pkg/MethodsClass.java:5</span></h2>
+<div class="member">
+<h3>pkg.MethodsClass.m1() <small class="muted">Method</small> <span class="loc" title="pkg/MethodsClass.java:7">📍 pkg/MethodsClass.java:7</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">EXECUTABLE_NOW_PROTECTED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><span class="kind kind-mutation">METHOD_RETURN_TYPE_ERASURE_CHANGED</span> <span class="compat compat-binary">Binary</span> <span class="detail">— <code>int</code> → <code>long</code></span></li>
+<li><span class="kind kind-mutation">METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>int</code> → <code>long</code></span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.MethodsClass.m2() <small class="muted">Method</small> <span class="loc" title="pkg/MethodsClass.java:10">📍 pkg/MethodsClass.java:10</span></h3>
+<ul class="changes">
+<li><span class="kind kind-deletion">EXECUTABLE_REMOVED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.MethodsClass.m4() <small class="muted">Method</small> <span class="loc" title="pkg/MethodsClass.java:16">📍 pkg/MethodsClass.java:16</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">METHOD_NO_LONGER_STATIC</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.MethodsClass.m5() <small class="muted">Method</small> <span class="loc" title="pkg/MethodsClass.java:19">📍 pkg/MethodsClass.java:19</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">METHOD_NOW_FINAL</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span></li>
+<li><span class="kind kind-mutation">EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>java.io.IOException</code></span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.MethodsClass.m6() <small class="muted">Method</small> <span class="loc" title="pkg/MethodsClass.java:22">📍 pkg/MethodsClass.java:22</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">METHOD_NOW_STATIC</span> <span class="compat compat-binary">Binary</span></li>
+<li><span class="kind kind-mutation">METHOD_OVERRIDABLE_NOW_STATIC</span> <span class="compat compat-source">Source</span></li>
+<li><span class="kind kind-mutation">EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>java.io.IOException</code></span></li>
+</ul>
+</div>
+<div class="member">
+<h3>pkg.MethodsClass.params(java.util.List&lt;java.lang.String&gt;) <small class="muted">Method</small> <span class="loc" title="pkg/MethodsClass.java:25">📍 pkg/MethodsClass.java:25</span></h3>
+<ul class="changes">
+<li><span class="kind kind-mutation">EXECUTABLE_PARAMETER_GENERICS_CHANGED</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>java.util.List&lt;java.lang.String&gt;</code> → <code>java.util.List&lt;java.lang.Number&gt;</code></span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-myproblem">
+<h2>pkg.MyProblem <span class="badge">2</span> <span class="loc" title="pkg/MyProblem.java:4">📍 pkg/MyProblem.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">TYPE_SUPERTYPE_REMOVED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span> <span class="detail">— <code>java.lang.RuntimeException</code></span></li>
+<li><span class="kind kind-mutation">CLASS_NOW_CHECKED_EXCEPTION</span> <span class="compat compat-source">Source</span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-simplei">
+<h2>pkg.SimpleI <span class="badge">1</span> <span class="loc" title="pkg/SimpleI.java:4">📍 pkg/SimpleI.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-addition">TYPE_NEW_ABSTRACT_METHOD</span> <span class="compat compat-source">Source</span> <span class="detail">— <code>b()</code></span></li>
+</ul>
+</div>
+</article>
+<article class="card type" id="pkg-toberemoved">
+<h2>pkg.ToBeRemoved <span class="badge">1</span> <span class="loc" title="pkg/ToBeRemoved.java:4">📍 pkg/ToBeRemoved.java:4</span></h2>
+<div class="danger-banner">This type was removed in the new version.</div>
+</article>
+<article class="card type" id="pkg-typekind">
+<h2>pkg.TypeKind <span class="badge">1</span> <span class="loc" title="pkg/TypeKind.java:4">📍 pkg/TypeKind.java:4</span></h2>
+<div class="type-level">
+<ul class="changes">
+<li><span class="kind kind-mutation">TYPE_KIND_CHANGED</span> <span class="compat compat-source">Source</span> <span class="compat compat-binary">Binary</span> <span class="detail">— <code>InterfaceDecl</code> → <code>ClassDecl</code></span></li>
+</ul>
+</div>
+</article>
+</section>
+</main>
+<footer class="footer">Made with <span class="heart">❤</span> by Roseau</footer>
+<script>(function(){function setIcon(){try{var t=document.documentElement.getAttribute('data-theme')||'light';
+var b=document.getElementById('theme-toggle');if(b){b.textContent=t==='dark'?'🌙':'☀️';}}catch(e){}};setIcon();
+var btn=document.getElementById('theme-toggle');if(btn){btn.addEventListener('click',function(){try{var cur=
+document.documentElement.getAttribute('data-theme')||'dark';var next=cur==='dark'?'light':'dark';document.
+documentElement.setAttribute('data-theme',next);localStorage.setItem('roseau_theme',next);setIcon();}catch(e){}});
+}})();</script></body>
+</html>
