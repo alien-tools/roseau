@@ -241,7 +241,7 @@ class PopularRepositoriesTestIT {
 
 			assertThat(lastApi.getLibraryTypes())
 				.as("Incremental types at HEAD should match full rebuild")
-				.isEqualTo(fullApi.getLibraryTypes();
+				.isEqualTo(fullApi.getLibraryTypes());
 
 			assertThat(lastApi)
 				.as("Incremental API at HEAD should match full rebuild")

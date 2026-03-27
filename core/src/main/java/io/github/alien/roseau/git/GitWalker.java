@@ -18,9 +18,11 @@ import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
+import org.eclipse.jgit.api.errors.JGitInternalException;
 import org.eclipse.jgit.diff.DiffEntry;
 import org.eclipse.jgit.diff.DiffFormatter;
 import org.eclipse.jgit.diff.Edit;
+import org.eclipse.jgit.errors.MissingObjectException;
 import org.eclipse.jgit.lib.Constants;
 import org.eclipse.jgit.lib.ObjectId;
 import org.eclipse.jgit.lib.ObjectReader;
@@ -33,6 +35,7 @@ import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.time.Instant;
@@ -111,7 +114,7 @@ public final class GitWalker {
 					continue;
 				}
 
-				long checkoutTime = checkoutCommit(git, revCommit);
+				long checkoutTime = checkoutCommit(git, workTree, revCommit);
 				Optional<Path> sourceRoot = resolveSourceRoot();
 				if (sourceRoot.isEmpty()) {
 					LOGGER.info("Skipping commit {} (no configured source root exists)", info.sha());
@@ -162,10 +165,19 @@ public final class GitWalker {
 		return new CommitAnalysis(info, Optional.empty(), Optional.empty(), false, 0, 0, 0, List.of());
 	}
 
-	private static long checkoutCommit(Git git, RevCommit commit) throws Exception {
+	private static long checkoutCommit(Git git, Path workTree, RevCommit commit) throws Exception {
 		Stopwatch sw = Stopwatch.createStarted();
 		makePristine(git);
-		git.checkout().setName(commit.getName()).setForced(true).call();
+		try {
+			git.checkout().setName(commit.getName()).setForced(true).call();
+		} catch (JGitInternalException e) {
+			if (!isMissingObjectCheckoutFailure(e)) {
+				throw e;
+			}
+			LOGGER.warn("JGit checkout failed for commit {}; falling back to native git", commit.getName(), e);
+			makePristine(workTree);
+			runGit(workTree, "checkout", "--force", commit.getName());
+		}
 		return sw.elapsed().toMillis();
 	}
 
@@ -382,6 +394,18 @@ public final class GitWalker {
 		return commit.getParentCount() > 0 ? commit.getParent(0).getName() : "";
 	}
 
+	private static boolean isMissingObjectCheckoutFailure(JGitInternalException e) {
+		return e.getCause() instanceof MissingObjectException;
+	}
+
+	static void makePristine(Path workTree) throws Exception {
+		if (workTree == null) {
+			throw new IOException("Cannot resolve repository work tree");
+		}
+		runGit(workTree, "reset", "--hard");
+		runGit(workTree, "clean", "-fdx");
+	}
+
 	static void makePristine(Git git) throws Exception {
 		git.reset().setMode(ResetCommand.ResetType.HARD).call();
 		git.clean().setCleanDirectories(true).setIgnore(false).call();
@@ -412,6 +436,28 @@ public final class GitWalker {
 			git.checkout().setName(branchName).setForced(true).call();
 		}
 		git.reset().setMode(ResetCommand.ResetType.HARD).setRef("origin/" + branchName).call();
+	}
+
+	private static void runGit(Path workTree, String... args) throws Exception {
+		List<String> command = new ArrayList<>(args.length + 4);
+		command.add("git");
+		command.add("-c");
+		command.add("submodule.recurse=false");
+		command.add("-C");
+		command.add(workTree.toString());
+		Collections.addAll(command, args);
+		runCommand(command);
+	}
+
+	private static void runCommand(List<String> command) throws Exception {
+		Process process = new ProcessBuilder(command)
+			.redirectErrorStream(true)
+			.start();
+		String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+		int exit = process.waitFor();
+		if (exit != 0) {
+			throw new IOException("Command failed (%d): %s%n%s".formatted(exit, String.join(" ", command), output));
+		}
 	}
 
 	private static String resolveRemoteBranchName(Repository repo) throws Exception {
