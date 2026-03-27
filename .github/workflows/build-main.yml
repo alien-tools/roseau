@@ -37,7 +37,7 @@ jobs:
       - name: Verify build
         run: ./mvnw --batch-mode verify
       - name: Build tests report
-        uses: dorny/test-reporter@v2
+        uses: dorny/test-reporter@v3
         if: always()
         with:
           name: Maven Tests
