@@ -21,7 +21,7 @@
 
     <properties>
         <java.version>25</java.version>
-        <jreleaser.version>1.23.0</jreleaser.version>
+        <jreleaser.version>1.24.0</jreleaser.version>
         <maven.compiler.source>${java.version}</maven.compiler.source>
         <maven.compiler.target>${java.version}</maven.compiler.target>
         <maven.compiler.release>${java.version}</maven.compiler.release>
