@@ -558,7 +558,8 @@ public final class RoseauMojo extends AbstractMojo {
 				return Optional.of(resolved.toPath());
 			}
 		} catch (ArtifactResolutionException e) {
-			getLog().warn(e);
+			getLog().warn("Could not resolve baseline artifact " + toCoordinates(baselineDependency) + ": "
+				+ e.getMessage());
 		}
 
 		return Optional.empty();
