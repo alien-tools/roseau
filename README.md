@@ -41,7 +41,7 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ cd roseau && ./mvnw package -DskipTests
-$ alias roseau='java -jar $PWD/cli/target/roseau-<version>.jar --help' 
+$ alias roseau='java -jar $PWD/cli/target/roseau-<version>.jar'
 ```
 
 Identify breaking changes between two versions, passed as local JARs or source trees, or fetched remotely:
@@ -68,11 +68,13 @@ Roseau supports different modes, output formats, and options:
 $ roseau --help
 Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
               [--api-json=<path>] [--classpath=<path>[,<path>...]]
-              [--config=<path>] [--ignored=<path>] [--pom=<path>] [--v1=<path>]
-              [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
-              [--v2=<path>] [--v2-classpath=<path>[,<path>...]]
-              [--v2-pom=<path>] [--report=<format=path>]... (--api | --diff)
-      --api               Serialize the API model of --v1; see --api-json
+              [--config=<path>] [--ignored=<path>] [--pom=<path>]
+              [--v1=<path|coordinates>] [--v1-classpath=<path>[,<path>...]]
+              [--v1-pom=<path>] [--v2=<path|coordinates>] [--v2-classpath=<path>
+              [,<path>...]] [--v2-pom=<path>] [--report=<format=path>]...
+              (--api | --diff)
+      --api               Serialize the API model of --v1 as JSON; prints to
+                            stdout if --api-json is not provided
       --diff              Compute breaking changes between versions --v1 and --v2
       --v1=<path|coordinates> First version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:1.0.0)
       --v2=<path|coordinates> Second version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:2.0.0)
