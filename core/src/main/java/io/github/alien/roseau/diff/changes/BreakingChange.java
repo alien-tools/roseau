@@ -15,6 +15,7 @@ import io.github.alien.roseau.api.model.TypeMemberDecl;
  * @param impactedSymbol The API symbol impacted by the breaking change
  * @param newSymbol      If applicable, the corresponding symbol in the new version
  * @param details        Additional details about the breaking change
+ * @param location       The source location to report for the breaking change
  * @see BreakingChangeKind
  */
 public record BreakingChange(

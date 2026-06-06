@@ -44,7 +44,7 @@ class RoseauCLITest {
 	void version_uses_build_version() {
 		var exitCode = cmd.execute("--version");
 
-		assertThat(out.toString()).contains("Roseau 0.6.0-SNAPSHOT");
+		assertThat(out.toString()).contains("Roseau " + RoseauCLI.VersionProvider.resolveVersion());
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
