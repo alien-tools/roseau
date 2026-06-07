@@ -10,6 +10,8 @@ import com.soebes.itf.jupiter.extension.SystemProperty;
 import com.soebes.itf.jupiter.maven.MavenExecutionResult;
 import org.junit.jupiter.api.Nested;
 
+import java.nio.file.Path;
+
 import static com.soebes.itf.extension.assertj.MavenITAssertions.assertThat;
 
 @MavenJupiterExtension
@@ -121,10 +123,20 @@ class RoseauPluginIT {
 		@MavenOption(MavenCLIOptions.VERBOSE)
 		@MavenTest
 		void only_compile_dependencies_are_included(MavenExecutionResult result) {
+			var slf4jApi = Path.of("org", "slf4j", "slf4j-api", "2.0.17", "slf4j-api-2.0.17.jar").toString();
+			var junitApi = Path.of("org", "junit", "jupiter", "junit-jupiter-api", "6.0.2",
+				"junit-jupiter-api-6.0.2.jar").toString();
+			var commonsLang = Path.of("org", "apache", "commons", "commons-lang3", "3.20.0",
+				"commons-lang3-3.20.0.jar").toString();
+
 			assertThat(result).isSuccessful();
 			assertThat(result).out().debug()
-				.anyMatch(m -> m.contains("v1 classpath is:") && m.contains("org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"))
-				.anyMatch(m -> m.contains("v2 classpath is:") && m.contains("org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"));
+				.anyMatch(m -> m.contains("v1 classpath is:") && m.contains(slf4jApi))
+				.anyMatch(m -> m.contains("v2 classpath is:") && m.contains(slf4jApi))
+				.noneMatch(m -> m.contains("v1 classpath is:") && m.contains(junitApi))
+				.noneMatch(m -> m.contains("v2 classpath is:") && m.contains(junitApi))
+				.noneMatch(m -> m.contains("v1 classpath is:") && m.contains(commonsLang))
+				.noneMatch(m -> m.contains("v2 classpath is:") && m.contains(commonsLang));
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-classpath-config.yaml")

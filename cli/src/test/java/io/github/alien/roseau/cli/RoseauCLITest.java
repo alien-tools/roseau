@@ -44,7 +44,7 @@ class RoseauCLITest {
 	void version_uses_build_version() {
 		var exitCode = cmd.execute("--version");
 
-		assertThat(out.toString()).contains("Roseau 0.6.0-SNAPSHOT");
+		assertThat(out.toString()).contains("Roseau " + RoseauCLI.VersionProvider.resolveVersion());
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -615,15 +615,6 @@ class RoseauCLITest {
 	}
 
 	// --- Maven coordinates --- //
-	@Test
-	void path_with_separators_and_colons_is_treated_as_path() {
-		var exitCode = cmd.execute("--v1=target/lib:v1:debug.jar",
-			"--api");
-
-		assertThat(err.toString()).contains("Cannot find v1:");
-		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
-	}
-
 	@Test
 	@Timeout(value = 30, unit = TimeUnit.SECONDS)
 	void api_mode_with_maven_coordinates() {

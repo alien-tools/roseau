@@ -22,7 +22,8 @@ record ArtifactCoordinates(
 			case 4 -> new ArtifactCoordinates(parts[0], parts[1], parts[3], parts[2], null);
 			case 5 -> new ArtifactCoordinates(parts[0], parts[1], parts[4], parts[2], parts[3]);
 			default -> throw new IllegalArgumentException(
-				"Invalid Maven coordinates '%s': expected groupId:artifactId:version".formatted(coordinates));
+				"Invalid Maven coordinates '%s': expected groupId:artifactId:version[:extension[:classifier]]"
+					.formatted(coordinates));
 		};
 	}
 }
