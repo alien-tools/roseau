@@ -47,6 +47,7 @@ nav:
       - YAML configuration: guides/config.md
       - Reports: guides/reports.md
       - Maven plug-in: guides/maven-plugin.md
+      - Gradle: guides/gradle.md
   - Concepts:
       - API surface: api-surface.md
       - Kinds of breaking changes: breaking-change-kinds.md

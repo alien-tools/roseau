@@ -15,7 +15,7 @@ The official user documentation is available at [https://alien-tools.github.io/r
   - Supports Java up to version 25 (including records, sealed types, modules, etc.)
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
   - Highly configurable, CLI-first, and scriptable
-  - Maven plug-in
+  - Maven plug-in, integration with Gradle
 
 Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
 Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
@@ -144,6 +144,53 @@ The minimal setup is to bind the `check` goal and provide a baseline:
     <failOnIncompatibility>true</failOnIncompatibility>
   </configuration>
 </plugin>
+```
+
+### In a Gradle build
+
+Gradle builds can run Roseau through the published CLI artifact. A minimal Kotlin DSL setup is:
+
+```kotlin
+val roseau by configurations.creating
+
+dependencies {
+  roseau("io.github.alien-tools:roseau-cli:0.6.0")
+}
+
+tasks.register<JavaExec>("roseauCheck") {
+  group = "verification"
+  description = "Checks API breaking changes with Roseau"
+
+  dependsOn(tasks.named("jar"))
+
+  classpath = roseau
+  mainClass.set("io.github.alien.roseau.cli.RoseauCLI")
+  javaLauncher.set(
+    javaToolchains.launcherFor {
+      languageVersion.set(JavaLanguageVersion.of(25))
+    },
+  )
+
+  doFirst {
+    val currentJar = tasks.named<Jar>("jar").get().archiveFile.get().asFile
+    val reportsDir = layout.buildDirectory.dir("reports/roseau").get().asFile
+
+    args(
+      "--diff",
+      "--v1", "com.example:my-library:1.2.3",
+      "--v2", currentJar.absolutePath,
+      "--classpath", sourceSets.main.get().compileClasspath.asPath,
+      "--plain",
+      "--fail-on-bc",
+      "--report", "HTML=${reportsDir.resolve("report.html")}",
+      "--report", "CSV=${reportsDir.resolve("report.csv")}",
+    )
+  }
+}
+
+tasks.named("check") {
+  dependsOn("roseauCheck")
+}
 ```
 
 ## Configuration
