@@ -288,10 +288,6 @@ public final class RoseauCLI implements Callable<Integer> {
 		List<Path> classpath = library.getClasspath();
 		console.printlnVerbose("%d classpath entries for %s (%d ms)".formatted(classpath.size(), library.getLocation(),
 			sw.elapsed().toMillis()));
-
-		if (classpath.isEmpty()) {
-			console.printlnErr("Warning: no classpath provided, results may be inaccurate");
-		}
 	}
 
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {

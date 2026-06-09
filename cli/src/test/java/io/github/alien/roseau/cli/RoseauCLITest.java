@@ -250,7 +250,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(err.toString()).contains("Warning: no classpath provided", "results may be inaccurate");
+		assertThat(err.toString()).doesNotContain("Warning: no classpath provided", "results may be inaccurate");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
