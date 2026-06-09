@@ -28,16 +28,16 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 
 		BreakingChangeDetails details = new BreakingChangeDetails.FieldTypeChanged(oldField.getType(), newField.getType());
 
-		ITypeReference oldErased = ctx.v1().erasure().getErasedType(ctx.oldType(), oldField.getType());
-		ITypeReference newErased = ctx.v2().erasure().getErasedType(ctx.newType(), newField.getType());
+		ITypeReference oldErased = ctx.v1().analyzer().erasure().getErasedType(ctx.oldType(), oldField.getType());
+		ITypeReference newErased = ctx.v2().analyzer().erasure().getErasedType(ctx.newType(), newField.getType());
 		if (!oldErased.equals(newErased) && !oldField.isCompileTimeConstant()) {
 			ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED,
 				ctx.oldType(), oldField, newField, details);
 		}
 
-		boolean readCompatible = ctx.v2().isSourceCompatibleExpression(ctx.newType(), normalizedOld, normalizedNew);
+		boolean readCompatible = ctx.v2().analyzer().isSourceCompatibleExpression(ctx.newType(), normalizedOld, normalizedNew);
 		boolean writeCompatible = oldField.isFinal() ||
-			ctx.v2().isAssignable(ctx.newType(), normalizedOld, normalizedNew);
+			ctx.v2().analyzer().isAssignable(ctx.newType(), normalizedOld, normalizedNew);
 
 		if (!readCompatible || !writeCompatible) {
 			ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE,

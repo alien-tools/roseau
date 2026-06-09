@@ -63,11 +63,11 @@ class IncrementalJdtTypesExtractorTest {
 			.singleElement()
 			.isSameAs(c2.getImplementedInterfaces().iterator().next());
 
-		assertThat(api1.resolver().resolve(c1.getImplementedInterfaces().iterator().next())).containsSame(i1);
-		assertThat(api2.resolver().resolve(c2.getImplementedInterfaces().iterator().next())).containsSame(i2);
+		assertThat(api1.analyzer().resolver().resolve(c1.getImplementedInterfaces().iterator().next())).containsSame(i1);
+		assertThat(api2.analyzer().resolver().resolve(c2.getImplementedInterfaces().iterator().next())).containsSame(i2);
 
-		assertThat(api1.findMethod(c1, "m()")).isEmpty();
-		assertThat(api2.findMethod(c2, "m()")).isPresent();
+		assertThat(api1.analyzer().findMethod(c1, "m()")).isEmpty();
+		assertThat(api2.analyzer().findMethod(c2, "m()")).isPresent();
 	}
 
 	@Test

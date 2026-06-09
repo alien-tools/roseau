@@ -19,17 +19,17 @@ public class DefaultSymbolMatcher implements SymbolMatcher {
 
 	@Override
 	public Optional<FieldDecl> matchField(API api, TypeDecl type, FieldDecl field) {
-		return api.findField(type, field.getSimpleName());
+		return api.analyzer().findField(type, field.getSimpleName());
 	}
 
 	@Override
 	public Optional<MethodDecl> matchMethod(API api, TypeDecl type, MethodDecl method) {
-		return api.findMethod(type, api.getErasure(method));
+		return api.analyzer().findMethod(type, api.analyzer().getErasure(method));
 	}
 
 	@Override
 	public Optional<ConstructorDecl> matchConstructor(API api, ClassDecl cls, ConstructorDecl cons) {
-		return api.findConstructor(cls, api.getErasure(cons));
+		return api.analyzer().findConstructor(cls, api.analyzer().getErasure(cons));
 	}
 
 	@Override

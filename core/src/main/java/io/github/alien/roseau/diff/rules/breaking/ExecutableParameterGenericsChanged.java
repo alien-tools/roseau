@@ -36,7 +36,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 					ctx.oldType(), ctx.newType(), oldExecutable, newExecutable);
 				TypeReference<?> normalizedPt1 = (TypeReference<?>) normalizer.normalizeOld(pt1);
 
-				boolean isFinalExecutable = ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);
+				boolean isFinalExecutable = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
 
 				// Can be overridden = invariant: only rename old type params (do NOT erase new type params, since
 				// generizing a type argument like List<Object> → List<T> IS a source break due to name clashes
@@ -49,7 +49,7 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 				// Can't be overridden = variance: also erase newly added type params
 				if (isFinalExecutable) {
 					TypeReference<?> normalizedPt2 = (TypeReference<?>) normalizer.normalizeNew(pt2);
-					if (!ctx.v2().isSubtypeOf(newExecutable, normalizedPt1, normalizedPt2)) {
+					if (!ctx.v2().analyzer().isSubtypeOf(newExecutable, normalizedPt1, normalizedPt2)) {
 						ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED,
 							ctx.oldType(), oldExecutable, newExecutable, details);
 					}

@@ -16,7 +16,7 @@ public final class AddParameterConstructorStrategy extends AbstractCtrStrategy {
 		super(ctr, queue, "AddParameter%s%sToConstructor%sIn%s".formatted(
 				StringUtils.getPrettyQualifiedName(type),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(ctr)),
 				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
 			api
 		);

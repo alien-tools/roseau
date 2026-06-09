@@ -13,7 +13,7 @@ public final class ChangeTypeMethodStrategy extends AbstractMtdStrategy {
 
 	public ChangeTypeMethodStrategy(ITypeReference type, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "ChangeMethod%sIn%sTypeTo%s".formatted(
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(mtd)),
 				StringUtils.getPrettyQualifiedName(mtd.getContainingType()),
 				StringUtils.getPrettyQualifiedName(type)),
 			api

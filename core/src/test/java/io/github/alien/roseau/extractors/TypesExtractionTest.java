@@ -29,7 +29,7 @@ class TypesExtractionTest {
 
 		var a = assertClass(api, "pkg.A");
 
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isPublic());
 		assertThat(a.getQualifiedName()).isEqualTo("pkg.A");
 		assertThat(a.getSimpleName()).isEqualTo("A");
@@ -42,7 +42,7 @@ class TypesExtractionTest {
 
 		var a = assertClass(api, "A");
 
-		assertFalse(api.isExported(a));
+		assertFalse(api.analyzer().isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes()).isEmpty();
 		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
@@ -56,7 +56,7 @@ class TypesExtractionTest {
 
 		var a = assertClass(api, "A");
 
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isPublic());
 		assertThat(api.getExportedTypes()).hasSize(1);
 		assertThat(a.getSuperClass()).isEqualTo(TypeReference.OBJECT);
@@ -69,7 +69,7 @@ class TypesExtractionTest {
 
 		var a = assertInterface(api, "A");
 
-		assertFalse(api.isExported(a));
+		assertFalse(api.analyzer().isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes()).isEmpty();
 		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
@@ -82,7 +82,7 @@ class TypesExtractionTest {
 
 		var a = assertInterface(api, "A");
 
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isPublic());
 		assertThat(api.getExportedTypes()).hasSize(1);
 	}
@@ -94,7 +94,7 @@ class TypesExtractionTest {
 
 		var a = assertRecord(api, "A");
 
-		assertFalse(api.isExported(a));
+		assertFalse(api.analyzer().isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes()).isEmpty();
 		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
@@ -108,7 +108,7 @@ class TypesExtractionTest {
 
 		var a = assertRecord(api, "A");
 
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isPublic());
 		assertThat(api.getExportedTypes()).hasSize(1);
 		assertThat(a.getSuperClass()).isEqualTo(TypeReference.RECORD);
@@ -121,7 +121,7 @@ class TypesExtractionTest {
 
 		var a = assertEnum(api, "A");
 
-		assertFalse(api.isExported(a));
+		assertFalse(api.analyzer().isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getExportedTypes()).isEmpty();
 		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
@@ -135,7 +135,7 @@ class TypesExtractionTest {
 
 		var a = assertEnum(api, "A");
 
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isPublic());
 		assertThat(api.getExportedTypes()).hasSize(1);
 		assertThat(a.getSuperClass()).isEqualTo(TypeReference.ENUM);
@@ -148,7 +148,7 @@ class TypesExtractionTest {
 
 		var a = assertAnnotation(api, "A");
 
-		assertFalse(api.isExported(a));
+		assertFalse(api.analyzer().isExported(a));
 		assertTrue(a.isPackagePrivate());
 		assertThat(api.getLibraryTypes().getAllTypes()).hasSize(1);
 		assertThat(api.getExportedTypes()).isEmpty();
@@ -161,7 +161,7 @@ class TypesExtractionTest {
 
 		var a = assertAnnotation(api, "A");
 
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isPublic());
 		assertThat(api.getExportedTypes()).hasSize(1);
 	}
@@ -183,15 +183,15 @@ class TypesExtractionTest {
 		var e = assertEnum(api, "E");
 
 		assertThat(i.getDeclaredMethods()).isEmpty();
-		assertThat(api.getExportedMethods(i)).hasSize(11); // java.lang.Object's methods
+		assertThat(api.analyzer().getExportedMethods(i)).hasSize(11); // java.lang.Object's methods
 		assertThat(c.getDeclaredMethods()).isEmpty();
-		assertThat(api.getExportedMethods(c)).hasSize(11); // java.lang.Object's methods
+		assertThat(api.analyzer().getExportedMethods(c)).hasSize(11); // java.lang.Object's methods
 		assertThat(r.getDeclaredMethods()).isEmpty();
-		assertThat(api.getExportedMethods(r)).hasSize(9); // java.lang.Record's methods
+		assertThat(api.analyzer().getExportedMethods(r)).hasSize(9); // java.lang.Record's methods
 		assertThat(a.getDeclaredMethods()).isEmpty();
-		assertThat(api.getExportedMethods(a)).hasSize(11); // java.lang.Object's methods
+		assertThat(api.analyzer().getExportedMethods(a)).hasSize(11); // java.lang.Object's methods
 		assertThat(e.getDeclaredMethods()).isEmpty();
-		assertThat(api.getExportedMethods(e)).hasSize(16); // java.lang.Enum's methods
+		assertThat(api.analyzer().getExportedMethods(e)).hasSize(16); // java.lang.Enum's methods
 	}
 
 	@ParameterizedTest
@@ -282,31 +282,31 @@ class TypesExtractionTest {
 		var a = assertClass(api, "A");
 		assertFalse(a.isFinal());
 		assertFalse(a.isSealed());
-		assertFalse(api.isEffectivelyFinal(a));
+		assertFalse(api.analyzer().isEffectivelyFinal(a));
 
 		var b = assertClass(api, "B");
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
-		assertTrue(api.isEffectivelyFinal(b));
+		assertTrue(api.analyzer().isEffectivelyFinal(b));
 		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("C", "D", "E");
 
 		var c = assertClass(api, "C");
 		assertFalse(c.isFinal());
 		assertTrue(c.isSealed());
-		assertTrue(api.isEffectivelyFinal(c));
+		assertTrue(api.analyzer().isEffectivelyFinal(c));
 		assertThat(c.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("F");
 
 		var d = assertClass(api, "D");
 		assertTrue(d.isFinal());
 		assertFalse(d.isSealed());
-		assertTrue(api.isEffectivelyFinal(d));
+		assertTrue(api.analyzer().isEffectivelyFinal(d));
 
 		var e = assertClass(api, "E");
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
-		assertFalse(api.isEffectivelyFinal(e));
+		assertFalse(api.analyzer().isEffectivelyFinal(e));
 		// FIXME: No support for NON_SEALED in ASM
 		if (builder != ApiBuilderType.ASM) {
 			assertTrue(e.isNonSealed());
@@ -315,7 +315,7 @@ class TypesExtractionTest {
 		var f = assertClass(api, "F");
 		assertTrue(f.isFinal());
 		assertFalse(f.isSealed());
-		assertTrue(api.isEffectivelyFinal(f));
+		assertTrue(api.analyzer().isEffectivelyFinal(f));
 	}
 
 	@ParameterizedTest
@@ -331,19 +331,19 @@ class TypesExtractionTest {
 		var a = assertInterface(api, "A");
 		assertFalse(a.isFinal());
 		assertFalse(a.isSealed());
-		assertFalse(api.isEffectivelyFinal(a));
+		assertFalse(api.analyzer().isEffectivelyFinal(a));
 
 		var b = assertInterface(api, "B");
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
-		assertTrue(api.isEffectivelyFinal(b));
+		assertTrue(api.analyzer().isEffectivelyFinal(b));
 		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("C", "D");
 
 		var c = assertInterface(api, "C");
 		assertFalse(c.isFinal());
 		assertTrue(c.isSealed());
-		assertTrue(api.isEffectivelyFinal(c));
+		assertTrue(api.analyzer().isEffectivelyFinal(c));
 		assertThat(c.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("E");
 
@@ -354,12 +354,12 @@ class TypesExtractionTest {
 		if (builder != ApiBuilderType.ASM) {
 			assertTrue(d.isNonSealed());
 		}
-		assertFalse(api.isEffectivelyFinal(d));
+		assertFalse(api.analyzer().isEffectivelyFinal(d));
 
 		var e = assertClass(api, "E");
 		assertTrue(e.isFinal());
 		assertFalse(e.isSealed());
-		assertTrue(api.isEffectivelyFinal(e));
+		assertTrue(api.analyzer().isEffectivelyFinal(e));
 	}
 
 	@ParameterizedTest
@@ -374,7 +374,7 @@ class TypesExtractionTest {
 		var i = assertInterface(api, "I");
 		assertFalse(i.isFinal());
 		assertTrue(i.isSealed());
-		assertTrue(api.isEffectivelyFinal(i));
+		assertTrue(api.analyzer().isEffectivelyFinal(i));
 		assertThat(i.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("I$R1", "I$R2");
 	}
@@ -390,24 +390,24 @@ class TypesExtractionTest {
 			class E extends C {}""");
 
 		var a = assertClass(api, "A");
-		assertFalse(api.isCheckedException(a));
-		assertFalse(api.isUncheckedException(a));
+		assertFalse(api.analyzer().isCheckedException(a));
+		assertFalse(api.analyzer().isUncheckedException(a));
 
 		var b = assertClass(api, "B");
-		assertTrue(api.isCheckedException(b));
-		assertFalse(api.isUncheckedException(b));
+		assertTrue(api.analyzer().isCheckedException(b));
+		assertFalse(api.analyzer().isUncheckedException(b));
 
 		var c = assertClass(api, "C");
-		assertFalse(api.isCheckedException(c));
-		assertTrue(api.isUncheckedException(c));
+		assertFalse(api.analyzer().isCheckedException(c));
+		assertTrue(api.analyzer().isUncheckedException(c));
 
 		var d = assertClass(api, "D");
-		assertTrue(api.isCheckedException(d));
-		assertFalse(api.isUncheckedException(d));
+		assertTrue(api.analyzer().isCheckedException(d));
+		assertFalse(api.analyzer().isUncheckedException(d));
 
 		var e = assertClass(api, "E");
-		assertFalse(api.isCheckedException(e));
-		assertTrue(api.isUncheckedException(e));
+		assertFalse(api.analyzer().isCheckedException(e));
+		assertTrue(api.analyzer().isUncheckedException(e));
 	}
 
 	@ParameterizedTest

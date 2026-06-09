@@ -14,7 +14,7 @@ public final class AddModifierMethodStrategy extends AbstractMtdStrategy {
 	public AddModifierMethodStrategy(Modifier modifier, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "AddModifier%sToMethod%sIn%s".formatted(
 				StringUtils.splitSpecialCharsAndCapitalize(modifier.name()),
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(mtd)),
 				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
 			api
 		);

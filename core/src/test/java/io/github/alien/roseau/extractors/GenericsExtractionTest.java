@@ -248,8 +248,8 @@ class GenericsExtractionTest {
 		var mvRef = get.getType();
 
 		if (mvRef instanceof TypeParameterReference tpr) {
-			assertThat(api.resolveTypeParameter(get, tpr)).hasValue(v);
-			assertThat(api.resolveTypeParameterBound(get, tpr)).isEqualTo(new TypeReference<>("java.lang.Number"));
+			assertThat(api.analyzer().resolveTypeParameter(get, tpr)).hasValue(v);
+			assertThat(api.analyzer().resolveTypeParameterBound(get, tpr)).isEqualTo(new TypeReference<>("java.lang.Number"));
 		} else fail();
 	}
 

@@ -14,7 +14,7 @@ public final class AddExceptionMethodStrategy extends AbstractMtdStrategy {
 	public AddExceptionMethodStrategy(ITypeReference exception, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "AddException%sToMethod%sIn%s".formatted(
 				StringUtils.getPrettyQualifiedName(exception),
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(mtd)),
 				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
 			api
 		);

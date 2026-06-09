@@ -16,7 +16,7 @@ public final class AddParameterMethodStrategy extends AbstractMtdStrategy {
 		super(mtd, queue, "AddParameter%s%sToMethod%sIn%s".formatted(
 				StringUtils.getPrettyQualifiedName(type),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(mtd)),
 				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
 			api
 		);

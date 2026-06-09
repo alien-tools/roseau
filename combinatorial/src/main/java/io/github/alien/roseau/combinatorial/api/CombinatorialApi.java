@@ -424,7 +424,7 @@ public final class CombinatorialApi {
 					var currentApi = getAPI();
 					var methodsToGenerate = new HashMap<String, MethodBuilder>();
 					if (!clsBuilder.modifiers.contains(ABSTRACT) && superCls.isAbstract()) {
-						currentApi.getAllMethodsToImplement(superCls)
+						currentApi.analyzer().getAllMethodsToImplement(superCls)
 							.forEach(m -> methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder)));
 					}
 					if (isHidingAndOverriding) {
@@ -443,7 +443,7 @@ public final class CombinatorialApi {
 
 						clsBuilder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 						if (!clsBuilder.modifiers.contains(ABSTRACT)) {
-							currentApi.getAllMethodsToImplement(implementingIntf)
+							currentApi.analyzer().getAllMethodsToImplement(implementingIntf)
 								.forEach(m -> {
 									if (!methodsToGenerate.containsKey(m.getSignature())) {
 										methodsToGenerate.put(m.getSignature(), generateMethodForTypeDeclBuilder(m, clsBuilder));
@@ -571,7 +571,7 @@ public final class CombinatorialApi {
 			var currentApi = getAPI();
 			var currentConstructor = constructorBuilder.make();
 			var constructorsWithSameErasure = classBuilder.constructors.stream()
-				.filter(c -> currentApi.haveSameErasure(c.make(), currentConstructor))
+				.filter(c -> currentApi.analyzer().haveSameErasure(c.make(), currentConstructor))
 				.toList();
 
 			if (!constructorsWithSameErasure.isEmpty()) {
@@ -592,7 +592,7 @@ public final class CombinatorialApi {
 
 			builder.implementedInterfaces.add(typeReferenceFactory.createTypeReference(implementingIntf.getQualifiedName()));
 			if (!builder.modifiers.contains(ABSTRACT)) {
-				getAPI().getAllMethodsToImplement(implementingIntf)
+				getAPI().analyzer().getAllMethodsToImplement(implementingIntf)
 					.forEach(m -> builder.methods.add(generateMethodForTypeDeclBuilder(m, builder)));
 			}
 

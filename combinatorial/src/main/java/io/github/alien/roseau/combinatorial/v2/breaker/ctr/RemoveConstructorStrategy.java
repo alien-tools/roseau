@@ -9,7 +9,7 @@ import io.github.alien.roseau.combinatorial.v2.queue.NewApiQueue;
 public final class RemoveConstructorStrategy extends AbstractCtrStrategy {
 	public RemoveConstructorStrategy(ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "RemoveConstructor%sIn%s".formatted(
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(ctr)),
 				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
 			api
 		);

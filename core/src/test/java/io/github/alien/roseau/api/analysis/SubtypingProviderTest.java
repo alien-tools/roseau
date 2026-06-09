@@ -23,9 +23,9 @@ class SubtypingProviderTest {
 		var api = builder.build("public class C {}");
 		var c = assertClass(api, "C");
 
-		assertThat(api.isSubtypeOf(c, PrimitiveTypeReference.INT, PrimitiveTypeReference.INT)).isTrue();
-		assertThat(api.isSubtypeOf(c, PrimitiveTypeReference.INT, PrimitiveTypeReference.LONG)).isFalse();
-		assertThat(api.isSubtypeOf(c, PrimitiveTypeReference.LONG, PrimitiveTypeReference.INT)).isFalse();
+		assertThat(api.analyzer().isSubtypeOf(c, PrimitiveTypeReference.INT, PrimitiveTypeReference.INT)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(c, PrimitiveTypeReference.INT, PrimitiveTypeReference.LONG)).isFalse();
+		assertThat(api.analyzer().isSubtypeOf(c, PrimitiveTypeReference.LONG, PrimitiveTypeReference.INT)).isFalse();
 	}
 
 	@ParameterizedTest
@@ -34,17 +34,17 @@ class SubtypingProviderTest {
 		var api = builder.build("public class C {}");
 		var c = assertClass(api, "C");
 
-		assertThat(api.isSubtypeOf(c,
+		assertThat(api.analyzer().isSubtypeOf(c,
 			new ArrayTypeReference(TypeReference.STRING, 1),
 			new ArrayTypeReference(TypeReference.OBJECT, 1)))
 			.isTrue();
 
-		assertThat(api.isSubtypeOf(c,
+		assertThat(api.analyzer().isSubtypeOf(c,
 			new ArrayTypeReference(PrimitiveTypeReference.INT, 1),
 			new ArrayTypeReference(TypeReference.OBJECT, 1)))
 			.isFalse();
 
-		assertThat(api.isSubtypeOf(c,
+		assertThat(api.analyzer().isSubtypeOf(c,
 			new ArrayTypeReference(TypeReference.STRING, 1),
 			TypeReference.OBJECT))
 			.isTrue();
@@ -66,10 +66,10 @@ class SubtypingProviderTest {
 		var listOfNumber = new TypeReference<>("java.util.List",
 			List.of(new TypeReference<>("java.lang.Number")));
 
-		assertThat(api.isSubtypeOf(c, arrayListOfString, listOfString)).isTrue();
-		assertThat(api.isSubtypeOf(c, listOfString, listOfObject)).isFalse();
-		assertThat(api.isSubtypeOf(c, listOfString, listOfExtendsCharSequence)).isTrue();
-		assertThat(api.isSubtypeOf(c, listOfNumber, listOfSuperInteger)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(c, arrayListOfString, listOfString)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(c, listOfString, listOfObject)).isFalse();
+		assertThat(api.analyzer().isSubtypeOf(c, listOfString, listOfExtendsCharSequence)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(c, listOfNumber, listOfSuperInteger)).isTrue();
 	}
 
 	@ParameterizedTest
@@ -81,8 +81,8 @@ class SubtypingProviderTest {
 		var superNumber = new WildcardTypeReference(List.of(new TypeReference<>("java.lang.Number")), false);
 		var superInteger = new WildcardTypeReference(List.of(new TypeReference<>("java.lang.Integer")), false);
 
-		assertThat(api.isSubtypeOf(c, superNumber, superInteger)).isTrue();
-		assertThat(api.isSubtypeOf(c, superInteger, superNumber)).isFalse();
+		assertThat(api.analyzer().isSubtypeOf(c, superNumber, superInteger)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(c, superInteger, superNumber)).isFalse();
 	}
 
 	@ParameterizedTest
@@ -99,9 +99,9 @@ class SubtypingProviderTest {
 		var u = new TypeParameterReference("U");
 		var number = new TypeReference<>("java.lang.Number");
 
-		assertThat(api.isSubtypeOf(a, t, TypeReference.OBJECT)).isTrue();
-		assertThat(api.isSubtypeOf(m, u, number)).isTrue();
-		assertThat(api.isSubtypeOf(m, u, TypeReference.OBJECT)).isTrue();
-		assertThat(api.isSubtypeOf(a, u, TypeReference.OBJECT)).isFalse();
+		assertThat(api.analyzer().isSubtypeOf(a, t, TypeReference.OBJECT)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(m, u, number)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(m, u, TypeReference.OBJECT)).isTrue();
+		assertThat(api.analyzer().isSubtypeOf(a, u, TypeReference.OBJECT)).isFalse();
 	}
 }

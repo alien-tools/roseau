@@ -36,7 +36,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertThat(api.isExported(a)).isFalse();
+		assertThat(api.analyzer().isExported(a)).isFalse();
 		assertThat(a.getDeclaredConstructors()).isEmpty();
 		assertThat(a.getDeclaredMethods())
 			.extracting(MethodDecl::getSimpleName)
@@ -62,7 +62,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertThat(api.isExported(a)).isTrue();
+		assertThat(api.analyzer().isExported(a)).isTrue();
 		assertThat(a.getDeclaredConstructors()).hasSize(1);
 		assertThat(a.getDeclaredMethods())
 			.extracting(MethodDecl::getSimpleName)
@@ -84,7 +84,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertInterface(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 
@@ -117,7 +117,7 @@ class TypeMemberExtractionTest {
 			 }""");
 
 		var a = assertClass(api, "B$A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 
@@ -148,7 +148,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(1);
 		assertThat(a.getDeclaredMethods()).hasSize(1);
 
@@ -176,7 +176,7 @@ class TypeMemberExtractionTest {
 			final class B extends A {}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isSealed());
 		assertThat(a.getDeclaredFields()).hasSize(1);
 		assertThat(a.getDeclaredMethods()).hasSize(1);
@@ -205,7 +205,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(1);
 		assertThat(a.getDeclaredMethods()).hasSize(1);
 
@@ -228,7 +228,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 
@@ -255,7 +255,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 

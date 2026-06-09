@@ -44,7 +44,7 @@ public class TypeFormalTypeParametersChanged implements TypeRule<TypeDecl> {
 			// We normalize b1 from v1's namespace to v2's namespace before comparing.
 			if (p2.bounds().stream()
 				.anyMatch(b2 -> !b2.equals(TypeReference.OBJECT) &&
-					p1.bounds().stream().noneMatch(b1 -> ctx.v2().isSubtypeOf(newType, normalizer.normalizeOld(b1), b2)))) {
+					p1.bounds().stream().noneMatch(b1 -> ctx.v2().analyzer().isSubtypeOf(newType, normalizer.normalizeOld(b1), b2)))) {
 				ctx.builder().typeBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, oldType,
 					new BreakingChangeDetails.FormalTypeParametersChanged(p1, p2));
 			}

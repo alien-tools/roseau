@@ -14,7 +14,7 @@ public final class AddExceptionConstructorStrategy extends AbstractCtrStrategy {
 	public AddExceptionConstructorStrategy(ITypeReference exception, ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "AddException%sToConstructor%sIn%s".formatted(
 				StringUtils.getPrettyQualifiedName(exception),
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(ctr)),
 				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
 			api
 		);

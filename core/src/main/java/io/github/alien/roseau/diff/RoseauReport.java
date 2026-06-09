@@ -191,9 +191,11 @@ public final class RoseauReport {
 
 		return switch (symbol) {
 			case TypeDecl type -> isAnnotationExcluded || isNameExcluded ||
-				type.getEnclosingType().map(t -> v1.resolver().resolve(t).map(this::isExcluded).orElse(false)).orElse(false);
+				type.getEnclosingType()
+					.map(t -> v1.analyzer().resolver().resolve(t).map(this::isExcluded).orElse(false))
+					.orElse(false);
 			case TypeMemberDecl member -> isAnnotationExcluded || isNameExcluded ||
-				v1.resolver().resolve(member.getContainingType()).map(this::isExcluded).orElse(false);
+				v1.analyzer().resolver().resolve(member.getContainingType()).map(this::isExcluded).orElse(false);
 		};
 	}
 

@@ -1,52 +1,48 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.api.analysis.CachingApiAnalyzer;
-import io.github.alien.roseau.api.resolution.TypeResolver;
+import io.github.alien.roseau.api.analysis.ApiAnalyzer;
 
+import java.util.Comparator;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * An API augments {@link LibraryTypes} with analysis capabilities and symbol export information.
+ * A resolved API snapshot with analysis capabilities.
  */
-public final class API extends CachingApiAnalyzer {
+public final class API {
 	/**
 	 * The types, exported or not, declared in the library.
 	 */
 	private final LibraryTypes libraryTypes;
-	private final TypeResolver typeResolver;
-	private final List<TypeDecl> exportedTypes;
+	private final ApiAnalyzer analyzer;
+	private final Map<String, TypeDecl> exportedTypes;
 
-	public API(LibraryTypes libraryTypes, TypeResolver typeResolver) {
+	public API(LibraryTypes libraryTypes, ApiAnalyzer analyzer) {
 		Preconditions.checkNotNull(libraryTypes);
-		Preconditions.checkNotNull(typeResolver);
 		this.libraryTypes = libraryTypes;
-		this.typeResolver = typeResolver;
+		this.analyzer = Preconditions.checkNotNull(analyzer);
 		this.exportedTypes = libraryTypes.getAllTypes().stream()
-			.filter(this::isExported)
-			.toList();
+			.filter(analyzer::isExported)
+			.collect(ImmutableSortedMap.toImmutableSortedMap(
+				Comparator.naturalOrder(),
+				Symbol::getQualifiedName,
+				Function.identity()
+			));
 	}
 
 	public LibraryTypes getLibraryTypes() {
 		return libraryTypes;
 	}
 
-	@Override
-	public TypeResolver resolver() {
-		return typeResolver;
-	}
-
-	@Override
-	public boolean isExported(TypeDecl type) {
-		return isModuleExported(type) && super.isExported(type);
-	}
-
-	public boolean isModuleExported(TypeDecl type) {
-		return libraryTypes.getModule().isExporting(type.getPackageName());
+	public ApiAnalyzer analyzer() {
+		return analyzer;
 	}
 
 	/**
@@ -55,7 +51,7 @@ public final class API extends CachingApiAnalyzer {
 	 * @return The list of exported {@link TypeDecl}
 	 */
 	public List<TypeDecl> getExportedTypes() {
-		return List.copyOf(exportedTypes);
+		return List.copyOf(exportedTypes.values());
 	}
 
 	/**
@@ -65,9 +61,7 @@ public final class API extends CachingApiAnalyzer {
 	 * @return An {@link Optional} indicating whether the type was found
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
-		return exportedTypes.stream()
-			.filter(type -> type.getQualifiedName().equals(qualifiedName))
-			.findAny();
+		return Optional.ofNullable(exportedTypes.get(qualifiedName));
 	}
 
 	public Library getLibrary() {

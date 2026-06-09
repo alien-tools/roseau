@@ -39,37 +39,37 @@ class MethodsOverridingTest {
 		var c = assertClass(api, "C");
 		var d = assertClass(api, "D");
 
-		assertThat(api.getExportedMethods(i))
+		assertThat(api.analyzer().getExportedMethods(i))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("I.m()");
 
-		assertThat(api.getExportedMethods(j))
+		assertThat(api.analyzer().getExportedMethods(j))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("J.m()");
 
-		assertThat(api.getExportedMethods(k))
+		assertThat(api.analyzer().getExportedMethods(k))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("K.m()");
 
-		assertThat(api.getExportedMethods(a))
+		assertThat(api.analyzer().getExportedMethods(a))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("A.m()");
 
-		assertThat(api.getExportedMethods(b))
+		assertThat(api.analyzer().getExportedMethods(b))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("A.m()");
 
-		assertThat(api.getExportedMethods(c))
+		assertThat(api.analyzer().getExportedMethods(c))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("C.m()");
 
-		assertThat(api.getExportedMethods(d))
+		assertThat(api.analyzer().getExportedMethods(d))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("K.m()");
@@ -99,11 +99,11 @@ class MethodsOverridingTest {
 		var na = assertMethod(api, a, "n(java.lang.Object[])");
 		var nb = assertMethod(api, b, "n(java.lang.Object[])");
 
-		assertFalse(api.isOverriding(ma, mb));
-		assertFalse(api.isOverriding(na, nb));
+		assertFalse(api.analyzer().isOverriding(ma, mb));
+		assertFalse(api.analyzer().isOverriding(na, nb));
 
-		assertTrue(api.isOverriding(mb, ma));
-		assertTrue(api.isOverriding(nb, na));
+		assertTrue(api.analyzer().isOverriding(mb, ma));
+		assertTrue(api.analyzer().isOverriding(nb, na));
 	}
 
 	// Example §8.4.2-1
@@ -123,8 +123,8 @@ class MethodsOverridingTest {
 		var ma = assertMethod(api, a, "m(java.util.Collection)");
 		var mb = assertMethod(api, b, "m(java.util.Collection)");
 
-		assertTrue(api.isOverriding(mb, ma));
-		assertFalse(api.isOverriding(ma, mb));
+		assertTrue(api.analyzer().isOverriding(mb, ma));
+		assertFalse(api.analyzer().isOverriding(ma, mb));
 	}
 
 	@ParameterizedTest
@@ -177,10 +177,10 @@ class MethodsOverridingTest {
 		assertThat(m5b.getType()).isEqualTo(new TypeReference<>("java.util.ArrayList",
 			List.of(new TypeReference<>("java.lang.Number"))));
 
-		assertTrue(api.isOverriding(m1b, m1a));
-		assertTrue(api.isOverriding(m2b, m2a));
-		assertTrue(api.isOverriding(m3b, m3a));
-		assertTrue(api.isOverriding(m4b, m4a));
-		assertTrue(api.isOverriding(m5b, m5a));
+		assertTrue(api.analyzer().isOverriding(m1b, m1a));
+		assertTrue(api.analyzer().isOverriding(m2b, m2a));
+		assertTrue(api.analyzer().isOverriding(m3b, m3a));
+		assertTrue(api.analyzer().isOverriding(m4b, m4a));
+		assertTrue(api.analyzer().isOverriding(m5b, m5a));
 	}
 }

@@ -103,7 +103,7 @@ public final class ClientWriter extends AbstractWriter {
 		var code = "throw %s;".formatted(constructor);
 
 		var exceptions = new ArrayList<String>();
-		if (api.isCheckedException(classDecl)) {
+		if (api.analyzer().isCheckedException(classDecl)) {
 			exceptions.add(StringUtils.cleanQualifiedNameForType(classDecl));
 		}
 
@@ -302,7 +302,7 @@ public final class ClientWriter extends AbstractWriter {
 		var referenceVarName = "%sRef".formatted(getPrettyQualifiedName(typeDecl));
 		var code = new StringBuilder("%s %s = null;".formatted(StringUtils.cleanQualifiedNameForType(typeDecl), referenceVarName));
 
-		api.getAllSuperTypes(typeDecl).forEach(superType ->
+		api.analyzer().getAllSuperTypes(typeDecl).forEach(superType ->
 				code.append("\n\t\t%s %sUpcastTo%s = %s;".formatted(StringUtils.cleanQualifiedNameForType(superType), getPrettyQualifiedName(typeDecl), getPrettyQualifiedName(superType), referenceVarName))
 		);
 
@@ -462,7 +462,7 @@ public final class ClientWriter extends AbstractWriter {
 		var params = "";
 		var exceptionsFormatted = "";
 
-		var enclosingType = classDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElseThrow();
+		var enclosingType = classDecl.getEnclosingType().flatMap(eT -> api.analyzer().resolver().resolve(eT)).orElseThrow();
 		if (!classDecl.isStatic() && enclosingType instanceof ClassDecl) {
 			var constructors = getSortedConstructors(classDecl);
 			if (!constructors.isEmpty()) {
@@ -484,13 +484,13 @@ public final class ClientWriter extends AbstractWriter {
 	}
 
 	private String implementNecessaryMethods(TypeDecl typeDecl) {
-		return api.getAllMethodsToImplement(typeDecl).stream()
+		return api.analyzer().getAllMethodsToImplement(typeDecl).stream()
 				.map(this::overrideMethod)
 				.collect(Collectors.joining("\n\n"));
 	}
 
 	private List<String> getExceptionsForExecutableInvocation(ExecutableDecl executableDecl) {
-		return api.getThrownCheckedExceptions(executableDecl).stream()
+		return api.analyzer().getThrownCheckedExceptions(executableDecl).stream()
 				.map(StringUtils::cleanQualifiedNameForType)
 				.toList();
 	}
@@ -600,7 +600,7 @@ public final class ClientWriter extends AbstractWriter {
 		var constructorInvocation = "new %s()".formatted(constructorName);
 
 		if (!typeDecl.isStatic()) {
-			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.resolver().resolve(eT)).orElse(null);
+			var enclosingType = typeDecl.getEnclosingType().flatMap(eT -> api.analyzer().resolver().resolve(eT)).orElse(null);
 			if (enclosingType instanceof ClassDecl) {
 				constructorInvocation = "new %s((%s) null)".formatted(constructorName, StringUtils.cleanQualifiedNameForType(enclosingType));
 			}
@@ -621,7 +621,7 @@ public final class ClientWriter extends AbstractWriter {
 
 		while (currentType != null && currentType.isNested()) {
 			var enclosingType = currentType.getEnclosingType()
-					.flatMap(tR -> api.resolver().resolve(tR))
+					.flatMap(tR -> api.analyzer().resolver().resolve(tR))
 					.orElse(null);
 
 			if (enclosingType == null) {

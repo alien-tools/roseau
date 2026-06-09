@@ -423,7 +423,7 @@ class PopularLibrariesTestIT {
 
 		@Override
 		public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-			if (api.resolver().resolve(it).isEmpty()) {
+			if (api.analyzer().resolver().resolve(it).isEmpty()) {
 				unresolved.add(it);
 			}
 			return super.typeReference(it);

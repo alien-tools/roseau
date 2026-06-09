@@ -14,7 +14,7 @@ public final class RemoveExceptionConstructorStrategy extends AbstractCtrStrateg
 	public RemoveExceptionConstructorStrategy(ITypeReference exception, ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "RemoveException%sFromConstructor%sIn%s".formatted(
 				StringUtils.getPrettyQualifiedName(exception),
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(ctr)),
 				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
 			api
 		);

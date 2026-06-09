@@ -23,25 +23,28 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 	 */
 	@Override
 	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
-		Set<ITypeReference> thrown1 = ctx.v1().getThrownCheckedExceptions(oldExecutable);
-		Set<ITypeReference> thrown2 = ctx.v2().getThrownCheckedExceptions(newExecutable);
+		Set<ITypeReference> thrown1 = ctx.v1().analyzer().getThrownCheckedExceptions(oldExecutable);
+		Set<ITypeReference> thrown2 = ctx.v2().analyzer().getThrownCheckedExceptions(newExecutable);
 
-		boolean effectivelyFinal = ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);
+		boolean effectivelyFinal = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
 
 		thrown1.stream()
 			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
 				effectivelyFinal
-					? ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)
-					: ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)
+					? ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)
+					: ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)
 			))
 			.forEach(exc1 ->
-				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
+				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION,
+					ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
 		thrown2.stream()
-			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> ctx.v2().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)))
+			.filter(exc2 -> thrown1.stream()
+				.noneMatch(exc1 -> ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)))
 			.forEach(exc2 ->
-				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, ctx.oldType(), oldExecutable, newExecutable,
+				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION,
+					ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc2)));
 	}
 }

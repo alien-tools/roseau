@@ -19,7 +19,7 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
 		int paramsCount1 = oldExecutable.getFormalTypeParameters().size();
 		int paramsCount2 = newExecutable.getFormalTypeParameters().size();
-		boolean isOverridable = !ctx.v1().isEffectivelyFinal(ctx.oldType(), oldExecutable);
+		boolean isOverridable = !ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
 
 		// Removing a type parameter is breaking if:
 		//  - it's a method (due to @Override)
@@ -65,7 +65,7 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 						// We can safely ignore this bound
 						.filter(b2 -> !b2.equals(TypeReference.OBJECT))
 						.anyMatch(b2 -> bounds1.stream().noneMatch(b1 ->
-							ctx.v2().isSubtypeOf(newExecutable, normalizer.normalizeOld(b1), b2)))) {
+							ctx.v2().analyzer().isSubtypeOf(newExecutable, normalizer.normalizeOld(b1), b2)))) {
 						ctx.builder().memberBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, ctx.oldType(), oldExecutable,
 							newExecutable, new BreakingChangeDetails.FormalTypeParametersChanged(ftp1, ftp2));
 					}

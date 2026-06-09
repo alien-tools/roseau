@@ -18,7 +18,7 @@ public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 
 	@Override
 	public Visit symbol(Symbol it) {
-		if (api.isExported(it)) {
+		if (api.analyzer().isExported(it)) {
 			switch (it) {
 				case EnumDecl e: generateTypeClients(e); break;
 				case RecordDecl r: generateTypeClients(r); break;
@@ -49,11 +49,11 @@ public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 	private void generateClassClients(ClassDecl it) {
 		generateTypeClients(it);
 
-		if (!api.isEffectivelyFinal(it) && !it.isProtected()) {
+		if (!api.analyzer().isEffectivelyFinal(it) && !it.isProtected()) {
 			writer.writeClassInheritance(it);
 		}
 
-		if (api.isCheckedException(it) || api.isUncheckedException(it)) {
+		if (api.analyzer().isCheckedException(it) || api.analyzer().isUncheckedException(it)) {
 			generateExceptionClients(it);
 		}
 	}
@@ -70,7 +70,7 @@ public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 	private void generateInterfaceClients(InterfaceDecl it) {
 		generateTypeClients(it);
 
-		if (!api.isEffectivelyFinal(it) && !it.isProtected()) {
+		if (!api.analyzer().isEffectivelyFinal(it) && !it.isProtected()) {
 			writer.writeInterfaceExtension(it);
 			writer.writeInterfaceImplementation(it);
 		}
@@ -145,12 +145,12 @@ public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 					writer.writeMethodFullDirectInvocation(it, containingClass);
 				}
 
-				if (!api.isEffectivelyFinal(it) && !isContainingTypeFinal) {
+				if (!api.analyzer().isEffectivelyFinal(it) && !isContainingTypeFinal) {
 					writer.writeMethodMinimalDirectInvocation(it, containingClass);
 				}
 			}
 
-			if (!it.isAbstract() && !api.isEffectivelyFinal(it) && !isContainingTypeFinal) {
+			if (!it.isAbstract() && !api.analyzer().isEffectivelyFinal(it) && !isContainingTypeFinal) {
 				writer.writeMethodOverride(it, containingClass);
 			}
 		}
@@ -158,11 +158,11 @@ public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 		if (containingType instanceof InterfaceDecl containingInterface) {
 			if (it.isStatic()) {
 				writer.writeMethodDirectInvocation(it, containingInterface);
-			} else if (!api.isEffectivelyFinal(it)) {
+			} else if (!api.analyzer().isEffectivelyFinal(it)) {
 				writer.writeMethodMinimalDirectInvocation(it, containingInterface);
 			}
 
-			if ((it.isDefault() || it.isStatic()) && !api.isEffectivelyFinal(it)) {
+			if ((it.isDefault() || it.isStatic()) && !api.analyzer().isEffectivelyFinal(it)) {
 				writer.writeMethodOverride(it, containingInterface);
 			}
 		}
@@ -179,10 +179,10 @@ public final class ClientGeneratorVisitor extends AbstractApiVisitor {
 	}
 
 	private Optional<TypeDecl> getContainingTypeFromTypeMember(TypeMemberDecl typeMemberDecl) {
-		return api.resolver().resolve(typeMemberDecl.getContainingType());
+		return api.analyzer().resolver().resolve(typeMemberDecl.getContainingType());
 	}
 
 	private boolean isTypeFinal(TypeDecl type) {
-		return type.isEnum() || type.isRecord() || api.isEffectivelyFinal(type);
+		return type.isEnum() || type.isRecord() || api.analyzer().isEffectivelyFinal(type);
 	}
 }

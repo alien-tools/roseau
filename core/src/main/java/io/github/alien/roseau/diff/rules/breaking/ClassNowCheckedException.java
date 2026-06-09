@@ -8,7 +8,7 @@ import io.github.alien.roseau.diff.rules.TypeRuleContext;
 public class ClassNowCheckedException implements TypeRule<ClassDecl> {
 	@Override
 	public void onMatched(ClassDecl oldCls, ClassDecl newCls, TypeRuleContext ctx) {
-		if (ctx.v1().isUncheckedException(oldCls) && ctx.v2().isCheckedException(newCls)) {
+		if (ctx.v1().analyzer().isUncheckedException(oldCls) && ctx.v2().analyzer().isCheckedException(newCls)) {
 			ctx.builder().typeBC(BreakingChangeKind.CLASS_NOW_CHECKED_EXCEPTION, oldCls);
 		}
 	}
