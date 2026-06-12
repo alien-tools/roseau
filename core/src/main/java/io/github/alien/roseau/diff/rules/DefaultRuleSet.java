@@ -67,6 +67,8 @@ public class DefaultRuleSet implements RuleSet {
 		return List.of(
 			new ClassNowAbstract(),
 			new ClassNowCheckedException(),
+			new TypeNewAbstractMethod(),
+			new MethodNowAbstract(),
 			new ClassNowFinal(),
 			new ClassNoLongerStatic(),
 			new ClassNowStatic()

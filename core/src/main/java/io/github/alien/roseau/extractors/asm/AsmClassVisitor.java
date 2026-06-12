@@ -38,7 +38,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toSet;
@@ -163,7 +162,9 @@ public final class AsmClassVisitor extends ClassVisitor {
 			hasAccessibleConstructor = true;
 		}
 
-		if (shouldSkip || isSynthetic(access) || isBridge(access) || !isTypeMemberExported(access)) {
+		boolean exported = isTypeMemberExported(access);
+		boolean nonPrivateMethod = !"<init>".equals(name) && !"<clinit>".equals(name) && isNotPrivate(access);
+		if (shouldSkip || isSynthetic(access) || isBridge(access) || (!exported && !nonPrivateMethod)) {
 			return null;
 		}
 
@@ -193,11 +194,16 @@ public final class AsmClassVisitor extends ClassVisitor {
 			@Override
 			public void visitEnd() {
 				if ("<init>".equals(name)) {
-					constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations, firstLine));
+					if (exported) {
+						constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations, firstLine));
+					}
 				} else if (isAnnotation(classAccess)) {
 					annotationMethods.add(convertAnnotationMethod(name, descriptor, signature, annotations, firstLine, hasDefault));
 				} else {
-					methods.add(convertMethod(access, name, descriptor, signature, exceptions, annotations, firstLine));
+					MethodDecl method = convertMethod(access, name, descriptor, signature, exceptions, annotations, firstLine);
+					if (nonPrivateMethod) {
+						methods.add(method);
+					}
 				}
 			}
 		};
@@ -257,10 +263,9 @@ public final class AsmClassVisitor extends ClassVisitor {
 		SourceLocation location = factory.location(sourceFile, -1);
 
 		if (isEffectivelyFinal(classAccess)) {
-			// We initially included all PUBLIC/PROTECTED type members
+			// We initially included all public/protected fields and constructors.
 			// Now that we finally know whether the enclosing type is effectively final, we can filter
 			fields.removeIf(TypeMemberDecl::isProtected);
-			methods.removeIf(TypeMemberDecl::isProtected);
 			constructors.removeIf(TypeMemberDecl::isProtected);
 		}
 
@@ -454,6 +459,10 @@ public final class AsmClassVisitor extends ClassVisitor {
 	private static boolean isTypeMemberExported(int access) {
 		AccessModifier visibility = convertVisibility(access);
 		return visibility == AccessModifier.PUBLIC || visibility == AccessModifier.PROTECTED;
+	}
+
+	private static boolean isNotPrivate(int access) {
+		return convertVisibility(access) != AccessModifier.PRIVATE;
 	}
 
 	private boolean isEffectivelyFinal(int access) {

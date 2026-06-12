@@ -138,4 +138,38 @@ class MethodNowAbstractTest {
 
 		assertBC("B", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
+
+	@Client("abstract class B extends A { @Override public void m() {} }")
+	@Test
+	void now_abstract_method_in_unconcretizable_class() {
+		var v1 = """
+			public abstract class A {
+				public void m() {}
+				abstract void n();
+			}""";
+		var v2 = """
+			public abstract class A {
+				public abstract void m();
+				abstract void n();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("class B extends A { @Override public void m() {} }")
+	@Test
+	void making_package_private_method_abstract_in_concretizable_class() {
+		var v1 = """
+			public abstract class A {
+				public abstract void m();
+				void n() {}
+			}""";
+		var v2 = """
+			public abstract class A {
+				public abstract void m();
+				abstract void n();
+			}""";
+
+		assertBC("A", "A.n()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 3, buildDiff(v1, v2));
+	}
 }

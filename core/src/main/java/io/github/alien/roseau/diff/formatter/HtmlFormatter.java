@@ -186,7 +186,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 	private static String apiCard(String label, API api) {
 		int exported = api.getExportedTypes().size();
 		int all = api.getLibraryTypes().getAllTypes().size();
-		int methodCount = api.getExportedTypes().stream().mapToInt(t -> t.getDeclaredMethods().size()).sum();
+		int methodCount = api.getExportedTypes().stream().mapToInt(t -> api.analyzer().getExportedMethods(t).size()).sum();
 		int fieldCount = api.getExportedTypes().stream().mapToInt(t -> t.getDeclaredFields().size()).sum();
 		return "<div class=\"lib\">" +
 			"<div class=\"lib-label\">" + escape(label) + "</div>" +
