@@ -41,6 +41,7 @@ Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [An
 | [`CLASS_NOW_CHECKED_EXCEPTION`](#class_now_checked_exception)                                     | | :material-code-braces: | An unchecked exception becomes checked                                      |
 | [`CLASS_NOW_STATIC`](#class_now_static)                                                           | :material-package-variant-closed: | :material-code-braces: | A nested inner class becomes static                                         |
 | [`CLASS_NO_LONGER_STATIC`](#class_no_longer_static)                                               | :material-package-variant-closed: | :material-code-braces: | A nested static class becomes inner                                         |
+| [`CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE`](#class_no_longer_concretely_extensible)                 | :material-package-variant-closed: | :material-code-braces: | A class can no longer be subclassed by a concrete class
 | [`ANNOTATION_TARGET_REMOVED`](#annotation_target_removed)                                         | | :material-code-braces: | An annotation loses one or more legal targets                               |
 | [`ANNOTATION_NEW_METHOD_WITHOUT_DEFAULT`](#annotation_new_method_without_default)                 | | :material-code-braces: | An annotation gains an element with no default value                        |
 | [`ANNOTATION_NO_LONGER_REPEATABLE`](#annotation_no_longer_repeatable)                             | | :material-code-braces: | An annotation stops being repeatable                                        |
@@ -293,6 +294,30 @@ A nested static class becomes inner. Clients now need an enclosing instance to c
 new A.B();
 ```
 
+---
+
+### `CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE`
+
+:material-package-variant-closed: :material-code-braces:
+
+A class can still be extended, but external clients can no longer declare a *concrete* subclass of it. This happens when the class carries an abstract package-private method, which cannot be overridden from another package. Existing concrete subclasses no longer compile or link.
+
+**Library**
+
+```diff
+ public abstract class A {
+   public abstract void m();
++  abstract void n();
+ }
+```
+
+**Client**
+
+```java
+class B extends A {
+  public void m() {}
+}
+```
 ---
 
 ## Annotation-Related

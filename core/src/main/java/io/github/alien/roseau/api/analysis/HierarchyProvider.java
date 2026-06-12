@@ -302,7 +302,7 @@ public interface HierarchyProvider {
 			return Set.of();
 		}
 		return getAllMethodsByErasure(type).values().stream()
-			.filter(m -> !m.isStatic() && m.isAbstract() && m.isPackagePrivate())
+			.filter(m -> m.isAbstract() && m.isPackagePrivate())
 			.collect(Collectors.toUnmodifiableSet());
 	}
 
@@ -317,12 +317,6 @@ public interface HierarchyProvider {
 	default boolean canHaveConcreteSubtypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return !properties().isEffectivelyFinal(type) && getConcreteSubclassBlockers(type).isEmpty();
-	}
-
-	private static String declaringPackage(MethodDecl method) {
-		String typeName = method.getContainingType().getQualifiedName();
-		int lastDot = typeName.lastIndexOf('.');
-		return lastDot >= 0 ? typeName.substring(0, lastDot) : "";
 	}
 
 	/**
