@@ -587,7 +587,7 @@ class TypesExtractionTest {
 			.extracting(MethodDecl::getSimpleName)
 			.contains("m")
 			.doesNotContain("n");
-		assertThat(api.analyzer().getInheritableMethods(a))
+		assertThat(api.analyzer().getAllMethodsByErasure(a).values())
 			.extracting(MethodDecl::getSimpleName)
 			.contains("m", "n");
 	}

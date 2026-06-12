@@ -15,6 +15,7 @@ import io.github.alien.roseau.diff.rules.breaking.AnnotationMethodNoLongerDefaul
 import io.github.alien.roseau.diff.rules.breaking.AnnotationNewMethodWithoutDefault;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationNoLongerRepeatable;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationTargetRemoved;
+import io.github.alien.roseau.diff.rules.breaking.ClassNoLongerConcretelyExtensible;
 import io.github.alien.roseau.diff.rules.breaking.ClassNoLongerStatic;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowAbstract;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowCheckedException;
@@ -67,11 +68,10 @@ public class DefaultRuleSet implements RuleSet {
 		return List.of(
 			new ClassNowAbstract(),
 			new ClassNowCheckedException(),
-			new TypeNewAbstractMethod(),
-			new MethodNowAbstract(),
 			new ClassNowFinal(),
 			new ClassNoLongerStatic(),
-			new ClassNowStatic()
+			new ClassNowStatic(),
+			new ClassNoLongerConcretelyExtensible()
 		);
 	}
 

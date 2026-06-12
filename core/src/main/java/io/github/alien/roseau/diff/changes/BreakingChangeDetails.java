@@ -12,6 +12,7 @@ public sealed interface BreakingChangeDetails {
 	record None() implements BreakingChangeDetails {}
 	record TypeNewAbstractMethod(MethodDecl newMethod) implements BreakingChangeDetails {}
 	record TypeKindChanged(Class<?> oldType, Class<?> newType) implements BreakingChangeDetails {}
+	record ClassNoLongerConcretelyExtensible(MethodDecl unsatisfiableObligation) implements BreakingChangeDetails {}
 	record MethodParameterGenericsChanged(ITypeReference oldType, ITypeReference newType)
 		implements BreakingChangeDetails {}
 	record TypeSupertypeRemoved(TypeReference<TypeDecl> superType) implements BreakingChangeDetails {}

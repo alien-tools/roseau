@@ -94,6 +94,7 @@ public class MavenFormatter implements BreakingChangesFormatter {
 				"%s → %s".formatted(oldFtp.name(), newFtp.name());
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType, newType);
+			case BreakingChangeDetails.ClassNoLongerConcretelyExtensible(var blocker) -> blocker.getSignature();
 		};
 	}
 }

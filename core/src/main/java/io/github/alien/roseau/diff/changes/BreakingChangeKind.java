@@ -23,6 +23,7 @@ public enum BreakingChangeKind {
 	CLASS_NOW_CHECKED_EXCEPTION(MUTATION, false, true),
 	CLASS_NOW_STATIC(MUTATION, true, true),
 	CLASS_NO_LONGER_STATIC(MUTATION, true, true),
+	CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE(MUTATION, true, true),
 
 	// Annotation-related BCs
 	ANNOTATION_TARGET_REMOVED(MUTATION, false, true),

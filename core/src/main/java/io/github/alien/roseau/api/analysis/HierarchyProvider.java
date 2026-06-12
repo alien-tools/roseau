@@ -247,19 +247,33 @@ public interface HierarchyProvider {
 	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
 	 * invoked on this type
 	 */
-	default Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
+	default Map<String, MethodDecl> getAllMethodsByErasure(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredMethods().stream(),
 				getAllSuperTypes(type).stream()
 					.map(resolver()::resolve)
 					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Set::of).stream()))
-			.filter(m -> properties().isExported(type, m))
 			.collect(Collectors.toMap(
 				erasure()::getErasure,
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
 			));
+	}
+
+	/**
+	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
+	 * method erasure, returns the most concrete implementation, indexed by erasure.
+	 *
+	 * @param type the base type
+	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
+	 * invoked on this type
+	 */
+	default Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return getAllMethodsByErasure(type).entrySet().stream()
+			.filter(p -> properties().isExported(type, p.getValue()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -274,26 +288,6 @@ public interface HierarchyProvider {
 	}
 
 	/**
-	 * Returns the non-static methods that {@code type} inherits or declares, including non-exported (package-private)
-	 * ones. Unlike {@link #getExportedMethods(TypeDecl)}, no overriding resolution is performed: every declaration in the
-	 * hierarchy is kept, so a hidden abstract method and its concrete override both appear. This is what abstract
-	 * implementation-obligation analysis needs.
-	 *
-	 * @param type the base type
-	 * @return all non-static methods declared or inherited by {@code type}
-	 */
-	default Set<MethodDecl> getInheritableMethods(TypeDecl type) {
-		Preconditions.checkNotNull(type);
-		return Stream.concat(
-				type.getDeclaredMethods().stream(),
-				getAllSuperTypes(type).stream()
-					.map(resolver()::resolve)
-					.flatMap(t -> t.map(TypeDecl::getDeclaredMethods).orElseGet(Set::of).stream()))
-			.filter(m -> !m.isStatic())
-			.collect(Collectors.toUnmodifiableSet());
-	}
-
-	/**
 	 * Returns the package-private abstract methods that prevent external code from declaring a <em>concrete</em> subclass
 	 * of {@code type}. Such methods cannot be overridden from another package (JLS §8.4.8.1), so no external subclass can
 	 * ever discharge the obligation. A method is omitted when a more concrete inheritable declaration (abstract or
@@ -302,64 +296,27 @@ public interface HierarchyProvider {
 	 * @param type the base type
 	 * @return the inaccessible abstract obligations blocking external concrete subclassing
 	 */
-	default Set<MethodDecl> getConcreteSubtypeBlockers(TypeDecl type) {
+	default Set<MethodDecl> getConcreteSubclassBlockers(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		if (!(type instanceof ClassDecl)) {
+		if (!type.isClass()) {
 			return Set.of();
 		}
-		Set<MethodDecl> methods = getInheritableMethods(type);
-		return methods.stream()
-			.filter(MethodDecl::isAbstract)
-			.filter(MethodDecl::isPackagePrivate)
-			.filter(abs -> methods.stream()
-				.filter(m -> !m.equals(abs))
-				.noneMatch(m -> isInheritableOverride(m, abs)))
+		return getAllMethodsByErasure(type).values().stream()
+			.filter(m -> !m.isStatic() && m.isAbstract() && m.isPackagePrivate())
 			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	/**
 	 * Returns whether external clients can declare a <em>concrete</em> subtype of {@code type}. It is false when the type
 	 * cannot be subclassed at all ({@link PropertiesProvider#isEffectivelyFinal(TypeDecl)}) or when an inaccessible
-	 * abstract obligation makes every external subclass necessarily abstract (see {@link #getConcreteSubtypeBlockers}).
+	 * abstract obligation makes every external subclass necessarily abstract (see {@link #getConcreteSubclassBlockers}).
 	 *
 	 * @param type the base type
 	 * @return whether external clients can declare a concrete subtype of {@code type}
 	 */
 	default boolean canHaveConcreteSubtypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		return !properties().isEffectivelyFinal(type) && getConcreteSubtypeBlockers(type).isEmpty();
-	}
-
-	/**
-	 * Finds an inheritable method of {@code type} (declared or inherited) matching the given qualified name and erasure.
-	 * Matching on both keys tracks a specific declaration across versions, including non-exported package-private methods
-	 * and distinguishing same-erasure methods inherited from different supertypes.
-	 *
-	 * @param type          the base type
-	 * @param qualifiedName the qualified name of the declaration to find
-	 * @param erasure       the erasure of the declaration to find
-	 * @return an {@link Optional} indicating whether the matching method was found
-	 */
-	default Optional<MethodDecl> findInheritableMethod(TypeDecl type, String qualifiedName, String erasure) {
-		Preconditions.checkNotNull(type);
-		Preconditions.checkNotNull(qualifiedName);
-		Preconditions.checkNotNull(erasure);
-		return getInheritableMethods(type).stream()
-			.filter(m -> m.getQualifiedName().equals(qualifiedName))
-			.filter(m -> erasure().getErasure(m).equals(erasure))
-			.findFirst();
-	}
-
-	private boolean isInheritableOverride(MethodDecl method, MethodDecl other) {
-		if (!erasure().haveSameErasure(method, other)) {
-			return false;
-		}
-		if (other.isPackagePrivate() && !Objects.equals(declaringPackage(method), declaringPackage(other))) {
-			return false;
-		}
-		return resolver().resolve(method.getContainingType())
-			.map(scope -> subtyping().isSubtypeOf(scope, method.getContainingType(), other.getContainingType()))
-			.orElse(method.getContainingType().equals(other.getContainingType()));
+		return !properties().isEffectivelyFinal(type) && getConcreteSubclassBlockers(type).isEmpty();
 	}
 
 	private static String declaringPackage(MethodDecl method) {

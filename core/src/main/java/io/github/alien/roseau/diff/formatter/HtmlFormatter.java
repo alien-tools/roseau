@@ -245,6 +245,8 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 				"<code>" + escape(String.valueOf(ftp)) + "</code>";
 			case BreakingChangeDetails.FormalTypeParametersChanged(var oldFtp, var newFtp) ->
 				"<code>" + escape(String.valueOf(oldFtp)) + "</code> → <code>" + escape(String.valueOf(newFtp)) + "</code>";
+			case BreakingChangeDetails.ClassNoLongerConcretelyExtensible(var blocker) ->
+				"<code>" + escape(String.valueOf(blocker)) + "</code>";
 			case BreakingChangeDetails.None() -> "";
 		};
 	}
