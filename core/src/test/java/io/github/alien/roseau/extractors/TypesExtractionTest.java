@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.utils.ApiBuilder;
@@ -537,7 +538,8 @@ class TypesExtractionTest {
 			}""");
 		var a = assertEnum(api, "A");
 		assertThat(api.getExportedTypes()).hasSize(1);
-		assertThat(a.getDeclaredMethods()).hasSize(1);
+		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 	}
 
 	@ParameterizedTest
@@ -559,5 +561,34 @@ class TypesExtractionTest {
 		assertThat(a.getSimpleName()).isEqualTo("A");
 		assertThat(b.getSimpleName()).isEqualTo("B");
 		assertThat(c.getSimpleName()).isEqualTo("C");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void types_with_unexported_abstract_methods_are_not_effectively_final(ApiBuilder builder) {
+		// A package-private abstract method cannot be overridden from another package (JLS §8.4.8.1:
+		// a package-private method is only inherited/overridable within its own package). Consequently,
+		// per JLS §8.1.1.1, client code in another package cannot create a *concrete* subclass of A.
+		//
+		// A still has an accessible constructor, so client code can declare an *abstract* subclass.
+		var api = builder.build("""
+			public abstract class A {
+				public abstract void m();
+				abstract void n();
+			}""");
+
+		var a = assertClass(api, "A");
+		assertFalse(a.isFinal());
+		assertFalse(api.analyzer().isEffectivelyFinal(a));
+		assertFalse(api.analyzer().canHaveConcreteSubtypes(a));
+
+		assertThat(a.getDeclaredMethods()).hasSize(2);
+		assertThat(api.analyzer().getExportedMethods(a))
+			.extracting(MethodDecl::getSimpleName)
+			.contains("m")
+			.doesNotContain("n");
+		assertThat(api.analyzer().getAllMethodsByErasure(a).values())
+			.extracting(MethodDecl::getSimpleName)
+			.contains("m", "n");
 	}
 }

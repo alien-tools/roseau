@@ -45,9 +45,9 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	}
 
 	@Override
-	public Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
+	public Map<String, MethodDecl> getAllMethodsByErasure(TypeDecl type) {
 		try {
-			return methodsCache.get(type.getQualifiedName(), () -> ApiAnalyzer.super.getExportedMethodsByErasure(type));
+			return methodsCache.get(type.getQualifiedName(), () -> ApiAnalyzer.super.getAllMethodsByErasure(type));
 		} catch (ExecutionException _) {
 			return Map.of();
 		}

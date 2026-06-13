@@ -310,7 +310,7 @@ public interface HierarchyProvider {
 	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
 	 * invoked on this type
 	 */
-	default Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
+	default Map<String, MethodDecl> getAllMethodsByErasure(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		return Stream.concat(
 				type.getDeclaredMethods().stream(),
@@ -320,12 +320,26 @@ public interface HierarchyProvider {
 							Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
 							return decl.getDeclaredMethods().stream().map(m -> instantiate(m, substitutions));
 						})))
-			.filter(m -> properties().isExported(type, m))
 			.collect(Collectors.toMap(
 				erasure()::getErasure,
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
 			));
+	}
+
+	/**
+	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
+	 * method erasure, returns the most concrete implementation, indexed by erasure.
+	 *
+	 * @param type the base type
+	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
+	 * invoked on this type
+	 */
+	default Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return getAllMethodsByErasure(type).entrySet().stream()
+			.filter(p -> properties().isExported(type, p.getValue()))
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -337,6 +351,37 @@ public interface HierarchyProvider {
 	 */
 	default Set<MethodDecl> getExportedMethods(TypeDecl type) {
 		return Set.copyOf(getExportedMethodsByErasure(type).values());
+	}
+
+	/**
+	 * Returns the package-private abstract methods that prevent external code from declaring a <em>concrete</em> subclass
+	 * of {@code type}. Such methods cannot be overridden from another package (JLS §8.4.8.1), so no external subclass can
+	 * ever discharge the obligation.
+	 *
+	 * @param type the base type
+	 * @return the inaccessible abstract obligations blocking external concrete subclassing
+	 */
+	default Set<MethodDecl> getConcreteSubclassBlockers(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		if (!type.isClass()) {
+			return Set.of();
+		}
+		return getAllMethodsByErasure(type).values().stream()
+			.filter(m -> m.isAbstract() && m.isPackagePrivate())
+			.collect(Collectors.toUnmodifiableSet());
+	}
+
+	/**
+	 * Returns whether external clients can declare a <em>concrete</em> subtype of {@code type}. It is false when the type
+	 * cannot be subclassed at all ({@link PropertiesProvider#isEffectivelyFinal(TypeDecl)}) or when an inaccessible
+	 * abstract obligation makes every external subclass necessarily abstract (see {@link #getConcreteSubclassBlockers}).
+	 *
+	 * @param type the base type
+	 * @return whether external clients can declare a concrete subtype of {@code type}
+	 */
+	default boolean canHaveConcreteSubtypes(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return !properties().isEffectivelyFinal(type) && getConcreteSubclassBlockers(type).isEmpty();
 	}
 
 	/**

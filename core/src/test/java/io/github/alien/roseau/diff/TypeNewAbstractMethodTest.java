@@ -6,6 +6,7 @@ import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
+import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
@@ -64,5 +65,86 @@ class TypeNewAbstractMethodTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("I", "I", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1),
 			bc("J", "J", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1));
+	}
+
+	@Client("class B extends A { @Override public void m() {} }")
+	@Test
+	void abstract_method_added_to_abstract_class() {
+		var v1 = """
+			public abstract class A {
+				public abstract void m();
+			}""";
+		var v2 = """
+			public abstract class A {
+				public abstract void m();
+				public abstract void p();
+			}""";
+
+		assertBC("A", "A", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
+	}
+
+	@Client("I i;")
+	@Test
+	void method_added_to_sealed_interface() {
+		var v1 = """
+			public sealed interface I permits X {}
+			final class X implements I {}""";
+		var v2 = """
+			public sealed interface I permits X {
+				void m();
+			}
+			final class X implements I {
+				public void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new B(){}.m();")
+	@Test
+	void method_abstract_added_to_class_with_private_constructor() {
+		var v1 = """
+			public abstract class B {
+				private B() {}
+			}""";
+		var v2 = """
+			public abstract class B {
+				private B() {}
+				public abstract void m();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("I i;")
+	@Test
+	void method_added_while_interface_becomes_unsealed() {
+		var v1 = """
+			public sealed interface I permits X {}
+			final class X implements I {}""";
+		var v2 = """
+			public interface I {
+				void m();
+			}
+			final class X implements I {
+				public void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("class C implements I {}")
+	@Test
+	void method_added_while_interface_becomes_sealed() {
+		var v1 = "public interface I {}";
+		var v2 = """
+			public sealed interface I permits X {
+				void m();
+			}
+			final class X implements I {
+				public void m() {}
+			}""";
+
+		assertBC("I", "I", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
 	}
 }

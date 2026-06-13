@@ -242,7 +242,7 @@ final class JdtApiVisitor extends ASTVisitor {
 
 	private Set<MethodDecl> convertMethods(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method))
+			.filter(method -> !method.isConstructor() && isNotPrivate(method))
 			.map(method -> convertMethod(method, binding))
 			.collect(toSet());
 	}
@@ -470,6 +470,10 @@ final class JdtApiVisitor extends ASTVisitor {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(method.getModifiers()) ||
 			(org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers()) &&
 				!isEffectivelyFinal(method.getDeclaringClass()));
+	}
+
+	private static boolean isNotPrivate(IMethodBinding method) {
+		return !org.eclipse.jdt.core.dom.Modifier.isPrivate(method.getModifiers());
 	}
 
 	private static boolean isSourceAnnotation(IAnnotationBinding ann) {
