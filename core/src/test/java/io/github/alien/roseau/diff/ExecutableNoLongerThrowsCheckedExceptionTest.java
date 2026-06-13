@@ -344,4 +344,39 @@ class ExecutableNoLongerThrowsCheckedExceptionTest {
 
 		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
+
+	@Client("""
+		try { new A().m(); } catch (E e) {}
+		class C extends A { @Override public void m() throws E {} }""")
+	@Test
+	void declared_exception_becomes_unchecked_is_compatible() {
+		var v1 = """
+			public class A {
+				public void m() throws E {}
+			}
+			class E extends Exception {}""";
+		var v2 = """
+			public class A {
+				public void m() throws E {}
+			}
+			class E extends RuntimeException {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try { new A().m(); } catch (java.io.IOException e) {}""")
+	@Test
+	void checked_exception_replaced_by_unchecked_breaks() {
+		var v1 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws RuntimeException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
 }

@@ -29,6 +29,9 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 		boolean effectivelyFinal = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
 
 		thrown1.stream()
+			// An exception that is no longer checked in v2 constrains no client: callers need not catch it and
+			// overriders need not declare it, so removing (or keeping) it from the throws clause is compatible.
+			.filter(exc1 -> ctx.v2().analyzer().isCheckedException(exc1))
 			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
 				effectivelyFinal
 					? ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)
