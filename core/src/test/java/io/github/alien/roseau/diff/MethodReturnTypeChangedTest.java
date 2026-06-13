@@ -4,11 +4,14 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
+import java.util.stream.Collectors;
+
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
+import static org.assertj.core.api.Assertions.assertThat;
 
 class MethodReturnTypeChangedTest {
 	@Client("""
@@ -655,5 +658,45 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A().m();")
+	@Test
+	void inherited_members_are_type_parameter_substituted() {
+		var v1 = """
+			public class A<T> { public T m() {} }
+			public class B extends A<String> {}""";
+		var v2 = """
+			public class A<T> { public T m() {} }
+			public class B extends A<Integer> {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("String s = new A().get(0);")
+	@Test
+	void inherited_members_are_type_parameter_substituted_jdk() {
+		var v1 = "public class A extends java.util.ArrayList<String> {}";
+		var v2 = "public class A extends java.util.ArrayList<Integer> {}";
+
+		// Many removed/changed methods due to substitutions
+		assertThat(buildDiff(v1, v2)).isNotEmpty();
+	}
+
+	@Client("""
+		class C extends A { public String get() { return "client"; } }
+		A a = new C();
+		String s = a.get();""")
+	@Test
+	void covariant_specialization_of_inherited_generic_method() {
+		var v1 = "public abstract class A implements java.util.function.Supplier<String> {}";
+		var v2 = """
+			public abstract class A implements java.util.function.Supplier<String> {
+				public String get() { return "v2"; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
 	}
 }

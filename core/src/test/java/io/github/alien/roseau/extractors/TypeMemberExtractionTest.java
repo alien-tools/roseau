@@ -426,4 +426,24 @@ class TypeMemberExtractionTest {
 		assertThat(f.getType()).isEqualTo(new TypeParameterReference("T"));
 		assertThat(m.getType()).isEqualTo(new TypeParameterReference("U"));
 	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_generic_field_type_is_substituted(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Box<T> {
+				public T value;
+			}
+			public class StringBox extends Box<String> {}""");
+
+		var box = assertClass(api, "Box");
+		var stringBox = assertClass(api, "StringBox");
+
+		// In Box<T>, the field type is the type variable T
+		assertThat(assertField(api, box, "value").getType()).isEqualTo(new TypeParameterReference("T"));
+
+		// In StringBox, it is substituted
+		var inherited = api.analyzer().findField(stringBox, "value").orElseThrow();
+		assertThat(inherited.getType()).isEqualTo(TypeReference.STRING);
+	}
 }
