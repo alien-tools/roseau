@@ -86,6 +86,11 @@ public interface AssignabilityProvider {
 		Preconditions.checkNotNull(oldType);
 		Preconditions.checkNotNull(newType);
 
+		if (PrimitiveTypeReference.VOID.equals(oldType)) {
+			// A void expression yields no value, so its result was never assigned and every change is safe
+			return true;
+		}
+
 		if (!isAssignable(scope, newType, oldType)) {
 			return false;
 		}

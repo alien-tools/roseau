@@ -109,4 +109,27 @@ class AssignabilityProviderTest {
 		assertThat(api.analyzer().isAssignable(m, u, number)).isTrue();
 		assertThat(api.analyzer().isAssignable(m, string, t)).isFalse();
 	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void void_expression_is_source_compatible_with_any_return_type(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A {
+				public void m() {}
+			}""");
+		var a = assertClass(api, "A");
+		var m = assertMethod(api, a, "m()");
+		var analyzer = api.analyzer();
+
+		// A void call observes no value, so replacing void by any return type keeps existing callers valid
+		assertThat(analyzer.isSourceCompatibleExpression(m, PrimitiveTypeReference.VOID, PrimitiveTypeReference.INT)).isTrue();
+		assertThat(analyzer.isSourceCompatibleExpression(m, PrimitiveTypeReference.VOID, TypeReference.STRING)).isTrue();
+
+		// The converse (a value-producing call becoming void) breaks `int x = a.m();`
+		assertThat(analyzer.isSourceCompatibleExpression(m, PrimitiveTypeReference.INT, PrimitiveTypeReference.VOID)).isFalse();
+
+		// Narrowing a reference return is caller-compatible, widening is not
+		assertThat(analyzer.isSourceCompatibleExpression(m, TypeReference.OBJECT, TypeReference.STRING)).isTrue();
+		assertThat(analyzer.isSourceCompatibleExpression(m, TypeReference.STRING, TypeReference.OBJECT)).isFalse();
+	}
 }
