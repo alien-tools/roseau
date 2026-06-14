@@ -3,6 +3,9 @@ package io.github.alien.roseau.api.analysis;
 import com.google.common.base.Preconditions;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableSetMultimap;
+import com.google.common.collect.SetMultimap;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
@@ -10,6 +13,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public final class DefaultApiAnalyzer implements ApiAnalyzer {
@@ -24,10 +28,17 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver resolver;
+	private final SetMultimap<String, TypeDecl> directKnownSubtypes;
 
 	public DefaultApiAnalyzer(LibraryTypes libraryTypes, TypeResolver resolver) {
 		this.libraryTypes = Preconditions.checkNotNull(libraryTypes);
 		this.resolver = Preconditions.checkNotNull(resolver);
+		this.directKnownSubtypes = buildDirectKnownSubtypesBySuperType(libraryTypes);
+	}
+
+	@Override
+	public LibraryTypes libraryTypes() {
+		return libraryTypes;
 	}
 
 	@Override
@@ -36,12 +47,8 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	}
 
 	@Override
-	public boolean isExported(TypeDecl type) {
-		return isModuleExported(type) && ApiAnalyzer.super.isExported(type);
-	}
-
-	private boolean isModuleExported(TypeDecl type) {
-		return libraryTypes.getModule().isExporting(type.getPackageName());
+	public Set<TypeDecl> getDirectKnownSubtypes(TypeDecl type) {
+		return directKnownSubtypes.get(type.getQualifiedName());
 	}
 
 	@Override
@@ -60,5 +67,12 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 		} catch (ExecutionException _) {
 			return Map.of();
 		}
+	}
+
+	private static SetMultimap<String, TypeDecl> buildDirectKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
+		HashMultimap<String, TypeDecl> subtypes = HashMultimap.create();
+		libraryTypes.getAllTypes().forEach(type ->
+			PropertiesProvider.directSuperTypeNames(type).forEach(superTypeName -> subtypes.put(superTypeName, type)));
+		return ImmutableSetMultimap.copyOf(subtypes);
 	}
 }

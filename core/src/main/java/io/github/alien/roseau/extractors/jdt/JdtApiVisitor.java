@@ -235,7 +235,7 @@ final class JdtApiVisitor extends ASTVisitor {
 
 	private Set<FieldDecl> convertFields(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredFields())
-			.filter(JdtApiVisitor::isExported)
+			.filter(JdtApiVisitor::isPublicOrProtected)
 			.map(field -> convertField(field, binding))
 			.collect(toSet());
 	}
@@ -249,7 +249,7 @@ final class JdtApiVisitor extends ASTVisitor {
 
 	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> method.isConstructor() && isExported(method))
+			.filter(method -> method.isConstructor() && isPublicOrProtected(method))
 			.map(cons -> convertConstructor(cons, binding))
 			.collect(toSet());
 	}
@@ -460,16 +460,14 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(ElementType.class)));
 	}
 
-	private static boolean isExported(IVariableBinding field) {
+	private static boolean isPublicOrProtected(IVariableBinding field) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(field.getModifiers()) ||
-			(org.eclipse.jdt.core.dom.Modifier.isProtected(field.getModifiers()) &&
-				!isEffectivelyFinal(field.getDeclaringClass()));
+			org.eclipse.jdt.core.dom.Modifier.isProtected(field.getModifiers());
 	}
 
-	private static boolean isExported(IMethodBinding method) {
+	private static boolean isPublicOrProtected(IMethodBinding method) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(method.getModifiers()) ||
-			(org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers()) &&
-				!isEffectivelyFinal(method.getDeclaringClass()));
+			org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers());
 	}
 
 	private static boolean isNotPrivate(IMethodBinding method) {
@@ -504,29 +502,6 @@ final class JdtApiVisitor extends ASTVisitor {
 			case ITypeBinding typeBinding -> makeFqn(typeBinding);
 			default -> value.toString();
 		};
-	}
-
-	private static boolean isEffectivelyFinal(ITypeBinding binding) {
-		if (binding.isEnum() || binding.isRecord()) {
-			return true;
-		}
-
-		if (binding.isClass()) {
-			var cons = Arrays.stream(binding.getDeclaredMethods())
-				.filter(IMethodBinding::isConstructor)
-				.toList();
-
-			if (!cons.isEmpty() &&
-				cons.stream().allMatch(c -> org.eclipse.jdt.core.dom.Modifier.isPrivate(c.getModifiers()))) {
-				return true;
-			}
-		}
-
-		var isFinal = org.eclipse.jdt.core.dom.Modifier.isFinal(binding.getModifiers());
-		var isSealed = org.eclipse.jdt.core.dom.Modifier.isSealed(binding.getModifiers());
-		var isNonSealed = org.eclipse.jdt.core.dom.Modifier.isNonSealed(binding.getModifiers());
-
-		return (isFinal || isSealed) && !isNonSealed;
 	}
 
 	private static AccessModifier convertVisibility(int modifiers) {

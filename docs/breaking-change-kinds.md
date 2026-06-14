@@ -35,6 +35,7 @@ Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [An
 | [`TYPE_NOW_PROTECTED`](#type_now_protected)                                                       | :material-package-variant-closed: | :material-code-braces: | A public nested type becomes protected                                      |
 | [`TYPE_KIND_CHANGED`](#type_kind_changed)                                                         | :material-package-variant-closed: | :material-code-braces: | A type changes its kind (e.g., changing a class to an enum or a record)     |
 | [`TYPE_SUPERTYPE_REMOVED`](#type_supertype_removed)                                               | :material-package-variant-closed: | :material-code-braces: | A visible supertype is removed from a type's hierarchy                      |
+| [`TYPE_NOW_SEALED`](#type_now_sealed)                                                             | :material-package-variant-closed: | :material-code-braces: | A type becomes sealed                                                       |
 | [`TYPE_NEW_ABSTRACT_METHOD`](#type_new_abstract_method)                                           | | :material-code-braces: | An abstract class or interface gains a new abstract method                  |
 | [`CLASS_NOW_ABSTRACT`](#class_now_abstract)                                                       | :material-package-variant-closed: | :material-code-braces: | A concrete class becomes abstract                                           |
 | [`CLASS_NOW_FINAL`](#class_now_final)                                                             | :material-package-variant-closed: | :material-code-braces: | A class becomes effectively final                                           |
@@ -185,6 +186,29 @@ I i = new I() {};
 
 ---
 
+### `TYPE_NOW_SEALED`
+
+:material-package-variant-closed: :material-code-braces:
+
+A class or interface that clients could previously extend or implement becomes sealed. Existing direct client subtypes
+are no longer permitted and fail to compile; existing binaries fail when the non-permitted subtype is loaded.
+
+**Library**
+
+```diff
+-public interface I {}
++public sealed interface I permits X {}
++final class X implements I {}
+```
+
+**Client**
+
+```java
+class C implements I {}
+```
+
+---
+
 ## Class-Related
 
 ### `CLASS_NOW_ABSTRACT`
@@ -212,7 +236,9 @@ new A();
 
 :material-package-variant-closed: :material-code-braces:
 
-A class that was not effectively final becomes effectively final, preventing subclassing. This fires for explicit `final`, for `sealed` (without `non-sealed`), and for any change that removes all constructors accessible to subclasses.
+A class that was not effectively final becomes final or otherwise unsubclassable. This fires for explicit `final` and
+for changes that remove all constructors accessible to subclasses. Sealing is reported separately as
+[`TYPE_NOW_SEALED`](#type_now_sealed).
 
 **Library**
 

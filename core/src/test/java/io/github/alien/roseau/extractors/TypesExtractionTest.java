@@ -288,7 +288,7 @@ class TypesExtractionTest {
 		var b = assertClass(api, "B");
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
-		assertTrue(api.analyzer().isEffectivelyFinal(b));
+		assertFalse(api.analyzer().isEffectivelyFinal(b));
 		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("C", "D", "E");
 
@@ -321,6 +321,107 @@ class TypesExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
+	void sealed_class_with_non_sealed_subclass_is_not_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed class A permits B {}
+			public non-sealed class B extends A {}""");
+
+		var a = assertClass(api, "A");
+
+		assertTrue(a.isSealed());
+		assertFalse(api.analyzer().canBeDirectlySubtyped(a));
+		assertTrue(api.analyzer().canBeIndirectlySubtyped(a));
+		assertFalse(api.analyzer().isEffectivelyFinal(a));
+		assertTrue(api.analyzer().canHaveConcreteSubtypes(a));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_class_with_only_internal_non_sealed_subclass_is_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed class A permits B {}
+			non-sealed class B extends A {}""");
+
+		var a = assertClass(api, "A");
+
+		assertTrue(a.isSealed());
+		assertFalse(api.analyzer().canBeDirectlySubtyped(a));
+		assertFalse(api.analyzer().canBeIndirectlySubtyped(a));
+		assertTrue(api.analyzer().isEffectivelyFinal(a));
+		assertFalse(api.analyzer().canHaveConcreteSubtypes(a));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void constructor_closed_class_with_exported_extensible_subclass_is_not_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A {
+				private A() {}
+				protected void p() {}
+			
+				public static class B extends A {
+					public B() {}
+				}
+			}""");
+
+		var a = assertClass(api, "A");
+		var p = assertMethod(api, a, "p()");
+
+		assertFalse(api.analyzer().isEffectivelyFinal(a));
+		assertTrue(api.analyzer().isExported(a, p));
+		assertTrue(api.analyzer().canHaveConcreteSubtypes(a));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_class_with_exported_non_sealed_descendant_is_not_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed class A permits B {}
+			sealed class B extends A permits C {}
+			public non-sealed class C extends B {}""");
+
+		var a = assertClass(api, "A");
+
+		assertTrue(a.isSealed());
+		assertFalse(api.analyzer().isEffectivelyFinal(a));
+		assertTrue(api.analyzer().canHaveConcreteSubtypes(a));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_class_with_protected_nested_non_sealed_subclass_is_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed class A permits A.B {
+				protected static non-sealed class B extends A {}
+			}""");
+
+		var a = assertClass(api, "A");
+
+		assertTrue(a.isSealed());
+		assertTrue(api.analyzer().isEffectivelyFinal(a));
+		assertFalse(api.analyzer().canHaveConcreteSubtypes(a));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void protected_members_in_sealed_class_with_non_sealed_subclass_are_exported(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed class A permits B {
+				protected void p() {}
+			}
+			public non-sealed class B extends A {}""");
+
+		var a = assertClass(api, "A");
+		var p = assertMethod(api, a, "p()");
+
+		assertTrue(api.analyzer().isExported(a, p));
+		assertThat(api.analyzer().getExportedMethods(a))
+			.extracting(MethodDecl::getSimpleName)
+			.contains("p");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
 	void sealed_interfaces(ApiBuilder builder) {
 		var api = builder.build("""
 			public interface A {}
@@ -337,7 +438,7 @@ class TypesExtractionTest {
 		var b = assertInterface(api, "B");
 		assertFalse(b.isFinal());
 		assertTrue(b.isSealed());
-		assertTrue(api.analyzer().isEffectivelyFinal(b));
+		assertFalse(api.analyzer().isEffectivelyFinal(b));
 		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
 			.containsExactlyInAnyOrder("C", "D");
 
@@ -361,6 +462,53 @@ class TypesExtractionTest {
 		assertTrue(e.isFinal());
 		assertFalse(e.isSealed());
 		assertTrue(api.analyzer().isEffectivelyFinal(e));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_interface_with_non_sealed_subinterface_is_not_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed interface I permits J {}
+			public non-sealed interface J extends I {}""");
+
+		var i = assertInterface(api, "I");
+
+		assertTrue(i.isSealed());
+		assertFalse(api.analyzer().canBeDirectlySubtyped(i));
+		assertTrue(api.analyzer().canBeIndirectlySubtyped(i));
+		assertFalse(api.analyzer().isEffectivelyFinal(i));
+		assertTrue(api.analyzer().canHaveConcreteSubtypes(i));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_interface_with_only_internal_non_sealed_subinterface_is_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed interface I permits J {}
+			non-sealed interface J extends I {}""");
+
+		var i = assertInterface(api, "I");
+
+		assertTrue(i.isSealed());
+		assertFalse(api.analyzer().canBeDirectlySubtyped(i));
+		assertFalse(api.analyzer().canBeIndirectlySubtyped(i));
+		assertTrue(api.analyzer().isEffectivelyFinal(i));
+		assertFalse(api.analyzer().canHaveConcreteSubtypes(i));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void sealed_interface_with_exported_non_sealed_descendant_is_not_effectively_final(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed interface I permits J {}
+			sealed interface J extends I permits K {}
+			public non-sealed interface K extends J {}""");
+
+		var i = assertInterface(api, "I");
+
+		assertTrue(i.isSealed());
+		assertFalse(api.analyzer().isEffectivelyFinal(i));
+		assertTrue(api.analyzer().canHaveConcreteSubtypes(i));
 	}
 
 	@ParameterizedTest

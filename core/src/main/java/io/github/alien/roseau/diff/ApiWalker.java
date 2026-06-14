@@ -70,14 +70,14 @@ public final class ApiWalker {
 			.forEach(m2 -> sink.onAddedMethod(t2, m2));
 
 		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
-			c1.getDeclaredConstructors().forEach(cons1 ->
+			v1.analyzer().getExportedConstructors(c1).forEach(cons1 ->
 				matcher.matchConstructor(v2, c2, cons1).ifPresentOrElse(
 					cons2 -> sink.onMatchedConstructor(c1, c2, cons1, cons2),
 					() -> sink.onRemovedConstructor(c1, cons1)
 				)
 			);
 
-			c2.getDeclaredConstructors().stream()
+			v2.analyzer().getExportedConstructors(c2).stream()
 				.filter(cons2 -> matcher.matchConstructor(v1, c1, cons2).isEmpty())
 				.forEach(cons2 -> sink.onAddedConstructor(c2, cons2));
 		}

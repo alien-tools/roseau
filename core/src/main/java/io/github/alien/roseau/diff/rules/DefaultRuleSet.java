@@ -42,6 +42,7 @@ import io.github.alien.roseau.diff.rules.breaking.TypeFormalTypeParametersChange
 import io.github.alien.roseau.diff.rules.breaking.TypeKindChanged;
 import io.github.alien.roseau.diff.rules.breaking.TypeNewAbstractMethod;
 import io.github.alien.roseau.diff.rules.breaking.TypeNowProtected;
+import io.github.alien.roseau.diff.rules.breaking.TypeNowSealed;
 import io.github.alien.roseau.diff.rules.breaking.TypeRemoved;
 import io.github.alien.roseau.diff.rules.breaking.TypeSupertypeRemoved;
 
@@ -59,7 +60,8 @@ public class DefaultRuleSet implements RuleSet {
 			new TypeRemoved(),
 			new TypeSupertypeRemoved(),
 			new TypeFormalTypeParametersChanged(),
-			new TypeNowProtected()
+			new TypeNowProtected(),
+			new TypeNowSealed()
 		);
 	}
 

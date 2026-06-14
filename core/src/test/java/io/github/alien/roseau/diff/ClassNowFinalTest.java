@@ -41,17 +41,6 @@ class ClassNowFinalTest {
 
 	@Client("new A(){};")
 	@Test
-	void class_now_sealed() {
-		var v1 = "public class A {}";
-		var v2 = """
-			public sealed class A permits B {}
-			final class B extends A {}""";
-
-		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
-	}
-
-	@Client("new A(){};")
-	@Test
 	void class_now_record() {
 		var v1 = "public class A {}";
 		var v2 = "public record A() {}";

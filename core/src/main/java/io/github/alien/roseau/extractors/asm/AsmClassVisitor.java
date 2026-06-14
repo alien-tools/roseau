@@ -13,7 +13,6 @@ import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
@@ -50,7 +49,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 	private int classAccess;
 	private TypeReference<TypeDecl> enclosingType;
 	private TypeReference<ClassDecl> superClass;
-	private boolean hasAccessibleConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
 	private final Set<TypeReference<InterfaceDecl>> implementedInterfaces = new LinkedHashSet<>();
@@ -158,10 +156,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		if (isAccessibleConstructor(name, access)) {
-			hasAccessibleConstructor = true;
-		}
-
 		boolean exported = isTypeMemberExported(access);
 		boolean nonPrivateMethod = !"<init>".equals(name) && !"<clinit>".equals(name) && isNotPrivate(access);
 		if (shouldSkip || isSynthetic(access) || isBridge(access) || (!exported && !nonPrivateMethod)) {
@@ -261,13 +255,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 		Set<Modifier> modifiers = convertClassModifiers(classAccess);
 		Set<Annotation> anns = convertAnnotations(annotations);
 		SourceLocation location = factory.location(sourceFile, -1);
-
-		if (isEffectivelyFinal(classAccess)) {
-			// We initially included all public/protected fields and constructors.
-			// Now that we finally know whether the enclosing type is effectively final, we can filter
-			fields.removeIf(TypeMemberDecl::isProtected);
-			constructors.removeIf(TypeMemberDecl::isProtected);
-		}
 
 		// §8.9: an enum class E is implicitly sealed if its declaration contains at least one
 		// enum constant that has a class body. Otherwise, final.
@@ -465,23 +452,12 @@ public final class AsmClassVisitor extends ClassVisitor {
 		return convertVisibility(access) != AccessModifier.PRIVATE;
 	}
 
-	private boolean isEffectivelyFinal(int access) {
-		if (isEnum(access) || isRecord(access)) {
-			return true;
-		}
-		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasAccessibleConstructor);
-	}
-
 	private static String bytecodeToFqn(String bytecodeName) {
 		return bytecodeName.replace('/', '.');
 	}
 
 	private static String descriptorToFqn(String descriptor) {
 		return Type.getType(descriptor).getClassName();
-	}
-
-	private boolean isAccessibleConstructor(String name, int access) {
-		return "<init>".equals(name) && !isSynthetic(access) && convertVisibility(access) != AccessModifier.PRIVATE;
 	}
 
 	private static boolean isSynthetic(int access) {

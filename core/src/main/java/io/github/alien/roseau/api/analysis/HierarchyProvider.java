@@ -74,9 +74,22 @@ public interface HierarchyProvider {
 	default Optional<ConstructorDecl> findConstructor(ClassDecl classDecl, String erasure) {
 		Preconditions.checkNotNull(classDecl);
 		Preconditions.checkNotNull(erasure);
-		return classDecl.getDeclaredConstructors().stream()
+		return getExportedConstructors(classDecl).stream()
 			.filter(cons -> Objects.equals(erasure, erasure().getErasure(cons)))
 			.findFirst();
+	}
+
+	/**
+	 * Returns the exported constructors of this class.
+	 *
+	 * @param classDecl the class
+	 * @return its exported constructors
+	 */
+	default Set<ConstructorDecl> getExportedConstructors(ClassDecl classDecl) {
+		Preconditions.checkNotNull(classDecl);
+		return classDecl.getDeclaredConstructors().stream()
+			.filter(constructor -> properties().isExported(classDecl, constructor))
+			.collect(Collectors.toUnmodifiableSet());
 	}
 
 	/**

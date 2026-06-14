@@ -415,6 +415,39 @@ class ExecutableRemovedTest {
 		assertBC("A", "A.<init>(int)", BreakingChangeKind.EXECUTABLE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("// Cannot instantiate or subclass A through its protected constructor")
+	@Test
+	void protected_constructor_removed_from_final_class() {
+		var v1 = """
+			public final class A {
+				protected A(int i) {}
+			}""";
+		var v2 = "public final class A {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("class C extends B {}")
+	@Test
+	void protected_constructor_removed_from_sealed_root_with_non_sealed_subtype() {
+		var v1 = """
+			public sealed class A permits B {
+				protected A(int i) {}
+			}
+			public non-sealed class B extends A {
+				public B() { super(0); }
+			}""";
+		var v2 = """
+			public sealed class A permits B {
+				protected A() {}
+			}
+			public non-sealed class B extends A {
+				public B() { super(); }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("A a = new A(0);")
 	@Test
 	void record_implicit_constructor_changed() {

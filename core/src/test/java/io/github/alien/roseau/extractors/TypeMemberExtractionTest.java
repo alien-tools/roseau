@@ -155,13 +155,16 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.analyzer().isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(1);
+		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 
+		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
 
+		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
 	}
@@ -185,13 +188,16 @@ class TypeMemberExtractionTest {
 		var a = assertClass(api, "A");
 		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isSealed());
-		assertThat(a.getDeclaredFields()).hasSize(1);
+		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 
+		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
 
+		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
 	}
@@ -214,13 +220,16 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.analyzer().isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(1);
+		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 
+		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
 
+		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
 	}

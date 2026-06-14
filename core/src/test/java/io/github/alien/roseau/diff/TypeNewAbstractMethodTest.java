@@ -133,18 +133,4 @@ class TypeNewAbstractMethodTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("class C implements I {}")
-	@Test
-	void method_added_while_interface_becomes_sealed() {
-		var v1 = "public interface I {}";
-		var v2 = """
-			public sealed interface I permits X {
-				void m();
-			}
-			final class X implements I {
-				public void m() {}
-			}""";
-
-		assertBC("I", "I", BreakingChangeKind.TYPE_NEW_ABSTRACT_METHOD, 1, buildDiff(v1, v2));
-	}
 }

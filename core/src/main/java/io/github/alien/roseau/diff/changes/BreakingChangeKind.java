@@ -15,6 +15,7 @@ public enum BreakingChangeKind {
 	TYPE_NOW_PROTECTED(MUTATION, true, true),
 	TYPE_KIND_CHANGED(MUTATION, true, true),
 	TYPE_SUPERTYPE_REMOVED(MUTATION, true, true),
+	TYPE_NOW_SEALED(MUTATION, true, true),
 	TYPE_NEW_ABSTRACT_METHOD(ADDITION, false, true),
 
 	// Class-related BCs,
