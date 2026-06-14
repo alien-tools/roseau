@@ -1,6 +1,6 @@
 # Roseau: Breaking Change Analysis for Java Libraries
 
-Roseau (/ʁozo/) is a **fast** and **accurate** tool for detecting breaking changes between library versions, similar to tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
+Roseau (/ʁozo/) is a **fast** and **[accurate](ACCURACY.md)** tool for detecting breaking changes between library versions, similar to tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
 Whether you're a library maintainer or upgrading dependencies in your projects, Roseau helps ensure backward compatibility across versions.
 Roseau analyzes both JAR files and source code, is highly configurable, and includes a dedicated Maven plug-in.
 
