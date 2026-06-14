@@ -5,7 +5,9 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class ClassNoLongerConcretelyExtensibleTest {
@@ -43,7 +45,11 @@ class ClassNoLongerConcretelyExtensibleTest {
 		assertBC("A", "A", BreakingChangeKind.CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE, 1, buildDiff(v1, v2));
 	}
 
-	@Client("class C extends B { @Override public void m() {} }")
+	@Client("""
+		class C extends B {
+			@Override public void m() {}
+			@Override public void n() {}
+		}""")
 	@Test
 	void abstract_method_no_longer_overridden() {
 		var v1 = """
@@ -53,7 +59,7 @@ class ClassNoLongerConcretelyExtensibleTest {
 			
 			public abstract class B extends A {
 				public abstract void n();
-				void m() {}
+				public void m() {}
 			}""";
 		var v2 = """
 			abstract class A {
@@ -64,7 +70,9 @@ class ClassNoLongerConcretelyExtensibleTest {
 				public abstract void n();
 			}""";
 
-		assertBC("B", "B", BreakingChangeKind.CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE, 1, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "B", BreakingChangeKind.CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE, 1),
+			bc("B", "B.m()", BreakingChangeKind.EXECUTABLE_REMOVED, 3));
 	}
 
 	@Client("abstract class B extends A { @Override public void m() {} }")
@@ -85,7 +93,7 @@ class ClassNoLongerConcretelyExtensibleTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("abstract class C extends B { @Override public void m() {} }")
+	@Client("abstract class C extends B {}")
 	@Test
 	void new_abstract_method_in_unconcretizable_class_inherited() {
 		var v1 = """
@@ -105,8 +113,6 @@ class ClassNoLongerConcretelyExtensibleTest {
 				public abstract void n();
 				public abstract void o();
 			}""";
-
-		assertNoBC(buildDiff(v1, v2));
 	}
 
 	@Client("class B extends A { @Override public void m() {} }")

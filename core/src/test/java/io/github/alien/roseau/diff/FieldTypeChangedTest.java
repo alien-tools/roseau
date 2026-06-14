@@ -347,16 +347,19 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("String s = new A().f.get(0);")
+	@Client("""
+		java.util.List<String> f = new A().f;
+		f.add("");
+		String s = f.get(0);""")
 	@Test
 	void raw_subtype_to_parameterized_supertype_final_binary_only() {
 		var v1 = """
 			public class A {
-				public final java.util.List<String> f = null;
+				public final java.util.List<String> f = new java.util.ArrayList<>();
 			}""";
 		var v2 = """
 			public class A {
-				public final java.util.ArrayList f = null;
+				public final java.util.ArrayList f = new java.util.ArrayList<>();
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
@@ -368,26 +371,29 @@ class FieldTypeChangedTest {
 	void raw_to_parameterized() {
 		var v1 = """
 			public class A {
-				public java.util.List f;
+				public java.util.List f = new java.util.ArrayList();
 			}""";
 		var v2 = """
 			public class A {
-				public java.util.List<String> f;
+				public java.util.List<String> f = new java.util.ArrayList<String>();
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("String s = new A().f.get(0);")
+	@Client("""
+		java.util.List<String> l = new A().f;
+		l.add("");
+		String s = l.get(0);""")
 	@Test
 	void parameterized_to_raw() {
 		var v1 = """
 			public class A {
-				public java.util.List<String> f;
+				public java.util.List<String> f = new java.util.ArrayList<>();
 			}""";
 		var v2 = """
 			public class A {
-				public java.util.List f;
+				public java.util.List f = new java.util.ArrayList<>();
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));

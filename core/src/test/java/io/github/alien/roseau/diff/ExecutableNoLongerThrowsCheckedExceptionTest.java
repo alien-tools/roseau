@@ -354,12 +354,12 @@ class ExecutableNoLongerThrowsCheckedExceptionTest {
 			public class A {
 				public void m() throws E {}
 			}
-			class E extends Exception {}""";
+			public class E extends Exception {}""";
 		var v2 = """
 			public class A {
 				public void m() throws E {}
 			}
-			class E extends RuntimeException {}""";
+			public class E extends RuntimeException {}""";
 
 		assertNoBC(buildDiff(v1, v2));
 	}

@@ -100,7 +100,7 @@ class TypeNewAbstractMethodTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new B(){}.m();")
+	@Client("// Can't extend or instantiate B")
 	@Test
 	void method_abstract_added_to_class_with_private_constructor() {
 		var v1 = """

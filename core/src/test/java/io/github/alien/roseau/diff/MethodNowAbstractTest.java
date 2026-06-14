@@ -139,38 +139,38 @@ class MethodNowAbstractTest {
 		assertBC("B", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("new I(){}.m()")
+	@Client("new X().m();")
 	@Test
 	void default_now_abstract_in_sealed_interface() {
 		var v1 = """
 			public sealed interface I permits X {
 				default void m() {}
 			}
-			final class X implements I {}""";
+			public final class X implements I {}""";
 		var v2 = """
 			public sealed interface I permits X {
 				void m();
 			}
-			final class X implements I {
+			public final class X implements I {
 				public void m() {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new I(){}.m()")
+	@Client("new X().m();")
 	@Test
 	void default_now_abstract_while_interface_becomes_unsealed() {
 		var v1 = """
 			public sealed interface I permits X {
 				default void m() {}
 			}
-			final class X implements I {}""";
+			public final class X implements I {}""";
 		var v2 = """
 			public interface I {
 				void m();
 			}
-			final class X implements I {
+			public final class X implements I {
 				public void m() {}
 			}""";
 

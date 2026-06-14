@@ -4,8 +4,6 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
-import java.util.stream.Collectors;
-
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
@@ -456,16 +454,19 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("String s = new A().m().get(0);")
+	@Client("""
+		java.util.List<String> f = new A().m();
+		f.add("");
+		String s = f.get(0);""")
 	@Test
 	void raw_subtype_to_parameterized_supertype_final_binary_only() {
 		var v1 = """
 			public class A {
-				public final java.util.List<String> m() { return null; }
+				public final java.util.List<String> m() { return new java.util.ArrayList<>(java.util.List.of("")); }
 			}""";
 		var v2 = """
 			public class A {
-				public final java.util.ArrayList m() { return null; }
+				public final java.util.ArrayList m() { return new java.util.ArrayList<>(java.util.List.of("")); }
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
@@ -660,14 +661,14 @@ class MethodReturnTypeChangedTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("String s = new A().m();")
+	@Client("String s = new B().m();")
 	@Test
 	void inherited_members_are_type_parameter_substituted() {
 		var v1 = """
-			public class A<T> { public T m() {} }
+			public class A<T> { public T m() { return null; } }
 			public class B extends A<String> {}""";
 		var v2 = """
-			public class A<T> { public T m() {} }
+			public class A<T> { public T m() { return null; } }
 			public class B extends A<Integer> {}""";
 
 		assertBCs(buildDiff(v1, v2),
@@ -675,7 +676,10 @@ class MethodReturnTypeChangedTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
 	}
 
-	@Client("String s = new A().get(0);")
+	@Client("""
+		A a = new A();
+		a.add("");
+		String s = a.get(0);""")
 	@Test
 	void inherited_members_are_type_parameter_substituted_jdk() {
 		var v1 = "public class A extends java.util.ArrayList<String> {}";
