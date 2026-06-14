@@ -1,5 +1,5 @@
 # enabled	gav	reason
-true	io.github.alien-tools:roseau-core:0.4.0	
+true	io.github.alien-tools:roseau-core:0.6.0	
 true	org.assertj:assertj-core:3.27.3	
 true	com.google.guava:guava:32.1.3-jre	
 true	org.eclipse.collections:eclipse-collections:13.0.0		
@@ -35,6 +35,26 @@ true	io.reactivex.rxjava3:rxjava:3.1.12
 true	org.openjdk.jmh:jmh-core:1.37	
 true	org.glassfish.jersey.core:jersey-server:3.1.11	
 true	org.glassfish.jersey.core:jersey-client:3.1.11	
+true	info.picocli:picocli:4.7.6	
+true	org.yaml:snakeyaml:2.3	
+true	org.apache.commons:commons-text:1.12.0	
+true	org.apache.commons:commons-math3:3.6.1	
+true	org.apache.commons:commons-compress:1.27.1	
+true	org.antlr:antlr4-runtime:4.13.2	
+true	org.threeten:threeten-extra:1.8.0	
+true	com.google.protobuf:protobuf-java:4.28.3	
+true	org.apache.commons:commons-csv:1.12.0	
+true	io.vavr:vavr:0.10.4	
+true	org.apache.poi:poi:5.5.1	
+true	org.apache.pdfbox:pdfbox:3.0.7	
+true	org.jgrapht:jgrapht-core:1.5.3	
+true	org.apache.avro:avro:1.12.1	
+true	org.apache.tika:tika-core:3.3.1	
+true	org.owasp.encoder:encoder:1.4.0	
+false	net.bytebuddy:byte-buddy:1.15.10	One enum differs on abstract?
+false	com.github.ben-manes.caffeine:caffeine:3.1.8	Generated classes
+false	com.zaxxer:HikariCP:5.1.0	Generated proxies
+false	org.jsoup:jsoup:1.18.1	ulti-release JAR with different API
 false	org.osgi:org.osgi.core:6.0.0	Missing dependencies
 false	org.mapstruct:mapstruct:1.6.3	repeatable annotation difference between ASM and JDT
 false	org.eclipse.collections:eclipse-collections-api:13.0.0	interface diamond conflict

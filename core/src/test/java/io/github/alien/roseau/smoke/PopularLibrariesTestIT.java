@@ -400,7 +400,7 @@ class PopularLibrariesTestIT {
 			return files
 				.filter(path -> path.toString().endsWith(".java"))
 				.mapToLong(path -> {
-					try (BufferedReader reader = Files.newBufferedReader(path)) {
+					try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.ISO_8859_1)) {
 						return reader.lines().count();
 					} catch (IOException e) {
 						System.err.println("Failed to count lines in " + path + ": " + e.getMessage());
