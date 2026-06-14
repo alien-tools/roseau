@@ -51,7 +51,7 @@ jobs:
         if: always() && (github.event_name != 'schedule' || steps.smoke-cache.outputs.cache-hit != 'true')
         with:
           name: Smoke Tests
-          path: '**/target/failsafe-reports/*.xml'
+          path: '**/target/failsafe-reports/TEST-*.xml'
           reporter: java-junit
           fail-on-error: true
 
