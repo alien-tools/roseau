@@ -11,7 +11,6 @@ import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
@@ -48,6 +47,8 @@ import static picocli.CommandLine.Spec;
 		"Output symbols: ✗ removal  ⚠ modification  ★ addition"
 	})
 public final class RoseauCLI implements Callable<Integer> {
+	private static final List<String> VERBOSE_LOGGERS = List.of("io.github.alien.roseau", "org.objectweb.asm", "spoon");
+
 	private Console console;
 	@Spec
 	private CommandSpec spec;
@@ -341,9 +342,9 @@ public final class RoseauCLI implements Callable<Integer> {
 			console = new Console(spec.commandLine().getOut(), spec.commandLine().getErr(), verbosity);
 
 			if (verbosity == Console.Verbosity.DEBUG) {
-				Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
+				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.DEBUG));
 			} else if (verbosity == Console.Verbosity.VERBOSE) {
-				Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.INFO));
 			}
 
 			RoseauOptions cliOptions = makeCliOptions();
@@ -384,6 +385,10 @@ public final class RoseauCLI implements Callable<Integer> {
 				console.printlnErr("Use -v/-vv for detailed error logs.");
 			}
 			return ExitCode.ERROR.code();
+		} finally {
+			if (verbosity != Console.Verbosity.NORMAL) {
+				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.WARN));
+			}
 		}
 	}
 
