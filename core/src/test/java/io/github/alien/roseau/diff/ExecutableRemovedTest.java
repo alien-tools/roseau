@@ -381,6 +381,37 @@ class ExecutableRemovedTest {
 	}
 
 	@Client("""
+		class B extends A { B() { super(0); } }
+		A a = new A(0) {};""")
+	@Test
+	void abstract_class_constructor_now_protected() {
+		var v1 = """
+			public abstract class A {
+				public A(int i) {}
+			}""";
+		var v2 = """
+			public abstract class A {
+				protected A(int i) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		class B extends A { B() { super(); } }
+		A a = new A() {};""")
+	@Test
+	void abstract_class_default_constructor_now_protected() {
+		var v1 = "public abstract class A {}";
+		var v2 = """
+			public abstract class A {
+				protected A() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
 		class B extends A {
 			B() {
 				super();
