@@ -1,8 +1,8 @@
 # enabled	gav	reason
-true	io.github.alien-tools:roseau-core:0.4.0
+true	io.github.alien-tools:roseau-core:0.4.0	
 true	org.assertj:assertj-core:3.27.3	
 true	com.google.guava:guava:32.1.3-jre	
-true	org.eclipse.collections:eclipse-collections:13.0.0	
+true	org.eclipse.collections:eclipse-collections:13.0.0		
 true	io.dropwizard:dropwizard-core:4.0.1	
 true	org.reactivestreams:reactive-streams:1.0.4	
 true	com.google.code.gson:gson:2.10.1	
@@ -25,7 +25,7 @@ true	commons-codec:commons-codec:1.18.0
 true	commons-io:commons-io:2.18.0	
 true	commons-logging:commons-logging:1.3.5	
 true	commons-beanutils:commons-beanutils:1.10.0	
-true	org.hamcrest:hamcrest:3.0	
+true	org.hamcrest:hamcrest:3.0		
 true	com.alibaba:fastjson:2.0.54	
 true	org.json:json:20250107	
 true	org.apache.maven:maven-plugin-api:3.9.11	

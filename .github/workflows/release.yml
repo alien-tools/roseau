@@ -34,7 +34,7 @@ jobs:
           distribution: 'temurin'
           cache: 'maven'
       - name: Verify build
-        run: ${{ runner.os == 'Windows' && 'mvn' || './mvnw' }} --batch-mode verify
+        run: ${{ runner.os == 'Windows' && 'mvn' || './mvnw' }} --batch-mode -Pinclude-smoke verify
 
   stage:
     name: Stage Maven artifacts

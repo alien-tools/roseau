@@ -3,8 +3,8 @@ package io.github.alien.roseau.smoke;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.extractors.ExtractorType;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
@@ -19,6 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @Disabled("Not sure how to share/download JDK's sources and binaries; set JDK_BIN_PATH & JDK_SRC_PATH")
+@Tag("smoke")
 class JdkTestIT {
 	static final String JDK_BIN_PATH = "/data/jdk21/bin";
 	static final String JDK_SRC_PATH = "/data/jdk21/sources";
