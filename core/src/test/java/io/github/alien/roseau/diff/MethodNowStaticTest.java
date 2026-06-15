@@ -76,7 +76,7 @@ class MethodNowStaticTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("I i = null; i.m();")
+	@Client("I i = new A(); i.m();")
 	@Test
 	void sealed_interface_method_now_static() {
 		var v1 = """

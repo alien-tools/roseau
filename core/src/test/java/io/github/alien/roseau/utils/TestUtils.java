@@ -18,6 +18,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.options.RoseauOptions.Exclude;
+import io.github.alien.roseau.utils.compat.DiffGroundTruthRecorder;
 import org.opentest4j.AssertionFailedError;
 
 import javax.tools.FileObject;
@@ -340,7 +341,9 @@ public class TestUtils {
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		API v1 = buildSourcesAPI(sourcesV1);
 		API v2 = buildSourcesAPI(sourcesV2);
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		List<BreakingChange> breakingChanges = Roseau.diff(v1, v2).getBreakingChanges();
+		DiffGroundTruthRecorder.record(sourcesV1, List.of(), sourcesV2, List.of(), breakingChanges);
+		return breakingChanges;
 
 		// Simple differential testing with japicmp
 		/*try {
@@ -373,7 +376,9 @@ public class TestUtils {
 	                                             String sourcesV2, List<Path> classpathV2) {
 		API v1 = buildSourcesAPI(sourcesV1, classpathV1);
 		API v2 = buildSourcesAPI(sourcesV2, classpathV2);
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		List<BreakingChange> breakingChanges = Roseau.diff(v1, v2).getBreakingChanges();
+		DiffGroundTruthRecorder.record(sourcesV1, classpathV1, sourcesV2, classpathV2, breakingChanges);
+		return breakingChanges;
 	}
 
 	/*public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {
