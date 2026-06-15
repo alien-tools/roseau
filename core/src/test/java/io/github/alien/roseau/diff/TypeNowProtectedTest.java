@@ -13,11 +13,17 @@ class TypeNowProtectedTest {
 	@Client("A.B b; new A().new B();")
 	@Test
 	void public_nested_type_now_protected() {
-		var v1 = "public class A { public class B {} }";
-		var v2 = "public class A { protected class B {} }";
+		var v1 = """
+			public class A {
+				public class B {}
+			}""";
+		var v2 = """
+			public class A {
+				protected class B {}
+			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A$B", "A$B", TYPE_NOW_PROTECTED, 1),
+			bc("A$B", "A$B", TYPE_NOW_PROTECTED, 2),
 			bc("A$B", "A$B.<init>()", EXECUTABLE_NOW_PROTECTED, -1));
 	}
 }

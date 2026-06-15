@@ -83,15 +83,16 @@ class MethodNowStaticTest {
 			public sealed interface I permits A {
 				default void m() {}
 			}
-			final class A implements I {}""";
+			public final class A implements I {}""";
 		var v2 = """
 			public sealed interface I permits A {
 				static void m() {}
 			}
-			final class A implements I {}""";
+			public final class A implements I {}""";
 
 		assertBCs(buildDiff(v1, v2),
 			bc("I", "I.m()", BreakingChangeKind.METHOD_NOW_STATIC, 2),
+			bc("A", "I.m()", BreakingChangeKind.METHOD_NOW_STATIC, 2),
 			bc("I", "I.m()", BreakingChangeKind.METHOD_OVERRIDABLE_NOW_STATIC, 2));
 	}
 }

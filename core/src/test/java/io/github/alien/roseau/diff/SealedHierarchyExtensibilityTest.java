@@ -10,7 +10,9 @@ import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class SealedHierarchyExtensibilityTest {
-	@Client("class C extends B { @Override public void m() {} }")
+	@Client("""
+		class C extends B { @Override public void m() {} }
+		new C().m();""")
 	@Test
 	void method_now_final_in_sealed_class_with_non_sealed_subclass() {
 		var v1 = """
@@ -46,7 +48,9 @@ class SealedHierarchyExtensibilityTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("class D extends C { @Override public void m() {} }")
+	@Client("""
+		class D extends C { @Override public void m() {} }
+		new D().m();""")
 	@Test
 	void method_now_final_in_sealed_class_with_exported_non_sealed_descendant() {
 		var v1 = """
@@ -69,7 +73,8 @@ class SealedHierarchyExtensibilityTest {
 
 	@Client("""
 		class C extends B { @Override public void m() {} }
-		new C().m();""")
+		new C().m();
+		new B().m();""")
 	@Test
 	void method_now_static_in_sealed_class_with_non_sealed_subclass() {
 		var v1 = """
@@ -90,7 +95,9 @@ class SealedHierarchyExtensibilityTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_OVERRIDABLE_NOW_STATIC, 2));
 	}
 
-	@Client("class C extends B {}")
+	@Client("""
+		class C extends B {}
+		new C().m();""")
 	@Test
 	void method_now_abstract_in_sealed_class_with_non_sealed_subclass() {
 		var v1 = """
@@ -109,7 +116,9 @@ class SealedHierarchyExtensibilityTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2));
 	}
 
-	@Client("class C implements J {}")
+	@Client("""
+		class C implements J {}
+		new C().m();""")
 	@Test
 	void default_method_now_abstract_in_sealed_interface_with_non_sealed_subinterface() {
 		var v1 = """
@@ -238,7 +247,8 @@ class SealedHierarchyExtensibilityTest {
 	@Client("""
 		class C extends B {
 			void use() { p(); }
-		}""")
+		}
+		new C().use();""")
 	@Test
 	void protected_method_removed_from_sealed_class_with_non_sealed_subclass() {
 		var v1 = """
@@ -258,7 +268,8 @@ class SealedHierarchyExtensibilityTest {
 	@Client("""
 		class C extends B {
 			int use() { return f; }
-		}""")
+		}
+		new C().use();""")
 	@Test
 	void protected_field_removed_from_sealed_class_with_non_sealed_subclass() {
 		var v1 = """

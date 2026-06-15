@@ -31,6 +31,8 @@ import java.util.stream.Stream;
 public final class JavaCompatibilityOracle {
 	private static final Duration EXECUTION_TIMEOUT = Duration.ofSeconds(10);
 	private static final String PATH_SEPARATOR = System.getProperty("path.separator");
+	private static final String SYNTHETIC_API_PACKAGE = "api";
+	private static final String CLIENT_PACKAGE = "client";
 
 	private JavaCompatibilityOracle() {
 	}
@@ -50,13 +52,13 @@ public final class JavaCompatibilityOracle {
 
 	private static JavaCompatibilityResult check(Path workingDirectory, DiffCompatibilityCase compatibilityCase,
 	                                             Client client) throws IOException {
-		Path v1Sources = writeSources(workingDirectory.resolve("v1/src"), compatibilityCase.sourcesV1());
-		Path v2Sources = writeSources(workingDirectory.resolve("v2/src"), compatibilityCase.sourcesV2());
+		SourceSet v1Sources = writeSources(workingDirectory.resolve("v1/src"), compatibilityCase.sourcesV1());
+		SourceSet v2Sources = writeSources(workingDirectory.resolve("v2/src"), compatibilityCase.sourcesV2());
 		Path v1Classes = workingDirectory.resolve("v1/classes");
 		Path v2Classes = workingDirectory.resolve("v2/classes");
 
-		CompilationResult v1Compilation = compileSources(v1Sources, v1Classes, compatibilityCase.classpathV1());
-		CompilationResult v2Compilation = compileSources(v2Sources, v2Classes, compatibilityCase.classpathV2());
+		CompilationResult v1Compilation = compileSources(v1Sources.root(), v1Classes, compatibilityCase.classpathV1());
+		CompilationResult v2Compilation = compileSources(v2Sources.root(), v2Classes, compatibilityCase.classpathV2());
 		if (!v1Compilation.succeeded() || !v2Compilation.succeeded()) {
 			return new JavaCompatibilityResult(v1Compilation, v2Compilation,
 				CompilationResult.skipped("client compilation requires compilable v1 and v2 libraries"),
@@ -70,7 +72,8 @@ public final class JavaCompatibilityOracle {
 		createJar(v1Classes, v1Jar);
 		createJar(v2Classes, v2Jar);
 
-		Path clientSource = writeClient(workingDirectory.resolve("client/src"), client);
+		Path clientSource = writeClient(workingDirectory.resolve("client/src"), client,
+			v1Sources.hasSyntheticApiPackage());
 		Path clientV1Classes = workingDirectory.resolve("client/classes-v1");
 		Path clientV2Classes = workingDirectory.resolve("client/classes-v2");
 
@@ -94,14 +97,26 @@ public final class JavaCompatibilityOracle {
 			clientV1Execution, clientV2Execution);
 	}
 
-	private static Path writeSources(Path sourcesDirectory, String sources) throws IOException {
+	private static SourceSet writeSources(Path sourcesDirectory, String sources) throws IOException {
 		Files.createDirectories(sourcesDirectory);
+		boolean hasSyntheticApiPackage = false;
 		for (Map.Entry<String, String> entry : TestUtils.buildSourcesMap(sources).entrySet()) {
-			Path sourceFile = sourcePath(sourcesDirectory, entry.getKey());
+			String sourceName = entry.getKey();
+			String source = entry.getValue();
+			if (shouldMoveToSyntheticApiPackage(sourceName)) {
+				sourceName = SYNTHETIC_API_PACKAGE + "." + sourceName;
+				source = "package " + SYNTHETIC_API_PACKAGE + ";" + System.lineSeparator() + System.lineSeparator() + source;
+				hasSyntheticApiPackage = true;
+			}
+			Path sourceFile = sourcePath(sourcesDirectory, sourceName);
 			Files.createDirectories(sourceFile.getParent());
-			Files.writeString(sourceFile, entry.getValue());
+			Files.writeString(sourceFile, source);
 		}
-		return sourcesDirectory;
+		return new SourceSet(sourcesDirectory, hasSyntheticApiPackage);
+	}
+
+	private static boolean shouldMoveToSyntheticApiPackage(String sourceName) {
+		return !"module-info".equals(sourceName) && !sourceName.contains(".");
 	}
 
 	private static Path sourcePath(Path sourcesDirectory, String sourceName) {
@@ -111,17 +126,24 @@ public final class JavaCompatibilityOracle {
 		return sourcesDirectory.resolve(sourceName.replace('.', '/') + ".java");
 	}
 
-	private static Path writeClient(Path sourcesDirectory, Client client) throws IOException {
-		Files.createDirectories(sourcesDirectory);
+	private static Path writeClient(Path sourcesDirectory, Client client, boolean importSyntheticApiPackage) throws IOException {
+		Path clientPackageDirectory = sourcesDirectory.resolve(CLIENT_PACKAGE);
+		Files.createDirectories(clientPackageDirectory);
 		String run = client.run().isBlank() ? "" : System.lineSeparator() + client.run();
+		String imports = importSyntheticApiPackage
+			? "import " + SYNTHETIC_API_PACKAGE + ".*;" + System.lineSeparator() + System.lineSeparator()
+			: "";
 		String source = """
+			package %s;
+
+			%s\
 			public class Client {
-				public static void main(String[] args) throws Throwable {
+				public static void main(String[] args) {
 			%s
 				}
 			}
-			""".formatted(indent(client.value() + run));
-		Path sourceFile = sourcesDirectory.resolve("Client.java");
+			""".formatted(CLIENT_PACKAGE, imports, indent(client.value() + run));
+		Path sourceFile = clientPackageDirectory.resolve("Client.java");
 		Files.writeString(sourceFile, source);
 		return sourceFile;
 	}
@@ -209,7 +231,7 @@ public final class JavaCompatibilityOracle {
 			ProcessBuilder processBuilder = new ProcessBuilder(
 				Path.of(System.getProperty("java.home"), "bin", "java").toString(),
 				"-cp", joinPaths(runtimeClasspath),
-				"Client"
+				CLIENT_PACKAGE + ".Client"
 			);
 			processBuilder.redirectErrorStream(true);
 			Process process = processBuilder.start();
@@ -257,6 +279,9 @@ public final class JavaCompatibilityOracle {
 				.sorted(Comparator.comparing(Path::toString))
 				.toList();
 		}
+	}
+
+	private record SourceSet(Path root, boolean hasSyntheticApiPackage) {
 	}
 
 	record JavaCompatibilityResult(

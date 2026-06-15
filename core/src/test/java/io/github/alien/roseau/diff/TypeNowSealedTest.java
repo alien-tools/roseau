@@ -25,7 +25,9 @@ class TypeNowSealedTest {
 		assertBC("A", "A", BreakingChangeKind.TYPE_NOW_SEALED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("class C implements I {}")
+	@Client("""
+		class C implements I {}
+		new C();""")
 	@Test
 	void interface_now_sealed() {
 		var v1 = "public interface I {}";
@@ -36,7 +38,9 @@ class TypeNowSealedTest {
 		assertBC("I", "I", BreakingChangeKind.TYPE_NOW_SEALED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("class C implements I { @Override public void m() {} }")
+	@Client("""
+		class C implements I { @Override public void m() {} }
+		new C().m();""")
 	@Test
 	void default_method_does_not_become_final_when_interface_becomes_sealed() {
 		var v1 = """
@@ -52,7 +56,9 @@ class TypeNowSealedTest {
 		assertBC("I", "I", BreakingChangeKind.TYPE_NOW_SEALED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("class C implements I {}")
+	@Client("""
+		class C implements I {}
+		new C().m();""")
 	@Test
 	void default_method_now_abstract_while_interface_becomes_sealed() {
 		var v1 = """
@@ -70,7 +76,9 @@ class TypeNowSealedTest {
 		assertBC("I", "I", BreakingChangeKind.TYPE_NOW_SEALED, 1, buildDiff(v1, v2));
 	}
 
-	@Client("class C implements I {}")
+	@Client("""
+		class C implements I {}
+		new C();""")
 	@Test
 	void abstract_method_added_while_interface_becomes_sealed() {
 		var v1 = "public interface I {}";

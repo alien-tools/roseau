@@ -607,10 +607,13 @@ class ExecutableRemovedTest {
 
 	@Client("""
 		new A() {
+			void use() {
+				m();
+			}
 			@Override protected void m() {
 				super.m();
 			}
-		}.m();""")
+		}.use();""")
 	@Test
 	void protected_to_package_private() {
 		var v1 = """

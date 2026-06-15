@@ -5,7 +5,9 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class TypeSupertypeRemovedTest {
@@ -88,15 +90,17 @@ class TypeSupertypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A b = new B();")
+	@Client("""
+		A b = new B();
+		b.m();""")
 	@Test
 	void public_interface_removed() {
 		var v1 = """
-			public interface A {}
-			public class B implements A {}""";
+			public interface A { void m(); }
+			public class B implements A { public void m() {} }""";
 		var v2 = """
-			public interface A {}
-			public class B {}""";
+			public interface A { void m(); }
+			public class B { public void m() {} }""";
 
 		assertBC("B", "B", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));
 	}
@@ -116,16 +120,18 @@ class TypeSupertypeRemovedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("A c = new C();")
+	@Client("""
+		A c = new C();
+		c.m();""")
 	@Test
 	void public_interface_removed_indirect() {
 		var v1 = """
-			public interface A {}
-			class B implements A {}
+			public interface A { void m(); }
+			class B implements A { public void m() {} }
 			public class C extends B {}""";
 		var v2 = """
-			public interface A {}
-			class B {}
+			public interface A { void m(); }
+			class B { public void m() {} }
 			public class C extends B {}""";
 
 		assertBC("C", "C", BreakingChangeKind.TYPE_SUPERTYPE_REMOVED, 1, buildDiff(v1, v2));

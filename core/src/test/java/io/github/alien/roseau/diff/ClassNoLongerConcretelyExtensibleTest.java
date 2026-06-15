@@ -28,7 +28,9 @@ class ClassNoLongerConcretelyExtensibleTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("class B extends A { @Override public void m() {} }")
+	@Client("""
+		class B extends A { @Override public void m() {} }
+		new B().m();""")
 	@Test
 	void making_package_private_method_abstract_in_concretizable_class() {
 		var v1 = """
@@ -115,7 +117,9 @@ class ClassNoLongerConcretelyExtensibleTest {
 			}""";
 	}
 
-	@Client("class B extends A { @Override public void m() {} }")
+	@Client("""
+		class B extends A { @Override public void m() {} }
+		new B().m();""")
 	@Test
 	void adding_package_private_abstract_method_to_concretizable_class() {
 		var v1 = """
