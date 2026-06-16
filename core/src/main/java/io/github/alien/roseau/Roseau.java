@@ -2,6 +2,7 @@ package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
+import io.github.alien.roseau.api.analysis.DefaultApiAnalyzer;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
@@ -87,7 +88,7 @@ public final class Roseau {
 	public static API buildAPI(LibraryTypes types, TypeResolver resolver) {
 		Preconditions.checkNotNull(types);
 		Preconditions.checkNotNull(resolver);
-		return new API(types, resolver);
+		return new API(types, new DefaultApiAnalyzer(types, resolver));
 	}
 
 	/**

@@ -152,12 +152,12 @@ class MethodsExtractionTest {
 		var b = assertClass(v1, "B");
 		var c = assertClass(v1, "C");
 
-		assertFalse(v1.isExported(a, am));
-		assertFalse(v1.isExported(a, an));
-		assertTrue(v1.isExported(b, am));
-		assertTrue(v1.isExported(b, an));
-		assertTrue(v1.isExported(c, am));
-		assertFalse(v1.isExported(c, an));
+		assertFalse(v1.analyzer().isExported(a, am));
+		assertFalse(v1.analyzer().isExported(a, an));
+		assertTrue(v1.analyzer().isExported(b, am));
+		assertTrue(v1.analyzer().isExported(b, an));
+		assertTrue(v1.analyzer().isExported(c, am));
+		assertFalse(v1.analyzer().isExported(c, an));
 	}
 
 	@ParameterizedTest

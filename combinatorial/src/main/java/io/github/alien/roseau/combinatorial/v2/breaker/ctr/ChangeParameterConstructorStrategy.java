@@ -18,7 +18,7 @@ public final class ChangeParameterConstructorStrategy extends AbstractCtrStrateg
 				index,
 				StringUtils.getPrettyQualifiedName(type),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(ctr)),
 				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
 			api
 		);

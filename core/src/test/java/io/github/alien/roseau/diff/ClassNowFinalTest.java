@@ -41,17 +41,6 @@ class ClassNowFinalTest {
 
 	@Client("new A(){};")
 	@Test
-	void class_now_sealed() {
-		var v1 = "public class A {}";
-		var v2 = """
-			public sealed class A permits B {}
-			final class B extends A {}""";
-
-		assertBC("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1, buildDiff(v1, v2));
-	}
-
-	@Client("new A(){};")
-	@Test
 	void class_now_record() {
 		var v1 = "public class A {}";
 		var v2 = "public record A() {}";
@@ -80,7 +69,7 @@ class ClassNowFinalTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1),
 			bc("A", "A", BreakingChangeKind.CLASS_NOW_ABSTRACT, 1),
-			bc("A", "A.<init>()", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1));
+			bc("A", "A.<init>()", BreakingChangeKind.EXECUTABLE_REMOVED, -1));
 	}
 
 	@Client("new A.B(){};")
@@ -120,5 +109,23 @@ class ClassNowFinalTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("abstract class B extends A { @Override public void m() {} }")
+	@Test
+	void unconcretizable_class_becomes_final() {
+		var v1 = """
+			public abstract class A {
+				public abstract void m();
+				abstract void n();
+			}""";
+		var v2 = """
+			public final class A {
+				public void m() {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.CLASS_NOW_FINAL, 1),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_NOW_FINAL, 2));
 	}
 }

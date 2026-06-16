@@ -11,13 +11,14 @@ import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
@@ -26,6 +27,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
+import java.util.regex.Pattern;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -38,9 +40,15 @@ import static picocli.CommandLine.Spec;
 @Command(name = "roseau", sortOptions = false, mixinStandardHelpOptions = true,
 	versionProvider = RoseauCLI.VersionProvider.class,
 	description = "Roseau detects breaking changes between two versions (--v1/--v2) of a Java module or library. " +
-		"--v1 and --v2 can point to either JAR files or source code directories. " +
-		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 /path/to/library-2.0.0.jar")
+		"--v1 and --v2 accept JAR files, source code directories, or Maven coordinates (groupId:artifactId:version). " +
+		"Example: roseau --diff --v1 /path/to/library-1.0.0.jar --v2 com.example:library:2.0.0",
+	footer = {
+		"",
+		"Output symbols: ✗ removal  ⚠ modification  ★ addition"
+	})
 public final class RoseauCLI implements Callable<Integer> {
+	private static final List<String> VERBOSE_LOGGERS = List.of("io.github.alien.roseau", "org.objectweb.asm", "spoon");
+
 	private Console console;
 	@Spec
 	private CommandSpec spec;
@@ -49,19 +57,23 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private static class Mode {
 		@Option(names = "--api",
-			description = "Serialize the API model of --v1; see --api-json")
+			description = "Serialize the API model of --v1 as JSON; prints to stdout if --api-json is not provided")
 		boolean api;
 		@Option(names = "--diff",
 			description = "Compute breaking changes between versions --v1 and --v2")
 		boolean diff;
 	}
 
-	@Option(names = "--v1", paramLabel = "<path>",
-		description = "Path to the first version of the library; either a source directory or a JAR")
-	private Path v1;
-	@Option(names = "--v2", paramLabel = "<path>",
-		description = "Path to the second version of the library; either a source directory or a JAR")
-	private Path v2;
+	@Option(names = "--v1", paramLabel = "<path|coordinates>",
+		converter = LibraryVersionConverter.class,
+		description = "First version of the library: a JAR file, source directory (e.g., src/main/java), " +
+			"or Maven coordinates (e.g., com.example:lib:1.0.0)")
+	private LibraryVersion v1;
+	@Option(names = "--v2", paramLabel = "<path|coordinates>",
+		converter = LibraryVersionConverter.class,
+		description = "Second version of the library: a JAR file, source directory (e.g., src/main/java), " +
+			"or Maven coordinates (e.g., com.example:lib:2.0.0)")
+	private LibraryVersion v2;
 	@Option(names = "--api-json", paramLabel = "<path>",
 		description = "Where to serialize the Json API model of --v1 in --api mode")
 	private Path apiJson;
@@ -143,6 +155,23 @@ public final class RoseauCLI implements Callable<Integer> {
 			.toList();
 	}
 
+	private static final class LibraryVersionConverter implements CommandLine.ITypeConverter<LibraryVersion> {
+		private static final Pattern MAVEN_COORDINATES =
+			Pattern.compile("[A-Za-z0-9._-]+:[A-Za-z0-9._-]+(:[A-Za-z0-9._-]+)+");
+
+		@Override
+		public LibraryVersion convert(String value) {
+			if (MAVEN_COORDINATES.matcher(value).matches()) {
+				try {
+					return new LibraryVersion.MavenCoordinates(ArtifactCoordinates.parse(value));
+				} catch (IllegalArgumentException e) {
+					throw new CommandLine.TypeConversionException(e.getMessage());
+				}
+			}
+			return new LibraryVersion.LocalPath(Path.of(value));
+		}
+	}
+
 	private static final class ReportOptionConverter implements CommandLine.ITypeConverter<RoseauOptions.Report> {
 		@Override
 		public RoseauOptions.Report convert(String value) {
@@ -194,10 +223,6 @@ public final class RoseauCLI implements Callable<Integer> {
 			throw new RoseauException("Cannot find v1: %s".formatted(v1Path));
 		}
 
-		if (mode.api && options.v1().apiReport() == null) {
-			throw new RoseauException("--api-json option required with --api mode");
-		}
-
 		Path v2Path = options.v2().location();
 		if (mode.diff && (v2Path == null || !Files.exists(v2Path))) {
 			throw new RoseauException("Cannot find v2: %s".formatted(v2Path));
@@ -224,15 +249,31 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
+	private Path resolveToPath(LibraryVersion version) {
+		if (version == null) {
+			return null;
+		}
+		return switch (version) {
+			case LibraryVersion.LocalPath(var path) -> path;
+			case LibraryVersion.MavenCoordinates(var coords) -> {
+				console.printVerbose("Downloading %s:%s:%s... ".formatted(
+					coords.groupId(), coords.artifactId(), coords.version()));
+				Path path = ArtifactDownloader.downloadArtifact(coords);
+				console.printlnVerbose("done");
+				yield path;
+			}
+		};
+	}
+
 	private RoseauOptions makeCliOptions() {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
 			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			v1, new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
+			resolveToPath(v1), new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			v2, new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
+			resolveToPath(v2), new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
 		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
 		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
@@ -248,10 +289,6 @@ public final class RoseauCLI implements Callable<Integer> {
 		List<Path> classpath = library.getClasspath();
 		console.printlnVerbose("%d classpath entries for %s (%d ms)".formatted(classpath.size(), library.getLocation(),
 			sw.elapsed().toMillis()));
-
-		if (classpath.isEmpty()) {
-			console.printlnErr("Warning: no classpath provided, results may be inaccurate");
-		}
 	}
 
 	private void doApi(Library library, RoseauOptions.Library libraryOptions) {
@@ -263,6 +300,12 @@ public final class RoseauCLI implements Callable<Integer> {
 			sw.elapsed().toMillis()));
 		if (libraryOptions.apiReport() != null) {
 			writeApiReport(types, libraryOptions.apiReport());
+		} else {
+			try {
+				console.println(types.toJson());
+			} catch (IOException e) {
+				throw new RoseauException("Error printing the API", e);
+			}
 		}
 	}
 
@@ -299,9 +342,9 @@ public final class RoseauCLI implements Callable<Integer> {
 			console = new Console(spec.commandLine().getOut(), spec.commandLine().getErr(), verbosity);
 
 			if (verbosity == Console.Verbosity.DEBUG) {
-				Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.DEBUG);
+				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.DEBUG));
 			} else if (verbosity == Console.Verbosity.VERBOSE) {
-				Configurator.setAllLevels(LogManager.getRootLogger().getName(), Level.INFO);
+				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.INFO));
 			}
 
 			RoseauOptions cliOptions = makeCliOptions();
@@ -342,6 +385,10 @@ public final class RoseauCLI implements Callable<Integer> {
 				console.printlnErr("Use -v/-vv for detailed error logs.");
 			}
 			return ExitCode.ERROR.code();
+		} finally {
+			if (verbosity != Console.Verbosity.NORMAL) {
+				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.WARN));
+			}
 		}
 	}
 
@@ -351,10 +398,30 @@ public final class RoseauCLI implements Callable<Integer> {
 	}
 
 	static final class VersionProvider implements CommandLine.IVersionProvider {
+		private static final String VERSION_RESOURCE = "/roseau-version.txt";
+
 		@Override
 		public String[] getVersion() {
-			String impl = Optional.ofNullable(Roseau.class.getPackage().getImplementationVersion()).orElse("0.6.0-SNAPSHOT");
-			return new String[]{"Roseau " + impl};
+			return new String[]{"Roseau " + resolveVersion()};
+		}
+
+		static String resolveVersion() {
+			return Optional.ofNullable(RoseauCLI.class.getPackage().getImplementationVersion())
+				.or(VersionProvider::readVersionResource)
+				.orElse("unknown");
+		}
+
+		private static Optional<String> readVersionResource() {
+			try (InputStream in = RoseauCLI.class.getResourceAsStream(VERSION_RESOURCE)) {
+				if (in == null) {
+					return Optional.empty();
+				}
+
+				String version = new String(in.readAllBytes(), StandardCharsets.UTF_8).trim();
+				return version.isEmpty() ? Optional.empty() : Optional.of(version);
+			} catch (IOException e) {
+				return Optional.empty();
+			}
 		}
 	}
 }

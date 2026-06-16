@@ -66,7 +66,8 @@ public class CachingTypeResolver implements TypeResolver {
 			.findFirst()
 			.map(ResolvedType::new)
 			.orElseGet(() -> {
-				LOGGER.warn("Failed to resolve type reference {} of kind {}", () -> qualifiedName, type::getSimpleName);
+				LOGGER.warn("Failed to resolve type reference {} of kind {}; " +
+					"is the classpath correct?", () -> qualifiedName, type::getSimpleName);
 				return ResolvedType.UNRESOLVED;
 			});
 	}

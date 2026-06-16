@@ -39,6 +39,10 @@ build/
 logs/
 output/
 tmp/
+site/
+
+### Python virtual environments ###
+.venv/
 
 sample/
 !sample/api/v1/

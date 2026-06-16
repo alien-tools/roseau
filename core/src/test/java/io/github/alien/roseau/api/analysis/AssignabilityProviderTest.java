@@ -26,14 +26,15 @@ class AssignabilityProviderTest {
 			}""");
 		var a = assertClass(api, "A");
 		var m = assertMethod(api, a, "m()");
+		var analyzer = api.analyzer();
 
-		assertThat(api.isAssignable(m, PrimitiveTypeReference.INT, PrimitiveTypeReference.LONG)).isTrue();
-		assertThat(api.isAssignable(m, PrimitiveTypeReference.LONG, PrimitiveTypeReference.INT)).isFalse();
+		assertThat(analyzer.isAssignable(m, PrimitiveTypeReference.INT, PrimitiveTypeReference.LONG)).isTrue();
+		assertThat(analyzer.isAssignable(m, PrimitiveTypeReference.LONG, PrimitiveTypeReference.INT)).isFalse();
 
-		assertThat(api.isAssignable(m, PrimitiveTypeReference.INT, new TypeReference<>("java.lang.Integer"))).isTrue();
-		assertThat(api.isAssignable(m, new TypeReference<>("java.lang.Integer"), PrimitiveTypeReference.INT)).isTrue();
-		assertThat(api.isAssignable(m, new TypeReference<>("java.lang.Integer"), PrimitiveTypeReference.LONG)).isTrue();
-		assertThat(api.isAssignable(m, new TypeReference<>("java.lang.Long"), PrimitiveTypeReference.INT)).isFalse();
+		assertThat(analyzer.isAssignable(m, PrimitiveTypeReference.INT, new TypeReference<>("java.lang.Integer"))).isTrue();
+		assertThat(analyzer.isAssignable(m, new TypeReference<>("java.lang.Integer"), PrimitiveTypeReference.INT)).isTrue();
+		assertThat(analyzer.isAssignable(m, new TypeReference<>("java.lang.Integer"), PrimitiveTypeReference.LONG)).isTrue();
+		assertThat(analyzer.isAssignable(m, new TypeReference<>("java.lang.Long"), PrimitiveTypeReference.INT)).isFalse();
 	}
 
 	@ParameterizedTest
@@ -46,17 +47,17 @@ class AssignabilityProviderTest {
 		var a = assertClass(api, "A");
 		var m = assertMethod(api, a, "m()");
 
-		assertThat(api.isAssignable(m,
+		assertThat(api.analyzer().isAssignable(m,
 			new ArrayTypeReference(TypeReference.STRING, 1),
 			new ArrayTypeReference(TypeReference.OBJECT, 1)))
 			.isTrue();
 
-		assertThat(api.isAssignable(m,
+		assertThat(api.analyzer().isAssignable(m,
 			new ArrayTypeReference(PrimitiveTypeReference.INT, 1),
 			new ArrayTypeReference(TypeReference.OBJECT, 1)))
 			.isFalse();
 
-		assertThat(api.isAssignable(m,
+		assertThat(api.analyzer().isAssignable(m,
 			new ArrayTypeReference(PrimitiveTypeReference.INT, 1),
 			TypeReference.OBJECT))
 			.isTrue();
@@ -82,12 +83,12 @@ class AssignabilityProviderTest {
 		var listOfNumber = new TypeReference<>("java.util.List",
 			List.of(new TypeReference<>("java.lang.Number")));
 
-		assertThat(api.isAssignable(m, listOfString, rawList)).isTrue();
-		assertThat(api.isAssignable(m, rawList, listOfString)).isTrue();
-		assertThat(api.isAssignable(m, rawArrayList, listOfString)).isTrue();
-		assertThat(api.isAssignable(m, listOfString, listOfExtendsCharSequence)).isTrue();
-		assertThat(api.isAssignable(m, listOfNumber, listOfSuperInteger)).isTrue();
-		assertThat(api.isAssignable(m, listOfExtendsCharSequence, listOfString)).isFalse();
+		assertThat(api.analyzer().isAssignable(m, listOfString, rawList)).isTrue();
+		assertThat(api.analyzer().isAssignable(m, rawList, listOfString)).isTrue();
+		assertThat(api.analyzer().isAssignable(m, rawArrayList, listOfString)).isTrue();
+		assertThat(api.analyzer().isAssignable(m, listOfString, listOfExtendsCharSequence)).isTrue();
+		assertThat(api.analyzer().isAssignable(m, listOfNumber, listOfSuperInteger)).isTrue();
+		assertThat(api.analyzer().isAssignable(m, listOfExtendsCharSequence, listOfString)).isFalse();
 	}
 
 	@ParameterizedTest
@@ -105,7 +106,30 @@ class AssignabilityProviderTest {
 		var number = new TypeReference<>("java.lang.Number");
 		var string = TypeReference.STRING;
 
-		assertThat(api.isAssignable(m, u, number)).isTrue();
-		assertThat(api.isAssignable(m, string, t)).isFalse();
+		assertThat(api.analyzer().isAssignable(m, u, number)).isTrue();
+		assertThat(api.analyzer().isAssignable(m, string, t)).isFalse();
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void void_expression_is_source_compatible_with_any_return_type(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A {
+				public void m() {}
+			}""");
+		var a = assertClass(api, "A");
+		var m = assertMethod(api, a, "m()");
+		var analyzer = api.analyzer();
+
+		// A void call observes no value, so replacing void by any return type keeps existing callers valid
+		assertThat(analyzer.isSourceCompatibleExpression(m, PrimitiveTypeReference.VOID, PrimitiveTypeReference.INT)).isTrue();
+		assertThat(analyzer.isSourceCompatibleExpression(m, PrimitiveTypeReference.VOID, TypeReference.STRING)).isTrue();
+
+		// The converse (a value-producing call becoming void) breaks `int x = a.m();`
+		assertThat(analyzer.isSourceCompatibleExpression(m, PrimitiveTypeReference.INT, PrimitiveTypeReference.VOID)).isFalse();
+
+		// Narrowing a reference return is caller-compatible, widening is not
+		assertThat(analyzer.isSourceCompatibleExpression(m, TypeReference.OBJECT, TypeReference.STRING)).isTrue();
+		assertThat(analyzer.isSourceCompatibleExpression(m, TypeReference.STRING, TypeReference.OBJECT)).isFalse();
 	}
 }

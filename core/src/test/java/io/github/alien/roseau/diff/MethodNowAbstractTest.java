@@ -9,7 +9,7 @@ import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class MethodNowAbstractTest {
-	@Client("new A(){};")
+	@Client("new A(){}.m();")
 	@Test
 	void method_now_abstract() {
 		var v1 = """
@@ -24,7 +24,7 @@ class MethodNowAbstractTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("new I(){};")
+	@Client("new I(){}.m();")
 	@Test
 	void default_now_abstract() {
 		var v1 = """
@@ -57,7 +57,7 @@ class MethodNowAbstractTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("new A(){};")
+	@Client("new A(){}.m();")
 	@Test
 	void method_becomes_abstract_in_superclass_affecting_subclass() {
 		var v1 = """
@@ -77,7 +77,7 @@ class MethodNowAbstractTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("new A(){};")
+	@Client("new A(){}.m();")
 	@Test
 	void abstract_class_implements_interface_method_as_abstract() {
 		var v1 = """
@@ -99,7 +99,7 @@ class MethodNowAbstractTest {
 		assertBC("A", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("B b = new B() {};")
+	@Client("new B(){}.m();")
 	@Test
 	void super_concrete_method_becomes_abstract_explicit() {
 		var v1 = """
@@ -120,7 +120,7 @@ class MethodNowAbstractTest {
 		assertBC("B", "B.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
 
-	@Client("B b = new B() {};")
+	@Client("new B(){}.m();")
 	@Test
 	void super_concrete_method_becomes_abstract_implicit() {
 		var v1 = """
@@ -138,4 +138,43 @@ class MethodNowAbstractTest {
 
 		assertBC("B", "A.m()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2, buildDiff(v1, v2));
 	}
+
+	@Client("new X().m();")
+	@Test
+	void default_now_abstract_in_sealed_interface() {
+		var v1 = """
+			public sealed interface I permits X {
+				default void m() {}
+			}
+			public final class X implements I {}""";
+		var v2 = """
+			public sealed interface I permits X {
+				void m();
+			}
+			public final class X implements I {
+				public void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new X().m();")
+	@Test
+	void default_now_abstract_while_interface_becomes_unsealed() {
+		var v1 = """
+			public sealed interface I permits X {
+				default void m() {}
+			}
+			public final class X implements I {}""";
+		var v2 = """
+			public interface I {
+				void m();
+			}
+			public final class X implements I {
+				public void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 }

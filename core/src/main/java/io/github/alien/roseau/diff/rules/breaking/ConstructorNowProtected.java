@@ -8,8 +8,8 @@ import io.github.alien.roseau.diff.rules.MemberRuleContext;
 public class ConstructorNowProtected implements MemberRule<ConstructorDecl> {
 	@Override
 	public void onMatched(ConstructorDecl oldCons, ConstructorDecl newCons, MemberRuleContext ctx) {
-		if (oldCons.isPublic() && newCons.isProtected()) {
-			ctx.builder().memberBC(BreakingChangeKind.CONSTRUCTOR_NOW_PROTECTED, ctx.oldType(), oldCons, newCons);
+		if (oldCons.isPublic() && newCons.isProtected() && !ctx.oldType().isAbstract()) {
+			ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_PROTECTED, ctx.oldType(), oldCons, newCons);
 		}
 	}
 }

@@ -18,7 +18,7 @@ public final class ChangeParameterMethodStrategy extends AbstractMtdStrategy {
 				index,
 				StringUtils.getPrettyQualifiedName(type),
 				isVarargs ? "Varargs" : "",
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(mtd)),
 				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
 			api
 		);

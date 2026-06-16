@@ -153,11 +153,11 @@ class TypeHierarchyExtractionTest {
 		var a = assertClass(api, "A");
 
 		assertThat(a.getSuperClass()).isEqualTo(new TypeReference<>("E"));
-		assertThat(api.getAllSuperClasses(a))
+		assertThat(api.analyzer().getAllSuperClasses(a))
 			.containsOnly(new TypeReference<>("E"), new TypeReference<>("D"), new TypeReference<>("C"), TypeReference.OBJECT);
 		assertThat(a.getImplementedInterfaces())
 			.containsOnly(new TypeReference<>("M"), new TypeReference<>("N"));
-		assertThat(api.getAllImplementedInterfaces(a))
+		assertThat(api.analyzer().getAllImplementedInterfaces(a))
 			.containsOnly(new TypeReference<>("I"), new TypeReference<>("J"), new TypeReference<>("K"),
 				new TypeReference<>("L"), new TypeReference<>("M"), new TypeReference<>("N"));
 	}
@@ -180,10 +180,10 @@ class TypeHierarchyExtractionTest {
 		var a = assertClass(api, "A");
 
 		assertThat(a.getSuperClass()).isEqualTo(new TypeReference<>("E"));
-		assertThat(api.getAllSuperClasses(a))
+		assertThat(api.analyzer().getAllSuperClasses(a))
 			.containsOnly(new TypeReference<>("E"), new TypeReference<>("D"),
 				new TypeReference<>("java.lang.Thread"), TypeReference.OBJECT);
-		assertThat(api.getAllImplementedInterfaces(a))
+		assertThat(api.analyzer().getAllImplementedInterfaces(a))
 			.containsOnly(new TypeReference<>("M"), new TypeReference<>("N"),
 				new TypeReference<>("java.lang.Runnable"), new TypeReference<>("java.lang.Cloneable"),
 				new TypeReference<>("java.lang.Comparable", List.of(TypeReference.STRING)));
@@ -226,7 +226,7 @@ class TypeHierarchyExtractionTest {
 		var d = assertInterface(api, "D");
 		assertThat(d.getImplementedInterfaces())
 			.containsOnly(new TypeReference<>("B"), new TypeReference<>("C"));
-		assertThat(api.getAllImplementedInterfaces(d))
+		assertThat(api.analyzer().getAllImplementedInterfaces(d))
 			.containsOnly(new TypeReference<>("A"), new TypeReference<>("B"), new TypeReference<>("C"));
 	}
 

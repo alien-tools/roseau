@@ -39,37 +39,37 @@ class MethodsOverridingTest {
 		var c = assertClass(api, "C");
 		var d = assertClass(api, "D");
 
-		assertThat(api.getExportedMethods(i))
+		assertThat(api.analyzer().getExportedMethods(i))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("I.m()");
 
-		assertThat(api.getExportedMethods(j))
+		assertThat(api.analyzer().getExportedMethods(j))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("J.m()");
 
-		assertThat(api.getExportedMethods(k))
+		assertThat(api.analyzer().getExportedMethods(k))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("K.m()");
 
-		assertThat(api.getExportedMethods(a))
+		assertThat(api.analyzer().getExportedMethods(a))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("A.m()");
 
-		assertThat(api.getExportedMethods(b))
+		assertThat(api.analyzer().getExportedMethods(b))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("A.m()");
 
-		assertThat(api.getExportedMethods(c))
+		assertThat(api.analyzer().getExportedMethods(c))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("C.m()");
 
-		assertThat(api.getExportedMethods(d))
+		assertThat(api.analyzer().getExportedMethods(d))
 			.hasSize(1 + 11) // java.lang.Object's methods
 			.extracting(MethodDecl::getQualifiedName)
 			.contains("K.m()");
@@ -99,11 +99,11 @@ class MethodsOverridingTest {
 		var na = assertMethod(api, a, "n(java.lang.Object[])");
 		var nb = assertMethod(api, b, "n(java.lang.Object[])");
 
-		assertFalse(api.isOverriding(ma, mb));
-		assertFalse(api.isOverriding(na, nb));
+		assertFalse(api.analyzer().isOverriding(ma, mb));
+		assertFalse(api.analyzer().isOverriding(na, nb));
 
-		assertTrue(api.isOverriding(mb, ma));
-		assertTrue(api.isOverriding(nb, na));
+		assertTrue(api.analyzer().isOverriding(mb, ma));
+		assertTrue(api.analyzer().isOverriding(nb, na));
 	}
 
 	// Example §8.4.2-1
@@ -123,8 +123,8 @@ class MethodsOverridingTest {
 		var ma = assertMethod(api, a, "m(java.util.Collection)");
 		var mb = assertMethod(api, b, "m(java.util.Collection)");
 
-		assertTrue(api.isOverriding(mb, ma));
-		assertFalse(api.isOverriding(ma, mb));
+		assertTrue(api.analyzer().isOverriding(mb, ma));
+		assertFalse(api.analyzer().isOverriding(ma, mb));
 	}
 
 	@ParameterizedTest
@@ -177,10 +177,86 @@ class MethodsOverridingTest {
 		assertThat(m5b.getType()).isEqualTo(new TypeReference<>("java.util.ArrayList",
 			List.of(new TypeReference<>("java.lang.Number"))));
 
-		assertTrue(api.isOverriding(m1b, m1a));
-		assertTrue(api.isOverriding(m2b, m2a));
-		assertTrue(api.isOverriding(m3b, m3a));
-		assertTrue(api.isOverriding(m4b, m4a));
-		assertTrue(api.isOverriding(m5b, m5a));
+		assertTrue(api.analyzer().isOverriding(m1b, m1a));
+		assertTrue(api.analyzer().isOverriding(m2b, m2a));
+		assertTrue(api.analyzer().isOverriding(m3b, m3a));
+		assertTrue(api.analyzer().isOverriding(m4b, m4a));
+		assertTrue(api.analyzer().isOverriding(m5b, m5a));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_generic_member_types_are_substituted(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Box<T> {
+				public T get() { return null; }
+				public void set(T t) {}
+			}
+			public class StringBox extends Box<String> {}""");
+
+		var stringBox = assertClass(api, "StringBox");
+
+		// Box<T>.get() is seen as String get() on StringBox
+		var get = api.analyzer().findMethod(stringBox, "get()").orElseThrow();
+		assertThat(get.getType()).isEqualTo(TypeReference.STRING);
+
+		// Box<T>.set(T) is seen as set(String) on StringBox
+		var set = api.analyzer().findMethod(stringBox, "set(java.lang.String)").orElseThrow();
+		assertThat(set.getParameters().getFirst().type()).isEqualTo(TypeReference.STRING);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_jdk_generic_method_types_are_substituted(ApiBuilder builder) {
+		var api = builder.build("public class A extends java.util.ArrayList<String> {}");
+		var a = assertClass(api, "A");
+
+		// E get(int) from List<E> is substituted to String get(int)
+		var get = api.analyzer().findMethod(a, "get(int)").orElseThrow();
+		assertThat(get.getType()).isEqualTo(TypeReference.STRING);
+
+		// Iterator<E> iterator() from Iterable<E> is substituted to Iterator<String>
+		var iterator = api.analyzer().findMethod(a, "iterator()").orElseThrow();
+		assertThat(iterator.getType())
+			.isEqualTo(new TypeReference<>("java.util.Iterator", List.of(TypeReference.STRING)));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_method_own_type_parameter_is_not_substituted(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Box<T> {
+				public <T> T identity(T t) { return t; }
+			}
+			public class StringBox extends Box<String> {}""");
+
+		var stringBox = assertClass(api, "StringBox");
+
+		// identity's T shadows Box's T, so it must remain a type variable
+		var identity = api.analyzer().findMethod(stringBox, "identity(java.lang.Object)").orElseThrow();
+		assertThat(identity.getType()).isEqualTo(new TypeParameterReference("T"));
+		assertThat(identity.getParameters().getFirst().type()).isEqualTo(new TypeParameterReference("T"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_generic_thrown_exception_is_substituted(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Thrower<X extends Throwable> {
+				public void m() throws X {}
+			}
+			public class IOThrower extends Thrower<java.io.IOException> {}""");
+
+		var thrower = assertClass(api, "Thrower");
+		var ioThrower = assertClass(api, "IOThrower");
+
+		// Thrower<X>.m() throws X is seen as throws IOException on IOThrower
+		var declared = assertMethod(api, thrower, "m()");
+		assertThat(declared.getThrownExceptions()).singleElement().isEqualTo(new TypeParameterReference("X"));
+
+		var inherited = api.analyzer().findMethod(ioThrower, "m()").orElseThrow();
+		assertThat(inherited.getThrownExceptions())
+			.singleElement()
+			.isEqualTo(new TypeReference<>("java.io.IOException"));
 	}
 }

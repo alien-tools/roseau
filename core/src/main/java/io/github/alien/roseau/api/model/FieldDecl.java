@@ -3,6 +3,7 @@ package io.github.alien.roseau.api.model;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
+import java.util.Objects;
 import java.util.Set;
 
 /**
@@ -25,5 +26,20 @@ public final class FieldDecl extends TypeMemberDecl {
 	@Override
 	public String toString() {
 		return "%s %s %s".formatted(visibility, type, simpleName);
+	}
+
+
+	@Override
+	public boolean equals(Object obj) {
+		if (!super.equals(obj)) {
+			return false;
+		}
+		return obj instanceof FieldDecl other
+			&& compileTimeConstant == other.compileTimeConstant;
+	}
+
+	@Override
+	public int hashCode() {
+		return Objects.hash(super.hashCode(), compileTimeConstant);
 	}
 }

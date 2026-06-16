@@ -18,7 +18,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 	private static final String CYAN = "\u001B[36m";
 	private static final String RESET = "\u001B[0m";
 
-	private static final String KIND_ADDITION = "➕";
+	private static final String KIND_ADDITION = "★";
 	private static final String KIND_DELETION = "✗";
 	private static final String KIND_MUTATION = "⚠";
 
@@ -126,6 +126,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 				"%s → %s".formatted(oldFtp.name(), newFtp.name());
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType, newType);
+			case BreakingChangeDetails.ClassNoLongerConcretelyExtensible(var blocker) -> blocker.getSignature();
 		};
 	}
 

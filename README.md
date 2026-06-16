@@ -1,7 +1,10 @@
 # Roseau: Breaking Change Analysis for Java Libraries
 
-Roseau (/ʁozo/) is a **fast** and **accurate** tool for detecting breaking changes between two versions of a library, similar to other tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
-Whether you're a library maintainer or a developer worrying about upgrading your dependencies, Roseau helps ensure backward compatibility across versions.
+Roseau (/ʁozo/) is a **fast** and **[accurate](ACCURACY.md)** tool for detecting breaking changes between library versions, similar to tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
+Whether you're a library maintainer or upgrading dependencies in your projects, Roseau helps ensure backward compatibility across versions.
+Roseau analyzes both JAR files and source code, is highly configurable, and includes a dedicated Maven plug-in.
+
+The official user documentation is available at [https://alien-tools.github.io/roseau/](https://alien-tools.github.io/roseau/).
 
 ## Key Features
 
@@ -12,6 +15,7 @@ Whether you're a library maintainer or a developer worrying about upgrading your
   - Supports Java up to version 25 (including records, sealed types, modules, etc.)
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
   - Highly configurable, CLI-first, and scriptable
+  - Maven plug-in, integration with Gradle
 
 Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
 Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
@@ -36,36 +40,44 @@ Download the latest stable version of the CLI JAR from the [releases page](https
 
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
-$ ./mvnw package
-$ java -jar cli/target/roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --help 
+$ cd roseau && ./mvnw package -DskipTests
+$ alias roseau='java -jar $PWD/cli/target/roseau-<version>.jar'
 ```
 
-Identify breaking changes between two versions, either from compiled JARs or source trees:
+Identify breaking changes between two versions, passed as local JARs or source trees, or fetched remotely:
 
 ```
-$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
-  CLASS_NOW_ABSTRACT com.pkg.ClassNowAbstract
-    com/pkg/ClassNowAbstract.java:4
-$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --diff --v1 /path/to/sources-v1 --v2 /path/to/sources-v2
-  METHOD_REMOVED com.pkg.Interface.m(int)
-    com/pkg/Interface.java:18
+$ roseau --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
+Breaking changes found: 3 (2 binary-breaking, 2 source-breaking)
+✗ com.pkg.A TYPE_REMOVED
+  ✗ binary-breaking ✗ source-breaking
+  → com/pkg/A.java:4
+⚠ com.pkg.B.f FIELD_NOW_STATIC
+  ✗ binary-breaking ✓ source-compatible
+  → com/pkg/B.java:18
+★ com.pkg.C TYPE_NEW_ABSTRACT_METHOD [toOverride()]
+  ✓ binary-compatible ✗ source-breaking
+  → com/pkg/C.java:210
+$ roseau --diff --v1 com.example:lib:1.0.0 --v2 /path/to/v2/src/main/java
+[...]
 ```
 
 Roseau supports different modes, output formats, and options:
 
 ```
-$ java -jar roseau-cli-0.6.0-SNAPSHOT-jar-with-dependencies.jar --help
+$ roseau --help
 Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
               [--api-json=<path>] [--classpath=<path>[,<path>...]]
               [--config=<path>] [--ignored=<path>] [--pom=<path>]
-              [--report=<format=path>]... [--v1=<path>]
-              [--v1-classpath=<path>[,<path>...]] [--v1-pom=<path>]
-              [--v2=<path>] [--v2-classpath=<path>[,<path>...]]
-              [--v2-pom=<path>] (--api | --diff)
-      --api               Serialize the API model of --v1; see --api-json
+              [--v1=<path|coordinates>] [--v1-classpath=<path>[,<path>...]]
+              [--v1-pom=<path>] [--v2=<path|coordinates>] [--v2-classpath=<path>
+              [,<path>...]] [--v2-pom=<path>] [--report=<format=path>]...
+              (--api | --diff)
+      --api               Serialize the API model of --v1 as JSON; prints to
+                            stdout if --api-json is not provided
       --diff              Compute breaking changes between versions --v1 and --v2
-      --v1=<path>         Path to the first version of the library; either a source directory or a JAR
-      --v2=<path>         Path to the second version of the library; either a source directory or a JAR
+      --v1=<path|coordinates> First version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:1.0.0)
+      --v2=<path|coordinates> Second version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:2.0.0)
       --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
       --report=<format=path> Write a breaking changes report in the given format to the given path; repeatable (formats: CLI, CSV, HTML, JSON, MD)
       --classpath=<path>[,<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
@@ -81,6 +93,8 @@ Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
       --fail-on-bc        Return with exit code 1 if breaking changes are detected
       --plain             Disable ANSI colors, output plain text
   -v, --verbose           Increase verbosity (-v, -vv).
+  -h, --help              Show this help message and exit.
+  -V, --version           Print version information and exit.
 ```
 
 ### As a Java library
@@ -97,7 +111,6 @@ Library v2 = Library.builder()
 
 API apiV1 = Roseau.buildAPI(v1);
 API apiV2 = Roseau.buildAPI(v2);
-
 RoseauReport report = Roseau.diff(apiV1, apiV2);
 report.getBreakingChanges().forEach(System.out::println);
 ```
@@ -111,7 +124,7 @@ The minimal setup is to bind the `check` goal and provide a baseline:
 <plugin>
   <groupId>io.github.alien-tools</groupId>
   <artifactId>roseau-maven-plugin</artifactId>
-  <version>0.6.0-SNAPSHOT</version>
+  <version>${roseau.version}</version>
   <executions>
     <execution>
       <goals>
@@ -123,14 +136,61 @@ The minimal setup is to bind the `check` goal and provide a baseline:
     <!-- Compare against a baseline JAR -->
     <baselineJar>${project.basedir}/old.jar</baselineJar>
     <!-- Compare against a previous version -->
-    <baselineVersion>
+    <baselineDependency>
       <groupId>com.group</groupId>
       <artifactId>my-artifact</artifactId>
       <version>1.0.1</version>
-    </baselineVersion>
+    </baselineDependency>
     <failOnIncompatibility>true</failOnIncompatibility>
   </configuration>
 </plugin>
+```
+
+### In a Gradle build
+
+Gradle builds can run Roseau through the published CLI artifact. A minimal Kotlin DSL setup is:
+
+```kotlin
+val roseau by configurations.creating
+
+dependencies {
+  roseau("io.github.alien-tools:roseau-cli:0.6.0")
+}
+
+tasks.register<JavaExec>("roseauCheck") {
+  group = "verification"
+  description = "Checks API breaking changes with Roseau"
+
+  dependsOn(tasks.named("jar"))
+
+  classpath = roseau
+  mainClass.set("io.github.alien.roseau.cli.RoseauCLI")
+  javaLauncher.set(
+    javaToolchains.launcherFor {
+      languageVersion.set(JavaLanguageVersion.of(25))
+    },
+  )
+
+  doFirst {
+    val currentJar = tasks.named<Jar>("jar").get().archiveFile.get().asFile
+    val reportsDir = layout.buildDirectory.dir("reports/roseau").get().asFile
+
+    args(
+      "--diff",
+      "--v1", "com.example:my-library:1.2.3",
+      "--v2", currentJar.absolutePath,
+      "--classpath", sourceSets.main.get().compileClasspath.asPath,
+      "--plain",
+      "--fail-on-bc",
+      "--report", "HTML=${reportsDir.resolve("report.html")}",
+      "--report", "CSV=${reportsDir.resolve("report.csv")}",
+    )
+  }
+}
+
+tasks.named("check") {
+  dependsOn("roseauCheck")
+}
 ```
 
 ## Configuration
@@ -173,7 +233,7 @@ Breaking changes are sometimes necessary and intended. To avoid reporting the sa
 
 ```csv
 type;symbol;kind
-pkg.T;pkg.T.m();METHOD_REMOVED
+pkg.T;pkg.T.m();EXECUTABLE_REMOVED
 ```
 
 ## Citing Roseau

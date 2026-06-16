@@ -108,11 +108,9 @@ class FieldRemovedTest {
 	}
 
 	@Client("""
-		new A() {
-			void m() {
-				f = 0;
-			}
-		};""")
+		new A() {{
+			f = 0;
+		}};""")
 	@Test
 	void field_visibility_protected_to_private() {
 		var v1 = """
@@ -172,7 +170,9 @@ class FieldRemovedTest {
 		assertBC("E", "E.Y", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
 	}
 
-	@Client("@A(A.E.Y) int i;")
+	@Client("""
+		@A(A.E.Y) int i;
+		System.out.println(A.E.Y);""")
 	@Test
 	void annotation_interface_enum_constant_removed() {
 		var v1 = """
@@ -196,7 +196,7 @@ class FieldRemovedTest {
 		var v2 = "public record A() {}";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.i()", BreakingChangeKind.METHOD_REMOVED, -1),
-			bc("A", "A.<init>(int)", BreakingChangeKind.CONSTRUCTOR_REMOVED, -1));
+			bc("A", "A.i()", BreakingChangeKind.EXECUTABLE_REMOVED, -1),
+			bc("A", "A.<init>(int)", BreakingChangeKind.EXECUTABLE_REMOVED, -1));
 	}
 }

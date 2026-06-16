@@ -10,6 +10,8 @@ import com.soebes.itf.jupiter.extension.SystemProperty;
 import com.soebes.itf.jupiter.maven.MavenExecutionResult;
 import org.junit.jupiter.api.Nested;
 
+import java.nio.file.Path;
+
 import static com.soebes.itf.extension.assertj.MavenITAssertions.assertThat;
 
 @MavenJupiterExtension
@@ -23,7 +25,7 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().error().isEmpty();
 			assertThat(result).out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 		}
@@ -33,7 +35,7 @@ class RoseauPluginIT {
 		void can_filter_binary_changes(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
 				.noneMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"));
 		}
@@ -43,7 +45,7 @@ class RoseauPluginIT {
 		void can_filter_source_changes(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 		}
@@ -77,7 +79,7 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().error().isEmpty();
 			assertThat(result).out().warn()
-				.noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.noneMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.noneMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 			assertThat(result).out().info().anyMatch(m -> m.contains("Skipping."));
@@ -88,7 +90,7 @@ class RoseauPluginIT {
 		void baseline_jar_from_pom_configuration_takes_precedence_over_system_property(MavenExecutionResult result) {
 			assertThat(result).isSuccessful()
 				.out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
@@ -99,6 +101,13 @@ class RoseauPluginIT {
 		void invalid_config_file_fails(MavenExecutionResult result) {
 			assertThat(result).isFailure()
 				.out().error().anyMatch(m -> m.contains("Could not load configuration file"));
+		}
+
+		@SystemProperty(value = "roseau.baselineCoordinates", content = "nope")
+		@MavenTest
+		void invalid_baseline_coordinates_fail(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Invalid baseline coordinates 'nope'"));
 		}
 
 		@SystemProperty(value = "roseau.exportBaselineApi", content = "target/apis/v1.json")
@@ -114,10 +123,20 @@ class RoseauPluginIT {
 		@MavenOption(MavenCLIOptions.VERBOSE)
 		@MavenTest
 		void only_compile_dependencies_are_included(MavenExecutionResult result) {
+			var slf4jApi = Path.of("org", "slf4j", "slf4j-api", "2.0.17", "slf4j-api-2.0.17.jar").toString();
+			var junitApi = Path.of("org", "junit", "jupiter", "junit-jupiter-api", "6.0.2",
+				"junit-jupiter-api-6.0.2.jar").toString();
+			var commonsLang = Path.of("org", "apache", "commons", "commons-lang3", "3.20.0",
+				"commons-lang3-3.20.0.jar").toString();
+
 			assertThat(result).isSuccessful();
 			assertThat(result).out().debug()
-				.anyMatch(m -> m.contains("v1 classpath is:") && m.contains("org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"))
-				.anyMatch(m -> m.contains("v2 classpath is:") && m.contains("org/slf4j/slf4j-api/2.0.17/slf4j-api-2.0.17.jar"));
+				.anyMatch(m -> m.contains("v1 classpath is:") && m.contains(slf4jApi))
+				.anyMatch(m -> m.contains("v2 classpath is:") && m.contains(slf4jApi))
+				.noneMatch(m -> m.contains("v1 classpath is:") && m.contains(junitApi))
+				.noneMatch(m -> m.contains("v2 classpath is:") && m.contains(junitApi))
+				.noneMatch(m -> m.contains("v1 classpath is:") && m.contains(commonsLang))
+				.noneMatch(m -> m.contains("v2 classpath is:") && m.contains(commonsLang));
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-classpath-config.yaml")
@@ -139,7 +158,7 @@ class RoseauPluginIT {
 			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
-				.noneMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"));
+				.noneMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"));
 			assertThat(baseDir.resolve("report.csv")).doesNotExist();
 			assertThat(baseDir.resolve("report.html")).doesNotExist();
 			assertThat(baseDir.resolve("target/roseau/report.csv")).exists();
@@ -160,7 +179,7 @@ class RoseauPluginIT {
 		void yaml_properties_are_applied(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().warn()
-				.anyMatch(m -> m.contains("pkg.I.foo() METHOD_REMOVED"))
+				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
 				.noneMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
 		}
@@ -195,6 +214,13 @@ class RoseauPluginIT {
 				.out().warn().anyMatch(m -> m.contains("io.github.alien.roseau.Library TYPE_REMOVED"));
 			assertThat(result).out().error().noneMatch(m -> m.contains("Invalid baseline JAR"));
 		}
+
+		@SystemProperty(value = "roseau.baselineCoordinates", content = "io.github.alien-tools:roseau-core:0.0.0-nope")
+		@MavenTest
+		void baseline_coordinates_take_precedence_over_baseline_dependency(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
+		}
 	}
 
 	@Nested
@@ -205,6 +231,13 @@ class RoseauPluginIT {
 			assertThat(result).isFailure()
 				.out().error().anyMatch(m -> m.contains("No baseline specified"));
 		}
+
+		@SystemProperty(value = "roseau.baselineCoordinates", content = "io.github.alien-tools:roseau-core:0.4.0")
+		@MavenTest
+		void baseline_coordinates_can_be_passed_from_cli(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().error().isEmpty();
+		}
 	}
 
 	@Nested
@@ -213,7 +246,16 @@ class RoseauPluginIT {
 		@MavenTest
 		void invalid_baseline_version_is_reported_and_check_is_skipped(MavenExecutionResult result) {
 			assertThat(result).isFailure()
-				.out().error().anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
+				.out().error()
+				.anyMatch(m -> m.contains("Couldn't resolve the baseline version"));
+		}
+
+		@SystemProperty("roseau.skipIfBaselineUnresolvable")
+		@MavenTest
+		void unresolvable_baseline_is_skipped_when_configured(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().warn()
+				.anyMatch(m -> m.contains("Baseline could not be resolved; skipping check."));
 		}
 	}
 

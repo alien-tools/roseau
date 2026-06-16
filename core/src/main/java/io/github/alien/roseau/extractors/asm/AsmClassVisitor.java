@@ -13,7 +13,6 @@ import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
-import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
@@ -38,7 +37,6 @@ import java.util.EnumSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 import static java.util.stream.Collectors.toSet;
@@ -51,7 +49,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 	private int classAccess;
 	private TypeReference<TypeDecl> enclosingType;
 	private TypeReference<ClassDecl> superClass;
-	private boolean hasAccessibleConstructor;
 	private boolean hasEnumConstantBody;
 	private boolean shouldSkip;
 	private final Set<TypeReference<InterfaceDecl>> implementedInterfaces = new LinkedHashSet<>();
@@ -159,11 +156,9 @@ public final class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public MethodVisitor visitMethod(int access, String name, String descriptor, String signature, String[] exceptions) {
-		if (isAccessibleConstructor(name, access)) {
-			hasAccessibleConstructor = true;
-		}
-
-		if (shouldSkip || isSynthetic(access) || isBridge(access) || !isTypeMemberExported(access)) {
+		boolean exported = isTypeMemberExported(access);
+		boolean nonPrivateMethod = !"<init>".equals(name) && !"<clinit>".equals(name) && isNotPrivate(access);
+		if (shouldSkip || isSynthetic(access) || isBridge(access) || (!exported && !nonPrivateMethod)) {
 			return null;
 		}
 
@@ -193,11 +188,16 @@ public final class AsmClassVisitor extends ClassVisitor {
 			@Override
 			public void visitEnd() {
 				if ("<init>".equals(name)) {
-					constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations, firstLine));
+					if (exported) {
+						constructors.add(convertConstructor(access, descriptor, signature, exceptions, annotations, firstLine));
+					}
 				} else if (isAnnotation(classAccess)) {
 					annotationMethods.add(convertAnnotationMethod(name, descriptor, signature, annotations, firstLine, hasDefault));
 				} else {
-					methods.add(convertMethod(access, name, descriptor, signature, exceptions, annotations, firstLine));
+					MethodDecl method = convertMethod(access, name, descriptor, signature, exceptions, annotations, firstLine);
+					if (nonPrivateMethod) {
+						methods.add(method);
+					}
 				}
 			}
 		};
@@ -255,14 +255,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 		Set<Modifier> modifiers = convertClassModifiers(classAccess);
 		Set<Annotation> anns = convertAnnotations(annotations);
 		SourceLocation location = factory.location(sourceFile, -1);
-
-		if (isEffectivelyFinal(classAccess)) {
-			// We initially included all PUBLIC/PROTECTED type members
-			// Now that we finally know whether the enclosing type is effectively final, we can filter
-			fields.removeIf(TypeMemberDecl::isProtected);
-			methods.removeIf(TypeMemberDecl::isProtected);
-			constructors.removeIf(TypeMemberDecl::isProtected);
-		}
 
 		// §8.9: an enum class E is implicitly sealed if its declaration contains at least one
 		// enum constant that has a class body. Otherwise, final.
@@ -456,11 +448,8 @@ public final class AsmClassVisitor extends ClassVisitor {
 		return visibility == AccessModifier.PUBLIC || visibility == AccessModifier.PROTECTED;
 	}
 
-	private boolean isEffectivelyFinal(int access) {
-		if (isEnum(access) || isRecord(access)) {
-			return true;
-		}
-		return isFinal(access) || !permittedTypes.isEmpty() || (isClass(classAccess) && !hasAccessibleConstructor);
+	private static boolean isNotPrivate(int access) {
+		return convertVisibility(access) != AccessModifier.PRIVATE;
 	}
 
 	private static String bytecodeToFqn(String bytecodeName) {
@@ -469,10 +458,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 
 	private static String descriptorToFqn(String descriptor) {
 		return Type.getType(descriptor).getClassName();
-	}
-
-	private boolean isAccessibleConstructor(String name, int access) {
-		return "<init>".equals(name) && !isSynthetic(access) && convertVisibility(access) != AccessModifier.PRIVATE;
 	}
 
 	private static boolean isSynthetic(int access) {

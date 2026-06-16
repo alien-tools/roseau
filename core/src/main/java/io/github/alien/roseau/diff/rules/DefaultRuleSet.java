@@ -15,6 +15,7 @@ import io.github.alien.roseau.diff.rules.breaking.AnnotationMethodNoLongerDefaul
 import io.github.alien.roseau.diff.rules.breaking.AnnotationNewMethodWithoutDefault;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationNoLongerRepeatable;
 import io.github.alien.roseau.diff.rules.breaking.AnnotationTargetRemoved;
+import io.github.alien.roseau.diff.rules.breaking.ClassNoLongerConcretelyExtensible;
 import io.github.alien.roseau.diff.rules.breaking.ClassNoLongerStatic;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowAbstract;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowCheckedException;
@@ -41,6 +42,7 @@ import io.github.alien.roseau.diff.rules.breaking.TypeFormalTypeParametersChange
 import io.github.alien.roseau.diff.rules.breaking.TypeKindChanged;
 import io.github.alien.roseau.diff.rules.breaking.TypeNewAbstractMethod;
 import io.github.alien.roseau.diff.rules.breaking.TypeNowProtected;
+import io.github.alien.roseau.diff.rules.breaking.TypeNowSealed;
 import io.github.alien.roseau.diff.rules.breaking.TypeRemoved;
 import io.github.alien.roseau.diff.rules.breaking.TypeSupertypeRemoved;
 
@@ -58,7 +60,8 @@ public class DefaultRuleSet implements RuleSet {
 			new TypeRemoved(),
 			new TypeSupertypeRemoved(),
 			new TypeFormalTypeParametersChanged(),
-			new TypeNowProtected()
+			new TypeNowProtected(),
+			new TypeNowSealed()
 		);
 	}
 
@@ -69,7 +72,8 @@ public class DefaultRuleSet implements RuleSet {
 			new ClassNowCheckedException(),
 			new ClassNowFinal(),
 			new ClassNoLongerStatic(),
-			new ClassNowStatic()
+			new ClassNowStatic(),
+			new ClassNoLongerConcretelyExtensible()
 		);
 	}
 

@@ -7,11 +7,17 @@
     <parent>
         <groupId>io.github.alien-tools</groupId>
         <artifactId>roseau-parent</artifactId>
-        <version>0.6.0-SNAPSHOT</version>
+        <version>0.7.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>roseau-combinatorial</artifactId>
     <name>Combinatorial Benchmark</name>
+
+    <properties>
+        <maven.source.skip>true</maven.source.skip>
+        <maven.javadoc.skip>true</maven.javadoc.skip>
+        <maven.deploy.skip>true</maven.deploy.skip>
+    </properties>
 
     <build>
         <plugins>
@@ -68,7 +74,7 @@
         <dependency>
             <groupId>io.github.alien-tools</groupId>
             <artifactId>roseau-core</artifactId>
-            <version>0.6.0-SNAPSHOT</version>
+            <version>0.7.0-SNAPSHOT</version>
         </dependency>
         <dependency>
             <groupId>org.javatuples</groupId>
@@ -83,7 +89,7 @@
         <dependency>
             <groupId>com.github.siom79.japicmp</groupId>
             <artifactId>japicmp</artifactId>
-            <version>0.25.4</version>
+            <version>0.26.1</version>
         </dependency>
         <dependency>
             <groupId>info.picocli</groupId>

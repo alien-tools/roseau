@@ -1,0 +1,69 @@
+name: Smoke tests
+
+on:
+  schedule:
+    - cron: '17 2 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  smoke:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      checks: write
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Check if this commit was already smoked
+        id: smoke-cache
+        uses: actions/cache/restore@v5
+        with:
+          path: .smoke-success
+          key: smoke-${{ runner.os }}-jdk25-${{ github.sha }}
+
+      - name: Set up JDK 25
+        if: github.event_name != 'schedule' || steps.smoke-cache.outputs.cache-hit != 'true'
+        uses: actions/setup-java@v5
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+
+      - name: Restore popular library fixtures
+        if: github.event_name != 'schedule' || steps.smoke-cache.outputs.cache-hit != 'true'
+        uses: actions/cache@v5
+        with:
+          path: core/target/popular-libraries-fixtures
+          key: popular-libraries-${{ runner.os }}-jdk25-${{ hashFiles('core/src/test/resources/popular-libraries.tsv') }}
+          restore-keys: popular-libraries-${{ runner.os }}-jdk25-
+
+      - name: Run smoke tests
+        if: github.event_name != 'schedule' || steps.smoke-cache.outputs.cache-hit != 'true'
+        run: ./mvnw --batch-mode -pl core -Psmoke test-compile failsafe:integration-test failsafe:verify
+
+      - name: Build smoke test report
+        uses: dorny/test-reporter@v3
+        if: always() && (github.event_name != 'schedule' || steps.smoke-cache.outputs.cache-hit != 'true')
+        with:
+          name: Smoke Tests
+          path: '**/target/failsafe-reports/TEST-*.xml'
+          reporter: java-junit
+          fail-on-error: true
+
+      - name: Mark commit as smoked
+        if: success() && (github.event_name != 'schedule' || steps.smoke-cache.outputs.cache-hit != 'true')
+        run: |
+          mkdir -p .smoke-success
+          printf '%s\n' '${{ github.sha }}' > .smoke-success/commit
+
+      - name: Cache smoke success marker
+        if: success() && steps.smoke-cache.outputs.cache-hit != 'true'
+        uses: actions/cache/save@v5
+        with:
+          path: .smoke-success
+          key: smoke-${{ runner.os }}-jdk25-${{ github.sha }}

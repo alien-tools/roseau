@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.rules.breaking;
 
+import io.github.alien.roseau.api.analysis.TypeParameterMapping;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
@@ -14,19 +15,29 @@ public class MethodReturnTypeChanged implements MemberRule<MethodDecl> {
 			return;
 		}
 
+		// Build combined type-level + method-level mappings. Method-level entries take precedence (shadowing).
+		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forExecutable(
+			ctx.oldType(), ctx.newType(), oldMethod, newMethod);
+		ITypeReference normalizedOld = normalizer.normalizeOld(oldMethod.getType());
+		ITypeReference normalizedNew = normalizer.normalizeNew(newMethod.getType());
+
+		if (normalizedOld.equals(normalizedNew)) {
+			return;
+		}
+
 		BreakingChangeDetails details = new BreakingChangeDetails.MethodReturnTypeChanged(
 			oldMethod.getType(), newMethod.getType());
 
-		ITypeReference oldErased = ctx.v1().erasure().getErasedType(oldMethod, oldMethod.getType());
-		ITypeReference newErased = ctx.v2().erasure().getErasedType(newMethod, newMethod.getType());
+		ITypeReference oldErased = ctx.v1().analyzer().erasure().getErasedType(oldMethod, oldMethod.getType());
+		ITypeReference newErased = ctx.v2().analyzer().erasure().getErasedType(newMethod, newMethod.getType());
 		if (!oldErased.equals(newErased)) {
 			ctx.builder().memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED,
 				ctx.oldType(), oldMethod, newMethod, details);
 		}
 
-		boolean invokerCompatible = ctx.v2().isSourceCompatibleExpression(newMethod, oldMethod.getType(), newMethod.getType());
-		boolean overriderCompatible = ctx.v1().isEffectivelyFinal(ctx.oldType(), oldMethod) ||
-			ctx.v2().isSubtypeOf(newMethod, oldMethod.getType(), newMethod.getType());
+		boolean invokerCompatible = ctx.v2().analyzer().isSourceCompatibleExpression(newMethod, normalizedOld, normalizedNew);
+		boolean overriderCompatible = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldMethod) ||
+			ctx.v2().analyzer().isSubtypeOf(newMethod, normalizedOld, normalizedNew);
 		if (!invokerCompatible || !overriderCompatible) {
 			ctx.builder().memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE,
 				ctx.oldType(), oldMethod, newMethod, details);

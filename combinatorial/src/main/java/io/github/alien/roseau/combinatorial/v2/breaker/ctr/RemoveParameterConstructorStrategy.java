@@ -12,7 +12,7 @@ public final class RemoveParameterConstructorStrategy extends AbstractCtrStrateg
 	public RemoveParameterConstructorStrategy(int parameterIndex, ConstructorDecl ctr, NewApiQueue queue, API api) {
 		super(ctr, queue, "RemoveParameter%dFromConstructor%sIn%s".formatted(
 				parameterIndex,
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(ctr)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(ctr)),
 				StringUtils.getPrettyQualifiedName(ctr.getContainingType())),
 			api
 		);

@@ -133,8 +133,11 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 		if (this == obj) {
 			return true;
 		}
-		return obj instanceof Symbol other
-			&& Objects.equals(qualifiedName, other.qualifiedName)
+		if (obj == null || getClass() != obj.getClass()) {
+			return false;
+		}
+		Symbol other = (Symbol) obj;
+		return Objects.equals(qualifiedName, other.qualifiedName)
 			&& visibility == other.visibility
 			&& Objects.equals(modifiers, other.modifiers)
 			&& Objects.equals(annotations, other.annotations);

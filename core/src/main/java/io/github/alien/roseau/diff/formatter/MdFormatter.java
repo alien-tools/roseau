@@ -18,24 +18,31 @@ public class MdFormatter implements BreakingChangesFormatter {
 		if (report.getBreakingChanges().isEmpty()) {
 			sb.append("No breaking changes detected.");
 		} else {
-			sb.append(report.getBreakingChanges().size()).append(" breaking changes detected.\n\n");
-			sb.append("| Type | Symbol | Kind | Nature | Location |\n");
-			sb.append("|------|--------|------|--------|----------|\n");
+			int total = report.getBreakingChanges().size();
+			int binaryBreaking = report.getBinaryBreakingChanges().size();
+			int sourceBreaking = report.getSourceBreakingChanges().size();
+			sb.append(total).append(" breaking changes detected");
+			sb.append(" (").append(binaryBreaking).append(" binary-breaking, ");
+			sb.append(sourceBreaking).append(" source-breaking).\n\n");
+			sb.append("| Type | Symbol | Kind | Nature | Location | New symbol | Binary | Source |\n");
+			sb.append("|------|--------|------|--------|----------|------------|--------|--------|\n");
 
 			for (BreakingChange bc : report.getBreakingChanges()) {
 				sb.append("| ").append(bc.impactedType().getQualifiedName()).append(" | ")
 					.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
 					.append(bc.kind()).append(" | ")
 					.append(bc.kind().getNature()).append(" | ")
-					.append(formatLocation(bc.getLocation())).append(" |\n");
+					.append(formatLocation(bc.getLocation())).append(" | ")
+					.append(bc.newSymbol() != null ? BreakingChange.printSymbol(bc.newSymbol()) : "").append(" | ")
+					.append(bc.kind().isBinaryBreaking()).append(" | ")
+					.append(bc.kind().isSourceBreaking()).append(" |\n");
 			}
 		}
 		return sb.toString();
 	}
 
 	private static String formatLocation(SourceLocation location) {
-		return location == SourceLocation.NO_LOCATION
-			? "No location"
-			: "%s:%d".formatted(location.file(), location.line());
+		if (location == SourceLocation.NO_LOCATION) return "No location";
+		return location.line() != -1 ? "%s:%d".formatted(location.file(), location.line()) : location.file().toString();
 	}
 }

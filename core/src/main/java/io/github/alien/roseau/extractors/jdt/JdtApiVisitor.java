@@ -40,7 +40,6 @@ import org.eclipse.jdt.core.dom.ImportDeclaration;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
-import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
@@ -51,6 +50,7 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -183,9 +183,9 @@ final class JdtApiVisitor extends ASTVisitor {
 		SourceLocation location = factory.location(filePath, cu.getLineNumber(type.getName().getStartPosition()));
 		List<FormalTypeParameter> typeParams = convertTypeParameters(binding.getTypeParameters());
 		Set<TypeReference<InterfaceDecl>> implemented = convertImplementedInterfaces(binding);
-		Set<FieldDecl> fields = convertFields(binding, type);
-		Set<MethodDecl> methods = convertMethods(binding, type);
-		Set<ConstructorDecl> constructors = convertConstructors(binding, type);
+		Set<FieldDecl> fields = convertFields(binding);
+		Set<MethodDecl> methods = convertMethods(binding);
+		Set<ConstructorDecl> constructors = convertConstructors(binding);
 		TypeReference<TypeDecl> enclosingType = createTypeReference(binding.getDeclaringClass());
 
 		TypeDecl typeDecl = switch (type) {
@@ -233,23 +233,23 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(toSet());
 	}
 
-	private Set<FieldDecl> convertFields(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private Set<FieldDecl> convertFields(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredFields())
-			.filter(field -> isExported(field, type))
+			.filter(JdtApiVisitor::isPublicOrProtected)
 			.map(field -> convertField(field, binding))
 			.collect(toSet());
 	}
 
-	private Set<MethodDecl> convertMethods(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private Set<MethodDecl> convertMethods(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> !method.isConstructor() && isExported(method, type))
+			.filter(method -> !method.isConstructor() && isNotPrivate(method))
 			.map(method -> convertMethod(method, binding))
 			.collect(toSet());
 	}
 
-	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding, AbstractTypeDeclaration type) {
+	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding) {
 		return Arrays.stream(binding.getDeclaredMethods())
-			.filter(method -> method.isConstructor() && isExported(method, type))
+			.filter(method -> method.isConstructor() && isPublicOrProtected(method))
 			.map(cons -> convertConstructor(cons, binding))
 			.collect(toSet());
 	}
@@ -287,14 +287,6 @@ final class JdtApiVisitor extends ASTVisitor {
 		TypeReference<TypeDecl> enclosingTypeRef = createTypeReference(enclosingType);
 		List<ParameterDecl> params = convertParameters(binding.getParameterNames(), binding.getParameterTypes(),
 			binding.isVarargs());
-
-		if (binding.isCompactConstructor() && enclosingType instanceof RecordDeclaration rec) {
-			params.addAll(
-				stream(rec.recordComponents(), SingleVariableDeclaration.class)
-					.map(variable -> factory.createParameter(variable.getName().getIdentifier(),
-						createITypeReference(variable.getType().resolveBinding()), false))
-					.toList());
-		}
 
 		return factory.createConstructor(makeMemberFqn(enclosingType, "<init>"), visibility, mods, anns, location,
 			enclosingTypeRef, enclosingTypeRef, params, typeParams, thrownExceptions);
@@ -468,18 +460,18 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(ElementType.class)));
 	}
 
-	// We need to carry the AbstractTypeDeclaration in the utilities below to account for
-	// https://github.com/eclipse-jdt/eclipse.jdt.core/pull/3252
-	private static boolean isExported(IVariableBinding field, AbstractTypeDeclaration containingType) {
+	private static boolean isPublicOrProtected(IVariableBinding field) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(field.getModifiers()) ||
-			(org.eclipse.jdt.core.dom.Modifier.isProtected(field.getModifiers()) &&
-				!isEffectivelyFinal(field.getDeclaringClass(), containingType));
+			org.eclipse.jdt.core.dom.Modifier.isProtected(field.getModifiers());
 	}
 
-	private static boolean isExported(IMethodBinding method, AbstractTypeDeclaration containingType) {
+	private static boolean isPublicOrProtected(IMethodBinding method) {
 		return org.eclipse.jdt.core.dom.Modifier.isPublic(method.getModifiers()) ||
-			(org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers()) &&
-				!isEffectivelyFinal(method.getDeclaringClass(), containingType));
+			org.eclipse.jdt.core.dom.Modifier.isProtected(method.getModifiers());
+	}
+
+	private static boolean isNotPrivate(IMethodBinding method) {
+		return !org.eclipse.jdt.core.dom.Modifier.isPrivate(method.getModifiers());
 	}
 
 	private static boolean isSourceAnnotation(IAnnotationBinding ann) {
@@ -510,29 +502,6 @@ final class JdtApiVisitor extends ASTVisitor {
 			case ITypeBinding typeBinding -> makeFqn(typeBinding);
 			default -> value.toString();
 		};
-	}
-
-	private static boolean isEffectivelyFinal(ITypeBinding binding, AbstractTypeDeclaration type) {
-		if (binding.isEnum() || binding.isRecord()) {
-			return true;
-		}
-
-		if (binding.isClass()) {
-			var cons = Arrays.stream(binding.getDeclaredMethods())
-				.filter(IMethodBinding::isConstructor)
-				.toList();
-
-			if (!cons.isEmpty() &&
-				cons.stream().allMatch(c -> org.eclipse.jdt.core.dom.Modifier.isPrivate(c.getModifiers()))) {
-				return true;
-			}
-		}
-
-		var isFinal = org.eclipse.jdt.core.dom.Modifier.isFinal(type.getModifiers());
-		var isSealed = org.eclipse.jdt.core.dom.Modifier.isSealed(type.getModifiers());
-		var isNonSealed = org.eclipse.jdt.core.dom.Modifier.isNonSealed(type.getModifiers());
-
-		return (isFinal || isSealed) && !isNonSealed;
 	}
 
 	private static AccessModifier convertVisibility(int modifiers) {
@@ -605,8 +574,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		return makeFqn(containingType) + "." + simpleName;
 	}
 
-	@SuppressWarnings("unchecked")
-	private static <T> Stream<T> stream(List raw, Class<T> cls) {
-		return raw.stream().filter(cls::isInstance);
+	private static <T> Stream<T> stream(Collection<?> list, Class<T> cls) {
+		return list.stream().filter(cls::isInstance).map(cls::cast);
 	}
 }

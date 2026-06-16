@@ -18,6 +18,24 @@ class FormalTypeParameterAddedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("A a;")
+	@Test
+	void class_two_params_added_to_non_generic() {
+		var v1 = "public class A {}";
+		var v2 = "public class A<T, U> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("A a;")
+	@Test
+	void class_bounded_param_added_to_non_generic() {
+		var v1 = "public class A {}";
+		var v2 = "public class A<T extends Number> {}";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("A<String> a;")
 	@Test
 	void class_second_param_added() {
@@ -37,6 +55,96 @@ class FormalTypeParameterAddedTest {
 		var v2 = """
 			public class A {
 				public <T> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m();")
+	@Test
+	void method_two_params_added_to_non_generic() {
+		var v1 = """
+			public class A {
+				public void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T, U> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m();")
+	@Test
+	void method_bounded_param_added_to_non_generic() {
+		var v1 = """
+			public class A {
+				public void m() {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends Number> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(\"\");")
+	@Test
+	void method_first_param_added_and_used_as_parameter_type() {
+		var v1 = """
+			public class A {
+				public void m(Object o) {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T> void m(T t) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(1);")
+	@Test
+	void method_bounded_param_added_and_used_as_parameter_type() {
+		var v1 = """
+			public class A {
+				public void m(Number n) {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends Number> void m(T t) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(\"\");")
+	@Test
+	void type_first_param_added_and_used_as_method_parameter_type() {
+		var v1 = """
+			public class A {
+				public void m(Object o) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(T t) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(1);")
+	@Test
+	void type_bounded_param_added_and_used_as_method_parameter_type() {
+		var v1 = """
+			public class A {
+				public void m(Number n) {}
+			}""";
+		var v2 = """
+			public class A<T extends Number> {
+				public void m(T t) {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));

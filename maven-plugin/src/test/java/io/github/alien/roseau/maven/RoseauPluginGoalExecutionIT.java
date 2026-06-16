@@ -15,6 +15,6 @@ class RoseauPluginGoalExecutionIT {
 	@MavenTest
 	void check_goal_without_packaging_reports_missing_artifact(MavenExecutionResult result) {
 		assertThat(result).isFailure()
-			.out().error().anyMatch(m -> m.contains("Current artifact not found."));
+			.out().error().anyMatch(m -> m.contains("Current artifact JAR not found."));
 	}
 }

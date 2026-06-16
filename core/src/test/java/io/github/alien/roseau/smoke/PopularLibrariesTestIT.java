@@ -11,6 +11,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.visit.AbstractApiVisitor;
 import io.github.alien.roseau.api.visit.Visit;
 import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.Tag;
 import org.junit.jupiter.api.TestInstance;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -25,9 +26,9 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.charset.StandardCharsets;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -46,6 +47,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.fail;
 
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@Tag("smoke")
 class PopularLibrariesTestIT {
 	private static final HttpClient HTTP_CLIENT = HttpClient.newBuilder()
 		.followRedirects(HttpClient.Redirect.NORMAL)
@@ -341,11 +343,13 @@ class PopularLibrariesTestIT {
 	private static List<Path> prepareClasspath(Coordinates coordinates) {
 		if (Files.isRegularFile(coordinates.classpathFile())) {
 			try {
-				return Files.readAllLines(coordinates.classpathFile()).stream()
+				var paths = Files.readAllLines(coordinates.classpathFile()).stream()
 					.filter(line -> !line.isBlank())
 					.map(Path::of)
-					.filter(Files::isRegularFile)
 					.toList();
+				if (paths.stream().allMatch(Files::isRegularFile)) {
+					return paths;
+				}
 			} catch (IOException e) {
 				throw new UncheckedIOException(e);
 			}
@@ -396,7 +400,7 @@ class PopularLibrariesTestIT {
 			return files
 				.filter(path -> path.toString().endsWith(".java"))
 				.mapToLong(path -> {
-					try (BufferedReader reader = Files.newBufferedReader(path)) {
+					try (BufferedReader reader = Files.newBufferedReader(path, StandardCharsets.ISO_8859_1)) {
 						return reader.lines().count();
 					} catch (IOException e) {
 						System.err.println("Failed to count lines in " + path + ": " + e.getMessage());
@@ -421,7 +425,7 @@ class PopularLibrariesTestIT {
 
 		@Override
 		public <U extends TypeDecl> Visit typeReference(TypeReference<U> it) {
-			if (api.resolver().resolve(it).isEmpty()) {
+			if (api.analyzer().resolver().resolve(it).isEmpty()) {
 				unresolved.add(it);
 			}
 			return super.typeReference(it);

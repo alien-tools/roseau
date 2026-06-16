@@ -81,13 +81,13 @@ class TypeKindChangedTest {
 	}
 
 	@Client("""
-		switch (new A()) {
-			case A() -> {}
+		switch (new A(0)) {
+			case A(int i) -> {}
 		};""")
 	@Test
 	void record_to_class() {
-		var v1 = "public record A() {}";
-		var v2 = "public class A {}";
+		var v1 = "public record A(int i) {}";
+		var v2 = "public class A { public int i; public A(int i) {} }";
 
 		assertBC("A", "A", BreakingChangeKind.TYPE_KIND_CHANGED, 1, buildDiff(v1, v2));
 	}

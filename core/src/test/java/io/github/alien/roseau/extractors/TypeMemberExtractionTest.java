@@ -36,11 +36,13 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertThat(api.isExported(a)).isFalse();
+		assertThat(api.analyzer().isExported(a)).isFalse();
 		assertThat(a.getDeclaredConstructors()).isEmpty();
 		assertThat(a.getDeclaredMethods())
 			.extracting(MethodDecl::getSimpleName)
-			.containsOnly("m2", "m3");
+			.containsOnly("m2", "m3", "m4");
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m)))
+			.isEmpty();
 		assertThat(a.getDeclaredFields())
 			.extracting(FieldDecl::getSimpleName)
 			.containsOnly("f2", "f3");
@@ -62,9 +64,12 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertThat(api.isExported(a)).isTrue();
+		assertThat(api.analyzer().isExported(a)).isTrue();
 		assertThat(a.getDeclaredConstructors()).hasSize(1);
 		assertThat(a.getDeclaredMethods())
+			.extracting(MethodDecl::getSimpleName)
+			.containsOnly("m2", "m3", "m4");
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m)))
 			.extracting(MethodDecl::getSimpleName)
 			.containsOnly("m2", "m3");
 		assertThat(a.getDeclaredFields())
@@ -84,7 +89,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertInterface(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 
@@ -117,9 +122,10 @@ class TypeMemberExtractionTest {
 			 }""");
 
 		var a = assertClass(api, "B$A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
-		assertThat(a.getDeclaredMethods()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(2);
 
 		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
@@ -148,13 +154,17 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(1);
-		assertThat(a.getDeclaredMethods()).hasSize(1);
+		assertTrue(api.analyzer().isExported(a));
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 
+		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
 
+		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
 	}
@@ -176,13 +186,18 @@ class TypeMemberExtractionTest {
 			final class B extends A {}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(1);
-		assertThat(a.getDeclaredMethods()).hasSize(1);
+		assertTrue(api.analyzer().isExported(a));
+		assertTrue(a.isSealed());
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 
+		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
 
+		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
 	}
@@ -204,13 +219,17 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(1);
-		assertThat(a.getDeclaredMethods()).hasSize(1);
+		assertTrue(api.analyzer().isExported(a));
+		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
+		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 
+		var f2 = assertField(api, a, "f2");
 		var f3 = assertField(api, a, "f3");
 		var m3 = assertMethod(api, a, "m3()");
 
+		assertTrue(f2.isProtected());
 		assertTrue(f3.isPublic());
 		assertTrue(m3.isPublic());
 	}
@@ -227,7 +246,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 
@@ -254,7 +273,7 @@ class TypeMemberExtractionTest {
 			}""");
 
 		var a = assertClass(api, "A");
-		assertTrue(api.isExported(a));
+		assertTrue(api.analyzer().isExported(a));
 		assertThat(a.getDeclaredFields()).hasSize(2);
 		assertThat(a.getDeclaredMethods()).hasSize(2);
 
@@ -424,5 +443,25 @@ class TypeMemberExtractionTest {
 
 		assertThat(f.getType()).isEqualTo(new TypeParameterReference("T"));
 		assertThat(m.getType()).isEqualTo(new TypeParameterReference("U"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_generic_field_type_is_substituted(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Box<T> {
+				public T value;
+			}
+			public class StringBox extends Box<String> {}""");
+
+		var box = assertClass(api, "Box");
+		var stringBox = assertClass(api, "StringBox");
+
+		// In Box<T>, the field type is the type variable T
+		assertThat(assertField(api, box, "value").getType()).isEqualTo(new TypeParameterReference("T"));
+
+		// In StringBox, it is substituted
+		var inherited = api.analyzer().findField(stringBox, "value").orElseThrow();
+		assertThat(inherited.getType()).isEqualTo(TypeReference.STRING);
 	}
 }

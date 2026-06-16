@@ -26,7 +26,7 @@ class DependencyClasspathChangesTest {
 	void inherited_method_removed_in_dependency() {
 		var v1 = "public class A extends depfixtures.removed.B {}";
 
-		assertBC("A", "depfixtures.removed.B.m()", BreakingChangeKind.METHOD_REMOVED, 1, buildDiff(v1, CP_V1, v1, CP_V2));
+		assertBC("A", "depfixtures.removed.B.m()", BreakingChangeKind.EXECUTABLE_REMOVED, 1, buildDiff(v1, CP_V1, v1, CP_V2));
 	}
 
 	@Test
@@ -49,7 +49,7 @@ class DependencyClasspathChangesTest {
 	void inherited_method_now_throws_checked_exception_in_dependency() {
 		var v1 = "public class A extends depfixtures.throwschecked.B {}";
 
-		assertBC("A", "depfixtures.throwschecked.B.m()", BreakingChangeKind.METHOD_NOW_THROWS_CHECKED_EXCEPTION, 1,
+		assertBC("A", "depfixtures.throwschecked.B.m()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 1,
 			buildDiff(v1, CP_V1, v1, CP_V2));
 	}
 

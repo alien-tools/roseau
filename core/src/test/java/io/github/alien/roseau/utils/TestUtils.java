@@ -132,29 +132,31 @@ public class TestUtils {
 	}
 
 	public static void assertNoField(API api, TypeDecl decl, String name) {
-		Optional<FieldDecl> findField = api.findField(decl, name);
+		Optional<FieldDecl> findField = api.analyzer().findField(decl, name);
 
 		if (findField.isPresent())
 			throw new AssertionFailedError("Unexpected field", "No such field", findField.get().getQualifiedName());
 	}
 
 	public static void assertNoMethod(API api, TypeDecl decl, String erasure) {
-		Optional<MethodDecl> findMethod = api.findMethod(decl, erasure);
+		Optional<MethodDecl> findMethod = api.analyzer().findMethod(decl, erasure);
 
 		if (findMethod.isPresent())
-			throw new AssertionFailedError("Unexpected method", "No such method", api.getErasure(findMethod.get()));
+			throw new AssertionFailedError("Unexpected method", "No such method",
+				api.analyzer().getErasure(findMethod.get()));
 	}
 
 	public static void assertNoConstructor(API api, ClassDecl decl, String erasure) {
-		Optional<ConstructorDecl> findCons = api.findConstructor(decl, erasure);
+		Optional<ConstructorDecl> findCons = api.analyzer().findConstructor(decl, erasure);
 
 		if (findCons.isPresent())
-			throw new AssertionFailedError("Unexpected constructor", "No such constructor", api.getErasure(findCons.get()));
+			throw new AssertionFailedError("Unexpected constructor", "No such constructor",
+				api.analyzer().getErasure(findCons.get()));
 	}
 
 	public static MethodDecl assertMethod(API api, TypeDecl decl, String erasure) {
 		List<MethodDecl> findMethod = decl.getDeclaredMethods().stream()
-			.filter(m -> api.getErasure(m).equals(erasure))
+			.filter(m -> api.analyzer().getErasure(m).equals(erasure))
 			.toList();
 
 		if (findMethod.isEmpty())
@@ -164,7 +166,7 @@ public class TestUtils {
 
 	public static AnnotationMethodDecl assertAnnotationMethod(API api, AnnotationDecl decl, String erasure) {
 		List<AnnotationMethodDecl> findMethod = decl.getAnnotationMethods().stream()
-			.filter(m -> api.getErasure(m).equals(erasure))
+			.filter(m -> api.analyzer().getErasure(m).equals(erasure))
 			.toList();
 
 		if (findMethod.isEmpty())
@@ -174,7 +176,7 @@ public class TestUtils {
 
 	public static ConstructorDecl assertConstructor(API api, ClassDecl decl, String erasure) {
 		List<ConstructorDecl> findCons = decl.getDeclaredConstructors().stream()
-			.filter(m -> api.getErasure(m).equals(erasure))
+			.filter(m -> api.analyzer().getErasure(m).equals(erasure))
 			.toList();
 
 		if (findCons.isEmpty())

@@ -27,13 +27,13 @@ class TypeParameterProviderTest {
 		var v = new TypeParameterReference("V");
 		var number = new TypeReference<>("java.lang.Number");
 
-		assertThat(api.resolveDirectTypeParameterBound(m, t)).isEqualTo(number);
-		assertThat(api.resolveDirectTypeParameterBound(m, u)).isEqualTo(t);
-		assertThat(api.resolveDirectTypeParameterBound(m, v)).isEqualTo(u);
+		assertThat(api.analyzer().resolveDirectTypeParameterBound(m, t)).isEqualTo(number);
+		assertThat(api.analyzer().resolveDirectTypeParameterBound(m, u)).isEqualTo(t);
+		assertThat(api.analyzer().resolveDirectTypeParameterBound(m, v)).isEqualTo(u);
 
-		assertThat(api.resolveTypeParameterBound(m, t)).isEqualTo(number);
-		assertThat(api.resolveTypeParameterBound(m, u)).isEqualTo(number);
-		assertThat(api.resolveTypeParameterBound(m, v)).isEqualTo(number);
+		assertThat(api.analyzer().resolveTypeParameterBound(m, t)).isEqualTo(number);
+		assertThat(api.analyzer().resolveTypeParameterBound(m, u)).isEqualTo(number);
+		assertThat(api.analyzer().resolveTypeParameterBound(m, v)).isEqualTo(number);
 	}
 
 	@ParameterizedTest
@@ -48,7 +48,7 @@ class TypeParameterProviderTest {
 		var m = assertMethod(api, a, "m(java.lang.Number)");
 		var x = new TypeParameterReference("X");
 
-		assertThat(api.resolveTypeParameterBound(m, x)).isEqualTo(TypeReference.OBJECT);
+		assertThat(api.analyzer().resolveTypeParameterBound(m, x)).isEqualTo(TypeReference.OBJECT);
 	}
 
 	@ParameterizedTest
@@ -69,8 +69,8 @@ class TypeParameterProviderTest {
 		var number = new TypeReference<>("java.lang.Number");
 		var charSequence = new TypeReference<>("java.lang.CharSequence");
 
-		assertThat(api.resolveDirectTypeParameterBound(a, t)).isEqualTo(charSequence);
-		assertThat(api.resolveDirectTypeParameterBound(b, t)).isEqualTo(number);
-		assertThat(api.resolveDirectTypeParameterBound(m, t)).isEqualTo(TypeReference.OBJECT);
+		assertThat(api.analyzer().resolveDirectTypeParameterBound(a, t)).isEqualTo(charSequence);
+		assertThat(api.analyzer().resolveDirectTypeParameterBound(b, t)).isEqualTo(number);
+		assertThat(api.analyzer().resolveDirectTypeParameterBound(m, t)).isEqualTo(TypeReference.OBJECT);
 	}
 }

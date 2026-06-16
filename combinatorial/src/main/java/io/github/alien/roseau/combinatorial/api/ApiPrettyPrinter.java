@@ -200,8 +200,8 @@ public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 			!it.getThrownExceptions().isEmpty() ? " throws " + it.getThrownExceptions().stream().map(ITypeReference::getQualifiedName).collect(Collectors.joining(", ")) : "",
 			hasBody(it)
 				? "void".equals(it.getType().getQualifiedName())
-				? "{}"
-				: "{ return %s; }".formatted(getDefaultValue(it.getType()))
+				  ? "{}"
+				  : "{ return %s; }".formatted(getDefaultValue(it.getType()))
 				: ";"
 		);
 	}
@@ -225,7 +225,7 @@ public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 	public Print fieldDecl(FieldDecl it) {
 		return () -> "\t%s %s %s %s%s;".formatted(
 			prettyPrint(it.getVisibility()), prettyPrint(it.getModifiers()), it.getType(), it.getSimpleName(),
-			it.isFinal() || api.resolver().resolve(it.getContainingType()).get().isInterface() ? " = " + getDefaultValue(it.getType()) : "");
+			it.isFinal() || api.analyzer().resolver().resolve(it.getContainingType()).get().isInterface() ? " = " + getDefaultValue(it.getType()) : "");
 	}
 
 	@Override
@@ -303,7 +303,7 @@ public class ApiPrettyPrinter implements ApiAlgebra<Print> {
 	}
 
 	private boolean hasBody(MethodDecl it) {
-		if (api.resolver().resolve(it.getContainingType()).get().isInterface())
+		if (api.analyzer().resolver().resolve(it.getContainingType()).get().isInterface())
 			return it.isDefault() || it.isStatic() || it.getVisibility() == AccessModifier.PRIVATE;
 		return !it.isAbstract() && !it.isNative();
 	}

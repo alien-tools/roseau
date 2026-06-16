@@ -12,7 +12,7 @@ public final class RemoveParameterMethodStrategy extends AbstractMtdStrategy {
 	public RemoveParameterMethodStrategy(int parameterIndex, MethodDecl mtd, NewApiQueue queue, API api) {
 		super(mtd, queue, "RemoveParameter%dFromMethod%sIn%s".formatted(
 				parameterIndex,
-				StringUtils.splitSpecialCharsAndCapitalize(api.getErasure(mtd)),
+				StringUtils.splitSpecialCharsAndCapitalize(api.analyzer().getErasure(mtd)),
 				StringUtils.getPrettyQualifiedName(mtd.getContainingType())),
 			api
 		);

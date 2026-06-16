@@ -2,6 +2,7 @@ package io.github.alien.roseau.cli;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.io.TempDir;
 import picocli.CommandLine;
 
@@ -11,6 +12,9 @@ import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Set;
+import java.util.concurrent.TimeUnit;
+import java.util.stream.Collectors;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -36,6 +40,14 @@ class RoseauCLITest {
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
+	@Test
+	void version_uses_build_version() {
+		var exitCode = cmd.execute("--version");
+
+		assertThat(out.toString()).contains("Roseau " + RoseauCLI.VersionProvider.resolveVersion());
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
 	// --- Diffs --- //
 	@Test
 	void simple_source_diff() {
@@ -44,7 +56,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -56,7 +68,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -68,7 +80,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -80,7 +92,7 @@ class RoseauCLITest {
 			"--diff",
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(out.toString()).contains("pkg.T FORMAL_TYPE_PARAMETER_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
@@ -115,7 +127,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString())
-			.contains("METHOD_REMOVED")
+			.contains("EXECUTABLE_REMOVED")
 			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -130,7 +142,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString())
-			.contains("METHOD_REMOVED")
+			.contains("EXECUTABLE_REMOVED")
 			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
 			.doesNotContain("METHOD_NOW_STATIC")
 			.contains("METHOD_OVERRIDABLE_NOW_STATIC");
@@ -197,12 +209,12 @@ class RoseauCLITest {
 
 	// --- APIs --- //
 	@Test
-	void write_api_no_file() {
+	void write_api_no_file_prints_to_stdout() {
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
 			"--api");
 
-		assertThat(err.toString()).contains("--api-json option required with --api mode");
-		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+		assertThat(out.toString()).contains("allTypes");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
 	@Test
@@ -238,7 +250,7 @@ class RoseauCLITest {
 			"--v2=src/test/resources/test-project-v2/src",
 			"--diff");
 
-		assertThat(err.toString()).contains("Warning: no classpath provided", "results may be inaccurate");
+		assertThat(err.toString()).doesNotContain("Warning: no classpath provided", "results may be inaccurate");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -375,7 +387,7 @@ class RoseauCLITest {
 
 		assertThat(csvReport).isNotEmptyFile();
 		assertThat(jsonReport).isNotEmptyFile();
-		assertThat(Files.readString(jsonReport)).contains("\"kind\": \"METHOD_REMOVED\"", "\"nature\": \"DELETION\"");
+		assertThat(Files.readString(jsonReport)).contains("\"kind\": \"EXECUTABLE_REMOVED\"", "\"nature\": \"DELETION\"");
 		assertThat(Files.readString(cliReport)).contains("Breaking Changes found:");
 		assertThat(Files.readString(cliReport)).doesNotContain("\u001B[");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -415,14 +427,14 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind;nature;location
-			pkg.T;pkg.T.m();METHOD_REMOVED;DELETION;pkg/T.java:10""");
+			pkg.T;pkg.T.m();EXECUTABLE_REMOVED;DELETION;pkg/T.java:10""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).doesNotContain("METHOD_REMOVED pkg.T.m");
+		assertThat(out.toString()).doesNotContain("EXECUTABLE_REMOVED pkg.T.m");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -431,14 +443,14 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind;nature;location
-			pkg.T;pkg.T.m2();METHOD_REMOVED;DELETION;pkg/T.java:10""");
+			pkg.T;pkg.T.m2();EXECUTABLE_REMOVED;DELETION;pkg/T.java:10""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
 			"--diff",
 			"--ignored=" + ignored,
 			"--plain");
 
-		assertThat(out.toString()).contains("pkg.T.m() METHOD_REMOVED");
+		assertThat(out.toString()).contains("pkg.T.m() EXECUTABLE_REMOVED");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
 	}
 
@@ -465,7 +477,7 @@ class RoseauCLITest {
 		var ignored = tempDir.resolve("ignored.csv");
 		Files.writeString(ignored, """
 			type;symbol;kind
-			pkg.T;pkg.T.m();METHOD_REMOVED
+			pkg.T;pkg.T.m();EXECUTABLE_REMOVED
 			pkg.T;pkg.T;FORMAL_TYPE_PARAMETER_REMOVED""");
 		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/test-project-v1.jar",
 			"--v2=src/test/resources/test-project-v2/test-project-v2.jar",
@@ -474,7 +486,7 @@ class RoseauCLITest {
 			"--plain");
 
 		assertThat(out.toString())
-			.doesNotContain("METHOD_REMOVED")
+			.doesNotContain("EXECUTABLE_REMOVED")
 			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
@@ -599,6 +611,54 @@ class RoseauCLITest {
 			"--diff");
 
 		assertThat(err.toString()).contains("Invalid path to library");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	// --- Maven coordinates --- //
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void api_mode_with_maven_coordinates() {
+		var exitCode = cmd.execute("--v1=io.github.alien-tools:roseau-core:0.5.0", "--api");
+
+		assertThat(out.toString()).contains("allTypes");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void diff_mode_with_maven_coordinates() {
+		var exitCode = cmd.execute(
+			"--v1=io.github.alien-tools:roseau-core:0.4.0",
+			"--v2=io.github.alien-tools:roseau-core:0.5.0",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("TYPE_REMOVED");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void mixed_mode_jar_and_coordinates() {
+		var exitCode = cmd.execute(
+			"--v1=src/test/resources/test-project-v1/test-project-v1.jar",
+			"--v2=junit:junit:4.13.2",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("TYPE_REMOVED");
+		assertThat(err.toString()).doesNotContain("Failed to download");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	@Timeout(value = 30, unit = TimeUnit.SECONDS)
+	void nonexistent_artifact_gives_clear_error() {
+		var exitCode = cmd.execute("--v1=no-group:no-artifact:0.0.1", "--api");
+
+		assertThat(err.toString()).contains("Failed to download no-group:no-artifact:0.0.1");
 		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 }
