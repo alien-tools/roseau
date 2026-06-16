@@ -18,11 +18,11 @@ record DiffCompatibilityCase(
 		roseauBreakingChanges = List.copyOf(roseauBreakingChanges);
 	}
 
-	boolean roseauSourceBreaking() {
+	boolean isSourceBreaking() {
 		return roseauBreakingChanges.stream().anyMatch(bc -> bc.kind().isSourceBreaking());
 	}
 
-	boolean roseauBinaryBreaking() {
+	boolean isBinaryBreaking() {
 		return roseauBreakingChanges.stream().anyMatch(bc -> bc.kind().isBinaryBreaking());
 	}
 }

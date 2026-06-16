@@ -14,10 +14,9 @@ public final class DiffGroundTruthRecorder {
 
 	public static void record(String sourcesV1, List<Path> classpathV1,
 	                          String sourcesV2, List<Path> classpathV2,
-	                          List<BreakingChange> roseauBreakingChanges) {
+	                          List<BreakingChange> bcs) {
 		if (DiffGroundTruthMode.current().isEnabled()) {
-			CASES.get().add(new DiffCompatibilityCase(sourcesV1, classpathV1, sourcesV2, classpathV2,
-				roseauBreakingChanges));
+			CASES.get().add(new DiffCompatibilityCase(sourcesV1, classpathV1, sourcesV2, classpathV2, bcs));
 		}
 	}
 

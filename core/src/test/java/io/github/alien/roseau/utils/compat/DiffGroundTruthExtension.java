@@ -51,10 +51,10 @@ public final class DiffGroundTruthExtension implements BeforeTestExecutionCallba
 			|| result.v2Compilation().failed()
 			|| result.clientV1Compilation().failed();
 		boolean sourceMismatch = result.setupSucceeded()
-			&& compatibilityCase.roseauSourceBreaking() != result.observedSourceBreaking();
+			&& compatibilityCase.isSourceBreaking() != result.observedSourceBreaking();
 		boolean binaryBaselineFailed = result.setupSucceeded() && result.clientV1Execution().failed();
 		boolean binaryMismatch = result.clientV1Execution().succeeded()
-			&& compatibilityCase.roseauBinaryBreaking() != result.observedBinaryBreaking();
+			&& compatibilityCase.isBinaryBreaking() != result.observedBinaryBreaking();
 
 		if (!setupFailed && !sourceMismatch && !binaryBaselineFailed && !binaryMismatch) {
 			return "";
@@ -62,8 +62,8 @@ public final class DiffGroundTruthExtension implements BeforeTestExecutionCallba
 
 		StringBuilder report = new StringBuilder();
 		report.append(" - expected from javac/JVM: ").append(expectedVerdict(result)).append(System.lineSeparator());
-		report.append(" - found by Roseau: ").append(verdict(compatibilityCase.roseauSourceBreaking(),
-			compatibilityCase.roseauBinaryBreaking())).append(System.lineSeparator());
+		report.append(" - found by Roseau: ").append(verdict(compatibilityCase.isSourceBreaking(),
+			compatibilityCase.isBinaryBreaking())).append(System.lineSeparator());
 		report.append(" - Roseau breaking changes: ").append(roseauBreakingChanges(compatibilityCase)).append(System.lineSeparator());
 
 		appendCompilationDetail(report, "v1 library compilation", result.v1Compilation());
