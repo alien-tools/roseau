@@ -36,7 +36,8 @@ public final class BatchGitWalker {
 
 		repos.parallelStream().forEach(repo -> {
 			GitWalker.Config config = new GitWalker.Config(
-				repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.exclusions());
+				repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.exclusions(),
+				repo.startSha());
 
 			try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 				new GitWalker(config).walk(reporter);
@@ -62,7 +63,7 @@ public final class BatchGitWalker {
 
 	private static GitWalker.Config repoWithMergedExclusions(GitWalker.Config repo, RoseauOptions.Exclude defaults) {
 		RoseauOptions.Exclude exclusions = mergeExclusions(defaults, sanitizeExclusions(repo.exclusions()));
-		return new GitWalker.Config(repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), exclusions);
+		return new GitWalker.Config(repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), exclusions, repo.startSha());
 	}
 
 	private static RoseauOptions.Exclude mergeExclusions(RoseauOptions.Exclude defaults, RoseauOptions.Exclude repo) {

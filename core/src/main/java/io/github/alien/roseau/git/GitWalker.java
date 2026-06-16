@@ -45,6 +45,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -62,7 +63,8 @@ public final class GitWalker {
 		String url,
 		Path gitDir,
 		List<Path> sourceRoots,
-		RoseauOptions.Exclude exclusions
+		RoseauOptions.Exclude exclusions,
+		String startSha
 	) {
 		public Config {
 			sourceRoots = List.copyOf(sourceRoots);
@@ -89,7 +91,7 @@ public final class GitWalker {
 		try (Repository repo = repoBuilder.build();
 		     Git git = new Git(repo);
 		     RevWalk rw = new RevWalk(repo)) {
-			List<RevCommit> chain = firstParentChain(repo, rw);
+			List<RevCommit> chain = firstParentChain(repo, rw, config.startSha());
 			Map<String, List<String>> tagsByCommit = tagsByCommit(repo);
 			String branch = defaultBranchName(repo);
 			Path workTree = repo.getWorkTree().toPath();
@@ -278,7 +280,7 @@ public final class GitWalker {
 		}
 	}
 
-	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw) throws IOException {
+	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw, String startSha) throws IOException {
 		ObjectId headId = repo.resolve("HEAD");
 		if (headId == null) {
 			throw new IllegalStateException("Cannot resolve HEAD");
@@ -288,7 +290,7 @@ public final class GitWalker {
 		RevCommit cur = rw.parseCommit(headId);
 		while (true) {
 			chain.add(cur);
-			if (cur.getParentCount() == 0) {
+			if (cur.getParentCount() == 0 || Objects.equals(cur.name(), startSha)) {
 				break;
 			}
 			cur = rw.parseCommit(cur.getParent(0));

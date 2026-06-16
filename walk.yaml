@@ -14,6 +14,7 @@ repositories:
   - libraryId: guava
     url: "https://github.com/google/guava"
     gitDir: "/data/guava/.git"
+    startSha: "d10797e284aff5b5c2ed8a2147aac9f66b04a2fd"
     sourceRoots:
       - /data/guava/guava/src  # 2abfb185dc directory reorganization in preparation for deeper maven integration
       - /data/guava/src # initial root on first-parent history
@@ -30,9 +31,4 @@ repositories:
         - # inferred from HEAD (2 hits)
           name: com.google.errorprone.annotations.RestrictedApi
           args: { }
-  - libraryId: roseau
-    url: "https://github.com/alien-tools/roseau"
-    gitDir: "/data/roseau/.git"
-    sourceRoots:
-      - /data/roseau/core/src/main/java
-      - /data/roseau/src/main/java
+

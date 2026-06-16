@@ -87,6 +87,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 	private static final List<String> BCS_HEADER = List.of(
 		"library",
 		"commit",
+		"commit_url",
 		"kind",
 		"nature",
 		"details",
@@ -372,6 +373,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			writeCsvRow(bcsWriter, List.of(
 				libraryId,
 				commitSha,
+				commitUrl(url, commitSha),
 				kind.name(),
 				kind.getNature().name().toLowerCase(Locale.ROOT),
 				bc.details().toString(),
