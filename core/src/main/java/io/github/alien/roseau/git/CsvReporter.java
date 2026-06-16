@@ -206,10 +206,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			.sum();
 		int exportedTypesCount = api.getExportedTypes().size();
 		int exportedMethodsCount = api.getExportedTypes().stream()
-			.mapToInt(type -> api.getDeclaredExportedMethods(type).size())
+			.mapToInt(type -> api.analyzer().getDeclaredExportedMethods(type).size())
 			.sum();
 		int exportedFieldsCount = api.getExportedTypes().stream()
-			.mapToInt(type -> api.getDeclaredExportedFields(type).size())
+			.mapToInt(type -> api.analyzer().getDeclaredExportedFields(type).size())
 			.sum();
 		return new ApiStats(
 			allTypesCount,
@@ -229,10 +229,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 				long typeCount = type.getAnnotations().stream()
 					.filter(a -> a.actualAnnotation().getQualifiedName().equals(fqn))
 					.count();
-				long fieldCount = api.getDeclaredExportedFields(type).stream()
+				long fieldCount = api.analyzer().getDeclaredExportedFields(type).stream()
 					.filter(f -> f.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals(fqn)))
 					.count();
-				long methodCount = api.getDeclaredExportedMethods(type).stream()
+				long methodCount = api.analyzer().getDeclaredExportedMethods(type).stream()
 					.filter(m -> m.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals(fqn)))
 					.count();
 				return typeCount + fieldCount + methodCount;
@@ -244,7 +244,8 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		return api.getExportedTypes().stream()
 			.flatMap(type -> Stream.concat(
 				Stream.of(type),
-				Stream.concat(api.getDeclaredExportedFields(type).stream(), api.getDeclaredExportedMethods(type).stream())))
+				Stream.concat(api.analyzer().getDeclaredExportedFields(type).stream(),
+					api.analyzer().getDeclaredExportedMethods(type).stream())))
 			.filter(symbol -> exclusionMatcher.isInternal(symbol, api))
 			.count();
 	}
@@ -269,10 +270,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 				case TypeDecl type -> annotationExclusions.stream()
 					.anyMatch(excl -> type.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)))
 					|| type.getEnclosingType()
-					.flatMap(api.resolver()::resolve)
+					.flatMap(api.analyzer().resolver()::resolve)
 					.map(enclosing -> isInternal(enclosing, api))
 					.orElse(false);
-				case TypeMemberDecl member -> api.resolver().resolve(member.getContainingType())
+				case TypeMemberDecl member -> api.analyzer().resolver().resolve(member.getContainingType())
 					.map(type -> isInternal(type, api)).orElse(false)
 					|| annotationExclusions.stream()
 					.anyMatch(excl -> member.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)));
