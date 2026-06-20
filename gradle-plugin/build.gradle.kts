@@ -1,10 +1,12 @@
 plugins {
     `java-gradle-plugin`
     `maven-publish`
+    id("org.jreleaser")
 }
 
 group = "io.github.alien-tools"
-version = "0.7.0-SNAPSHOT"
+val releaseVersion = findProperty("releaseVersion") as? String
+version = releaseVersion ?: "0.7.0-SNAPSHOT"
 
 repositories {
     mavenLocal()
@@ -18,7 +20,7 @@ dependencies {
     testImplementation(platform("org.junit:junit-bom:5.11.4"))
     testImplementation("org.junit.jupiter:junit-jupiter")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
-    testImplementation("org.assertj:assertj-core:3.27.3")
+    testImplementation("org.assertj:assertj-core:3.27.7")
 }
 
 tasks.withType<Test> {
@@ -76,6 +78,33 @@ publishing {
                     connection.set("scm:git:git://github.com/alien-tools/roseau.git")
                     developerConnection.set("scm:git:ssh://github.com:alien-tools/roseau.git")
                     url.set("https://github.com/alien-tools/roseau/tree/main")
+                }
+            }
+        }
+    }
+
+    repositories {
+        mavenLocal()
+        maven {
+            name = "staging"
+            url = layout.buildDirectory.dir("staging-deploy")
+        }
+    }
+}
+
+jreleaser {
+    signing {
+        active = "ALWAYS"
+        armored = true
+    }
+
+    deploy {
+        maven {
+            mavenCentral {
+                sonatype {
+                    active = "ALWAYS"
+                    url = "https://central.sonatype.com/api/v1/publisher"
+                    stagingRepository("build/staging-deploy")
                 }
             }
         }
