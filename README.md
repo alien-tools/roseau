@@ -2,7 +2,7 @@
 
 Roseau (/ʁozo/) is a **fast** and **[accurate](ACCURACY.md)** tool for detecting breaking changes between library versions, similar to tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
 Whether you're a library maintainer or upgrading dependencies in your projects, Roseau helps ensure backward compatibility across versions.
-Roseau analyzes both JAR files and source code, is highly configurable, and includes a dedicated Maven plug-in.
+Roseau analyzes both JAR files and source code, is highly configurable, and includes dedicated Maven and Gradle plug-ins.
 
 The official user documentation is available at [https://alien-tools.github.io/roseau/](https://alien-tools.github.io/roseau/).
 
@@ -15,7 +15,7 @@ The official user documentation is available at [https://alien-tools.github.io/r
   - Supports Java up to version 25 (including records, sealed types, modules, etc.)
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
   - Highly configurable, CLI-first, and scriptable
-  - Maven plug-in, integration with Gradle
+  - Dedicated Maven and Gradle plug-ins
 
 Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
 Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
@@ -148,7 +148,32 @@ The minimal setup is to bind the `check` goal and provide a baseline:
 
 ### In a Gradle build
 
-Gradle builds can run Roseau through the published CLI artifact. A minimal Kotlin DSL setup is:
+Roseau provides a dedicated Gradle plug-in (`io.github.alien-tools.roseau`):
+
+```kotlin
+// build.gradle.kts
+buildscript {
+    repositories { mavenCentral() }
+    dependencies { classpath("io.github.alien-tools:roseau-gradle-plugin:0.7.0") }
+}
+apply(plugin = "io.github.alien-tools.roseau")
+
+roseau {
+    mvnCoord = "com.example:my-library"
+    v1 = "1.0.0"              // baseline version
+    failOnBreaking = true
+
+    excludes {
+        annotation("org.apiguardian.api.API") {
+            arg("status", "INTERNAL")
+        }
+    }
+}
+```
+
+Run with `./gradlew roseauCheck`. See the [Gradle guide](https://alien-tools.github.io/roseau/guides/gradle/) for full documentation.
+
+Alternatively, Gradle builds can also invoke Roseau through the CLI artifact:
 
 ```kotlin
 val roseau by configurations.creating
