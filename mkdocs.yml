@@ -54,3 +54,4 @@ nav:
   - Reference:
       - CLI options: reference/cli.md
       - Maven plug-in options: reference/maven-plugin.md
+      - Gradle plug-in options: reference/gradle-plugin.md

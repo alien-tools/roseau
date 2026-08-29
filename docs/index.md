@@ -2,7 +2,7 @@
 
 Roseau (/ʁozo/) is a **fast** and **[accurate](https://github.com/alien-tools/roseau/ACCURACY.md)** tool for detecting breaking changes between Java library versions, similar to tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
 Whether you're a library maintainer or upgrading dependencies in your projects, Roseau helps ensure backward compatibility across versions.
-Roseau analyzes both [JAR files and source code](guides/compare.md), is [highly configurable](reference/cli.md), generates [reports](guides/reports.md) in HTML, JSON, and Markdown, and includes a [dedicated Maven plug-in](guides/maven-plugin.md).
+Roseau analyzes both [JAR files and source code](guides/compare.md), is [highly configurable](reference/cli.md), generates [reports](guides/reports.md) in HTML, JSON, and Markdown, and includes dedicated [Maven](guides/maven-plugin.md) and [Gradle](guides/gradle.md) plug-ins.
 
 [Get the latest release :material-download:](https://github.com/alien-tools/roseau/releases/latest){ .md-button .md-button--primary }
 [View on GitHub :material-github:](https://github.com/alien-tools/roseau){ .md-button }
