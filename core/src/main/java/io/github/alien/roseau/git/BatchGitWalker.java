@@ -15,6 +15,8 @@ import org.apache.logging.log4j.Logger;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
@@ -34,17 +36,23 @@ public final class BatchGitWalker {
 		Path outputDir = Path.of("walk-results");
 		List<GitWalker.Config> repos = loadConfig(yamlConfig);
 
-		repos.parallelStream().forEach(repo -> {
+		// Several libraries may be published from a single repository (log4j-api and log4j-core, for instance). They
+		// share a working tree, so walking them concurrently makes their checkouts fight over the index lock: group
+		// by repository, run the groups in parallel and each group's libraries sequentially.
+		Map<Path, List<GitWalker.Config>> reposByGitDir = repos.stream()
+			.collect(Collectors.groupingBy(GitWalker.Config::gitDir));
+
+		reposByGitDir.values().parallelStream().forEach(group -> group.forEach(repo -> {
 			GitWalker.Config config = new GitWalker.Config(
 				repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), repo.exclusions(),
-				repo.startSha());
+				repo.startSha(), repo.endSha());
 
 			try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 				new GitWalker(config).walk(reporter);
 			} catch (Exception e) {
-				LOGGER.error("Analysis of {} failed", repo.url(), e);
+				LOGGER.error("Analysis of {} ({}) failed", repo.libraryId(), repo.url(), e);
 			}
-		});
+		}));
 	}
 
 	static List<GitWalker.Config> loadConfig(Path yamlFile) throws IOException {
@@ -63,7 +71,8 @@ public final class BatchGitWalker {
 
 	private static GitWalker.Config repoWithMergedExclusions(GitWalker.Config repo, RoseauOptions.Exclude defaults) {
 		RoseauOptions.Exclude exclusions = mergeExclusions(defaults, sanitizeExclusions(repo.exclusions()));
-		return new GitWalker.Config(repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), exclusions, repo.startSha());
+		return new GitWalker.Config(repo.libraryId(), repo.url(), repo.gitDir(), repo.sourceRoots(), exclusions,
+			repo.startSha(), repo.endSha());
 	}
 
 	private static RoseauOptions.Exclude mergeExclusions(RoseauOptions.Exclude defaults, RoseauOptions.Exclude repo) {

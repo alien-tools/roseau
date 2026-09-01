@@ -200,6 +200,11 @@ public interface HierarchyProvider {
 			.orElseGet(List::of);
 	}
 
+	default boolean hasIncompleteHierarchy(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return getAllSuperTypes(type).stream().anyMatch(ref -> resolver().resolve(ref).isEmpty());
+	}
+
 	/**
 	 * Returns all supertypes of the given reference with generic arguments instantiated through the hierarchy.
 	 * For instance, {@code ArrayList<String> -> List<String> -> Collection<String>}, etc.

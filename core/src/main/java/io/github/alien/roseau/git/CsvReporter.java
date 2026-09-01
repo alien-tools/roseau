@@ -28,6 +28,7 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -76,6 +77,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"api_changed",
 		"has_java_changes",
 		"has_pom_changes",
+		"source_root",
+		"unresolved_types_count",
+		"incomplete_hierarchy_types_count",
 		"checkout_time_ms",
 		"classpath_time_ms",
 		"api_time_ms",
@@ -99,6 +103,8 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"is_excluded_symbol",
 		"is_deprecated_removal",
 		"is_internal_removal",
+		"matched_exclusion_rule",
+		"impacted_type_hierarchy_incomplete",
 		"source_file",
 		"source_line"
 	);
@@ -167,7 +173,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		int exportedMethodsCount,
 		int exportedFieldsCount,
 		long deprecatedCount,
-		long internalCount
+		long internalCount,
+		int unresolvedTypesCount,
+		int incompleteHierarchyTypesCount
 	) {
 		int allApiSymbolsCount() {
 			return allApiTypesCount + allApiMethodsCount + allApiFieldsCount;
@@ -178,7 +186,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		}
 	}
 
-	private static final ApiStats EMPTY_STATS = new ApiStats(0, 0, 0, 0, 0, 0, 0, 0);
+	private static final ApiStats EMPTY_STATS = new ApiStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 	private record StatsResult(ApiStats stats, long timeMs) {
 	}
@@ -212,6 +220,10 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		int exportedFieldsCount = api.getExportedTypes().stream()
 			.mapToInt(type -> api.analyzer().getDeclaredExportedFields(type).size())
 			.sum();
+		int incompleteHierarchyTypes = (int) api.getExportedTypes().stream()
+			.filter(type -> api.analyzer().hasIncompleteHierarchy(type))
+			.count();
+
 		return new ApiStats(
 			allTypesCount,
 			allMethodsCount,
@@ -220,7 +232,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			exportedMethodsCount,
 			exportedFieldsCount,
 			countAnnotated(api, Deprecated.class.getCanonicalName()),
-			countInternal(api)
+			countInternal(api),
+			api.analyzer().resolver().unresolvedTypes().size(),
+			incompleteHierarchyTypes
 		);
 	}
 
@@ -261,24 +275,36 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		}
 
 		boolean isInternal(Symbol symbol, API api) {
+			return matchedRule(symbol, api).isPresent();
+		}
+
+		Optional<String> matchedRule(Symbol symbol, API api) {
 			if (symbol == null) {
-				return false;
+				return Optional.empty();
 			}
-			if (namePatterns.stream().anyMatch(p -> p.matcher(symbol.getQualifiedName()).matches())) {
-				return true;
+			Optional<String> byName = namePatterns.stream()
+				.filter(p -> p.matcher(symbol.getQualifiedName()).matches())
+				.findFirst()
+				.map(p -> "name:" + p.pattern());
+			if (byName.isPresent()) {
+				return byName;
 			}
 			return switch (symbol) {
-				case TypeDecl type -> annotationExclusions.stream()
-					.anyMatch(excl -> type.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)))
-					|| type.getEnclosingType()
-					.flatMap(api.analyzer().resolver()::resolve)
-					.map(enclosing -> isInternal(enclosing, api))
-					.orElse(false);
+				case TypeDecl type -> matchedAnnotation(type)
+					.or(() -> type.getEnclosingType()
+						.flatMap(api.analyzer().resolver()::resolve)
+						.flatMap(enclosing -> matchedRule(enclosing, api)));
 				case TypeMemberDecl member -> api.analyzer().resolver().resolve(member.getContainingType())
-					.map(type -> isInternal(type, api)).orElse(false)
-					|| annotationExclusions.stream()
-					.anyMatch(excl -> member.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)));
+					.flatMap(type -> matchedRule(type, api))
+					.or(() -> matchedAnnotation(member));
 			};
+		}
+
+		private Optional<String> matchedAnnotation(Symbol symbol) {
+			return annotationExclusions.stream()
+				.filter(excl -> symbol.getAnnotations().stream().anyMatch(ann -> annotationMatches(ann, excl)))
+				.findFirst()
+				.map(excl -> "annotation:" + excl.name());
 		}
 
 		private static boolean annotationMatches(Annotation annotation, RoseauOptions.AnnotationExclusion exclusion) {
@@ -347,6 +373,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			analysis.apiChanged(),
 			c.javaChanged(),
 			c.pomChanged(),
+			analysis.sourceRoot().map(Path::toString).orElse(""),
+			stats.stats().unresolvedTypesCount(),
+			stats.stats().incompleteHierarchyTypesCount(),
 			analysis.checkoutTimeMs(),
 			0L,
 			analysis.apiTimeMs(),
@@ -365,8 +394,11 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			SourceLocation location = bc.getLocation();
 			Symbol impactedSymbol = bc.impactedSymbol();
 			BreakingChangeKind kind = bc.kind();
-			boolean isExcludedSymbol = exclusionMatcher.isInternal(impactedSymbol, api)
-				|| exclusionMatcher.isInternal(bc.impactedType(), api);
+			String matchedRule = exclusionMatcher.matchedRule(impactedSymbol, api)
+				.or(() -> exclusionMatcher.matchedRule(bc.impactedType(), api))
+				.orElse("");
+			boolean isExcludedSymbol = !matchedRule.isEmpty();
+			boolean hierarchyIncomplete = api.analyzer().hasIncompleteHierarchy(bc.impactedType());
 			boolean isRemoval = kind.getNature() == BreakingChangeNature.DELETION;
 			boolean isDeprecatedRemoval = isRemoval && hasAnnotation(impactedSymbol, Deprecated.class.getCanonicalName());
 			boolean isInternalRemoval = isRemoval && isExcludedSymbol;
@@ -385,6 +417,8 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 				isExcludedSymbol,
 				isDeprecatedRemoval,
 				isInternalRemoval,
+				matchedRule,
+				hierarchyIncomplete,
 				location.file() != null ? location.file().toString() : "",
 				location.line() >= 0 ? location.line() : ""
 			));

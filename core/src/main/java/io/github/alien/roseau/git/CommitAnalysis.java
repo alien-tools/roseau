@@ -3,6 +3,7 @@ package io.github.alien.roseau.git;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.diff.RoseauReport;
 
+import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
 
@@ -17,7 +18,8 @@ public record CommitAnalysis(
 	long checkoutTimeMs,
 	long apiTimeMs,
 	long diffTimeMs,
-	List<Exception> errors
+	List<Exception> errors,
+	Optional<Path> sourceRoot
 ) {
 	public CommitAnalysis {
 		errors = List.copyOf(errors);

@@ -31,7 +31,9 @@ import org.eclipse.jgit.lib.Repository;
 import org.eclipse.jgit.revwalk.RevCommit;
 import org.eclipse.jgit.revwalk.RevWalk;
 import org.eclipse.jgit.storage.file.FileRepositoryBuilder;
+import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
+import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
 
 import java.io.IOException;
@@ -49,6 +51,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Walks a Git repository's first-parent commit chain, building APIs incrementally and
@@ -64,10 +67,21 @@ public final class GitWalker {
 		Path gitDir,
 		List<Path> sourceRoots,
 		RoseauOptions.Exclude exclusions,
-		String startSha
+		String startSha,
+		String endSha
 	) {
 		public Config {
 			sourceRoots = List.copyOf(sourceRoots);
+		}
+
+		public Config(String libraryId, String url, Path gitDir, List<Path> sourceRoots,
+		              RoseauOptions.Exclude exclusions, String startSha) {
+			this(libraryId, url, gitDir, sourceRoots, exclusions, startSha, null);
+		}
+
+		public Config(String libraryId, String url, Path gitDir, List<Path> sourceRoots,
+		              RoseauOptions.Exclude exclusions) {
+			this(libraryId, url, gitDir, sourceRoots, exclusions, null, null);
 		}
 	}
 
@@ -91,7 +105,7 @@ public final class GitWalker {
 		try (Repository repo = repoBuilder.build();
 		     Git git = new Git(repo);
 		     RevWalk rw = new RevWalk(repo)) {
-			List<RevCommit> chain = firstParentChain(repo, rw, config.startSha());
+			List<RevCommit> chain = firstParentChain(repo, rw, config.startSha(), config.endSha());
 			Map<String, List<String>> tagsByCommit = tagsByCommit(repo);
 			String branch = defaultBranchName(repo);
 			Path workTree = repo.getWorkTree().toPath();
@@ -102,6 +116,7 @@ public final class GitWalker {
 
 			API previousApi = null;
 			Path previousSourceRoot = null;
+			Optional<Path> previousRelativeRoot = Optional.empty();
 			for (RevCommit revCommit : chain) {
 				CommitDiff diff = buildCommitDiff(repo, revCommit, rw);
 				CommitInfo info = buildCommitInfo(diff, revCommit, tagsByCommit, branch);
@@ -109,7 +124,7 @@ public final class GitWalker {
 				// FIXME: only correct because we don't care about classpath yet
 				if (!info.javaChanged()) {
 					if (previousApi != null) {
-						sink.accept(unchangedAnalysis(info, previousApi));
+						sink.accept(unchangedAnalysis(info, previousApi, previousRelativeRoot));
 					} else {
 						sink.accept(emptyAnalysis(info));
 					}
@@ -119,7 +134,9 @@ public final class GitWalker {
 				long checkoutTime = checkoutCommit(git, workTree, revCommit);
 				Optional<Path> sourceRoot = resolveSourceRoot();
 				if (sourceRoot.isEmpty()) {
-					LOGGER.info("Skipping commit {} (no configured source root exists)", info.sha());
+					LOGGER.info("No configured source root exists at commit {}; reporting it without an API",
+						info.sha());
+					sink.accept(noSourceRootAnalysis(info, previousApi, checkoutTime));
 					continue;
 				}
 				LOGGER.info("Commit {}: {} (source root {})", info.sha(), info.shortMessage(), sourceRoot.get());
@@ -130,10 +147,13 @@ public final class GitWalker {
 
 				sink.accept(new CommitAnalysis(
 					info, Optional.of(apiResult.api()), diffResult.report(), diffResult.apiChanged(),
-					checkoutTime, apiResult.timeMs(), diffResult.timeMs(), apiResult.errors()));
+					checkoutTime, apiResult.timeMs(), diffResult.timeMs(),
+					concatErrors(apiResult.errors(), diff.error()),
+					Optional.of(workTree.relativize(sourceRoot.get()))));
 
 				previousApi = apiResult.api();
 				previousSourceRoot = sourceRoot.get();
+				previousRelativeRoot = Optional.of(workTree.relativize(sourceRoot.get()));
 			}
 		}
 	}
@@ -159,12 +179,26 @@ public final class GitWalker {
 		);
 	}
 
-	private static CommitAnalysis unchangedAnalysis(CommitInfo info, API previousApi) {
-		return new CommitAnalysis(info, Optional.of(previousApi), Optional.empty(), false, 0, 0, 0, List.of());
+	private static CommitAnalysis unchangedAnalysis(CommitInfo info, API previousApi, Optional<Path> sourceRoot) {
+		return new CommitAnalysis(info, Optional.of(previousApi), Optional.empty(), false, 0, 0, 0, List.of(),
+			sourceRoot);
 	}
 
 	private static CommitAnalysis emptyAnalysis(CommitInfo info) {
-		return new CommitAnalysis(info, Optional.empty(), Optional.empty(), false, 0, 0, 0, List.of());
+		return new CommitAnalysis(info, Optional.empty(), Optional.empty(), false, 0, 0, 0, List.of(),
+			Optional.empty());
+	}
+
+	private static CommitAnalysis noSourceRootAnalysis(CommitInfo info, API previousApi, long checkoutTime) {
+		return new CommitAnalysis(info, Optional.ofNullable(previousApi), Optional.empty(), false,
+			checkoutTime, 0, 0, List.of(), Optional.empty());
+	}
+
+	private static List<Exception> concatErrors(List<Exception> errors, String diffError) {
+		if (diffError == null) {
+			return errors;
+		}
+		return Stream.concat(errors.stream(), Stream.of(new IOException(diffError))).toList();
 	}
 
 	private static long checkoutCommit(Git git, Path workTree, RevCommit commit) throws Exception {
@@ -259,7 +293,8 @@ public final class GitWalker {
 		int locDeleted,
 		Set<Path> updatedJavaFiles,
 		Set<Path> deletedJavaFiles,
-		Set<Path> createdJavaFiles
+		Set<Path> createdJavaFiles,
+		String error
 	) {
 	}
 
@@ -281,9 +316,15 @@ public final class GitWalker {
 	}
 
 	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw, String startSha) throws IOException {
-		ObjectId headId = repo.resolve("HEAD");
+		return firstParentChain(repo, rw, startSha, null);
+	}
+
+	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw, String startSha, String endSha)
+		throws IOException {
+		String tip = endSha == null || endSha.isBlank() ? "HEAD" : endSha;
+		ObjectId headId = repo.resolve(tip);
 		if (headId == null) {
-			throw new IllegalStateException("Cannot resolve HEAD");
+			throw new IllegalStateException("Cannot resolve " + tip);
 		}
 
 		List<RevCommit> chain = new ArrayList<>();
@@ -308,12 +349,14 @@ public final class GitWalker {
 			CanonicalTreeParser newTree = new CanonicalTreeParser();
 			newTree.reset(reader, commit.getTree().getId());
 
-			CanonicalTreeParser oldTree = new CanonicalTreeParser();
+			AbstractTreeIterator oldTree;
 			if (commit.getParentCount() > 0) {
+				CanonicalTreeParser parentTree = new CanonicalTreeParser();
 				RevCommit parent = rw.parseCommit(commit.getParent(0).getId());
-				oldTree.reset(reader, parent.getTree().getId());
+				parentTree.reset(reader, parent.getTree().getId());
+				oldTree = parentTree;
 			} else {
-				oldTree.reset(reader, Constants.EMPTY_TREE_ID);
+				oldTree = new EmptyTreeIterator();
 			}
 
 			List<DiffEntry> diffs = df.scan(oldTree, newTree);
@@ -351,10 +394,12 @@ public final class GitWalker {
 			}
 
 			boolean javaChanged = !updated.isEmpty() || !deleted.isEmpty() || !created.isEmpty();
-			return new CommitDiff(javaChanged, pomChanged, diffs.size(), locAdded, locDeleted, updated, deleted, created);
+			return new CommitDiff(javaChanged, pomChanged, diffs.size(), locAdded, locDeleted, updated, deleted, created,
+				null);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to compute commit diff for {}", commit.getName(), e);
-			return new CommitDiff(true, true, 0, 0, 0, Set.of(), Set.of(), Set.of());
+			return new CommitDiff(true, true, 0, 0, 0, Set.of(), Set.of(), Set.of(),
+				"commit diff failed: " + e.getMessage());
 		}
 	}
 

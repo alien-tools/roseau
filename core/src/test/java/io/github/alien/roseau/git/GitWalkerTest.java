@@ -86,6 +86,79 @@ class GitWalkerTest {
 		assertThat(docsAnalysis.diffTimeMs()).isZero();
 	}
 
+	// --- Commits without a source root ---
+
+	@Test
+	void commit_without_any_source_root_is_reported_without_an_api(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			// The module of interest does not exist yet, but Java files do: the commit must still be reported.
+			GitWalkTestUtils.commit(remote, "c1-before-module-exists",
+				Map.of("legacy/src/pkg/A.java", "package pkg; public class A {}"),
+				List.of());
+			GitWalkTestUtils.commit(remote, "c2-module-created",
+				Map.of("src/main/java/pkg/B.java", "package pkg; public class B {}"),
+				List.of());
+		}
+
+		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
+
+		assertThat(analyses).hasSize(2);
+		CommitAnalysis before = analyses.getFirst();
+		assertThat(before.commit().shortMessage()).isEqualTo("c1-before-module-exists");
+		assertThat(before.commit().javaChanged()).isTrue();
+		assertThat(before.api()).isEmpty();
+		assertThat(before.sourceRoot()).isEmpty();
+		assertThat(before.apiChanged()).isFalse();
+
+		CommitAnalysis after = analyses.get(1);
+		assertThat(after.api()).isPresent();
+		assertThat(after.sourceRoot()).contains(Path.of("src/main/java"));
+	}
+
+	@Test
+	void source_root_is_recorded_for_commits_that_do_not_touch_java(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A {}"), List.of());
+			GitWalkTestUtils.commit(remote, "c2-docs", Map.of("README.md", "docs"), List.of());
+		}
+
+		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
+
+		assertThat(analyses).hasSize(2);
+		assertThat(analyses.get(1).commit().javaChanged()).isFalse();
+		assertThat(analyses.get(1).sourceRoot()).contains(Path.of("src/main/java"));
+	}
+
+	// --- Pinning the end of the walk ---
+
+	@Test
+	void end_sha_pins_the_tip_of_the_walk(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		RevCommit second;
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A {}"), List.of());
+			second = GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/B.java", "package pkg; public class B {}"), List.of());
+			GitWalkTestUtils.commit(remote, "c3-after-the-pin",
+				Map.of("src/main/java/pkg/C.java", "package pkg; public class C {}"), List.of());
+		}
+
+		Path cloneRoot = wd.resolve("clone");
+		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
+			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
+			null, second.getName()));
+
+		List<CommitAnalysis> analyses = collectAnalyses(walker);
+
+		assertThat(analyses).hasSize(2);
+		assertThat(analyses.getLast().commit().sha()).isEqualTo(second.getName());
+		assertThat(analyses).extracting(a -> a.commit().shortMessage()).doesNotContain("c3-after-the-pin");
+	}
+
 	// --- First commit behavior ---
 
 	@Test

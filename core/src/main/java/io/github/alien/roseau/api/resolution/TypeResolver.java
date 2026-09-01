@@ -4,6 +4,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.Optional;
+import java.util.Set;
 
 /**
  * A type resolver that resolves {@link TypeReference} instances to their corresponding {@link TypeDecl}.
@@ -28,5 +29,9 @@ public interface TypeResolver {
 	@SuppressWarnings("unchecked")
 	default Optional<TypeDecl> resolve(TypeReference<? extends TypeDecl> reference) {
 		return resolve((TypeReference<TypeDecl>) reference, TypeDecl.class);
+	}
+
+	default Set<String> unresolvedTypes() {
+		return Set.of();
 	}
 }

@@ -9,6 +9,8 @@ import org.apache.logging.log4j.Logger;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -30,6 +32,8 @@ public class CachingTypeResolver implements TypeResolver {
 		CacheBuilder.newBuilder()
 			.maximumSize(5_000L)
 			.build();
+
+	private final Set<String> unresolved = ConcurrentHashMap.newKeySet();
 
 	private static final Logger LOGGER = LogManager.getLogger(CachingTypeResolver.class);
 
@@ -59,6 +63,11 @@ public class CachingTypeResolver implements TypeResolver {
 		}
 	}
 
+	@Override
+	public Set<String> unresolvedTypes() {
+		return Set.copyOf(unresolved);
+	}
+
 	private <T extends TypeDecl> ResolvedType resolveType(String qualifiedName, Class<T> type) {
 		return typeProviders.stream()
 			.map(provider -> provider.findType(qualifiedName, type))
@@ -66,6 +75,7 @@ public class CachingTypeResolver implements TypeResolver {
 			.findFirst()
 			.map(ResolvedType::new)
 			.orElseGet(() -> {
+				unresolved.add(qualifiedName);
 				LOGGER.warn("Failed to resolve type reference {} of kind {}; " +
 					"is the classpath correct?", () -> qualifiedName, type::getSimpleName);
 				return ResolvedType.UNRESOLVED;
