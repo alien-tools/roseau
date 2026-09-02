@@ -42,7 +42,9 @@ public final class DefaultApiFactory implements ApiFactory {
 
 	@Override
 	public SourceLocation location(Path file, int line) {
-		return new SourceLocation(file, line);
+		return file == null
+			? SourceLocation.NO_LOCATION
+			: new SourceLocation(file, line);
 	}
 
 	@Override
