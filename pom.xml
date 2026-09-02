@@ -14,6 +14,7 @@
 
     <modules>
         <module>core</module>
+        <module>git</module>
         <module>cli</module>
         <module>combinatorial</module>
         <module>maven-plugin</module>

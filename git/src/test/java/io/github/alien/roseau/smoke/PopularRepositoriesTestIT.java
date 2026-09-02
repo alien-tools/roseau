@@ -119,7 +119,7 @@ class PopularRepositoriesTestIT {
 					GitWalker.prepareRepository(spec.url(), gitDir);
 
 					var config = new GitWalker.Config(
-						spec.libraryId(), spec.url(), gitDir, sourceRoots, NO_EXCLUSIONS);
+						spec.libraryId(), spec.url(), gitDir, sourceRoots, NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 
 					System.out.printf("[setup %d/%d] Ready %s in %dms%n",
 						index + 1, total, spec.libraryId(), sw.elapsed().toMillis());
@@ -191,7 +191,7 @@ class PopularRepositoriesTestIT {
 			analyses.stream()
 				.filter(a -> !a.errors().isEmpty())
 				.forEach(a -> System.out.printf("\tError at %s: %s%n", a.commit().sha(),
-					a.errors().stream().map(Exception::getMessage).collect(Collectors.joining("; "))));
+					String.join("; ", a.errors())));
 		}
 
 		// We processed commits

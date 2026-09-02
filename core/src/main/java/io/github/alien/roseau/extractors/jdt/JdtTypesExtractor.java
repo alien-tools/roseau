@@ -68,6 +68,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 	ParsingResult parseTypes(Library library, Set<Path> sourcesToParse) {
 		String[] sourcesArray = sourcesToParse.stream()
 			.map(Path::toString)
+			.sorted()
 			.toArray(String[]::new);
 
 		Map<String, String> options = JavaCore.getOptions();

@@ -49,13 +49,13 @@ public final class RoseauReport {
 		Preconditions.checkNotNull(breakingChanges);
 		this.v1 = v1;
 		this.v2 = v2;
-		this.breakingChanges = List.copyOf(
-			breakingChanges.stream()
-				.sorted(
-					Comparator.comparing((BreakingChange bc) -> bc.impactedType().getQualifiedName())
-						.thenComparing(bc -> bc.impactedSymbol().getQualifiedName())
-						.thenComparing(BreakingChange::kind))
-				.toList());
+		this.breakingChanges = breakingChanges.stream()
+			.sorted(
+				Comparator.comparing((BreakingChange bc) -> bc.impactedType().getQualifiedName())
+					.thenComparing(bc -> bc.impactedSymbol().getQualifiedName())
+					.thenComparing(BreakingChange::kind)
+					.thenComparing(bc -> bc.details().toString()))
+			.toList();
 		this.excludedNamePatterns = v1.getLibrary().getExclusions().names().stream()
 			.map(name -> {
 				try {
@@ -183,7 +183,7 @@ public final class RoseauReport {
 		return new Builder(v1, v2);
 	}
 
-	public boolean isExcluded(Symbol symbol) {
+	private boolean isExcluded(Symbol symbol) {
 		boolean isAnnotationExcluded = v1.getLibrary().getExclusions().annotations().stream()
 			.anyMatch(ann -> symbol.hasAnnotation(new TypeReference<>(ann.name()), ann.args()));
 		boolean isNameExcluded = excludedNamePatterns.stream()

@@ -38,7 +38,7 @@ class WalkersIT {
 		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 		GitWalker.Config config = new GitWalker.Config("lib", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS);
+			List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -85,7 +85,7 @@ class WalkersIT {
 		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 		GitWalker.Config config = new GitWalker.Config("lib-conv", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS);
+			List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -126,7 +126,7 @@ class WalkersIT {
 		);
 		String url = remoteDir.toUri().toString();
 		GitWalker.Config config = new GitWalker.Config("lib", url, cloneRoot.resolve(".git"),
-			sourceRoots, NO_EXCLUSIONS);
+			sourceRoots, NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -174,7 +174,7 @@ class WalkersIT {
 		Path cloneRoot = wd.resolve("clone");
 		String url = remoteDir.toUri().toString();
 		GitWalker.Config config = new GitWalker.Config("lib-tags", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS);
+			List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -216,7 +216,7 @@ class WalkersIT {
 		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
 			List.of("pkg\\.internal\\..*"), List.of());
 		GitWalker.Config config = new GitWalker.Config("counts-case", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+			List.of(cloneRoot.resolve("src/main/java")), exclusions, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -252,7 +252,7 @@ class WalkersIT {
 		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(
 			List.of("pkg\\.Outer"), List.of());
 		GitWalker.Config config = new GitWalker.Config("nested-case", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+			List.of(cloneRoot.resolve("src/main/java")), exclusions, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -292,7 +292,7 @@ class WalkersIT {
 			List.of(),
 			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion("Internal", Map.of())));
 		GitWalker.Config config = new GitWalker.Config("ann-type-case", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+			List.of(cloneRoot.resolve("src/main/java")), exclusions, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -323,7 +323,7 @@ class WalkersIT {
 		String url = remoteDir.toUri().toString();
 		var exclusions = new io.github.alien.roseau.options.RoseauOptions.Exclude(List.of(".*\\.internal\\..*"), List.of());
 		GitWalker.Config config = new GitWalker.Config("name-case", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+			List.of(cloneRoot.resolve("src/main/java")), exclusions, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -368,7 +368,7 @@ class WalkersIT {
 				"com.google.common.annotations.Beta", Map.of()))
 		);
 		GitWalker.Config config = new GitWalker.Config("ann-fqn-case", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+			List.of(cloneRoot.resolve("src/main/java")), exclusions, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}
@@ -412,7 +412,7 @@ class WalkersIT {
 			List.of(new io.github.alien.roseau.options.RoseauOptions.AnnotationExclusion("Internal", Map.of()))
 		);
 		GitWalker.Config config = new GitWalker.Config("ann-simple-case", url, cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")), exclusions);
+			List.of(cloneRoot.resolve("src/main/java")), exclusions, GitWalker.ROOT_COMMIT, GitWalker.HEAD);
 		try (CsvReporter reporter = new CsvReporter(config, outputDir)) {
 			new GitWalker(config).walk(reporter);
 		}

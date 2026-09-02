@@ -1,5 +1,6 @@
 package io.github.alien.roseau.git;
 
+import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
@@ -40,6 +41,7 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -50,6 +52,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -61,6 +64,9 @@ import java.util.stream.Stream;
 public final class GitWalker {
 	private static final Logger LOGGER = LogManager.getLogger(GitWalker.class);
 
+	/** Upper bound on any native {@code git} invocation, so a hung command cannot stall a whole walk. */
+	private static final Duration COMMAND_TIMEOUT = Duration.ofMinutes(10);
+
 	public record Config(
 		String libraryId,
 		String url,
@@ -71,19 +77,33 @@ public final class GitWalker {
 		String endSha
 	) {
 		public Config {
+			Preconditions.checkNotNull(libraryId, "libraryId must be provided");
+			Preconditions.checkNotNull(url, "url must be provided");
+			Preconditions.checkNotNull(gitDir, "gitDir must be provided");
+			Preconditions.checkNotNull(sourceRoots, "sourceRoots must be provided");
+			Preconditions.checkNotNull(startSha, "startSha must be provided; use ROOT_COMMIT to walk the whole history");
+			Preconditions.checkNotNull(endSha, "endSha must be provided; use HEAD to walk up to the current tip");
+			// Exclusions are the one genuinely optional part of a configuration
+			exclusions = exclusions == null ? NO_EXCLUSIONS : exclusions;
 			sourceRoots = List.copyOf(sourceRoots);
 		}
-
-		public Config(String libraryId, String url, Path gitDir, List<Path> sourceRoots,
-		              RoseauOptions.Exclude exclusions, String startSha) {
-			this(libraryId, url, gitDir, sourceRoots, exclusions, startSha, null);
-		}
-
-		public Config(String libraryId, String url, Path gitDir, List<Path> sourceRoots,
-		              RoseauOptions.Exclude exclusions) {
-			this(libraryId, url, gitDir, sourceRoots, exclusions, null, null);
-		}
 	}
+
+	/**
+	 * An empty set of exclusions, applied when a configuration does not define any.
+	 */
+	public static final RoseauOptions.Exclude NO_EXCLUSIONS = new RoseauOptions.Exclude(List.of(), List.of());
+
+	/**
+	 * {@link Config#startSha()} value walking back to the repository's root commit.
+	 */
+	public static final String ROOT_COMMIT = "";
+
+	/**
+	 * {@link Config#endSha()} value walking from whatever {@code HEAD} currently points at. Prefer an explicit commit:
+	 * {@code HEAD} moves whenever the repository is fetched, making the walk irreproducible.
+	 */
+	public static final String HEAD = "HEAD";
 
 	private final Config config;
 
@@ -194,11 +214,10 @@ public final class GitWalker {
 			checkoutTime, 0, 0, List.of(), Optional.empty());
 	}
 
-	private static List<Exception> concatErrors(List<Exception> errors, String diffError) {
-		if (diffError == null) {
-			return errors;
-		}
-		return Stream.concat(errors.stream(), Stream.of(new IOException(diffError))).toList();
+	private static List<String> concatErrors(List<String> errors, String diffError) {
+		return diffError == null
+			? errors
+			: Stream.concat(errors.stream(), Stream.of(diffError)).toList();
 	}
 
 	private static long checkoutCommit(Git git, Path workTree, RevCommit commit) throws Exception {
@@ -221,7 +240,7 @@ public final class GitWalker {
 		return config.sourceRoots().stream().filter(Files::exists).findFirst();
 	}
 
-	private record ApiResult(API api, long timeMs, List<Exception> errors) {
+	private record ApiResult(API api, long timeMs, List<String> errors) {
 	}
 
 	private ApiResult buildApi(CommitInfo info, CommitDiff diff, Path sourceRoot,
@@ -257,15 +276,17 @@ public final class GitWalker {
 			return new ApiResult(Roseau.buildAPI(updatedTypes), sw.elapsed().toMillis(), List.of());
 		} catch (RuntimeException e) {
 			LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", info.sha(), e);
-			return new ApiResult(buildApiFull(sourceRoot, extractor).api(), sw.elapsed().toMillis(), List.of(e));
+			return new ApiResult(buildApiFull(sourceRoot, extractor).api(), sw.elapsed().toMillis(),
+				List.of("incremental update failed, rebuilt from scratch: " + e.getMessage()));
 		}
 	}
 
 	private Library buildLibrary(Path sourceRoot) {
+		// Exclusions are deliberately not applied here: we want breaking changes to be detected on excluded symbols
+		// too, and filtered downstream, so that public and internal breakage can be reported separately.
 		return Library.builder()
 			.location(sourceRoot)
 			.classpath(List.of())
-			//.exclusions(config.exclusions()) we still want BCs on them and filter them later
 			.build();
 	}
 
@@ -315,27 +336,39 @@ public final class GitWalker {
 		}
 	}
 
-	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw, String startSha) throws IOException {
-		return firstParentChain(repo, rw, startSha, null);
-	}
-
+	/**
+	 * Collects the first-parent chain in chronological order, from {@code startSha} (or the root commit when it is
+	 * {@link #ROOT_COMMIT}) to {@code endSha} (or the current tip when it is {@link #HEAD}).
+	 *
+	 * @throws IllegalStateException if {@code endSha} cannot be resolved, or if {@code startSha} is not on the
+	 *                               first-parent chain reaching {@code endSha}
+	 */
 	static List<RevCommit> firstParentChain(Repository repo, RevWalk rw, String startSha, String endSha)
 		throws IOException {
-		String tip = endSha == null || endSha.isBlank() ? "HEAD" : endSha;
-		ObjectId headId = repo.resolve(tip);
-		if (headId == null) {
-			throw new IllegalStateException("Cannot resolve " + tip);
+		String tip = endSha.isBlank() ? HEAD : endSha;
+		ObjectId tipId = repo.resolve(tip);
+		if (tipId == null) {
+			throw new IllegalStateException("Cannot resolve %s in %s".formatted(tip, repo.getDirectory()));
 		}
 
+		boolean walkToRoot = startSha.isBlank();
 		List<RevCommit> chain = new ArrayList<>();
-		RevCommit cur = rw.parseCommit(headId);
+		RevCommit cur = rw.parseCommit(tipId);
 		while (true) {
 			chain.add(cur);
-			if (cur.getParentCount() == 0 || Objects.equals(cur.name(), startSha)) {
+			if (cur.getParentCount() == 0 || (!walkToRoot && cur.name().equals(startSha))) {
 				break;
 			}
 			cur = rw.parseCommit(cur.getParent(0));
 		}
+
+		// Reaching the root commit without having seen startSha means it is not an ancestor of endSha along
+		// first-parent links; silently analysing a different range would be worse than failing.
+		if (!walkToRoot && !cur.name().equals(startSha)) {
+			throw new IllegalStateException("startSha %s is not on the first-parent chain of %s in %s"
+				.formatted(startSha, tip, repo.getDirectory()));
+		}
+
 		Collections.reverse(chain);
 		return chain;
 	}
@@ -433,8 +466,8 @@ public final class GitWalker {
 		return tagsByCommit;
 	}
 
-	static String defaultBranchName(Repository repo) throws Exception {
-		return Optional.ofNullable(resolveRemoteBranchName(repo)).orElse("");
+	static String defaultBranchName(Repository repo) throws IOException {
+		return resolveRemoteBranchName(repo);
 	}
 
 	static String parentCommit(RevCommit commit) {
@@ -496,18 +529,29 @@ public final class GitWalker {
 		runCommand(command);
 	}
 
-	private static void runCommand(List<String> command) throws Exception {
+	private static void runCommand(List<String> command) throws IOException, InterruptedException {
 		Process process = new ProcessBuilder(command)
 			.redirectErrorStream(true)
 			.start();
-		String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
-		int exit = process.waitFor();
-		if (exit != 0) {
-			throw new IOException("Command failed (%d): %s%n%s".formatted(exit, String.join(" ", command), output));
+		try {
+			// stdout and stderr are merged, so draining the single stream before waiting cannot deadlock
+			String output = new String(process.getInputStream().readAllBytes(), StandardCharsets.UTF_8).trim();
+			if (!process.waitFor(COMMAND_TIMEOUT.toSeconds(), TimeUnit.SECONDS)) {
+				throw new IOException("Command timed out after %s: %s".formatted(COMMAND_TIMEOUT,
+					String.join(" ", command)));
+			}
+			int exit = process.exitValue();
+			if (exit != 0) {
+				throw new IOException("Command failed (%d): %s%n%s".formatted(exit, String.join(" ", command), output));
+			}
+		} finally {
+			if (process.isAlive()) {
+				process.destroyForcibly();
+			}
 		}
 	}
 
-	private static String resolveRemoteBranchName(Repository repo) throws Exception {
+	private static String resolveRemoteBranchName(Repository repo) throws IOException {
 		final String prefix = "refs/remotes/origin/";
 
 		Ref remoteHead = repo.exactRef("refs/remotes/origin/HEAD");
@@ -518,7 +562,13 @@ public final class GitWalker {
 			}
 		}
 
-		for (String candidate : List.of("main", "master", repo.getBranch())) {
+		// Repository#getBranch is @Nullable on a corrupt repository, so it cannot go into List.of
+		List<String> candidates = new ArrayList<>(List.of("main", "master"));
+		String currentBranch = repo.getBranch();
+		if (currentBranch != null) {
+			candidates.add(currentBranch);
+		}
+		for (String candidate : candidates) {
 			if (repo.findRef(prefix + candidate) != null) {
 				return candidate;
 			}

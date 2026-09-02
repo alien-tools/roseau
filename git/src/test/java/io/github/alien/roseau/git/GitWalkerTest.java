@@ -12,6 +12,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class GitWalkerTest {
 	private static final RoseauOptions.Exclude NO_EXCLUSIONS =
@@ -21,7 +22,7 @@ class GitWalkerTest {
 		Path cloneRoot = wd.resolve("clone");
 		List<Path> roots = sourceRoots != null ? sourceRoots : List.of(cloneRoot.resolve("src/main/java"));
 		return new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
-			cloneRoot.resolve(".git"), roots, NO_EXCLUSIONS));
+			cloneRoot.resolve(".git"), roots, NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD));
 	}
 
 	private GitWalker walkerForRepo(Path remoteDir, Path wd) {
@@ -84,6 +85,58 @@ class GitWalkerTest {
 		assertThat(docsAnalysis.checkoutTimeMs()).isZero();
 		assertThat(docsAnalysis.apiTimeMs()).isZero();
 		assertThat(docsAnalysis.diffTimeMs()).isZero();
+	}
+
+	// --- Walk range validation ---
+
+	@Test
+	void start_sha_not_on_the_first_parent_chain_is_rejected(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A {}"), List.of());
+			GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/B.java", "package pkg; public class B {}"), List.of());
+		}
+
+		Path cloneRoot = wd.resolve("clone");
+		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
+			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
+			"0123456789012345678901234567890123456789", GitWalker.HEAD));
+
+		assertThatThrownBy(() -> collectAnalyses(walker))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("is not on the first-parent chain");
+	}
+
+	@Test
+	void unresolvable_end_sha_is_rejected(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A {}"), List.of());
+		}
+
+		Path cloneRoot = wd.resolve("clone");
+		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
+			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
+			GitWalker.ROOT_COMMIT, "not-a-commit"));
+
+		assertThatThrownBy(() -> collectAnalyses(walker))
+			.isInstanceOf(IllegalStateException.class)
+			.hasMessageContaining("Cannot resolve");
+	}
+
+	@Test
+	void config_requires_an_explicit_walk_range() {
+		assertThatThrownBy(() -> new GitWalker.Config("lib", "url", Path.of(".git"), List.of(), NO_EXCLUSIONS,
+			null, GitWalker.HEAD))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessageContaining("startSha");
+		assertThatThrownBy(() -> new GitWalker.Config("lib", "url", Path.of(".git"), List.of(), NO_EXCLUSIONS,
+			GitWalker.ROOT_COMMIT, null))
+			.isInstanceOf(NullPointerException.class)
+			.hasMessageContaining("endSha");
 	}
 
 	// --- Commits without a source root ---
@@ -150,7 +203,7 @@ class GitWalkerTest {
 		Path cloneRoot = wd.resolve("clone");
 		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
 			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
-			null, second.getName()));
+			GitWalker.ROOT_COMMIT, second.getName()));
 
 		List<CommitAnalysis> analyses = collectAnalyses(walker);
 

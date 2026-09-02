@@ -18,7 +18,7 @@ public record CommitAnalysis(
 	long checkoutTimeMs,
 	long apiTimeMs,
 	long diffTimeMs,
-	List<Exception> errors,
+	List<String> errors,
 	Optional<Path> sourceRoot
 ) {
 	public CommitAnalysis {

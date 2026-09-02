@@ -1,9 +1,12 @@
 package io.github.alien.roseau.git;
 
 import com.google.common.base.Stopwatch;
+import com.google.common.collect.Iterables;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
+import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -18,17 +21,19 @@ import org.apache.logging.log4j.Logger;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
-import java.io.Serializable;
-import java.io.UncheckedIOException;
 import java.io.Writer;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Collection;
+import java.util.IdentityHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -142,20 +147,23 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		StatsResult stats = computeApiStats(analysis);
 		long daysSincePrev = daysBetweenInstants(previousCommitTime, analysis.commit().commitTime());
 
+		List<BreakingChange> bcs = analysis.report().map(RoseauReport::getAllBreakingChanges).orElse(List.of());
+		// One exclusion decision per breaking change, shared by the commit row and the breaking-change rows
+		Map<BreakingChange, String> matchedRules = analysis.api()
+			.map(api -> matchExclusions(bcs, api))
+			.orElseGet(Map::of);
+
 		try {
-			writeCommitRow(analysis, stats, daysSincePrev);
-			analysis.report().ifPresent(report -> {
-				if (analysis.api().isPresent()) {
-					try {
-						writeBreakingChangesRows(analysis.commit().sha(), report, analysis.api().get());
-					} catch (IOException e) {
-						throw new UncheckedIOException(e);
-					}
-				}
-			});
-			previousCommitTime = analysis.commit().commitTime();
+			writeCommitRow(analysis, stats, daysSincePrev, bcs, matchedRules);
+			if (analysis.api().isPresent()) {
+				writeBreakingChangesRows(analysis.commit().sha(), bcs, analysis.api().get(), matchedRules);
+			}
 		} catch (IOException e) {
-			LOGGER.error("Error writing commit data", e);
+			// A failed write costs one row, not the whole history: log it and keep walking
+			LOGGER.error("Error writing data for commit {}", analysis.commit().sha(), e);
+		} finally {
+			// Advance regardless, so a failed write does not make the next commit's delta span two commits
+			previousCommitTime = analysis.commit().commitTime();
 		}
 	}
 
@@ -206,63 +214,62 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 	}
 
 	private ApiStats computeApiStats(API api) {
-		int allTypesCount = api.getLibraryTypes().getAllTypes().size();
-		int allMethodsCount = api.getLibraryTypes().getAllTypes().stream()
-			.mapToInt(type -> type.getDeclaredMethods().size())
-			.sum();
-		int allFieldsCount = api.getLibraryTypes().getAllTypes().stream()
-			.mapToInt(type -> type.getDeclaredFields().size())
-			.sum();
-		int exportedTypesCount = api.getExportedTypes().size();
-		int exportedMethodsCount = api.getExportedTypes().stream()
-			.mapToInt(type -> api.analyzer().getDeclaredExportedMethods(type).size())
-			.sum();
-		int exportedFieldsCount = api.getExportedTypes().stream()
-			.mapToInt(type -> api.analyzer().getDeclaredExportedFields(type).size())
-			.sum();
-		int incompleteHierarchyTypes = (int) api.getExportedTypes().stream()
-			.filter(type -> api.analyzer().hasIncompleteHierarchy(type))
-			.count();
+		Collection<TypeDecl> allTypes = api.getLibraryTypes().getAllTypes();
+		int allMethodsCount = 0;
+		int allFieldsCount = 0;
+		for (TypeDecl type : allTypes) {
+			allMethodsCount += type.getDeclaredMethods().size();
+			allFieldsCount += type.getDeclaredFields().size();
+		}
+
+		// Single pass over the exported types: the exported member sets are expensive to compute, so they are
+		// materialised once per type and every counter is derived from them. Resolution is demand-driven, so walking
+		// each hierarchy here is also what makes the unresolved-reference counters deterministic for every commit.
+		String deprecated = Deprecated.class.getCanonicalName();
+		int exportedTypesCount = 0;
+		int exportedMethodsCount = 0;
+		int exportedFieldsCount = 0;
+		int incompleteHierarchyTypesCount = 0;
+		long deprecatedCount = 0;
+		long internalCount = 0;
+		for (TypeDecl type : api.getExportedTypes()) {
+			Set<MethodDecl> methods = api.analyzer().getDeclaredExportedMethods(type);
+			Set<FieldDecl> fields = api.analyzer().getDeclaredExportedFields(type);
+
+			exportedTypesCount++;
+			exportedMethodsCount += methods.size();
+			exportedFieldsCount += fields.size();
+			if (api.analyzer().hasIncompleteHierarchy(type)) {
+				incompleteHierarchyTypesCount++;
+			}
+			if (hasAnnotation(type, deprecated)) {
+				deprecatedCount++;
+			}
+			if (exclusionMatcher.isInternal(type, api)) {
+				internalCount++;
+			}
+			for (TypeMemberDecl member : Iterables.concat(methods, fields)) {
+				if (hasAnnotation(member, deprecated)) {
+					deprecatedCount++;
+				}
+				if (exclusionMatcher.isInternal(member, api)) {
+					internalCount++;
+				}
+			}
+		}
 
 		return new ApiStats(
-			allTypesCount,
+			allTypes.size(),
 			allMethodsCount,
 			allFieldsCount,
 			exportedTypesCount,
 			exportedMethodsCount,
 			exportedFieldsCount,
-			countAnnotated(api, Deprecated.class.getCanonicalName()),
-			countInternal(api),
+			deprecatedCount,
+			internalCount,
 			api.analyzer().resolver().unresolvedTypes().size(),
-			incompleteHierarchyTypes
+			incompleteHierarchyTypesCount
 		);
-	}
-
-	private static long countAnnotated(API api, String fqn) {
-		return api.getExportedTypes().stream()
-			.mapToLong(type -> {
-				long typeCount = type.getAnnotations().stream()
-					.filter(a -> a.actualAnnotation().getQualifiedName().equals(fqn))
-					.count();
-				long fieldCount = api.analyzer().getDeclaredExportedFields(type).stream()
-					.filter(f -> f.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals(fqn)))
-					.count();
-				long methodCount = api.analyzer().getDeclaredExportedMethods(type).stream()
-					.filter(m -> m.getAnnotations().stream().anyMatch(a -> a.actualAnnotation().getQualifiedName().equals(fqn)))
-					.count();
-				return typeCount + fieldCount + methodCount;
-			})
-			.sum();
-	}
-
-	private long countInternal(API api) {
-		return api.getExportedTypes().stream()
-			.flatMap(type -> Stream.concat(
-				Stream.of(type),
-				Stream.concat(api.analyzer().getDeclaredExportedFields(type).stream(),
-					api.analyzer().getDeclaredExportedMethods(type).stream())))
-			.filter(symbol -> exclusionMatcher.isInternal(symbol, api))
-			.count();
 	}
 
 	private record ExclusionMatcher(List<Pattern> namePatterns,
@@ -318,22 +325,29 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		}
 	}
 
-	private void writeCommitRow(CommitAnalysis analysis, StatsResult stats, long daysSincePrev) throws IOException {
+	/**
+	 * Maps every excluded breaking change to the configured rule that excluded it. Breaking changes are compared by
+	 * identity: they are deeply-structured records, so hashing them would be needlessly expensive.
+	 */
+	private Map<BreakingChange, String> matchExclusions(List<BreakingChange> bcs, API api) {
+		Map<BreakingChange, String> matchedRules = new IdentityHashMap<>();
+		for (BreakingChange bc : bcs) {
+			exclusionMatcher.matchedRule(bc.impactedSymbol(), api)
+				.or(() -> exclusionMatcher.matchedRule(bc.impactedType(), api))
+				.ifPresent(rule -> matchedRules.put(bc, rule));
+		}
+		return matchedRules;
+	}
+
+	private void writeCommitRow(CommitAnalysis analysis, StatsResult stats, long daysSincePrev,
+	                            List<BreakingChange> bcs, Map<BreakingChange, String> matchedRules) throws IOException {
 		CommitInfo c = analysis.commit();
 		String tags = String.join(";", c.tags());
-		String error = analysis.errors().stream()
-			.map(Exception::getMessage)
-			.collect(Collectors.joining("; "));
-		List<BreakingChange> bcs = analysis.report().map(RoseauReport::getAllBreakingChanges).orElse(List.of());
+		String error = String.join("; ", analysis.errors());
 		int allBcCount = bcs.size();
 		long binaryBcCount = bcs.stream().filter(bc -> bc.kind().isBinaryBreaking()).count();
 		long sourceBcCount = bcs.stream().filter(bc -> bc.kind().isSourceBreaking()).count();
-		long excludedBcCount = analysis.api()
-			.map(api -> bcs.stream()
-				.filter(bc -> exclusionMatcher.isInternal(bc.impactedSymbol(), api)
-					|| exclusionMatcher.isInternal(bc.impactedType(), api))
-				.count())
-			.orElse(0L);
+		long excludedBcCount = matchedRules.size();
 		long apiBcCount = allBcCount - excludedBcCount;
 
 		writeCsvRow(commitsWriter, List.of(
@@ -389,14 +403,13 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		return url + "/commit/" + sha;
 	}
 
-	private void writeBreakingChangesRows(String commitSha, RoseauReport report, API api) throws IOException {
-		for (BreakingChange bc : report.getAllBreakingChanges()) {
+	private void writeBreakingChangesRows(String commitSha, List<BreakingChange> bcs, API api,
+	                                      Map<BreakingChange, String> matchedRules) throws IOException {
+		for (BreakingChange bc : bcs) {
 			SourceLocation location = bc.getLocation();
 			Symbol impactedSymbol = bc.impactedSymbol();
 			BreakingChangeKind kind = bc.kind();
-			String matchedRule = exclusionMatcher.matchedRule(impactedSymbol, api)
-				.or(() -> exclusionMatcher.matchedRule(bc.impactedType(), api))
-				.orElse("");
+			String matchedRule = matchedRules.getOrDefault(bc, "");
 			boolean isExcludedSymbol = !matchedRule.isEmpty();
 			boolean hierarchyIncomplete = api.analyzer().hasIncompleteHierarchy(bc.impactedType());
 			boolean isRemoval = kind.getNature() == BreakingChangeNature.DELETION;

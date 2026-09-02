@@ -35,6 +35,8 @@ class RepositoryWalkerUtilsTest {
 			repositories:
 			  - libraryId: lib
 			    url: "https://example.org/repo.git"
+			    startSha: ""
+			    endSha: "HEAD"
 			    gitDir: "%s/.git"
 			    sourceRoots:
 			      - "%s/src/main/java"
@@ -176,7 +178,9 @@ class RepositoryWalkerUtilsTest {
 			remoteDir.toUri().toString(),
 			cloneRoot.resolve(".git"),
 			List.of(cloneRoot.resolve("src/main/java")),
-			NO_EXCLUSIONS
+			NO_EXCLUSIONS,
+			GitWalker.ROOT_COMMIT,
+			GitWalker.HEAD
 		);
 
 		List<CommitAnalysis> analyses = new ArrayList<>();
