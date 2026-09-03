@@ -563,6 +563,26 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void yaml_source_only_is_honored(@TempDir Path tempDir) throws IOException {
+		var config = tempDir.resolve("roseau.yaml");
+		Files.writeString(config, """
+			diff:
+			  sourceOnly: true
+			""");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/test-project-v1/src",
+			"--v2=src/test/resources/test-project-v2/src",
+			"--diff",
+			"--config=" + config,
+			"--plain");
+
+		assertThat(out.toString())
+			.contains("FORMAL_TYPE_PARAMETER_REMOVED")
+			.doesNotContain("pkg.T.n() METHOD_NOW_STATIC");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void cli_flags_override_config(@TempDir Path tempDir) throws IOException {
 		var config = tempDir.resolve("roseau.yaml");
 		Files.writeString(config, """

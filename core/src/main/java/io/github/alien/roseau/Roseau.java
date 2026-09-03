@@ -88,7 +88,14 @@ public final class Roseau {
 	public static API buildAPI(LibraryTypes types, TypeResolver resolver) {
 		Preconditions.checkNotNull(types);
 		Preconditions.checkNotNull(resolver);
-		return new API(types, new DefaultApiAnalyzer(types, resolver));
+		API api = new API(types, new DefaultApiAnalyzer(types, resolver));
+
+		if (api.getExportedTypes().isEmpty()) {
+			LOGGER.warn("Warning: none of the {} types declared in {} are exported: the API is empty",
+				types.getAllTypes().size(), types.getLibrary().getLocation());
+		}
+
+		return api;
 	}
 
 	/**
@@ -229,6 +236,10 @@ public final class Roseau {
 		LOGGER.debug("Extracting types from library {} using {} took {}ms ({} types)",
 			library::getLocation, library::getExtractorType, () -> sw.elapsed().toMillis(),
 			() -> types.getAllTypes().size());
+
+		if (types.getAllTypes().isEmpty()) {
+			LOGGER.warn("Warning: no type found in {}", library::getLocation);
+		}
 
 		return types;
 	}

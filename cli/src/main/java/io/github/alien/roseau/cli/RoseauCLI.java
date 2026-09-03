@@ -28,6 +28,7 @@ import java.util.Optional;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CompletableFuture;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static picocli.CommandLine.ArgGroup;
 import static picocli.CommandLine.Command;
@@ -249,36 +250,68 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 	}
 
-	private Path resolveToPath(LibraryVersion version) {
+	private record ResolvedLibraryVersion(Path location, List<Path> classpath) {}
+
+	private record PreparedCliOptions(RoseauOptions options, List<Path> v1Classpath, List<Path> v2Classpath) {}
+
+	private ResolvedLibraryVersion resolveLibraryVersion(LibraryVersion version) {
 		if (version == null) {
-			return null;
+			return new ResolvedLibraryVersion(null, List.of());
 		}
 		return switch (version) {
-			case LibraryVersion.LocalPath(var path) -> path;
+			case LibraryVersion.LocalPath(var path) -> new ResolvedLibraryVersion(path, List.of());
 			case LibraryVersion.MavenCoordinates(var coords) -> {
 				console.printVerbose("Downloading %s:%s:%s... ".formatted(
 					coords.groupId(), coords.artifactId(), coords.version()));
-				Path path = ArtifactDownloader.downloadArtifact(coords);
+				ArtifactDownloader.Resolution resolution = ArtifactDownloader.resolveArtifact(coords);
 				console.printlnVerbose("done");
-				yield path;
+				yield new ResolvedLibraryVersion(resolution.artifact(), resolution.classpath());
 			}
 		};
 	}
 
-	private RoseauOptions makeCliOptions() {
+	private PreparedCliOptions makeCliOptions() {
+		ResolvedLibraryVersion resolvedV1 = resolveLibraryVersion(v1);
+		ResolvedLibraryVersion resolvedV2 = resolveLibraryVersion(v2);
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
 			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
-			resolveToPath(v1), new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)), noExclusions, apiJson);
+			resolvedV1.location(), new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
+			noExclusions, apiJson);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
-			resolveToPath(v2), new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)), noExclusions, null);
-		boolean cliSourceOnly = Boolean.TRUE.equals(sourceOnly);
-		boolean cliBinaryOnly = Boolean.TRUE.equals(binaryOnly);
+			resolvedV2.location(), new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
+			noExclusions, null);
+		Boolean cliSourceOnly = sourceOnly;
+		Boolean cliBinaryOnly = binaryOnly;
+		if (Boolean.TRUE.equals(sourceOnly) && binaryOnly == null) {
+			cliBinaryOnly = false;
+		} else if (Boolean.TRUE.equals(binaryOnly) && sourceOnly == null) {
+			cliSourceOnly = false;
+		}
 		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
 		List<RoseauOptions.Report> reportsCli = reports == null ? List.of() : List.copyOf(reports);
-		return new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
+		RoseauOptions options = new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
+		return new PreparedCliOptions(options, resolvedV1.classpath(), resolvedV2.classpath());
+	}
+
+	private static Library toLibrary(RoseauOptions.Library libraryOptions, RoseauOptions.Common commonOptions,
+	                                 List<Path> coordinateClasspath) {
+		Library library = libraryOptions.mergeWith(commonOptions).toLibrary();
+		if (coordinateClasspath.isEmpty()) {
+			return library;
+		}
+
+		List<Path> classpath = Stream.concat(library.getCustomClasspath().stream(), coordinateClasspath.stream())
+			.distinct()
+			.toList();
+		return Library.builder()
+			.location(library.getLocation())
+			.classpath(classpath)
+			.pom(library.getPom())
+			.exclusions(library.getExclusions())
+			.build();
 	}
 
 	private void buildClasspath(Library library) {
@@ -347,23 +380,23 @@ public final class RoseauCLI implements Callable<Integer> {
 				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.INFO));
 			}
 
-			RoseauOptions cliOptions = makeCliOptions();
+			PreparedCliOptions preparedCliOptions = makeCliOptions();
 			RoseauOptions fileOptions = config != null && Files.isRegularFile(config)
 				? RoseauOptions.load(config)
 				: RoseauOptions.newDefault();
-			RoseauOptions options = fileOptions.mergeWith(cliOptions);
+			RoseauOptions options = fileOptions.mergeWith(preparedCliOptions.options());
 			checkOptions(options);
 			console.printlnDebug("Options are " + options);
 
 			if (mode.api) {
-				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
+				Library libraryV1 = toLibrary(options.v1(), options.common(), preparedCliOptions.v1Classpath());
 				console.printlnDebug("v1 = " + libraryV1);
 				doApi(libraryV1, options.v1());
 			}
 
 			if (mode.diff) {
-				Library libraryV1 = options.v1().mergeWith(options.common()).toLibrary();
-				Library libraryV2 = options.v2().mergeWith(options.common()).toLibrary();
+				Library libraryV1 = toLibrary(options.v1(), options.common(), preparedCliOptions.v1Classpath());
+				Library libraryV2 = toLibrary(options.v2(), options.common(), preparedCliOptions.v2Classpath());
 				console.printlnDebug("v1 = " + libraryV1);
 				console.printlnDebug("v2 = " + libraryV2);
 				boolean breaking = doDiff(libraryV1, libraryV2, options);
