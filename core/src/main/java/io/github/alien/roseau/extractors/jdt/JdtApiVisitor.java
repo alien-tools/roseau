@@ -66,11 +66,12 @@ import static java.util.stream.Collectors.toSet;
 
 final class JdtApiVisitor extends ASTVisitor {
 	private final CompilationUnit cu;
-	private final String packageName;
 	private final Path filePath;
 	private final ExtractorSink sink;
 	private final ApiFactory factory;
 	private final Map<String, Integer> lineNumbersMapping = HashMap.newHashMap(100);
+	private final Map<String, String> singleTypeImports;
+	private final List<String> unresolvedOnDemandImports;
 
 	private static final Logger LOGGER = LogManager.getLogger(JdtApiVisitor.class);
 
@@ -79,7 +80,8 @@ final class JdtApiVisitor extends ASTVisitor {
 		this.filePath = filePath;
 		this.sink = sink;
 		this.factory = factory;
-		this.packageName = Optional.ofNullable(cu.getPackage()).map(p -> p.getName().getFullyQualifiedName()).orElse("");
+		this.singleTypeImports = collectSingleTypeImports(cu);
+		this.unresolvedOnDemandImports = collectUnresolvedOnDemandImports(cu);
 	}
 
 	/*
@@ -390,16 +392,87 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(toSet());
 	}
 
-	// Attempt to resolve a simpleName that's left unresolved by JDT
-	// If we find an import that corresponds, use that import's fqn
-	// Otherwise, assume it's a type from the current package
-	private String lookupUnresolvedName(String simpleName) {
-		return stream(cu.imports(), ImportDeclaration.class)
-			.filter(id -> !id.isOnDemand())
+	private static Map<String, String> collectSingleTypeImports(CompilationUnit cu) {
+		Map<String, String> imports = new HashMap<>();
+		stream(cu.imports(), ImportDeclaration.class)
+			.filter(id -> !id.isOnDemand() && !id.isStatic())
 			.map(id -> id.getName().getFullyQualifiedName())
-			.filter(fqn -> fqn.endsWith("." + simpleName))
-			.findFirst()
-			.orElse(packageName.isEmpty() ? simpleName : (packageName + "." + simpleName));
+			.forEach(fqn -> {
+				int lastDot = fqn.lastIndexOf('.');
+				if (lastDot > 0) {
+					// Two single-type imports of the same simple name cannot compile; keep the first for determinism
+					imports.putIfAbsent(fqn.substring(lastDot + 1), fqn);
+				}
+			});
+		return Map.copyOf(imports);
+	}
+
+	private static List<String> collectUnresolvedOnDemandImports(CompilationUnit cu) {
+		return stream(cu.imports(), ImportDeclaration.class)
+			.filter(id -> id.isOnDemand() && !id.isStatic())
+			.filter(id -> {
+				IBinding binding = id.resolveBinding();
+				return binding == null || binding.isRecovered();
+			})
+			.map(id -> id.getName().getFullyQualifiedName())
+			.distinct()
+			.toList();
+	}
+
+	/**
+	 * JDT hands us a <em>recovered</em> binding for every type it cannot find on the sourcepath or the classpath. Its
+	 * {@link ITypeBinding#getQualifiedName()} is then a guess: JDT prepends the compilation unit's own package. Its
+	 * {@link ITypeBinding#getBinaryName()} only carries a package when the source spelled one out, so we trust the
+	 * latter and resolve bare simple names ourselves.
+	 */
+	private String resolveTypeName(ITypeBinding binding) {
+		if (!binding.isRecovered()) {
+			return makeFqn(binding);
+		}
+
+		String binaryName = binding.getBinaryName();
+		if (binaryName != null && binaryName.indexOf('.') != -1) {
+			return makeFqn(binding);
+		}
+
+		return resolveUnresolvedSimpleName(simpleNameOf(binding));
+	}
+
+	/**
+	 * Infers the qualified name of a simple name JDT could not bind, following the shadowing order of JLS §7.5: a
+	 * single-type import wins over an on-demand import.
+	 * <p>
+	 * The compilation unit's own package is deliberately <em>not</em> a candidate. JDT is given the library's source
+	 * root as its sourcepath, so every type the library declares resolves. A recovered binding means the type is
+	 * declared neither in the library nor on the classpath, and qualifying it with the current package would name a
+	 * type that cannot exist.
+	 *
+	 * @param simpleName the unresolved simple name
+	 * @return the inferred qualified name, or {@code simpleName} itself when its package cannot be determined
+	 */
+	private String resolveUnresolvedSimpleName(String simpleName) {
+		String singleTypeImport = singleTypeImports.get(simpleName);
+		if (singleTypeImport != null) {
+			return singleTypeImport;
+		}
+
+		String inferred = unresolvedOnDemandImports.size() == 1
+			? unresolvedOnDemandImports.getFirst() + "." + simpleName
+			: simpleName;
+
+		LOGGER.warn("Cannot reliably resolve type {} in {}; recording it as {}. " +
+				"Add the missing dependency to the classpath for accurate results.",
+			simpleName, filePath, inferred);
+		return inferred;
+	}
+
+	/**
+	 * Returns a binding's simple name without its type arguments ({@code List<String>} yields {@code List}).
+	 */
+	private static String simpleNameOf(ITypeBinding binding) {
+		String name = binding.getName();
+		int typeArguments = name.indexOf('<');
+		return typeArguments > 0 ? name.substring(0, typeArguments) : name;
 	}
 
 	private ITypeReference createITypeReference(ITypeBinding binding) {
@@ -434,14 +507,9 @@ final class JdtApiVisitor extends ASTVisitor {
 			var tas = Arrays.stream(binding.getTypeArguments())
 				.map(this::createITypeReference)
 				.toList();
-			return factory.references().createTypeReference(makeFqn(binding), tas);
+			return factory.references().createTypeReference(resolveTypeName(binding), tas);
 		}
-		// JDT attempts to recover the FQN of missing bindings; if it fails, the unresolved type
-		// is assumed to be in the current package. Try to fall back to imported types, or the current package.
-		if (binding.isRecovered() && binding.getQualifiedName().startsWith(packageName)) {
-			return factory.references().createTypeReference(lookupUnresolvedName(binding.getName()));
-		}
-		return factory.references().createTypeReference(makeFqn(binding));
+		return factory.references().createTypeReference(resolveTypeName(binding));
 	}
 
 	private static Set<ElementType> convertAnnotationTargets(ITypeBinding binding) {
