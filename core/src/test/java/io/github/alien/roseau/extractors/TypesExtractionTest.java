@@ -1,6 +1,7 @@
 package io.github.alien.roseau.extractors;
 
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.utils.ApiBuilder;
@@ -630,6 +631,7 @@ class TypesExtractionTest {
 		var api = builder.build("public enum A {}");
 		var a = assertEnum(api, "A");
 		assertTrue(a.isFinal());
+		assertFalse(a.isAbstract());
 	}
 
 	@ParameterizedTest
@@ -649,6 +651,98 @@ class TypesExtractionTest {
 		// §8.9: An enum class E is implicitly sealed if its declaration contains
 		// at least one enum constant that has a class body
 		assertThat(a.isSealed()).isTrue();
+		assertFalse(a.isAbstract());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_concrete_method_and_constant_bodies_is_not_abstract(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum TopLevel implements I {
+				A { public void run() {} },
+				B { public void run() {} };
+				public void run() {}
+			}
+			interface I { void run(); }
+			""");
+		var type = assertEnum(api, "TopLevel");
+		assertThat(type.getModifiers()).containsExactly(Modifier.SEALED);
+		assertFalse(assertMethod(api, type, "run()").isAbstract());
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_inherited_abstract_method_is_abstract(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum TopLevel implements I {
+				A { public void run() {} },
+				B { public void run() {} };
+			}
+			interface I { void run(); }
+			""");
+		var type = assertEnum(api, "TopLevel");
+		assertThat(type.getModifiers()).containsExactlyInAnyOrder(Modifier.ABSTRACT, Modifier.SEALED);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_inherited_concrete_methods_is_not_abstract(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum TopLevel implements I {
+				A {}, B {};
+			}
+			interface I {
+				String toString();
+				String name();
+			}
+			""");
+		var type = assertEnum(api, "TopLevel");
+		assertThat(type.getModifiers()).containsExactly(Modifier.SEALED);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_inherited_default_method_is_not_abstract(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum TopLevel implements I {
+				A { public String run() { return "A"; } },
+				B { public String run() { return "B"; } };
+			}
+			interface Parent<T> { T run(); }
+			interface I extends Parent<String> {
+				default String run() { return "default"; }
+			}
+			""");
+		var type = assertEnum(api, "TopLevel");
+		assertThat(type.getModifiers()).containsExactly(Modifier.SEALED);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_reabstracted_default_method_is_abstract(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum TopLevel implements I {
+				A { public String run() { return "A"; } },
+				B { public String run() { return "B"; } };
+			}
+			interface Parent<T> { default T run() { return null; } }
+			interface I extends Parent<String> { String run(); }
+			""");
+		var type = assertEnum(api, "TopLevel");
+		assertThat(type.getModifiers()).containsExactlyInAnyOrder(Modifier.ABSTRACT, Modifier.SEALED);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void enum_with_package_private_abstract_method_is_abstract(ApiBuilder builder) {
+		var api = builder.build("""
+			public enum TopLevel {
+				A { void run() {} };
+				abstract void run();
+			}
+			""");
+		var type = assertEnum(api, "TopLevel");
+		assertThat(type.getModifiers()).containsExactlyInAnyOrder(Modifier.ABSTRACT, Modifier.SEALED);
 	}
 
 	@ParameterizedTest
@@ -687,6 +781,7 @@ class TypesExtractionTest {
 		var a = assertEnum(api, "A");
 		assertThat(api.getExportedTypes()).hasSize(1);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(a.getModifiers()).containsExactlyInAnyOrder(Modifier.ABSTRACT, Modifier.SEALED);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
 	}
 

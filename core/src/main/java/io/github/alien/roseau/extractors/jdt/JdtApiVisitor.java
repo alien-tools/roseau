@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -203,6 +204,11 @@ final class JdtApiVisitor extends ASTVisitor {
 					typeParams, fields, methods, enclosingType, permittedTypes);
 			}
 			case EnumDeclaration e -> {
+				// JDT may mark enums with constant bodies abstract even when fully implemented.
+				// Abstract obligations can be declared here or inherited from an interface (§8.9.2).
+				if (modifiers.contains(Modifier.ABSTRACT) && !hasAbstractEnumMethods(binding)) {
+					modifiers.remove(Modifier.ABSTRACT);
+				}
 				// §8.9: an enum class E is implicitly sealed if its declaration contains at least one
 				// enum constant that has a class body. Otherwise, final.
 				if (stream(e.enumConstants(), EnumConstantDeclaration.class)
@@ -227,6 +233,39 @@ final class JdtApiVisitor extends ASTVisitor {
 		};
 
 		sink.accept(typeDecl);
+	}
+
+	private static boolean hasAbstractEnumMethods(ITypeBinding binding) {
+		if (Arrays.stream(binding.getDeclaredMethods())
+			.anyMatch(method -> org.eclipse.jdt.core.dom.Modifier.isAbstract(method.getModifiers()))) {
+			return true;
+		}
+		if (binding.getInterfaces().length == 0) {
+			return false;
+		}
+
+		Set<IMethodBinding> methods = new HashSet<>();
+		collectEnumHierarchyMethods(binding, new HashSet<>(), methods);
+		return methods.stream()
+			.filter(method -> org.eclipse.jdt.core.dom.Modifier.isAbstract(method.getModifiers()))
+			.anyMatch(method -> methods.stream().noneMatch(other -> other.overrides(method)
+				|| (method.getDeclaringClass().isInterface() && !other.getDeclaringClass().isInterface()
+				&& org.eclipse.jdt.core.dom.Modifier.isPublic(other.getModifiers())
+				&& !org.eclipse.jdt.core.dom.Modifier.isAbstract(other.getModifiers())
+				&& !org.eclipse.jdt.core.dom.Modifier.isStatic(other.getModifiers())
+				&& other.isSubsignature(method))));
+	}
+
+	private static void collectEnumHierarchyMethods(ITypeBinding binding, Set<ITypeBinding> visited,
+	                                                Set<IMethodBinding> methods) {
+		if (binding == null || !visited.add(binding)) {
+			return;
+		}
+		methods.addAll(Arrays.asList(binding.getDeclaredMethods()));
+		collectEnumHierarchyMethods(binding.getSuperclass(), visited, methods);
+		for (ITypeBinding iface : binding.getInterfaces()) {
+			collectEnumHierarchyMethods(iface, visited, methods);
+		}
 	}
 
 	private Set<TypeReference<InterfaceDecl>> convertImplementedInterfaces(ITypeBinding binding) {
