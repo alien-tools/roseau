@@ -322,6 +322,9 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions mavenOptions = buildMavenOptions(oldJar, newJar);
 		options = options.mergeWith(mavenOptions);
 		options = normalizePaths(options);
+		if (Boolean.TRUE.equals(options.diff().sourceOnly()) && Boolean.TRUE.equals(options.diff().binaryOnly())) {
+			throw new MojoExecutionException("sourceOnly and binaryOnly cannot both be true.");
+		}
 
 		getLog().debug("Roseau options = " + options);
 		return options;
@@ -368,7 +371,14 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions.Library v2 = new RoseauOptions.Library(
 			newJar, v2Classpath, new RoseauOptions.Exclude(List.of(), List.of()), resolvePath(exportCurrentApi));
 
-		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, sourceOnly, binaryOnly);
+		Boolean mavenSourceOnly = sourceOnly;
+		Boolean mavenBinaryOnly = binaryOnly;
+		if (Boolean.TRUE.equals(sourceOnly) && binaryOnly == null) {
+			mavenBinaryOnly = false;
+		} else if (Boolean.TRUE.equals(binaryOnly) && sourceOnly == null) {
+			mavenSourceOnly = false;
+		}
+		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, mavenSourceOnly, mavenBinaryOnly);
 
 		// Build Reports list
 		List<RoseauOptions.Report> reportsList = reports != null
