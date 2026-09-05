@@ -2,8 +2,10 @@ package io.github.alien.roseau;
 
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Symbol;
+import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.HashFunction;
 import io.github.alien.roseau.extractors.incremental.HashingChangedFilesProvider;
+import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -12,6 +14,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -59,6 +62,39 @@ class RoseauTest {
 		var rebuiltTypes = Roseau.buildLibraryTypes(v2);
 
 		assertThat(incrementalTypes).isEqualTo(rebuiltTypes);
+	}
+
+	@Test
+	void incrementalDiff_unchanged_sources_use_the_new_classpath(@TempDir Path wd) throws IOException {
+		var oldDependency = wd.resolve("old.jar");
+		var newDependency = wd.resolve("new.jar");
+		try (var _ = TestUtils.buildJar(Map.of("dependency.Base",
+			"package dependency; public class Base { public void removed() {} }"), oldDependency);
+		     var _ = TestUtils.buildJar(Map.of("dependency.Base",
+			     "package dependency; public class Base {}"), newDependency)) {
+			var sources = Files.createDirectory(wd.resolve("sources"));
+			Files.writeString(sources.resolve("C.java"), "public class C extends dependency.Base {}");
+			var oldLibrary = Library.builder().location(sources).classpath(List.of(oldDependency)).build();
+			var newLibrary = Library.builder().location(sources).classpath(List.of(newDependency)).build();
+			var oldTypes = Roseau.buildLibraryTypes(oldLibrary);
+
+			var expected = Roseau.diff(oldLibrary, newLibrary);
+			var actual = Roseau.incrementalDiff(oldLibrary, newLibrary);
+
+			assertThat(expected.getBreakingChanges()).hasSize(1);
+			assertThat(actual.getBreakingChanges()).isEqualTo(expected.getBreakingChanges());
+			assertThat(actual.v2().getLibrary()).isEqualTo(newLibrary);
+		}
+	}
+
+	@Test
+	void incrementalBuild_unchanged_snapshot_carries_new_library_location(@TempDir Path wd) throws IOException {
+		var oldLibrary = Library.of(Files.createDirectory(wd.resolve("old")));
+		var newLibrary = Library.of(Files.createDirectory(wd.resolve("new")));
+		var oldTypes = Roseau.buildLibraryTypes(oldLibrary);
+
+		assertThat(Roseau.incrementalBuild(oldTypes, newLibrary, ChangedFiles.NO_CHANGES).getLibrary())
+			.isEqualTo(newLibrary);
 	}
 
 	@Test

@@ -18,10 +18,11 @@ import java.util.stream.Stream;
  * <br>
  * This implementation:
  * <ul>
- *   <li>Returns the previous API if no file has changed</li>
+ *   <li>Reuses previous declarations with the new library configuration if no file has changed</li>
  *   <li>Discards deleted symbols</li>
  *   <li>Reparses changed symbols</li>
  *   <li>Parses new files to extract new symbols</li>
+ *   <li>Reparses all sources when the classpath changes</li>
  * </ul>
  */
 public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtractor {
@@ -37,9 +38,16 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
 
-		// If nothing's changed, just return the old one
+		// Always reparse when the classpath changes
+		if (!previousTypes.getLibrary().getClasspath().equals(newVersion.getClasspath())) {
+			return extractor.extractTypes(newVersion);
+		}
+
 		if (changedFiles.hasNoChanges()) {
-			return previousTypes;
+			if (previousTypes.getLibrary().equals(newVersion)) {
+				return previousTypes;
+			}
+			return new LibraryTypes(newVersion, previousTypes.getModule(), Set.copyOf(previousTypes.getAllTypes()));
 		}
 
 		// Collect types that should be discarded from the previous API

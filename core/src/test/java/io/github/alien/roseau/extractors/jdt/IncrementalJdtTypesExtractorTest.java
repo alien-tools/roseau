@@ -2,18 +2,22 @@ package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
+import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
@@ -191,5 +195,30 @@ class IncrementalJdtTypesExtractorTest {
 			.isEqualTo(new TypeReference<>("pkg2.D"));
 		assertThat(clsB.getDeclaredMethods().iterator().next().getParameters().get(1).type())
 			.isEqualTo(new TypeReference<>("pkg1.A"));
+	}
+
+	@Test
+	void unchanged_sources_use_the_new_dependency_classpath(@TempDir Path wd) throws IOException {
+		var oldDependency = wd.resolve("old.jar");
+		var newDependency = wd.resolve("new.jar");
+		try (var _ = TestUtils.buildJar(Map.of("dependency.Base",
+			"package dependency; public class Base { public void removed() {} }"), oldDependency);
+		     var _ = TestUtils.buildJar(Map.of("dependency.Base",
+			     "package dependency; public class Base {}"), newDependency)) {
+			var sources = Files.createDirectory(wd.resolve("sources"));
+			Files.writeString(sources.resolve("C.java"), "public class C extends dependency.Base {}");
+			var oldLibrary = Library.builder().location(sources).classpath(List.of(oldDependency)).build();
+			var newLibrary = Library.builder().location(sources).classpath(List.of(newDependency)).build();
+			var oldAPI = Roseau.buildAPI(oldLibrary);
+			var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+				oldAPI.getLibraryTypes(), newLibrary, ChangedFiles.NO_CHANGES));
+			var oldC = oldAPI.findExportedType("C").orElseThrow();
+			var newC = newAPI.findExportedType("C").orElseThrow();
+
+			assertThat(oldAPI.analyzer().getExportedMethods(oldC))
+				.extracting(MethodDecl::getSimpleName).contains("removed");
+			assertThat(newAPI.analyzer().getExportedMethods(newC))
+				.extracting(MethodDecl::getSimpleName).doesNotContain("removed");
+		}
 	}
 }
