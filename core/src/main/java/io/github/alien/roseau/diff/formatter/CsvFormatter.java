@@ -5,6 +5,7 @@ import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * A formatter of {@link RoseauReport} that produces a CSV output.
@@ -15,16 +16,24 @@ public class CsvFormatter implements BreakingChangesFormatter {
 	@Override
 	public String format(RoseauReport report) {
 		return HEADER + System.lineSeparator() +
-			report.getBreakingChanges().stream().map(bc -> "%s;%s;%s;%s;%s;%s;%s;%s".formatted(
+			report.getBreakingChanges().stream().map(bc -> Stream.of(
 				bc.impactedType().getQualifiedName(),
 				bc.impactedSymbol().getQualifiedName(),
-				bc.kind(),
-				bc.kind().getNature(),
+				bc.kind().name(),
+				bc.kind().getNature().name(),
 				formatLocation(bc.getLocation()),
 				bc.newSymbol() != null ? BreakingChange.printSymbol(bc.newSymbol()) : "",
-				bc.kind().isBinaryBreaking(),
-				bc.kind().isSourceBreaking())
+				Boolean.toString(bc.kind().isBinaryBreaking()),
+				Boolean.toString(bc.kind().isSourceBreaking()))
+				.map(CsvFormatter::escape).collect(Collectors.joining(";"))
 			).collect(Collectors.joining(System.lineSeparator()));
+	}
+
+	private static String escape(String value) {
+		if (value.indexOf(';') >= 0 || value.indexOf('"') >= 0 || value.indexOf('\r') >= 0 || value.indexOf('\n') >= 0) {
+			return '"' + value.replace("\"", "\"\"") + '"';
+		}
+		return value;
 	}
 
 	private static String formatLocation(SourceLocation location) {

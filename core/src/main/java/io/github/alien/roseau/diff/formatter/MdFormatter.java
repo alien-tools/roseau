@@ -28,17 +28,32 @@ public class MdFormatter implements BreakingChangesFormatter {
 			sb.append("|------|--------|------|--------|----------|------------|--------|--------|\n");
 
 			for (BreakingChange bc : report.getBreakingChanges()) {
-				sb.append("| ").append(bc.impactedType().getQualifiedName()).append(" | ")
-					.append(bc.impactedSymbol().getQualifiedName()).append(" | ")
+				sb.append("| ").append(escape(bc.impactedType().getQualifiedName())).append(" | ")
+					.append(escape(bc.impactedSymbol().getQualifiedName())).append(" | ")
 					.append(bc.kind()).append(" | ")
 					.append(bc.kind().getNature()).append(" | ")
-					.append(formatLocation(bc.getLocation())).append(" | ")
-					.append(bc.newSymbol() != null ? BreakingChange.printSymbol(bc.newSymbol()) : "").append(" | ")
+					.append(escape(formatLocation(bc.getLocation()))).append(" | ")
+					.append(escape(bc.newSymbol() != null ? BreakingChange.printSymbol(bc.newSymbol()) : "")).append(" | ")
 					.append(bc.kind().isBinaryBreaking()).append(" | ")
 					.append(bc.kind().isSourceBreaking()).append(" |\n");
 			}
 		}
 		return sb.toString();
+	}
+
+	private static String escape(String value) {
+		StringBuilder escaped = new StringBuilder();
+		for (char c : value.replace("\r\n", "\n").replace('\r', '\n').toCharArray()) {
+			switch (c) {
+				case '&' -> escaped.append("&amp;");
+				case '<' -> escaped.append("&lt;");
+				case '>' -> escaped.append("&gt;");
+				case '\n' -> escaped.append("<br>");
+				case '|', '\\', '`', '*', '_', '[', ']' -> escaped.append("&#").append((int) c).append(';');
+				default -> escaped.append(c);
+			}
+		}
+		return escaped.toString();
 	}
 
 	private static String formatLocation(SourceLocation location) {
