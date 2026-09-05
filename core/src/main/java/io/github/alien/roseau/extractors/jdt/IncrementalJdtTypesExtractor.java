@@ -22,7 +22,7 @@ import java.util.stream.Stream;
  *   <li>Discards deleted symbols</li>
  *   <li>Reparses changed symbols</li>
  *   <li>Parses new files to extract new symbols</li>
- *   <li>Reparses all sources when the classpath changes</li>
+ *   <li>Reparses all sources when the classpath or module declaration changes</li>
  * </ul>
  */
 public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtractor {
@@ -38,8 +38,14 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
 
-		// Always reparse when the classpath changes
-		if (!previousTypes.getLibrary().getClasspath().equals(newVersion.getClasspath())) {
+		boolean classpathChanged = !previousTypes.getLibrary().getClasspath().equals(newVersion.getClasspath());
+		boolean moduleChanged = Stream.of(changedFiles.createdFiles(), changedFiles.updatedFiles(),
+				changedFiles.deletedFiles())
+			.flatMap(Set::stream)
+			.anyMatch(path -> path.endsWith("module-info.java"));
+
+		// Always reparse when the classpath or module declaration changes
+		if (classpathChanged || moduleChanged) {
 			return extractor.extractTypes(newVersion);
 		}
 
@@ -69,7 +75,6 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 			extractor.parseTypes(newVersion, filesToParse).types().stream()
 		).collect(Collectors.toSet());
 
-		// FIXME: the module declaration might have changed between the two versions
 		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
 	}
 }

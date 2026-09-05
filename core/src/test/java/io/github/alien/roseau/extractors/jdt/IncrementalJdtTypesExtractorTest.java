@@ -221,4 +221,59 @@ class IncrementalJdtTypesExtractorTest {
 				.extracting(MethodDecl::getSimpleName).doesNotContain("removed");
 		}
 	}
+
+	@Test
+	void updated_module_is_parsed(@TempDir Path wd) throws IOException {
+		var oldRoot = Files.createDirectory(wd.resolve("old"));
+		var newRoot = Files.createDirectory(wd.resolve("new"));
+		Files.writeString(oldRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(oldRoot.resolve("module-info.java"), "module mod { exports pkg; }");
+		Files.writeString(newRoot.resolve("module-info.java"), "module mod {}");
+		var oldLibrary = Library.of(oldRoot);
+		var newLibrary = Library.of(newRoot);
+		var changes = new ChangedFiles(Set.of(Path.of("module-info.java")), Set.of(), Set.of());
+		var oldAPI = Roseau.buildAPI(oldLibrary);
+		var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+			oldAPI.getLibraryTypes(), newLibrary, changes));
+
+		assertThat(oldAPI.findExportedType("pkg.C")).isPresent();
+		assertThat(newAPI.findExportedType("pkg.C")).isEmpty();
+	}
+
+	@Test
+	void new_module_is_parsed(@TempDir Path wd) throws IOException {
+		var oldRoot = Files.createDirectory(wd.resolve("old"));
+		var newRoot = Files.createDirectory(wd.resolve("new"));
+		Files.writeString(oldRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("module-info.java"), "module mod {}");
+		var oldLibrary = Library.of(oldRoot);
+		var newLibrary = Library.of(newRoot);
+		var changes = new ChangedFiles(Set.of(Path.of("module-info.java")), Set.of(), Set.of());
+		var oldAPI = Roseau.buildAPI(oldLibrary);
+		var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+			oldAPI.getLibraryTypes(), newLibrary, changes));
+
+		assertThat(oldAPI.findExportedType("pkg.C")).isPresent();
+		assertThat(newAPI.findExportedType("pkg.C")).isEmpty();
+	}
+
+	@Test
+	void removed_module_is_parsed(@TempDir Path wd) throws IOException {
+		var oldRoot = Files.createDirectory(wd.resolve("old"));
+		var newRoot = Files.createDirectory(wd.resolve("new"));
+		Files.writeString(oldRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(oldRoot.resolve("module-info.java"), "module mod {}");
+		var oldLibrary = Library.of(oldRoot);
+		var newLibrary = Library.of(newRoot);
+		var changes = new ChangedFiles(Set.of(Path.of("module-info.java")), Set.of(), Set.of());
+		var oldAPI = Roseau.buildAPI(oldLibrary);
+		var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+			oldAPI.getLibraryTypes(), newLibrary, changes));
+
+		assertThat(oldAPI.findExportedType("pkg.C")).isEmpty();
+		assertThat(newAPI.findExportedType("pkg.C")).isPresent();
+	}
 }
