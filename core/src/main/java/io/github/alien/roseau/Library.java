@@ -271,7 +271,7 @@ public final class Library {
 			}
 
 			if (isModuleInfo(location)) {
-				location = location.getParent();
+				location = location.toAbsolutePath().getParent();
 			}
 
 			if (pom != null && !isValidPom(pom)) {
