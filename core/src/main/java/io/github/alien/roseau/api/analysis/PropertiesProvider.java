@@ -60,7 +60,8 @@ public interface PropertiesProvider {
 	}
 
 	private boolean isExported(TypeDecl type, Set<String> inProgress) {
-		if (!libraryTypes().getModule().isExporting(type.getPackageName())) {
+		if (libraryTypes().findType(type.getQualifiedName()).isPresent() &&
+			!libraryTypes().getModule().isExporting(type.getPackageName())) {
 			return false;
 		}
 		Optional<TypeDecl> enclosing = type.getEnclosingType().flatMap(resolver()::resolve);

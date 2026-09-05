@@ -739,4 +739,22 @@ class TypesExtractionTest {
 			.extracting(MethodDecl::getSimpleName)
 			.contains("m", "n");
 	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void types_outside_module_are_exported(ApiBuilder builder) {
+		var api = builder.build("""
+			module m { exports pkg1; }
+			package pkg1;
+			public class A {}
+			package pkg2;
+			public class B {}""");
+		var a = assertClass(api, "pkg1.A");
+		var b = assertClass(api, "pkg2.B");
+		var list = new TypeReference<>("java.util.List");
+
+		assertThat(api.analyzer().isExported(a)).isTrue();
+		assertThat(api.analyzer().isExported(b)).isFalse();
+		assertThat(api.analyzer().isExported(list)).isTrue();
+	}
 }
