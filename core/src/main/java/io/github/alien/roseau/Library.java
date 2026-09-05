@@ -66,7 +66,7 @@ public final class Library {
 		}
 		return resolved.stream()
 			.<Path>mapMulti((p, downstream) -> {
-				if (Files.isRegularFile(p)) {
+				if (Files.isRegularFile(p) || Files.isDirectory(p)) {
 					downstream.accept(p);
 				} else {
 					LOGGER.warn("Missing classpath file {}", p);

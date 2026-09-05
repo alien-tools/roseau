@@ -1,14 +1,17 @@
 package io.github.alien.roseau;
 
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.extractors.incremental.HashFunction;
 import io.github.alien.roseau.extractors.incremental.HashingChangedFilesProvider;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -56,5 +59,26 @@ class RoseauTest {
 		var rebuiltTypes = Roseau.buildLibraryTypes(v2);
 
 		assertThat(incrementalTypes).isEqualTo(rebuiltTypes);
+	}
+
+	@Test
+	void buildAPI_accepts_class_directories(@TempDir Path directory) throws Exception {
+		var dependency = directory.resolve("Base.java");
+		Files.writeString(dependency, "package dependency; public class Base { public void inherited() {} }");
+		var classes = Files.createDirectory(directory.resolve("classes"));
+		assertThat(ToolProvider.getSystemJavaCompiler().run(null, null, null,
+			"-proc:none", "-d", classes.toString(), dependency.toString())).isZero();
+		var sources = Files.createDirectory(directory.resolve("sources"));
+		Files.writeString(sources.resolve("C.java"), "public class C extends dependency.Base {}");
+
+		var library = Library.builder()
+			.location(sources)
+			.classpath(List.of(classes))
+			.build();
+		var api = Roseau.buildAPI(library);
+
+		var type = api.findExportedType("C").orElseThrow();
+		assertThat(api.analyzer().getExportedMethods(type))
+			.extracting(MethodDecl::getQualifiedName).contains("dependency.Base.inherited()");
 	}
 }
