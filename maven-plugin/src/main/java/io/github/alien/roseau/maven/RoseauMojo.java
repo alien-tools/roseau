@@ -247,15 +247,16 @@ public final class RoseauMojo extends AbstractMojo {
 	 * Exports API models to JSON files.
 	 *
 	 * @param report the RoseauReport containing the APIs
+	 * @param options the merged export configuration
 	 * @throws MojoExecutionException if an error occurs while exporting APIs
 	 */
-	private void exportApis(RoseauReport report) throws MojoExecutionException {
-		if (exportBaselineApi != null) {
-			exportApi(report.v1(), exportBaselineApi);
+	private void exportApis(RoseauReport report, RoseauOptions options) throws MojoExecutionException {
+		if (options.v1().apiReport() != null) {
+			exportApi(report.v1(), options.v1().apiReport());
 		}
 
-		if (exportCurrentApi != null) {
-			exportApi(report.v2(), exportCurrentApi);
+		if (options.v2().apiReport() != null) {
+			exportApi(report.v2(), options.v2().apiReport());
 		}
 	}
 
@@ -514,7 +515,7 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauReport report = Roseau.diff(oldLibrary, newLibrary);
 
 		// Export APIs if configured
-		exportApis(report);
+		exportApis(report, options);
 
 		// Filter report based on configuration
 		RoseauReport filteredReport = report.filterReport(options.diff());
