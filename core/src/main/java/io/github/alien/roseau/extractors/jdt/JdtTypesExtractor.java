@@ -22,9 +22,9 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -58,7 +58,8 @@ public final class JdtTypesExtractor implements TypesExtractor {
 			return switch (modules.size()) {
 				case 0 -> new LibraryTypes(library, types);
 				case 1 -> new LibraryTypes(library, modules.iterator().next(), result.types());
-				default -> throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
+				default ->
+					throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
 			};
 		} catch (IOException e) {
 			throw new RoseauException("Failed to parse sources", e);
@@ -91,6 +92,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		parser.setEnvironment(classpathEntries, sourcesRootArray, null, true);
 
 		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
+		Set<String> reportedErrors = ConcurrentHashMap.newKeySet();
 		// Receive parsed ASTs and forward them to the visitor
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
@@ -101,6 +103,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 					// Actual parsing errors are just warnings for us
 					Arrays.stream(problems)
 						.filter(IProblem::isError)
+						.filter(p -> reportedErrors.add(p.getMessage()))
 						.forEach(p -> LOGGER.warn("JDT error [{}:{}]: {}", filePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 
