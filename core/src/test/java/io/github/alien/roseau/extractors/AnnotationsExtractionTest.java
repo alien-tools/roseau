@@ -475,6 +475,90 @@ class AnnotationsExtractionTest {
 		var ann = beta.getAnnotation(new TypeReference<>(Target.class.getCanonicalName())).orElseThrow();
 		assertThat(beta.getTargets()).containsExactlyInAnyOrder(ElementType.ANNOTATION_TYPE, ElementType.CONSTRUCTOR,
 			ElementType.FIELD, ElementType.METHOD, ElementType.TYPE);
-		assertThat(ann.values()).containsEntry("value", "{}"); // We ignore those
+		assertThat(ann.values()).containsEntry("value",
+			"{java.lang.annotation.ElementType.ANNOTATION_TYPE, java.lang.annotation.ElementType.CONSTRUCTOR, " +
+				"java.lang.annotation.ElementType.FIELD, java.lang.annotation.ElementType.METHOD, java.lang.annotation.ElementType.TYPE}");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void repeatable_annotations_use_container_retention(ApiBuilder builder) {
+		var api = builder.build("""
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.SOURCE)
+			@java.lang.annotation.Repeatable(Tags.class)
+			public @interface Tag { String value(); }
+			@java.lang.annotation.Retention(java.lang.annotation.RetentionPolicy.RUNTIME)
+			public @interface Tags { Tag[] value(); }
+			@Tag("a") @Tag("b") public class Repeated {}
+			@Tag("a") public class Single {}
+			""");
+		assertThat(assertClass(api, "Repeated").getAnnotations()).containsExactly(
+			new Annotation(new TypeReference<>("Tags"), Map.of("value", "{@Tag(value=a), @Tag(value=b)}")));
+		assertThat(assertClass(api, "Single").getAnnotations()).isEmpty();
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void array_and_nested_annotation_values(ApiBuilder builder) {
+		var api = builder.build("""
+			public @interface Nested { String a(); int z() default 0; }
+			public @interface Values {
+				int[] ints(); boolean[] flags(); String[] strings(); Class<?>[] types();
+				java.lang.annotation.RetentionPolicy[] enums(); Nested nested(); Nested[] annotations();
+				String[] empty();
+			}
+			public class Holder {
+				@Values(ints = {1, 2}, flags = {true, false}, strings = {"a", "b"},
+					types = {String.class, int[].class}, enums = {java.lang.annotation.RetentionPolicy.CLASS},
+					nested = @Nested(z = 2, a = "x"), annotations = {@Nested(a = "y")}, empty = {})
+				public int f;
+			}
+			""");
+		var holder = assertClass(api, "Holder");
+		assertThat(assertField(api, holder, "f").getAnnotations()).containsExactly(
+			new Annotation(new TypeReference<>("Values"), Map.of(
+				"ints", "{1, 2}", "flags", "{true, false}", "strings", "{a, b}",
+				"types", "{java.lang.String, int[]}", "enums", "{java.lang.annotation.RetentionPolicy.CLASS}",
+				"nested", "@Nested(a=x, z=2)", "annotations", "{@Nested(a=y)}", "empty", "{}")));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void repeatable_annotations_use_container(ApiBuilder builder) {
+		var api = builder.build("""
+			package pkg;
+			@java.lang.annotation.Repeatable(Tags.class)
+			public @interface Tag { String value(); }
+			public @interface Tags { Tag[] value(); String note() default ""; }
+			@Tag("a") @Tag("b") public class C {
+				@Tag("a") @Tag("b") public C() {}
+				@Tag("a") @Tag("b") public int f;
+				@Tag("a") @Tag("b") public void m() {}
+				@Tags({@Tag("a"), @Tag("b")}) public static class Explicit {}
+				@Tags(value = {@Tag("a")}, note = "keep") public static class WithNote {}
+				@Tags({}) public static class Empty {}
+			}
+			@Tag("a") public class Single {}
+			@Tag("a") @Tag("a") public class Duplicates {}
+			""");
+
+		var c = assertClass(api, "pkg.C");
+		var expected = new Annotation(new TypeReference<>("pkg.Tags"),
+			Map.of("value", "{@pkg.Tag(value=a), @pkg.Tag(value=b)}"));
+		assertThat(c.getAnnotations()).containsExactly(expected);
+		assertThat(c.getDeclaredConstructors()).singleElement()
+			.satisfies(ctor -> assertThat(ctor.getAnnotations()).containsExactly(expected));
+		assertThat(assertField(api, c, "f").getAnnotations()).containsExactly(expected);
+		assertThat(assertMethod(api, c, "m()").getAnnotations()).containsExactly(expected);
+		assertThat(assertClass(api, "pkg.C$Explicit").getAnnotations()).containsExactly(expected);
+		assertThat(assertClass(api, "pkg.C$WithNote").getAnnotations()).containsExactly(
+			new Annotation(new TypeReference<>("pkg.Tags"), Map.of("value", "{@pkg.Tag(value=a)}", "note", "keep")));
+		assertThat(assertClass(api, "pkg.C$Empty").getAnnotations()).containsExactly(
+			new Annotation(new TypeReference<>("pkg.Tags"), Map.of("value", "{}")));
+		assertThat(assertClass(api, "pkg.Single").getAnnotations()).containsExactly(
+			new Annotation(new TypeReference<>("pkg.Tag"), Map.of("value", "a")));
+		assertThat(assertClass(api, "pkg.Duplicates").getAnnotations()).containsExactly(
+			new Annotation(new TypeReference<>("pkg.Tags"),
+				Map.of("value", "{@pkg.Tag(value=a), @pkg.Tag(value=a)}")));
 	}
 }

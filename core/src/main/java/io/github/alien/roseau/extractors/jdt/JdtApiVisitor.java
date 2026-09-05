@@ -384,21 +384,43 @@ final class JdtApiVisitor extends ASTVisitor {
 	}
 
 	private Set<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
+		// Group before collecting into a set: identical repeats still belong in the container.
 		return Arrays.stream(annotations)
-			// Only retain RUNTIME/CLASS annotations to align with bytecode
-			.filter(ann -> !isSourceAnnotation(ann))
-			.map(ann -> {
-				Map<String, String> values = new HashMap<>(ann.getDeclaredMemberValuePairs().length);
-				for (IMemberValuePairBinding pair : ann.getDeclaredMemberValuePairs()) {
-					String key = pair.getName();
-					Object value = pair.getValue();
-					if (value != null) {
-						values.put(key, formatAnnotationValue(value));
-					}
+			.collect(Collectors.groupingBy(ann -> makeFqn(ann.getAnnotationType())))
+			.values().stream()
+			.flatMap(group -> {
+				Optional<ITypeBinding> container = group.size() > 1
+					? repeatableContainer(group.getFirst().getAnnotationType())
+					: Optional.empty();
+				if (container.isPresent()) {
+					return isSourceAnnotationType(container.get()) ? Stream.empty() : Stream.of(factory.createAnnotation(
+						createTypeReference(container.get()), Map.of("value", formatAnnotationValue(group.toArray()))));
 				}
-				return factory.createAnnotation(createTypeReference(ann.getAnnotationType()), values);
+				return group.stream().filter(ann -> !isSourceAnnotation(ann))
+					.map(ann -> factory.createAnnotation(createTypeReference(ann.getAnnotationType()), annotationValues(ann)));
 			})
 			.collect(toSet());
+	}
+
+	private static Optional<ITypeBinding> repeatableContainer(ITypeBinding annotationType) {
+		return Arrays.stream(annotationType.getAnnotations())
+			.filter(meta -> "java.lang.annotation.Repeatable".equals(meta.getAnnotationType().getQualifiedName()))
+			.flatMap(meta -> Arrays.stream(meta.getDeclaredMemberValuePairs()))
+			.filter(pair -> "value".equals(pair.getName()))
+			.map(IMemberValuePairBinding::getValue)
+			.filter(ITypeBinding.class::isInstance)
+			.map(ITypeBinding.class::cast)
+			.findFirst();
+	}
+
+	private static Map<String, String> annotationValues(IAnnotationBinding annotation) {
+		Map<String, String> values = new HashMap<>();
+		for (IMemberValuePairBinding pair : annotation.getDeclaredMemberValuePairs()) {
+			if (pair.getValue() != null) {
+				values.put(pair.getName(), formatAnnotationValue(pair.getValue()));
+			}
+		}
+		return values;
 	}
 
 	private List<FormalTypeParameter> convertTypeParameters(ITypeBinding[] typeParameters) {
@@ -582,7 +604,10 @@ final class JdtApiVisitor extends ASTVisitor {
 	}
 
 	private static boolean isSourceAnnotation(IAnnotationBinding ann) {
-		ITypeBinding binding = ann.getAnnotationType();
+		return isSourceAnnotationType(ann.getAnnotationType());
+	}
+
+	private static boolean isSourceAnnotationType(ITypeBinding binding) {
 		if (binding != null) {
 			Optional<IAnnotationBinding> find = Arrays.stream(binding.getAnnotations())
 				.filter(a -> Retention.class.getCanonicalName().equals(a.getAnnotationType().getQualifiedName()))
@@ -601,12 +626,18 @@ final class JdtApiVisitor extends ASTVisitor {
 
 	private static String formatAnnotationValue(Object value) {
 		return switch (value) {
-			// We don't store those
-			case Object[] _ -> "{}";
+			case Object[] values -> Arrays.stream(values).map(JdtApiVisitor::formatAnnotationValue)
+				.collect(Collectors.joining(", ", "{", "}"));
+			case IAnnotationBinding annotation -> annotationValues(annotation).entrySet().stream()
+				.sorted(Map.Entry.comparingByKey())
+				.map(entry -> entry.getKey() + "=" + entry.getValue())
+				.collect(Collectors.joining(", ", "@" + makeFqn(annotation.getAnnotationType()) + "(", ")"));
 			// Enum constant
 			case IVariableBinding varBinding -> makeMemberFqn(varBinding.getDeclaringClass(), varBinding);
 			// Class literal
-			case ITypeBinding typeBinding -> makeFqn(typeBinding);
+			case ITypeBinding typeBinding -> typeBinding.isArray()
+				? formatAnnotationValue(typeBinding.getElementType()) + "[]".repeat(typeBinding.getDimensions())
+				: typeBinding.isPrimitive() ? typeBinding.getName() : makeFqn(typeBinding);
 			default -> value.toString();
 		};
 	}
