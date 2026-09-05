@@ -7,7 +7,9 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import java.util.Map;
 
 /**
- * An annotation on a {@link Symbol}.
+ * An annotation on a {@link Symbol}. Repeated annotations use their containing annotation,
+ * matching the bytecode representation. Array values retain their ordered elements in braces,
+ * and nested annotations use {@code @Type(member=value)} with members sorted by name.
  *
  * @param actualAnnotation This annotation's annotation declaration
  * @param values           Key-value string-based representation of annotation values

@@ -4,6 +4,7 @@ import io.github.alien.roseau.extractors.ExtractorType;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.tools.ToolProvider;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -117,6 +118,23 @@ class LibraryTest {
 		assertThat(lib.getPom()).isEqualTo(pom);
 		assertThat(lib.getExtractorType()).isEqualTo(ExtractorType.ASM);
 		assertThat(lib.getClasspath()).hasSizeGreaterThan(10);
+	}
+
+	@Test
+	void classpath_accepts_class_directories(@TempDir Path tempDir) throws IOException {
+		var dependency = tempDir.resolve("Base.java");
+		Files.writeString(dependency, "package dependency; public class Base { public void inherited() {} }");
+		var classes = Files.createDirectory(tempDir.resolve("classes"));
+		assertThat(ToolProvider.getSystemJavaCompiler().run(null, null, null,
+			"-proc:none", "-d", classes.toString(), dependency.toString())).isZero();
+		var sources = Files.createDirectory(tempDir.resolve("sources"));
+
+		var lib = Library.builder()
+			.location(sources)
+			.classpath(List.of(classes))
+			.build();
+
+		assertThat(lib.getClasspath()).containsExactly(classes);
 	}
 
 	@Test

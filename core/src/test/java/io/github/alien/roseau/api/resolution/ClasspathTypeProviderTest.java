@@ -12,7 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import javax.tools.ToolProvider;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
@@ -190,6 +192,19 @@ class ClasspathTypeProviderTest {
 			var result = provider.findType("C").orElseThrow();
 			assertThat(result.getQualifiedName()).isEqualTo("C");
 		}
+	}
+
+	@Test
+	void class_directory() throws IOException {
+		var sources = Files.createDirectory(tempDir.resolve("sources"));
+		var c = sources.resolve("C.java");
+		Files.writeString(c, "public class C {}");
+		var classes = Files.createDirectory(tempDir.resolve("classes"));
+		assertThat(ToolProvider.getSystemJavaCompiler().run(null, null, null,
+			"-proc:none", "-d", classes.toString(), c.toString())).isZero();
+		provider = new ClasspathTypeProvider(extractor, List.of(classes));
+		var result = provider.findType("C").orElseThrow();
+		assertThat(result.getQualifiedName()).isEqualTo("C");
 	}
 
 	@Test

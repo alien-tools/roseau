@@ -53,6 +53,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -203,6 +204,11 @@ final class JdtApiVisitor extends ASTVisitor {
 					typeParams, fields, methods, enclosingType, permittedTypes);
 			}
 			case EnumDeclaration e -> {
+				// JDT may mark enums with constant bodies abstract even when fully implemented.
+				// Abstract obligations can be declared here or inherited from an interface (§8.9.2).
+				if (modifiers.contains(Modifier.ABSTRACT) && !hasAbstractEnumMethods(binding)) {
+					modifiers.remove(Modifier.ABSTRACT);
+				}
 				// §8.9: an enum class E is implicitly sealed if its declaration contains at least one
 				// enum constant that has a class body. Otherwise, final.
 				if (stream(e.enumConstants(), EnumConstantDeclaration.class)
@@ -227,6 +233,39 @@ final class JdtApiVisitor extends ASTVisitor {
 		};
 
 		sink.accept(typeDecl);
+	}
+
+	private static boolean hasAbstractEnumMethods(ITypeBinding binding) {
+		if (Arrays.stream(binding.getDeclaredMethods())
+			.anyMatch(method -> org.eclipse.jdt.core.dom.Modifier.isAbstract(method.getModifiers()))) {
+			return true;
+		}
+		if (binding.getInterfaces().length == 0) {
+			return false;
+		}
+
+		Set<IMethodBinding> methods = new HashSet<>();
+		collectEnumHierarchyMethods(binding, new HashSet<>(), methods);
+		return methods.stream()
+			.filter(method -> org.eclipse.jdt.core.dom.Modifier.isAbstract(method.getModifiers()))
+			.anyMatch(method -> methods.stream().noneMatch(other -> other.overrides(method)
+				|| (method.getDeclaringClass().isInterface() && !other.getDeclaringClass().isInterface()
+				&& org.eclipse.jdt.core.dom.Modifier.isPublic(other.getModifiers())
+				&& !org.eclipse.jdt.core.dom.Modifier.isAbstract(other.getModifiers())
+				&& !org.eclipse.jdt.core.dom.Modifier.isStatic(other.getModifiers())
+				&& other.isSubsignature(method))));
+	}
+
+	private static void collectEnumHierarchyMethods(ITypeBinding binding, Set<ITypeBinding> visited,
+	                                                Set<IMethodBinding> methods) {
+		if (binding == null || !visited.add(binding)) {
+			return;
+		}
+		methods.addAll(Arrays.asList(binding.getDeclaredMethods()));
+		collectEnumHierarchyMethods(binding.getSuperclass(), visited, methods);
+		for (ITypeBinding iface : binding.getInterfaces()) {
+			collectEnumHierarchyMethods(iface, visited, methods);
+		}
 	}
 
 	private Set<TypeReference<InterfaceDecl>> convertImplementedInterfaces(ITypeBinding binding) {
@@ -345,21 +384,43 @@ final class JdtApiVisitor extends ASTVisitor {
 	}
 
 	private Set<Annotation> convertAnnotations(IAnnotationBinding[] annotations) {
+		// Group before collecting into a set: identical repeats still belong in the container.
 		return Arrays.stream(annotations)
-			// Only retain RUNTIME/CLASS annotations to align with bytecode
-			.filter(ann -> !isSourceAnnotation(ann))
-			.map(ann -> {
-				Map<String, String> values = new HashMap<>(ann.getDeclaredMemberValuePairs().length);
-				for (IMemberValuePairBinding pair : ann.getDeclaredMemberValuePairs()) {
-					String key = pair.getName();
-					Object value = pair.getValue();
-					if (value != null) {
-						values.put(key, formatAnnotationValue(value));
-					}
+			.collect(Collectors.groupingBy(ann -> makeFqn(ann.getAnnotationType())))
+			.values().stream()
+			.flatMap(group -> {
+				Optional<ITypeBinding> container = group.size() > 1
+					? repeatableContainer(group.getFirst().getAnnotationType())
+					: Optional.empty();
+				if (container.isPresent()) {
+					return isSourceAnnotationType(container.get()) ? Stream.empty() : Stream.of(factory.createAnnotation(
+						createTypeReference(container.get()), Map.of("value", formatAnnotationValue(group.toArray()))));
 				}
-				return factory.createAnnotation(createTypeReference(ann.getAnnotationType()), values);
+				return group.stream().filter(ann -> !isSourceAnnotation(ann))
+					.map(ann -> factory.createAnnotation(createTypeReference(ann.getAnnotationType()), annotationValues(ann)));
 			})
 			.collect(toSet());
+	}
+
+	private static Optional<ITypeBinding> repeatableContainer(ITypeBinding annotationType) {
+		return Arrays.stream(annotationType.getAnnotations())
+			.filter(meta -> "java.lang.annotation.Repeatable".equals(meta.getAnnotationType().getQualifiedName()))
+			.flatMap(meta -> Arrays.stream(meta.getDeclaredMemberValuePairs()))
+			.filter(pair -> "value".equals(pair.getName()))
+			.map(IMemberValuePairBinding::getValue)
+			.filter(ITypeBinding.class::isInstance)
+			.map(ITypeBinding.class::cast)
+			.findFirst();
+	}
+
+	private static Map<String, String> annotationValues(IAnnotationBinding annotation) {
+		Map<String, String> values = new HashMap<>();
+		for (IMemberValuePairBinding pair : annotation.getDeclaredMemberValuePairs()) {
+			if (pair.getValue() != null) {
+				values.put(pair.getName(), formatAnnotationValue(pair.getValue()));
+			}
+		}
+		return values;
 	}
 
 	private List<FormalTypeParameter> convertTypeParameters(ITypeBinding[] typeParameters) {
@@ -543,7 +604,10 @@ final class JdtApiVisitor extends ASTVisitor {
 	}
 
 	private static boolean isSourceAnnotation(IAnnotationBinding ann) {
-		ITypeBinding binding = ann.getAnnotationType();
+		return isSourceAnnotationType(ann.getAnnotationType());
+	}
+
+	private static boolean isSourceAnnotationType(ITypeBinding binding) {
 		if (binding != null) {
 			Optional<IAnnotationBinding> find = Arrays.stream(binding.getAnnotations())
 				.filter(a -> Retention.class.getCanonicalName().equals(a.getAnnotationType().getQualifiedName()))
@@ -562,12 +626,18 @@ final class JdtApiVisitor extends ASTVisitor {
 
 	private static String formatAnnotationValue(Object value) {
 		return switch (value) {
-			// We don't store those
-			case Object[] _ -> "{}";
+			case Object[] values -> Arrays.stream(values).map(JdtApiVisitor::formatAnnotationValue)
+				.collect(Collectors.joining(", ", "{", "}"));
+			case IAnnotationBinding annotation -> annotationValues(annotation).entrySet().stream()
+				.sorted(Map.Entry.comparingByKey())
+				.map(entry -> entry.getKey() + "=" + entry.getValue())
+				.collect(Collectors.joining(", ", "@" + makeFqn(annotation.getAnnotationType()) + "(", ")"));
 			// Enum constant
 			case IVariableBinding varBinding -> makeMemberFqn(varBinding.getDeclaringClass(), varBinding);
 			// Class literal
-			case ITypeBinding typeBinding -> makeFqn(typeBinding);
+			case ITypeBinding typeBinding -> typeBinding.isArray()
+				? formatAnnotationValue(typeBinding.getElementType()) + "[]".repeat(typeBinding.getDimensions())
+				: typeBinding.isPrimitive() ? typeBinding.getName() : makeFqn(typeBinding);
 			default -> value.toString();
 		};
 	}

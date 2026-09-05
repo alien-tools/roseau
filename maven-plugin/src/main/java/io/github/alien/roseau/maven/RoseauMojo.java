@@ -247,15 +247,16 @@ public final class RoseauMojo extends AbstractMojo {
 	 * Exports API models to JSON files.
 	 *
 	 * @param report the RoseauReport containing the APIs
+	 * @param options the merged export configuration
 	 * @throws MojoExecutionException if an error occurs while exporting APIs
 	 */
-	private void exportApis(RoseauReport report) throws MojoExecutionException {
-		if (exportBaselineApi != null) {
-			exportApi(report.v1(), exportBaselineApi);
+	private void exportApis(RoseauReport report, RoseauOptions options) throws MojoExecutionException {
+		if (options.v1().apiReport() != null) {
+			exportApi(report.v1(), options.v1().apiReport());
 		}
 
-		if (exportCurrentApi != null) {
-			exportApi(report.v2(), exportCurrentApi);
+		if (options.v2().apiReport() != null) {
+			exportApi(report.v2(), options.v2().apiReport());
 		}
 	}
 
@@ -275,7 +276,8 @@ public final class RoseauMojo extends AbstractMojo {
 	 *
 	 * @param report the RoseauReport to format and write
 	 */
-	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs) {
+	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs)
+		throws MojoExecutionException {
 		if (reportConfigs == null || reportConfigs.isEmpty()) {
 			return;
 		}
@@ -286,9 +288,9 @@ public final class RoseauMojo extends AbstractMojo {
 				makeParent(outputPath);
 				report.writeReport(config.format(), outputPath);
 				getLog().info(String.format("%s report written to %s", config.format(), outputPath));
-			} catch (IOException e) {
-				getLog().error(String.format("Failed to write %s report to %s: %s",
-					config.format(), outputPath, e.getMessage()));
+			} catch (RoseauException | IOException e) {
+				throw new MojoExecutionException("Failed to write %s report to %s".formatted(
+					config.format(), outputPath), e);
 			}
 		}
 	}
@@ -322,6 +324,9 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions mavenOptions = buildMavenOptions(oldJar, newJar);
 		options = options.mergeWith(mavenOptions);
 		options = normalizePaths(options);
+		if (Boolean.TRUE.equals(options.diff().sourceOnly()) && Boolean.TRUE.equals(options.diff().binaryOnly())) {
+			throw new MojoExecutionException("sourceOnly and binaryOnly cannot both be true.");
+		}
 
 		getLog().debug("Roseau options = " + options);
 		return options;
@@ -368,7 +373,14 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions.Library v2 = new RoseauOptions.Library(
 			newJar, v2Classpath, new RoseauOptions.Exclude(List.of(), List.of()), resolvePath(exportCurrentApi));
 
-		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, sourceOnly, binaryOnly);
+		Boolean mavenSourceOnly = sourceOnly;
+		Boolean mavenBinaryOnly = binaryOnly;
+		if (Boolean.TRUE.equals(sourceOnly) && binaryOnly == null) {
+			mavenBinaryOnly = false;
+		} else if (Boolean.TRUE.equals(binaryOnly) && sourceOnly == null) {
+			mavenSourceOnly = false;
+		}
+		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, mavenSourceOnly, mavenBinaryOnly);
 
 		// Build Reports list
 		List<RoseauOptions.Report> reportsList = reports != null
@@ -382,13 +394,14 @@ public final class RoseauMojo extends AbstractMojo {
 	}
 
 	/**
-	 * Resolves the project's compile and runtime dependencies from the classpath.
+	 * Resolves the project's compile classpath, including provided and system dependencies.
 	 *
 	 * @return a list of paths to the dependency JARs
 	 */
 	private List<Path> resolveProjectClasspath() {
 		return project.getArtifacts().stream()
-			.filter(artifact -> "compile".equals(artifact.getScope()))
+			.filter(artifact -> "compile".equals(artifact.getScope()) || "provided".equals(artifact.getScope()) ||
+				"system".equals(artifact.getScope()))
 			.map(org.apache.maven.artifact.Artifact::getFile)
 			.filter(file -> file != null && Files.isRegularFile(file.toPath()))
 			.map(File::toPath)
@@ -502,7 +515,7 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauReport report = Roseau.diff(oldLibrary, newLibrary);
 
 		// Export APIs if configured
-		exportApis(report);
+		exportApis(report, options);
 
 		// Filter report based on configuration
 		RoseauReport filteredReport = report.filterReport(options.diff());

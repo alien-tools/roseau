@@ -2,18 +2,22 @@ package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
+import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
+import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
@@ -194,67 +198,82 @@ class IncrementalJdtTypesExtractorTest {
 	}
 
 	@Test
-	void module_info_update_is_reflected_in_incremental_api(@TempDir Path wd) throws Exception {
-		var root = Files.createDirectories(wd.resolve("src/main/java"));
-		var moduleInfo = root.resolve("module-info.java");
-		var a = root.resolve("pkg/A.java");
-		Files.createDirectories(a.getParent());
-		Files.writeString(moduleInfo, """
-			module m {
-				exports pkg;
-			}
-			""");
-		Files.writeString(a, "package pkg; public class A {}");
+	void unchanged_sources_use_the_new_dependency_classpath(@TempDir Path wd) throws IOException {
+		var oldDependency = wd.resolve("old.jar");
+		var newDependency = wd.resolve("new.jar");
+		try (var _ = TestUtils.buildJar(Map.of("dependency.Base",
+			"package dependency; public class Base { public void removed() {} }"), oldDependency);
+		     var _ = TestUtils.buildJar(Map.of("dependency.Base",
+			     "package dependency; public class Base {}"), newDependency)) {
+			var sources = Files.createDirectory(wd.resolve("sources"));
+			Files.writeString(sources.resolve("C.java"), "public class C extends dependency.Base {}");
+			var oldLibrary = Library.builder().location(sources).classpath(List.of(oldDependency)).build();
+			var newLibrary = Library.builder().location(sources).classpath(List.of(newDependency)).build();
+			var oldAPI = Roseau.buildAPI(oldLibrary);
+			var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+				oldAPI.getLibraryTypes(), newLibrary, ChangedFiles.NO_CHANGES));
+			var oldC = oldAPI.findExportedType("C").orElseThrow();
+			var newC = newAPI.findExportedType("C").orElseThrow();
 
-		var types1 = extractor.extractTypes(Library.of(root));
-		assertThat(types1.getModule().getQualifiedName()).isEqualTo("m");
-		assertThat(types1.getModule().getExports()).contains("pkg");
-
-		Files.writeString(moduleInfo, """
-			module m {
-				exports pkg;
-				exports pkg2;
-			}
-			""");
-		var b = root.resolve("pkg2/B.java");
-		Files.createDirectories(b.getParent());
-		Files.writeString(b, "package pkg2; public class B {}");
-
-		var changedFiles = new ChangedFiles(
-			Set.of(root.relativize(moduleInfo)),
-			Set.of(),
-			Set.of(root.relativize(b))
-		);
-		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(root), changedFiles);
-
-		assertThat(types2.getModule().getQualifiedName()).isEqualTo("m");
-		assertThat(types2.getModule().getExports()).contains("pkg", "pkg2");
+			assertThat(oldAPI.analyzer().getExportedMethods(oldC))
+				.extracting(MethodDecl::getSimpleName).contains("removed");
+			assertThat(newAPI.analyzer().getExportedMethods(newC))
+				.extracting(MethodDecl::getSimpleName).doesNotContain("removed");
+		}
 	}
 
 	@Test
-	void module_info_deletion_falls_back_to_unnamed_module(@TempDir Path wd) throws Exception {
-		var root = Files.createDirectories(wd.resolve("src/main/java"));
-		var moduleInfo = root.resolve("module-info.java");
-		var a = root.resolve("pkg/A.java");
-		Files.createDirectories(a.getParent());
-		Files.writeString(moduleInfo, """
-			module m {
-				exports pkg;
-			}
-			""");
-		Files.writeString(a, "package pkg; public class A {}");
+	void updated_module_is_parsed(@TempDir Path wd) throws IOException {
+		var oldRoot = Files.createDirectory(wd.resolve("old"));
+		var newRoot = Files.createDirectory(wd.resolve("new"));
+		Files.writeString(oldRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(oldRoot.resolve("module-info.java"), "module mod { exports pkg; }");
+		Files.writeString(newRoot.resolve("module-info.java"), "module mod {}");
+		var oldLibrary = Library.of(oldRoot);
+		var newLibrary = Library.of(newRoot);
+		var changes = new ChangedFiles(Set.of(Path.of("module-info.java")), Set.of(), Set.of());
+		var oldAPI = Roseau.buildAPI(oldLibrary);
+		var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+			oldAPI.getLibraryTypes(), newLibrary, changes));
 
-		var types1 = extractor.extractTypes(Library.of(root));
-		assertThat(types1.getModule().isUnnamed()).isFalse();
+		assertThat(oldAPI.findExportedType("pkg.C")).isPresent();
+		assertThat(newAPI.findExportedType("pkg.C")).isEmpty();
+	}
 
-		Files.delete(moduleInfo);
-		var changedFiles = new ChangedFiles(
-			Set.of(),
-			Set.of(root.relativize(moduleInfo)),
-			Set.of()
-		);
-		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(root), changedFiles);
+	@Test
+	void new_module_is_parsed(@TempDir Path wd) throws IOException {
+		var oldRoot = Files.createDirectory(wd.resolve("old"));
+		var newRoot = Files.createDirectory(wd.resolve("new"));
+		Files.writeString(oldRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("module-info.java"), "module mod {}");
+		var oldLibrary = Library.of(oldRoot);
+		var newLibrary = Library.of(newRoot);
+		var changes = new ChangedFiles(Set.of(Path.of("module-info.java")), Set.of(), Set.of());
+		var oldAPI = Roseau.buildAPI(oldLibrary);
+		var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+			oldAPI.getLibraryTypes(), newLibrary, changes));
 
-		assertThat(types2.getModule().isUnnamed()).isTrue();
+		assertThat(oldAPI.findExportedType("pkg.C")).isPresent();
+		assertThat(newAPI.findExportedType("pkg.C")).isEmpty();
+	}
+
+	@Test
+	void removed_module_is_parsed(@TempDir Path wd) throws IOException {
+		var oldRoot = Files.createDirectory(wd.resolve("old"));
+		var newRoot = Files.createDirectory(wd.resolve("new"));
+		Files.writeString(oldRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(newRoot.resolve("C.java"), "package pkg; public class C {}");
+		Files.writeString(oldRoot.resolve("module-info.java"), "module mod {}");
+		var oldLibrary = Library.of(oldRoot);
+		var newLibrary = Library.of(newRoot);
+		var changes = new ChangedFiles(Set.of(Path.of("module-info.java")), Set.of(), Set.of());
+		var oldAPI = Roseau.buildAPI(oldLibrary);
+		var newAPI = Roseau.buildAPI(incrementalExtractor.incrementalUpdate(
+			oldAPI.getLibraryTypes(), newLibrary, changes));
+
+		assertThat(oldAPI.findExportedType("pkg.C")).isEmpty();
+		assertThat(newAPI.findExportedType("pkg.C")).isPresent();
 	}
 }

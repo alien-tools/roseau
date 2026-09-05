@@ -1,5 +1,7 @@
 package io.github.alien.roseau.api.model;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.fasterxml.jackson.databind.ser.std.ToStringSerializer;
 
@@ -23,6 +25,17 @@ public record SourceLocation(
 	 * An unknown location for symbols that exist but cannot be located in source code (e.g. default constructors)
 	 */
 	public static final SourceLocation NO_LOCATION = new SourceLocation(null, -1);
+
+	// Force the creation of SourceLocation.NO_LOCATION singleton when appropriate
+	@JsonCreator(mode = JsonCreator.Mode.PROPERTIES)
+	public static SourceLocation fromJson(
+		@JsonProperty("file") Path file,
+		@JsonProperty("line") int line
+	) {
+		return file == null
+			? NO_LOCATION
+			: new SourceLocation(file, line);
+	}
 
 	@Override
 	public String toString() {

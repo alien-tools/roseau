@@ -3,9 +3,9 @@ package io.github.alien.roseau.cli;
 import java.io.PrintWriter;
 
 class Console {
-	private PrintWriter out;
-	private PrintWriter err;
-	private Verbosity verbosity;
+	private final PrintWriter out;
+	private final PrintWriter err;
+	private final Verbosity verbosity;
 
 	enum Verbosity {
 		NORMAL(0),
@@ -29,30 +29,26 @@ class Console {
 		out.println(message);
 	}
 
+	void printlnErr(String message) {
+		err.println(message);
+	}
+
 	void printlnVerbose(String message) {
 		if (verbosity.level >= Verbosity.VERBOSE.level) {
-			println(message);
+			printlnErr(message);
 		}
 	}
 
 	void printlnDebug(String message) {
 		if (verbosity.level >= Verbosity.DEBUG.level) {
-			println(message);
+			printlnErr(message);
 		}
-	}
-
-	void printlnErr(String message) {
-		err.println(message);
-	}
-
-	void print(String message) {
-		out.print(message);
-		out.flush();
 	}
 
 	void printVerbose(String message) {
 		if (verbosity.level >= Verbosity.VERBOSE.level) {
-			print(message);
+			err.print(message);
+			err.flush();
 		}
 	}
 

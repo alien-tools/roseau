@@ -20,10 +20,11 @@ import java.util.stream.Stream;
  * <br>
  * This implementation:
  * <ul>
- *   <li>Returns the previous API if no file has changed</li>
+ *   <li>Reuses previous declarations with the new library configuration if no file has changed</li>
  *   <li>Discards deleted symbols</li>
  *   <li>Reparses changed symbols</li>
  *   <li>Parses new files to extract new symbols</li>
+ *   <li>Reparses all sources when the classpath or module declaration changes</li>
  * </ul>
  */
 public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtractor {
@@ -39,9 +40,22 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
 
-		// If nothing's changed, just return the old one
+		boolean classpathChanged = !previousTypes.getLibrary().getClasspath().equals(newVersion.getClasspath());
+		boolean moduleChanged = Stream.of(changedFiles.createdFiles(), changedFiles.updatedFiles(),
+				changedFiles.deletedFiles())
+			.flatMap(Set::stream)
+			.anyMatch(path -> path.endsWith("module-info.java"));
+
+		// Always reparse when the classpath or module declaration changes
+		if (classpathChanged || moduleChanged) {
+			return extractor.extractTypes(newVersion);
+		}
+
 		if (changedFiles.hasNoChanges()) {
-			return previousTypes;
+			if (previousTypes.getLibrary().equals(newVersion)) {
+				return previousTypes;
+			}
+			return new LibraryTypes(newVersion, previousTypes.getModule(), Set.copyOf(previousTypes.getAllTypes()));
 		}
 
 		// Collect types that should be discarded from the previous API
@@ -64,32 +78,6 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 			parsingResult.types().stream()
 		).collect(Collectors.toSet());
 
-		ModuleDecl module = resolveModule(previousTypes, changedFiles, parsingResult.modules());
-		return new LibraryTypes(newVersion, module, newTypeDecls);
-	}
-
-	private static ModuleDecl resolveModule(LibraryTypes previousTypes, ChangedFiles changedFiles, Set<ModuleDecl> parsedModules) {
-		boolean moduleTouched = Stream.of(
-				changedFiles.updatedFiles(),
-				changedFiles.deletedFiles(),
-				changedFiles.createdFiles()
-			)
-			.flatMap(Set::stream)
-			.anyMatch(IncrementalJdtTypesExtractor::isModuleInfo);
-
-		if (!moduleTouched) {
-			return previousTypes.getModule();
-		}
-
-		return switch (parsedModules.size()) {
-			case 0 -> ModuleDecl.UNNAMED_MODULE;
-			case 1 -> parsedModules.iterator().next();
-			default -> throw new RoseauException("%s contains multiple module declarations: %s"
-				.formatted(previousTypes.getLibrary(), parsedModules));
-		};
-	}
-
-	private static boolean isModuleInfo(Path path) {
-		return path.getFileName() != null && "module-info.java".equals(path.getFileName().toString());
+		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls);
 	}
 }
