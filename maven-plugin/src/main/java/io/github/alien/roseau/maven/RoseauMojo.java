@@ -392,13 +392,14 @@ public final class RoseauMojo extends AbstractMojo {
 	}
 
 	/**
-	 * Resolves the project's compile and runtime dependencies from the classpath.
+	 * Resolves the project's compile classpath, including provided and system dependencies.
 	 *
 	 * @return a list of paths to the dependency JARs
 	 */
 	private List<Path> resolveProjectClasspath() {
 		return project.getArtifacts().stream()
-			.filter(artifact -> "compile".equals(artifact.getScope()))
+			.filter(artifact -> "compile".equals(artifact.getScope()) || "provided".equals(artifact.getScope()) ||
+				"system".equals(artifact.getScope()))
 			.map(org.apache.maven.artifact.Artifact::getFile)
 			.filter(file -> file != null && Files.isRegularFile(file.toPath()))
 			.map(File::toPath)
