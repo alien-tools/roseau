@@ -29,6 +29,7 @@ import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.List;
@@ -56,16 +57,56 @@ class PopularLibrariesTestIT {
 	private static final String LIBRARIES_RESOURCE = "/popular-libraries.tsv";
 	private static final int SETUP_CONCURRENCY = Math.max(1, Runtime.getRuntime().availableProcessors());
 
-	static Stream<String> libraries() {
+	static Stream<LibrarySpec> libraries() {
 		return loadLibrarySpecs().stream()
-			.filter(LibrarySpec::enabled)
-			.map(LibrarySpec::gav);
+			.filter(spec -> spec.mode().isEnabled());
+	}
+
+	enum Mode {
+		FULL("full"),
+		JAR_AND_SOURCES("jar+sources"),
+		JAR("jar"),
+		SOURCES("sources"),
+		OFF("off");
+
+		private final String token;
+
+		Mode(String token) {
+			this.token = token;
+		}
+
+		static Mode parse(String token) {
+			return Arrays.stream(values())
+				.filter(mode -> mode.token.equals(token))
+				.findFirst()
+				.orElseThrow(() -> new IllegalArgumentException("Unknown mode: " + token));
+		}
+
+		boolean isEnabled() {
+			return this != OFF;
+		}
+
+		boolean checksJar() {
+			return this == FULL || this == JAR_AND_SOURCES || this == JAR;
+		}
+
+		boolean checksSources() {
+			return this == FULL || this == JAR_AND_SOURCES || this == SOURCES;
+		}
+
+		boolean comparesJarAndSources() {
+			return this == FULL;
+		}
 	}
 
 	record Lib(Path binary, Path sources, List<Path> classpath) {
 	}
 
-	record LibrarySpec(boolean enabled, String gav, String reason) {
+	record LibrarySpec(Mode mode, String gav, String reason) {
+		@Override
+		public String toString() {
+			return gav + " [" + mode.token + "]";
+		}
 	}
 
 	record Coordinates(String groupId, String artifactId, String version) {
@@ -128,102 +169,112 @@ class PopularLibrariesTestIT {
 		if (parts.length < 2) {
 			throw new IllegalArgumentException("Invalid popular library entry: " + line);
 		}
-		var enabled = switch (parts[0]) {
-			case "true" -> true;
-			case "false" -> false;
-			default -> throw new IllegalArgumentException("Invalid enabled flag in entry: " + line);
-		};
+		var mode = Mode.parse(parts[0]);
 		var reason = parts.length == 3 ? parts[2] : "";
-		return new LibrarySpec(enabled, parts[1], reason);
+		return new LibrarySpec(mode, parts[1], reason);
 	}
 
 	@ParameterizedTest(name = "{0}")
 	@MethodSource("libraries")
 	@Timeout(value = 3, unit = TimeUnit.MINUTES)
-	void analyzeLibrary(String libraryGAV) {
-		var lib = downloaded.get(libraryGAV);
-		var binaryJar = lib.binary();
-		var sourcesDir = lib.sources();
+	void analyzeLibrary(LibrarySpec spec) {
+		var mode = spec.mode();
+		var lib = downloaded.get(spec.gav());
 		var classpath = lib.classpath();
-
 		var sw = Stopwatch.createUnstarted();
-		var asmLibrary = Library.builder()
-			.location(binaryJar)
-			.classpath(classpath)
-			.build();
-		var jdtLibrary = Library
-			.builder()
-			.location(sourcesDir)
-			.classpath(classpath)
-			.build();
 
 		// ASM API
-		sw.reset().start();
-		var asmApi = Roseau.buildAPI(asmLibrary);
-		var asmTypes = asmApi.getLibraryTypes();
-		long asmApiTime = sw.elapsed().toMillis();
-
-		// JDT API
-		sw.reset().start();
-		var jdtApi = Roseau.buildAPI(jdtLibrary);
-		long jdtApiTime = sw.elapsed().toMillis();
-		var jdtTypes = jdtApi.getLibraryTypes();
-
-		// -sources JAR often do not have module-info.java (?); use the other one
-		if (!jdtTypes.getModule().equals(asmTypes.getModule())) {
-			System.out.printf("Different modules: asm=%s, jdt=%s%n", asmTypes.getModule(), jdtTypes.getModule());
-			jdtApi = jdtApi.getLibraryTypes().getModule().isUnnamed()
-				? Roseau.buildAPI(new LibraryTypes(jdtTypes.getLibrary(), asmTypes.getModule(),
-				new HashSet<>(jdtTypes.getAllTypes())))
-				: jdtApi;
+		API asmApi = null;
+		long asmApiTime = 0;
+		if (mode.checksJar()) {
+			var asmLibrary = Library.builder()
+				.location(lib.binary())
+				.classpath(classpath)
+				.build();
+			sw.reset().start();
+			asmApi = Roseau.buildAPI(asmLibrary);
+			asmApiTime = sw.elapsed().toMillis();
 		}
 
-		var asmVisitor = new ReferenceVisitor();
-		asmVisitor.$(asmApi).visit();
-		var jdtVisitor = new ReferenceVisitor();
-		jdtVisitor.$(jdtApi).visit();
+		// JDT API
+		API jdtApi = null;
+		long jdtApiTime = 0;
+		if (mode.checksSources()) {
+			var jdtLibrary = Library.builder()
+				.location(lib.sources())
+				.classpath(classpath)
+				.build();
+			sw.reset().start();
+			jdtApi = Roseau.buildAPI(jdtLibrary);
+			jdtApiTime = sw.elapsed().toMillis();
+		}
 
-		if (asmVisitor.unresolved.size() + jdtVisitor.unresolved.size() > 0) {
+		// -sources JAR often do not have module-info.java (?); use the other one
+		if (asmApi != null && jdtApi != null) {
+			var asmModule = asmApi.getLibraryTypes().getModule();
+			var jdtTypes = jdtApi.getLibraryTypes();
+			if (!jdtTypes.getModule().equals(asmModule)) {
+				System.out.printf("Different modules: asm=%s, jdt=%s%n", asmModule, jdtTypes.getModule());
+				jdtApi = jdtTypes.getModule().isUnnamed()
+					? Roseau.buildAPI(new LibraryTypes(jdtTypes.getLibrary(), asmModule,
+					new HashSet<>(jdtTypes.getAllTypes())))
+					: jdtApi;
+			}
+		}
+
+		// Every reference must resolve, on both sides
+		int asmUnresolved = countUnresolvedReferences(asmApi);
+		int jdtUnresolved = countUnresolvedReferences(jdtApi);
+		if (asmUnresolved + jdtUnresolved > 0) {
 			System.out.println("classpath=" + classpath);
-			System.out.printf("Unresolved references: asm=%d jdt=%d%n",
-				asmVisitor.unresolved.size(), jdtVisitor.unresolved.size());
+			System.out.printf("Unresolved references: asm=%d jdt=%d%n", asmUnresolved, jdtUnresolved);
 			fail("Unresolved references");
 		}
 
-		// Diffs
-		sw.reset().start();
-		var asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges();
-		long diffTime = sw.elapsed().toMillis();
-		var jdtToJdtBCs = Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges();
-		var asmToJdtBCs = Roseau.diff(asmApi, jdtApi).getAllBreakingChanges();
-		var jdtToAsmBCs = Roseau.diff(jdtApi, asmApi).getAllBreakingChanges();
-
-		// Equality
-		sw.reset().start();
-		boolean apiEquals = asmApi.equals(jdtApi);
-		long apiEqualityTime = sw.elapsed().toMillis();
+		// Self-diffs: an API cannot break itself
+		long diffTime = 0;
+		int asmToAsmBCs = 0;
+		if (asmApi != null) {
+			sw.reset().start();
+			asmToAsmBCs = Roseau.diff(asmApi, asmApi).getAllBreakingChanges().size();
+			diffTime = sw.elapsed().toMillis();
+			assertThat(asmApi.getLibraryTypes().getAllTypes()).isNotEmpty();
+			assertThat(Roseau.diff(asmApi, asmApi).getAllBreakingChanges()).isEmpty();
+		}
+		if (jdtApi != null) {
+			assertThat(jdtApi.getLibraryTypes().getAllTypes()).isNotEmpty();
+			assertThat(Roseau.diff(jdtApi, jdtApi).getAllBreakingChanges()).isEmpty();
+		}
 
 		// Stats
-		long loc = countLinesOfCode(sourcesDir);
-		int numTypes = jdtTypes.getAllTypes().size();
-		int numMethods = jdtTypes.getAllTypes().stream()
+		var statsApi = jdtApi != null ? jdtApi : asmApi;
+		var statsTypes = statsApi.getLibraryTypes().getAllTypes();
+		long loc = mode.checksSources() ? countLinesOfCode(lib.sources()) : -1L;
+		int numMethods = statsTypes.stream()
 			.mapToInt(type -> type.getDeclaredMethods().size())
 			.sum();
-		int numFields = jdtTypes.getAllTypes().stream()
+		int numFields = statsTypes.stream()
 			.mapToInt(type -> type.getDeclaredFields().size())
 			.sum();
 
 		System.out.printf("Processed %s (%d LoC, %d types, %d methods, %d fields)%n" +
 				"\tASM: %dms; %dms diff%n" +
 				"\tJDT: %dms%n" +
-				"\tBCs: %s%n" +
-				"\tEquals: %dms%n",
-			libraryGAV, loc, numTypes, numMethods, numFields,
+				"\tBCs: %s%n",
+			spec, loc, statsTypes.size(), numMethods, numFields,
 			asmApiTime, diffTime, jdtApiTime,
-			asmToAsmBCs.size(),
-			apiEqualityTime);
+			asmToAsmBCs);
 
-		if (!jdtTypes.getAllTypes().equals(asmApi.getLibraryTypes().getAllTypes())) {
+		if (!mode.comparesJarAndSources()) {
+			return;
+		}
+
+		var asmTypes = asmApi.getLibraryTypes();
+		var jdtTypes = jdtApi.getLibraryTypes();
+
+		if (!jdtTypes.getAllTypes().equals(asmTypes.getAllTypes())) {
+			System.out.println("JDT has %d types, ASM has %d types".formatted(jdtTypes.getAllTypes().size(),
+				asmTypes.getAllTypes().size()));
 			jdtTypes.getAllTypes().forEach(jdtType -> {
 				var asmType = asmTypes.findType(jdtType.getQualifiedName()).orElseThrow(
 					() -> new AssertionError("Missing ASM type: " + jdtType.getQualifiedName()));
@@ -236,20 +287,28 @@ class PopularLibrariesTestIT {
 			fail("Type mismatch");
 		}
 
-		// We extracted some types
-		assertThat(asmTypes.getAllTypes()).isNotEmpty();
-		assertThat(jdtTypes.getAllTypes()).isNotEmpty();
-
 		// Equal APIs
+		sw.reset().start();
+		boolean apiEquals = asmApi.equals(jdtApi);
+		System.out.printf("\tEquals: %dms%n", sw.elapsed().toMillis());
+
 		assertThat(asmTypes.getAllTypes()).isEqualTo(jdtTypes.getAllTypes());
 		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
 		assertThat(apiEquals).isTrue();
 
-		// No BCs
-		assertThat(jdtToJdtBCs).isEmpty();
-		assertThat(asmToAsmBCs).isEmpty();
-		assertThat(jdtToAsmBCs).isEmpty();
-		assertThat(asmToJdtBCs).isEmpty();
+		// No BCs across extractors either
+		assertThat(Roseau.diff(jdtApi, asmApi).getAllBreakingChanges()).isEmpty();
+		assertThat(Roseau.diff(asmApi, jdtApi).getAllBreakingChanges()).isEmpty();
+	}
+
+	private static int countUnresolvedReferences(API api) {
+		if (api == null) {
+			return 0;
+		}
+
+		var visitor = new ReferenceVisitor();
+		visitor.$(api).visit();
+		return visitor.unresolved.size();
 	}
 
 	private static Path downloadSourcesJar(Coordinates coordinates) {
@@ -387,10 +446,10 @@ class PopularLibrariesTestIT {
 		}
 	}
 
-	private Lib prepareLibrary(String libraryGAV) {
-		var coordinates = Coordinates.parse(libraryGAV);
-		var binary = downloadBinaryJar(coordinates);
-		var sources = prepareSources(coordinates);
+	private Lib prepareLibrary(LibrarySpec spec) {
+		var coordinates = Coordinates.parse(spec.gav());
+		var binary = spec.mode().checksJar() ? downloadBinaryJar(coordinates) : null;
+		var sources = spec.mode().checksSources() ? prepareSources(coordinates) : null;
 		var classpath = prepareClasspath(coordinates);
 		return new Lib(binary, sources, classpath);
 	}
@@ -441,16 +500,16 @@ class PopularLibrariesTestIT {
 		try (var executor = Executors.newFixedThreadPool(SETUP_CONCURRENCY)) {
 			var futures = IntStream.range(0, total)
 				.mapToObj(index -> executor.submit(() -> {
-					var libraryGAV = libraries.get(index);
+					var spec = libraries.get(index);
 					var sw = Stopwatch.createStarted();
-					System.out.printf("[setup %d/%d] Preparing %s%n", index + 1, total, libraryGAV);
-					var prepared = prepareLibrary(libraryGAV);
+					System.out.printf("[setup %d/%d] Preparing %s%n", index + 1, total, spec);
+					var prepared = prepareLibrary(spec);
 					System.out.printf("[setup %d/%d] Ready %s in %dms%n",
 						index + 1,
 						total,
-						libraryGAV,
+						spec,
 						sw.elapsed().toMillis());
-					return Map.entry(libraryGAV, prepared);
+					return Map.entry(spec.gav(), prepared);
 				}))
 				.toList();
 
