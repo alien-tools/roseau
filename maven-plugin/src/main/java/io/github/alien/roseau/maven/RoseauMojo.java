@@ -275,7 +275,8 @@ public final class RoseauMojo extends AbstractMojo {
 	 *
 	 * @param report the RoseauReport to format and write
 	 */
-	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs) {
+	private void writeReports(RoseauReport report, List<RoseauOptions.Report> reportConfigs)
+		throws MojoExecutionException {
 		if (reportConfigs == null || reportConfigs.isEmpty()) {
 			return;
 		}
@@ -286,9 +287,9 @@ public final class RoseauMojo extends AbstractMojo {
 				makeParent(outputPath);
 				report.writeReport(config.format(), outputPath);
 				getLog().info(String.format("%s report written to %s", config.format(), outputPath));
-			} catch (IOException e) {
-				getLog().error(String.format("Failed to write %s report to %s: %s",
-					config.format(), outputPath, e.getMessage()));
+			} catch (RoseauException | IOException e) {
+				throw new MojoExecutionException("Failed to write %s report to %s".formatted(
+					config.format(), outputPath), e);
 			}
 		}
 	}
