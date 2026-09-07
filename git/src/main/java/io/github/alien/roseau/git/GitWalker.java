@@ -6,6 +6,7 @@ import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.LibraryTypes;
+import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
 import io.github.alien.roseau.diff.RoseauReport;
@@ -47,6 +48,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -71,7 +73,7 @@ public final class GitWalker {
 		String libraryId,
 		String url,
 		Path gitDir,
-		List<Path> sourceRoots,
+		List<List<Path>> sourceRoots,
 		RoseauOptions.Exclude exclusions,
 		String startSha,
 		String endSha
@@ -85,7 +87,7 @@ public final class GitWalker {
 			Preconditions.checkNotNull(endSha, "endSha must be provided; use HEAD to walk up to the current tip");
 			// Exclusions are the one genuinely optional part of a configuration
 			exclusions = exclusions == null ? NO_EXCLUSIONS : exclusions;
-			sourceRoots = List.copyOf(sourceRoots);
+			sourceRoots = sourceRoots.stream().map(List::copyOf).toList();
 		}
 	}
 
@@ -135,8 +137,8 @@ public final class GitWalker {
 			IncrementalTypesExtractor incrementalExtractor = new IncrementalJdtTypesExtractor(jdtExtractor);
 
 			API previousApi = null;
-			Path previousSourceRoot = null;
-			Optional<Path> previousRelativeRoot = Optional.empty();
+			List<Path> previousSourceRoots = List.of();
+			List<Path> previousRelativeRoots = List.of();
 			for (RevCommit revCommit : chain) {
 				CommitDiff diff = buildCommitDiff(repo, revCommit, rw);
 				CommitInfo info = buildCommitInfo(diff, revCommit, tagsByCommit, branch);
@@ -144,7 +146,7 @@ public final class GitWalker {
 				// FIXME: only correct because we don't care about classpath yet
 				if (!info.javaChanged()) {
 					if (previousApi != null) {
-						sink.accept(unchangedAnalysis(info, previousApi, previousRelativeRoot));
+						sink.accept(unchangedAnalysis(info, previousApi, previousRelativeRoots));
 					} else {
 						sink.accept(emptyAnalysis(info));
 					}
@@ -152,28 +154,29 @@ public final class GitWalker {
 				}
 
 				long checkoutTime = checkoutCommit(git, workTree, revCommit);
-				Optional<Path> sourceRoot = resolveSourceRoot();
-				if (sourceRoot.isEmpty()) {
+				List<Path> sourceRoots = resolveSourceRoots();
+				if (sourceRoots.isEmpty()) {
 					LOGGER.info("No configured source root exists at commit {}; reporting it without an API",
 						info.sha());
 					sink.accept(noSourceRootAnalysis(info, previousApi, checkoutTime));
 					continue;
 				}
-				LOGGER.info("Commit {}: {} (source root {})", info.sha(), info.shortMessage(), sourceRoot.get());
+				LOGGER.info("Commit {}: {} (source roots {})", info.sha(), info.shortMessage(), sourceRoots);
 
-				ApiResult apiResult = buildApi(info, diff, sourceRoot.get(), previousApi, previousSourceRoot,
+				ApiResult apiResult = buildApi(info, diff, sourceRoots, previousApi, previousSourceRoots,
 					workTree, jdtExtractor, incrementalExtractor);
 				DiffResult diffResult = diffApis(previousApi, apiResult.api());
 
+				List<Path> relativeRoots = sourceRoots.stream().map(workTree::relativize).toList();
 				sink.accept(new CommitAnalysis(
 					info, Optional.of(apiResult.api()), diffResult.report(), diffResult.apiChanged(),
 					checkoutTime, apiResult.timeMs(), diffResult.timeMs(),
 					concatErrors(apiResult.errors(), diff.error()),
-					Optional.of(workTree.relativize(sourceRoot.get()))));
+					relativeRoots));
 
 				previousApi = apiResult.api();
-				previousSourceRoot = sourceRoot.get();
-				previousRelativeRoot = Optional.of(workTree.relativize(sourceRoot.get()));
+				previousSourceRoots = sourceRoots;
+				previousRelativeRoots = relativeRoots;
 			}
 		}
 	}
@@ -199,19 +202,19 @@ public final class GitWalker {
 		);
 	}
 
-	private static CommitAnalysis unchangedAnalysis(CommitInfo info, API previousApi, Optional<Path> sourceRoot) {
+	private static CommitAnalysis unchangedAnalysis(CommitInfo info, API previousApi, List<Path> sourceRoots) {
 		return new CommitAnalysis(info, Optional.of(previousApi), Optional.empty(), false, 0, 0, 0, List.of(),
-			sourceRoot);
+			sourceRoots);
 	}
 
 	private static CommitAnalysis emptyAnalysis(CommitInfo info) {
 		return new CommitAnalysis(info, Optional.empty(), Optional.empty(), false, 0, 0, 0, List.of(),
-			Optional.empty());
+			List.of());
 	}
 
 	private static CommitAnalysis noSourceRootAnalysis(CommitInfo info, API previousApi, long checkoutTime) {
 		return new CommitAnalysis(info, Optional.ofNullable(previousApi), Optional.empty(), false,
-			checkoutTime, 0, 0, List.of(), Optional.empty());
+			checkoutTime, 0, 0, List.of(), List.of());
 	}
 
 	private static List<String> concatErrors(List<String> errors, String diffError) {
@@ -236,27 +239,54 @@ public final class GitWalker {
 		return sw.elapsed().toMillis();
 	}
 
-	private Optional<Path> resolveSourceRoot() {
-		return config.sourceRoots().stream().filter(Files::exists).findFirst();
+	/**
+	 * Resolves the source roots to analyze in the current worktree: the first configured group in which at least one
+	 * directory exists, restricted to the directories that do exist. A group holds the several source roots a library
+	 * is compiled from at a given point in its history (a module split, typically); most groups hold a single one.
+	 *
+	 * @return the directories to analyze, empty if no configured group exists at this commit
+	 */
+	private List<Path> resolveSourceRoots() {
+		return config.sourceRoots().stream()
+			.map(group -> group.stream().filter(Files::exists).toList())
+			.filter(existing -> !existing.isEmpty())
+			.findFirst()
+			.orElse(List.of());
 	}
 
 	private record ApiResult(API api, long timeMs, List<String> errors) {
 	}
 
-	private ApiResult buildApi(CommitInfo info, CommitDiff diff, Path sourceRoot,
-	                           API previousApi, Path previousSourceRoot,
+	private ApiResult buildApi(CommitInfo info, CommitDiff diff, List<Path> sourceRoots,
+	                           API previousApi, List<Path> previousSourceRoots,
 	                           Path workTree, JdtTypesExtractor extractor,
 	                           IncrementalTypesExtractor incrementalExtractor) {
-		return canIncrementalUpdate(previousApi, previousSourceRoot, sourceRoot)
-			? buildApiIncremental(info, diff, sourceRoot, previousApi, workTree, extractor, incrementalExtractor)
-			: buildApiFull(sourceRoot, extractor);
+		return canIncrementalUpdate(previousApi, previousSourceRoots, sourceRoots)
+			? buildApiIncremental(info, diff, sourceRoots.getFirst(), previousApi, workTree, extractor,
+			incrementalExtractor)
+			: buildApiFull(sourceRoots, extractor);
 	}
 
-	private ApiResult buildApiFull(Path sourceRoot, JdtTypesExtractor extractor) {
-		Library library = buildLibrary(sourceRoot);
+	private ApiResult buildApiFull(List<Path> sourceRoots, JdtTypesExtractor extractor) {
 		Stopwatch sw = Stopwatch.createStarted();
-		API api = Roseau.buildAPI(extractor.extractTypes(library));
+		// A Library points to a single location, so each root is parsed on its own. Merging the extracted types before
+		// building the API is enough for cross-root references to resolve: resolution runs on the merged set.
+		List<LibraryTypes> perRoot = sourceRoots.stream()
+			.map(root -> extractor.extractTypes(buildLibrary(root)))
+			.toList();
+		API api = Roseau.buildAPI(mergeTypes(perRoot));
 		return new ApiResult(api, sw.elapsed().toMillis(), List.of());
+	}
+
+	private static LibraryTypes mergeTypes(List<LibraryTypes> perRoot) {
+		LibraryTypes first = perRoot.getFirst();
+		if (perRoot.size() == 1) {
+			return first;
+		}
+		Set<TypeDecl> allTypes = perRoot.stream()
+			.flatMap(types -> types.getAllTypes().stream())
+			.collect(Collectors.toCollection(LinkedHashSet::new));
+		return new LibraryTypes(first.getLibrary(), first.getModule(), allTypes);
 	}
 
 	private ApiResult buildApiIncremental(CommitInfo info, CommitDiff diff,
@@ -276,7 +306,7 @@ public final class GitWalker {
 			return new ApiResult(Roseau.buildAPI(updatedTypes), sw.elapsed().toMillis(), List.of());
 		} catch (RuntimeException e) {
 			LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", info.sha(), e);
-			return new ApiResult(buildApiFull(sourceRoot, extractor).api(), sw.elapsed().toMillis(),
+			return new ApiResult(buildApiFull(List.of(sourceRoot), extractor).api(), sw.elapsed().toMillis(),
 				List.of("incremental update failed, rebuilt from scratch: " + e.getMessage()));
 		}
 	}
@@ -290,8 +320,10 @@ public final class GitWalker {
 			.build();
 	}
 
-	private static boolean canIncrementalUpdate(API previousApi, Path previousSourceRoot, Path sourceRoot) {
-		return previousApi != null && previousSourceRoot != null && previousSourceRoot.equals(sourceRoot);
+	// Incremental updates track a single Library, so a commit with several roots is always rebuilt from scratch.
+	private static boolean canIncrementalUpdate(API previousApi, List<Path> previousSourceRoots,
+	                                            List<Path> sourceRoots) {
+		return previousApi != null && sourceRoots.size() == 1 && previousSourceRoots.equals(sourceRoots);
 	}
 
 	private record DiffResult(Optional<RoseauReport> report, boolean apiChanged, long timeMs) {

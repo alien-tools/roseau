@@ -112,8 +112,8 @@ class PopularRepositoriesTestIT {
 
 					Path cloneDir = CLONE_CACHE_DIR.resolve(spec.libraryId());
 					Path gitDir = cloneDir.resolve(".git");
-					List<Path> sourceRoots = spec.sourceRoots().stream()
-						.map(cloneDir::resolve)
+					List<List<Path>> sourceRoots = spec.sourceRoots().stream()
+						.map(root -> List.of(cloneDir.resolve(root)))
 						.toList();
 
 					GitWalker.prepareRepository(spec.url(), gitDir);

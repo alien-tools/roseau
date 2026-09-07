@@ -22,7 +22,8 @@ class GitWalkerTest {
 		Path cloneRoot = wd.resolve("clone");
 		List<Path> roots = sourceRoots != null ? sourceRoots : List.of(cloneRoot.resolve("src/main/java"));
 		return new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
-			cloneRoot.resolve(".git"), roots, NO_EXCLUSIONS, GitWalker.ROOT_COMMIT, GitWalker.HEAD));
+			cloneRoot.resolve(".git"), roots.stream().map(List::of).toList(), NO_EXCLUSIONS,
+			GitWalker.ROOT_COMMIT, GitWalker.HEAD));
 	}
 
 	private GitWalker walkerForRepo(Path remoteDir, Path wd) {
@@ -101,7 +102,7 @@ class GitWalkerTest {
 
 		Path cloneRoot = wd.resolve("clone");
 		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
-			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
+			cloneRoot.resolve(".git"), List.of(List.of(cloneRoot.resolve("src/main/java"))), NO_EXCLUSIONS,
 			"0123456789012345678901234567890123456789", GitWalker.HEAD));
 
 		assertThatThrownBy(() -> collectAnalyses(walker))
@@ -119,7 +120,7 @@ class GitWalkerTest {
 
 		Path cloneRoot = wd.resolve("clone");
 		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
-			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
+			cloneRoot.resolve(".git"), List.of(List.of(cloneRoot.resolve("src/main/java"))), NO_EXCLUSIONS,
 			GitWalker.ROOT_COMMIT, "not-a-commit"));
 
 		assertThatThrownBy(() -> collectAnalyses(walker))
@@ -161,12 +162,12 @@ class GitWalkerTest {
 		assertThat(before.commit().shortMessage()).isEqualTo("c1-before-module-exists");
 		assertThat(before.commit().javaChanged()).isTrue();
 		assertThat(before.api()).isEmpty();
-		assertThat(before.sourceRoot()).isEmpty();
+		assertThat(before.sourceRoots()).isEmpty();
 		assertThat(before.apiChanged()).isFalse();
 
 		CommitAnalysis after = analyses.get(1);
 		assertThat(after.api()).isPresent();
-		assertThat(after.sourceRoot()).contains(Path.of("src/main/java"));
+		assertThat(after.sourceRoots()).containsExactly(Path.of("src/main/java"));
 	}
 
 	@Test
@@ -182,7 +183,7 @@ class GitWalkerTest {
 
 		assertThat(analyses).hasSize(2);
 		assertThat(analyses.get(1).commit().javaChanged()).isFalse();
-		assertThat(analyses.get(1).sourceRoot()).contains(Path.of("src/main/java"));
+		assertThat(analyses.get(1).sourceRoots()).containsExactly(Path.of("src/main/java"));
 	}
 
 	// --- Pinning the end of the walk ---
@@ -202,7 +203,7 @@ class GitWalkerTest {
 
 		Path cloneRoot = wd.resolve("clone");
 		GitWalker walker = new GitWalker(new GitWalker.Config("test-lib", remoteDir.toUri().toString(),
-			cloneRoot.resolve(".git"), List.of(cloneRoot.resolve("src/main/java")), NO_EXCLUSIONS,
+			cloneRoot.resolve(".git"), List.of(List.of(cloneRoot.resolve("src/main/java"))), NO_EXCLUSIONS,
 			GitWalker.ROOT_COMMIT, second.getName()));
 
 		List<CommitAnalysis> analyses = collectAnalyses(walker);

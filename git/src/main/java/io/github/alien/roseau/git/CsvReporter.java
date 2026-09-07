@@ -387,7 +387,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			analysis.apiChanged(),
 			c.javaChanged(),
 			c.pomChanged(),
-			analysis.sourceRoot().map(Path::toString).orElse(""),
+			analysis.sourceRoots().stream().map(Path::toString).collect(Collectors.joining(";")),
 			stats.stats().unresolvedTypesCount(),
 			stats.stats().incompleteHierarchyTypesCount(),
 			analysis.checkoutTimeMs(),

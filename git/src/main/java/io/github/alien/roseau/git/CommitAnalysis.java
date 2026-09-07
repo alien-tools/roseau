@@ -19,9 +19,10 @@ public record CommitAnalysis(
 	long apiTimeMs,
 	long diffTimeMs,
 	List<String> errors,
-	Optional<Path> sourceRoot
+	List<Path> sourceRoots
 ) {
 	public CommitAnalysis {
 		errors = List.copyOf(errors);
+		sourceRoots = List.copyOf(sourceRoots);
 	}
 }

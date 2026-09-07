@@ -3,6 +3,7 @@ package io.github.alien.roseau.git;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.DeserializationContext;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.JsonDeserializer;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -162,6 +163,8 @@ public final class BatchGitWalker {
 		});
 		ObjectMapper mapper = new ObjectMapper(new YAMLFactory());
 		mapper.registerModule(pathModule);
+		// sourceRoots entries are groups, but the common case is a single directory written as a bare path
+		mapper.enable(DeserializationFeature.ACCEPT_SINGLE_VALUE_AS_ARRAY);
 		return mapper;
 	}
 }

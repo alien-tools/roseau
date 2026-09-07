@@ -177,7 +177,7 @@ class RepositoryWalkerUtilsTest {
 			"lib",
 			remoteDir.toUri().toString(),
 			cloneRoot.resolve(".git"),
-			List.of(cloneRoot.resolve("src/main/java")),
+			List.of(List.of(cloneRoot.resolve("src/main/java"))),
 			NO_EXCLUSIONS,
 			GitWalker.ROOT_COMMIT,
 			GitWalker.HEAD
