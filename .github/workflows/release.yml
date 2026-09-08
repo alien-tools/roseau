@@ -4,14 +4,48 @@ on:
   push:
     tags:
       - 'v*'
+  workflow_dispatch:
 
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: false
 
 jobs:
+  preflight:
+    name: Validate release version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Validate project and tag versions
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          version="$(./mvnw --batch-mode --no-transfer-progress help:evaluate \
+            -Dexpression=project.version -q -DforceStdout -Dstyle.color=never)"
+          if [[ "$version" == *-SNAPSHOT ]]; then
+            echo "The release pipeline requires a non-SNAPSHOT project version; found $version" >&2
+            exit 1
+          elif [[ "$EVENT_NAME" == "push" && "$REF_NAME" != "v$version" ]]; then
+            echo "Tag $REF_NAME does not match project version $version (expected v$version)" >&2
+            exit 1
+          fi
+          echo "Validated release candidate version $version"
+
   verify:
     name: Verify (${{ matrix.os }})
+    needs: preflight
     runs-on: ${{ matrix.os }}
     defaults:
       run:
@@ -116,14 +150,14 @@ jobs:
           if-no-files-found: error
 
   publish:
-    name: Publish release with JReleaser
+    name: Validate or publish with JReleaser
     needs:
       - stage
       - assemble-jlink
     runs-on: ubuntu-latest
     permissions:
       contents: write
-    timeout-minutes: 30
+    timeout-minutes: 60
     steps:
       - uses: actions/checkout@v7
         with:
@@ -152,7 +186,25 @@ jobs:
           pattern: jlink-*
           merge-multiple: true
           path: target/jreleaser/assemble/roseau-standalone/jlink
+      - name: Validate release configuration and generate notes
+        if: github.event_name == 'workflow_dispatch'
+        run: ./mvnw --batch-mode -N jreleaser:config jreleaser:changelog -Djreleaser.config.file=jreleaser.yml -Djreleaser.dry.run=true
+        env:
+          JRELEASER_GITHUB_TOKEN: ${{ github.token }}
+          JRELEASER_GPG_PUBLIC_KEY: ${{ secrets.GPG_PUBLIC_KEY }}
+          JRELEASER_GPG_SECRET_KEY: ${{ secrets.GPG_PRIVATE_KEY }}
+          JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
+          JRELEASER_MAVENCENTRAL_RELEASE_DEPLOY_USERNAME: ${{ secrets.NEXUS_USERNAME }}
+          JRELEASER_MAVENCENTRAL_RELEASE_DEPLOY_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+      - name: Upload dry-run release notes
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v7
+        with:
+          name: release-dry-run-notes
+          path: target/jreleaser/release/CHANGELOG.md
+          if-no-files-found: error
       - name: Publish release with JReleaser
+        if: github.event_name == 'push'
         run: ./mvnw --batch-mode -N jreleaser:full-release -Djreleaser.config.file=jreleaser.yml
         env:
           JRELEASER_GITHUB_TOKEN: ${{ github.token }}

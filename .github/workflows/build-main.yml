@@ -11,8 +11,38 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
+  version:
+    name: Check snapshot version
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    outputs:
+      is_snapshot: ${{ steps.version.outputs.is_snapshot }}
+    steps:
+      - uses: actions/checkout@v7
+      - name: Set up JDK 25
+        uses: actions/setup-java@v6
+        with:
+          java-version: '25'
+          distribution: 'temurin'
+          cache: 'maven'
+      - name: Read project version
+        id: version
+        shell: bash
+        run: |
+          version="$(./mvnw --batch-mode --no-transfer-progress help:evaluate \
+            -Dexpression=project.version -q -DforceStdout -Dstyle.color=never)"
+          if [[ "$version" == *-SNAPSHOT ]]; then
+            echo "is_snapshot=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "is_snapshot=false" >> "$GITHUB_OUTPUT"
+            echo "Skipping snapshot publication for release version $version"
+          fi
+
   stage:
     name: Build, test, and stage Maven artifacts
+    needs: version
+    if: needs.version.outputs.is_snapshot == 'true'
     runs-on: ubuntu-latest
     permissions:
       contents: read

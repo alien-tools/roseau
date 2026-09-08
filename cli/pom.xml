@@ -12,6 +12,8 @@
 
     <artifactId>roseau-cli</artifactId>
     <name>Roseau CLI</name>
+    <description>Command-line interface for Roseau breaking change analysis</description>
+    <url>https://github.com/alien-tools/roseau</url>
     <packaging>jar</packaging>
 
     <build>

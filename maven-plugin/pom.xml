@@ -13,6 +13,8 @@
     <artifactId>roseau-maven-plugin</artifactId>
     <packaging>maven-plugin</packaging>
     <name>Roseau Maven plug-in</name>
+    <description>Maven plug-in for Roseau breaking change analysis</description>
+    <url>https://github.com/alien-tools/roseau</url>
 
     <properties>
         <maven.version>3.9.16</maven.version>
