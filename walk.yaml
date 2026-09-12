@@ -1,0 +1,18 @@
+# Example configuration for io.github.alien.roseau.git.BatchGitWalker
+defaults:
+  exclusions:
+    names:
+      - ".*(\\.)?(internal|example|examples)(\\.)?.*"
+    annotations:
+      - name: Internal
+        args: { }
+
+repositories:
+  - libraryId: roseau-core
+    url: "https://github.com/alien-tools/roseau"
+    gitDir: "clones/roseau/.git"
+    sourceRoots:
+      - clones/roseau/core/src/main/java
+      - clones/roseau/src/main/java
+    startSha: ""
+    endSha: "HEAD"
