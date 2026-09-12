@@ -356,6 +356,19 @@ public interface HierarchyProvider {
 	}
 
 	/**
+	 * Returns all methods declared by this type that are exported.
+	 *
+	 * @param type the base type
+	 * @return the set of declared exported methods
+	 */
+	default Set<MethodDecl> getDeclaredExportedMethods(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return type.getDeclaredMethods().stream()
+			.filter(m -> properties().isExported(type, m))
+			.collect(Collectors.toSet());
+	}
+
+	/**
 	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
 	 * method erasure, returns the most concrete implementation.
 	 *
@@ -436,6 +449,19 @@ public interface HierarchyProvider {
 				Function.identity(),
 				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
 			));
+	}
+
+	/**
+	 * Returns all fields declared by this type that are exported.
+	 *
+	 * @param type the base type
+	 * @return the set of declared exported fields
+	 */
+	default Set<FieldDecl> getDeclaredExportedFields(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		return type.getDeclaredFields().stream()
+			.filter(f -> properties().isExported(type, f))
+			.collect(Collectors.toSet());
 	}
 
 	/**
