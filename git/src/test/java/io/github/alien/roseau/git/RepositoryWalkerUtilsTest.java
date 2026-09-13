@@ -37,14 +37,14 @@ class RepositoryWalkerUtilsTest {
 			    url: "https://example.org/repo.git"
 			    startSha: ""
 			    endSha: "HEAD"
-			    gitDir: "%s/.git"
+			    gitDir: '%s/.git'
 			    sourceRoots:
-			      - "%s/src/main/java"
+			      - '%s/src/main/java'
 			    exclusions:
 			      annotations:
 			        - name: com.google.common.annotations.Beta
 			          args: {}
-			""".formatted(wd, wd, wd));
+			""".formatted(wd, wd));
 
 		List<GitWalker.Config> repositories = BatchGitWalker.loadConfig(yaml);
 
