@@ -2,7 +2,7 @@ cff-version: 1.2.0
 message: "If you use Roseau in your research, please cite the preferred publication below."
 title: "Roseau"
 type: software
-version: "0.6.0"
+version: "0.7.0"
 license: MIT
 repository-code: "https://github.com/alien-tools/roseau"
 authors:

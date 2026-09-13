@@ -17,7 +17,7 @@ The tools do not have access to the clients.
 
 ### Evaluated tools
 
-- [Roseau](https://github.com/alien-tools/roseau) (`v0.7.0-SNAPSHOT`)
+- [Roseau](https://github.com/alien-tools/roseau) (`v0.7.0`)
 - [japicmp](https://siom79.github.io/japicmp/) (`v0.25.4`)
 - [Revapi](https://revapi.org) (`v0.28.4`)
 

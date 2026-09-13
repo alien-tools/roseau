@@ -154,7 +154,7 @@ Gradle builds can run Roseau through the published CLI artifact. A minimal Kotli
 val roseau by configurations.creating
 
 dependencies {
-  roseau("io.github.alien-tools:roseau-cli:0.6.0")
+  roseau("io.github.alien-tools:roseau-cli:0.7.0")
 }
 
 tasks.register<JavaExec>("roseauCheck") {
