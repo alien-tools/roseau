@@ -4,6 +4,7 @@ Roseau uses JReleaser and GitHub Actions to publish Maven artifacts to Central a
 
 - [`build-main.yml`](.github/workflows/build-main.yml) publishes snapshots and updates `early-access` when `main` has a `-SNAPSHOT` version. Stable versions are skipped.
 - [`release.yml`](.github/workflows/release.yml) supports a manual rehearsal and publishes when a `v*` tag matches the Maven version. This workflow must be merged into `main` before manual runs are available.
+- [`docs.yml`](.github/workflows/docs.yml) validates the documentation on every pull request and deploys the `dev` version of the site from `main`. The `docs` job of `release.yml` deploys the tagged version and promotes it to `stable` once publication succeeds.
 
 ## 1. Prepare
 
@@ -35,13 +36,13 @@ Wait for all jobs to pass, then merge. Run the rehearsal against `main` and conf
 Check out the tested commit, confirm the version has no `-SNAPSHOT` suffix and has not already been released, then push an annotated tag:
 
 ```bash
-git tag -a vX.Y.Z -m "Roseau X.Y.Z"
+git tag -s vX.Y.Z -m "Roseau X.Y.Z"
 git push origin refs/tags/vX.Y.Z
 ```
 
-Use `git tag -s` instead if signing tags. Wait for **Publish release from tag** to finish. It uses the existing repository secrets for Central and GPG signing.
+Wait for **Publish release from tag** to finish. It uses the existing repository secrets for Central and GPG signing. Its final `docs` job publishes the documentation built from the tag under `/X.Y.Z/` and moves the `stable` alias, so the site root starts serving the new release.
 
-Before announcing, check that the four Maven artifacts (`roseau-parent`, `roseau-core`, `roseau-cli`, and `roseau-maven-plugin`) resolve from Central, the GitHub release includes all assets, and the downloaded CLI and standalone launcher report the correct version. Verify the downloaded checksums and signatures.
+Before announcing, check that the four Maven artifacts (`roseau-parent`, `roseau-core`, `roseau-cli`, and `roseau-maven-plugin`) resolve from Central, the GitHub release includes all assets, and the downloaded CLI and standalone launcher report the correct version. Verify the downloaded checksums and signatures. Check that <https://alien-tools.github.io/roseau/> redirects to the new release and that the version selector lists it.
 
 Central releases cannot be overwritten. If publication fails, check whether Central accepted the version before retrying; never move a published tag or redeploy an accepted version.
 

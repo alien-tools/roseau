@@ -5,15 +5,36 @@ on:
       - main
     paths:
       - 'docs/**'
+      - 'overrides/**'
+      - 'mkdocs.yml'
+      - '.github/workflows/docs.yml'
+  pull_request:
+    paths:
+      - 'docs/**'
+      - 'overrides/**'
       - 'mkdocs.yml'
       - '.github/workflows/docs.yml'
   workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to publish from the selected ref, leave empty to only validate.'
+        required: false
+        default: ''
+      alias:
+        description: 'Alias to move onto that version, e.g. stable. Leave empty to publish the version alone.'
+        required: false
+        default: ''
+      set_default:
+        description: 'Point the site root at the alias.'
+        type: boolean
+        default: false
 
 permissions:
-  contents: write
+  contents: read
 
 jobs:
-  deploy:
+  build:
+    name: Validate docs
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -31,5 +52,58 @@ jobs:
         run: uv pip sync docs/requirements-docs.txt
       - name: Validate docs
         run: .venv/bin/mkdocs build --strict
+
+  deploy:
+    name: Deploy docs
+    needs: build
+    if: >-
+      (github.event_name == 'push' && github.ref == 'refs/heads/main') ||
+      (github.event_name == 'workflow_dispatch' && inputs.version != '')
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.21"
+          enable-cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Create docs virtual environment
+        run: uv venv
+      - name: Install docs dependencies
+        run: uv pip sync docs/requirements-docs.txt
+      - name: Put the virtual environment on PATH
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
       - name: Deploy docs
-        run: .venv/bin/mkdocs gh-deploy --force
+        shell: bash
+        env:
+          EVENT_NAME: ${{ github.event_name }}
+          VERSION: ${{ inputs.version }}
+          ALIAS: ${{ inputs.alias }}
+          SET_DEFAULT: ${{ inputs.set_default }}
+        run: |
+          if [[ "$EVENT_NAME" == "push" ]]; then
+            mike deploy --push --update-aliases dev
+            exit 0
+          fi
+          mike deploy --push --update-aliases "$VERSION" ${ALIAS:+"$ALIAS"}
+          if [[ "$SET_DEFAULT" == "true" ]]; then
+            if [[ -z "$ALIAS" ]]; then
+              echo "set_default requires an alias" >&2
+              exit 1
+            fi
+            mike set-default --push "$ALIAS"
+          fi

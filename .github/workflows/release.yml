@@ -213,3 +213,53 @@ jobs:
           JRELEASER_GPG_PASSPHRASE: ${{ secrets.GPG_PASSPHRASE }}
           JRELEASER_MAVENCENTRAL_RELEASE_DEPLOY_USERNAME: ${{ secrets.NEXUS_USERNAME }}
           JRELEASER_MAVENCENTRAL_RELEASE_DEPLOY_PASSWORD: ${{ secrets.NEXUS_PASSWORD }}
+
+  docs:
+    name: Deploy release docs
+    needs: publish
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    timeout-minutes: 15
+    concurrency:
+      group: gh-pages
+      cancel-in-progress: false
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: Install uv
+        uses: astral-sh/setup-uv@v7
+        with:
+          version: "0.9.21"
+          enable-cache: true
+      - uses: actions/setup-python@v7
+        with:
+          python-version: "3.12"
+      - name: Create docs virtual environment
+        run: uv venv
+      - name: Install docs dependencies
+        run: uv pip sync docs/requirements-docs.txt
+      - name: Put the virtual environment on PATH
+        run: echo "$PWD/.venv/bin" >> "$GITHUB_PATH"
+      - name: Configure Git identity
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+      - name: Deploy versioned docs and promote them to stable
+        shell: bash
+        env:
+          REF_NAME: ${{ github.ref_name }}
+        run: |
+          version="${REF_NAME#v}"
+          current="$(mike list --json stable 2>/dev/null \
+            | python -c 'import json,sys; d=sys.stdin.read().strip(); print(json.loads(d)["version"] if d else "")')"
+          if [[ -n "$current" ]] && ! python -c \
+            'import sys; from verspec.loose import LooseVersion as V; sys.exit(0 if V(sys.argv[1]) >= V(sys.argv[2]) else 1)' \
+            "$version" "$current"; then
+            echo "Refusing to move stable from $current back to $version" >&2
+            exit 1
+          fi
+          mike deploy --push --update-aliases "$version" stable
+          mike set-default --push stable
