@@ -22,22 +22,31 @@ public class IgnoredCsvFile {
 				.filter(line -> !line.isEmpty())
 				.filter(line -> line.charAt(0) != '#')
 				.filter(line -> !line.startsWith("type;symbol;kind"))
-				.map(line -> line.split(";", -1))
-				.map(fields -> {
+				.map(line -> {
+					String[] fields = line.split(";", -1);
 					if (fields.length < 3) {
 						throw new RoseauException("Malformed line '%s' in %s, expecting <type>;<symbol>;<kind>"
-							.formatted(String.join(";", fields), csv));
+							.formatted(line, csv));
 					}
+					String kind = unquote(fields[2]);
 					try {
-						return new Ignored(fields[0].trim(), fields[1].trim(), BreakingChangeKind.valueOf(fields[2].trim()));
+						return new Ignored(unquote(fields[0]), unquote(fields[1]), BreakingChangeKind.valueOf(kind));
 					} catch (IllegalArgumentException ignored) {
-						throw new RoseauException("Malformed kind '%s' in %s".formatted(fields[2], csv));
+						throw new RoseauException("Malformed kind '%s' in %s".formatted(kind, csv));
 					}
 				})
 				.toList();
 		} catch (IOException e) {
 			throw new RoseauException("Couldn't read CSV file %s".formatted(csv), e);
 		}
+	}
+
+	private static String unquote(String field) {
+		String trimmed = field.trim();
+		if (trimmed.length() >= 2 && trimmed.charAt(0) == '"' && trimmed.charAt(trimmed.length() - 1) == '"') {
+			return trimmed.substring(1, trimmed.length() - 1).replace("\"\"", "\"");
+		}
+		return trimmed;
 	}
 
 	public boolean isIgnored(BreakingChange bc) {
