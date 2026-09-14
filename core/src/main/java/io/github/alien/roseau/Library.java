@@ -4,8 +4,8 @@ import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.base.Suppliers;
 import io.github.alien.roseau.extractors.ExtractorType;
 import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -43,7 +43,7 @@ public final class Library {
 	@JsonIgnore
 	private final Supplier<List<Path>> classpath;
 
-	private static final Logger LOGGER = LogManager.getLogger(Library.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Library.class);
 
 	/**
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.

@@ -7,7 +7,7 @@
 
     <Appenders>
         <Console name="CONSOLE" target="SYSTEM_ERR">
-            <PatternLayout pattern="%m%n"/>
+            <PatternLayout pattern="[%-5level] %m%n"/>
         </Console>
     </Appenders>
 

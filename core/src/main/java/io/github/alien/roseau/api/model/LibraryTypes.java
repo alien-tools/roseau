@@ -12,8 +12,8 @@ import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.resolution.TypeProvider;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -50,7 +50,7 @@ public final class LibraryTypes implements TypeProvider {
 	private final Map<String, TypeDecl> allTypes;
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
-	private static final Logger LOGGER = LogManager.getLogger(LibraryTypes.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(LibraryTypes.class);
 
 	static {
 		MAPPER.setVisibility(PropertyAccessor.ALL, JsonAutoDetect.Visibility.NONE);

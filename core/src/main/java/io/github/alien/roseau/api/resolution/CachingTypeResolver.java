@@ -4,8 +4,8 @@ import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
@@ -31,7 +31,7 @@ public class CachingTypeResolver implements TypeResolver {
 			.maximumSize(5_000L)
 			.build();
 
-	private static final Logger LOGGER = LogManager.getLogger(CachingTypeResolver.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CachingTypeResolver.class);
 
 	// Cannot store null in typeCache, so this serves as a marker/sentinel value
 	// to keep track of whether we've already attempted resolution or not
@@ -67,7 +67,7 @@ public class CachingTypeResolver implements TypeResolver {
 			.map(ResolvedType::new)
 			.orElseGet(() -> {
 				LOGGER.warn("Failed to resolve type reference {} of kind {}; " +
-					"is the classpath correct?", () -> qualifiedName, type::getSimpleName);
+					"is the classpath correct?", qualifiedName, type.getSimpleName());
 				return ResolvedType.UNRESOLVED;
 			});
 	}

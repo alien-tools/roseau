@@ -9,11 +9,6 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.Level;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.core.LoggerContext;
-import org.apache.logging.log4j.core.config.Configuration;
-import org.apache.logging.log4j.core.config.LoggerConfig;
 import org.apache.maven.model.Dependency;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -187,12 +182,6 @@ public final class RoseauMojo extends AbstractMojo {
 	private Path configFile;
 
 	/**
-	 * Logging verbosity for Roseau internals: QUIET, NORMAL, VERBOSE, DEBUG.
-	 */
-	@Parameter(property = "roseau.verbosity")
-	private String verbosity;
-
-	/**
 	 * Maven artifact resolver.
 	 */
 	@Inject
@@ -211,42 +200,9 @@ public final class RoseauMojo extends AbstractMojo {
 	private List<RemoteRepository> remoteRepositories;
 
 	/**
-	 * Configures logging based on the verbosity parameter.
-	 */
-	private void configureLogging() {
-		if (verbosity == null || verbosity.isEmpty()) {
-			return;
-		}
-
-		Level level = switch (verbosity.toUpperCase(Locale.ROOT)) {
-			case "QUIET" -> Level.ERROR;
-			case "NORMAL" -> Level.WARN;
-			case "VERBOSE" -> Level.INFO;
-			case "DEBUG" -> Level.DEBUG;
-			default -> {
-				getLog().warn("Invalid verbosity level: " + verbosity + ". Valid values: QUIET, NORMAL, VERBOSE, DEBUG");
-				yield null;
-			}
-		};
-
-		if (level != null) {
-			try {
-				LoggerContext context = (LoggerContext) LogManager.getContext(false);
-				Configuration config = context.getConfiguration();
-				LoggerConfig loggerConfig = config.getLoggerConfig("io.github.alien.roseau");
-				loggerConfig.setLevel(level);
-				context.updateLoggers();
-				getLog().debug("Set Roseau logging level to " + level);
-			} catch (Exception e) {
-				getLog().warn("Could not configure logging: " + e.getMessage());
-			}
-		}
-	}
-
-	/**
 	 * Exports API models to JSON files.
 	 *
-	 * @param report the RoseauReport containing the APIs
+	 * @param report  the RoseauReport containing the APIs
 	 * @param options the merged export configuration
 	 * @throws MojoExecutionException if an error occurs while exporting APIs
 	 */
@@ -445,8 +401,6 @@ public final class RoseauMojo extends AbstractMojo {
 
 	@Override
 	public void execute() throws MojoExecutionException {
-		configureLogging();
-
 		if (skip) {
 			getLog().info("Skipping.");
 			return;

@@ -2,13 +2,13 @@ package io.github.alien.roseau;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Strings;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.apache.maven.shared.invoker.DefaultInvocationRequest;
 import org.apache.maven.shared.invoker.DefaultInvoker;
 import org.apache.maven.shared.invoker.InvocationRequest;
 import org.apache.maven.shared.invoker.InvocationResult;
 import org.apache.maven.shared.invoker.Invoker;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
@@ -25,7 +25,7 @@ import java.util.Properties;
  * classpath from a supplied {@code pom.xml} file using {@code mvn dependency:build-classpath}.
  */
 public class MavenClasspathBuilder {
-	private static final Logger LOGGER = LogManager.getLogger(MavenClasspathBuilder.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(MavenClasspathBuilder.class);
 
 	/**
 	 * Returns the classpath of the supplied {@code pom.xml} file using {@code mvn dependency:build-classpath}.
@@ -61,7 +61,7 @@ public class MavenClasspathBuilder {
 					LOGGER.debug("Extracted classpath from {}: {} entries", pom, cp.size());
 					return cp;
 				} else {
-					LOGGER.warn("Failed to build Maven classpath from {}", () -> pom, result::getExecutionException);
+					LOGGER.warn("Failed to build Maven classpath from {}", pom, result.getExecutionException());
 				}
 			} else {
 				LOGGER.warn("Cannot find Maven executable; skipping classpath resolution for {}", pom);

@@ -10,8 +10,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.module.SimpleModule;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
 import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -29,7 +29,7 @@ import java.util.stream.Stream;
  * and delegates to {@link GitWalker} for each configured repository.
  */
 public final class BatchGitWalker {
-	private static final Logger LOGGER = LogManager.getLogger(BatchGitWalker.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(BatchGitWalker.class);
 	private static final ObjectMapper MAPPER = createMapper();
 
 	private BatchGitWalker() {

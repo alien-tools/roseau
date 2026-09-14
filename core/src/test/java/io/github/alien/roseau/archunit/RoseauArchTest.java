@@ -18,4 +18,9 @@ class RoseauArchTest {
 	static final ArchRule jdt_is_only_used_for_parsing =
 		noClasses().that().resideOutsideOfPackage("..roseau.extractors.jdt..")
 			.should().accessClassesThat().resideInAPackage("org.eclipse.jdt..");
+
+	@ArchTest
+	static final ArchRule does_not_depend_on_a_logging_backend =
+		noClasses().should().dependOnClassesThat().resideInAnyPackage(
+			"org.apache.logging.log4j..", "ch.qos.logback..");
 }
