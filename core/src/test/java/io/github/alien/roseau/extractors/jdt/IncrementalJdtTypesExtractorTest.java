@@ -11,6 +11,8 @@ import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
@@ -198,6 +200,9 @@ class IncrementalJdtTypesExtractorTest {
 	}
 
 	@Test
+	@DisabledOnOs(value = OS.WINDOWS,
+		disabledReason = "JDT never cleans up the name environment it builds from ASTParser.setEnvironment(), keeping the "
+			+ "classpath JARs open until GC; Windows then refuses to delete them and @TempDir cleanup fails")
 	void unchanged_sources_use_the_new_dependency_classpath(@TempDir Path wd) throws IOException {
 		var oldDependency = wd.resolve("old.jar");
 		var newDependency = wd.resolve("new.jar");

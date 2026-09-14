@@ -7,6 +7,8 @@ import io.github.alien.roseau.extractors.incremental.HashFunction;
 import io.github.alien.roseau.extractors.incremental.HashingChangedFilesProvider;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.io.TempDir;
 
 import javax.tools.ToolProvider;
@@ -65,6 +67,9 @@ class RoseauTest {
 	}
 
 	@Test
+	@DisabledOnOs(value = OS.WINDOWS,
+		disabledReason = "JDT never cleans up the name environment it builds from ASTParser.setEnvironment(), keeping the "
+			+ "classpath JARs open until GC; Windows then refuses to delete them and @TempDir cleanup fails")
 	void incrementalDiff_unchanged_sources_use_the_new_classpath(@TempDir Path wd) throws IOException {
 		var oldDependency = wd.resolve("old.jar");
 		var newDependency = wd.resolve("new.jar");
