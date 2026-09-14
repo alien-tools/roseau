@@ -10,7 +10,7 @@ Add a resolvable configuration for the Roseau CLI, then register a verification 
 val roseau by configurations.creating
 
 dependencies {
-  roseau("io.github.alien-tools:roseau-cli:0.7.0")
+  roseau("io.github.alien-tools:roseau-cli:0.8.0")
 }
 
 tasks.register<JavaExec>("roseauCheck") {
