@@ -11,6 +11,7 @@ import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.logging.log4j.Level;
+import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.core.config.Configurator;
 import picocli.CommandLine;
 import picocli.CommandLine.Model.CommandSpec;
@@ -48,7 +49,7 @@ import static picocli.CommandLine.Spec;
 		"Output symbols: ✗ removal  ⚠ modification  ★ addition"
 	})
 public final class RoseauCLI implements Callable<Integer> {
-	private static final List<String> VERBOSE_LOGGERS = List.of("io.github.alien.roseau", "org.objectweb.asm", "spoon");
+	private static final String ROSEAU_LOGGER = "io.github.alien.roseau";
 
 	private Console console;
 	@Spec
@@ -371,13 +372,17 @@ public final class RoseauCLI implements Callable<Integer> {
 			default -> Console.Verbosity.DEBUG;
 		};
 
+		Level originalLogLevel = LogManager.getLogger(ROSEAU_LOGGER).getLevel();
+		boolean logLevelChanged = false;
 		try {
 			console = new Console(spec.commandLine().getOut(), spec.commandLine().getErr(), verbosity);
 
 			if (verbosity == Console.Verbosity.DEBUG) {
-				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.DEBUG));
+				Configurator.setLevel(ROSEAU_LOGGER, Level.DEBUG);
+				logLevelChanged = true;
 			} else if (verbosity == Console.Verbosity.VERBOSE) {
-				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.INFO));
+				Configurator.setLevel(ROSEAU_LOGGER, Level.INFO);
+				logLevelChanged = true;
 			}
 
 			PreparedCliOptions preparedCliOptions = makeCliOptions();
@@ -419,8 +424,8 @@ public final class RoseauCLI implements Callable<Integer> {
 			}
 			return ExitCode.ERROR.code();
 		} finally {
-			if (verbosity != Console.Verbosity.NORMAL) {
-				VERBOSE_LOGGERS.forEach(logger -> Configurator.setAllLevels(logger, Level.WARN));
+			if (logLevelChanged) {
+				Configurator.setLevel(ROSEAU_LOGGER, originalLogLevel);
 			}
 		}
 	}

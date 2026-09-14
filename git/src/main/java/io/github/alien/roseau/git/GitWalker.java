@@ -15,8 +15,6 @@ import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.IncrementalJdtTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
 import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.api.ResetCommand;
 import org.eclipse.jgit.api.errors.GitAPIException;
@@ -37,6 +35,8 @@ import org.eclipse.jgit.treewalk.AbstractTreeIterator;
 import org.eclipse.jgit.treewalk.CanonicalTreeParser;
 import org.eclipse.jgit.treewalk.EmptyTreeIterator;
 import org.eclipse.jgit.util.io.DisabledOutputStream;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -70,7 +70,7 @@ public final class GitWalker {
 	public static final String HEAD = "HEAD";
 
 	private static final Duration GIT_COMMAND_TIMEOUT = Duration.ofMinutes(10);
-	private static final Logger LOGGER = LogManager.getLogger(GitWalker.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(GitWalker.class);
 
 	public record Config(
 		String libraryId,

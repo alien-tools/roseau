@@ -8,7 +8,7 @@
     <Appenders>
         <!-- Redirecting to System.out so we can capture and assert -->
         <Console name="CONSOLE" target="SYSTEM_OUT" follow="true">
-            <PatternLayout pattern="%m%n"/>
+            <PatternLayout pattern="[%-5level] %m%n"/>
         </Console>
     </Appenders>
 

@@ -26,8 +26,8 @@ import io.github.alien.roseau.extractors.incremental.HashingChangedFilesProvider
 import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.IncrementalJdtTypesExtractor;
 import io.github.alien.roseau.extractors.jdt.JdtTypesExtractor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -39,7 +39,7 @@ import java.util.concurrent.ForkJoinPool;
  * Entry point for extracting library snapshots, building resolved APIs, and computing diffs.
  */
 public final class Roseau {
-	private static final Logger LOGGER = LogManager.getLogger(Roseau.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(Roseau.class);
 
 	private Roseau() {
 
@@ -91,7 +91,7 @@ public final class Roseau {
 		API api = new API(types, new DefaultApiAnalyzer(types, resolver));
 
 		if (api.getExportedTypes().isEmpty()) {
-			LOGGER.warn("Warning: none of the {} types declared in {} are exported: the API is empty",
+			LOGGER.warn("None of the {} types declared in {} are exported: the API is empty",
 				types.getAllTypes().size(), types.getLibrary().getLocation());
 		}
 
@@ -113,8 +113,10 @@ public final class Roseau {
 		ApiWalker walker = new ApiWalker(v1, v2, new DefaultSymbolMatcher());
 		ApiDiffer<RoseauReport> differ = new BreakingChangeAnalyzer(v1, v2);
 		RoseauReport report = walker.walk(differ);
-		LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
-			() -> sw.elapsed().toMillis(), () -> report.getBreakingChanges().size());
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
+				sw.elapsed().toMillis(), report.getBreakingChanges().size());
+		}
 
 		return report;
 	}
@@ -139,8 +141,10 @@ public final class Roseau {
 		try {
 			API api1 = futureV1.join();
 			API api2 = futureV2.join();
-			LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
-				() -> sw.elapsed().toMillis(), () -> api1.getExportedTypes().size(), () -> api2.getExportedTypes().size());
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Building APIs in parallel took {}ms ({} vs {} types)",
+					sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
+			}
 			return diff(api1, api2);
 		} catch (CompletionException e) {
 			throw new RoseauException("Failed to build diff", e.getCause() != null ? e.getCause() : e);
@@ -209,8 +213,10 @@ public final class Roseau {
 			LibraryTypes types2 = futureV2.join();
 			API api1 = buildAPI(types1);
 			API api2 = buildAPI(types2);
-			LOGGER.debug("Building APIs incrementally took {}ms ({} vs {} types)",
-				() -> sw.elapsed().toMillis(), () -> api1.getExportedTypes().size(), () -> api2.getExportedTypes().size());
+			if (LOGGER.isDebugEnabled()) {
+				LOGGER.debug("Building APIs incrementally took {}ms ({} vs {} types)",
+					sw.elapsed().toMillis(), api1.getExportedTypes().size(), api2.getExportedTypes().size());
+			}
 			return diff(api1, api2);
 		} catch (CompletionException e) {
 			throw new RoseauException("Failed to incrementally update APIs", e.getCause() != null ? e.getCause() : e);
@@ -233,12 +239,13 @@ public final class Roseau {
 
 		Stopwatch sw = Stopwatch.createStarted();
 		LibraryTypes types = extractor.extractTypes(library);
-		LOGGER.debug("Extracting types from library {} using {} took {}ms ({} types)",
-			library::getLocation, library::getExtractorType, () -> sw.elapsed().toMillis(),
-			() -> types.getAllTypes().size());
+		if (LOGGER.isDebugEnabled()) {
+			LOGGER.debug("Extracting types from library {} using {} took {}ms ({} types)",
+				library.getLocation(), library.getExtractorType(), sw.elapsed().toMillis(), types.getAllTypes().size());
+		}
 
 		if (types.getAllTypes().isEmpty()) {
-			LOGGER.warn("Warning: no type found in {}", library::getLocation);
+			LOGGER.warn("No type found in {}", library.getLocation());
 		}
 
 		return types;

@@ -9,14 +9,14 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.TypesExtractor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.core.compiler.IProblem;
 import org.eclipse.jdt.core.dom.AST;
 import org.eclipse.jdt.core.dom.ASTParser;
 import org.eclipse.jdt.core.dom.CompilationUnit;
 import org.eclipse.jdt.core.dom.FileASTRequestor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.file.Files;
@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 public final class JdtTypesExtractor implements TypesExtractor {
 	private final ApiFactory factory;
 
-	private static final Logger LOGGER = LogManager.getLogger(JdtTypesExtractor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JdtTypesExtractor.class);
 
 	record ParsingResult(Set<TypeDecl> types, Set<ModuleDecl> modules) {
 	}

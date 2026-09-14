@@ -35,7 +35,6 @@ Parameters with a Maven property can be overridden on the command line with `-D<
 | `exportBaselineApi` | `roseau.exportBaselineApi` | `Path`               | —                                   | Export the baseline API model as JSON |
 | `exportCurrentApi` | `roseau.exportCurrentApi` | `Path`               | —                                   | Export the current API model as JSON |
 | `configFile` | `roseau.configFile` | `Path`               | —                                   | Path to a `roseau.yaml` file |
-| `verbosity` | `roseau.verbosity` | `String`             | —                                   | Logging level: `QUIET`, `NORMAL`, `VERBOSE`, or `DEBUG` |
 
 ## `reports` Entries
 

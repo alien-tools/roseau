@@ -6,14 +6,14 @@
                        https://logging.apache.org/xml/ns/log4j-config-2.xsd">
 
     <Appenders>
-        <Console name="CONSOLE">
-            <PatternLayout pattern="%p %c{1.} - %m%n"/>
+        <Console name="CONSOLE" target="SYSTEM_ERR">
+            <PatternLayout pattern="[%-5level] %m%n"/>
         </Console>
     </Appenders>
 
     <Loggers>
-        <Logger name="io.github.alien.roseau" level="WARN"/>
-        <Root level="ERROR">
+        <Logger name="io.github.alien.roseau" level="INFO"/>
+        <Root level="WARN">
             <AppenderRef ref="CONSOLE"/>
         </Root>
     </Loggers>

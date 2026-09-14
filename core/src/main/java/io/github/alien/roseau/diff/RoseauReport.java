@@ -17,8 +17,8 @@ import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.diff.formatter.CliFormatter;
 import io.github.alien.roseau.options.IgnoredCsvFile;
 import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -36,7 +36,7 @@ import java.util.regex.PatternSyntaxException;
 import java.util.stream.Collectors;
 
 public final class RoseauReport {
-	private static final Logger LOGGER = LogManager.getLogger(RoseauReport.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(RoseauReport.class);
 
 	private final API v1;
 	private final API v2;

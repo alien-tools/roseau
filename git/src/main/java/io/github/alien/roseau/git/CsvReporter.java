@@ -16,8 +16,8 @@ import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.changes.BreakingChangeNature;
 import io.github.alien.roseau.options.RoseauOptions;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedWriter;
 import java.io.IOException;
@@ -42,7 +42,7 @@ import java.util.stream.Collectors;
  * and one for individual breaking changes.
  */
 final class CsvReporter implements CommitSink, AutoCloseable {
-	private static final Logger LOGGER = LogManager.getLogger(CsvReporter.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(CsvReporter.class);
 
 	private static final List<String> COMMITS_HEADER = List.of(
 		"library",

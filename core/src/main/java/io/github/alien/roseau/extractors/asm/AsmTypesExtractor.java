@@ -9,10 +9,10 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.TypesExtractor;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.objectweb.asm.ClassReader;
 import org.objectweb.asm.Opcodes;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -31,7 +31,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private static final int ASM_VERSION = Opcodes.ASM9;
 	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
 	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
-	private static final Logger LOGGER = LogManager.getLogger(AsmTypesExtractor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(AsmTypesExtractor.class);
 
 	public AsmTypesExtractor(ApiFactory factory) {
 		this.factory = Preconditions.checkNotNull(factory);

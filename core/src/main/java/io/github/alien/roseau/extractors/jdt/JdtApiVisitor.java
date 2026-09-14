@@ -19,8 +19,6 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.ExtractorSink;
-import org.apache.logging.log4j.LogManager;
-import org.apache.logging.log4j.Logger;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
@@ -43,6 +41,8 @@ import org.eclipse.jdt.core.dom.RecordDeclaration;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;
@@ -74,7 +74,7 @@ final class JdtApiVisitor extends ASTVisitor {
 	private final Map<String, String> singleTypeImports;
 	private final List<String> unresolvedOnDemandImports;
 
-	private static final Logger LOGGER = LogManager.getLogger(JdtApiVisitor.class);
+	private static final Logger LOGGER = LoggerFactory.getLogger(JdtApiVisitor.class);
 
 	JdtApiVisitor(CompilationUnit cu, Path filePath, ExtractorSink sink, ApiFactory factory) {
 		this.cu = cu;
@@ -170,7 +170,7 @@ final class JdtApiVisitor extends ASTVisitor {
 	private void processAbstractTypeDeclaration(AbstractTypeDeclaration type) {
 		ITypeBinding binding = type.resolveBinding();
 		if (binding == null) {
-			LOGGER.warn("No binding for {}; skipping", () -> type.getName().getFullyQualifiedName());
+			LOGGER.warn("No binding for {}; skipping", type.getName().getFullyQualifiedName());
 			return;
 		}
 
