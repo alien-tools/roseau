@@ -1028,6 +1028,7 @@
 </table>
 <h2 id="add-dependencies-when-resolution-matters">Add Dependencies When Resolution Matters<a class="headerlink" href="#add-dependencies-when-resolution-matters" title="Permanent link">&para;</a></h2>
 <p>Dependency information matters when signatures, supertypes, annotations, or generic types refer to third-party types that are not present in the analyzed inputs.</p>
+<p>Classpath entries are JARs or class directories, so build outputs such as <code>build/classes/java/main</code> or <code>target/classes</code> can be used directly.</p>
 <p>Use a shared classpath when both versions need the same dependencies:</p>
 <div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a>roseau<span class="w"> </span>--diff<span class="w"> </span>--v1<span class="w"> </span>path/to/v1.jar<span class="w"> </span>--v2<span class="w"> </span>path/to/v2.jar<span class="w"> </span><span class="se">\</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span>--classpath<span class="w"> </span>libs/dependency-a.jar:libs/dependency-b.jar
