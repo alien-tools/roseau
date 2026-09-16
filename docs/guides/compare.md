@@ -21,6 +21,8 @@ The old and new versions can be JAR files, source trees (e.g., `src/main/java`),
 
 Dependency information matters when signatures, supertypes, annotations, or generic types refer to third-party types that are not present in the analyzed inputs.
 
+Classpath entries are JARs or class directories, so build outputs such as `build/classes/java/main` or `target/classes` can be used directly.
+
 Use a shared classpath when both versions need the same dependencies:
 
 ```bash

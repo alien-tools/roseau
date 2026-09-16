@@ -253,6 +253,19 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void classpath_accepts_class_directories() {
+		var exitCode = cmd.execute("--v1=src/test/resources/classpath-library/classpath-library.jar",
+			"--v2=src/test/resources/classpath-library/classpath-library.jar",
+			"--v1-classpath=src/test/resources/classpath-dependency/classpath-dependency.jar",
+			"--v2-classpath=src/test/resources/classpath-dependency/classes",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void valid_pom(@TempDir Path tempDir) {
 		var api = tempDir.resolve("api.json");
 		var pom = Path.of("src/test/resources/valid-pom.xml");

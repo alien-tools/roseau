@@ -26,6 +26,8 @@ Exactly one mode must be specified.
 
 ## Dependencies
 
+Classpath entries are JARs or class directories, separated by `:` (`;` on Windows).
+
 | Option | Meaning |
 | --- | --- |
 | `--classpath=<path>[,<path>...]` | Shared classpath for `--v1` and `--v2` |

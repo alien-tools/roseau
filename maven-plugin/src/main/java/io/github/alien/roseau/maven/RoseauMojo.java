@@ -352,22 +352,34 @@ public final class RoseauMojo extends AbstractMojo {
 	/**
 	 * Resolves the project's compile classpath, including provided and system dependencies.
 	 *
-	 * @return a list of paths to the dependency JARs
+	 * @return a list of paths to the dependency JARs or class directories
 	 */
 	private List<Path> resolveProjectClasspath() {
 		return project.getArtifacts().stream()
 			.filter(artifact -> "compile".equals(artifact.getScope()) || "provided".equals(artifact.getScope()) ||
 				"system".equals(artifact.getScope()))
 			.map(org.apache.maven.artifact.Artifact::getFile)
-			.filter(file -> file != null && Files.isRegularFile(file.toPath()))
+			.filter(RoseauMojo::isClasspathEntry)
 			.map(File::toPath)
 			.toList();
 	}
 
 	/**
+	 * Checks whether the given file is a usable classpath entry: a JAR, or the class directory that Maven attaches to
+	 * reactor dependencies that haven't been packaged yet.
+	 *
+	 * @param file the file to check, possibly {@code null}
+	 * @return whether the file can be used as a classpath entry
+	 */
+	private static boolean isClasspathEntry(File file) {
+		return file != null && (Files.isRegularFile(file.toPath()) || Files.isDirectory(file.toPath()));
+	}
+
+	/**
 	 * Resolves the baseline artifact and its transitive dependencies.
 	 *
-	 * @return a list of paths to the baseline dependency JARs, or an empty list if resolution fails
+	 * @return a list of paths to the baseline dependency JARs or class directories, or an empty list if
+	 * resolution fails
 	 */
 	private List<Path> resolveBaselineClasspath() {
 		if (baselineDependency == null || baselineDependency.getArtifactId() == null) {
@@ -390,7 +402,7 @@ public final class RoseauMojo extends AbstractMojo {
 			return result.getArtifactResults().stream()
 				.map(ArtifactResult::getArtifact)
 				.map(Artifact::getFile)
-				.filter(file -> file != null && Files.isRegularFile(file.toPath()))
+				.filter(RoseauMojo::isClasspathEntry)
 				.map(File::toPath)
 				.toList();
 		} catch (DependencyResolutionException e) {

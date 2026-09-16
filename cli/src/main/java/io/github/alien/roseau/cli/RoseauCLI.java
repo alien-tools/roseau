@@ -85,8 +85,8 @@ public final class RoseauCLI implements Callable<Integer> {
 		converter = ReportOptionConverter.class)
 	private List<RoseauOptions.Report> reports;
 	@Option(names = "--classpath", paramLabel = "<path>[,<path>...]",
-		description = "A colon-separated list of JARs to include in the classpath (Windows: semi-colon), " +
-			"shared by --v1 and --v2")
+		description = "A colon-separated list of JARs or class directories to include in the classpath " +
+			"(Windows: semi-colon), shared by --v1 and --v2")
 	private String classpath;
 	@Option(names = "--pom", paramLabel = "<path>",
 		description = "A pom.xml file to extract the classpath from, shared by --v1 and --v2")
@@ -152,7 +152,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		}
 
 		return Arrays.stream(cp.split(File.pathSeparator))
-			.filter(p -> p.endsWith(".jar"))
+			.filter(p -> !p.isBlank())
 			.map(Path::of)
 			.toList();
 	}
