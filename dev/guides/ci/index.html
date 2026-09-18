@@ -952,10 +952,13 @@
 
 <h1 id="use-in-ci">Use in CI<a class="headerlink" href="#use-in-ci" title="Permanent link">&para;</a></h1>
 <p>Roseau is meant to be easily integrated into build and CI pipelines to spot breaking changes as early as possible. A typical example is as follows:</p>
-<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>roseau<span class="w"> </span>--diff<span class="w"> </span>--v1<span class="w"> </span>path/to/v1.jar<span class="w"> </span>--v2<span class="w"> </span>path/to/v2.jar<span class="w"> </span>--fail-on-bc<span class="w"> </span>--plain<span class="w"> </span><span class="se">\</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--report<span class="w"> </span><span class="nv">JSON</span><span class="o">=</span>reports/breaking-changes.json
+<div class="language-bash highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a>roseau<span class="w"> </span>--diff<span class="w"> </span>--v1<span class="w"> </span>path/to/v1.jar<span class="w"> </span>--v2<span class="w"> </span>path/to/v2.jar
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="w">  </span>--fail-on-bc
+<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="w">  </span>--fail-on-unresolved
+<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="w">  </span>--plain<span class="w"> </span><span class="se">\</span>
+<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a><span class="w">  </span>--report<span class="w"> </span><span class="nv">JSON</span><span class="o">=</span>reports/breaking-changes.json
 </code></pre></div>
-<p><code>--fail-on-bc</code> makes the process fail when breaking changes are found. <code>--plain</code> removes ANSI control codes from the log output. The <code>--report</code> option generates a machine-readable JSON report.</p>
+<p><code>--fail-on-bc</code> makes the process fail when breaking changes are found. <code>--fail-on-unresolved</code> makes it fail when the analysis is unreliable due to missing types in the classpath. <code>--plain</code> removes ANSI control codes from the log output. The <code>--report</code> option generates a machine-readable JSON report.</p>
 <h2 id="exit-codes">Exit Codes<a class="headerlink" href="#exit-codes" title="Permanent link">&para;</a></h2>
 <table>
 <thead>
@@ -975,7 +978,7 @@
 </tr>
 <tr>
 <td><code>2</code></td>
-<td>the command failed before producing a result</td>
+<td>the command failed before producing a result, or <code>--fail-on-unresolved</code> was set and some types could not be resolved</td>
 </tr>
 </tbody>
 </table>

@@ -1225,6 +1225,10 @@ Classpath values use the operating-system path separator: <code>:</code> on Unix
 <td>Return exit code <code>1</code> when breaking changes are found</td>
 </tr>
 <tr>
+<td><code>--fail-on-unresolved</code></td>
+<td>Return exit code <code>2</code> when some types cannot be resolved, which makes the analysis inaccurate</td>
+</tr>
+<tr>
 <td><code>--plain</code></td>
 <td>Disable ANSI colors, output plain text</td>
 </tr>
@@ -1253,7 +1257,7 @@ Classpath values use the operating-system path separator: <code>:</code> on Unix
 </tr>
 <tr>
 <td><code>2</code></td>
-<td>The command failed before producing a result</td>
+<td>The command failed before producing a result, or <code>--fail-on-unresolved</code> was set and some types could not be resolved</td>
 </tr>
 </tbody>
 </table>

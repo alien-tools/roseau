@@ -653,6 +653,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fail-on-unresolved-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fail on unresolved types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#narrow-the-scope-of-reported-breaking-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1041,6 +1052,17 @@
 </li>
       
         <li class="md-nav__item">
+  <a href="#fail-on-unresolved-types" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Fail on unresolved types
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
   <a href="#narrow-the-scope-of-reported-breaking-changes" class="md-nav__link">
     <span class="md-ellipsis">
       
@@ -1212,61 +1234,71 @@ Exclude them individually with <code>roseau.skip</code> or configure Roseau to s
 <a id="__codelineno-7-8" name="__codelineno-7-8" href="#__codelineno-7-8"></a><span class="w">  </span><span class="nt">&lt;failOnSourceIncompatibility&gt;</span>true<span class="nt">&lt;/failOnSourceIncompatibility&gt;</span>
 <a id="__codelineno-7-9" name="__codelineno-7-9" href="#__codelineno-7-9"></a><span class="nt">&lt;/configuration&gt;</span>
 </code></pre></div>
-<h2 id="narrow-the-scope-of-reported-breaking-changes">Narrow the scope of reported breaking changes<a class="headerlink" href="#narrow-the-scope-of-reported-breaking-changes" title="Permanent link">&para;</a></h2>
-<p>Report only binary-breaking or only source-breaking changes:</p>
+<h2 id="fail-on-unresolved-types">Fail on unresolved types<a class="headerlink" href="#fail-on-unresolved-types" title="Permanent link">&para;</a></h2>
+<p>The baseline and the current version are analyzed against their classpaths. When a type is declared neither in the analyzed project nor on its classpath, the API models are incomplete and the reported breaking changes may be inaccurate. The plug-in logs a warning for each such type.</p>
+<p>Maintainers who gate their builds on Roseau should also fail on unresolved types, so that an incomplete classpath is reported as a setup problem instead of a list of spurious breaking changes:</p>
 <div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-8-1" name="__codelineno-8-1" href="#__codelineno-8-1"></a><span class="nt">&lt;configuration&gt;</span>
 <a id="__codelineno-8-2" name="__codelineno-8-2" href="#__codelineno-8-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
-<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="nt">&lt;binaryOnly&gt;</span>true<span class="nt">&lt;/binaryOnly&gt;</span>
-<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="nt">&lt;/configuration&gt;</span>
+<a id="__codelineno-8-3" name="__codelineno-8-3" href="#__codelineno-8-3"></a><span class="w">  </span><span class="cm">&lt;!-- Fail the build when some types cannot be resolved --&gt;</span>
+<a id="__codelineno-8-4" name="__codelineno-8-4" href="#__codelineno-8-4"></a><span class="w">  </span><span class="nt">&lt;failOnUnresolvedTypes&gt;</span>true<span class="nt">&lt;/failOnUnresolvedTypes&gt;</span>
+<a id="__codelineno-8-5" name="__codelineno-8-5" href="#__codelineno-8-5"></a><span class="nt">&lt;/configuration&gt;</span>
 </code></pre></div>
-<p>Or:</p>
+<p>The build then fails before any report is written, listing the types that could not be resolved. Complete the classpath of the version at fault with <code>classpath</code>/<code>classpathPom</code> or <code>baselineClasspath</code>/<code>baselineClasspathPom</code> to fix it.</p>
+<h2 id="narrow-the-scope-of-reported-breaking-changes">Narrow the scope of reported breaking changes<a class="headerlink" href="#narrow-the-scope-of-reported-breaking-changes" title="Permanent link">&para;</a></h2>
+<p>Report only binary-breaking or only source-breaking changes:</p>
 <div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="nt">&lt;configuration&gt;</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
-<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&lt;sourceOnly&gt;</span>true<span class="nt">&lt;/sourceOnly&gt;</span>
+<a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="w">  </span><span class="nt">&lt;binaryOnly&gt;</span>true<span class="nt">&lt;/binaryOnly&gt;</span>
 <a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a><span class="nt">&lt;/configuration&gt;</span>
+</code></pre></div>
+<p>Or:</p>
+<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">&lt;configuration&gt;</span>
+<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&lt;sourceOnly&gt;</span>true<span class="nt">&lt;/sourceOnly&gt;</span>
+<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="nt">&lt;/configuration&gt;</span>
 </code></pre></div>
 <h2 id="write-report-artifacts">Write report artifacts<a class="headerlink" href="#write-report-artifacts" title="Permanent link">&para;</a></h2>
 <p>Report files are written under <code>reportDirectory</code>, which defaults to <code>${project.build.directory}/roseau</code>. See <a href="../reports/">Reports</a> for the available formats.</p>
-<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="nt">&lt;configuration&gt;</span>
-<a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a><span class="w">  </span><span class="nt">&lt;reports&gt;</span>
-<a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a><span class="w">    </span><span class="nt">&lt;report&gt;</span>
-<a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="w">      </span><span class="nt">&lt;file&gt;</span>report.csv<span class="nt">&lt;/file&gt;</span>
-<a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a><span class="w">      </span><span class="nt">&lt;format&gt;</span>CSV<span class="nt">&lt;/format&gt;</span>
-<a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="w">    </span><span class="nt">&lt;/report&gt;</span>
-<a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="w">    </span><span class="nt">&lt;report&gt;</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a><span class="w">      </span><span class="nt">&lt;file&gt;</span>report.html<span class="nt">&lt;/file&gt;</span>
-<a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a><span class="w">      </span><span class="nt">&lt;format&gt;</span>HTML<span class="nt">&lt;/format&gt;</span>
-<a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a><span class="w">    </span><span class="nt">&lt;/report&gt;</span>
-<a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="w">  </span><span class="nt">&lt;/reports&gt;</span>
-<a id="__codelineno-10-13" name="__codelineno-10-13" href="#__codelineno-10-13"></a><span class="nt">&lt;/configuration&gt;</span>
+<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">&lt;configuration&gt;</span>
+<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&lt;reports&gt;</span>
+<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">&lt;report&gt;</span>
+<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">      </span><span class="nt">&lt;file&gt;</span>report.csv<span class="nt">&lt;/file&gt;</span>
+<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">      </span><span class="nt">&lt;format&gt;</span>CSV<span class="nt">&lt;/format&gt;</span>
+<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nt">&lt;/report&gt;</span>
+<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">    </span><span class="nt">&lt;report&gt;</span>
+<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="w">      </span><span class="nt">&lt;file&gt;</span>report.html<span class="nt">&lt;/file&gt;</span>
+<a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="w">      </span><span class="nt">&lt;format&gt;</span>HTML<span class="nt">&lt;/format&gt;</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a><span class="w">    </span><span class="nt">&lt;/report&gt;</span>
+<a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a><span class="w">  </span><span class="nt">&lt;/reports&gt;</span>
+<a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a><span class="nt">&lt;/configuration&gt;</span>
 </code></pre></div>
 <h2 id="classpath-and-yaml-configuration">Classpath and YAML configuration<a class="headerlink" href="#classpath-and-yaml-configuration" title="Permanent link">&para;</a></h2>
 <p>The plug-in automatically includes the current project's compile-scope dependencies in the analysis classpath.
 To add extra entries:</p>
-<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="nt">&lt;configuration&gt;</span>
-<a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a><span class="w">  </span><span class="nt">&lt;classpath&gt;</span>
-<a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a><span class="w">    </span><span class="nt">&lt;path&gt;</span>/path/to/common-dependency.jar<span class="nt">&lt;/path&gt;</span>
-<a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a><span class="w">  </span><span class="nt">&lt;/classpath&gt;</span>
-<a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a><span class="w">  </span><span class="nt">&lt;baselineClasspath&gt;</span>
-<a id="__codelineno-11-7" name="__codelineno-11-7" href="#__codelineno-11-7"></a><span class="w">    </span><span class="nt">&lt;path&gt;</span>/path/to/old-dependency.jar<span class="nt">&lt;/path&gt;</span>
-<a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a><span class="w">  </span><span class="nt">&lt;/baselineClasspath&gt;</span>
-<a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="nt">&lt;/configuration&gt;</span>
-</code></pre></div>
-<p>Instead, the Maven plug-in can reuse an existing configuration file that specifies classpaths, exclusion policies, etc. Note that Maven parameters override YAML values.</p>
 <div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-12-1" name="__codelineno-12-1" href="#__codelineno-12-1"></a><span class="nt">&lt;configuration&gt;</span>
 <a id="__codelineno-12-2" name="__codelineno-12-2" href="#__codelineno-12-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
-<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&lt;configFile&gt;</span>roseau.yaml<span class="nt">&lt;/configFile&gt;</span>
-<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="nt">&lt;/configuration&gt;</span>
+<a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a><span class="w">  </span><span class="nt">&lt;classpath&gt;</span>
+<a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="w">    </span><span class="nt">&lt;path&gt;</span>/path/to/common-dependency.jar<span class="nt">&lt;/path&gt;</span>
+<a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="w">  </span><span class="nt">&lt;/classpath&gt;</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a><span class="w">  </span><span class="nt">&lt;baselineClasspath&gt;</span>
+<a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a><span class="w">    </span><span class="nt">&lt;path&gt;</span>/path/to/old-dependency.jar<span class="nt">&lt;/path&gt;</span>
+<a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a><span class="w">  </span><span class="nt">&lt;/baselineClasspath&gt;</span>
+<a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a><span class="nt">&lt;/configuration&gt;</span>
+</code></pre></div>
+<p>Instead, the Maven plug-in can reuse an existing configuration file that specifies classpaths, exclusion policies, etc. Note that Maven parameters override YAML values.</p>
+<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">&lt;configuration&gt;</span>
+<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
+<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&lt;configFile&gt;</span>roseau.yaml<span class="nt">&lt;/configFile&gt;</span>
+<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="nt">&lt;/configuration&gt;</span>
 </code></pre></div>
 <h2 id="export-api-models">Export API models<a class="headerlink" href="#export-api-models" title="Permanent link">&para;</a></h2>
 <p>Export the API models as JSON for archival or further analysis:</p>
-<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-13-1" name="__codelineno-13-1" href="#__codelineno-13-1"></a><span class="nt">&lt;configuration&gt;</span>
-<a id="__codelineno-13-2" name="__codelineno-13-2" href="#__codelineno-13-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
-<a id="__codelineno-13-3" name="__codelineno-13-3" href="#__codelineno-13-3"></a><span class="w">  </span><span class="nt">&lt;exportBaselineApi&gt;</span>${project.build.directory}/roseau/baseline-api.json<span class="nt">&lt;/exportBaselineApi&gt;</span>
-<a id="__codelineno-13-4" name="__codelineno-13-4" href="#__codelineno-13-4"></a><span class="w">  </span><span class="nt">&lt;exportCurrentApi&gt;</span>${project.build.directory}/roseau/current-api.json<span class="nt">&lt;/exportCurrentApi&gt;</span>
-<a id="__codelineno-13-5" name="__codelineno-13-5" href="#__codelineno-13-5"></a><span class="nt">&lt;/configuration&gt;</span>
+<div class="language-xml highlight"><pre><span></span><code><a id="__codelineno-14-1" name="__codelineno-14-1" href="#__codelineno-14-1"></a><span class="nt">&lt;configuration&gt;</span>
+<a id="__codelineno-14-2" name="__codelineno-14-2" href="#__codelineno-14-2"></a><span class="w">  </span><span class="nt">&lt;baselineJar&gt;</span>${project.basedir}/old.jar<span class="nt">&lt;/baselineJar&gt;</span>
+<a id="__codelineno-14-3" name="__codelineno-14-3" href="#__codelineno-14-3"></a><span class="w">  </span><span class="nt">&lt;exportBaselineApi&gt;</span>${project.build.directory}/roseau/baseline-api.json<span class="nt">&lt;/exportBaselineApi&gt;</span>
+<a id="__codelineno-14-4" name="__codelineno-14-4" href="#__codelineno-14-4"></a><span class="w">  </span><span class="nt">&lt;exportCurrentApi&gt;</span>${project.build.directory}/roseau/current-api.json<span class="nt">&lt;/exportCurrentApi&gt;</span>
+<a id="__codelineno-14-5" name="__codelineno-14-5" href="#__codelineno-14-5"></a><span class="nt">&lt;/configuration&gt;</span>
 </code></pre></div>
 
 
