@@ -33,14 +33,17 @@ import java.util.stream.Stream;
  */
 public final class JdtTypesExtractor implements TypesExtractor {
 	private final ApiFactory factory;
+	private final boolean failOnJdtError;
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JdtTypesExtractor.class);
 
-	record ParsingResult(Set<TypeDecl> types, Set<ModuleDecl> modules) {
+	public JdtTypesExtractor(ApiFactory factory) {
+		this(factory, false);
 	}
 
-	public JdtTypesExtractor(ApiFactory factory) {
+	public JdtTypesExtractor(ApiFactory factory, boolean failOnJdtError) {
 		this.factory = Preconditions.checkNotNull(factory);
+		this.failOnJdtError = failOnJdtError;
 	}
 
 	@Override
@@ -93,9 +96,24 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		parser.setEnvironment(classpathEntries, sourcesRootArray, null, true);
 
 		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
+		FileASTRequestor requestor = getRequestor(library, sink);
+
+		// Start parsing and forwarding ASTs
+		try {
+			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
+			return new ParsingResult(sink.getTypes(), sink.getModules());
+		} catch (RoseauException e) {
+			throw e;
+		} catch (RuntimeException e) {
+			// Catching JDT's internal messy errors
+			throw new RoseauException("JDT failed to parse code from " + library.getLocation(), e);
+		}
+	}
+
+	private FileASTRequestor getRequestor(Library library, ExtractorSink sink) {
 		Set<String> reportedErrors = ConcurrentHashMap.newKeySet();
-		// Receive parsed ASTs and forward them to the visitor
-		FileASTRequestor requestor = new FileASTRequestor() {
+		// Receives parsed ASTs and forward them to the visitor
+		return new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
 				Path filePath = library.getLocation().relativize(Path.of(sourceFilePath));
@@ -104,23 +122,20 @@ public final class JdtTypesExtractor implements TypesExtractor {
 					// Actual parsing errors are just warnings for us
 					Arrays.stream(problems)
 						.filter(IProblem::isError)
+						// Report errors only once
 						.filter(p -> reportedErrors.add(p.getMessage()))
-						.forEach(p -> LOGGER.warn("JDT error [{}:{}]: {}", filePath, p.getSourceLineNumber(), p.getMessage()));
+						.forEach(p -> {
+							LOGGER.warn("JDT error [{}:{}]: {}", filePath, p.getSourceLineNumber(), p.getMessage());
+							if (failOnJdtError) {
+								throw new RoseauException("JDT failed to parse; aborting");
+							}
+						});
 				}
 
 				JdtApiVisitor visitor = new JdtApiVisitor(ast, filePath, sink, factory);
 				ast.accept(visitor);
 			}
 		};
-
-		// Start parsing and forwarding ASTs
-		try {
-			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
-			return new ParsingResult(sink.getTypes(), sink.getModules());
-		} catch (RuntimeException e) {
-			// Catching JDT's internal messy errors
-			throw new RoseauException("JDT failed to parse code from " + library.getLocation(), e);
-		}
 	}
 
 	private static boolean canExtract(Library library) {

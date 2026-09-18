@@ -47,10 +47,6 @@ public class AsmTypesExtractor implements TypesExtractor {
 		}
 	}
 
-	public boolean canExtract(Library library) {
-		return library != null && library.isJar();
-	}
-
 	/**
 	 * Extracts the {@link LibraryTypes} stored in the provided JAR file.
 	 *
@@ -60,7 +56,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private LibraryTypes extractTypes(Library library, JarFile jar) {
 		ExtractorSink sink = new ExtractorSink(jar.size() << 1);
 		jar.versionedStream().parallel()
-			.filter(this::isRegularClassFile)
+			.filter(AsmTypesExtractor::isRegularClassFile)
 			.forEach(entry -> processEntry(jar, entry, sink));
 
 		Set<TypeDecl> types = sink.getTypes();
@@ -72,7 +68,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 		};
 	}
 
-	public void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
+	private void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
 		try (InputStream is = jar.getInputStream(entry)) {
 			ClassReader reader = new ClassReader(is);
 			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
@@ -88,9 +84,13 @@ public class AsmTypesExtractor implements TypesExtractor {
 		reader.accept(visitor, PARSING_OPTIONS);
 	}
 
-	private boolean isRegularClassFile(JarEntry entry) {
+	private static boolean isRegularClassFile(JarEntry entry) {
 		return !entry.isDirectory()
 			&& entry.getName().endsWith(".class")
 			&& !ANONYMOUS_MATCHER.matcher(entry.getName()).find();
+	}
+
+	private static boolean canExtract(Library library) {
+		return library != null && library.isJar();
 	}
 }

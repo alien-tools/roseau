@@ -2,6 +2,7 @@ package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -19,13 +20,18 @@ import java.util.List;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class JdtTypesExtractorTest {
-	JdtTypesExtractor extractor;
+	JdtTypesExtractor recoveringExtractor;
+	JdtTypesExtractor failingExtractor;
+	Library library;
 
 	@BeforeEach
 	void setUp() {
-		extractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()));
+		library = Library.of(wd);
+		recoveringExtractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()), false);
+		failingExtractor = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()), true);
 	}
 
 	@TempDir
@@ -33,10 +39,11 @@ class JdtTypesExtractorTest {
 
 	@Test
 	void parse_empty_sources_empty_api() {
-		var api = extractor.extractTypes(Library.of(wd));
+		var types = recoveringExtractor.extractTypes(library);
 
-		assertThat(api).isNotNull();
-		assertThat(api.getAllTypes()).isEmpty();
+		assertThat(types).isNotNull();
+		assertThat(types.getAllTypes()).isEmpty();
+		assertThat(failingExtractor.extractTypes(library)).isEqualTo(types);
 	}
 
 	@Test
@@ -45,16 +52,17 @@ class JdtTypesExtractorTest {
 			package pkg;
 			public class A {}""");
 
-		var api = extractor.extractTypes(Library.of(wd));
+		var types = recoveringExtractor.extractTypes(library);
 
-		assertThat(api.getAllTypes())
+		assertThat(types.getAllTypes())
 			.singleElement()
 			.extracting(TypeDecl::getQualifiedName)
 			.isEqualTo("pkg.A");
+		assertThat(failingExtractor.extractTypes(library)).isEqualTo(types);
 	}
 
 	@Test
-	void parse_syntax_error_ignores() throws IOException {
+	void parse_syntax_errors() throws IOException {
 		Files.writeString(wd.resolve("A.java"), """
 			package pkg;
 			public clazz A {}""");
@@ -64,13 +72,13 @@ class JdtTypesExtractorTest {
 				public int float double f;
 			}""");
 
-		var api = extractor.extractTypes(Library.of(wd));
-
-		assertThat(api).isNotNull();
-		assertThat(api.getAllTypes()).hasSize(1);
-
-		var b = api.findType("pkg.B").orElseThrow();
+		var types = recoveringExtractor.extractTypes(library);
+		assertThat(types).isNotNull();
+		assertThat(types.getAllTypes()).hasSize(1);
+		var b = types.findType("pkg.B").orElseThrow();
 		assertThat(b.getDeclaredFields()).isEmpty();
+
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -86,7 +94,7 @@ class JdtTypesExtractorTest {
 				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
 			}""");
 
-		var types = extractor.extractTypes(Library.of(wd));
+		var types = recoveringExtractor.extractTypes(library);
 		var api = Roseau.buildAPI(types);
 
 		assertThat(types).isNotNull();
@@ -102,6 +110,8 @@ class JdtTypesExtractorTest {
 
 		// JDT can't parse public <U> B<U> n(unknown.C<U> p1, B<T> p2)
 		assertThat(cls.getDeclaredMethods()).hasSize(1);
+
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -136,12 +146,12 @@ class JdtTypesExtractorTest {
 				public <U> B<U> n(unknown.C<U> p1, B<T> p2) { return null; }
 			}""");
 
-		var types = extractor.extractTypes(Library.of(wd));
-		var api = Roseau.buildAPI(types);
+		var recoveringTypes = recoveringExtractor.extractTypes(library);
+		var recoveringApi = Roseau.buildAPI(recoveringTypes);
 
-		assertThat(types.getAllTypes()).hasSize(7);
+		assertThat(recoveringTypes.getAllTypes()).hasSize(7);
 
-		var cls = assertClass(api, "pkg.A");
+		var cls = assertClass(recoveringApi, "pkg.A");
 		assertThat(cls.getSuperClass()).isEqualTo(new TypeReference<>("unknown.A"));
 		assertThat(cls.getImplementedInterfaces().iterator().next()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("T"))));
@@ -150,13 +160,15 @@ class JdtTypesExtractorTest {
 		var m = cls.getDeclaredMethods().stream().filter(mt -> "m".equals(mt.getSimpleName())).findFirst().get();
 		var n = cls.getDeclaredMethods().stream().filter(mt -> "n".equals(mt.getSimpleName())).findFirst().get();
 		assertThat(m.getType()).isEqualTo(new TypeReference<>("unknown.D"));
-		assertThat(api.analyzer().getErasure(m)).isEqualTo("m(unknown.E[],pkg.F)");
+		assertThat(recoveringApi.analyzer().getErasure(m)).isEqualTo("m(unknown.E[],pkg.F)");
 		assertThat(n.getType()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("U"))));
 		assertThat(n.getParameters().getFirst().type()).isEqualTo(
 			new TypeReference<>("unknown.C", List.of(new TypeParameterReference("U"))));
 		assertThat(n.getParameters().get(1).type()).isEqualTo(
 			new TypeReference<>("unknown.B", List.of(new TypeParameterReference("T"))));
+
+		assertThat(failingExtractor.extractTypes(library)).isEqualTo(recoveringTypes);
 	}
 
 	@Test
@@ -167,6 +179,7 @@ class JdtTypesExtractorTest {
 			public class A {
 				public Missing f;
 			}""")).isEqualTo(new TypeReference<>("com.example.absent.Missing"));
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -178,6 +191,7 @@ class JdtTypesExtractorTest {
 			public class A {
 				public Missing f;
 			}""")).isEqualTo(new TypeReference<>("com.example.exact.Missing"));
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -189,6 +203,7 @@ class JdtTypesExtractorTest {
 			public class A {
 				public Missing f;
 			}""")).isEqualTo(new TypeReference<>("com.example.absent.Missing"));
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -200,6 +215,7 @@ class JdtTypesExtractorTest {
 			public class A {
 				public Missing f;
 			}""")).isEqualTo(new TypeReference<>("Missing"));
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -209,6 +225,7 @@ class JdtTypesExtractorTest {
 			public class A {
 				public pkgtwo.Missing f;
 			}""")).isEqualTo(new TypeReference<>("pkgtwo.Missing"));
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -221,6 +238,7 @@ class JdtTypesExtractorTest {
 				public List<Missing> f;
 			}""")).isEqualTo(new TypeReference<>("java.util.List",
 			List.of(new TypeReference<>("com.example.absent.Missing"))));
+		assertThatFailingExtractorFails();
 	}
 
 	@Test
@@ -231,11 +249,18 @@ class JdtTypesExtractorTest {
 			public class A {
 				public Missing<String> f;
 			}""")).isEqualTo(new TypeReference<>("com.example.absent.Missing", List.of(TypeReference.STRING)));
+		assertThatFailingExtractorFails();
 	}
 
 	private ITypeReference typeOfField(String source) throws IOException {
 		Files.writeString(wd.resolve("A.java"), source);
-		var api = Roseau.buildAPI(extractor.extractTypes(Library.of(wd)));
+		var api = Roseau.buildAPI(recoveringExtractor.extractTypes(library));
 		return assertClass(api, "pkg.A").getDeclaredFields().iterator().next().getType();
+	}
+
+	private void assertThatFailingExtractorFails() {
+		assertThatThrownBy(() -> failingExtractor.extractTypes(library))
+			.isInstanceOf(RoseauException.class)
+			.hasMessageStartingWith("JDT failed to parse; aborting");
 	}
 }
