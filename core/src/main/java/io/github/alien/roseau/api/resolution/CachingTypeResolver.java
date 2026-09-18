@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.resolution;
 
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
+import com.google.common.collect.ImmutableSortedSet;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.slf4j.Logger;
@@ -9,6 +10,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 /**
@@ -30,6 +33,11 @@ public class CachingTypeResolver implements TypeResolver {
 		CacheBuilder.newBuilder()
 			.maximumSize(5_000L)
 			.build();
+
+	/**
+	 * Keeps track of every type reference that could not be resolved.
+	 */
+	private final Set<String> unresolvedTypes = ConcurrentHashMap.newKeySet();
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(CachingTypeResolver.class);
 
@@ -66,9 +74,15 @@ public class CachingTypeResolver implements TypeResolver {
 			.findFirst()
 			.map(ResolvedType::new)
 			.orElseGet(() -> {
+				unresolvedTypes.add(qualifiedName);
 				LOGGER.warn("Failed to resolve type reference {} of kind {}; " +
 					"is the classpath correct?", qualifiedName, type.getSimpleName());
 				return ResolvedType.UNRESOLVED;
 			});
+	}
+
+	@Override
+	public Set<String> getUnresolvedTypes() {
+		return ImmutableSortedSet.copyOf(unresolvedTypes);
 	}
 }

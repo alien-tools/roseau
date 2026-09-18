@@ -93,6 +93,24 @@ class CachingTypeResolverTest {
 	}
 
 	@Test
+	void unresolved_types_are_recorded() {
+		var unknown = new TypeReference<>("pkg.UnknownType");
+		var other = new TypeReference<>("pkg.AnotherUnknownType");
+		var known = new TypeReference<>("pkg.Type");
+		var type = mock(ClassDecl.class);
+
+		when(provider1.findType("pkg.Type", TypeDecl.class)).thenReturn(Optional.of(type));
+
+		resolver.resolve(unknown);
+		resolver.resolve(other);
+		resolver.resolve(unknown);
+		resolver.resolve(known);
+
+		assertThat(resolver.getUnresolvedTypes())
+			.containsExactly("pkg.AnotherUnknownType", "pkg.UnknownType");
+	}
+
+	@Test
 	void resolve_unexpected_type_kind() {
 		var reference = new TypeReference<ClassDecl>("pkg.Class");
 		var illReference = new TypeReference<InterfaceDecl>("pkg.Class");

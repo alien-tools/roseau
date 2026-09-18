@@ -108,6 +108,13 @@ public final class RoseauMojo extends AbstractMojo {
 	private boolean failOnSourceIncompatibility;
 
 	/**
+	 * Fails the build when some types cannot be resolved, instead of reporting breaking changes computed from an
+	 * incomplete API model. Recommended in CI, where the warnings Roseau logs for unresolved types go unnoticed.
+	 */
+	@Parameter(property = "roseau.failOnUnresolvedTypes")
+	private Boolean failOnUnresolvedTypes;
+
+	/**
 	 * Baseline artifact coordinates as a string ({@code groupId:artifactId:version[:extension[:classifier]]})
 	 * resolved from Maven repositories. Takes precedence over {@code baselineDependency} when set.
 	 */
@@ -336,7 +343,7 @@ public final class RoseauMojo extends AbstractMojo {
 		} else if (Boolean.TRUE.equals(binaryOnly) && sourceOnly == null) {
 			mavenSourceOnly = false;
 		}
-		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, mavenSourceOnly, mavenBinaryOnly);
+		RoseauOptions.Diff diff = new RoseauOptions.Diff(null, mavenSourceOnly, mavenBinaryOnly, failOnUnresolvedTypes);
 
 		// Build Reports list
 		List<RoseauOptions.Report> reportsList = reports != null
@@ -479,6 +486,15 @@ public final class RoseauMojo extends AbstractMojo {
 
 		// Run diff
 		RoseauReport report = Roseau.diff(oldLibrary, newLibrary);
+
+		// Reject a verdict computed from an incomplete API model before reporting anything
+		if (Boolean.TRUE.equals(options.diff().failOnUnresolved())) {
+			try {
+				report.checkFullyResolved();
+			} catch (RoseauException e) {
+				throw new MojoExecutionException(e.getMessage(), e);
+			}
+		}
 
 		// Export APIs if configured
 		exportApis(report, options);
@@ -656,7 +672,8 @@ public final class RoseauMojo extends AbstractMojo {
 		RoseauOptions.Diff diff = new RoseauOptions.Diff(
 			resolvePath(options.diff().ignore()),
 			options.diff().sourceOnly(),
-			options.diff().binaryOnly()
+			options.diff().binaryOnly(),
+			options.diff().failOnUnresolved()
 		);
 
 		return new RoseauOptions(common, v1, v2, diff, options.reports());

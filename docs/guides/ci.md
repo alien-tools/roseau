@@ -3,11 +3,14 @@
 Roseau is meant to be easily integrated into build and CI pipelines to spot breaking changes as early as possible. A typical example is as follows:
 
 ```bash
-roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar --fail-on-bc --plain \
+roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar
+  --fail-on-bc
+  --fail-on-unresolved
+  --plain \
   --report JSON=reports/breaking-changes.json
 ```
 
-`--fail-on-bc` makes the process fail when breaking changes are found. `--plain` removes ANSI control codes from the log output. The `--report` option generates a machine-readable JSON report.
+`--fail-on-bc` makes the process fail when breaking changes are found. `--fail-on-unresolved` makes it fail when the analysis is unreliable due to missing types in the classpath. `--plain` removes ANSI control codes from the log output. The `--report` option generates a machine-readable JSON report.
 
 ## Exit Codes
 
@@ -15,4 +18,4 @@ roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar --fail-on-bc --plain \
 | --- | --- |
 | `0` | the check completed and no breaking changes were found |
 | `1` | `--fail-on-bc` was set and breaking changes were found |
-| `2` | the command failed before producing a result |
+| `2` | the command failed before producing a result, or `--fail-on-unresolved` was set and some types could not be resolved |

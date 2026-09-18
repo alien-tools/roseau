@@ -141,6 +141,22 @@ By default, the plug-in reports breaking changes as Maven warnings (`[WARN]`) bu
 </configuration>
 ```
 
+## Fail on unresolved types
+
+The baseline and the current version are analyzed against their classpaths. When a type is declared neither in the analyzed project nor on its classpath, the API models are incomplete and the reported breaking changes may be inaccurate. The plug-in logs a warning for each such type.
+
+Maintainers who gate their builds on Roseau should also fail on unresolved types, so that an incomplete classpath is reported as a setup problem instead of a list of spurious breaking changes:
+
+```xml
+<configuration>
+  <baselineJar>${project.basedir}/old.jar</baselineJar>
+  <!-- Fail the build when some types cannot be resolved -->
+  <failOnUnresolvedTypes>true</failOnUnresolvedTypes>
+</configuration>
+```
+
+The build then fails before any report is written, listing the types that could not be resolved. Complete the classpath of the version at fault with `classpath`/`classpathPom` or `baselineClasspath`/`baselineClasspathPom` to fix it.
+
 ## Narrow the scope of reported breaking changes
 
 Report only binary-breaking or only source-breaking changes:

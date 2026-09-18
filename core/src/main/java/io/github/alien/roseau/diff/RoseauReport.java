@@ -1,6 +1,7 @@
 package io.github.alien.roseau.diff;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
@@ -144,6 +145,40 @@ public final class RoseauReport {
 				() -> new TreeMap<>(Comparator.comparing(TypeMemberDecl::getQualifiedName)),
 				Collectors.toList()
 			));
+	}
+
+	/**
+	 * Returns the qualified names of the types that could not be resolved while analyzing either version.
+	 *
+	 * @return the qualified names of the unresolved types
+	 * @see #checkFullyResolved()
+	 */
+	public Set<String> getUnresolvedTypes() {
+		return ImmutableSortedSet.<String>naturalOrder()
+			.addAll(v1.getUnresolvedTypes())
+			.addAll(v2.getUnresolvedTypes())
+			.build();
+	}
+
+	/**
+	 * Checks that both API models are complete, i.e. that every type reference the analysis needed was resolved.
+	 *
+	 * @throws RoseauException if at least one type could not be resolved
+	 */
+	public void checkFullyResolved() {
+		Set<String> unresolved = getUnresolvedTypes();
+		if (unresolved.isEmpty()) {
+			return;
+		}
+
+		String names = unresolved.stream()
+			.limit(25L)
+			.collect(Collectors.joining(", "));
+		String more = unresolved.size() > 25
+			? ", and %d more".formatted(unresolved.size() - 25)
+			: "";
+		throw new RoseauException(("%d type(s) could not be resolved (%s%s); make sure the classpaths are accurate")
+			.formatted(unresolved.size(), names, more));
 	}
 
 	public RoseauReport filterReport(RoseauOptions.Diff diffOptions) {

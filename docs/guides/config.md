@@ -48,7 +48,7 @@ common:
 | `common` | shared classpath and exclusion rules |
 | `v1` | input path and overrides for the baseline version |
 | `v2` | input path and overrides for the current version |
-| `diff` | filtering options such as `ignore`, `binaryOnly`, and `sourceOnly` |
+| `diff` | diff options such as `ignore`, `binaryOnly`, `sourceOnly`, and `failOnUnresolved` |
 | `reports` | report files to generate |
 
 ```yaml title="roseau.yaml"
@@ -75,6 +75,7 @@ diff:
   ignore: /path/to/ignored.csv
   binaryOnly: false
   sourceOnly: false
+  failOnUnresolved: false
 
 reports:
   - file: reports/breaking-changes.csv

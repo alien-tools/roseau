@@ -10,6 +10,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.Set;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -62,6 +63,16 @@ public final class API {
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
 		return Optional.ofNullable(exportedTypes.get(qualifiedName));
+	}
+
+	/**
+	 * Returns the qualified names of the types that could not be resolved while analyzing this API. A non-empty
+	 * result means the API model is incomplete and that verdicts may be inaccurate.
+	 *
+	 * @return the qualified names of the unresolved types
+	 */
+	public Set<String> getUnresolvedTypes() {
+		return analyzer.resolver().getUnresolvedTypes();
 	}
 
 	public Library getLibrary() {

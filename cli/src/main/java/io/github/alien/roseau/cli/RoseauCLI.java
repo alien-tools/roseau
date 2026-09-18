@@ -119,6 +119,9 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--fail-on-bc",
 		description = "Return with exit code 1 if breaking changes are detected")
 	private boolean failMode;
+	@Option(names = "--fail-on-unresolved",
+		description = "Abort with exit code 2 if some types cannot be resolved to avoid spurious breaking changes")
+	private Boolean failOnUnresolved;
 	@Option(names = "--plain",
 		description = "Disable ANSI colors, output plain text")
 	private boolean plain;
@@ -291,7 +294,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		} else if (Boolean.TRUE.equals(binaryOnly) && sourceOnly == null) {
 			cliSourceOnly = false;
 		}
-		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly);
+		RoseauOptions.Diff diffCli = new RoseauOptions.Diff(ignoredCsv, cliSourceOnly, cliBinaryOnly, failOnUnresolved);
 		List<RoseauOptions.Report> reportsCli = reports == null ? List.of() : List.copyOf(reports);
 		RoseauOptions options = new RoseauOptions(commonCli, v1Cli, v2Cli, diffCli, reportsCli);
 		return new PreparedCliOptions(options, resolvedV1.classpath(), resolvedV2.classpath());
@@ -347,6 +350,12 @@ public final class RoseauCLI implements Callable<Integer> {
 		buildClasspath(v1);
 		buildClasspath(v2);
 		RoseauReport report = diff(v1, v2).filterReport(options.diff());
+
+		if (Boolean.TRUE.equals(options.diff().failOnUnresolved())) {
+			// Before printing or writing anything: an incomplete API model makes the whole verdict unreliable
+			report.checkFullyResolved();
+		}
+
 		console.println(new CliFormatter(plain ? CliFormatter.Mode.PLAIN : CliFormatter.Mode.ANSI).format(report));
 
 		if (options.v1().apiReport() != null) {

@@ -198,6 +198,25 @@ class RoseauPluginIT {
 	}
 
 	@Nested
+	@MavenProjectSources(sources = "unresolved-types-test")
+	class UnresolvedTypes {
+		@MavenTest
+		void unresolved_types_do_not_fail_the_build_by_default(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().error().isEmpty();
+			assertThat(result).out().warn().anyMatch(m -> m.contains("pkg.C TYPE_SUPERTYPE_REMOVED"));
+		}
+
+		@SystemProperty("roseau.failOnUnresolvedTypes")
+		@MavenTest
+		void unresolved_types_can_fail_the_build(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error().anyMatch(m -> m.contains("could not be resolved") && m.contains("dep.Base"));
+			assertThat(result).out().warn().noneMatch(m -> m.contains("pkg.C TYPE_SUPERTYPE_REMOVED"));
+		}
+	}
+
+	@Nested
 	@MavenProjectSources(sources = "module-with-maven-baseline")
 	class ModuleWithMavenBaseline {
 		@MavenTest

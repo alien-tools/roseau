@@ -266,6 +266,43 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void fail_on_unresolved_with_incomplete_classpath() {
+		var exitCode = cmd.execute("--v1=src/test/resources/classpath-library/classpath-library.jar",
+			"--v2=src/test/resources/classpath-library/classpath-library.jar",
+			"--diff",
+			"--fail-on-unresolved",
+			"--plain");
+
+		assertThat(err.toString()).contains("dependency.Base");
+		assertThat(out.toString()).doesNotContain("No breaking changes found.");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
+	}
+
+	@Test
+	void fail_on_unresolved_with_complete_classpath() {
+		var exitCode = cmd.execute("--v1=src/test/resources/classpath-library/classpath-library.jar",
+			"--v2=src/test/resources/classpath-library/classpath-library.jar",
+			"--classpath=src/test/resources/classpath-dependency/classes",
+			"--diff",
+			"--fail-on-unresolved",
+			"--plain");
+
+		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void no_fail_on_unresolved_with_incomplete_classpath() {
+		var exitCode = cmd.execute("--v1=src/test/resources/classpath-library/classpath-library.jar",
+			"--v2=src/test/resources/classpath-library/classpath-library.jar",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString()).contains("No breaking changes found.");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void valid_pom(@TempDir Path tempDir) {
 		var api = tempDir.resolve("api.json");
 		var pom = Path.of("src/test/resources/valid-pom.xml");
@@ -612,6 +649,24 @@ class RoseauCLITest {
 			.doesNotContain("FORMAL_TYPE_PARAMETER_REMOVED")
 			.contains("METHOD_NOW_STATIC");
 		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void yaml_fail_on_unresolved_is_honored(@TempDir Path tempDir) throws IOException {
+		var config = tempDir.resolve("roseau.yaml");
+		Files.writeString(config, """
+			diff:
+			  failOnUnresolved: true
+			""");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/classpath-library/classpath-library.jar",
+			"--v2=src/test/resources/classpath-library/classpath-library.jar",
+			"--diff",
+			"--config=" + config,
+			"--plain");
+
+		assertThat(err.toString()).contains("dependency.Base");
+		assertThat(exitCode).isEqualTo(ExitCode.ERROR.code());
 	}
 
 	@Test

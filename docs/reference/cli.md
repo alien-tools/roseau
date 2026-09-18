@@ -57,6 +57,7 @@ Classpath entries are JARs or class directories, separated by `:` (`;` on Window
 | --- | --- |
 | `--config=<path>` | Load options from a `roseau.yaml` file; CLI options take precedence |
 | `--fail-on-bc` | Return exit code `1` when breaking changes are found |
+| `--fail-on-unresolved` | Return exit code `2` when some types cannot be resolved, which makes the analysis inaccurate |
 | `--plain` | Disable ANSI colors, output plain text |
 | `-v`, `--verbose` | Increase verbosity: `-v` for verbose output, `-vv` for debug output |
 
@@ -66,4 +67,4 @@ Classpath entries are JARs or class directories, separated by `:` (`;` on Window
 | --- | --- |
 | `0` | The check completed and no breaking changes were found (or `--fail-on-bc` was not set) |
 | `1` | `--fail-on-bc` was set and breaking changes were found |
-| `2` | The command failed before producing a result |
+| `2` | The command failed before producing a result, or `--fail-on-unresolved` was set and some types could not be resolved |

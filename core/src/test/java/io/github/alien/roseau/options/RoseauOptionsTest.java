@@ -33,7 +33,7 @@ class RoseauOptionsTest {
 		var commonBase = new RoseauOptions.Common(cpBase, exBase);
 		var libBase = new RoseauOptions.Library(
 			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
-		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true);
+		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true, true);
 		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
@@ -43,7 +43,7 @@ class RoseauOptionsTest {
 		var commonOther = new RoseauOptions.Common(cpOther, exOther);
 		var libOther = new RoseauOptions.Library(
 			Path.of("other-lib"), cpOther, exOther, Path.of("other.json"));
-		var diffOther = new RoseauOptions.Diff(Path.of("other-ignore.csv"), false, false);
+		var diffOther = new RoseauOptions.Diff(Path.of("other-ignore.csv"), false, false, false);
 		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther,
 			List.of(new RoseauOptions.Report(Path.of("other.html"), BreakingChangesFormatterFactory.HTML)));
 
@@ -52,6 +52,7 @@ class RoseauOptionsTest {
 		assertThat(merged.diff().ignore()).isEqualTo(Path.of("other-ignore.csv"));
 		assertThat(merged.diff().sourceOnly()).isFalse();
 		assertThat(merged.diff().binaryOnly()).isFalse();
+		assertThat(merged.diff().failOnUnresolved()).isFalse();
 		assertThat(merged.reports()).singleElement().isEqualTo(
 			new RoseauOptions.Report(Path.of("other.html"), BreakingChangesFormatterFactory.HTML));
 
@@ -78,7 +79,7 @@ class RoseauOptionsTest {
 		var commonBase = new RoseauOptions.Common(cpBase, exBase);
 		var libBase = new RoseauOptions.Library(
 			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
-		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true);
+		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true, true);
 		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
@@ -86,7 +87,7 @@ class RoseauOptionsTest {
 		var exOther = new RoseauOptions.Exclude(List.of(), List.of());
 		var commonOther = new RoseauOptions.Common(cpOther, exOther);
 		var libOther = new RoseauOptions.Library(null, cpOther, exOther, null);
-		var diffOther = new RoseauOptions.Diff(null, null, null);
+		var diffOther = new RoseauOptions.Diff(null, null, null, null);
 		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther, List.of());
 
 		var merged = base.mergeWith(other);
@@ -150,6 +151,7 @@ class RoseauOptionsTest {
 			  ignore: /ignore.csv
 			  sourceOnly: false
 			  binaryOnly: true
+			  failOnUnresolved: true
 			reports:
 			  - file: /report.csv
 			    format: CSV
@@ -169,6 +171,7 @@ class RoseauOptionsTest {
 		assertThat(options.diff().ignore()).isEqualTo(Path.of("/ignore.csv"));
 		assertThat(options.diff().sourceOnly()).isEqualTo(false);
 		assertThat(options.diff().binaryOnly()).isEqualTo(true);
+		assertThat(options.diff().failOnUnresolved()).isEqualTo(true);
 		assertThat(options.reports()).containsExactly(
 			new RoseauOptions.Report(Path.of("/report.csv"), BreakingChangesFormatterFactory.CSV),
 			new RoseauOptions.Report(Path.of("/report.html"), BreakingChangesFormatterFactory.HTML));

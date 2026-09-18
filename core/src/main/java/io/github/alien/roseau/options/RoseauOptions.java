@@ -75,15 +75,17 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	/**
 	 * Diff options.
 	 *
-	 * @param ignore     the CSV "ignore" file to use
-	 * @param sourceOnly whether to report source-breaking changes only
-	 * @param binaryOnly whether to report binary-breaking changes only
+	 * @param ignore           the CSV "ignore" file to use
+	 * @param sourceOnly       whether to report source-breaking changes only
+	 * @param binaryOnly       whether to report binary-breaking changes only
+	 * @param failOnUnresolved whether to abort the analysis when a type cannot be resolved
 	 */
-	public record Diff(Path ignore, Boolean sourceOnly, Boolean binaryOnly) {
+	public record Diff(Path ignore, Boolean sourceOnly, Boolean binaryOnly, Boolean failOnUnresolved) {
 		Diff mergeWith(Diff other) {
 			return other != null
 				? new Diff(either(other.ignore(), ignore), either(other.sourceOnly(), either(sourceOnly, false)),
-					either(other.binaryOnly(), either(binaryOnly, false)))
+				either(other.binaryOnly(), either(binaryOnly, false)),
+				either(other.failOnUnresolved(), either(failOnUnresolved, false)))
 				: this;
 		}
 	}
@@ -169,7 +171,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
 		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null);
 		Common defaultCommon = new Common(defaultClasspath, defaultExclusion);
-		Diff diff = new Diff(null, false, false);
+		Diff diff = new Diff(null, false, false, false);
 		List<Report> defaultReports = List.of();
 		return new RoseauOptions(defaultCommon, defaultLibrary, defaultLibrary, diff, defaultReports);
 	}
