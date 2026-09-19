@@ -1,8 +1,10 @@
 package io.github.alien.roseau.diff.rules.breaking;
 
+import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.diff.rules.MemberRule;
@@ -31,7 +33,7 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 		thrown1.stream()
 			// An exception that is no longer checked in v2 constrains no client: callers need not catch it and
 			// overriders need not declare it, so removing (or keeping) it from the throws clause is compatible.
-			.filter(exc1 -> ctx.v2().analyzer().isCheckedException(exc1))
+			.filter(exc1 -> isChecked(exc1, ctx))
 			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
 				effectivelyFinal
 					? ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)
@@ -49,5 +51,12 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION,
 					ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNowThrowsCheckedException(exc2)));
+	}
+
+	private static boolean isChecked(ITypeReference exception, MemberRuleContext ctx) {
+		boolean goneInV2 = exception instanceof TypeReference<?> reference &&
+			ctx.v2().analyzer().resolver().resolve(reference).isEmpty();
+		API version = goneInV2 ? ctx.v1() : ctx.v2();
+		return version.analyzer().isCheckedException(exception);
 	}
 }

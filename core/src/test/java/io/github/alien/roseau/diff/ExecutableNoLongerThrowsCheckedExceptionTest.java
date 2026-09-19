@@ -379,4 +379,25 @@ class ExecutableNoLongerThrowsCheckedExceptionTest {
 
 		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (MyException e) {}""")
+	@Test
+	void method_no_longer_throws_exception_removed_from_the_api() {
+		var v1 = """
+			public class MyException extends Exception {}
+			public class A {
+				public void m() throws MyException {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("MyException", "MyException", BreakingChangeKind.TYPE_REMOVED, 1),
+			bc("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2));
+	}
 }

@@ -35,7 +35,7 @@ public class CachingTypeResolver implements TypeResolver {
 			.build();
 
 	/**
-	 * Keeps track of every type reference that could not be resolved.
+	 * Keeps track of every type reference this resolver was asked to resolve and could not.
 	 */
 	private final Set<String> unresolvedTypes = ConcurrentHashMap.newKeySet();
 
@@ -75,8 +75,7 @@ public class CachingTypeResolver implements TypeResolver {
 			.map(ResolvedType::new)
 			.orElseGet(() -> {
 				unresolvedTypes.add(qualifiedName);
-				LOGGER.warn("Failed to resolve type reference {} of kind {}; " +
-					"is the classpath correct?", qualifiedName, type.getSimpleName());
+				LOGGER.debug("Failed to resolve type reference {} of kind {}", qualifiedName, type.getSimpleName());
 				return ResolvedType.UNRESOLVED;
 			});
 	}

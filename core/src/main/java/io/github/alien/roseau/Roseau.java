@@ -30,6 +30,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
@@ -116,6 +117,12 @@ public final class Roseau {
 		if (LOGGER.isDebugEnabled()) {
 			LOGGER.debug("Diffing APIs took {}ms ({} breaking changes)",
 				sw.elapsed().toMillis(), report.getBreakingChanges().size());
+		}
+
+		Set<String> unresolved = report.getUnresolvedTypes();
+		if (!unresolved.isEmpty()) {
+			LOGGER.warn("{} type(s) could not be resolved ({}); are the classpaths correct?",
+				unresolved.size(), String.join(", ", unresolved));
 		}
 
 		return report;

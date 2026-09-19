@@ -10,6 +10,8 @@ import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.api.visit.AbstractApiVisitor;
+import io.github.alien.roseau.api.visit.Visit;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
@@ -27,6 +29,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -155,9 +158,24 @@ public final class RoseauReport {
 	 */
 	public Set<String> getUnresolvedTypes() {
 		return ImmutableSortedSet.<String>naturalOrder()
-			.addAll(v1.getUnresolvedTypes())
-			.addAll(v2.getUnresolvedTypes())
+			.addAll(missingFromClasspath(v1))
+			.addAll(missingFromClasspath(v2))
 			.build();
+	}
+
+	private static Set<String> missingFromClasspath(API version) {
+		Set<String> referenced = new HashSet<>();
+		new AbstractApiVisitor() {
+			@Override
+			public <U extends TypeDecl> Visit typeReference(TypeReference<U> reference) {
+				return () -> {
+					referenced.add(reference.getQualifiedName());
+					super.typeReference(reference).visit();
+				};
+			}
+		}.$(version.getLibraryTypes()).visit();
+
+		return Sets.intersection(version.getUnresolvedTypes(), referenced);
 	}
 
 	/**

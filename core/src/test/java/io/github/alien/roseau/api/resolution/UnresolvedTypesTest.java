@@ -94,4 +94,102 @@ class UnresolvedTypesTest {
 		var report = Roseau.diff(v1, v2);
 		assertThat(report.getUnresolvedTypes()).isEmpty();
 	}
+
+	@Test
+	void diffing_does_not_record_a_return_type_the_new_version_dropped() {
+		var v1 = buildSourcesAPI("""
+			public class Old {}
+			public class A {
+				public Old m() { return null; }
+			}""");
+		var v2 = buildSourcesAPI("""
+			public class A {
+				public String m() { return null; }
+			}""");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getUnresolvedTypes()).isEmpty();
+	}
+
+	@Test
+	void diffing_does_not_record_a_field_type_the_new_version_dropped() {
+		var v1 = buildSourcesAPI("""
+			public class Old {}
+			public class A {
+				public Old f;
+			}""");
+		var v2 = buildSourcesAPI("""
+			public class A {
+				public String f;
+			}""");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getUnresolvedTypes()).isEmpty();
+	}
+
+	@Test
+	void diffing_does_not_record_a_type_parameter_bound_the_new_version_dropped() {
+		var v1 = buildSourcesAPI("""
+			public class Old {}
+			public class A<T extends Old> {}""");
+		var v2 = buildSourcesAPI("public class A<T extends String> {}");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getUnresolvedTypes()).isEmpty();
+	}
+
+	@Test
+	void diffing_does_not_record_a_thrown_exception_the_new_version_dropped() {
+		var v1 = buildSourcesAPI("""
+			public class MyException extends Exception {}
+			public class A {
+				public void m() throws MyException {}
+			}""");
+		var v2 = buildSourcesAPI("""
+			public class A {
+				public void m() {}
+			}""");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getUnresolvedTypes()).isEmpty();
+	}
+
+	@Test
+	void type_the_old_version_references_and_cannot_resolve_is_still_reported() {
+		var v1 = buildSourcesAPI("""
+			public class A extends unknown.Unknown {
+				public void m() {}
+			}""");
+		var v2 = buildSourcesAPI("""
+			public class A {
+				public void m() {}
+			}""");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getUnresolvedTypes()).containsExactly("unknown.Unknown");
+	}
+
+	@Test
+	void unresolved_type_of_the_new_version_is_still_reported() {
+		var v1 = buildSourcesAPI("""
+			public class A {
+				public String m() { return null; }
+			}""");
+		var v2 = buildSourcesAPI("""
+			public class A {
+				public unknown.Unknown m() { return null; }
+			}""");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(v2.getUnresolvedTypes()).containsExactly("unknown.Unknown");
+		assertThatThrownBy(report::checkFullyResolved)
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("unknown.Unknown");
+	}
 }
