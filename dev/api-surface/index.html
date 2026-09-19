@@ -1058,6 +1058,7 @@
 <li><strong>Visibility:</strong> <code>public</code> and <code>protected</code> declarations are candidates; <code>private</code> and package-private declarations are not. A nested type or member must itself be accessible, and its enclosing type must be accessible as well.</li>
 <li><strong>Module boundaries:</strong> In a named module, a package must appear in an unqualified <code>exports</code> directive to contribute to the API surface. Qualified exports (<code>exports ... to ...</code>) are not considered public API.</li>
 <li><strong>No module declaration:</strong> If the library has no <code>module-info</code>, Roseau treats all packages as accessible.</li>
+<li><strong>Classpath clients:</strong> The same library consumed from the class path ignores its module declaration, so every <code>public</code> type is reachable. Enable <code>ignoreModule</code> (<code>--ignore-module</code> in the CLI, <code>&lt;ignoreModule&gt;</code> in the Maven plug-in) to analyze the library from that point of view.</li>
 </ul>
 <div class="admonition note">
 <p class="admonition-title">Package-private declarations</p>
