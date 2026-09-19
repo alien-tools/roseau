@@ -59,26 +59,26 @@ public final class ApiWalker {
 			.forEach(f2 -> sink.onAddedField(t2, f2));
 
 		v1.analyzer().getExportedMethods(t1).forEach(m1 ->
-			matcher.matchMethod(v2, t2, m1).ifPresentOrElse(
+			matcher.matchMethod(v2, t2, m1, v1, t1).ifPresentOrElse(
 				m2 -> sink.onMatchedMethod(t1, t2, m1, m2),
 				() -> sink.onRemovedMethod(t1, m1)
 			)
 		);
 
 		v2.analyzer().getExportedMethods(t2).stream()
-			.filter(m2 -> matcher.matchMethod(v1, t1, m2).isEmpty())
+			.filter(m2 -> matcher.matchMethod(v1, t1, m2, v2, t2).isEmpty())
 			.forEach(m2 -> sink.onAddedMethod(t2, m2));
 
 		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
 			v1.analyzer().getExportedConstructors(c1).forEach(cons1 ->
-				matcher.matchConstructor(v2, c2, cons1).ifPresentOrElse(
+				matcher.matchConstructor(v2, c2, cons1, v1, c1).ifPresentOrElse(
 					cons2 -> sink.onMatchedConstructor(c1, c2, cons1, cons2),
 					() -> sink.onRemovedConstructor(c1, cons1)
 				)
 			);
 
 			v2.analyzer().getExportedConstructors(c2).stream()
-				.filter(cons2 -> matcher.matchConstructor(v1, c1, cons2).isEmpty())
+				.filter(cons2 -> matcher.matchConstructor(v1, c1, cons2, v2, c2).isEmpty())
 				.forEach(cons2 -> sink.onAddedConstructor(c2, cons2));
 		}
 

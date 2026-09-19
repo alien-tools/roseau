@@ -5,7 +5,9 @@ import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertBC;
+import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
+import static io.github.alien.roseau.utils.TestUtils.bc;
 import static io.github.alien.roseau.utils.TestUtils.buildDiff;
 
 class FormalTypeParameterChangedTest {
@@ -515,5 +517,73 @@ class FormalTypeParameterChangedTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().m(\"\");")
+	@Test
+	void bounded_type_param_renamed_used_as_method_parameter_type() {
+		var v1 = """
+			public class A<T extends CharSequence> {
+				public void m(T t) {}
+			}""";
+		var v2 = """
+			public class A<U extends CharSequence> {
+				public void m(U u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>(\"\");")
+	@Test
+	void bounded_type_param_renamed_used_as_constructor_parameter_type() {
+		var v1 = """
+			public class A<T extends CharSequence> {
+				public A(T t) {}
+			}""";
+		var v2 = """
+			public class A<U extends CharSequence> {
+				public A(U u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		A<String> a = new A<>();
+		a.m("");""")
+	@Test
+	void bound_widened_used_as_method_parameter_type() {
+		// Source-compatible, but the method's erasure and descriptor change from
+		// m(java.lang.String) to m(java.lang.CharSequence): clients compiled against v1 no longer link
+		var v1 = """
+			public class A<T extends String> {
+				public void m(T t) {}
+			}""";
+		var v2 = """
+			public class A<T extends CharSequence> {
+				public void m(T t) {}
+			}""";
+
+		assertBC("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		A<StringBuilder> a = new A<>();
+		a.m(new StringBuilder());""")
+	@Test
+	void bound_narrowed_used_as_method_parameter_type() {
+		var v1 = """
+			public class A<T extends CharSequence> {
+				public void m(T t) {}
+			}""";
+		var v2 = """
+			public class A<T extends String> {
+				public void m(T t) {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1),
+			bc("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_REMOVED, 2));
 	}
 }

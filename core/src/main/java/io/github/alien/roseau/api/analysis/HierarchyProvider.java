@@ -55,9 +55,9 @@ public interface HierarchyProvider {
 	 * Finds a {@link MethodDecl} by erasure, declared (or inherited) by this type.
 	 *
 	 * @param typeDecl the type to search in
-	 * @param erasure  the erasure of the method to find
+	 * @param erasure  the erasure of the method to find, as seen from {@code typeDecl}
 	 * @return an {@link Optional} indicating whether the matching method was found
-	 * @see ErasureProvider#getErasure(ExecutableDecl)
+	 * @see ErasureProvider#getErasure(TypeDecl, ExecutableDecl)
 	 */
 	default Optional<MethodDecl> findMethod(TypeDecl typeDecl, String erasure) {
 		Preconditions.checkNotNull(typeDecl);
@@ -68,14 +68,15 @@ public interface HierarchyProvider {
 	/**
 	 * Finds a {@link ConstructorDecl} by erasure, declared by this type.
 	 *
-	 * @param erasure The erasure to look for
+	 * @param erasure The erasure to look for, as seen from {@code classDecl}
 	 * @return an {@link Optional} indicating whether the matching constructor was found
+	 * @see ErasureProvider#getErasure(TypeDecl, ExecutableDecl)
 	 */
 	default Optional<ConstructorDecl> findConstructor(ClassDecl classDecl, String erasure) {
 		Preconditions.checkNotNull(classDecl);
 		Preconditions.checkNotNull(erasure);
 		return getExportedConstructors(classDecl).stream()
-			.filter(cons -> Objects.equals(erasure, erasure().getErasure(cons)))
+			.filter(cons -> Objects.equals(erasure, erasure().getErasure(classDecl, cons)))
 			.findFirst();
 	}
 
@@ -317,7 +318,8 @@ public interface HierarchyProvider {
 
 	/**
 	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
-	 * method erasure, returns the most concrete implementation, indexed by erasure.
+	 * method erasure, returns the most concrete implementation, indexed by erasure. Erasures are those seen from
+	 * {@code type}: inherited methods are instantiated with its type arguments.
 	 *
 	 * @param type the base type
 	 * @return a map from method erasure to the most concrete implementation of each {@link MethodDecl} that can be
@@ -334,7 +336,7 @@ public interface HierarchyProvider {
 							return decl.getDeclaredMethods().stream().map(m -> instantiate(m, substitutions));
 						})))
 			.collect(Collectors.toMap(
-				erasure()::getErasure,
+				m -> erasure().getErasure(type, m),
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
 			));

@@ -639,4 +639,81 @@ class ExecutableRemovedTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("""
+		// Compatible
+		new A<Integer>().m(1);""")
+	@Test
+	void generic_method_pushed_up_to_a_new_superclass() {
+		var v1 = """
+			public class A<T extends Number> {
+				public void m(T t) {}
+			}""";
+		var v2 = """
+			public class Base<T extends Number> {
+				public void m(T t) {}
+			}
+			public class A<T extends Number> extends Base<T> {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		// Compatible
+		new A<Integer>().m(1);""")
+	@Test
+	void subclass_renames_its_own_type_parameter() {
+		var v1 = """
+			public class Base<T extends Number> {
+				public void m(T t) {}
+			}
+			public class A<T extends Number> extends Base<T> {}""";
+		var v2 = """
+			public class Base<T extends Number> {
+				public void m(T t) {}
+			}
+			public class A<E extends Number> extends Base<E> {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		Base<Integer> b = new A<Integer>();
+		b.m(1);""")
+	@Test
+	void inherited_generic_method_removed_from_subclass_renaming_its_type_parameter() {
+		var v1 = """
+			public class Base<T extends Number> {
+				public void m(T t) {}
+			}
+			public class A<E extends Number> extends Base<E> {
+				public void m(Object o) {}
+			}""";
+		var v2 = """
+			public class Base<T extends Number> {
+			}
+			public class A<E extends Number> extends Base<E> {
+				public void m(Object o) {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("Base", "Base.m(T)", BreakingChangeKind.EXECUTABLE_REMOVED, 2),
+			bc("A", "Base.m(E)", BreakingChangeKind.EXECUTABLE_REMOVED, 2));
+	}
+
+	@Client("new A<Integer>().m(new Object());")
+	@Test
+	void overload_removed_next_to_a_renamed_type_parameter() {
+		var v1 = """
+			public class A<T extends Number> {
+				public void m(T t) {}
+				public void m(Object o) {}
+			}""";
+		var v2 = """
+			public class A<U extends Number> {
+				public void m(U u) {}
+			}""";
+
+		assertBC("A", "A.m(java.lang.Object)", BreakingChangeKind.EXECUTABLE_REMOVED, 3, buildDiff(v1, v2));
+	}
 }

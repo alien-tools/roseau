@@ -1,5 +1,6 @@
 package io.github.alien.roseau.extractors;
 
+import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -164,5 +165,52 @@ class MethodsOverloadingTest {
 		assertTrue(api.analyzer().isOverloading(m2, m3));
 		assertTrue(api.analyzer().isOverloading(m3, m1));
 		assertTrue(api.analyzer().isOverloading(m3, m2));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overloading_inherited_generic_method(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Base<T extends Number> {
+				public void m(T t) {}
+			}
+			public class A<E extends Number> extends Base<E> {
+				public void m(Object o) {}
+			}""");
+
+		var a = assertClass(api, "A");
+
+		// Base.m(T) is inherited as m(E) and erases to m(java.lang.Number): it coexists with A.m(Object)
+		var declared = assertMethod(api, a, "m(java.lang.Object)");
+		var inherited = api.analyzer().findMethod(a, "m(java.lang.Number)").orElseThrow();
+		assertThat(inherited.getQualifiedName()).isEqualTo("Base.m(E)");
+
+		assertTrue(api.analyzer().isOverloading(declared, inherited));
+		assertTrue(api.analyzer().isOverloading(inherited, declared));
+		assertFalse(api.analyzer().isOverriding(declared, inherited));
+		assertFalse(api.analyzer().isOverriding(inherited, declared));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void overloading_methods_inherited_from_unrelated_supertypes(ApiBuilder builder) {
+		var api = builder.build("""
+			public interface I<T extends Number> {
+				void m(T t);
+			}
+			public interface J {
+				void m(Object o);
+			}
+			public abstract class A<E extends Number> implements I<E>, J {
+			}""");
+
+		var a = assertClass(api, "A");
+
+		// I.m(T) is inherited as m(E) and erases to m(java.lang.Number): it does not collide with J.m(Object)
+		assertThat(api.analyzer().getExportedMethodsByErasure(a))
+			.containsKeys("m(java.lang.Number)", "m(java.lang.Object)")
+			.extractingByKeys("m(java.lang.Number)", "m(java.lang.Object)")
+			.extracting(MethodDecl::getQualifiedName)
+			.containsExactly("I.m(E)", "J.m(java.lang.Object)");
 	}
 }

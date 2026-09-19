@@ -114,4 +114,24 @@ class MethodNowFinalTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("""
+		new A<Integer>() {
+			@Override public void m(Object o) {}
+		};""")
+	@Test
+	void method_now_final_next_to_a_renamed_type_parameter() {
+		var v1 = """
+			public class A<T extends Number> {
+				public void m(T t) {}
+				public void m(Object o) {}
+			}""";
+		var v2 = """
+			public class A<U extends Number> {
+				public void m(U u) {}
+				public final void m(Object o) {}
+			}""";
+
+		assertBC("A", "A.m(java.lang.Object)", BreakingChangeKind.METHOD_NOW_FINAL, 3, buildDiff(v1, v2));
+	}
 }

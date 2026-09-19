@@ -259,4 +259,54 @@ class MethodsOverridingTest {
 			.singleElement()
 			.isEqualTo(new TypeReference<>("java.io.IOException"));
 	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_generic_method_is_erased_in_the_inheriting_type_scope(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Base<T extends Number> {
+				public void m(T t) {}
+			}
+			public class A<E extends Number> extends Base<E> {
+				public void m(E e) {}
+			}""");
+
+		var base = assertClass(api, "Base");
+		var a = assertClass(api, "A");
+
+		// Base.m(T) is inherited as m(E); E is declared by A and still bounded by Number, so both
+		// methods erase to m(java.lang.Number) and A.m(E) overrides the inherited one
+		assertTrue(api.analyzer().isOverriding(assertMethod(api, a, "m(java.lang.Number)"),
+			assertMethod(api, base, "m(java.lang.Number)")));
+
+		assertThat(api.analyzer().getDeclaredExportedMethods(a))
+			.singleElement()
+			.extracting(MethodDecl::getQualifiedName)
+			.isEqualTo("A.m(E)");
+
+		var m = api.analyzer().findMethod(a, "m(java.lang.Number)").orElseThrow();
+		assertThat(m.getQualifiedName()).isEqualTo("A.m(E)");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void inherited_generic_method_erasure_in_the_inheriting_type_scope(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Base<T extends Number> {
+				public void arr(T[] ts) {}
+				public void vrg(T... ts) {}
+				public void nested(java.util.List<T> l) {}
+				public <T extends CharSequence> void shadowed(T t) {}
+			}
+			public class A<E extends Number> extends Base<E> {
+			}""");
+
+		var a = assertClass(api, "A");
+
+		// Arrays, varargs and type arguments of an inherited member are erased with E's bound, and a method type
+		// parameter still shadows the type's own
+		assertThat(api.analyzer().getExportedMethodsByErasure(a))
+			.containsKeys("arr(java.lang.Number[])", "vrg(java.lang.Number[])", "nested(java.util.List)",
+				"shadowed(java.lang.CharSequence)");
+	}
 }
