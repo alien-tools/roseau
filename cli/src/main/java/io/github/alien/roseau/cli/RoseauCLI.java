@@ -84,17 +84,17 @@ public final class RoseauCLI implements Callable<Integer> {
 			"(formats: CLI, CSV, HTML, JSON, MD)",
 		converter = ReportOptionConverter.class)
 	private List<RoseauOptions.Report> reports;
-	@Option(names = "--classpath", paramLabel = "<path>[,<path>...]",
+	@Option(names = "--classpath", paramLabel = "<path>[:<path>...]",
 		description = "A colon-separated list of JARs or class directories to include in the classpath " +
 			"(Windows: semi-colon), shared by --v1 and --v2")
 	private String classpath;
 	@Option(names = "--pom", paramLabel = "<path>",
 		description = "A pom.xml file to extract the classpath from, shared by --v1 and --v2")
 	private Path pom;
-	@Option(names = "--v1-classpath", paramLabel = "<path>[,<path>...]",
+	@Option(names = "--v1-classpath", paramLabel = "<path>[:<path>...]",
 		description = "A --classpath for --v1")
 	private String v1Classpath;
-	@Option(names = "--v2-classpath", paramLabel = "<path>[,<path>...]",
+	@Option(names = "--v2-classpath", paramLabel = "<path>[:<path>...]",
 		description = "A --classpath for --v2")
 	private String v2Classpath;
 	@Option(names = "--v1-pom", paramLabel = "<path>",

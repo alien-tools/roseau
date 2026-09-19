@@ -30,10 +30,10 @@ Classpath entries are JARs or class directories, separated by `:` (`;` on Window
 
 | Option | Meaning |
 | --- | --- |
-| `--classpath=<path>[,<path>...]` | Shared classpath for `--v1` and `--v2` |
+| `--classpath=<path>[:<path>...]` | Shared classpath for `--v1` and `--v2` |
 | `--pom=<path>` | Shared `pom.xml` for `--v1` and `--v2` |
-| `--v1-classpath=<path>[,<path>...]` | Classpath only for `--v1` |
-| `--v2-classpath=<path>[,<path>...]` | Classpath only for `--v2` |
+| `--v1-classpath=<path>[:<path>...]` | Classpath only for `--v1` |
+| `--v2-classpath=<path>[:<path>...]` | Classpath only for `--v2` |
 | `--v1-pom=<path>` | `pom.xml` only for `--v1` |
 | `--v2-pom=<path>` | `pom.xml` only for `--v2` |
 

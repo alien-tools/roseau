@@ -67,11 +67,11 @@ Roseau supports different modes, output formats, and options:
 ```
 $ roseau --help
 Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
-              [--api-json=<path>] [--classpath=<path>[,<path>...]]
+              [--api-json=<path>] [--classpath=<path>[:<path>...]]
               [--config=<path>] [--ignored=<path>] [--pom=<path>]
-              [--v1=<path|coordinates>] [--v1-classpath=<path>[,<path>...]]
+              [--v1=<path|coordinates>] [--v1-classpath=<path>[:<path>...]]
               [--v1-pom=<path>] [--v2=<path|coordinates>] [--v2-classpath=<path>
-              [,<path>...]] [--v2-pom=<path>] [--report=<format=path>]...
+              [:<path>...]] [--v2-pom=<path>] [--report=<format=path>]...
               (--api | --diff)
       --api               Serialize the API model of --v1 as JSON; prints to
                             stdout if --api-json is not provided
@@ -80,10 +80,10 @@ Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
       --v2=<path|coordinates> Second version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:2.0.0)
       --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
       --report=<format=path> Write a breaking changes report in the given format to the given path; repeatable (formats: CLI, CSV, HTML, JSON, MD)
-      --classpath=<path>[,<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
+      --classpath=<path>[:<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
       --pom=<path>        A pom.xml file to extract the classpath from, shared by --v1 and --v2
-      --v1-classpath=<path>[,<path>...] A --classpath for --v1
-      --v2-classpath=<path>[,<path>...] A --classpath for --v2
+      --v1-classpath=<path>[:<path>...] A --classpath for --v1
+      --v2-classpath=<path>[:<path>...] A --classpath for --v2
       --v1-pom=<path>     A --pom for --v1
       --v2-pom=<path>     A --pom for --v2
       --binary-only       Only report binary-breaking changes
