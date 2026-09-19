@@ -652,6 +652,51 @@ class RoseauCLITest {
 	}
 
 	@Test
+	void module_exports_restrict_the_api() {
+		var exitCode = cmd.execute("--v1=src/test/resources/module-library-v1/src",
+			"--v2=src/test/resources/module-library-v2/src",
+			"--diff",
+			"--plain");
+
+		assertThat(out.toString())
+			.contains("exported.Exported.m() EXECUTABLE_REMOVED")
+			.doesNotContain("internal.Internal.m()");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void ignore_module_includes_unexported_packages() {
+		var exitCode = cmd.execute("--v1=src/test/resources/module-library-v1/src",
+			"--v2=src/test/resources/module-library-v2/src",
+			"--diff",
+			"--ignore-module",
+			"--plain");
+
+		assertThat(out.toString())
+			.contains("exported.Exported.m() EXECUTABLE_REMOVED")
+			.contains("internal.Internal.m() EXECUTABLE_REMOVED");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
+	void yaml_ignore_module_is_honored(@TempDir Path tempDir) throws IOException {
+		var config = tempDir.resolve("roseau.yaml");
+		Files.writeString(config, """
+			common:
+			  ignoreModule: true
+			""");
+
+		var exitCode = cmd.execute("--v1=src/test/resources/module-library-v1/src",
+			"--v2=src/test/resources/module-library-v2/src",
+			"--diff",
+			"--config=" + config,
+			"--plain");
+
+		assertThat(out.toString()).contains("internal.Internal.m() EXECUTABLE_REMOVED");
+		assertThat(exitCode).isEqualTo(ExitCode.SUCCESS.code());
+	}
+
+	@Test
 	void yaml_fail_on_unresolved_is_honored(@TempDir Path tempDir) throws IOException {
 		var config = tempDir.resolve("roseau.yaml");
 		Files.writeString(config, """

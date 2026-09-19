@@ -24,6 +24,7 @@ Parameters with a Maven property can be overridden on the command line with `-D<
 | `failOnBinaryIncompatibility` | `roseau.failOnBinaryIncompatibility` | `boolean`            | `false`                             | Fail the build on binary-breaking changes |
 | `failOnSourceIncompatibility` | `roseau.failOnSourceIncompatibility` | `boolean`            | `false`                             | Fail the build on source-breaking changes |
 | `failOnUnresolvedTypes` | `roseau.failOnUnresolvedTypes` | `boolean`            | `false`                             | Fail the build when some types cannot be resolved, instead of reporting breaking changes computed from an incomplete API model |
+| `ignoreModule` | `roseau.ignoreModule` | `boolean`            | `false`                             | Ignore the module declarations of the compared artifacts, as seen by clients using the library from the class path |
 | `baselineCoordinates` | `roseau.baselineCoordinates` | `String`             | —                                   | Baseline as `groupId:artifactId:version[:extension[:classifier]]`; takes precedence over `baselineDependency` |
 | `baselineDependency` | —                    | `Dependency`         | —                                   | Baseline Maven coordinates as structured XML; use `baselineCoordinates` for CLI overrides |
 | `baselineJar` | `roseau.baselineJar` | `Path`               | —                                   | Path to a baseline JAR file |

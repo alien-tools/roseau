@@ -129,4 +129,42 @@ class ModulesExtractionTest {
 		assertThat(api.getExportedTypes().stream().map(TypeDecl::getQualifiedName))
 			.containsExactlyInAnyOrder("pkg1.C");
 	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void ignored_module_exports_everything(ApiBuilder builder) {
+		var sources = """
+			module m {
+				exports pkg1;
+			}
+			
+			package pkg1;
+			public class C {}
+			
+			package pkg2;
+			public class C {}
+			class Internal {}""";
+
+		var api = builder.buildIgnoringModule(sources);
+
+		// The module declaration is still extracted, it's just not accounted for
+		var module = api.getLibraryTypes().getModule();
+		assertThat(module.getQualifiedName()).isEqualTo("m");
+		assertThat(module.isExporting("pkg1")).isTrue();
+		assertThat(module.isExporting("pkg2")).isFalse();
+
+		assertThat(api.getExportedTypes().stream().map(TypeDecl::getQualifiedName))
+			.containsExactlyInAnyOrder("pkg1.C", "pkg2.C");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void ignored_module_without_module_declaration(ApiBuilder builder) {
+		var sources = """
+			package pkg1;
+			public class C {}""";
+
+		assertThat(builder.buildIgnoringModule(sources).getExportedTypes())
+			.isEqualTo(builder.build(sources).getExportedTypes());
+	}
 }

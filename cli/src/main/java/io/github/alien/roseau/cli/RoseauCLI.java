@@ -109,6 +109,9 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--source-only",
 		description = "Only report source-breaking changes")
 	private Boolean sourceOnly;
+	@Option(names = "--ignore-module",
+		description = "Ignore the libraries' module declarations and consider every public type as part of the API")
+	private Boolean ignoreModule;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as a CSV report")
@@ -280,13 +283,13 @@ public final class RoseauCLI implements Callable<Integer> {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
-			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions);
+			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions, ignoreModule);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
 			resolvedV1.location(), new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
-			noExclusions, apiJson);
+			noExclusions, apiJson, null);
 		RoseauOptions.Library v2Cli = new RoseauOptions.Library(
 			resolvedV2.location(), new RoseauOptions.Classpath(v2Pom, buildClasspathFromString(v2Classpath)),
-			noExclusions, null);
+			noExclusions, null, null);
 		Boolean cliSourceOnly = sourceOnly;
 		Boolean cliBinaryOnly = binaryOnly;
 		if (Boolean.TRUE.equals(sourceOnly) && binaryOnly == null) {
@@ -315,6 +318,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			.classpath(classpath)
 			.pom(library.getPom())
 			.exclusions(library.getExclusions())
+			.ignoreModule(library.isIgnoringModule())
 			.build();
 	}
 

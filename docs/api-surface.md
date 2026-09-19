@@ -9,6 +9,7 @@ Roseau treats a symbol as part of the API only if client code can access it with
 - **Visibility:** `public` and `protected` declarations are candidates; `private` and package-private declarations are not. A nested type or member must itself be accessible, and its enclosing type must be accessible as well.
 - **Module boundaries:** In a named module, a package must appear in an unqualified `exports` directive to contribute to the API surface. Qualified exports (`exports ... to ...`) are not considered public API.
 - **No module declaration:** If the library has no `module-info`, Roseau treats all packages as accessible.
+- **Classpath clients:** The same library consumed from the class path ignores its module declaration, so every `public` type is reachable. Enable `ignoreModule` (`--ignore-module` in the CLI, `<ignoreModule>` in the Maven plug-in) to analyze the library from that point of view.
 
 !!! note "Package-private declarations"
     Package-private declarations are not considered API, even if a client could technically access them by placing code in the same package or using other non-standard means.

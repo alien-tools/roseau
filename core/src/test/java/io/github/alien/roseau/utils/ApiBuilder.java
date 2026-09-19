@@ -4,4 +4,5 @@ import io.github.alien.roseau.api.model.API;
 
 public interface ApiBuilder {
 	API build(String sources);
+	API buildIgnoringModule(String sources);
 }

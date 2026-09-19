@@ -45,7 +45,7 @@ common:
 
 | Section | Meaning |
 | --- | --- |
-| `common` | shared classpath and exclusion rules |
+| `common` | shared classpath, exclusion rules, and `ignoreModule` |
 | `v1` | input path and overrides for the baseline version |
 | `v2` | input path and overrides for the current version |
 | `diff` | diff options such as `ignore`, `binaryOnly`, `sourceOnly`, and `failOnUnresolved` |
@@ -64,6 +64,7 @@ common:
       - name: com.google.common.annotations.Beta
       - name: org.apiguardian.api.API
         args: { status: org.apiguardian.api.API$Status.INTERNAL }
+  ignoreModule: false
 
 v1:
   location: /path/to/library-1.0.0.jar

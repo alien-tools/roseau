@@ -24,7 +24,7 @@ import java.util.zip.ZipFile;
  * The granularity of a library is that of a module, i.e., it should contain at most one module declaration
  * ({@code module-info.java}). If no module declaration is present, it is assumed that all names within this library
  * are implicitly exported. If a module declaration is present, the API accounts for unqualified {@code exports}
- * directives. The library points to a physical location that is either:
+ * directives, unless {@code ignoreModule} is set. The library points to a physical location that is either:
  * <ul>
  *   <li>A source directory containing nested names and source files and one module declaration at most</li>
  *   <li>A {@code module-info.java}. In this case, the directory containing the module is used as root directory</li>
@@ -40,6 +40,7 @@ public final class Library {
 	private final Path pom;
 	private final ExtractorType extractorType;
 	private final RoseauOptions.Exclude exclusions;
+	private final boolean ignoreModule;
 	@JsonIgnore
 	private final Supplier<List<Path>> classpath;
 
@@ -49,12 +50,13 @@ public final class Library {
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
 	 */
 	private Library(Path location, List<Path> customClasspath, Path pom, ExtractorType extractorType,
-	                RoseauOptions.Exclude exclusions) {
+	                RoseauOptions.Exclude exclusions, boolean ignoreModule) {
 		this.location = location.toAbsolutePath();
 		this.customClasspath = List.copyOf(customClasspath);
 		this.pom = pom;
 		this.extractorType = extractorType;
 		this.exclusions = exclusions;
+		this.ignoreModule = ignoreModule;
 		this.classpath = Suppliers.memoize(this::resolveClasspath);
 	}
 
@@ -123,6 +125,10 @@ public final class Library {
 		return exclusions;
 	}
 
+	public boolean isIgnoringModule() {
+		return ignoreModule;
+	}
+
 	public boolean isJar() {
 		return isJar(location);
 	}
@@ -161,18 +167,19 @@ public final class Library {
 			Objects.equals(customClasspath, other.customClasspath) &&
 			Objects.equals(pom, other.pom) &&
 			Objects.equals(exclusions, other.exclusions) &&
+			ignoreModule == other.ignoreModule &&
 			extractorType == other.extractorType;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(location, customClasspath, pom, exclusions, extractorType);
+		return Objects.hash(location, customClasspath, pom, exclusions, ignoreModule, extractorType);
 	}
 
 	@Override
 	public String toString() {
-		return "Library[location=%s, extractor=%s, classpath=%s, pom=%s, excludes=%s]".formatted(
-			location, extractorType, customClasspath, pom, exclusions);
+		return "Library[location=%s, extractor=%s, classpath=%s, pom=%s, excludes=%s, ignoreModule=%s]".formatted(
+			location, extractorType, customClasspath, pom, exclusions, ignoreModule);
 	}
 
 	/**
@@ -185,6 +192,7 @@ public final class Library {
 		private List<Path> classpath = List.of();
 		private Path pom;
 		private RoseauOptions.Exclude exclusions = new RoseauOptions.Exclude(List.of(), List.of());
+		private boolean ignoreModule;
 
 		private Builder() {
 
@@ -231,6 +239,17 @@ public final class Library {
 		 */
 		public Builder exclusions(RoseauOptions.Exclude exclusions) {
 			this.exclusions = exclusions;
+			return this;
+		}
+
+		/**
+		 * Sets whether the library's module declaration should be ignored when computing its API.
+		 *
+		 * @param ignoreModule whether to ignore the module declaration
+		 * @return this builder
+		 */
+		public Builder ignoreModule(boolean ignoreModule) {
+			this.ignoreModule = ignoreModule;
 			return this;
 		}
 
@@ -284,7 +303,7 @@ public final class Library {
 
 			// Default extractors
 			ExtractorType extractorType = isSources(location) ? ExtractorType.JDT : ExtractorType.ASM;
-			return new Library(location, classpath, pom, extractorType, exclusions);
+			return new Library(location, classpath, pom, extractorType, exclusions, ignoreModule);
 		}
 	}
 }

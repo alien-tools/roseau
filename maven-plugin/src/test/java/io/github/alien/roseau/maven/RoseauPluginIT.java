@@ -217,6 +217,27 @@ class RoseauPluginIT {
 	}
 
 	@Nested
+	@MavenProjectSources(sources = "ignore-module-test")
+	class IgnoreModule {
+		@MavenTest
+		void module_exports_restrict_the_api(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().warn()
+				.anyMatch(m -> m.contains("exported.Exported.m() EXECUTABLE_REMOVED"))
+				.noneMatch(m -> m.contains("internal.Internal.m()"));
+		}
+
+		@SystemProperty("roseau.ignoreModule")
+		@MavenTest
+		void unexported_packages_are_checked_when_module_is_ignored(MavenExecutionResult result) {
+			assertThat(result).isSuccessful();
+			assertThat(result).out().warn()
+				.anyMatch(m -> m.contains("exported.Exported.m() EXECUTABLE_REMOVED"))
+				.anyMatch(m -> m.contains("internal.Internal.m() EXECUTABLE_REMOVED"));
+		}
+	}
+
+	@Nested
 	@MavenProjectSources(sources = "module-with-maven-baseline")
 	class ModuleWithMavenBaseline {
 		@MavenTest

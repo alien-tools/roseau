@@ -44,6 +44,7 @@ Classpath entries are JARs or class directories, separated by `:` (`;` on Window
 | `--binary-only` | Only report binary-breaking changes |
 | `--source-only` | Only report source-breaking changes |
 | `--ignored=<path>` | Ignore breaking changes listed in a CSV file |
+| `--ignore-module` | Ignore the module declarations of `--v1` and `--v2`, as seen by clients using the library from the class path |
 
 ## Reports
 

@@ -115,6 +115,13 @@ public final class RoseauMojo extends AbstractMojo {
 	private Boolean failOnUnresolvedTypes;
 
 	/**
+	 * Ignores the module declarations of the compared artifacts and considers every {@code public} type as part of
+	 * the API, matching the view of clients using the library from the class path.
+	 */
+	@Parameter(property = "roseau.ignoreModule")
+	private Boolean ignoreModule;
+
+	/**
 	 * Baseline artifact coordinates as a string ({@code groupId:artifactId:version[:extension[:classifier]]})
 	 * resolved from Maven repositories. Takes precedence over {@code baselineDependency} when set.
 	 */
@@ -323,18 +330,18 @@ public final class RoseauMojo extends AbstractMojo {
 		// Build Common configuration (classpath + exclusions)
 		RoseauOptions.Classpath commonClasspath = new RoseauOptions.Classpath(resolvePath(classpathPom), mergedClasspath);
 		RoseauOptions.Exclude commonExclude = new RoseauOptions.Exclude(List.of(), List.of());
-		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude);
+		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude, ignoreModule);
 
 		// Build Library v1 (baseline)
 		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
 			resolvePath(baselineClasspathPom), baselineClasspathResolved);
 		RoseauOptions.Library v1 = new RoseauOptions.Library(
-			oldJar, v1Classpath, new RoseauOptions.Exclude(List.of(), List.of()), resolvePath(exportBaselineApi));
+			oldJar, v1Classpath, new RoseauOptions.Exclude(List.of(), List.of()), resolvePath(exportBaselineApi), null);
 
 		// Build Library v2 (current)
 		RoseauOptions.Classpath v2Classpath = new RoseauOptions.Classpath(null, List.of());
 		RoseauOptions.Library v2 = new RoseauOptions.Library(
-			newJar, v2Classpath, new RoseauOptions.Exclude(List.of(), List.of()), resolvePath(exportCurrentApi));
+			newJar, v2Classpath, new RoseauOptions.Exclude(List.of(), List.of()), resolvePath(exportCurrentApi), null);
 
 		Boolean mavenSourceOnly = sourceOnly;
 		Boolean mavenBinaryOnly = binaryOnly;
@@ -645,7 +652,8 @@ public final class RoseauMojo extends AbstractMojo {
 			resolvePath(options.common().classpath().pom()),
 			resolvePaths(options.common().classpath().jars())
 		);
-		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, options.common().excludes());
+		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, options.common().excludes(),
+			options.common().ignoreModule());
 
 		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
 			resolvePath(options.v1().classpath().pom()),
@@ -655,7 +663,8 @@ public final class RoseauMojo extends AbstractMojo {
 			resolvePath(options.v1().location()),
 			v1Classpath,
 			options.v1().excludes(),
-			resolvePath(options.v1().apiReport())
+			resolvePath(options.v1().apiReport()),
+			options.v1().ignoreModule()
 		);
 
 		RoseauOptions.Classpath v2Classpath = new RoseauOptions.Classpath(
@@ -666,7 +675,8 @@ public final class RoseauMojo extends AbstractMojo {
 			resolvePath(options.v2().location()),
 			v2Classpath,
 			options.v2().excludes(),
-			resolvePath(options.v2().apiReport())
+			resolvePath(options.v2().apiReport()),
+			options.v2().ignoreModule()
 		);
 
 		RoseauOptions.Diff diff = new RoseauOptions.Diff(

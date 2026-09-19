@@ -289,12 +289,17 @@ public class TestUtils {
 	}
 
 	public static API buildSourcesAPI(String sources, List<Path> classpath) {
+		return buildSourcesAPI(sources, classpath, false);
+	}
+
+	public static API buildSourcesAPI(String sources, List<Path> classpath, boolean ignoreModule) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			Path sourcesPath = writeSources(sourcesMap);
 			Library library = Library.builder()
 				.location(sourcesPath)
 				.classpath(classpath)
+				.ignoreModule(ignoreModule)
 				.build();
 			API api = Roseau.buildAPI(library);
 			MoreFiles.deleteRecursively(sourcesPath, RecursiveDeleteOption.ALLOW_INSECURE);
@@ -305,6 +310,10 @@ public class TestUtils {
 	}
 
 	public static API buildJarAPI(String sources) {
+		return buildJarAPI(sources, false);
+	}
+
+	public static API buildJarAPI(String sources, boolean ignoreModule) {
 		try {
 			Map<String, String> sourcesMap = buildSourcesMap(sources);
 			File tempJarFile = File.createTempFile("inMemoryJar", ".jar");
@@ -312,6 +321,7 @@ public class TestUtils {
 			buildJar(sourcesMap, tempJarFile.toPath());
 			Library library = Library.builder()
 				.location(tempJarFile.toPath())
+				.ignoreModule(ignoreModule)
 				.build();
 			return Roseau.buildAPI(library);
 		} catch (IOException e) {

@@ -30,9 +30,9 @@ class RoseauOptionsTest {
 		var cpBase = new RoseauOptions.Classpath(Path.of("base-pom.xml"), List.of(Path.of("base.jar")));
 		var exBase = new RoseauOptions.Exclude(
 			List.of("base.*"), List.of(new RoseauOptions.AnnotationExclusion("BaseAnn", Map.of("baseK", "baseV"))));
-		var commonBase = new RoseauOptions.Common(cpBase, exBase);
+		var commonBase = new RoseauOptions.Common(cpBase, exBase, false);
 		var libBase = new RoseauOptions.Library(
-			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
+			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"), false);
 		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true, true);
 		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
@@ -40,9 +40,9 @@ class RoseauOptionsTest {
 		var cpOther = new RoseauOptions.Classpath(Path.of("other-pom.xml"), List.of(Path.of("other.jar")));
 		var exOther = new RoseauOptions.Exclude(
 			List.of("other.*"), List.of(new RoseauOptions.AnnotationExclusion("OtherAnn", Map.of("otherK", "otherV"))));
-		var commonOther = new RoseauOptions.Common(cpOther, exOther);
+		var commonOther = new RoseauOptions.Common(cpOther, exOther, true);
 		var libOther = new RoseauOptions.Library(
-			Path.of("other-lib"), cpOther, exOther, Path.of("other.json"));
+			Path.of("other-lib"), cpOther, exOther, Path.of("other.json"), true);
 		var diffOther = new RoseauOptions.Diff(Path.of("other-ignore.csv"), false, false, false);
 		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther,
 			List.of(new RoseauOptions.Report(Path.of("other.html"), BreakingChangesFormatterFactory.HTML)));
@@ -59,6 +59,7 @@ class RoseauOptionsTest {
 		assertThat(merged.common().classpath().pom()).isEqualTo(Path.of("other-pom.xml"));
 		assertThat(merged.common().classpath().jars()).containsExactly(Path.of("other.jar"));
 		assertThat(merged.common().excludes().names()).containsExactly("other.*");
+		assertThat(merged.common().ignoreModule()).isTrue();
 		assertThat(merged.common().excludes().annotations()).singleElement().isEqualTo(
 			new RoseauOptions.AnnotationExclusion("OtherAnn", Map.of("otherK", "otherV")));
 
@@ -67,6 +68,7 @@ class RoseauOptionsTest {
 		assertThat(merged.v1().classpath().pom()).isEqualTo(Path.of("other-pom.xml"));
 		assertThat(merged.v1().classpath().jars()).containsExactly(Path.of("other.jar"));
 		assertThat(merged.v1().excludes().names()).containsExactly("other.*");
+		assertThat(merged.v1().ignoreModule()).isTrue();
 
 		assertThat(merged.v2()).isEqualTo(merged.v1());
 	}
@@ -76,17 +78,17 @@ class RoseauOptionsTest {
 		var cpBase = new RoseauOptions.Classpath(Path.of("base-pom.xml"), List.of(Path.of("base.jar")));
 		var exBase = new RoseauOptions.Exclude(
 			List.of("base.*"), List.of(new RoseauOptions.AnnotationExclusion("BaseAnn", Map.of("baseK", "baseV"))));
-		var commonBase = new RoseauOptions.Common(cpBase, exBase);
+		var commonBase = new RoseauOptions.Common(cpBase, exBase, true);
 		var libBase = new RoseauOptions.Library(
-			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"));
+			Path.of("base-lib"), cpBase, exBase, Path.of("base.json"), true);
 		var diffBase = new RoseauOptions.Diff(Path.of("base-ignore.csv"), true, true, true);
 		var base = new RoseauOptions(commonBase, libBase, libBase, diffBase,
 			List.of(new RoseauOptions.Report(Path.of("base.csv"), BreakingChangesFormatterFactory.CSV)));
 
 		var cpOther = new RoseauOptions.Classpath(null, List.of());
 		var exOther = new RoseauOptions.Exclude(List.of(), List.of());
-		var commonOther = new RoseauOptions.Common(cpOther, exOther);
-		var libOther = new RoseauOptions.Library(null, cpOther, exOther, null);
+		var commonOther = new RoseauOptions.Common(cpOther, exOther, null);
+		var libOther = new RoseauOptions.Library(null, cpOther, exOther, null, null);
 		var diffOther = new RoseauOptions.Diff(null, null, null, null);
 		var other = new RoseauOptions(commonOther, libOther, libOther, diffOther, List.of());
 
@@ -99,16 +101,16 @@ class RoseauOptionsTest {
 		var cpCommon = new RoseauOptions.Classpath(Path.of("common-pom.xml"), List.of(Path.of("common.jar")));
 		var exCommon = new RoseauOptions.Exclude(
 			List.of("common.*"), List.of(new RoseauOptions.AnnotationExclusion("CommonAnn", Map.of("commonK", "commonV"))));
-		var common = new RoseauOptions.Common(cpCommon, exCommon);
+		var common = new RoseauOptions.Common(cpCommon, exCommon, true);
 
 		var cpSet = new RoseauOptions.Classpath(Path.of("set-pom.xml"), List.of(Path.of("set.jar")));
 		var exSet = new RoseauOptions.Exclude(
 			List.of("set.*"), List.of(new RoseauOptions.AnnotationExclusion("SetAnn", Map.of("setK", "setV"))));
-		var set = new RoseauOptions.Library(Path.of("set"), cpSet, exSet, Path.of("a.json"));
+		var set = new RoseauOptions.Library(Path.of("set"), cpSet, exSet, Path.of("a.json"), false);
 
 		var cpUnset = new RoseauOptions.Classpath(null, List.of());
 		var exUnset = new RoseauOptions.Exclude(List.of(), List.of());
-		var unset = new RoseauOptions.Library(Path.of("unset"), cpUnset, exUnset, Path.of("a.json"));
+		var unset = new RoseauOptions.Library(Path.of("unset"), cpUnset, exUnset, Path.of("a.json"), null);
 
 		var mergedWithSet = set.mergeWith(common);
 		assertThat(mergedWithSet).isEqualTo(set);
@@ -118,6 +120,7 @@ class RoseauOptionsTest {
 		assertThat(mergedWithUnset.classpath()).isEqualTo(cpCommon);
 		assertThat(mergedWithUnset.excludes()).isEqualTo(exCommon);
 		assertThat(mergedWithUnset.apiReport()).isEqualTo(Path.of("a.json"));
+		assertThat(mergedWithUnset.ignoreModule()).isTrue();
 	}
 
 	@Test
@@ -133,6 +136,7 @@ class RoseauOptionsTest {
 			    annotations:
 			      - name: java.lang.Deprecated
 			        args: { since: 1.0 }
+			  ignoreModule: true
 			v1:
 			  location: /lib/v1
 			  classpath:
@@ -140,6 +144,7 @@ class RoseauOptionsTest {
 			  excludes:
 			    names: [x]
 			  apiReport: /api/v1.json
+			  ignoreModule: false
 			v2:
 			  location: /lib/v2
 			  classpath:
@@ -165,8 +170,12 @@ class RoseauOptionsTest {
 		assertThat(options.common().classpath().jars()).contains(Path.of("/cp/a.jar"), Path.of("/cp/b.jar"));
 		assertThat(options.common().excludes().names()).containsExactly("com.acme.*");
 		assertThat(options.common().excludes().annotations()).hasSize(1);
+		assertThat(options.common().ignoreModule()).isTrue();
 		assertThat(options.v1().location()).isEqualTo(Path.of("/lib/v1"));
 		assertThat(options.v1().apiReport()).isEqualTo(Path.of("/api/v1.json"));
+		assertThat(options.v1().ignoreModule()).isFalse();
+		assertThat(options.v1().mergeWith(options.common()).ignoreModule()).isFalse();
+		assertThat(options.v2().mergeWith(options.common()).ignoreModule()).isTrue();
 		assertThat(options.v2().location()).isEqualTo(Path.of("/lib/v2"));
 		assertThat(options.diff().ignore()).isEqualTo(Path.of("/ignore.csv"));
 		assertThat(options.diff().sourceOnly()).isEqualTo(false);

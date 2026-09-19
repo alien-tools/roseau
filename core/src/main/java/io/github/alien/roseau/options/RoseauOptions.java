@@ -27,14 +27,15 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	/**
 	 * Options shared by v1 and v2.
 	 *
-	 * @param classpath the {@link Classpath} to use
-	 * @param excludes  the API {@link Exclude} options to apply
+	 * @param classpath    the {@link Classpath} to use
+	 * @param excludes     the API {@link Exclude} options to apply
+	 * @param ignoreModule whether to ignore the libraries' module declarations
 	 */
-	public record Common(Classpath classpath, Exclude excludes) {
+	public record Common(Classpath classpath, Exclude excludes, Boolean ignoreModule) {
 		Common mergeWith(Common other) {
 			return other != null
 				? new Common(classpath.mergeWith(other.classpath()),
-				excludes.mergeWith(other.excludes()))
+				excludes.mergeWith(other.excludes()), either(other.ignoreModule(), ignoreModule))
 				: this;
 		}
 	}
@@ -42,23 +43,26 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	/**
 	 * Options for a particular library, v1 or v2.
 	 *
-	 * @param location  the location of the library
-	 * @param classpath the {@link Classpath} to use
-	 * @param excludes  the API {@link Exclude} options to apply
-	 * @param apiReport the location of the API report to generate
+	 * @param location     the location of the library
+	 * @param classpath    the {@link Classpath} to use
+	 * @param excludes     the API {@link Exclude} options to apply
+	 * @param apiReport    the location of the API report to generate
+	 * @param ignoreModule whether to ignore the library's module declaration
 	 */
-	public record Library(Path location, Classpath classpath, Exclude excludes, Path apiReport) {
+	public record Library(Path location, Classpath classpath, Exclude excludes, Path apiReport, Boolean ignoreModule) {
 		Library mergeWith(Library other) {
 			return other != null
 				? new Library(either(other.location(), location), classpath.mergeWith(other.classpath()),
-				excludes.mergeWith(other.excludes()), either(other.apiReport(), apiReport))
+				excludes.mergeWith(other.excludes()), either(other.apiReport(), apiReport),
+				either(other.ignoreModule(), ignoreModule))
 				: this;
 		}
 
 		public Library mergeWith(Common common) {
 			return common != null
 				? new Library(location, common.classpath().mergeWith(classpath),
-				common.excludes().mergeWith(excludes), apiReport)
+				common.excludes().mergeWith(excludes), apiReport,
+				either(ignoreModule, common.ignoreModule()))
 				: this;
 		}
 
@@ -68,6 +72,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 				.classpath(classpath.jars())
 				.pom(classpath.pom())
 				.exclusions(excludes)
+				.ignoreModule(Boolean.TRUE.equals(ignoreModule))
 				.build();
 		}
 	}
@@ -169,8 +174,8 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	public static RoseauOptions newDefault() {
 		Classpath defaultClasspath = new Classpath(null, List.of());
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
-		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null);
-		Common defaultCommon = new Common(defaultClasspath, defaultExclusion);
+		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null, null);
+		Common defaultCommon = new Common(defaultClasspath, defaultExclusion, false);
 		Diff diff = new Diff(null, false, false, false);
 		List<Report> defaultReports = List.of();
 		return new RoseauOptions(defaultCommon, defaultLibrary, defaultLibrary, diff, defaultReports);
