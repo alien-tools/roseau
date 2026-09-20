@@ -120,6 +120,6 @@ class RoseauTest {
 
 		var type = api.findExportedType("C").orElseThrow();
 		assertThat(api.analyzer().getExportedMethods(type))
-			.extracting(MethodDecl::getQualifiedName).contains("dependency.Base.inherited()");
+			.extracting(MethodDecl::getQualifiedSignature).contains("dependency.Base.inherited()");
 	}
 }

@@ -137,7 +137,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 					TypeMemberDecl member = me.getKey();
 					List<BreakingChange> bcs = me.getValue();
 					sb.append("<div class=\"member\">\n");
-					sb.append("<h3>").append(escape(member.getQualifiedName())).append(" <small class=\"muted\">")
+					sb.append("<h3>").append(escape(member.getUniqueId())).append(" <small class=\"muted\">")
 						.append(escape(formatMemberKind(member))).append("</small>");
 					String memLoc = locationBadge(member.getLocation());
 					if (!memLoc.isEmpty()) {

@@ -29,11 +29,11 @@ public class MdFormatter implements BreakingChangesFormatter {
 
 			for (BreakingChange bc : report.getBreakingChanges()) {
 				sb.append("| ").append(escape(bc.impactedType().getQualifiedName())).append(" | ")
-					.append(escape(bc.impactedSymbol().getQualifiedName())).append(" | ")
+					.append(escape(bc.impactedSymbol().getUniqueId())).append(" | ")
 					.append(bc.kind()).append(" | ")
 					.append(bc.kind().getNature()).append(" | ")
 					.append(escape(formatLocation(bc.getLocation()))).append(" | ")
-					.append(escape(bc.newSymbol() != null ? BreakingChange.printSymbol(bc.newSymbol()) : "")).append(" | ")
+					.append(escape(bc.newSymbol() != null ? bc.newSymbol().getUniqueId() : "")).append(" | ")
 					.append(bc.kind().isBinaryBreaking()).append(" | ")
 					.append(bc.kind().isSourceBreaking()).append(" |\n");
 			}

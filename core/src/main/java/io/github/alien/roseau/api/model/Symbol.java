@@ -11,7 +11,7 @@ import java.util.Set;
 
 /**
  * An abstract symbol (i.e., named entity) in the API: either a {@link TypeDecl} or a {@link TypeMemberDecl}. Symbols
- * are part of an {@link LibraryTypes}, can be referenced in client code, and are subject to breaking changes. Symbols
+ * are part of a {@link LibraryTypes}, can be referenced in client code, and are subject to breaking changes. Symbols
  * have a fully qualified name, a visibility, a set of modifiers, a physical location, and may be annotated. Symbols are
  * immutable.
  */
@@ -67,6 +67,16 @@ public abstract sealed class Symbol permits TypeDecl, TypeMemberDecl {
 	}
 
 	public String getQualifiedName() {
+		return qualifiedName;
+	}
+
+	/**
+	 * A symbol identifier that's unique within a given API. Its {@link #getQualifiedName() qualified name}, or,
+	 * for an {@link ExecutableDecl}, its {@link ExecutableDecl#getQualifiedSignature() qualified signature}.
+	 *
+	 * @return the unique identifier
+	 */
+	public String getUniqueId() {
 		return qualifiedName;
 	}
 

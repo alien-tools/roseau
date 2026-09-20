@@ -56,7 +56,7 @@ public final class RoseauReport {
 		this.breakingChanges = breakingChanges.stream()
 			.sorted(
 				Comparator.comparing((BreakingChange bc) -> bc.impactedType().getQualifiedName())
-					.thenComparing(bc -> bc.impactedSymbol().getQualifiedName())
+					.thenComparing(bc -> bc.impactedSymbol().getUniqueId())
 					.thenComparing(BreakingChange::kind)
 					.thenComparing(bc -> bc.details().toString()))
 			.toList();
@@ -145,7 +145,7 @@ public final class RoseauReport {
 			.filter(bc -> bc.impactedSymbol() instanceof TypeMemberDecl)
 			.collect(Collectors.groupingBy(
 				bc -> (TypeMemberDecl) bc.impactedSymbol(),
-				() -> new TreeMap<>(Comparator.comparing(TypeMemberDecl::getQualifiedName)),
+				() -> new TreeMap<>(Comparator.comparing(Symbol::getUniqueId)),
 				Collectors.toList()
 			));
 	}
@@ -240,7 +240,7 @@ public final class RoseauReport {
 		boolean isAnnotationExcluded = v1.getLibrary().getExclusions().annotations().stream()
 			.anyMatch(ann -> symbol.hasAnnotation(new TypeReference<>(ann.name()), ann.args()));
 		boolean isNameExcluded = excludedNamePatterns.stream()
-			.anyMatch(pattern -> pattern.matcher(symbol.getQualifiedName()).matches());
+			.anyMatch(pattern -> pattern.matcher(symbol.getUniqueId()).matches());
 
 		return switch (symbol) {
 			case TypeDecl type -> isAnnotationExcluded || isNameExcluded ||

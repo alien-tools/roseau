@@ -183,7 +183,7 @@ class MethodsOverloadingTest {
 		// Base.m(T) is inherited as m(E) and erases to m(java.lang.Number): it coexists with A.m(Object)
 		var declared = assertMethod(api, a, "m(java.lang.Object)");
 		var inherited = api.analyzer().findMethod(a, "m(java.lang.Number)").orElseThrow();
-		assertThat(inherited.getQualifiedName()).isEqualTo("Base.m(E)");
+		assertThat(inherited.getQualifiedSignature()).isEqualTo("Base.m(E)");
 
 		assertTrue(api.analyzer().isOverloading(declared, inherited));
 		assertTrue(api.analyzer().isOverloading(inherited, declared));
@@ -210,7 +210,7 @@ class MethodsOverloadingTest {
 		assertThat(api.analyzer().getExportedMethodsByErasure(a))
 			.containsKeys("m(java.lang.Number)", "m(java.lang.Object)")
 			.extractingByKeys("m(java.lang.Number)", "m(java.lang.Object)")
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.containsExactly("I.m(E)", "J.m(java.lang.Object)");
 	}
 }

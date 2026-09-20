@@ -36,8 +36,8 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl implements Ty
 	}
 
 	@Override
-	public String getQualifiedName() {
-		return String.format("%s.%s", getContainingType().getQualifiedName(), getSignature());
+	public String getUniqueId() {
+		return getQualifiedSignature();
 	}
 
 	/**
@@ -64,7 +64,7 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl implements Ty
 	 * @return the executable's signature
 	 */
 	public String getSignature() {
-		StringBuilder sb = new StringBuilder(100);
+		StringBuilder sb = new StringBuilder(simpleName.length() + 2 + 16 * parameters.size());
 		sb.append(simpleName);
 		sb.append('(');
 		for (int i = 0; i < parameters.size(); i++) {
@@ -79,6 +79,15 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl implements Ty
 		}
 		sb.append(')');
 		return sb.toString();
+	}
+
+	/**
+	 * The fully qualified signature of an executable, which uniquely identifies it within an API.
+	 *
+	 * @return the executable's fully qualified signature
+	 */
+	public String getQualifiedSignature() {
+		return containingType.getQualifiedName() + '.' + getSignature();
 	}
 
 	/**

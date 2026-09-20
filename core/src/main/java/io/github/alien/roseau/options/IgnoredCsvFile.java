@@ -51,7 +51,7 @@ public class IgnoredCsvFile {
 
 	public boolean isIgnored(BreakingChange bc) {
 		return ignoredBCs.stream().anyMatch(ign -> bc.impactedType().getQualifiedName().equals(ign.type()) &&
-			bc.impactedSymbol().getQualifiedName().equals(ign.symbol()) &&
+			bc.impactedSymbol().getUniqueId().equals(ign.symbol()) &&
 			bc.kind() == ign.kind());
 	}
 }

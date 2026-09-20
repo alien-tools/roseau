@@ -2,7 +2,6 @@ package io.github.alien.roseau.diff.formatter;
 
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.RoseauReport;
-import io.github.alien.roseau.diff.changes.BreakingChange;
 
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -17,14 +16,14 @@ public class CsvFormatter implements BreakingChangesFormatter {
 	public String format(RoseauReport report) {
 		return HEADER + System.lineSeparator() +
 			report.getBreakingChanges().stream().map(bc -> Stream.of(
-				bc.impactedType().getQualifiedName(),
-				bc.impactedSymbol().getQualifiedName(),
-				bc.kind().name(),
-				bc.kind().getNature().name(),
-				formatLocation(bc.getLocation()),
-				bc.newSymbol() != null ? BreakingChange.printSymbol(bc.newSymbol()) : "",
-				Boolean.toString(bc.kind().isBinaryBreaking()),
-				Boolean.toString(bc.kind().isSourceBreaking()))
+					bc.impactedType().getQualifiedName(),
+					bc.impactedSymbol().getUniqueId(),
+					bc.kind().name(),
+					bc.kind().getNature().name(),
+					formatLocation(bc.getLocation()),
+					bc.newSymbol() != null ? bc.newSymbol().getUniqueId() : "",
+					Boolean.toString(bc.kind().isBinaryBreaking()),
+					Boolean.toString(bc.kind().isSourceBreaking()))
 				.map(CsvFormatter::escape).collect(Collectors.joining(";"))
 			).collect(Collectors.joining(System.lineSeparator()));
 	}

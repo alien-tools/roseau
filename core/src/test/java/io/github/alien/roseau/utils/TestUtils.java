@@ -67,7 +67,7 @@ public class TestUtils {
 	public static void assertBCs(List<BreakingChange> actualBCs, BC... expectedVar) {
 		var expected = Arrays.asList(expectedVar);
 		var actual = actualBCs.stream().map(bc -> bc(bc.impactedType().getQualifiedName(),
-				bc.impactedSymbol().getQualifiedName(), bc.kind(), bc.getLocation().line()))
+				bc.impactedSymbol().getUniqueId(), bc.kind(), bc.getLocation().line()))
 			.toList();
 		if (expected.size() != actual.size() || !actual.containsAll(expected) || !expected.containsAll(actual)) {
 			String desc = expected.stream().map(expectedBC ->
@@ -83,7 +83,7 @@ public class TestUtils {
 	public static void assertNoBC(List<BreakingChange> bcs) {
 		if (!bcs.isEmpty()) {
 			String found = bcs.stream()
-				.map(bc -> "[%s, %s, %s, %d]".formatted(bc.impactedType().getQualifiedName(), bc.impactedSymbol().getQualifiedName(),
+				.map(bc -> "[%s, %s, %s, %d]".formatted(bc.impactedType().getQualifiedName(), bc.impactedSymbol().getUniqueId(),
 					bc.kind(), bc.getLocation().line()))
 				.collect(Collectors.joining(", "));
 			throw new AssertionFailedError("Unexpected breaking change", "No breaking change", found);

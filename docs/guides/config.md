@@ -30,6 +30,10 @@ Common examples:
 - package or symbol naming conventions such as `com\.example\.internal\..*`
 - stability annotations such as `com.google.common.annotations.Beta` or `org.apiguardian.api.API(status = INTERNAL)`
 
+Each pattern must match a symbol's name in full. Types and fields are matched on their qualified name
+(`com.example.T`, `com.example.T.f`); methods and constructors are matched on their qualified *signature*
+(`com.example.T.m(int)`).
+
 ```yaml title="roseau.yaml"
 common:
   excludes:

@@ -64,8 +64,8 @@ public class MavenFormatter implements BreakingChangesFormatter {
 
 	private static String formatSymbol(BreakingChange bc) {
 		return bc.isLocal()
-			? bc.impactedSymbol().getQualifiedName()
-			: "%s in %s".formatted(bc.impactedSymbol().getQualifiedName(), bc.impactedType().getQualifiedName());
+			? bc.impactedSymbol().getUniqueId()
+			: "%s in %s".formatted(bc.impactedSymbol().getUniqueId(), bc.impactedType().getQualifiedName());
 	}
 
 	private static String formatLocation(BreakingChange bc) {

@@ -41,37 +41,37 @@ class MethodsOverridingTest {
 
 		assertThat(api.analyzer().getExportedMethods(i))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("I.m()");
 
 		assertThat(api.analyzer().getExportedMethods(j))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("J.m()");
 
 		assertThat(api.analyzer().getExportedMethods(k))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("K.m()");
 
 		assertThat(api.analyzer().getExportedMethods(a))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("A.m()");
 
 		assertThat(api.analyzer().getExportedMethods(b))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("A.m()");
 
 		assertThat(api.analyzer().getExportedMethods(c))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("C.m()");
 
 		assertThat(api.analyzer().getExportedMethods(d))
 			.hasSize(1 + 11) // java.lang.Object's methods
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.contains("K.m()");
 	}
 
@@ -281,11 +281,11 @@ class MethodsOverridingTest {
 
 		assertThat(api.analyzer().getDeclaredExportedMethods(a))
 			.singleElement()
-			.extracting(MethodDecl::getQualifiedName)
+			.extracting(MethodDecl::getQualifiedSignature)
 			.isEqualTo("A.m(E)");
 
 		var m = api.analyzer().findMethod(a, "m(java.lang.Number)").orElseThrow();
-		assertThat(m.getQualifiedName()).isEqualTo("A.m(E)");
+		assertThat(m.getQualifiedSignature()).isEqualTo("A.m(E)");
 	}
 
 	@ParameterizedTest

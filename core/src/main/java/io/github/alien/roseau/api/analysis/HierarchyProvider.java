@@ -270,7 +270,7 @@ public interface HierarchyProvider {
 			return method;
 		}
 		return new MethodDecl(
-			method.getSimpleName(),
+			method.getQualifiedName(),
 			method.getVisibility(),
 			method.getModifiers(),
 			method.getAnnotations(),
