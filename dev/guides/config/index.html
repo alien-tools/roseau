@@ -1039,6 +1039,9 @@ For the baseline rules, see <a href="../../api-surface/">What Roseau considers A
 <li>package or symbol naming conventions such as <code>com\.example\.internal\..*</code></li>
 <li>stability annotations such as <code>com.google.common.annotations.Beta</code> or <code>org.apiguardian.api.API(status = INTERNAL)</code></li>
 </ul>
+<p>Each pattern must match a symbol's name in full. Types and fields are matched on their qualified name
+(<code>com.example.T</code>, <code>com.example.T.f</code>); methods and constructors are matched on their qualified <em>signature</em>
+(<code>com.example.T.m(int)</code>).</p>
 <div class="language-yaml highlight"><span class="filename">roseau.yaml</span><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="nt">common</span><span class="p">:</span>
 <a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a><span class="w">  </span><span class="nt">excludes</span><span class="p">:</span>
 <a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="w">    </span><span class="nt">names</span><span class="p">:</span>
