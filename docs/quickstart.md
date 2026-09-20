@@ -8,7 +8,7 @@
 
     ```bash
     unzip roseau-<version>-linux-x86_64.zip
-    export PATH="$PWD/roseau-<version>/bin:$PATH"
+    export PATH="$PWD/roseau-<version>-linux-x86_64/bin:$PATH"
     ```
 
     Verify the installation:

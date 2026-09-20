@@ -3,9 +3,9 @@
 Roseau is meant to be easily integrated into build and CI pipelines to spot breaking changes as early as possible. A typical example is as follows:
 
 ```bash
-roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar
-  --fail-on-bc
-  --fail-on-unresolved
+roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar \
+  --fail-on-bc \
+  --fail-on-unresolved \
   --plain \
   --report JSON=reports/breaking-changes.json
 ```

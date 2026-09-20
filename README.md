@@ -1,130 +1,80 @@
-# Roseau: Breaking Change Analysis for Java Libraries
+# Roseau – Breaking Change Analysis for Java Libraries
+
+[![Maven Central](https://img.shields.io/maven-central/v/io.github.alien-tools/roseau-core?style=flat-square&color=blue)](https://central.sonatype.com/namespace/io.github.alien-tools)
+[![Build](https://img.shields.io/github/actions/workflow/status/alien-tools/roseau/build-main.yml?branch=main&style=flat-square)](https://github.com/alien-tools/roseau/actions/workflows/build-main.yml)
+[![Documentation](https://img.shields.io/badge/docs-alien--tools.github.io-informational?style=flat-square)](https://alien-tools.github.io/roseau/)
+[![Java](https://img.shields.io/badge/Java-25-orange?style=flat-square&logo=openjdk&logoColor=white)](https://openjdk.org/projects/jdk/25/)
+[![License: MIT](https://img.shields.io/badge/license-MIT-success?style=flat-square)](LICENSE)
 
 Roseau (/ʁozo/) is a **fast** and **[accurate](https://github.com/alien-tools/api-evolution-benchmark)** tool for detecting breaking changes between library versions, similar to tools like [japicmp](https://github.com/siom79/japicmp/) or [Revapi](https://github.com/revapi/revapi/).
 Whether you're a library maintainer or upgrading dependencies in your projects, Roseau helps ensure backward compatibility across versions.
-Roseau analyzes both JAR files and source code, is highly configurable, and includes a dedicated Maven plug-in.
 
-The official user documentation is available at [https://alien-tools.github.io/roseau/](https://alien-tools.github.io/roseau/).
+The official user documentation is available at [https://alien-tools.github.io/roseau/](https://alien-tools.github.io/roseau/), including an example [HTML report](https://alien-tools.github.io/roseau/example-report.html).
 
 ## Key Features
 
   - Detects both binary-level and source-level breaking changes
-  - Accurate and customizable definition of the API surface (using visibilities, modules, annotations, naming conventions, etc.) 
-  - Indifferently analyzes JAR files (using [ASM](https://asm.ow2.io/)) or Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core))
-  - Excellent accuracy and performance
+  - Accurate and customizable definition of the API surface (using visibilities, module declarations, annotations, naming conventions)
+  - Analyzes both JAR files (using [ASM](https://asm.ow2.io/)) and Java source code (using [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core))
   - Supports Java up to version 25 (including records, sealed types, modules, etc.)
+  - Covers [an extensive list of breaking changes](core/src/main/java/io/github/alien/roseau/diff/changes/BreakingChangeKind.java) matching the [Java Language Specification](https://docs.oracle.com/javase/specs/jls/se25/html/index.html), backed by a [thorough test suite](core/src/test/java/io/github/alien/roseau/diff)
+  - Excellent accuracy and performance
   - Outputs reports in CSV, HTML, JSON, and Markdown formats
-  - Highly configurable, CLI-first, and scriptable
-  - Maven plug-in, integration with Gradle
+  - CLI-first, with a Maven plug-in and Gradle integration
 
 Like other JAR-based tools, Roseau integrates smoothly into CI pipelines and can analyze artifacts from remote repositories such as Maven Central.
 Unlike others, Roseau can also analyze source code directly, making it ideal for checking commits, pull requests, or local changes in an IDE, as well as libraries hosted on platforms like GitHub for which compiled JARs are not readily available.
-
-## In a nutshell
-
-  1. Roseau infers the exact API of each version of the library to analyze
-  2. It performs side-by-side comparison of the two APIs to detect any breaking changes
-
-Roseau builds lightweight, technology-agnostic API models that list all the exported symbols in a library—including types, methods, and fields—along with their properties. These models can be easily serialized and stored as JSON for further analysis or archival.
-Roseau relies on either [JDT](https://github.com/eclipse-jdt/eclipse.jdt.core) to extract API models from source code, and on [ASM](https://asm.ow2.io/) to extract API models from bytecode.
-
-
-The breaking change detection algorithm is efficient, agnostic of the underlying parsing technology, and is [extensively tested](core/src/test/java/io/github/alien/roseau/diff).
-The list of source-level and binary-level breaking changes considered in Roseau is specified [here](core/src/main/java/io/github/alien/roseau/diff/changes/BreakingChangeKind.java) and matches the [Java Language Specification](https://docs.oracle.com/javase/specs/).
 
 ## Usage
 
 ### As a standalone CLI tool
 
-Download the latest stable version of the CLI JAR from the [releases page](https://github.com/alien-tools/roseau/releases) or build the latest version locally (Java 25 required): 
+Download the [latest release](https://github.com/alien-tools/roseau/releases/latest) of Roseau: either a standalone archive for your platform, which bundles its own Java runtime, or the executable JAR.
+On Linux:
+
+```bash
+$ curl -fsSL https://github.com/alien-tools/roseau/releases/download/v0.7.0/roseau-0.7.0-linux-x86_64.zip -o roseau.zip && unzip -q roseau.zip
+$ alias roseau="$PWD/roseau-0.7.0-linux-x86_64/bin/roseau"
+```
+
+<details>
+<summary>Building from sources</summary>
+Note that building from sources requires Java 25.
 
 ```bash
 $ git clone https://github.com/alien-tools/roseau.git
 $ cd roseau && ./mvnw package -DskipTests
 $ alias roseau='java -jar $PWD/cli/target/roseau-<version>.jar'
 ```
+</details>
 
-Identify breaking changes between two versions, passed as local JARs or source trees, or fetched remotely:
+Identify breaking changes between two versions, passed as local JARs or source trees, or fetched remotely from Maven. See the [CLI reference](https://alien-tools.github.io/roseau/reference/cli/) for all options.
 
 ```
-$ roseau --diff --v1 /path/to/v1.jar --v2 /path/to/v2.jar
-Breaking changes found: 3 (2 binary-breaking, 2 source-breaking)
-✗ com.pkg.A TYPE_REMOVED
-  ✗ binary-breaking ✗ source-breaking
-  → com/pkg/A.java:4
-⚠ com.pkg.B.f FIELD_NOW_STATIC
-  ✗ binary-breaking ✓ source-compatible
-  → com/pkg/B.java:18
-★ com.pkg.C TYPE_NEW_ABSTRACT_METHOD [toOverride()]
+$ roseau --diff --v1 com.google.guava:guava:33.4.0-jre --v2 com.google.guava:guava:33.6.0-jre
+Breaking Changes found: 7 (3 binary-breaking, 7 source-breaking)
+★ com.google.common.graph.Graph TYPE_NEW_ABSTRACT_METHOD [asNetwork()]
   ✓ binary-compatible ✗ source-breaking
-  → com/pkg/C.java:210
-$ roseau --diff --v1 com.example:lib:1.0.0 --v2 /path/to/v2/src/main/java
+  → com/google/common/graph/Graph.java
+✗ com.google.thirdparty.publicsuffix.PublicSuffixPatterns TYPE_REMOVED
+  ✗ binary-breaking ✗ source-breaking
+  → com/google/thirdparty/publicsuffix/PublicSuffixPatterns.java
 [...]
-```
-
-Roseau supports different modes, output formats, and options:
-
-```
-$ roseau --help
-Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--plain] [--source-only]
-              [--api-json=<path>] [--classpath=<path>[:<path>...]]
-              [--config=<path>] [--ignored=<path>] [--pom=<path>]
-              [--v1=<path|coordinates>] [--v1-classpath=<path>[:<path>...]]
-              [--v1-pom=<path>] [--v2=<path|coordinates>] [--v2-classpath=<path>
-              [:<path>...]] [--v2-pom=<path>] [--report=<format=path>]...
-              (--api | --diff)
-      --api               Serialize the API model of --v1 as JSON; prints to
-                            stdout if --api-json is not provided
-      --diff              Compute breaking changes between versions --v1 and --v2
-      --v1=<path|coordinates> First version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:1.0.0)
-      --v2=<path|coordinates> Second version of the library: a JAR file, source directory (e.g., src/main/java), or Maven coordinates (e.g., com.example:lib:2.0.0)
-      --api-json=<path>   Where to serialize the Json API model of --v1 in --api mode
-      --report=<format=path> Write a breaking changes report in the given format to the given path; repeatable (formats: CLI, CSV, HTML, JSON, MD)
-      --classpath=<path>[:<path>...] A colon-separated list of JARs to include in the classpath (Windows: semi-colon), shared by --v1 and --v2
-      --pom=<path>        A pom.xml file to extract the classpath from, shared by --v1 and --v2
-      --v1-classpath=<path>[:<path>...] A --classpath for --v1
-      --v2-classpath=<path>[:<path>...] A --classpath for --v2
-      --v1-pom=<path>     A --pom for --v1
-      --v2-pom=<path>     A --pom for --v2
-      --binary-only       Only report binary-breaking changes
-      --source-only       Only report source-breaking changes
-      --ignored=<path>    Do not report the breaking changes listed in the given CSV file; this CSV file shares the same structure as a CSV report
-      --config=<path>     A roseau.yaml config file; CLI options take precedence over these options
-      --fail-on-bc        Return with exit code 1 if breaking changes are detected
-      --plain             Disable ANSI colors, output plain text
-  -v, --verbose           Increase verbosity (-v, -vv).
-  -h, --help              Show this help message and exit.
-  -V, --version           Print version information and exit.
-```
-
-### As a Java library
-
-The main programmatic entry points live in `Roseau`. In most cases, you configure two `Library` instances, build their APIs, and diff them:
-
-```java
-Library v1 = Library.of(Path.of("/path/to/library-v1.jar"));
-Library v2 = Library.builder()
-  .location(Path.of("/path/to/library-v2.jar"))
-  .classpath(List.of(Path.of("/path/to/dependency.jar")))
-  .pom(Path.of("/path/to/pom.xml"))
-  .build();
-
-API apiV1 = Roseau.buildAPI(v1);
-API apiV2 = Roseau.buildAPI(v2);
-RoseauReport report = Roseau.diff(apiV1, apiV2);
-report.getBreakingChanges().forEach(System.out::println);
+$ roseau --diff --v1 /path/to/v1.jar --v2 /path/to/v2/src/main/java
+[...]
 ```
 
 ### As a Maven plug-in
 
 Roseau also provides a Maven plug-in that compares the current artifact against a baseline during the `verify` phase.
-The minimal setup is to bind the `check` goal and provide a baseline:
+The minimal setup is to bind the `check` goal and provide a baseline.
+See the [Maven guide](https://alien-tools.github.io/roseau/guides/maven-plugin/) for a complete setup.
 
 ```xml
 <plugin>
   <groupId>io.github.alien-tools</groupId>
   <artifactId>roseau-maven-plugin</artifactId>
-  <version>${roseau.version}</version>
+  <version>0.7.0</version>
   <executions>
     <execution>
       <goals>
@@ -133,9 +83,6 @@ The minimal setup is to bind the `check` goal and provide a baseline:
     </execution>
   </executions>
   <configuration>
-    <!-- Compare against a baseline JAR -->
-    <baselineJar>${project.basedir}/old.jar</baselineJar>
-    <!-- Compare against a previous version -->
     <baselineDependency>
       <groupId>com.group</groupId>
       <artifactId>my-artifact</artifactId>
@@ -148,92 +95,50 @@ The minimal setup is to bind the `check` goal and provide a baseline:
 
 ### In a Gradle build
 
-Gradle builds can run Roseau through the published CLI artifact. A minimal Kotlin DSL setup is:
+Gradle builds can run Roseau by resolving the published CLI artifact and invoking it with a `JavaExec` task; see the [Gradle guide](https://alien-tools.github.io/roseau/guides/gradle/) for a complete setup, as well as the [JUnit](https://github.com/junit-team/junit-framework/blob/main/gradle/plugins/backward-compatibility/src/main/kotlin/junitbuild/compatibility/roseau/RoseauDiff.kt) and [Caffeine](https://github.com/ben-manes/caffeine/blob/master/gradle/plugins/src/main/kotlin/quality/roseau.caffeine.gradle.kts) builds for real-world integrations.
 
-```kotlin
-val roseau by configurations.creating
+### As a Java library
 
-dependencies {
-  roseau("io.github.alien-tools:roseau-cli:0.7.0")
-}
+Roseau's API is published on [Maven Central](https://central.sonatype.com/namespace/io.github.alien-tools) as `roseau-core`.
+The main programmatic entry point is `io.github.alien.roseau.Roseau`. In most cases, you configure two `Library` instances, build their APIs, and diff them:
 
-tasks.register<JavaExec>("roseauCheck") {
-  group = "verification"
-  description = "Checks API breaking changes with Roseau"
+```java
+Library v1 = Library.of(Path.of("/path/to/library-v1.jar"));
+Library v2 = Library.builder()
+  .location(Path.of("/path/to/library-v2.jar"))
+  .classpath(List.of(Path.of("/path/to/dependency.jar")))
+  .build();
 
-  dependsOn(tasks.named("jar"))
-
-  classpath = roseau
-  mainClass.set("io.github.alien.roseau.cli.RoseauCLI")
-  javaLauncher.set(
-    javaToolchains.launcherFor {
-      languageVersion.set(JavaLanguageVersion.of(25))
-    },
-  )
-
-  doFirst {
-    val currentJar = tasks.named<Jar>("jar").get().archiveFile.get().asFile
-    val reportsDir = layout.buildDirectory.dir("reports/roseau").get().asFile
-
-    args(
-      "--diff",
-      "--v1", "com.example:my-library:1.2.3",
-      "--v2", currentJar.absolutePath,
-      "--classpath", sourceSets.main.get().compileClasspath.asPath,
-      "--plain",
-      "--fail-on-bc",
-      "--report", "HTML=${reportsDir.resolve("report.html")}",
-      "--report", "CSV=${reportsDir.resolve("report.csv")}",
-    )
-  }
-}
-
-tasks.named("check") {
-  dependsOn("roseauCheck")
-}
+API apiV1 = Roseau.buildAPI(v1);
+API apiV2 = Roseau.buildAPI(v2);
+RoseauReport report = Roseau.diff(apiV1, apiV2);
+report.getBreakingChanges().forEach(System.out::println);
 ```
 
 ## Configuration
-Roseau accepts a YAML configuration file supplied using the `--config` option. If an option is specified both on the CLI and in the configuration file, the CLI option takes precedence. Example:
+Roseau accepts a YAML configuration file supplied using the `--config` option.
+Options also set on the CLI or in the Maven plug-in take precedence.
+See the [YAML configuration guide](https://alien-tools.github.io/roseau/guides/config/) for the full reference.
 
 ```yaml
 common:
+  excludes: # Exclude certain APIs from compatibility checks
+    names: [ com\.library\.internal\..* ] # Package naming conventions
+    annotations:
+      - name: com.google.common.annotations.Beta # Exclude @Beta APIs
+      - name: org.apiguardian.api.API # Exclude @API(status = INTERNAL) APIs
+        args: { status: org.apiguardian.api.API$Status.INTERNAL }
   classpath:
     pom: /path/to/pom.xml
     jars: [ /path/to/dependency.jar ]
-v1:
-  apiReport: ./reports/v1.json
-v2:
-  apiReport: ./reports/v2.json
 diff:
-  ignore: ignored-breaking-changes.csv
-  binaryOnly: true
+  ignore: ignored-breaking-changes.csv # Ignore a list of intentional known breaking changes
+  binaryOnly: true # Report binary incompatibilities only
 reports:
-  - file: ./reports/guava.html
+  - file: ./reports/bcs.html
     format: HTML
-  - file: ./reports/guava.csv
+  - file: ./reports/bcs.csv
     format: CSV
-```
-
-### Ignoring breaking changes on specific types and symbols
-Roseau can be configured to ignore breaking changes on symbols matching a given regular expression or annotated with a specific annotation:
-
-```yaml
-common:
-  excludes:
-    names: [ com\.google\.common\..* ]
-    annotations:
-      - name: com.google.common.annotations.Beta
-      - name: org.apiguardian.api.API
-        args: { status: org.apiguardian.api.API$Status.INTERNAL }
-```
-
-### Ignoring specific breaking changes
-Breaking changes are sometimes necessary and intended. To avoid reporting the same breaking changes over and over against a given baseline, Roseau can be configured to ignore/accept specific breaking changes and stop reporting them using a dedicated CSV file supplied using the `--ignored` option:
-
-```csv
-type;symbol;kind
-pkg.T;pkg.T.m();EXECUTABLE_REMOVED
 ```
 
 ## Citing Roseau
@@ -251,4 +156,4 @@ If you use Roseau for academic purposes, please cite: [Roseau: Fast, Accurate, S
 ```
 
 ## License
-This repository—and all its content—is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).  („• ‿ •„) 
+This repository—and all its content—is licensed under the [MIT License](https://choosealicense.com/licenses/mit/).  („• ‿ •„)

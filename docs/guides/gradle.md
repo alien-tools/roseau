@@ -57,3 +57,7 @@ Then run:
 
 `--v1` is the baseline release, usually the latest released Maven coordinates for the artifact. `--v2` is the JAR produced by the current build.
 If your project does not use the standard `jar` task for the artifact you publish, replace `jar` with the task that produces that artifact.
+
+## Real-world examples
+
+The [JUnit](https://github.com/junit-team/junit-framework/blob/main/gradle/plugins/backward-compatibility/src/main/kotlin/junitbuild/compatibility/roseau/RoseauDiff.kt) and [Caffeine](https://github.com/ben-manes/caffeine/blob/master/gradle/plugins/src/main/kotlin/quality/roseau.caffeine.gradle.kts) builds both run Roseau from their own Gradle convention plug-ins.
