@@ -19,9 +19,9 @@ public final class EnumDecl extends ClassDecl {
 	                Set<TypeReference<InterfaceDecl>> implementedInterfaces, Set<FieldDecl> fields,
 	                Set<MethodDecl> methods, TypeReference<TypeDecl> enclosingType,
 	                Set<ConstructorDecl> constructors, Set<EnumValueDecl> values) {
+		Preconditions.checkNotNull(values);
 		super(qualifiedName, visibility, modifiers, annotations, location, implementedInterfaces, List.of(),
 			fields, methods, enclosingType, TypeReference.ENUM, constructors, Set.of());
-		Preconditions.checkNotNull(values);
 		this.values = Set.copyOf(values);
 	}
 
@@ -32,16 +32,6 @@ public final class EnumDecl extends ClassDecl {
 
 	public Set<EnumValueDecl> getValues() {
 		return values;
-	}
-
-	@Override
-	public String toString() {
-		return """
-			%s enum %s
-			  %s
-			  %s
-			  %s
-			""".formatted(visibility, qualifiedName, values, fields, methods);
 	}
 
 	@Override

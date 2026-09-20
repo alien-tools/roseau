@@ -24,12 +24,6 @@ public final class FieldDecl extends TypeMemberDecl {
 	}
 
 	@Override
-	public String toString() {
-		return "%s %s %s".formatted(visibility, type, simpleName);
-	}
-
-
-	@Override
 	public boolean equals(Object obj) {
 		if (!super.equals(obj)) {
 			return false;

@@ -5,7 +5,6 @@ import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
 
 import java.util.Arrays;
-import java.util.List;
 import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;

@@ -44,15 +44,6 @@ public final class RecordDecl extends ClassDecl {
 	}
 
 	@Override
-	public String toString() {
-		return """
-			%s record %s
-			  %s
-			  %s
-			""".formatted(visibility, qualifiedName, fields, methods);
-	}
-
-	@Override
 	public boolean equals(Object obj) {
 		if (!super.equals(obj)) {
 			return false;

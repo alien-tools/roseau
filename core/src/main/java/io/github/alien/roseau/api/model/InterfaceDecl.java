@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.Set;
 
 /**
- * An interface declaration in an {@link LibraryTypes}.
+ * An interface declaration in a {@link LibraryTypes}.
  */
 public sealed class InterfaceDecl extends TypeDecl permits AnnotationDecl {
 	public InterfaceDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
@@ -23,14 +23,5 @@ public sealed class InterfaceDecl extends TypeDecl permits AnnotationDecl {
 	@Override
 	public boolean isInterface() {
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return """
-			%s interface %s
-			  %s
-			  %s
-			""".formatted(visibility, qualifiedName, fields, methods);
 	}
 }

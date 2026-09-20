@@ -20,8 +20,10 @@ public record Annotation(
 ) {
 	public Annotation(TypeReference<AnnotationDecl> actualAnnotation, Map<String, String> values) {
 		Preconditions.checkNotNull(actualAnnotation);
-		Preconditions.checkArgument(values != null &&
-			values.keySet().stream().noneMatch(Strings::isNullOrEmpty));
+		Preconditions.checkNotNull(values);
+		// Member names are always present; values may legitimately be empty
+		Preconditions.checkArgument(values.entrySet().stream().noneMatch(e ->
+			Strings.isNullOrEmpty(e.getKey()) || e.getValue() == null));
 		this.actualAnnotation = actualAnnotation;
 		this.values = Map.copyOf(values);
 	}

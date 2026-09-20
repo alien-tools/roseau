@@ -15,14 +15,14 @@ import java.nio.file.Path;
  * @see SourceLocation#NO_LOCATION
  */
 public record SourceLocation(
-	// Annoying, but Jackson serializes Path as URIs (file:///absolute/path/to/File.java)
+	// Annoying, but Jackson serializes Path as URIs (file:///absolute/path/to/File.java),
 	// and we want to keep relative paths instead
 	@JsonSerialize(using = ToStringSerializer.class)
 	Path file,
 	int line
 ) {
 	/**
-	 * An unknown location for symbols that exist but cannot be located in source code (e.g. default constructors)
+	 * An unknown location for symbols that exist but cannot be located in a file (e.g., default constructors)
 	 */
 	public static final SourceLocation NO_LOCATION = new SourceLocation(null, -1);
 

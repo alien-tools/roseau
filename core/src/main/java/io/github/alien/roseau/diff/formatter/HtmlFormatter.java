@@ -240,11 +240,11 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"<code>" + escape(String.valueOf(oldType)) + "</code> → <code>" + escape(String.valueOf(newType)) + "</code>";
 			case BreakingChangeDetails.FormalTypeParametersRemoved(var ftp) ->
-				"<code>" + escape(String.valueOf(ftp)) + "</code>";
+				"<code>" + escape(ftp.name()) + "</code>";
 			case BreakingChangeDetails.FormalTypeParametersAdded(var ftp) ->
-				"<code>" + escape(String.valueOf(ftp)) + "</code>";
+				"<code>" + escape(ftp.name()) + "</code>";
 			case BreakingChangeDetails.FormalTypeParametersChanged(var oldFtp, var newFtp) ->
-				"<code>" + escape(String.valueOf(oldFtp)) + "</code> → <code>" + escape(String.valueOf(newFtp)) + "</code>";
+				"<code>" + escape(oldFtp.name()) + "</code> → <code>" + escape(newFtp.name()) + "</code>";
 			case BreakingChangeDetails.ClassNoLongerConcretelyExtensible(var blocker) ->
 				"<code>" + escape(blocker.getSignature()) + "</code>";
 			case BreakingChangeDetails.None() -> "";

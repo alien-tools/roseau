@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.model;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.analysis.ApiAnalyzer;
@@ -12,23 +13,21 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * A resolved API snapshot with analysis capabilities.
  */
 public final class API {
-	/**
-	 * The types, exported or not, declared in the library.
-	 */
 	private final LibraryTypes libraryTypes;
 	private final ApiAnalyzer analyzer;
 	private final Map<String, TypeDecl> exportedTypes;
+	private final List<TypeDecl> exportedTypesList;
 
 	public API(LibraryTypes libraryTypes, ApiAnalyzer analyzer) {
 		Preconditions.checkNotNull(libraryTypes);
+		Preconditions.checkNotNull(analyzer);
 		this.libraryTypes = libraryTypes;
-		this.analyzer = Preconditions.checkNotNull(analyzer);
+		this.analyzer = analyzer;
 		this.exportedTypes = libraryTypes.getAllTypes().stream()
 			.filter(analyzer::isExported)
 			.collect(ImmutableSortedMap.toImmutableSortedMap(
@@ -36,12 +35,23 @@ public final class API {
 				Symbol::getQualifiedName,
 				Function.identity()
 			));
+		this.exportedTypesList = ImmutableList.copyOf(exportedTypes.values());
 	}
 
+	/**
+	 * The types, exported or not, declared in the library.
+	 *
+	 * @return the library types
+	 */
 	public LibraryTypes getLibraryTypes() {
 		return libraryTypes;
 	}
 
+	/**
+	 * An {@link ApiAnalyzer} for this API.
+	 *
+	 * @return the analyzer
+	 */
 	public ApiAnalyzer analyzer() {
 		return analyzer;
 	}
@@ -49,17 +59,17 @@ public final class API {
 	/**
 	 * Type declarations that are exported by the API.
 	 *
-	 * @return The list of exported {@link TypeDecl}
+	 * @return the list of exported {@link TypeDecl}
 	 */
 	public List<TypeDecl> getExportedTypes() {
-		return List.copyOf(exportedTypes.values());
+		return exportedTypesList;
 	}
 
 	/**
 	 * Returns the exported type in the API with the given qualified name.
 	 *
 	 * @param qualifiedName The qualified name of the type to find
-	 * @return An {@link Optional} indicating whether the type was found
+	 * @return an {@link Optional} indicating whether the type was found
 	 */
 	public Optional<TypeDecl> findExportedType(String qualifiedName) {
 		return Optional.ofNullable(exportedTypes.get(qualifiedName));
@@ -75,15 +85,13 @@ public final class API {
 		return analyzer.resolver().getUnresolvedTypes();
 	}
 
+	/**
+	 * The {@link Library} this API was extracted from.
+	 *
+	 * @return the library
+	 */
 	public Library getLibrary() {
 		return libraryTypes.getLibrary();
-	}
-
-	@Override
-	public String toString() {
-		return getExportedTypes().stream()
-			.map(TypeDecl::toString)
-			.collect(Collectors.joining(System.lineSeparator()));
 	}
 
 	@Override

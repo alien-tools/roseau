@@ -7,7 +7,6 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A method declaration is a kind of {@link ExecutableDecl} within a {@link TypeDecl}.
@@ -89,23 +88,9 @@ public sealed class MethodDecl extends ExecutableDecl permits AnnotationMethodDe
 	}
 
 	public boolean isValues() {
-		return simpleName.equals("values") &&
-			type instanceof ArrayTypeReference &&
+		return isStatic() &&
+			simpleName.equals("values") &&
+			type.equals(new ArrayTypeReference(containingType, 1)) &&
 			parameters.isEmpty();
-	}
-
-	@Override
-	public String toString() {
-		return "%s %s%s%s %s(%s)".formatted(
-			visibility,
-			modifiers.isEmpty()
-				? ""
-				: modifiers.stream().map(Modifier::toString).collect(Collectors.joining(" ")) + " ",
-			formalTypeParameters.isEmpty()
-				? ""
-				: "<" + formalTypeParameters.stream().map(FormalTypeParameter::toString).collect(Collectors.joining(", ")) + "> ",
-			type,
-			getSimpleName(),
-			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", ")));
 	}
 }

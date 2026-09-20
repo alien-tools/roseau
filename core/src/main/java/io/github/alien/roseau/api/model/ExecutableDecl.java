@@ -26,10 +26,10 @@ public abstract sealed class ExecutableDecl extends TypeMemberDecl implements Ty
 	                         TypeReference<TypeDecl> containingType, ITypeReference type, List<ParameterDecl> parameters,
 	                         List<FormalTypeParameter> formalTypeParameters,
 	                         Set<ITypeReference> thrownExceptions) {
-		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		Preconditions.checkNotNull(parameters);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(thrownExceptions);
+		super(qualifiedName, visibility, modifiers, annotations, location, containingType, type);
 		this.parameters = List.copyOf(parameters);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
 		this.thrownExceptions = Set.copyOf(thrownExceptions);

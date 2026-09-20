@@ -9,6 +9,7 @@ import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * A type declaration in an API, either a {@link ClassDecl}, {@link InterfaceDecl}, {@link AnnotationDecl},
@@ -29,20 +30,21 @@ public abstract sealed class TypeDecl extends Symbol implements TypeParameterSco
 	                   Set<TypeReference<InterfaceDecl>> implementedInterfaces,
 	                   List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                   TypeReference<TypeDecl> enclosingType, Set<TypeReference<TypeDecl>> permittedTypes) {
-		// §8.1.6: permitted types implies sealed
-		Set<Modifier> mods = Sets.union(modifiers, permittedTypes.isEmpty() ? Set.of() : Set.of(Modifier.SEALED));
-		super(qualifiedName, visibility, mods, annotations, location);
 		Preconditions.checkNotNull(implementedInterfaces);
 		Preconditions.checkNotNull(formalTypeParameters);
 		Preconditions.checkNotNull(fields);
 		Preconditions.checkNotNull(methods);
+		Preconditions.checkNotNull(permittedTypes);
 		Preconditions.checkArgument(enclosingType != null ||
 				Set.of(AccessModifier.PUBLIC, AccessModifier.PACKAGE_PRIVATE).contains(visibility),
 			"Top-level type declarations are either PUBLIC or PACKAGE_PRIVATE");
+		// §8.1.6: permitted types implies sealed
+		Set<Modifier> mods = Sets.union(modifiers, permittedTypes.isEmpty() ? Set.of() : Set.of(Modifier.SEALED));
+		super(qualifiedName, visibility, mods, annotations, location);
 		this.implementedInterfaces = Set.copyOf(implementedInterfaces);
 		this.formalTypeParameters = List.copyOf(formalTypeParameters);
 		this.fields = Set.copyOf(fields);
-		this.methods = Set.copyOf(methods.stream().filter(m -> !isSyntheticMethod(m)).toList());
+		this.methods = methods.stream().filter(m -> !isSyntheticMethod(m)).collect(Collectors.toUnmodifiableSet());
 		this.enclosingType = enclosingType;
 		this.permittedTypes = Set.copyOf(permittedTypes);
 	}

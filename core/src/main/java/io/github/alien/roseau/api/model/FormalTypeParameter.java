@@ -5,7 +5,6 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * A formal type parameter (or type variable) declares an identifier used as a type (e.g. {@code <T extends String>}).
@@ -21,25 +20,5 @@ public record FormalTypeParameter(
 		Preconditions.checkNotNull(name);
 		Preconditions.checkNotNull(bounds);
 		bounds = bounds.isEmpty() ? List.of(TypeReference.OBJECT) : List.copyOf(bounds);
-	}
-
-	@Override
-	public String toString() {
-		return String.format("%s extends %s",
-			name,
-			bounds.stream()
-				.map(t -> {
-					if (t instanceof TypeReference<?> tr && !tr.typeArguments().isEmpty()) {
-						return String.format("%s<%s>",
-							tr.getQualifiedName(),
-							tr.typeArguments().stream()
-								.map(ITypeReference::getQualifiedName)
-								.collect(Collectors.joining(", "))
-						);
-					}
-					return t.getQualifiedName();
-				})
-				.collect(Collectors.joining(" & "))
-		);
 	}
 }

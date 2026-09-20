@@ -22,10 +22,9 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 	                 List<FormalTypeParameter> formalTypeParameters, Set<FieldDecl> fields, Set<MethodDecl> methods,
 	                 TypeReference<TypeDecl> enclosingType, TypeReference<ClassDecl> superClass,
 	                 Set<ConstructorDecl> constructors, Set<TypeReference<TypeDecl>> permittedTypes) {
+		Preconditions.checkNotNull(constructors);
 		super(qualifiedName, visibility, modifiers, annotations, location,
 			implementedInterfaces, formalTypeParameters, fields, methods, enclosingType, permittedTypes);
-		Preconditions.checkNotNull(constructors);
-		Preconditions.checkNotNull(permittedTypes);
 		this.superClass = Optional.ofNullable(superClass).orElse(TypeReference.OBJECT);
 		this.constructors = Set.copyOf(constructors);
 	}
@@ -51,16 +50,6 @@ public sealed class ClassDecl extends TypeDecl permits RecordDecl, EnumDecl {
 
 	public Set<ConstructorDecl> getDeclaredConstructors() {
 		return constructors;
-	}
-
-	@Override
-	public String toString() {
-		return """
-			%s class %s
-			  %s
-			  %s
-			  %s
-			""".formatted(visibility, qualifiedName, constructors, fields, methods);
 	}
 
 	@Override

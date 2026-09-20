@@ -23,11 +23,6 @@ public record ParameterDecl(
 	}
 
 	@Override
-	public String toString() {
-		return "%s%s %s".formatted(type, isVarargs ? "..." : "", name);
-	}
-
-	@Override
 	public boolean equals(Object obj) {
 		if (this == obj) {
 			return true;

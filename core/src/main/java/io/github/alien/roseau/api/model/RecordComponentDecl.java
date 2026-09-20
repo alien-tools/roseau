@@ -7,6 +7,9 @@ import java.util.EnumSet;
 import java.util.Objects;
 import java.util.Set;
 
+/**
+ * A {@link RecordDecl} component declaration.
+ */
 public final class RecordComponentDecl extends TypeMemberDecl {
 	private final boolean isVarargs;
 
@@ -33,10 +36,5 @@ public final class RecordComponentDecl extends TypeMemberDecl {
 	@Override
 	public int hashCode() {
 		return Objects.hash(super.hashCode(), isVarargs);
-	}
-
-	@Override
-	public String toString() {
-		return "%s %s%s".formatted(type, isVarargs ? "..." : "", simpleName);
 	}
 }

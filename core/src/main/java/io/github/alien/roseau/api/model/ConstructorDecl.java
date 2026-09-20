@@ -5,7 +5,6 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 /**
  * A constructor declaration in a {@link ClassDecl}.
@@ -23,17 +22,5 @@ public final class ConstructorDecl extends ExecutableDecl {
 	@Override
 	public boolean isConstructor() {
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return "%s %s%s(%s)".formatted(
-			visibility,
-			formalTypeParameters.isEmpty()
-				? ""
-				: "<" + formalTypeParameters.stream().map(FormalTypeParameter::toString).collect(Collectors.joining(", ")) + "> ",
-			getSimpleName(),
-			parameters.stream().map(ParameterDecl::toString).collect(Collectors.joining(", "))
-		);
 	}
 }

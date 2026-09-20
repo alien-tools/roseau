@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 
-import java.util.List;
 import java.util.Objects;
 import java.util.Set;
 
@@ -14,16 +13,17 @@ import java.util.Set;
  * type and belong to some containing type.
  */
 public abstract sealed class TypeMemberDecl extends Symbol
-		permits FieldDecl, ExecutableDecl, EnumValueDecl, RecordComponentDecl {
+	permits FieldDecl, ExecutableDecl, EnumValueDecl, RecordComponentDecl {
 	protected final TypeReference<TypeDecl> containingType;
 	protected final ITypeReference type;
 
 	protected TypeMemberDecl(String qualifiedName, AccessModifier visibility, Set<Modifier> modifiers,
-			Set<Annotation> annotations, SourceLocation location,
-			TypeReference<TypeDecl> containingType, ITypeReference type) {
-		super(qualifiedName, visibility, modifiers, annotations, location);
+	                         Set<Annotation> annotations, SourceLocation location,
+	                         TypeReference<TypeDecl> containingType, ITypeReference type) {
 		Preconditions.checkNotNull(containingType);
 		Preconditions.checkNotNull(type);
+		Preconditions.checkArgument(qualifiedName.startsWith(containingType.getQualifiedName()));
+		super(qualifiedName, visibility, modifiers, annotations, location);
 		this.containingType = containingType;
 		this.type = type;
 	}
@@ -42,8 +42,8 @@ public abstract sealed class TypeMemberDecl extends Symbol
 			return false;
 		}
 		return obj instanceof TypeMemberDecl other
-				&& Objects.equals(type, other.type)
-				&& Objects.equals(containingType, other.containingType);
+			&& Objects.equals(type, other.type)
+			&& Objects.equals(containingType, other.containingType);
 	}
 
 	@Override

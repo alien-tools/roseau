@@ -19,7 +19,7 @@ public final class AnnotationDecl extends InterfaceDecl {
 	 */
 	private final Set<AnnotationMethodDecl> annotationMethods;
 	/**
-	 * The {@link ElementType} this annotation can be used on
+	 * The set of {@link ElementType} this annotation can be used on
 	 */
 	private final Set<ElementType> targets;
 
@@ -27,17 +27,18 @@ public final class AnnotationDecl extends InterfaceDecl {
 	                      Set<Annotation> annotations, SourceLocation location, Set<FieldDecl> fields,
 	                      Set<AnnotationMethodDecl> annotationMethods, TypeReference<TypeDecl> enclosingType,
 	                      Set<ElementType> targets) {
-		super(qualifiedName, visibility, modifiers, annotations, location, Set.of(),
-			List.of(), fields, Set.of(), enclosingType, Set.of());
 		Preconditions.checkNotNull(annotationMethods);
 		Preconditions.checkNotNull(targets);
+		super(qualifiedName, visibility, modifiers, annotations, location, Set.of(),
+			List.of(), fields, Set.of(), enclosingType, Set.of());
 		this.annotationMethods = Set.copyOf(annotationMethods);
 		if (hasAnnotation(TypeReference.ANNOTATION_TARGET)) {
 			// If @Target({}), the annotation cannot be placed on anything (cf. @Target's javadoc)
 			this.targets = Sets.immutableEnumSet(targets);
 		} else {
-			// §9.6.4.1: if no explicit @Target annotation, defaults to everything but TYPE_USE
-			this.targets = Sets.immutableEnumSet(EnumSet.complementOf(EnumSet.of(ElementType.TYPE_USE)));
+			// §9.6.4.1: if no explicit @Target annotation, defaults to everything but TYPE_USE/TYPE_PARAMETER
+			this.targets = Sets.immutableEnumSet(EnumSet.complementOf(
+				EnumSet.of(ElementType.TYPE_USE, ElementType.TYPE_PARAMETER)));
 		}
 	}
 
@@ -56,15 +57,6 @@ public final class AnnotationDecl extends InterfaceDecl {
 	@Override
 	public boolean isAnnotation() {
 		return true;
-	}
-
-	@Override
-	public String toString() {
-		return """
-			%s annotation %s
-			  %s
-			  %s
-			""".formatted(visibility, qualifiedName, fields, annotationMethods);
 	}
 
 	@Override

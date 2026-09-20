@@ -58,7 +58,7 @@ public final class RoseauReport {
 				Comparator.comparing((BreakingChange bc) -> bc.impactedType().getQualifiedName())
 					.thenComparing(bc -> bc.impactedSymbol().getUniqueId())
 					.thenComparing(BreakingChange::kind)
-					.thenComparing(bc -> bc.details().toString()))
+					.thenComparing(bc -> detailsKey(bc.details())))
 			.toList();
 		this.excludedNamePatterns = v1.getLibrary().getExclusions().names().stream()
 			.map(name -> {
@@ -234,6 +234,30 @@ public final class RoseauReport {
 
 	public static Builder builder(API v1, API v2) {
 		return new Builder(v1, v2);
+	}
+
+	private static String detailsKey(BreakingChangeDetails details) {
+		return switch (details) {
+			case BreakingChangeDetails.None() -> "";
+			case BreakingChangeDetails.TypeNewAbstractMethod(var newMethod) -> newMethod.getUniqueId();
+			case BreakingChangeDetails.ClassNoLongerConcretelyExtensible(var blocker) -> blocker.getUniqueId();
+			case BreakingChangeDetails.AnnotationNewMethodWithoutDefault(var newMethod) -> newMethod.getUniqueId();
+			case BreakingChangeDetails.TypeKindChanged(var oldType, var newType) ->
+				"%s %s".formatted(oldType.getSimpleName(), newType.getSimpleName());
+			case BreakingChangeDetails.TypeSupertypeRemoved(var superType) -> superType.getQualifiedName();
+			case BreakingChangeDetails.AnnotationTargetRemoved(var target) -> target.name();
+			case BreakingChangeDetails.MethodNoLongerThrowsCheckedException(var exception) -> exception.getQualifiedName();
+			case BreakingChangeDetails.MethodNowThrowsCheckedException(var exception) -> exception.getQualifiedName();
+			case BreakingChangeDetails.FieldTypeChanged(var oldType, var newType) -> "%s %s".formatted(oldType, newType);
+			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
+				"%s %s".formatted(oldType, newType);
+			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
+				"%s %s".formatted(oldType, newType);
+			case BreakingChangeDetails.FormalTypeParametersAdded(var ftp) -> ftp.name();
+			case BreakingChangeDetails.FormalTypeParametersRemoved(var ftp) -> ftp.name();
+			case BreakingChangeDetails.FormalTypeParametersChanged(var oldFtp, var newFtp) ->
+				"%s %s".formatted(oldFtp.name(), newFtp.name());
+		};
 	}
 
 	private boolean isExcluded(Symbol symbol) {

@@ -29,8 +29,7 @@ import java.util.function.Function;
  * Holds a set of {@link Symbol} extracted from a library and provides convenience methods to access type declarations.
  * All types are immutable and can be serialized/unserialized from/to JSON. To enable type resolution, library types
  * contain <strong>all</strong> the types declared in a library, including non-exported ones. {@link LibraryTypes}
- * instances are a pure extracted snapshot; type resolution and semantic analysis are added separately by
- * {@link API}.
+ * instances are an extracted snapshot; type resolution and semantic analysis are added separately by {@link API}.
  */
 public final class LibraryTypes implements TypeProvider {
 	/**
@@ -81,8 +80,8 @@ public final class LibraryTypes implements TypeProvider {
 				Comparator.naturalOrder(),
 				Symbol::getQualifiedName,
 				Function.identity(),
-				(fqn, _) -> {
-					throw new RoseauException("Duplicated type in %s: %s".formatted(library, fqn));
+				(type, _) -> {
+					throw new RoseauException("Duplicated type in %s: %s".formatted(library, type.getQualifiedName()));
 				}
 			));
 	}

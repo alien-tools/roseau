@@ -350,6 +350,22 @@ class AnnotationsExtractionTest {
 
 	@ParameterizedTest
 	@EnumSource(ApiBuilderType.class)
+	void annotation_values_empty_string(ApiBuilder builder) {
+		var api = builder.build("""
+			public @interface Ann { String name(); String other(); }
+			@Ann(name = "", other = "v")
+			public class A {}""");
+
+		var a = assertClass(api, "A");
+		var ann = a.getAnnotation(new TypeReference<>("Ann"));
+		assertThat(ann).isPresent();
+		assertThat(ann.get().values()).containsExactlyInAnyOrderEntriesOf(
+			Map.of("name", "",
+				"other", "v"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
 	void annotation_values_method(ApiBuilder builder) {
 		var api = builder.build("""
 			public @interface Ann { String value(); }
