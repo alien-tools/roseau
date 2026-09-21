@@ -67,9 +67,14 @@ public interface PropertiesProvider {
 			return false;
 		}
 		Optional<TypeDecl> enclosing = type.getEnclosingType().flatMap(resolver()::resolve);
-		boolean enclosingExported = enclosing.map(enc -> isExported(enc, inProgress)).orElse(true);
-		boolean enclosingSubtypable = enclosing.map(enc -> canBeSubtyped(enc, new HashSet<>(inProgress))).orElse(true);
-		return enclosingExported && (type.isPublic() || (type.isProtected() && enclosingSubtypable));
+		if (!enclosing.map(enc -> isExported(enc, inProgress)).orElse(true)) {
+			return false;
+		}
+		// Only a protected member type depends on clients being able to subclass the type that encloses it, and that is
+		// a far costlier question: answering it asks whether the enclosing type is exported all over again, so asking
+		// it for a public member type too makes the work grow exponentially with the depth of the nesting
+		return type.isPublic() || (type.isProtected()
+			&& enclosing.map(enc -> canBeSubtyped(enc, new HashSet<>(inProgress))).orElse(true));
 	}
 
 	/**
