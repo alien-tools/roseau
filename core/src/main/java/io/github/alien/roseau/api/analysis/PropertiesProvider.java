@@ -12,6 +12,7 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Optional;
 import java.util.Set;
@@ -182,13 +183,13 @@ public interface PropertiesProvider {
 	 * @param type the type whose known subtypes should be returned
 	 * @return directly declared known subtypes
 	 */
-	default Set<TypeDecl> getDirectKnownSubtypes(TypeDecl type) {
+	default Collection<TypeDecl> getDirectKnownSubtypes(TypeDecl type) {
 		Preconditions.checkNotNull(type);
 		String qualifiedName = type.getQualifiedName();
 		return libraryTypes().getAllTypes().stream()
 			.filter(candidate -> !candidate.equals(type))
 			.filter(candidate -> directSuperTypeNames(candidate).anyMatch(qualifiedName::equals))
-			.collect(Collectors.toUnmodifiableSet());
+			.toList();
 	}
 
 	private boolean canBeSubtyped(TypeDecl type, Set<String> inProgress) {

@@ -13,6 +13,7 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -334,10 +335,11 @@ public interface HierarchyProvider {
 	 * method erasure, returns the most concrete implementation.
 	 *
 	 * @param type the base type
-	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type
+	 * @return the most concrete implementation of each {@link MethodDecl} that can be invoked on this type, one per
+	 * erasure
 	 */
-	default Set<MethodDecl> getExportedMethods(TypeDecl type) {
-		return Set.copyOf(getExportedMethodsByErasure(type).values());
+	default Collection<MethodDecl> getExportedMethods(TypeDecl type) {
+		return getExportedMethodsByErasure(type).values();
 	}
 
 	/**
@@ -430,10 +432,10 @@ public interface HierarchyProvider {
 	 * shadowing, returns the visible field.
 	 *
 	 * @param type the base type
-	 * @return all {@link FieldDecl} that can be accessed on this type
+	 * @return all {@link FieldDecl} that can be accessed on this type, one per simple name
 	 */
-	default Set<FieldDecl> getExportedFields(TypeDecl type) {
-		return Set.copyOf(getExportedFieldsByName(type).values());
+	default Collection<FieldDecl> getExportedFields(TypeDecl type) {
+		return getExportedFieldsByName(type).values();
 	}
 
 	/**

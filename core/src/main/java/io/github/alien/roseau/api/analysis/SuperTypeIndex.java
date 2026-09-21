@@ -1,6 +1,5 @@
 package io.github.alien.roseau.api.analysis;
 
-import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import io.github.alien.roseau.api.model.LibraryTypes;
@@ -105,8 +104,10 @@ final class SuperTypeIndex {
 			return Closure.EMPTY;
 		}
 
-		Set<TypeReference<TypeDecl>> nominal = new LinkedHashSet<>();
-		Set<TypeReference<TypeDecl>> instantiated = new LinkedHashSet<>();
+		// Both builders deduplicate on insertion and keep insertion order, so the closures come out ordered and
+		// deduplicated without a second pass over the references, which are costly to hash
+		ImmutableSet.Builder<TypeReference<TypeDecl>> nominal = ImmutableSet.builder();
+		ImmutableSet.Builder<TypeReference<TypeDecl>> instantiated = ImmutableSet.builder();
 		for (TypeReference<TypeDecl> superType : hierarchy.getSuperTypes(type)) {
 			nominal.add(superType);
 			instantiated.add(superType);
@@ -121,7 +122,7 @@ final class SuperTypeIndex {
 		}
 
 		inProgress.remove(qualifiedName);
-		Closure closure = new Closure(type, ImmutableList.copyOf(nominal), ImmutableSet.copyOf(instantiated));
+		Closure closure = new Closure(type, nominal.build().asList(), instantiated.build());
 		computed.put(qualifiedName, closure);
 		return closure;
 	}

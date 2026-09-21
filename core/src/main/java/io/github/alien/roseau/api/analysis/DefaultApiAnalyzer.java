@@ -1,10 +1,9 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
-import com.google.common.collect.HashMultimap;
+import com.google.common.collect.ImmutableListMultimap;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSetMultimap;
-import com.google.common.collect.SetMultimap;
+import com.google.common.collect.ListMultimap;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
@@ -12,6 +11,7 @@ import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -38,7 +38,7 @@ import java.util.stream.Stream;
 public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver resolver;
-	private final SetMultimap<String, TypeDecl> directKnownSubtypes;
+	private final ListMultimap<String, TypeDecl> directKnownSubtypes;
 	private final SuperTypeIndex superTypes;
 	private final Map<String, Accessibility> accessibility;
 	private final Map<String, Members> members;
@@ -90,7 +90,7 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	}
 
 	@Override
-	public Set<TypeDecl> getDirectKnownSubtypes(TypeDecl type) {
+	public Collection<TypeDecl> getDirectKnownSubtypes(TypeDecl type) {
 		return directKnownSubtypes.get(type.getQualifiedName());
 	}
 
@@ -150,10 +150,15 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 		return types.parallel().collect(ImmutableMap.toImmutableMap(TypeDecl::getQualifiedName, resolve));
 	}
 
-	private static SetMultimap<String, TypeDecl> directKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
-		HashMultimap<String, TypeDecl> subtypes = HashMultimap.create();
+	/**
+	 * Indexes the types of the snapshot by the qualified name of the supertypes they declare. A multimap of lists keeps
+	 * the declarations out of hash buckets: a type declares a given supertype at most once, so there is nothing to
+	 * deduplicate, and hashing a declaration walks its modifiers and annotations.
+	 */
+	private static ListMultimap<String, TypeDecl> directKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
+		ImmutableListMultimap.Builder<String, TypeDecl> subtypes = ImmutableListMultimap.builder();
 		libraryTypes.getAllTypes().forEach(type ->
 			PropertiesProvider.directSuperTypeNames(type).forEach(superTypeName -> subtypes.put(superTypeName, type)));
-		return ImmutableSetMultimap.copyOf(subtypes);
+		return subtypes.build();
 	}
 }
