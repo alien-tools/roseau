@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableMap;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
@@ -295,7 +296,7 @@ public interface HierarchyProvider {
 							Map<String, ITypeReference> substitutions = TypeParameterMapping.forTypeArguments(decl, superType);
 							return decl.getDeclaredMethods().stream().map(m -> instantiate(m, substitutions));
 						})))
-			.collect(Collectors.toMap(
+			.collect(ImmutableMap.toImmutableMap(
 				m -> erasure().getErasure(type, m),
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
@@ -314,7 +315,7 @@ public interface HierarchyProvider {
 		Preconditions.checkNotNull(type);
 		return getAllMethodsByErasure(type).entrySet().stream()
 			.filter(p -> properties().isExported(type, p.getValue()))
-			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue));
+			.collect(ImmutableMap.toImmutableMap(Map.Entry::getKey, Map.Entry::getValue));
 	}
 
 	/**
@@ -407,7 +408,7 @@ public interface HierarchyProvider {
 							return decl.getDeclaredFields().stream().map(f -> instantiate(f, substitutions));
 						})))
 			.filter(f -> properties().isExported(type, f))
-			.collect(Collectors.toMap(
+			.collect(ImmutableMap.toImmutableMap(
 				FieldDecl::getSimpleName,
 				Function.identity(),
 				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2

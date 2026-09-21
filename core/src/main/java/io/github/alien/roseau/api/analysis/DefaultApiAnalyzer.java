@@ -77,6 +77,8 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 		this.members = index(libraryTypes.getAllTypes().stream().filter(this::isExported), type ->
 			new Members(type, ApiAnalyzer.super.getExportedMethodsByErasure(type),
 				ApiAnalyzer.super.getExportedFieldsByName(type)));
+		// What is indexed is handed out as is, and the resolution above builds it immutably, so no caller can alter
+		// what every later query answers from
 	}
 
 	@Override
