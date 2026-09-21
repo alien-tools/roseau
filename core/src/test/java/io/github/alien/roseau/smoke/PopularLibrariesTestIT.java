@@ -296,9 +296,15 @@ class PopularLibrariesTestIT {
 		assertThat(asmApi.getExportedTypes()).isEqualTo(jdtApi.getExportedTypes());
 		assertThat(apiEquals).isTrue();
 
-		// No BCs across extractors either
-		assertThat(Roseau.diff(jdtApi, asmApi).getAllBreakingChanges()).isEmpty();
-		assertThat(Roseau.diff(asmApi, jdtApi).getAllBreakingChanges()).isEmpty();
+		// API equality is what lets a caller skip a diff, so it has to mean the differ has nothing to report. Holding
+		// the two together here checks that on real libraries: a rule that reads something equality does not compare
+		// would surface as APIs comparing equal while the diff reports a change.
+		assertThat(Roseau.diff(jdtApi, asmApi).getAllBreakingChanges())
+			.as("the two APIs compare equal, so the diff must report nothing")
+			.isEmpty();
+		assertThat(Roseau.diff(asmApi, jdtApi).getAllBreakingChanges())
+			.as("the two APIs compare equal, so the diff must report nothing")
+			.isEmpty();
 	}
 
 	private static int countUnresolvedReferences(API api) {

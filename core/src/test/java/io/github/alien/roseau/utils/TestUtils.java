@@ -15,10 +15,13 @@ import io.github.alien.roseau.api.model.InterfaceDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.RecordDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.diff.RoseauReport;
 import io.github.alien.roseau.diff.changes.BreakingChange;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.options.RoseauOptions.Exclude;
 import org.opentest4j.AssertionFailedError;
+
+import static org.assertj.core.api.Assertions.assertThat;
 
 import javax.tools.FileObject;
 import javax.tools.ForwardingJavaFileManager;
@@ -350,7 +353,7 @@ public class TestUtils {
 	public static List<BreakingChange> buildDiff(String sourcesV1, String sourcesV2) {
 		API v1 = buildSourcesAPI(sourcesV1);
 		API v2 = buildSourcesAPI(sourcesV2);
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		return diffAndCheckEquality(v1, v2);
 
 		// Simple differential testing with japicmp
 		/*try {
@@ -383,7 +386,23 @@ public class TestUtils {
 	                                             String sourcesV2, List<Path> classpathV2) {
 		API v1 = buildSourcesAPI(sourcesV1, classpathV1);
 		API v2 = buildSourcesAPI(sourcesV2, classpathV2);
-		return Roseau.diff(v1, v2).getBreakingChanges();
+		return diffAndCheckEquality(v1, v2);
+	}
+
+	/**
+	 * Diffs the two APIs and holds {@link API#equals(Object)} to what it promises: two APIs that compare equal expose
+	 * the same thing to clients, so the differ must have nothing to report about them. Checked on every pair this
+	 * suite diffs, so that a rule reading something equality does not compare shows up here rather than as a silently
+	 * skipped commit.
+	 */
+	private static List<BreakingChange> diffAndCheckEquality(API v1, API v2) {
+		RoseauReport report = Roseau.diff(v1, v2);
+		if (v1.equals(v2)) {
+			assertThat(report.getAllBreakingChanges())
+				.as("the two APIs compare equal, so the diff must report nothing")
+				.isEmpty();
+		}
+		return report.getBreakingChanges();
 	}
 
 	/*public static List<JApiCompatibilityChange> buildJApiCmpDiff(String sourcesV1, String sourcesV2) throws IOException {
