@@ -39,6 +39,45 @@ class GitWalkerTest {
 	// --- Commit ordering and count ---
 
 	@Test
+	void commit_that_touches_no_declaration_reuses_the_previous_api(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public int m() { return 1; } }"),
+				List.of());
+			// Only the body changes: the declarations, and so the API, are the ones the previous commit resolved
+			GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public int m() { return 2; } }"),
+				List.of());
+		}
+
+		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
+
+		assertThat(analyses).hasSize(2);
+		assertThat(analyses.get(1).apiChanged()).isFalse();
+		assertThat(analyses.get(1).api()).containsSame(analyses.get(0).api().orElseThrow());
+	}
+
+	@Test
+	void commit_that_changes_a_declaration_resolves_a_new_api(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public int m() { return 1; } }"),
+				List.of());
+			GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/A.java", "package pkg; public class A { public long m() { return 2; } }"),
+				List.of());
+		}
+
+		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
+
+		assertThat(analyses).hasSize(2);
+		assertThat(analyses.get(1).apiChanged()).isTrue();
+		assertThat(analyses.get(1).api().orElseThrow()).isNotSameAs(analyses.get(0).api().orElseThrow());
+	}
+
+	@Test
 	void walk_emits_commits_oldest_to_newest(@TempDir Path wd) throws Exception {
 		Path remoteDir = wd.resolve("remote");
 		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {

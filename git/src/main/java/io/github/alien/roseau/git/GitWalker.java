@@ -286,12 +286,30 @@ public final class GitWalker {
 		try {
 			LibraryTypes updatedTypes = incrementalExtractor.incrementalUpdate(
 				previousApi.getLibraryTypes(), buildLibrary(sourceRoot), changedFiles);
+			if (resolvesToPreviousApi(updatedTypes, previousApi)) {
+				return new ApiResult(previousApi, sw.elapsed().toMillis(), List.of());
+			}
 			return new ApiResult(Roseau.buildAPI(updatedTypes), sw.elapsed().toMillis(), List.of());
 		} catch (RuntimeException e) {
 			LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", info.sha(), e);
 			return new ApiResult(buildApiFull(List.of(sourceRoot), extractor).api(), sw.elapsed().toMillis(),
 				List.of("incremental update failed, rebuilt from scratch: " + e.getMessage()));
 		}
+	}
+
+	/**
+	 * Whether resolving {@code updatedTypes} would yield the API the previous commit already has. An API is a pure
+	 * function of the types it was extracted from and of the classpath they resolve against, so both have to be
+	 * unchanged. Commits that touch no declaration at all — a body-only change, a comment, a renamed local — are the
+	 * common case in a history, and rebuilding their API resolves the same hierarchies and members all over again.
+	 * <p>
+	 * The classpath is compared <em>resolved</em>, on purpose: two {@link Library} instances are equal when they point
+	 * at the same {@code pom.xml}, whatever it declares, so a commit that bumps a dependency leaves every declaration
+	 * untouched while adding, removing or finalizing inherited members.
+	 */
+	private static boolean resolvesToPreviousApi(LibraryTypes updatedTypes, API previousApi) {
+		return updatedTypes.equals(previousApi.getLibraryTypes())
+			&& updatedTypes.getLibrary().getClasspath().equals(previousApi.getLibrary().getClasspath());
 	}
 
 	private Library buildLibrary(Path sourceRoot) {
