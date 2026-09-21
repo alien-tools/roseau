@@ -14,7 +14,6 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.HashMap;
-import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -154,19 +153,14 @@ public interface HierarchyProvider {
 
 	/**
 	 * Returns all super types recursively present in the hierarchy starting from this type, excluded. In the case of
-	 * {@link ClassDecl}, this includes super classes.
+	 * {@link ClassDecl}, this includes super classes. Supertypes are returned as written at their declaration site:
+	 * type arguments are <strong>not</strong> propagated down the hierarchy.
 	 *
 	 * @param type the base type
 	 * @return all super types in this type's hierarchy
+	 * @see #getAllInstantiatedSuperTypes(TypeReference)
 	 */
-	@SuppressWarnings("unchecked")
-	default List<TypeReference<TypeDecl>> getAllSuperTypes(TypeDecl type) {
-		Preconditions.checkNotNull(type);
-		return getSuperTypes(type).stream()
-			.flatMap(ref -> Stream.concat(Stream.of(ref), getAllSuperTypes(ref).stream()))
-			.distinct()
-			.toList();
-	}
+	List<TypeReference<TypeDecl>> getAllSuperTypes(TypeDecl type);
 
 	/**
 	 * Returns the direct supertypes of {@code type} (superclass when present, plus implemented interfaces).
@@ -201,32 +195,17 @@ public interface HierarchyProvider {
 	}
 
 	/**
-	 * Returns all supertypes of the given reference with generic arguments instantiated through the hierarchy.
-	 * For instance, {@code ArrayList<String> -> List<String> -> Collection<String>}, etc.
+	 * Returns all supertypes of the given reference, transitively, with generic arguments instantiated through the
+	 * hierarchy. For instance, {@code ArrayList<String> -> List<String> -> Collection<String>}, etc.
 	 * <p>
-	 * This closure is the basis of most hierarchy queries; implementations are expected to index it, as deriving it
-	 * re-walks the hierarchy above every supertype it reaches.
+	 * Together with {@link #getAllSuperTypes(TypeDecl)}, this closure underpins every hierarchy query. Deriving it
+	 * re-walks the hierarchy above every supertype it reaches, so implementations are expected to resolve it bottom-up
+	 * and to index the result.
+	 *
+	 * @param reference reference to the base type
+	 * @return all supertypes in this reference's hierarchy, instantiated
 	 */
-	default Set<TypeReference<TypeDecl>> getAllInstantiatedSuperTypes(TypeReference<?> reference) {
-		Preconditions.checkNotNull(reference);
-		Set<TypeReference<TypeDecl>> superTypes = new LinkedHashSet<>();
-		resolver().resolve(reference).ifPresent(resolved -> {
-			Map<String, ITypeReference> substitutions = TypeParameterMapping.forTypeArguments(resolved, reference);
-			for (TypeReference<TypeDecl> superType : getSuperTypes(resolved)) {
-				TypeReference<TypeDecl> instantiated = substituteSuperType(superType, substitutions);
-				if (superTypes.add(instantiated)) {
-					superTypes.addAll(getAllInstantiatedSuperTypes(instantiated));
-				}
-			}
-		});
-		return superTypes;
-	}
-
-	@SuppressWarnings("unchecked")
-	private static TypeReference<TypeDecl> substituteSuperType(TypeReference<TypeDecl> superType,
-	                                                           Map<String, ITypeReference> substitutions) {
-		return (TypeReference<TypeDecl>) TypeParameterMapping.substitute(superType, substitutions);
-	}
+	Set<TypeReference<TypeDecl>> getAllInstantiatedSuperTypes(TypeReference<?> reference);
 
 	/**
 	 * Returns the direct supertypes of {@code type} together with their transitive supertypes, all with generic

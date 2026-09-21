@@ -8,7 +8,6 @@ import com.google.common.collect.SetMultimap;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
-import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
@@ -17,46 +16,67 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.stream.Stream;
 
 /**
- * The default {@link ApiAnalyzer}, backed by immutable indexes computed once, when the analyzer is built.
+ * The default {@link ApiAnalyzer}, backed by facts resolved once, when the analyzer is built.
  * <p>
- * Which members a type offers and where it sits in the hierarchy are properties of the library snapshot: they cannot
- * change once it is extracted. Resolving them on demand is what used to make analysis expensive, as the answer for a
- * single type was re-derived once per question asked about it, and each answer re-walked the whole hierarchy above the
- * type. Both are instead resolved here exactly once per type, bottom-up:
+ * Where a type sits in the hierarchy, whether clients can see and extend it, and which members they can use are all
+ * properties of the library snapshot: they cannot change once it is extracted. Resolving them on demand is what made
+ * analysis expensive, as the answer for a single type was re-derived once per question asked about it. They are instead
+ * resolved here exactly once per type, in dependency order:
  * <ol>
- *   <li>{@link SuperTypeIndex} indexes the transitive supertypes of every type in the snapshot, so that walking a
- *   hierarchy costs one lookup rather than a fresh traversal;</li>
- *   <li>the inherited members of every type are then resolved on top of that index, and indexed too, so that looking a
- *   method or a field up on a type is a plain map lookup.</li>
+ *   <li>{@link SuperTypeIndex} resolves the supertypes of every type in the snapshot, bottom-up;</li>
+ *   <li>on top of it, whether each type is exported and whether clients can subtype it;</li>
+ *   <li>on top of both, the members clients can use on each exported type, indexed for lookup by erasure or name.</li>
  * </ol>
- * Types that are not part of the snapshot, such as the classpath types a query may incidentally reach, are resolved on
- * the fly by the {@link HierarchyProvider} implementations the indexes are built from.
+ * Each phase is complete before the next one starts, so none of them ever observes a partially-resolved snapshot: an
+ * index answers nothing until it holds every type it is meant to hold. The other types, such as the classpath types a
+ * query incidentally reaches, are resolved on demand by the {@link HierarchyProvider} and {@link PropertiesProvider}
+ * implementations this class inherits.
  */
 public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver resolver;
 	private final SetMultimap<String, TypeDecl> directKnownSubtypes;
 	private final SuperTypeIndex superTypes;
-	private final Map<String, TypeDecl> indexedTypes;
-	private final Map<String, Map<String, MethodDecl>> allMethodsByErasure;
-	private final Map<String, Map<String, MethodDecl>> exportedMethodsByErasure;
-	private final Map<String, Map<String, FieldDecl>> exportedFieldsByName;
+	private final Map<String, Accessibility> accessibility;
+	private final Map<String, Members> members;
+
+	/**
+	 * A fact resolved for one type declaration. The declaration itself is kept so that a type that merely shares its
+	 * qualified name, such as a classpath type or a type from the version this API is compared against, is never
+	 * answered from it.
+	 */
+	private sealed interface Resolved {
+		TypeDecl type();
+	}
+
+	/**
+	 * What clients can do with a type. Both answers are needed to tell which of its members are part of the API, so
+	 * they are resolved before {@link Members}.
+	 */
+	private record Accessibility(TypeDecl type, boolean exported, boolean subtypable) implements Resolved {
+	}
+
+	/**
+	 * The members clients can use on a type, its inherited ones included, indexed the way they are looked up.
+	 */
+	private record Members(TypeDecl type, Map<String, MethodDecl> methodsByErasure,
+	                       Map<String, FieldDecl> fieldsByName) implements Resolved {
+	}
 
 	public DefaultApiAnalyzer(LibraryTypes libraryTypes, TypeResolver resolver) {
 		this.libraryTypes = Preconditions.checkNotNull(libraryTypes);
 		this.resolver = Preconditions.checkNotNull(resolver);
-		this.directKnownSubtypes = buildDirectKnownSubtypesBySuperType(libraryTypes);
-		// Indexes are built in dependency order: each one is only ever read once the previous is in place, so none of
-		// them observes a partially-built analyzer
+		this.directKnownSubtypes = directKnownSubtypesBySuperType(libraryTypes);
 		this.superTypes = new SuperTypeIndex(this, libraryTypes);
-		// Members are only ever looked up on the types the library exposes; the others are left to be resolved on demand
-		List<TypeDecl> exportedTypes = libraryTypes.getAllTypes().parallelStream().filter(this::isExported).toList();
-		this.indexedTypes = index(exportedTypes, Function.identity());
-		this.allMethodsByErasure = index(exportedTypes, type -> ApiAnalyzer.super.getAllMethodsByErasure(type));
-		this.exportedMethodsByErasure = index(exportedTypes, type -> ApiAnalyzer.super.getExportedMethodsByErasure(type));
-		this.exportedFieldsByName = index(exportedTypes, type -> ApiAnalyzer.super.getExportedFieldsByName(type));
+		this.accessibility = index(libraryTypes.getAllTypes().stream(), type ->
+			new Accessibility(type, ApiAnalyzer.super.isExported(type), ApiAnalyzer.super.canBeSubtyped(type)));
+		// Members are only ever looked up on the types the library exposes; the others are resolved on demand
+		this.members = index(libraryTypes.getAllTypes().stream().filter(this::isExported), type ->
+			new Members(type, ApiAnalyzer.super.getExportedMethodsByErasure(type),
+				ApiAnalyzer.super.getExportedFieldsByName(type)));
 	}
 
 	@Override
@@ -87,41 +107,50 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	}
 
 	@Override
-	public Map<String, MethodDecl> getAllMethodsByErasure(TypeDecl type) {
+	public boolean isExported(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		Map<String, MethodDecl> indexed = indexed(allMethodsByErasure, type);
-		return indexed != null ? indexed : ApiAnalyzer.super.getAllMethodsByErasure(type);
+		Accessibility resolved = resolved(accessibility, type);
+		return resolved != null ? resolved.exported() : ApiAnalyzer.super.isExported(type);
+	}
+
+	@Override
+	public boolean canBeSubtyped(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		Accessibility resolved = resolved(accessibility, type);
+		return resolved != null ? resolved.subtypable() : ApiAnalyzer.super.canBeSubtyped(type);
 	}
 
 	@Override
 	public Map<String, MethodDecl> getExportedMethodsByErasure(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		Map<String, MethodDecl> indexed = indexed(exportedMethodsByErasure, type);
-		return indexed != null ? indexed : ApiAnalyzer.super.getExportedMethodsByErasure(type);
+		Members resolved = resolved(members, type);
+		return resolved != null ? resolved.methodsByErasure() : ApiAnalyzer.super.getExportedMethodsByErasure(type);
 	}
 
 	@Override
 	public Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		Map<String, FieldDecl> indexed = indexed(exportedFieldsByName, type);
-		return indexed != null ? indexed : ApiAnalyzer.super.getExportedFieldsByName(type);
+		Members resolved = resolved(members, type);
+		return resolved != null ? resolved.fieldsByName() : ApiAnalyzer.super.getExportedFieldsByName(type);
 	}
 
 	/**
-	 * Returns what was indexed for {@code type}, or {@code null} if it is not the declaration that was indexed under
-	 * that qualified name. A type may share its name with another declaration, be it one resolved from the classpath or
-	 * one from the version this API is compared against: only the declaration the index was built from is answered.
+	 * Returns what was resolved for {@code type}, or {@code null} when nothing was: either this index is still being
+	 * built, and answers nothing yet, or {@code type} is not the declaration it holds under that qualified name.
 	 */
-	private <T> T indexed(Map<String, T> index, TypeDecl type) {
-		return indexedTypes.get(type.getQualifiedName()) == type ? index.get(type.getQualifiedName()) : null;
+	private static <T extends Resolved> T resolved(Map<String, T> index, TypeDecl type) {
+		if (index == null) {
+			return null;
+		}
+		T resolved = index.get(type.getQualifiedName());
+		return resolved != null && resolved.type() == type ? resolved : null;
 	}
 
-	private static <T> Map<String, T> index(List<TypeDecl> types, Function<TypeDecl, T> resolve) {
-		return types.parallelStream()
-			.collect(ImmutableMap.toImmutableMap(Symbol::getQualifiedName, resolve));
+	private static <T> Map<String, T> index(Stream<TypeDecl> types, Function<TypeDecl, T> resolve) {
+		return types.parallel().collect(ImmutableMap.toImmutableMap(TypeDecl::getQualifiedName, resolve));
 	}
 
-	private static SetMultimap<String, TypeDecl> buildDirectKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
+	private static SetMultimap<String, TypeDecl> directKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
 		HashMultimap<String, TypeDecl> subtypes = HashMultimap.create();
 		libraryTypes.getAllTypes().forEach(type ->
 			PropertiesProvider.directSuperTypeNames(type).forEach(superTypeName -> subtypes.put(superTypeName, type)));
