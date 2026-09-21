@@ -2,6 +2,7 @@ package io.github.alien.roseau.api.resolution;
 
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.model.reference.TypeReference;
 import org.junit.jupiter.api.Test;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
@@ -19,15 +20,15 @@ class UnresolvedTypesTest {
 	}
 
 	@Test
-	void missing_supertype_is_unresolved_once_the_analysis_needs_it() {
+	void missing_supertype_is_unresolved_as_soon_as_the_api_is_built() {
 		var api = buildSourcesAPI("public class A extends unknown.Unknown {}");
 		var a = assertClass(api, "A");
 
-		assertThat(api.getUnresolvedTypes()).isEmpty();
-
-		api.analyzer().getAllSuperTypes(a);
-
+		// Hierarchies are resolved when the API is built, not when a query happens to walk them
 		assertThat(api.getUnresolvedTypes()).containsExactly("unknown.Unknown");
+		assertThat(api.analyzer().getAllSuperTypes(a))
+			.extracting(TypeReference::getQualifiedName)
+			.containsExactly("unknown.Unknown");
 	}
 
 	@Test

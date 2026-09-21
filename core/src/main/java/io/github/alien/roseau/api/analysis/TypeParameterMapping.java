@@ -68,6 +68,25 @@ public final class TypeParameterMapping {
 	}
 
 	/**
+	 * Builds the substitution from the formal type parameters declared by {@code type} to the type arguments supplied by
+	 * {@code reference} (e.g., {@code List<E>} instantiated as {@code List<String>} yields {@code E -> String}). Formal
+	 * type parameters left without a corresponding argument, as in raw usages, are left unmapped.
+	 *
+	 * @param type      the declaration supplying the formal type parameters
+	 * @param reference a reference to {@code type} supplying the type arguments
+	 * @return a substitution map from formal type parameter names to the supplied type arguments
+	 */
+	public static Map<String, ITypeReference> forTypeArguments(TypeParameterScope type, TypeReference<?> reference) {
+		List<FormalTypeParameter> formals = type.getFormalTypeParameters();
+		List<ITypeReference> arguments = reference.typeArguments();
+		Map<String, ITypeReference> substitutions = new HashMap<>();
+		for (int i = 0; i < Math.min(formals.size(), arguments.size()); i++) {
+			substitutions.put(formals.get(i).name(), arguments.get(i));
+		}
+		return substitutions;
+	}
+
+	/**
 	 * Merges two substitution maps into one. If both maps contain the same key, {@code secondary} is overridden by
 	 * {@code primary}.
 	 */

@@ -5,7 +5,6 @@ import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
-import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
@@ -204,42 +203,23 @@ public interface HierarchyProvider {
 	/**
 	 * Returns all supertypes of the given reference with generic arguments instantiated through the hierarchy.
 	 * For instance, {@code ArrayList<String> -> List<String> -> Collection<String>}, etc.
+	 * <p>
+	 * This closure is the basis of most hierarchy queries; implementations are expected to index it, as deriving it
+	 * re-walks the hierarchy above every supertype it reaches.
 	 */
 	default Set<TypeReference<TypeDecl>> getAllInstantiatedSuperTypes(TypeReference<?> reference) {
 		Preconditions.checkNotNull(reference);
-		Set<TypeReference<TypeDecl>> result = new LinkedHashSet<>();
-		collectInstantiatedSuperTypes(reference, result);
-		return result;
-	}
-
-	private void collectInstantiatedSuperTypes(TypeReference<?> reference, Set<TypeReference<TypeDecl>> accumulator) {
-		Optional<TypeDecl> resolved = resolver().resolve(reference);
-		if (resolved.isEmpty()) {
-			accumulator.addAll(getAllSuperTypes(reference));
-			return;
-		}
-
-		Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(resolved.get(), reference);
-		for (TypeReference<TypeDecl> superType : getSuperTypes(resolved.get())) {
-			TypeReference<TypeDecl> instantiated = substituteSuperType(superType, substitutions);
-			if (accumulator.add(instantiated)) {
-				collectInstantiatedSuperTypes(instantiated, accumulator);
+		Set<TypeReference<TypeDecl>> superTypes = new LinkedHashSet<>();
+		resolver().resolve(reference).ifPresent(resolved -> {
+			Map<String, ITypeReference> substitutions = TypeParameterMapping.forTypeArguments(resolved, reference);
+			for (TypeReference<TypeDecl> superType : getSuperTypes(resolved)) {
+				TypeReference<TypeDecl> instantiated = substituteSuperType(superType, substitutions);
+				if (superTypes.add(instantiated)) {
+					superTypes.addAll(getAllInstantiatedSuperTypes(instantiated));
+				}
 			}
-		}
-	}
-
-	/**
-	 * Builds the substitution from {@code typeDecl}'s formal type parameters to the type arguments supplied by
-	 * {@code reference} (e.g., {@code List<E>} instantiated as {@code List<String>} yields {@code E -> String}).
-	 */
-	private static Map<String, ITypeReference> typeArgumentSubstitutions(TypeDecl typeDecl, TypeReference<?> reference) {
-		List<FormalTypeParameter> formals = typeDecl.getFormalTypeParameters();
-		List<ITypeReference> arguments = reference.typeArguments();
-		Map<String, ITypeReference> substitutions = new HashMap<>();
-		for (int i = 0; i < Math.min(formals.size(), arguments.size()); i++) {
-			substitutions.put(formals.get(i).name(), arguments.get(i));
-		}
-		return substitutions;
+		});
+		return superTypes;
 	}
 
 	@SuppressWarnings("unchecked")
@@ -332,7 +312,7 @@ public interface HierarchyProvider {
 				getInstantiatedSuperTypes(type)
 					.flatMap(superType -> resolver().resolve(superType).stream()
 						.flatMap(decl -> {
-							Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
+							Map<String, ITypeReference> substitutions = TypeParameterMapping.forTypeArguments(decl, superType);
 							return decl.getDeclaredMethods().stream().map(m -> instantiate(m, substitutions));
 						})))
 			.collect(Collectors.toMap(
@@ -442,7 +422,7 @@ public interface HierarchyProvider {
 				getInstantiatedSuperTypes(type)
 					.flatMap(superType -> resolver().resolve(superType).stream()
 						.flatMap(decl -> {
-							Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
+							Map<String, ITypeReference> substitutions = TypeParameterMapping.forTypeArguments(decl, superType);
 							return decl.getDeclaredFields().stream().map(f -> instantiate(f, substitutions));
 						})))
 			.filter(f -> properties().isExported(type, f))
