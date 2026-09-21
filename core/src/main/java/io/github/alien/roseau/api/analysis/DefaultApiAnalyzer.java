@@ -1,8 +1,6 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableSetMultimap;
 import com.google.common.collect.SetMultimap;
@@ -14,17 +12,11 @@ import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ConcurrentHashMap;
 
 public final class DefaultApiAnalyzer implements ApiAnalyzer {
-	private final Cache<String, Map<String, MethodDecl>> methodsCache =
-		CacheBuilder.newBuilder()
-			.maximumSize(2_000L)
-			.build();
-	private final Cache<String, Map<String, FieldDecl>> fieldsCache =
-		CacheBuilder.newBuilder()
-			.maximumSize(2_000L)
-			.build();
+	private final Map<String, Map<String, MethodDecl>> methodsCache = new ConcurrentHashMap<>(2_000);
+	private final Map<String, Map<String, FieldDecl>> fieldsCache = new ConcurrentHashMap<>(2_000);
 
 	private final LibraryTypes libraryTypes;
 	private final TypeResolver resolver;
@@ -53,20 +45,12 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 
 	@Override
 	public Map<String, MethodDecl> getAllMethodsByErasure(TypeDecl type) {
-		try {
-			return methodsCache.get(type.getQualifiedName(), () -> ApiAnalyzer.super.getAllMethodsByErasure(type));
-		} catch (ExecutionException _) {
-			return Map.of();
-		}
+		return methodsCache.computeIfAbsent(type.getQualifiedName(), _ -> ApiAnalyzer.super.getAllMethodsByErasure(type));
 	}
 
 	@Override
 	public Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
-		try {
-			return fieldsCache.get(type.getQualifiedName(), () -> ApiAnalyzer.super.getExportedFieldsByName(type));
-		} catch (ExecutionException _) {
-			return Map.of();
-		}
+		return fieldsCache.computeIfAbsent(type.getQualifiedName(), _ -> ApiAnalyzer.super.getExportedFieldsByName(type));
 	}
 
 	private static SetMultimap<String, TypeDecl> buildDirectKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
