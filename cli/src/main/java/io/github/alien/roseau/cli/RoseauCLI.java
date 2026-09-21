@@ -220,7 +220,7 @@ public final class RoseauCLI implements Callable<Integer> {
 		Path v1Path = options.v1().location();
 
 		if (config != null && !Files.isRegularFile(config)) {
-			console.printlnErr("Warning: ignoring missing configuration file %s".formatted(config));
+			throw new RoseauException("Missing configuration file %s".formatted(config));
 		}
 
 		if (options.diff().sourceOnly() && options.diff().binaryOnly()) {

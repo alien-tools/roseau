@@ -1,0 +1,59 @@
+Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--fail-on-unresolved]
+              [--ignore-module] [--plain] [--source-only] [--api-json=<path>]
+              [--classpath=<path>[:<path>...]] [--config=<path>]
+              [--ignored=<path>] [--pom=<path>] [--v1=<path|coordinates>]
+              [--v1-classpath=<path>[:<path>...]] [--v1-pom=<path>]
+              [--v2=<path|coordinates>] [--v2-classpath=<path>[:<path>...]]
+              [--v2-pom=<path>] [--report=<format=path>]... (--api | --diff)
+Roseau detects breaking changes between two versions (--v1/--v2) of a Java
+module or library. --v1 and --v2 accept JAR files, source code directories, or
+Maven coordinates (groupId:artifactId:version). Example: roseau --diff --v1
+/path/to/library-1.0.0.jar --v2 com.example:library:2.0.0
+      --api                  Serialize the API model of --v1 as JSON; prints to
+                               stdout if --api-json is not provided
+      --diff                 Compute breaking changes between versions --v1 and
+                               --v2
+      --v1=<path|coordinates>
+                             First version of the library: a JAR file, source
+                               directory (e.g., src/main/java), or Maven
+                               coordinates (e.g., com.example:lib:1.0.0)
+      --v2=<path|coordinates>
+                             Second version of the library: a JAR file, source
+                               directory (e.g., src/main/java), or Maven
+                               coordinates (e.g., com.example:lib:2.0.0)
+      --api-json=<path>      Where to serialize the Json API model of --v1 in
+                               --api mode
+      --report=<format=path> Write a breaking changes report in the given
+                               format to the given path; repeatable (formats:
+                               CLI, CSV, HTML, JSON, MD)
+      --classpath=<path>[:<path>...]
+                             A colon-separated list of JARs or class
+                               directories to include in the classpath
+                               (Windows: semi-colon), shared by --v1 and --v2
+      --pom=<path>           A pom.xml file to extract the classpath from,
+                               shared by --v1 and --v2
+      --v1-classpath=<path>[:<path>...]
+                             A --classpath for --v1
+      --v2-classpath=<path>[:<path>...]
+                             A --classpath for --v2
+      --v1-pom=<path>        A --pom for --v1
+      --v2-pom=<path>        A --pom for --v2
+      --binary-only          Only report binary-breaking changes
+      --source-only          Only report source-breaking changes
+      --ignore-module        Ignore the libraries' module declarations and
+                               consider every public type as part of the API
+      --ignored=<path>       Do not report the breaking changes listed in the
+                               given CSV file; this CSV file shares the same
+                               structure as a CSV report
+      --config=<path>        A roseau.yaml config file; CLI options take
+                               precedence over these options
+      --fail-on-bc           Return with exit code 1 if breaking changes are
+                               detected
+      --fail-on-unresolved   Abort with exit code 2 if some types cannot be
+                               resolved to avoid spurious breaking changes
+      --plain                Disable ANSI colors, output plain text
+  -v, --verbose              Increase verbosity (-v, -vv).
+  -h, --help                 Show this help message and exit.
+  -V, --version              Print version information and exit.
+
+Output symbols: ✗ removal  ⚠ modification  ★ addition
