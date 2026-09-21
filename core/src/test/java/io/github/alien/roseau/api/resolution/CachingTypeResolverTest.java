@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.SoftAssertions.assertSoftly;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -116,14 +117,32 @@ class CachingTypeResolverTest {
 		var illReference = new TypeReference<InterfaceDecl>("pkg.Class");
 		var type = mock(ClassDecl.class);
 
-		when(provider1.findType("pkg.Class", ClassDecl.class)).thenReturn(Optional.of(type));
+		when(provider1.findType("pkg.Class", TypeDecl.class)).thenReturn(Optional.of(type));
 
 		var result = resolver.resolve(reference, ClassDecl.class);
 		var illResult = resolver.resolve(illReference, InterfaceDecl.class);
 
 		assertThat(result).hasValue(type);
 		assertThat(illResult).isEmpty();
-		verify(provider1, times(1)).findType("pkg.Class", ClassDecl.class);
+		verify(provider1, times(1)).findType("pkg.Class", TypeDecl.class);
 		verify(provider2, never()).findType(any(), any());
+	}
+
+	@Test
+	void wrong_kind_lookup_does_not_poison_later() {
+		var classReference = new TypeReference<ClassDecl>("pkg.Type");
+		var interfaceReference = new TypeReference<InterfaceDecl>("pkg.Type");
+		var type = mock(InterfaceDecl.class);
+
+		when(provider1.findType("pkg.Type", TypeDecl.class)).thenReturn(Optional.of(type));
+
+		var wrongKind = resolver.resolve(classReference, ClassDecl.class);
+		var rightKind = resolver.resolve(interfaceReference, InterfaceDecl.class);
+
+		assertSoftly(softly -> {
+			softly.assertThat(wrongKind).isEmpty();
+			softly.assertThat(rightKind).containsSame(type);
+			softly.assertThat(resolver.getUnresolvedTypes()).isEmpty();
+		});
 	}
 }

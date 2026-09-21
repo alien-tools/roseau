@@ -107,14 +107,33 @@ class ClasspathTypeProviderTest {
 			}""");
 		var jar2 = tempDir.resolve("jar2.jar");
 
-		try (var j1 = TestUtils.buildJar(sources1, jar1);
-		     var j2 = TestUtils.buildJar(sources2, jar2)) {
+		try (var _ = TestUtils.buildJar(sources1, jar1);
+		     var _ = TestUtils.buildJar(sources2, jar2)) {
 			provider = new ClasspathTypeProvider(extractor, List.of(jar1, jar2));
 			var result = provider.findType("pkg.C").orElseThrow();
 			assertThat(result).isInstanceOf(ClassDecl.class);
 			assertThat(result.getDeclaredMethods())
 				.extracting(MethodDecl::getSimpleName)
 				.containsExactly("m1");
+		}
+	}
+
+	@Test
+	void wrong_kind_in_first_classpath_entry_does_not_fall_through_to_a_shadowed_type() throws IOException {
+		var interfaceSources = Map.of("pkg.Type", """
+			package pkg;
+			public interface Type {}""");
+		var interfaceJar = tempDir.resolve("interface.jar");
+		var classSources = Map.of("pkg.Type", """
+			package pkg;
+			public class Type {}""");
+		var classJar = tempDir.resolve("class.jar");
+
+		try (var _ = TestUtils.buildJar(interfaceSources, interfaceJar);
+		     var _ = TestUtils.buildJar(classSources, classJar)) {
+			provider = new ClasspathTypeProvider(extractor, List.of(interfaceJar, classJar));
+
+			assertThat(provider.findType("pkg.Type", ClassDecl.class)).isEmpty();
 		}
 	}
 
@@ -176,7 +195,7 @@ class ClasspathTypeProviderTest {
 
 		try (var _ = TestUtils.buildJar(sources, jar)) {
 			provider = new ClasspathTypeProvider(extractor, List.of(jar));
-			var result = provider.findType("com.example.MyClass", ClassDecl.class);
+			var result = provider.findType("pkg.I", ClassDecl.class);
 			assertThat(result).isEmpty();
 		}
 	}

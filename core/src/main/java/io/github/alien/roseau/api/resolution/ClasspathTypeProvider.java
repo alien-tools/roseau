@@ -1,9 +1,12 @@
 package io.github.alien.roseau.api.resolution;
 
 import com.google.common.base.Preconditions;
+import com.google.common.base.Suppliers;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -11,7 +14,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
+import java.util.function.Supplier;
 import java.util.jar.JarFile;
+import java.util.stream.Collectors;
+import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
 /**
@@ -22,10 +29,11 @@ import java.util.zip.ZipFile;
  */
 public class ClasspathTypeProvider implements TypeProvider {
 	private final AsmTypesExtractor extractor;
-	private final List<Path> classpath;
+	private final List<ClasspathEntry> classpath;
 
 	private static final ClassLoader PLATFORM_CLASS_LOADER = ClassLoader.getPlatformClassLoader();
 	private static final Runtime.Version RUNTIME_VERSION = JarFile.runtimeVersion();
+	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathTypeProvider.class);
 
 	/**
 	 * Constructs a {@code ClasspathTypeProvider} that resolves and provides type declarations
@@ -36,33 +44,38 @@ public class ClasspathTypeProvider implements TypeProvider {
 	 */
 	public ClasspathTypeProvider(AsmTypesExtractor extractor, List<Path> classpath) {
 		this.extractor = Preconditions.checkNotNull(extractor);
-		this.classpath = List.copyOf(Preconditions.checkNotNull(classpath));
+		this.classpath = Preconditions.checkNotNull(classpath).stream()
+			.map(ClasspathEntry::new)
+			.toList();
 	}
 
 	@Override
 	public <T extends TypeDecl> Optional<T> findType(String qualifiedName, Class<T> type) {
 		String entryName = nameToEntry(qualifiedName);
-		return readPlatformType(entryName, type)
-			.or(() -> readClasspathType(entryName, type));
+		return readPlatformType(entryName)
+			.or(() -> readClasspathType(entryName))
+			.filter(type::isInstance)
+			.map(type::cast);
 	}
 
 	private static String nameToEntry(String name) {
 		return name.replace('.', '/') + ".class";
 	}
 
-	private <T extends TypeDecl> Optional<T> readPlatformType(String entryName, Class<T> type) {
+	private Optional<TypeDecl> readPlatformType(String entryName) {
 		try (InputStream in = PLATFORM_CLASS_LOADER.getResourceAsStream(entryName)) {
-			return extractType(in, type);
-		} catch (IOException _) {
+			return extractType(in);
+		} catch (IOException e) {
+			LOGGER.warn("Failed to read platform class {}: {}", entryName, e.getMessage());
 			return Optional.empty();
 		}
 	}
 
-	private <T extends TypeDecl> Optional<T> readClasspathType(String entryName, Class<T> type) {
-		for (Path entry : classpath) {
-			Optional<T> resolved = Files.isDirectory(entry)
-				? readDirectoryType(entry, entryName, type)
-				: readJarType(entry, entryName, type);
+	private Optional<TypeDecl> readClasspathType(String entryName) {
+		for (ClasspathEntry entry : classpath) {
+			Optional<TypeDecl> resolved = entry.isDirectory()
+				? readDirectoryType(entry, entryName)
+				: readJarType(entry, entryName);
 			if (resolved.isPresent()) {
 				return resolved;
 			}
@@ -71,55 +84,87 @@ public class ClasspathTypeProvider implements TypeProvider {
 		return Optional.empty();
 	}
 
-	private <T extends TypeDecl> Optional<T> readDirectoryType(Path directory, String entryName, Class<T> type) {
-		Path classFile = directory.resolve(entryName);
+	private Optional<TypeDecl> readDirectoryType(ClasspathEntry directory, String entryName) {
+		Path classFile = directory.path.resolve(entryName);
 		if (!Files.isRegularFile(classFile)) {
 			return Optional.empty();
 		}
 
 		try (InputStream in = Files.newInputStream(classFile)) {
-			return extractType(in, type);
-		} catch (IOException _) {
+			return extractType(in);
+		} catch (IOException e) {
+			LOGGER.warn("Failed to read class file {}: {}", classFile, e.getMessage());
 			return Optional.empty();
 		}
 	}
 
-	private <T extends TypeDecl> Optional<T> readJarType(Path jar, String entryName, Class<T> type) {
-		if (!Files.isRegularFile(jar)) {
+	private Optional<TypeDecl> readJarType(ClasspathEntry jar, String entryName) {
+		if (!jar.classFiles().contains(entryName)) {
 			return Optional.empty();
 		}
 
-		try (JarFile jarFile = new JarFile(jar.toFile(), false, ZipFile.OPEN_READ, RUNTIME_VERSION)) {
+		try (JarFile jarFile = new JarFile(jar.path.toFile(), false, ZipFile.OPEN_READ, RUNTIME_VERSION)) {
 			var entry = jarFile.getJarEntry(entryName);
 			if (entry == null) {
 				return Optional.empty();
 			}
 
 			try (InputStream in = jarFile.getInputStream(entry)) {
-				return extractType(in, type);
+				return extractType(in);
 			}
-		} catch (IOException _) {
+		} catch (IOException e) {
+			LOGGER.warn("Failed to read class {} from classpath entry {}: {}", entryName, jar.path, e.getMessage());
 			return Optional.empty();
 		}
 	}
 
-	private <T extends TypeDecl> Optional<T> extractType(InputStream in, Class<T> type) {
+	private Optional<TypeDecl> extractType(InputStream in) throws IOException {
 		if (in == null) {
 			return Optional.empty();
 		}
 
-		try {
-			ExtractorSink sink = new ExtractorSink(1);
-			extractor.processEntry(in.readAllBytes(), sink);
+		ExtractorSink sink = new ExtractorSink(1);
+		extractor.processEntry(in.readAllBytes(), sink);
 
-			if (sink.getTypes().size() != 1) {
-				return Optional.empty();
+		if (sink.getTypes().size() != 1) {
+			return Optional.empty();
+		}
+
+		return Optional.of(sink.getTypes().iterator().next());
+	}
+
+	private static final class ClasspathEntry {
+		private final Path path;
+		private final Supplier<Set<String>> classFiles;
+
+		private ClasspathEntry(Path path) {
+			this.path = path;
+			this.classFiles = Suppliers.memoize(() -> indexJar(path));
+		}
+
+		private static Set<String> indexJar(Path path) {
+			if (!Files.isRegularFile(path)) {
+				LOGGER.warn("Classpath entry {} does not exist or is not a regular file", path);
+				return Set.of();
 			}
 
-			TypeDecl foundType = sink.getTypes().iterator().next();
-			return type.isInstance(foundType) ? Optional.of(type.cast(foundType)) : Optional.empty();
-		} catch (IOException e) {
-			return Optional.empty();
+			try (JarFile jarFile = new JarFile(path.toFile(), false, ZipFile.OPEN_READ, RUNTIME_VERSION)) {
+				return jarFile.versionedStream()
+					.map(ZipEntry::getName)
+					.filter(name -> name.endsWith(".class"))
+					.collect(Collectors.toUnmodifiableSet());
+			} catch (IOException e) {
+				LOGGER.warn("Failed to read classpath entry {}: {}", path, e.getMessage());
+				return Set.of();
+			}
+		}
+
+		private Set<String> classFiles() {
+			return classFiles.get();
+		}
+
+		private boolean isDirectory() {
+			return Files.isDirectory(path);
 		}
 	}
 }

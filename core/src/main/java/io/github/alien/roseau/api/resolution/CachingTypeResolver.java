@@ -1,7 +1,5 @@
 package io.github.alien.roseau.api.resolution;
 
-import com.google.common.cache.Cache;
-import com.google.common.cache.CacheBuilder;
 import com.google.common.collect.ImmutableSortedSet;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -9,10 +7,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ExecutionException;
 
 /**
  * A type resolver implementation that caches the result of attempting to resolve a type reference. If a reference
@@ -29,10 +27,7 @@ public class CachingTypeResolver implements TypeResolver {
 	/**
 	 * Stores the resolution results.
 	 */
-	private final Cache<String, ResolvedType> typeCache =
-		CacheBuilder.newBuilder()
-			.maximumSize(5_000L)
-			.build();
+	private final Map<String, ResolvedType> typeCache = new ConcurrentHashMap<>(5_000);
 
 	/**
 	 * Keeps track of every type reference this resolver was asked to resolve and could not.
@@ -58,24 +53,20 @@ public class CachingTypeResolver implements TypeResolver {
 
 	@Override
 	public <T extends TypeDecl> Optional<T> resolve(TypeReference<T> reference, Class<T> type) {
-		try {
-			String fqn = reference.getQualifiedName();
-			ResolvedType cached = typeCache.get(fqn, () -> resolveType(fqn, type));
-			return Optional.ofNullable(cached.typeDecl()).filter(type::isInstance).map(type::cast);
-		} catch (ExecutionException _) {
-			return Optional.empty();
-		}
+		String fqn = reference.getQualifiedName();
+		ResolvedType cached = typeCache.computeIfAbsent(fqn, this::resolveType);
+		return Optional.ofNullable(cached.typeDecl()).filter(type::isInstance).map(type::cast);
 	}
 
-	private <T extends TypeDecl> ResolvedType resolveType(String qualifiedName, Class<T> type) {
+	private ResolvedType resolveType(String qualifiedName) {
 		return typeProviders.stream()
-			.map(provider -> provider.findType(qualifiedName, type))
+			.map(provider -> provider.findType(qualifiedName, TypeDecl.class))
 			.flatMap(Optional::stream)
 			.findFirst()
 			.map(ResolvedType::new)
 			.orElseGet(() -> {
 				unresolvedTypes.add(qualifiedName);
-				LOGGER.debug("Failed to resolve type reference {} of kind {}", qualifiedName, type.getSimpleName());
+				LOGGER.debug("Failed to resolve type reference {}", qualifiedName);
 				return ResolvedType.UNRESOLVED;
 			});
 	}
