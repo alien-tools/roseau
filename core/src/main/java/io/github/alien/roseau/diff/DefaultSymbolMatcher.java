@@ -23,9 +23,8 @@ public class DefaultSymbolMatcher implements SymbolMatcher {
 	}
 
 	@Override
-	public Optional<MethodDecl> matchMethod(API targetApi, TypeDecl targetType, MethodDecl method, API sourceApi,
-	                                        TypeDecl sourceType) {
-		return targetApi.analyzer().findMethod(targetType, sourceApi.analyzer().getErasure(sourceType, method));
+	public Optional<MethodDecl> matchMethod(API targetApi, TypeDecl targetType, String erasure) {
+		return targetApi.analyzer().findMethod(targetType, erasure);
 	}
 
 	@Override

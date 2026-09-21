@@ -58,16 +58,20 @@ public final class ApiWalker {
 			.filter(f2 -> matcher.matchField(v1, t1, f2).isEmpty())
 			.forEach(f2 -> sink.onAddedField(t2, f2));
 
-		v1.analyzer().getExportedMethods(t1).forEach(m1 ->
-			matcher.matchMethod(v2, t2, m1, v1, t1).ifPresentOrElse(
+		// Methods are matched by erasure, and the analyzer indexes them by erasure already: walking the entries hands
+		// us the erasure of every method within its own type, instead of computing it again for each of them
+		v1.analyzer().getExportedMethodsByErasure(t1).forEach((erasure, m1) ->
+			matcher.matchMethod(v2, t2, erasure).ifPresentOrElse(
 				m2 -> sink.onMatchedMethod(t1, t2, m1, m2),
 				() -> sink.onRemovedMethod(t1, m1)
 			)
 		);
 
-		v2.analyzer().getExportedMethods(t2).stream()
-			.filter(m2 -> matcher.matchMethod(v1, t1, m2, v2, t2).isEmpty())
-			.forEach(m2 -> sink.onAddedMethod(t2, m2));
+		v2.analyzer().getExportedMethodsByErasure(t2).forEach((erasure, m2) -> {
+			if (matcher.matchMethod(v1, t1, erasure).isEmpty()) {
+				sink.onAddedMethod(t2, m2);
+			}
+		});
 
 		if (t1 instanceof ClassDecl c1 && t2 instanceof ClassDecl c2) {
 			v1.analyzer().getExportedConstructors(c1).forEach(cons1 ->
