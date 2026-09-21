@@ -101,9 +101,13 @@ public class CliFormatter implements BreakingChangesFormatter {
 	}
 
 	private static String formatLocation(BreakingChange bc) {
-		return bc.getLocation() == SourceLocation.NO_LOCATION
-			? "No source location"
-			: "→ %s:%d".formatted(bc.getLocation().file(), bc.getLocation().line());
+		if (bc.getLocation() == SourceLocation.NO_LOCATION) {
+			return "No source location";
+		} else if (bc.getLocation().line() == -1) {
+			return "→ %s".formatted(bc.getLocation().file());
+		} else {
+			return "→ %s:%d".formatted(bc.getLocation().file(), bc.getLocation().line());
+		}
 	}
 
 	private static String formatDetails(BreakingChange bc) {

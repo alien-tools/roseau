@@ -84,6 +84,6 @@ class CliFormatterTest {
 		var report = normalize(new CliFormatter(CliFormatter.Mode.PLAIN)
 			.format(ReportFixtures.reportedAt(new SourceLocation(Path.of("pkg/A.class"), -1))));
 
-		assertThat(report).contains("  → pkg/A.class:-1");
+		assertThat(report).contains("  → pkg/A.class");
 	}
 }
