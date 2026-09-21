@@ -51,7 +51,7 @@ public class ApiTestFactory {
 
 	public static MethodDecl newMethod(String containing, String fqn, ITypeReference returnType, List<ParameterDecl> parameters,
 	                                   Set<Modifier> modifiers) {
-		return newMethod(fqn, containing, returnType, parameters, modifiers);
+		return newMethod(fqn, new TypeReference<>(containing), returnType, parameters, modifiers);
 	}
 
 	public static MethodDecl newMethod(String fqn, TypeReference<TypeDecl> containingType, ITypeReference returnType,
