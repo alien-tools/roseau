@@ -1,7 +1,6 @@
 package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
-import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.TypeParameterScope;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
@@ -9,10 +8,7 @@ import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
-import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
-import java.util.stream.Stream;
 
 /**
  * Resolves formal type parameters and their bounds in member/type scopes.
@@ -33,9 +29,23 @@ public interface TypeParameterProvider {
 	                                                           TypeParameterReference reference) {
 		Preconditions.checkNotNull(scope);
 		Preconditions.checkNotNull(reference);
-		return getFormalTypeParametersInScope(scope).stream()
-			.filter(tp -> tp.name().equals(reference.getQualifiedName()))
-			.findFirst();
+		// Scopes are searched from the innermost out, so that a method's type parameters shadow those its enclosing
+		// types declare under the same name. Searching them in place rather than collecting them first matters: this
+		// sits under every type variable resolution, hence under every erasure the analysis computes
+		String name = reference.getQualifiedName();
+		for (Optional<TypeParameterScope> current = Optional.of(scope); current.isPresent();
+		     current = enclosingScope(current.get())) {
+			for (FormalTypeParameter parameter : current.get().getFormalTypeParameters()) {
+				if (parameter.name().equals(name)) {
+					return Optional.of(parameter);
+				}
+			}
+		}
+		return Optional.empty();
+	}
+
+	private Optional<TypeParameterScope> enclosingScope(TypeParameterScope scope) {
+		return scope.getEnclosingType().flatMap(resolver()::resolve).map(TypeParameterScope.class::cast);
 	}
 
 	/**
@@ -86,17 +96,4 @@ public interface TypeParameterProvider {
 			: reference;
 	}
 
-	private List<FormalTypeParameter> getFormalTypeParametersInScope(TypeParameterScope scope) {
-		List<FormalTypeParameter> enclosingParameters = scope.getEnclosingType()
-			.flatMap(resolver()::resolve)
-			.map(this::getFormalTypeParametersInScope)
-			.orElse(Collections.emptyList());
-
-		if (scope instanceof ExecutableDecl executable) {
-			// Method/constructor type parameters shadow enclosing type parameters with the same name.
-			return Stream.concat(executable.getFormalTypeParameters().stream(), enclosingParameters.stream()).toList();
-		}
-
-		return Stream.concat(scope.getFormalTypeParameters().stream(), enclosingParameters.stream()).toList();
-	}
 }
