@@ -29,9 +29,24 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private final ApiFactory factory;
 
 	private static final int ASM_VERSION = Opcodes.ASM9;
-	private static final int PARSING_OPTIONS = ClassReader.SKIP_FRAMES;
 	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 	private static final Logger LOGGER = LoggerFactory.getLogger(AsmTypesExtractor.class);
+
+	public enum ParsingMode {
+		// Can't SKIP_DEBUG cause we need to retain the SourceFile
+		WITH_LOCATIONS(ClassReader.SKIP_FRAMES),
+		WITHOUT_LOCATIONS(ClassReader.SKIP_FRAMES | ClassReader.SKIP_CODE);
+
+		private final int flags;
+
+		ParsingMode(int flags) {
+			this.flags = flags;
+		}
+
+		int flags() {
+			return flags;
+		}
+	}
 
 	public AsmTypesExtractor(ApiFactory factory) {
 		this.factory = Preconditions.checkNotNull(factory);
@@ -40,7 +55,7 @@ public class AsmTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, Runtime.version())) {
+		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, JarFile.runtimeVersion())) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Failed to process JAR file", e);
@@ -60,8 +75,8 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private LibraryTypes extractTypes(Library library, JarFile jar) {
 		ExtractorSink sink = new ExtractorSink(jar.size() << 1);
 		jar.versionedStream().parallel()
-			.filter(this::isRegularClassFile)
-			.forEach(entry -> processEntry(jar, entry, sink));
+			.filter(AsmTypesExtractor::isRegularClassFile)
+			.forEach(entry -> processJarEntry(jar, entry, sink));
 
 		Set<TypeDecl> types = sink.getTypes();
 		Set<ModuleDecl> modules = sink.getModules();
@@ -72,20 +87,23 @@ public class AsmTypesExtractor implements TypesExtractor {
 		};
 	}
 
-	public void processEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
+	private void processJarEntry(JarFile jar, JarEntry entry, ExtractorSink sink) {
 		try (InputStream is = jar.getInputStream(entry)) {
-			ClassReader reader = new ClassReader(is);
-			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
-			reader.accept(visitor, PARSING_OPTIONS);
+			processInputStream(is, sink, ParsingMode.WITH_LOCATIONS);
 		} catch (IOException e) {
 			LOGGER.error("Error processing JAR entry {}", entry.getName(), e);
 		}
 	}
 
-	public void processEntry(byte[] bytes, ExtractorSink sink) {
-		ClassReader reader = new ClassReader(bytes);
-		AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
-		reader.accept(visitor, PARSING_OPTIONS);
+	public void processInputStream(InputStream is, ExtractorSink sink, ParsingMode parsingMode) {
+		try {
+			ClassReader reader = new ClassReader(is);
+			AsmClassVisitor visitor = new AsmClassVisitor(ASM_VERSION, sink, factory);
+			reader.accept(visitor, parsingMode.flags());
+		} catch (IOException | RuntimeException e) {
+			// Catching wide here as ASM can throw both IOException and different RuntimeException on corrupt entries
+			LOGGER.error("Error processing JAR input stream", e);
+		}
 	}
 
 	private boolean isRegularClassFile(JarEntry entry) {

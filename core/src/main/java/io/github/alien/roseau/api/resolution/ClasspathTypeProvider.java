@@ -124,7 +124,7 @@ public class ClasspathTypeProvider implements TypeProvider {
 		}
 
 		ExtractorSink sink = new ExtractorSink(1);
-		extractor.processEntry(in.readAllBytes(), sink);
+		extractor.processInputStream(in, sink, AsmTypesExtractor.ParsingMode.WITHOUT_LOCATIONS);
 
 		if (sink.getTypes().size() != 1) {
 			return Optional.empty();
