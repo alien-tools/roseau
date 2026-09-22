@@ -55,6 +55,7 @@ full	org.eclipse.collections:eclipse-collections-api:13.0.0
 full	commons-collections:commons-collections:3.2.2
 full	org.apache.commons:commons-collections4:4.5.0
 full	io.vertx:vertx-core:5.0.4
+full	org.elasticsearch:elasticsearch:9.5.4
 jar+sources	net.bytebuddy:byte-buddy:1.15.10	JAR ships 9 build-time generated CachedReturnPlugin$Advice$* classes
 jar+sources	com.github.ben-manes.caffeine:caffeine:3.1.8	JAR ships 528 build-time generated cache/node classes
 jar+sources	com.zaxxer:HikariCP:5.1.0	JAR ships 6 build-time generated HikariProxy* classes absent from the sources
@@ -63,6 +64,7 @@ jar+sources	com.fasterxml.jackson.core:jackson-core:2.20.0	Shaded: 34 relocated 
 jar+sources	ch.qos.logback:logback-core:1.5.16	Multi-release JAR: the Java 21 ConsoleCharsetPropertyDefiner is missing
 jar+sources	org.apache.logging.log4j:log4j-api:2.24.3	Multi-release JAR: the Java 9 sources are missing
 jar+sources	org.apache.logging.log4j:log4j-core:2.24.3	Multi-release JAR: the Java 9 sources are missing
+off	org.jetbrains.kotlin:kotlin-compiler-embeddable:2.4.20	Kotlin library, majority of source files are *.kt
 off	org.osgi:org.osgi.core:6.0.0	Missing dependencies: org.osgi.annotation.versioning is used but not declared
 off	io.micrometer:micrometer-core:1.15.5	Missing optional dependencies (okhttp3, kotlin); AspectJ weaving
 off	org.hibernate.orm:hibernate-core:7.1.4.Final	Missing dependencies
