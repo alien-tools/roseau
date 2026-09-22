@@ -13,6 +13,5 @@ public enum Modifier {
 	NATIVE,
 	STRICTFP,
 	SEALED,
-	NON_SEALED,
 	DEFAULT
 }

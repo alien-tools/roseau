@@ -206,7 +206,6 @@ public final class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitPermittedSubclass(String permittedSubclass) {
 		if (!shouldSkip) {
-			// No Opcodes.ACC_NON_SEALED in ASM yet
 			permittedTypes.add(factory.references().createTypeReference(bytecodeToFqn(permittedSubclass)));
 		}
 	}

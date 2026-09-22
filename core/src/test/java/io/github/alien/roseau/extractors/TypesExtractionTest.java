@@ -309,15 +309,74 @@ class TypesExtractionTest {
 		assertFalse(e.isFinal());
 		assertFalse(e.isSealed());
 		assertFalse(api.analyzer().isEffectivelyFinal(e));
-		// FIXME: No support for NON_SEALED in ASM
-		if (builder != ApiBuilderType.ASM) {
-			assertTrue(e.isNonSealed());
-		}
+		assertTrue(api.analyzer().isNonSealed(e));
 
 		var f = assertClass(api, "F");
 		assertTrue(f.isFinal());
 		assertFalse(f.isSealed());
 		assertTrue(api.analyzer().isEffectivelyFinal(f));
+	}
+
+	// §8.1.6/§9.1.4: without a permits clause, the permitted subtypes are the types of the same
+	// compilation unit that declare this type as a direct supertype, wherever they are nested.
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void nested_sealed_interface_with_implicit_permits(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A {
+				public sealed interface B {}
+				public static final class C implements B {}
+				public static final class D implements B {}
+			}""");
+
+		var b = assertInterface(api, "A$B");
+
+		assertTrue(b.isSealed());
+		assertThat(b.getPermittedTypes().stream().map(TypeReference::qualifiedName))
+			.containsExactlyInAnyOrder("A$C", "A$D");
+		assertFalse(api.analyzer().canBeDirectlySubtyped(b));
+		assertTrue(api.analyzer().isEffectivelyFinal(b));
+	}
+
+	// non-sealed has no bytecode representation (JVMS §4.1): it is derived from the sealed direct supertype
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void non_sealed_subtypes_are_derived_from_the_hierarchy(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed class A permits B, C {}
+			public non-sealed class B extends A {}
+			public final class C extends A {}
+			public class D extends B {}""");
+
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "B");
+		var c = assertClass(api, "C");
+		var d = assertClass(api, "D");
+
+		assertTrue(a.isSealed());
+		assertFalse(api.analyzer().isNonSealed(a));
+		assertTrue(api.analyzer().isNonSealed(b));
+		assertFalse(api.analyzer().isNonSealed(c));
+		assertFalse(api.analyzer().isNonSealed(d));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void non_sealed_interface_extending_sealed_interface_is_derived_from_the_hierarchy(ApiBuilder builder) {
+		var api = builder.build("""
+			public sealed interface A permits B, C {}
+			public non-sealed interface B extends A {}
+			public sealed interface C extends A permits D {}
+			public non-sealed interface D extends C {}""");
+
+		var b = assertInterface(api, "B");
+		var c = assertInterface(api, "C");
+		var d = assertInterface(api, "D");
+
+		assertTrue(api.analyzer().isNonSealed(b));
+		assertFalse(api.analyzer().isNonSealed(c));
+		assertTrue(c.isSealed());
+		assertTrue(api.analyzer().isNonSealed(d));
 	}
 
 	@ParameterizedTest
@@ -453,10 +512,7 @@ class TypesExtractionTest {
 		var d = assertInterface(api, "D");
 		assertFalse(d.isFinal());
 		assertFalse(d.isSealed());
-		// FIXME: No support for NON_SEALED in ASM
-		if (builder != ApiBuilderType.ASM) {
-			assertTrue(d.isNonSealed());
-		}
+		assertTrue(api.analyzer().isNonSealed(d));
 		assertFalse(api.analyzer().isEffectivelyFinal(d));
 
 		var e = assertClass(api, "E");

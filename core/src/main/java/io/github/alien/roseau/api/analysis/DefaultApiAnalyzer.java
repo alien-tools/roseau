@@ -56,7 +56,7 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 	private static SetMultimap<String, TypeDecl> buildDirectKnownSubtypesBySuperType(LibraryTypes libraryTypes) {
 		HashMultimap<String, TypeDecl> subtypes = HashMultimap.create();
 		libraryTypes.getAllTypes().forEach(type ->
-			PropertiesProvider.directSuperTypeNames(type).forEach(superTypeName -> subtypes.put(superTypeName, type)));
+			PropertiesProvider.directSuperTypes(type).forEach(sup -> subtypes.put(sup.getQualifiedName(), type)));
 		return ImmutableSetMultimap.copyOf(subtypes);
 	}
 }

@@ -23,7 +23,7 @@ Protected nested types require an additional check. A protected nested type is o
 A type is *effectively final* when client code cannot subclass it:
 
 - the type is declared `final`
-- the type is part of a `sealed` hierarchy (but is not `non-sealed`)
+- the type is declared `sealed` and no permitted subtype reopens the hierarchy (i.e., a `non-sealed` subtype)
 - the type is an `enum` or a `record`, both of which are implicitly final
 - the type is a class whose only declared constructors are `private` (i.e., it has no `public` or `protected` subclass-accessible constructor)
 

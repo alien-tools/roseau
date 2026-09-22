@@ -187,7 +187,7 @@ public interface PropertiesProvider {
 		String qualifiedName = type.getQualifiedName();
 		return libraryTypes().getAllTypes().stream()
 			.filter(candidate -> !candidate.equals(type))
-			.filter(candidate -> directSuperTypeNames(candidate).anyMatch(qualifiedName::equals))
+			.filter(candidate -> directSuperTypes(candidate).anyMatch(sup -> sup.getQualifiedName().equals(qualifiedName)))
 			.collect(Collectors.toUnmodifiableSet());
 	}
 
@@ -203,8 +203,26 @@ public interface PropertiesProvider {
 			.anyMatch(candidate -> canBeSubtyped(candidate, new HashSet<>(inProgress)));
 	}
 
+	/**
+	 * Checks whether this type is {@code non-sealed}.
+	 *
+	 * @param type the type to check
+	 * @return whether this type is {@code non-sealed}
+	 */
+	default boolean isNonSealed(TypeDecl type) {
+		Preconditions.checkNotNull(type);
+		// §8.1.1.2/§9.1.1.4: a permitted subtype is final, sealed, or non-sealed
+		if (type.isFinal() || type.isSealed()) {
+			return false;
+		}
+		return directSuperTypes(type)
+			.anyMatch(reference -> resolver().resolve(reference)
+				.map(TypeDecl::isSealed)
+				.orElse(false));
+	}
+
 	private boolean canBeDirectlySubtyped(TypeDecl type, Set<String> inProgress) {
-		return !type.isFinal() && !isStrictlySealed(type) && isExported(type, inProgress) &&
+		return !type.isFinal() && !type.isSealed() && isExported(type, inProgress) &&
 			hasSubclassAccessibleConstructor(type);
 	}
 
@@ -212,17 +230,11 @@ public interface PropertiesProvider {
 		return !(type instanceof ClassDecl cls) || !cls.getDeclaredConstructors().isEmpty();
 	}
 
-	private boolean isStrictlySealed(TypeDecl type) {
-		return type.isSealed() && !type.isNonSealed();
-	}
-
-	static Stream<String> directSuperTypeNames(TypeDecl type) {
-		Stream<String> implementedInterfaces = type.getImplementedInterfaces().stream()
-			.map(TypeReference::getQualifiedName);
-		if (type instanceof ClassDecl cls) {
-			return Stream.concat(Stream.of(cls.getSuperClass().getQualifiedName()), implementedInterfaces);
-		}
-		return implementedInterfaces;
+	static Stream<TypeReference<? extends TypeDecl>> directSuperTypes(TypeDecl type) {
+		Stream<TypeReference<? extends TypeDecl>> superClass = type instanceof ClassDecl cls
+			? Stream.of(cls.getSuperClass())
+			: Stream.empty();
+		return Stream.concat(superClass, type.getImplementedInterfaces().stream());
 	}
 
 	/**
