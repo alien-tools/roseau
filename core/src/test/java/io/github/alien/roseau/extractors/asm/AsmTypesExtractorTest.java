@@ -18,6 +18,8 @@ class AsmTypesExtractorTest {
 	private static final Path MULTI_RELEASE_JAR = Path.of("src/test/resources/multi-release.jar");
 	private static final Path CORRUPT_JAR = Path.of("src/test/resources/corrupt.jar");
 	private static final Path UNSUPPORTED_VERSION_JAR = Path.of("src/test/resources/unsupported-version.jar");
+	private static final Path NON_JAVAC_JAR = Path.of("src/test/resources/non-javac-bytecode.jar");
+	private static final Path DOLLAR_PACKAGE_JAR = Path.of("src/test/resources/dollar-package.jar");
 
 	AsmTypesExtractor extractor;
 
@@ -64,5 +66,12 @@ class AsmTypesExtractorTest {
 	void unsupported_class_file_version_does_not_abort_whole_jar() {
 		var types = extractor.extractTypes(Library.of(UNSUPPORTED_VERSION_JAR));
 		assertThat(types.findType("pkg.Valid")).isPresent();
+	}
+
+	@Test
+	void type_in_a_package_containing_a_dollar_digit_is_extracted() {
+		var types = extractor.extractTypes(Library.of(DOLLAR_PACKAGE_JAR));
+
+		assertThat(types.findType("org.foo$1.Bar")).isPresent();
 	}
 }

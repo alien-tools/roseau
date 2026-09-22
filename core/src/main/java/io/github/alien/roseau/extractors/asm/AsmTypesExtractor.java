@@ -19,7 +19,6 @@ import java.io.InputStream;
 import java.util.Set;
 import java.util.jar.JarEntry;
 import java.util.jar.JarFile;
-import java.util.regex.Pattern;
 import java.util.zip.ZipFile;
 
 /**
@@ -29,7 +28,6 @@ public class AsmTypesExtractor implements TypesExtractor {
 	private final ApiFactory factory;
 
 	private static final int ASM_VERSION = Opcodes.ASM9;
-	private static final Pattern ANONYMOUS_MATCHER = Pattern.compile("\\$\\d+");
 	private static final Logger LOGGER = LoggerFactory.getLogger(AsmTypesExtractor.class);
 
 	public enum ParsingMode {
@@ -106,9 +104,19 @@ public class AsmTypesExtractor implements TypesExtractor {
 		}
 	}
 
-	private boolean isRegularClassFile(JarEntry entry) {
+	private static boolean isRegularClassFile(JarEntry entry) {
 		return !entry.isDirectory()
 			&& entry.getName().endsWith(".class")
-			&& !ANONYMOUS_MATCHER.matcher(entry.getName()).find();
+			&& !isAnonymousOrLocal(entry.getName());
+	}
+
+	private static boolean isAnonymousOrLocal(String entryName) {
+		for (int i = entryName.lastIndexOf('/') + 1; i < entryName.length() - 1; i++) {
+			if (entryName.charAt(i) == '$' && Character.isDigit(entryName.charAt(i + 1))) {
+				return true;
+			}
+		}
+
+		return false;
 	}
 }
