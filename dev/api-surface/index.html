@@ -1070,7 +1070,7 @@
 <p>A type is <em>effectively final</em> when client code cannot subclass it:</p>
 <ul>
 <li>the type is declared <code>final</code></li>
-<li>the type is part of a <code>sealed</code> hierarchy (but is not <code>non-sealed</code>)</li>
+<li>the type is declared <code>sealed</code> and no permitted subtype reopens the hierarchy (i.e., a <code>non-sealed</code> subtype)</li>
 <li>the type is an <code>enum</code> or a <code>record</code>, both of which are implicitly final</li>
 <li>the type is a class whose only declared constructors are <code>private</code> (i.e., it has no <code>public</code> or <code>protected</code> subclass-accessible constructor)</li>
 </ul>

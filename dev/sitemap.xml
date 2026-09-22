@@ -2,54 +2,54 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/api-surface/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/breaking-change-kinds/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/quickstart/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/ci/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/compare/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/config/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/gradle/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/ignored/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/maven-plugin/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/guides/reports/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/reference/cli/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
     <url>
          <loc>https://alien-tools.github.io/roseau/stable/reference/maven-plugin/</loc>
-         <lastmod>2026-09-20</lastmod>
+         <lastmod>2026-09-22</lastmod>
     </url>
 </urlset>
