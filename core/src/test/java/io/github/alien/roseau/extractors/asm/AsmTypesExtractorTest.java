@@ -1,6 +1,8 @@
 package io.github.alien.roseau.extractors.asm;
 
 import io.github.alien.roseau.Library;
+import io.github.alien.roseau.api.model.FieldDecl;
+import io.github.alien.roseau.api.model.Modifier;
 import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -60,6 +62,25 @@ class AsmTypesExtractorTest {
 	void corrupt_class_file_does_not_abort_whole_jar() {
 		var types = extractor.extractTypes(Library.of(CORRUPT_JAR));
 		assertThat(types.findType("pkg.Valid")).isPresent();
+	}
+
+	@Test
+	void enum_without_constant_body_is_final_not_sealed() {
+		var types = extractor.extractTypes(Library.of(NON_JAVAC_JAR));
+
+		var bodylessEnum = types.findType("pkg.BodylessEnum").orElseThrow();
+		assertThat(bodylessEnum.getModifiers()).containsExactly(Modifier.FINAL);
+	}
+
+	@Test
+	void compile_time_constant_extraction() {
+		var types = extractor.extractTypes(Library.of(NON_JAVAC_JAR));
+
+		var constants = types.findType("pkg.Constants").orElseThrow();
+		assertThat(constants.getDeclaredFields())
+			.filteredOn(FieldDecl::isCompileTimeConstant)
+			.extracting(FieldDecl::getSimpleName)
+			.containsExactly("realConstant");
 	}
 
 	@Test

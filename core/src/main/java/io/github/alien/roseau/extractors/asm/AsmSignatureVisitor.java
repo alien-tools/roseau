@@ -48,7 +48,7 @@ final class AsmSignatureVisitor extends SignatureVisitor {
 	List<ParameterDecl> getParameters() {
 		List<ParameterDecl> parameters = new ArrayList<>();
 		for (int i = 0; i < parameterVisitors.size(); i++) {
-			parameters.add(new ParameterDecl("p" + i, parameterVisitors.get(i).getType(), false));
+			parameters.add(factory.createParameter("p" + i, parameterVisitors.get(i).getType(), false));
 		}
 		return parameters;
 	}
