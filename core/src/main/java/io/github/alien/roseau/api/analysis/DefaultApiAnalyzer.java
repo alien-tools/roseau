@@ -26,10 +26,14 @@ import java.util.stream.Stream;
  * analysis expensive, as the answer for a single type was re-derived once per question asked about it. They are instead
  * resolved here exactly once per type, in dependency order:
  * <ol>
- *   <li>{@link SuperTypeIndex} resolves the supertypes of every type in the snapshot, bottom-up;</li>
- *   <li>on top of it, whether each type is exported and whether clients can subtype it;</li>
+ *   <li>whether each type is exported and whether clients can subtype it, which only depends on the declarations;</li>
+ *   <li>{@link SuperTypeIndex} resolves the supertypes of every exported type, bottom-up, and so those of every type
+ *   in their hierarchies;</li>
  *   <li>on top of both, the members clients can use on each exported type, indexed for lookup by erasure or name.</li>
  * </ol>
+ * Only the hierarchies clients can observe are resolved eagerly: resolving those of internal types would also report
+ * the types they cannot resolve, such as the supertype of an internal class that comes from an optional dependency,
+ * although no part of the API depends on them.
  * Each phase is complete before the next one starts, so none of them ever observes a partially-resolved snapshot: an
  * index answers nothing until it holds every type it is meant to hold. The other types, such as the classpath types a
  * query incidentally reaches, are resolved on demand by the {@link HierarchyProvider} and {@link PropertiesProvider}
@@ -70,9 +74,9 @@ public final class DefaultApiAnalyzer implements ApiAnalyzer {
 		this.libraryTypes = Preconditions.checkNotNull(libraryTypes);
 		this.resolver = Preconditions.checkNotNull(resolver);
 		this.directKnownSubtypes = directKnownSubtypesBySuperType(libraryTypes);
-		this.superTypes = new SuperTypeIndex(this, libraryTypes);
 		this.accessibility = index(libraryTypes.getAllTypes().stream(), type ->
 			new Accessibility(type, ApiAnalyzer.super.isExported(type), ApiAnalyzer.super.canBeSubtyped(type)));
+		this.superTypes = new SuperTypeIndex(this, libraryTypes.getAllTypes().stream().filter(this::isExported));
 		// Members are only ever looked up on the types the library exposes; the others are resolved on demand
 		this.members = index(libraryTypes.getAllTypes().stream().filter(this::isExported), type ->
 			new Members(type, ApiAnalyzer.super.getExportedMethodsByErasure(type),

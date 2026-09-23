@@ -2,7 +2,6 @@ package io.github.alien.roseau.api.analysis;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -15,10 +14,11 @@ import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Stream;
 
 /**
- * Resolves the transitive supertypes of a type, and indexes them for every type reachable from a {@link LibraryTypes}
- * snapshot.
+ * Resolves the transitive supertypes of a type, and indexes them for a set of root types and every type their
+ * hierarchies reach.
  * <p>
  * Supertype closures underpin every hierarchy query: they drive subtyping checks and the resolution of inherited
  * members. Deriving one top-down is prohibitively expensive, as the closure of every supertype is then rebuilt from
@@ -49,13 +49,13 @@ final class SuperTypeIndex {
 		static final Closure EMPTY = new Closure(null, List.of(), Set.of());
 	}
 
-	SuperTypeIndex(HierarchyProvider hierarchy, LibraryTypes libraryTypes) {
+	SuperTypeIndex(HierarchyProvider hierarchy, Stream<TypeDecl> roots) {
 		this.hierarchy = hierarchy;
 		this.resolver = hierarchy.resolver();
 
 		// Resolving a type resolves its whole hierarchy, including the types it reaches through the classpath
 		Map<String, Closure> indexed = new HashMap<>(2_000);
-		libraryTypes.getAllTypes().forEach(type -> resolve(type, Map.of(), indexed, new HashSet<>()));
+		roots.forEach(type -> resolve(type, Map.of(), indexed, new HashSet<>()));
 		this.closures = ImmutableMap.copyOf(indexed);
 	}
 

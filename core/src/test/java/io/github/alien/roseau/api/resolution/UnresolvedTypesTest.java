@@ -32,6 +32,31 @@ class UnresolvedTypesTest {
 	}
 
 	@Test
+	void missing_supertype_of_an_internal_type_is_not_reported() {
+		// Nothing in the API depends on Internal's hierarchy, e.g. when it comes from an optional dependency
+		var src = """
+			class Internal extends unknown.Unknown {}
+			public class A {}""";
+		var v1 = buildSourcesAPI(src);
+		var v2 = buildSourcesAPI(src);
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(report.getUnresolvedTypes()).isEmpty();
+		assertThatCode(report::checkFullyResolved).doesNotThrowAnyException();
+	}
+
+	@Test
+	void missing_supertype_of_an_internal_supertype_is_reported() {
+		// A inherits from Internal, so what Internal inherits is part of the API
+		var api = buildSourcesAPI("""
+			class Internal extends unknown.Unknown {}
+			public class A extends Internal {}""");
+
+		assertThat(api.getUnresolvedTypes()).containsExactly("unknown.Unknown");
+	}
+
+	@Test
 	void report_merges_unresolved_types_of_both_versions() {
 		var v1 = buildSourcesAPI("public class A extends unknown.OnlyInV1 {}");
 		var v2 = buildSourcesAPI("public class A extends unknown.OnlyInV2 {}");
