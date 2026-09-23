@@ -3,6 +3,7 @@ package io.github.alien.roseau.api.model;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.Iterables;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.api.analysis.ApiAnalyzer;
 
@@ -95,16 +96,18 @@ public final class API {
 	}
 
 	/**
-	 * Two APIs are equal when they expose the same thing to clients: the same module, the same exported types, and,
-	 * for each of them, the same surface.
+	 * Two APIs are equal only when diffing them is guaranteed to report no breaking change. An API is fully
+	 * determined by the types it was extracted from and by the classpath they resolve against, so two APIs are equal
+	 * when they share a module, every declaration they hold, exported or not, and the classpath they were resolved
+	 * against. Source locations are not part of declarations, and so not part of this either.
 	 * <p>
-	 * What a type <em>declares</em> is only part of that surface. The members and supertypes it inherits are just as
-	 * visible, and they can come from a type this library does not export, or from the classpath — so a type can gain
-	 * or lose members without its own declaration changing at all. Its declarations are compared too, and in full:
-	 * package-private members look invisible but decide whether clients can write a concrete subclass.
+	 * Comparing what clients can observe instead is not enough: what the differ reports also depends on declarations
+	 * clients never see, such as the package-private abstract methods a type inherits from an internal class, or the
+	 * hierarchy of a thrown exception that comes from the classpath. Any such difference makes two APIs unequal,
+	 * even when it ends up changing nothing, which merely costs a diff.
 	 * <p>
-	 * A classpath is deliberately not part of this. Changing one is only a <em>potential</em> API change: whether it is
-	 * an actual one shows up in the surface it resolves to, which is what is compared here.
+	 * The classpath is compared as the list of files it resolves to, not by their content: two APIs resolved against
+	 * the same paths are assumed to have seen the same types there.
 	 */
 	@Override
 	public boolean equals(Object obj) {
@@ -114,36 +117,14 @@ public final class API {
 		return obj instanceof API other
 			&& Objects.equals(libraryTypes.getModule(), other.libraryTypes.getModule())
 			&& Objects.equals(exportedTypes.keySet(), other.exportedTypes.keySet())
-			&& exportedTypes.values().stream().allMatch(type -> exposesTheSameAs(type, other));
-	}
-
-	/**
-	 * Whether {@code type} exposes to clients exactly what the type of the same name exposes in {@code other}.
-	 */
-	private boolean exposesTheSameAs(TypeDecl type, API other) {
-		TypeDecl counterpart = other.exportedTypes.get(type.getQualifiedName());
-		return type.equals(counterpart)
-			// Supertypes are compared transitively: clients can cast to any of them, and one can appear or disappear
-			// several levels up, without the type itself declaring anything different
-			&& Objects.equals(analyzer.getAllSuperTypes(type), other.analyzer.getAllSuperTypes(counterpart))
-			&& Objects.equals(analyzer.getExportedMethodsByErasure(type),
-				other.analyzer.getExportedMethodsByErasure(counterpart))
-			&& Objects.equals(analyzer.getExportedFieldsByName(type),
-				other.analyzer.getExportedFieldsByName(counterpart))
-			&& exposesTheSameConstructors(type, counterpart, other);
-	}
-
-	private boolean exposesTheSameConstructors(TypeDecl type, TypeDecl counterpart, API other) {
-		if (!(type instanceof ClassDecl cls) || !(counterpart instanceof ClassDecl otherCls)) {
-			return true;
-		}
-		return Objects.equals(analyzer.getExportedConstructors(cls), other.analyzer.getExportedConstructors(otherCls));
+			&& Iterables.elementsEqual(libraryTypes.getAllTypes(), other.libraryTypes.getAllTypes())
+			&& Objects.equals(getLibrary().getClasspath(), other.getLibrary().getClasspath());
 	}
 
 	@Override
 	public int hashCode() {
-		// Deliberately coarse: equality compares the resolved surface of every exported type, which is far too much to
-		// hash on every lookup. Equal APIs export the same names under the same module, so this stays consistent.
+		// Deliberately coarse: equality compares every declaration, which is far too much to hash on every lookup.
+		// Equal APIs export the same names under the same module, so this stays consistent.
 		return Objects.hash(libraryTypes.getModule(), exportedTypes.keySet());
 	}
 }

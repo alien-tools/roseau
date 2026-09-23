@@ -1,5 +1,8 @@
 package io.github.alien.roseau.api.model;
 
+import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.diff.changes.BreakingChange;
+import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import io.github.alien.roseau.utils.TestUtils;
 import org.junit.jupiter.api.Test;
@@ -53,7 +56,7 @@ class APIEqualityTest {
 	}
 
 	@Test
-	void non_exported_symbols_do_not_affect_api_equality() {
+	void non_exported_symbols_conservatively_affect_api_equality() {
 		var api1 = TestUtils.buildSourcesAPI("""
 			package p;
 			public class A {
@@ -76,8 +79,9 @@ class APIEqualityTest {
 			}
 			class AlsoHidden {}""");
 
-		assertThat(api1).isEqualTo(api2);
-		assertThat(api1.hashCode()).isEqualTo(api2.hashCode());
+		// None of these changes is breaking, but equality cannot tell without running the differ: internal
+		// declarations can be (see package_private_abstract_method_inherited_from_a_non_exported_supertype_*)
+		assertThat(api1).isNotEqualTo(api2);
 	}
 
 	@Test
@@ -150,15 +154,64 @@ class APIEqualityTest {
 	}
 
 	@Test
-	void a_classpath_that_changes_nothing_visible_does_not_affect_api_equality() {
+	void a_different_classpath_conservatively_affects_api_equality() {
 		var sources = "public class A { public void m() {} }";
 		var api1 = TestUtils.buildSourcesAPI(sources,
 			List.of(Path.of("src/test/resources/dependency-classpath-v1.jar")));
 		var api2 = TestUtils.buildSourcesAPI(sources,
 			List.of(Path.of("src/test/resources/dependency-classpath-v2.jar")));
 
+		// Nothing A exposes changes, but what a classpath changes is only known once the differ has run
+		assertThat(api1).isNotEqualTo(api2);
+	}
+
+	@Test
+	void the_same_classpath_does_not_affect_api_equality() {
+		var sources = "public class A { public void m() {} }";
+		var api1 = TestUtils.buildSourcesAPI(sources,
+			List.of(Path.of("src/test/resources/dependency-classpath-v1.jar")));
+		var api2 = TestUtils.buildSourcesAPI(sources,
+			List.of(Path.of("src/test/resources/dependency-classpath-v1.jar")));
+
 		assertThat(api1).isEqualTo(api2);
 		assertThat(api1.hashCode()).isEqualTo(api2.hashCode());
+	}
+
+	@Test
+	void source_locations_do_not_affect_api_equality() {
+		var api1 = TestUtils.buildSourcesAPI("""
+			package p;
+			public class A { public void m() {} }""");
+		var api2 = TestUtils.buildSourcesAPI("""
+			package p;
+
+
+			public class A {
+				// Moved
+				public void m() {}
+			}""");
+
+		assertThat(api1).isEqualTo(api2);
+		assertThat(api1.hashCode()).isEqualTo(api2.hashCode());
+	}
+
+	@Test
+	void package_private_abstract_method_inherited_from_a_non_exported_supertype_affects_api_equality() {
+		// Nothing clients can see changes, yet they can no longer write a concrete subclass of C: they cannot
+		// implement x() from another package (JLS §8.4.8.1)
+		var api1 = TestUtils.buildSourcesAPI("""
+			package p;
+			abstract class Base {}
+			public abstract class C extends Base { public C() {} }""");
+		var api2 = TestUtils.buildSourcesAPI("""
+			package p;
+			abstract class Base { abstract void x(); }
+			public abstract class C extends Base { public C() {} }""");
+
+		assertThat(Roseau.diff(api1, api2).getAllBreakingChanges())
+			.extracting(BreakingChange::kind)
+			.containsExactly(BreakingChangeKind.CLASS_NO_LONGER_CONCRETELY_EXTENSIBLE);
+		assertThat(api1).isNotEqualTo(api2);
 	}
 
 	@Test
@@ -196,7 +249,7 @@ class APIEqualityTest {
 	}
 
 	@Test
-	void unexported_packages_are_ignored_by_api_equality() {
+	void unexported_packages_conservatively_affect_api_equality() {
 		var api1 = TestUtils.buildSourcesAPI("""
 			module m {
 				exports p;
@@ -216,7 +269,7 @@ class APIEqualityTest {
 				public void m() {}
 			}""");
 
-		assertThat(api1).isEqualTo(api2);
+		assertThat(api1).isNotEqualTo(api2);
 	}
 
 	@Test
