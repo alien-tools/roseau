@@ -1,5 +1,7 @@
 package io.github.alien.roseau.git;
 
+import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.eclipse.jgit.api.Git;
 import org.eclipse.jgit.revwalk.RevCommit;
@@ -56,6 +58,57 @@ class GitWalkerTest {
 		assertThat(analyses).hasSize(2);
 		assertThat(analyses.get(1).apiChanged()).isFalse();
 		assertThat(analyses.get(1).api()).containsSame(analyses.get(0).api().orElseThrow());
+	}
+
+	@Test
+	void api_locations_follow_declarations_that_moved_without_changing(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg;\npublic class A {\n\tpublic void m() {}\n}\n"),
+				List.of());
+			// Only lines move: every declaration stays the same, but now sits lower in the file
+			GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/A.java", "package pkg;\n\n\n\npublic class A {\n\t// m\n\tpublic void m() {}\n}\n"),
+				List.of());
+		}
+
+		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
+
+		assertThat(analyses).hasSize(2);
+		assertThat(analyses.get(1).apiChanged()).isFalse();
+		TypeDecl a = analyses.get(1).api().orElseThrow().findExportedType("pkg.A").orElseThrow();
+		assertThat(a.getLocation().line()).isEqualTo(5);
+		assertThat(a.getDeclaredMethods()).singleElement()
+			.extracting(m -> m.getLocation().line())
+			.isEqualTo(7);
+	}
+
+	@Test
+	void breaking_change_is_located_where_the_previous_commit_declared_the_symbol(@TempDir Path wd) throws Exception {
+		Path remoteDir = wd.resolve("remote");
+		try (Git remote = GitWalkTestUtils.initRepo(remoteDir)) {
+			GitWalkTestUtils.commit(remote, "c1",
+				Map.of("src/main/java/pkg/A.java", "package pkg;\npublic class A {\n\tpublic void m() {}\n}\n"),
+				List.of());
+			GitWalkTestUtils.commit(remote, "c2",
+				Map.of("src/main/java/pkg/A.java", "package pkg;\n\n\n\npublic class A {\n\t// m\n\tpublic void m() {}\n}\n"),
+				List.of());
+			GitWalkTestUtils.commit(remote, "c3",
+				Map.of("src/main/java/pkg/A.java", "package pkg;\n\n\n\npublic class A {\n}\n"),
+				List.of());
+		}
+
+		List<CommitAnalysis> analyses = collectAnalyses(walkerForRepo(remoteDir, wd));
+
+		assertThat(analyses).hasSize(3);
+		// m() was removed from c2, where it sits on line 7, not from c1, where it sat on line 3
+		assertThat(analyses.get(2).report().orElseThrow().getAllBreakingChanges())
+			.singleElement()
+			.satisfies(bc -> {
+				assertThat(bc.kind()).isEqualTo(BreakingChangeKind.EXECUTABLE_REMOVED);
+				assertThat(bc.getLocation().line()).isEqualTo(7);
+			});
 	}
 
 	@Test
