@@ -80,7 +80,7 @@ class AsmTypesExtractorTest {
 		assertThat(constants.getDeclaredFields())
 			.filteredOn(FieldDecl::isCompileTimeConstant)
 			.extracting(FieldDecl::getSimpleName)
-			.containsExactly("realConstant");
+			.containsExactlyInAnyOrder("instanceField", "realConstant");
 	}
 
 	@Test

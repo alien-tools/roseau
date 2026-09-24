@@ -296,7 +296,7 @@ public final class AsmClassVisitor extends ClassVisitor {
 			fieldType = convertType(descriptor);
 		}
 		SourceLocation location = factory.location(sourceFile, -1);
-		boolean compileTimeConstant = value != null && isStatic(access) && isFinal(access) &&
+		boolean compileTimeConstant = value != null && isFinal(access) &&
 			(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING));
 		return factory.createField(className + "." + name, convertVisibility(access), convertFieldModifiers(access),
 			convertAnnotations(annotations), location, factory.references().createTypeReference(className), fieldType,
