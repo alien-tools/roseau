@@ -1,4 +1,4 @@
-# Roseau – Breaking Change Analysis for Java Libraries
+# Roseau: Breaking Change Analysis for Java Libraries
 
 [![Maven Central](https://img.shields.io/maven-central/v/io.github.alien-tools/roseau-core?style=flat-square&color=blue)](https://central.sonatype.com/namespace/io.github.alien-tools)
 [![Build](https://img.shields.io/github/actions/workflow/status/alien-tools/roseau/build-main.yml?branch=main&style=flat-square)](https://github.com/alien-tools/roseau/actions/workflows/build-main.yml)
