@@ -1,0 +1,50 @@
+name: Roseau check
+
+# Dogfooding our roseau-action
+on:
+  pull_request:
+    branches:
+      - main
+  push:
+    branches:
+      - main
+
+jobs:
+  check-last-commit:
+    name: Breaking changes since last commit
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: write
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - uses: alien-tools/roseau-action@v2
+        with:
+          current: core/src/main/java
+          pom: core/pom.xml
+          fail-on-breaking-changes: false
+          roseau-version: latest
+
+  check-last-release:
+    name: Breaking changes since the latest release
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v7
+      - name: Find the latest release
+        id: release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: echo "tag=$(gh release view --repo "$GITHUB_REPOSITORY" --json tagName -q .tagName)" >> "$GITHUB_OUTPUT"
+      - uses: alien-tools/roseau-action@v2
+        with:
+          current: core/src/main/java
+          pom: core/pom.xml
+          baseline-ref: ${{ steps.release.outputs.tag }}
+          fail-on-breaking-changes: false
+          upload-reports: false
+          roseau-version: latest
