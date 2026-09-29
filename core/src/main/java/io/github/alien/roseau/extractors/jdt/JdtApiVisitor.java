@@ -19,6 +19,7 @@ import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.extractors.ExtractorSink;
+import org.eclipse.jdt.core.dom.ASTNode;
 import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
@@ -435,22 +436,44 @@ final class JdtApiVisitor extends ASTVisitor {
 			return Set.of();
 		}
 
-		// Workaround: JDT does not include an implicit permitted types list (nested types) in permittedTypes()
-		// and I can't find an equivalent utility in the binding.
-		// We assume every nested type implementing the containing type is permitted.
-		if (type.permittedTypes().isEmpty()) {
-			ITypeBinding binding = type.resolveBinding();
-			return Arrays.stream(binding.getDeclaredTypes())
-				.filter(t -> t.isSubTypeCompatible(binding))
+		if (!type.permittedTypes().isEmpty()) {
+			return stream(type.permittedTypes(), Type.class)
+				.map(Type::resolveBinding)
+				.filter(Objects::nonNull)
 				.map(this::createTypeReference)
 				.collect(toSet());
 		}
 
-		return stream(type.permittedTypes(), Type.class)
-			.map(Type::resolveBinding)
-			.filter(Objects::nonNull)
-			.map(this::createTypeReference)
-			.collect(toSet());
+		// §8.1.6/§9.1.4: without a permits clause, the permitted subtypes are the types of the same
+		// compilation unit that declare this type as a direct supertype, wherever they are nested.
+		// JDT exposes no equivalent on ITypeBinding, so we walk the compilation unit ourselves.
+		ITypeBinding binding = type.resolveBinding();
+		if (binding == null) {
+			return Set.of();
+		}
+
+		Set<TypeReference<TypeDecl>> permitted = new HashSet<>();
+		cu.accept(new ASTVisitor() {
+			@Override
+			public void postVisit(ASTNode node) {
+				if (node instanceof AbstractTypeDeclaration decl) {
+					ITypeBinding candidate = decl.resolveBinding();
+					if (candidate != null && isDirectSubtypeOf(candidate, binding)) {
+						permitted.add(createTypeReference(candidate));
+					}
+				}
+			}
+		});
+		return permitted;
+	}
+
+	private static boolean isDirectSubtypeOf(ITypeBinding candidate, ITypeBinding supertype) {
+		ITypeBinding superClass = candidate.getSuperclass();
+		if (superClass != null && supertype.isEqualTo(superClass.getTypeDeclaration())) {
+			return true;
+		}
+		return Arrays.stream(candidate.getInterfaces())
+			.anyMatch(intf -> supertype.isEqualTo(intf.getTypeDeclaration()));
 	}
 
 	private static Map<String, String> collectSingleTypeImports(CompilationUnit cu) {
@@ -683,9 +706,6 @@ final class JdtApiVisitor extends ASTVisitor {
 		}
 		if (org.eclipse.jdt.core.dom.Modifier.isSealed(modifiers)) {
 			result.add(Modifier.SEALED);
-		}
-		if (org.eclipse.jdt.core.dom.Modifier.isNonSealed(modifiers)) {
-			result.add(Modifier.NON_SEALED);
 		}
 		if (org.eclipse.jdt.core.dom.Modifier.isDefault(modifiers)) {
 			result.add(Modifier.DEFAULT);

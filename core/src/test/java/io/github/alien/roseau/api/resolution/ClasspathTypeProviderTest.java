@@ -279,4 +279,39 @@ class ClasspathTypeProviderTest {
 		var result = provider.findType("java.lang.String", InterfaceDecl.class);
 		assertThat(result).isEmpty();
 	}
+
+	@Test
+	void corrupt_classpath_entry_does_not_break_resolution() {
+		var corruptProvider = new ClasspathTypeProvider(extractor, List.of(Path.of("src/test/resources/corrupt.jar")));
+
+		assertThat(corruptProvider.findType("pkg.Broken")).isEmpty();
+		assertThat(corruptProvider.findType("pkg.Valid")).isPresent();
+	}
+
+	@Test
+	void does_not_extract_locations() throws IOException {
+		var sources = Map.of("pkg.C", """
+			package pkg;
+			public class C {
+				public void m() {}
+			}""");
+		var jar = tempDir.resolve("test.jar");
+
+		try (var _ = TestUtils.buildJar(sources, jar)) {
+			provider = new ClasspathTypeProvider(extractor, List.of(jar));
+			var m = provider.findType("pkg.C")
+				.map(ClassDecl.class::cast)
+				.orElseThrow()
+				.getDeclaredMethods()
+				.iterator().next();
+			var str = provider.findType("java.lang.String")
+				.map(ClassDecl.class::cast)
+				.orElseThrow()
+				.getDeclaredMethods()
+				.iterator().next();
+
+			assertThat(m.getLocation().line()).isEqualTo(-1);
+			assertThat(str.getLocation().line()).isEqualTo(-1);
+		}
+	}
 }

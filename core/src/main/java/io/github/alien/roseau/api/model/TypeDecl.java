@@ -87,10 +87,6 @@ public abstract sealed class TypeDecl extends Symbol implements TypeParameterSco
 		return modifiers.contains(Modifier.SEALED);
 	}
 
-	public boolean isNonSealed() {
-		return modifiers.contains(Modifier.NON_SEALED);
-	}
-
 	public boolean isAbstract() {
 		return modifiers.contains(Modifier.ABSTRACT);
 	}

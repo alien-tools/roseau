@@ -206,15 +206,16 @@ public final class AsmClassVisitor extends ClassVisitor {
 	@Override
 	public void visitPermittedSubclass(String permittedSubclass) {
 		if (!shouldSkip) {
-			// No Opcodes.ACC_NON_SEALED in ASM yet
 			permittedTypes.add(factory.references().createTypeReference(bytecodeToFqn(permittedSubclass)));
 		}
 	}
 
 	@Override
 	public void visitInnerClass(String name, String outerName, String innerName, int access) {
-		// FIXME: Constant bodies are inner classes
-		hasEnumConstantBody = isEnum(classAccess);
+		// §8.9: an enum constant with a class body compiles to an anonymous subclass of the enum, which appears here
+		// as an anonymous entry (no outer/inner name) directly nested in this class
+		hasEnumConstantBody |= isEnum(classAccess) && outerName == null && innerName == null
+			&& isAnonymousMemberOf(name, className);
 
 		if (shouldSkip || !bytecodeToFqn(name).equals(className)) {
 			return;
@@ -295,7 +296,7 @@ public final class AsmClassVisitor extends ClassVisitor {
 			fieldType = convertType(descriptor);
 		}
 		SourceLocation location = factory.location(sourceFile, -1);
-		boolean compileTimeConstant = value != null &&
+		boolean compileTimeConstant = value != null && isFinal(access) &&
 			(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING));
 		return factory.createField(className + "." + name, convertVisibility(access), convertFieldModifiers(access),
 			convertAnnotations(annotations), location, factory.references().createTypeReference(className), fieldType,
@@ -454,6 +455,15 @@ public final class AsmClassVisitor extends ClassVisitor {
 
 	private static String bytecodeToFqn(String bytecodeName) {
 		return bytecodeName.replace('/', '.');
+	}
+
+	private static boolean isAnonymousMemberOf(String bytecodeName, String outerFqn) {
+		String fqn = bytecodeToFqn(bytecodeName);
+		if (fqn.length() <= outerFqn.length() + 1 || !fqn.startsWith(outerFqn) || fqn.charAt(outerFqn.length()) != '$') {
+			return false;
+		}
+
+		return fqn.chars().skip(outerFqn.length() + 1L).allMatch(Character::isDigit);
 	}
 
 	private static String descriptorToFqn(String descriptor) {

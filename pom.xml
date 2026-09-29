@@ -29,7 +29,7 @@
         <argLine></argLine>
         <failsafe.groups></failsafe.groups>
         <failsafe.excludedGroups>smoke</failsafe.excludedGroups>
-        <maven-resolver.version>2.0.22</maven-resolver.version>
+        <maven-resolver.version>2.0.23</maven-resolver.version>
     </properties>
 
     <build>
@@ -136,7 +136,7 @@
             <dependency>
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-bom</artifactId>
-                <version>2.0.19</version>
+                <version>2.0.20</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -150,7 +150,7 @@
             <dependency>
                 <groupId>com.fasterxml.jackson</groupId>
                 <artifactId>jackson-bom</artifactId>
-                <version>2.22.2</version>
+                <version>2.22.3</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
@@ -188,7 +188,7 @@
             <dependency>
                 <groupId>org.mockito</groupId>
                 <artifactId>mockito-bom</artifactId>
-                <version>5.23.0</version>
+                <version>5.24.0</version>
                 <type>pom</type>
                 <scope>import</scope>
             </dependency>
