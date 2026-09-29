@@ -1,6 +1,7 @@
 package io.github.alien.roseau.api.analysis;
 
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
@@ -10,6 +11,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import java.util.List;
+import java.util.stream.IntStream;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -50,7 +52,7 @@ class HierarchyProviderTest {
 		assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("A", List.of(STRING))))
 			.contains(new TypeReference<>("Box", List.of(STRING)));
 		assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("A")))
-			.contains(new TypeReference<>("Box", List.of(new TypeParameterReference("T"))));
+			.contains(new TypeReference<>("Box"));
 	}
 
 	@ParameterizedTest
@@ -202,5 +204,70 @@ class HierarchyProviderTest {
 			.containsKey("contains(java.lang.Object)");
 		assertThat(api.analyzer().getExportedMethodsByErasure(a).get("add(java.lang.Number)").getParameters().getFirst()
 			.type()).isEqualTo(NUMBER);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void composed_substitutions_preserve_swapped_and_nested_arguments(ApiBuilder builder) {
+		var api = builder.build("""
+			public interface Pair<L, R> { L left(); R right(); }
+			public interface Swap<L, R> extends Pair<R, java.util.List<L[]>> {}
+			public abstract class A implements Swap<String, Number> {}""");
+
+		var expected = new TypeReference<>("java.util.List", List.of(
+			new ArrayTypeReference(STRING, 1)));
+		assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("A")))
+			.contains(new TypeReference<>("Pair", List.of(NUMBER, expected)));
+		var methods = api.analyzer().getExportedMethodsByErasure(assertClass(api, "A"));
+		assertThat(methods.get("left()").getType()).isEqualTo(NUMBER);
+		assertThat(methods.get("right()").getType()).isEqualTo(expected);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void concurrent_instantiations_do_not_contaminate_the_shared_closure(ApiBuilder builder) {
+		var api = builder.build("""
+			public interface Box<T> { T get(); }
+			public abstract class A<T> implements Box<java.util.List<T>> {}""");
+
+		IntStream.range(0, 100).parallel().forEach(i -> {
+			var argument = i % 2 == 0 ? STRING : NUMBER;
+			var expected = new TypeReference<>("Box", List.of(
+				new TypeReference<>("java.util.List", List.of(argument))));
+			assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("A", List.of(argument))))
+				.containsExactlyInAnyOrder(new TypeReference<>("java.lang.Object"), expected);
+		});
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void a_raw_edge_does_not_capture_a_subtypes_type_parameter(ApiBuilder builder) {
+		var api = builder.build("""
+			public interface Top<T> {}
+			public class Middle<T extends Number> implements Top<T> {}
+			public class Bottom<T> extends Middle {}
+			public class Parameterized<T extends Number> extends Middle<T> {}""");
+
+		// JLS 4.8: raw Middle inherits raw Top, regardless of Bottom's unrelated T.
+		assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("Bottom", List.of(STRING))))
+			.containsExactlyInAnyOrder(new TypeReference<>("Middle"), new TypeReference<>("Top"),
+				new TypeReference<>("java.lang.Object"));
+		assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("Parameterized", List.of(NUMBER))))
+			.containsExactlyInAnyOrder(new TypeReference<>("Middle", List.of(NUMBER)),
+				new TypeReference<>("Top", List.of(NUMBER)), new TypeReference<>("java.lang.Object"));
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void a_non_generic_supertype_preserves_its_arguments_above_a_raw_type(ApiBuilder builder) {
+		var api = builder.build("""
+			public interface Top<T> {}
+			public class Fixed implements Top<String> {}
+			public class Generic<T> extends Fixed {}""");
+
+		// Erasure applies to Generic's direct supertype Fixed; Fixed itself is not raw.
+		assertThat(api.analyzer().getAllInstantiatedSuperTypes(new TypeReference<>("Generic")))
+			.containsExactlyInAnyOrder(new TypeReference<>("Fixed"), new TypeReference<>("Top", List.of(STRING)),
+				new TypeReference<>("java.lang.Object"));
 	}
 }

@@ -27,12 +27,14 @@ import java.util.stream.Stream;
  * resolved. Types outside the snapshot, such as the classpath types a query incidentally reaches, are resolved the same
  * way, on demand.
  * <p>
- * Two closures are resolved per type:
+ * The following closures are resolved per type:
  * <ul>
  *   <li>the <em>nominal</em> one, where each supertype keeps the type arguments of its own declaration site;</li>
  *   <li>the <em>instantiated</em> one, where type arguments are propagated down the hierarchy and expressed in terms of
  *   the type's own formal type parameters, so that instantiating it for a particular {@link TypeReference} is a single
- *   substitution away.</li>
+ *   substitution away;</li>
+ *   <li>for generic types, the supertypes of a raw reference, erasing each direct supertype as required by JLS 4.8.
+ *   Non-generic supertypes retain their own parameterized ancestors.</li>
  * </ul>
  */
 final class SuperTypeIndex {
@@ -45,8 +47,8 @@ final class SuperTypeIndex {
 	 * shares its qualified name, such as a classpath type shadowed by a library type, is never answered from it.
 	 */
 	private record Closure(TypeDecl type, List<TypeReference<TypeDecl>> nominal,
-	                       Set<TypeReference<TypeDecl>> instantiated) {
-		static final Closure EMPTY = new Closure(null, List.of(), Set.of());
+	                       Set<TypeReference<TypeDecl>> instantiated, Set<TypeReference<TypeDecl>> raw) {
+		static final Closure EMPTY = new Closure(null, List.of(), Set.of(), Set.of());
 	}
 
 	SuperTypeIndex(HierarchyProvider hierarchy, Stream<TypeDecl> roots) {
@@ -78,7 +80,7 @@ final class SuperTypeIndex {
 		// Closures are resolved in terms of the type's own formal type parameters: instantiating one for this
 		// particular reference is a single substitution of the arguments it supplies
 		TypeDecl type = resolved.get();
-		return substitute(closureOf(type).instantiated(), TypeParameterMapping.forTypeArguments(type, reference));
+		return instantiate(closureOf(type), reference);
 	}
 
 	private Closure closureOf(TypeDecl type) {
@@ -104,27 +106,43 @@ final class SuperTypeIndex {
 			return Closure.EMPTY;
 		}
 
-		// Both builders deduplicate on insertion and keep insertion order, so the closures come out ordered and
+		// Builders deduplicate on insertion and keep insertion order, so the closures come out ordered and
 		// deduplicated without a second pass over the references, which are costly to hash
 		ImmutableSet.Builder<TypeReference<TypeDecl>> nominal = ImmutableSet.builder();
 		ImmutableSet.Builder<TypeReference<TypeDecl>> instantiated = ImmutableSet.builder();
+		boolean generic = !type.getFormalTypeParameters().isEmpty();
+		ImmutableSet.Builder<TypeReference<TypeDecl>> raw = ImmutableSet.builder();
 		for (TypeReference<TypeDecl> superType : hierarchy.getSuperTypes(type)) {
 			nominal.add(superType);
 			instantiated.add(superType);
+			if (generic) {
+				raw.add(new TypeReference<>(superType.qualifiedName()));
+			}
 			resolver.resolve(superType).ifPresent(superDecl -> {
 				Closure superClosure = resolve(superDecl, indexed, computed, inProgress);
 				nominal.addAll(superClosure.nominal());
 				// The supertype's closure is expressed in terms of its own formal type parameters; substituting the
 				// arguments this declaration supplies expresses it in terms of ours instead
-				instantiated.addAll(substitute(superClosure.instantiated(),
-					TypeParameterMapping.forTypeArguments(superDecl, superType)));
+				instantiated.addAll(instantiate(superClosure, superType));
+				if (generic) {
+					raw.addAll(superClosure.raw());
+				}
 			});
 		}
 
 		inProgress.remove(qualifiedName);
-		Closure closure = new Closure(type, nominal.build().asList(), instantiated.build());
+		Set<TypeReference<TypeDecl>> parameterized = instantiated.build();
+		Closure closure = new Closure(type, nominal.build().asList(), parameterized,
+			generic ? raw.build() : parameterized);
 		computed.put(qualifiedName, closure);
 		return closure;
+	}
+
+	private static Set<TypeReference<TypeDecl>> instantiate(Closure closure, TypeReference<?> reference) {
+		if (closure == Closure.EMPTY || reference.typeArguments().isEmpty()) {
+			return closure.raw();
+		}
+		return substitute(closure.instantiated(), TypeParameterMapping.forTypeArguments(closure.type(), reference));
 	}
 
 	@SuppressWarnings("unchecked")
