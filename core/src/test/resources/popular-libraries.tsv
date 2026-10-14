@@ -2,7 +2,6 @@ full	io.github.alien-tools:roseau-core:0.6.0
 full	org.assertj:assertj-core:3.27.3
 full	com.google.guava:guava:32.1.3-jre	
 full	org.eclipse.collections:eclipse-collections:13.0.0	
-full	io.dropwizard:dropwizard-core:4.0.1	
 full	org.reactivestreams:reactive-streams:1.0.4	
 full	com.google.code.gson:gson:2.10.1	
 full	org.junit.jupiter:junit-jupiter-api:5.14.0	
@@ -78,3 +77,4 @@ off	org.springframework:spring-context:6.2.12	Missing dependencies; JDT extracti
 off	org.springframework:spring-web:6.2.2	Missing dependencies; JDT extraction also silently yields 0 types
 off	io.projectreactor:reactor-core:3.6.3	Multi-release JAR (Java 21 schedulers missing from the sources JAR)
 off	org.apache.kafka:kafka-clients:4.1.0	Shaded protobuf/opentelemetry classes in the JAR, absent from the sources
+off	io.dropwizard:dropwizard-core:4.0.1	Maven 3.10.0 now rejects the duplicate 'metrics-annotation' dependency
