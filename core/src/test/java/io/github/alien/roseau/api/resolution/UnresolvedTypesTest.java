@@ -31,6 +31,16 @@ class UnresolvedTypesTest {
 	}
 
 	@Test
+	void missing_qualified_parameterized_supertype_is_unresolved_once_the_analysis_needs_it() {
+		var api = buildSourcesAPI("public class A extends unknown.Unknown<String> {}");
+		var a = assertClass(api, "A");
+
+		api.analyzer().getAllSuperTypes(a);
+
+		assertThat(api.getUnresolvedTypes()).containsExactly("unknown.Unknown");
+	}
+
+	@Test
 	void report_merges_unresolved_types_of_both_versions() {
 		var v1 = buildSourcesAPI("public class A extends unknown.OnlyInV1 {}");
 		var v2 = buildSourcesAPI("public class A extends unknown.OnlyInV2 {}");
@@ -61,6 +71,30 @@ class UnresolvedTypesTest {
 			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("unknown.Unknown")
 			.hasMessageContaining("classpath");
+	}
+
+	@Test
+	void check_fully_resolved_fails_on_a_missing_qualified_parameterized_supertype() {
+		var v1 = buildSourcesAPI("public class A extends unknown.Unknown<String> {}");
+		var v2 = buildSourcesAPI("public class A {}");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThatThrownBy(report::checkFullyResolved)
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("unknown.Unknown");
+	}
+
+	@Test
+	void check_fully_resolved_fails_on_identical_versions_with_a_missing_qualified_parameterized_supertype() {
+		var v1 = buildSourcesAPI("public class A extends unknown.Unknown<String> {}");
+		var v2 = buildSourcesAPI("public class A extends unknown.Unknown<String> {}");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThatThrownBy(report::checkFullyResolved)
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("unknown.Unknown");
 	}
 
 	@Test
@@ -183,6 +217,25 @@ class UnresolvedTypesTest {
 		var v2 = buildSourcesAPI("""
 			public class A {
 				public unknown.Unknown m() { return null; }
+			}""");
+
+		var report = Roseau.diff(v1, v2);
+
+		assertThat(v2.getUnresolvedTypes()).containsExactly("unknown.Unknown");
+		assertThatThrownBy(report::checkFullyResolved)
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("unknown.Unknown");
+	}
+
+	@Test
+	void unresolved_qualified_parameterized_type_of_the_new_version_is_still_reported() {
+		var v1 = buildSourcesAPI("""
+			public class A {
+				public String m() { return null; }
+			}""");
+		var v2 = buildSourcesAPI("""
+			public class A {
+				public unknown.Unknown<String> m() { return null; }
 			}""");
 
 		var report = Roseau.diff(v1, v2);
