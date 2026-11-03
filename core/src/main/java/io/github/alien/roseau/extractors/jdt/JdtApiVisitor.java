@@ -6,6 +6,7 @@ import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
+import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
@@ -24,10 +25,16 @@ import org.eclipse.jdt.core.dom.ASTVisitor;
 import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
+import org.eclipse.jdt.core.dom.ArrayType;
+import org.eclipse.jdt.core.dom.BooleanLiteral;
+import org.eclipse.jdt.core.dom.CastExpression;
+import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
+import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.ExportsDirective;
+import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IBinding;
@@ -36,12 +43,28 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
+import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ModuleDeclaration;
+import org.eclipse.jdt.core.dom.NameQualifiedType;
+import org.eclipse.jdt.core.dom.NumberLiteral;
+import org.eclipse.jdt.core.dom.ParameterizedType;
+import org.eclipse.jdt.core.dom.ParenthesizedExpression;
+import org.eclipse.jdt.core.dom.PrefixExpression;
+import org.eclipse.jdt.core.dom.PrimitiveType;
+import org.eclipse.jdt.core.dom.QualifiedName;
+import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
+import org.eclipse.jdt.core.dom.SimpleName;
+import org.eclipse.jdt.core.dom.SimpleType;
+import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
+import org.eclipse.jdt.core.dom.StringLiteral;
+import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
+import org.eclipse.jdt.core.dom.TypeParameter;
 import org.eclipse.jdt.core.dom.VariableDeclarationFragment;
+import org.eclipse.jdt.core.dom.WildcardType;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -50,11 +73,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -172,6 +197,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		ITypeBinding binding = type.resolveBinding();
 		if (binding == null) {
 			LOGGER.warn("No binding for {}; skipping", type.getName().getFullyQualifiedName());
+			reportUnboundType(type);
 			return;
 		}
 
@@ -181,6 +207,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		}
 
 		String qualifiedName = makeFqn(binding);
+		reportGaps(type, qualifiedName);
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		Set<Annotation> annotations = convertAnnotations(binding.getAnnotations());
@@ -189,7 +216,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		Set<TypeReference<InterfaceDecl>> implemented = convertImplementedInterfaces(binding);
 		Set<FieldDecl> fields = convertFields(binding);
 		Set<MethodDecl> methods = convertMethods(binding);
-		Set<ConstructorDecl> constructors = convertConstructors(binding);
+		Set<ConstructorDecl> constructors = convertConstructors(binding, hasLostRecordComponent(type));
 		TypeReference<TypeDecl> enclosingType = createTypeReference(binding.getDeclaringClass());
 
 		TypeDecl typeDecl = switch (type) {
@@ -234,6 +261,276 @@ final class JdtApiVisitor extends ASTVisitor {
 		};
 
 		sink.accept(typeDecl);
+	}
+
+	/*
+	 * ecj does not recover missing types spelled as qualified names with type arguments (a.b.Missing<String>,
+	 * Outer.Inner<String>, List<a.b.Missing<String>>): the declarations that use them lose their binding and vanish
+	 * from ITypeBinding, and supertypes and bounds silently become java.lang.Object. Such declarations cannot be
+	 * extracted faithfully, so we record them as extraction gaps instead.
+	 */
+	private void reportGaps(AbstractTypeDeclaration type, String qualifiedName) {
+		List<Type> header = new ArrayList<>();
+		switch (type) {
+			case TypeDeclaration t -> {
+				if (t.getSuperclassType() != null) {
+					header.add(t.getSuperclassType());
+				}
+				header.addAll(stream(t.superInterfaceTypes(), Type.class).toList());
+				header.addAll(typeParameterBounds(t.typeParameters()));
+			}
+			case EnumDeclaration e -> header.addAll(stream(e.superInterfaceTypes(), Type.class).toList());
+			case RecordDeclaration r -> {
+				header.addAll(stream(r.superInterfaceTypes(), Type.class).toList());
+				header.addAll(typeParameterBounds(r.typeParameters()));
+				stream(r.recordComponents(), SingleVariableDeclaration.class).forEach(component ->
+					reportLostTypes(qualifiedName, qualifiedName + "." + component.getName().getIdentifier(),
+						List.of(component.getType())));
+			}
+			default -> {
+			}
+		}
+		reportLostTypes(qualifiedName, qualifiedName, header);
+
+		// Members of interfaces are public unless declared private; annotation members are always public
+		boolean isInterface = type instanceof AnnotationTypeDeclaration ||
+			type instanceof TypeDeclaration t && t.isInterface();
+		for (Object member : type.bodyDeclarations()) {
+			switch (member) {
+				case FieldDeclaration field when isInterface || isPublicOrProtected(field.getModifiers()) ->
+					stream(field.fragments(), VariableDeclarationFragment.class).forEach(fragment -> {
+						String declaration = qualifiedName + "." + fragment.getName().getIdentifier();
+						reportMember(qualifiedName, declaration, fragment.resolveBinding(), fragment,
+							List.of(field.getType()));
+						reportUnknownConstant(qualifiedName, declaration, fragment);
+					});
+				case MethodDeclaration method when isApiMethod(method, isInterface) -> {
+					List<Type> types = new ArrayList<>();
+					if (method.getReturnType2() != null) {
+						types.add(method.getReturnType2());
+					}
+					stream(method.parameters(), SingleVariableDeclaration.class).forEach(p -> types.add(p.getType()));
+					types.addAll(typeParameterBounds(method.typeParameters()));
+					types.addAll(stream(method.thrownExceptionTypes(), Type.class).toList());
+					String parameters = stream(method.parameters(), SingleVariableDeclaration.class)
+						.map(p -> p.getType() + (p.isVarargs() ? "..." : "") + "[]".repeat(p.getExtraDimensions()))
+						.collect(Collectors.joining(", "));
+					String name = method.isConstructor() ? "<init>" : method.getName().getIdentifier();
+					reportMember(qualifiedName, "%s.%s(%s)".formatted(qualifiedName, name, parameters),
+						method.resolveBinding(), method.getName(), types);
+				}
+				case AnnotationTypeMemberDeclaration annotationMember ->
+					reportMember(qualifiedName, qualifiedName + "." + annotationMember.getName().getIdentifier() + "()",
+						annotationMember.resolveBinding(), annotationMember.getName(), List.of(annotationMember.getType()));
+				default -> {
+				}
+			}
+		}
+	}
+
+	private static boolean isApiMethod(MethodDeclaration method, boolean isInterface) {
+		int modifiers = method.getModifiers();
+		if (isInterface) {
+			return !org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers);
+		}
+		// Mirror the members we extract: non-private methods, public or protected constructors
+		return method.isConstructor()
+			? isPublicOrProtected(modifiers)
+			: !org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers);
+	}
+
+	private void reportMember(String declaringType, String declaration, IBinding binding, ASTNode node,
+	                          List<Type> types) {
+		if (!reportLostTypes(declaringType, declaration, types) && binding == null) {
+			reportGap(declaringType, declaration, null, node, ExtractionGap.Reason.NO_BINDING);
+		}
+	}
+
+	private boolean reportLostTypes(String declaringType, String declaration, List<Type> types) {
+		List<Type> lost = new ArrayList<>();
+		types.forEach(type -> collectLostTypes(type, lost));
+		// One gap per lost type name
+		Map<String, Type> byName = new LinkedHashMap<>();
+		lost.forEach(type -> byName.putIfAbsent(lostTypeName(type), type));
+		byName.forEach((name, type) ->
+			reportGap(declaringType, declaration, name, type, ExtractionGap.Reason.UNRESOLVED_TYPE));
+		return !byName.isEmpty();
+	}
+
+	/*
+	 * A constant whose initializer references a missing type (= a.b.Missing.VALUE) has no constant value.
+	 * Initializers that cannot be constant expressions (= compute()) are not reported, even with errors.
+	 */
+	private void reportUnknownConstant(String declaringType, String declaration, VariableDeclarationFragment fragment) {
+		IVariableBinding binding = fragment.resolveBinding();
+		Expression initializer = fragment.getInitializer();
+		if (binding == null || initializer == null || binding.getConstantValue() != null ||
+			!org.eclipse.jdt.core.dom.Modifier.isFinal(binding.getModifiers()) ||
+			!(binding.getType().isPrimitive() || "java.lang.String".equals(binding.getType().getQualifiedName())) ||
+			!mayBeConstantExpression(initializer)) {
+			return;
+		}
+
+		int start = initializer.getStartPosition();
+		int end = start + initializer.getLength();
+		boolean hasError = Arrays.stream(cu.getProblems())
+			.anyMatch(problem -> problem.isError() && problem.getSourceStart() >= start && problem.getSourceEnd() < end);
+		if (hasError) {
+			reportGap(declaringType, declaration, null, fragment, ExtractionGap.Reason.UNKNOWN_CONSTANT);
+		}
+	}
+
+	// §15.29: literals, simple and qualified names, casts, and operators other than ++/--
+	private static boolean mayBeConstantExpression(Expression expression) {
+		boolean[] mayBeConstant = {true};
+		expression.accept(new ASTVisitor() {
+			@Override
+			public boolean preVisit2(ASTNode node) {
+				boolean allowed = switch (node) {
+					case NumberLiteral _, CharacterLiteral _, StringLiteral _, TextBlock _, BooleanLiteral _,
+					     SimpleName _, QualifiedName _, ParenthesizedExpression _, InfixExpression _,
+					     ConditionalExpression _, CastExpression _, PrimitiveType _, SimpleType _ -> true;
+					case PrefixExpression prefix -> prefix.getOperator() != PrefixExpression.Operator.INCREMENT &&
+						prefix.getOperator() != PrefixExpression.Operator.DECREMENT;
+					default -> false;
+				};
+				mayBeConstant[0] &= allowed;
+				return allowed;
+			}
+		});
+		return mayBeConstant[0];
+	}
+
+	private void reportUnboundType(AbstractTypeDeclaration type) {
+		if (org.eclipse.jdt.core.dom.Modifier.isPrivate(type.getModifiers())) {
+			return;
+		}
+
+		List<String> names = new ArrayList<>();
+		for (ASTNode node = type; !(node instanceof CompilationUnit); node = node.getParent()) {
+			if (!(node instanceof AbstractTypeDeclaration decl)) {
+				// Local or anonymous
+				return;
+			}
+			names.addFirst(decl.getName().getIdentifier());
+		}
+		String pkg = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() + "." : "";
+		String qualifiedName = pkg + String.join("$", names);
+		reportGap(qualifiedName, qualifiedName, null, type.getName(), ExtractionGap.Reason.NO_BINDING);
+	}
+
+	private void reportGap(String declaringType, String declaration, String reference, ASTNode node,
+	                       ExtractionGap.Reason reason) {
+		SourceLocation location = factory.location(filePath, cu.getLineNumber(node.getStartPosition()));
+		ExtractionGap gap = new ExtractionGap(declaringType, declaration, reference, location, reason);
+		LOGGER.debug("Cannot extract {}", gap);
+		sink.accept(gap);
+	}
+
+	private static boolean hasLostRecordComponent(AbstractTypeDeclaration type) {
+		return type instanceof RecordDeclaration r &&
+			stream(r.recordComponents(), SingleVariableDeclaration.class).anyMatch(c -> isLost(c.getType()));
+	}
+
+	private static List<Type> typeParameterBounds(List<?> typeParameters) {
+		return stream(typeParameters, TypeParameter.class)
+			.flatMap(tp -> stream(tp.typeBounds(), Type.class))
+			.toList();
+	}
+
+	private static boolean isLost(Type type) {
+		List<Type> lost = new ArrayList<>();
+		collectLostTypes(type, lost);
+		return !lost.isEmpty();
+	}
+
+	/**
+	 * Collects the nodes, within {@code type}, of the types ecj lost. ecj recovers a missing type spelled with a
+	 * simple name ({@code Missing}, {@code Missing<String>}) or with a dotted name and no type arguments
+	 * ({@code a.b.Missing}), but not one spelled with a dotted name and type arguments ({@code a.b.Missing<String>},
+	 * {@code Outer<String>.Inner}): such a node has a missing or recovered binding that is not parameterized. The DOM
+	 * bindings of recovered simple names may not be parameterized either, so we only trust them for dotted names. A
+	 * resolved or recovered type is also lost when one of its type arguments is ({@code List<a.b.Missing<String>>}),
+	 * but only the missing types are collected.
+	 */
+	private static void collectLostTypes(Type type, List<Type> lost) {
+		switch (type) {
+			case ArrayType array -> collectLostTypes(array.getElementType(), lost);
+			case ParameterizedType parameterized -> {
+				int before = lost.size();
+				Type base = parameterized.getType();
+				collectLostTypes(base, lost);
+				stream(parameterized.typeArguments(), Type.class).forEach(arg -> collectLostTypes(arg, lost));
+				ITypeBinding binding = parameterized.resolveBinding();
+				boolean lostBinding = binding == null || !binding.isParameterizedType();
+				boolean lostBase = isRecovered(base) && (lost.size() > before || isDotted(base) && lostBinding);
+				if (lostBase && !lost.contains(base)) {
+					lost.add(base);
+				}
+			}
+			case QualifiedType qualified -> {
+				// Outer<String>.Inner: ecj never recovers a missing type spelled this way
+				if (isRecovered(qualified)) {
+					lost.add(qualified);
+					if (qualified.getQualifier() instanceof ParameterizedType qualifier) {
+						stream(qualifier.typeArguments(), Type.class).forEach(arg -> collectLostTypes(arg, lost));
+					}
+				} else {
+					collectLostTypes(qualified.getQualifier(), lost);
+				}
+			}
+			case WildcardType wildcard when wildcard.getBound() != null -> collectLostTypes(wildcard.getBound(), lost);
+			case SimpleType _, NameQualifiedType _ -> {
+				if (type.resolveBinding() == null) {
+					lost.add(type);
+				}
+			}
+			default -> {
+			}
+		}
+	}
+
+	private static boolean isDotted(Type type) {
+		return type instanceof QualifiedType || type instanceof NameQualifiedType ||
+			type instanceof SimpleType simple && simple.getName().isQualifiedName();
+	}
+
+	private static boolean isRecovered(Type type) {
+		ITypeBinding binding = type.resolveBinding();
+		return binding == null || binding.isRecovered();
+	}
+
+	/**
+	 * Infers the qualified name of a lost type from its written name: a simple name follows the import rules of
+	 * {@link #resolveUnresolvedSimpleName(String)}, a dotted name whose first segment is imported is a nested type
+	 * ({@code Outer.Inner} with {@code import x.Outer;} yields {@code x.Outer$Inner}), and other dotted names are
+	 * kept as written since they may name a package or a nested type.
+	 */
+	private String lostTypeName(Type type) {
+		String written = writtenName(type);
+		int firstDot = written.indexOf('.');
+		if (firstDot < 0) {
+			return resolveUnresolvedSimpleName(written);
+		}
+		String imported = singleTypeImports.get(written.substring(0, firstDot));
+		return imported != null
+			? imported + "$" + written.substring(firstDot + 1).replace('.', '$')
+			: written;
+	}
+
+	/**
+	 * The written name of a type, without type arguments or annotations.
+	 */
+	private static String writtenName(Type type) {
+		return switch (type) {
+			case ParameterizedType parameterized -> writtenName(parameterized.getType());
+			case QualifiedType qualified -> writtenName(qualified.getQualifier()) + "." + qualified.getName().getIdentifier();
+			case NameQualifiedType qualified ->
+				qualified.getQualifier().getFullyQualifiedName() + "." + qualified.getName().getIdentifier();
+			case SimpleType simple -> simple.getName().getFullyQualifiedName();
+			case ArrayType array -> writtenName(array.getElementType());
+			default -> type.toString();
+		};
 	}
 
 	private static boolean hasAbstractEnumMethods(ITypeBinding binding) {
@@ -289,9 +586,11 @@ final class JdtApiVisitor extends ASTVisitor {
 			.collect(toSet());
 	}
 
-	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding) {
+	private Set<ConstructorDecl> convertConstructors(ITypeBinding binding, boolean lostRecordComponent) {
 		return Arrays.stream(binding.getDeclaredMethods())
 			.filter(method -> method.isConstructor() && isPublicOrProtected(method))
+			// When ecj loses a record component, it synthesizes a canonical constructor without it, which does not exist
+			.filter(method -> !(lostRecordComponent && method.isCanonicalConstructor()))
 			.map(cons -> convertConstructor(cons, binding))
 			.collect(toSet());
 	}
@@ -610,6 +909,11 @@ final class JdtApiVisitor extends ASTVisitor {
 			.map(IVariableBinding::getName)
 			.map(ElementType::valueOf)
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(ElementType.class)));
+	}
+
+	private static boolean isPublicOrProtected(int modifiers) {
+		return org.eclipse.jdt.core.dom.Modifier.isPublic(modifiers) ||
+			org.eclipse.jdt.core.dom.Modifier.isProtected(modifiers);
 	}
 
 	private static boolean isPublicOrProtected(IVariableBinding field) {

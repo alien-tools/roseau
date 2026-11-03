@@ -2,6 +2,8 @@ package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
+import io.github.alien.roseau.api.model.ExtractionGap;
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -16,6 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.Set;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -102,6 +105,20 @@ class JdtTypesExtractorTest {
 
 		// JDT can't parse public <U> B<U> n(unknown.C<U> p1, B<T> p2)
 		assertThat(cls.getDeclaredMethods()).hasSize(1);
+		assertThat(types.getExtractionGaps()).containsExactly(new ExtractionGap("pkg.A", "pkg.A.n(unknown.C<U>, B<T>)",
+			"unknown.C", new SourceLocation(Path.of("A.java"), 8), ExtractionGap.Reason.UNRESOLVED_TYPE));
+	}
+
+	@Test
+	void files_jdt_does_not_parse_are_gaps() throws IOException {
+		Files.writeString(wd.resolve("A.java"), "public class A {}");
+		var library = Library.of(wd);
+
+		var result = extractor.parseTypes(library, Set.of(wd.resolve("A.java"), wd.resolve("Deleted.java")));
+
+		assertThat(result.types()).extracting(TypeDecl::getQualifiedName).containsExactly("A");
+		assertThat(result.gaps()).containsExactly(new ExtractionGap(null, "Deleted.java", null,
+			new SourceLocation(Path.of("Deleted.java"), -1), ExtractionGap.Reason.UNPARSED_FILE));
 	}
 
 	@Test

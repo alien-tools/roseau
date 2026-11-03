@@ -14,6 +14,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -97,5 +98,24 @@ class LibraryTypesTest {
 		LibraryTypes res = LibraryTypes.fromJson(json);
 
 		assertThat(res).isEqualTo(orig);
+	}
+
+	@Test
+	void json_round_trip_with_extraction_gaps(@TempDir Path tempDir) throws IOException {
+		Path sources = Files.createDirectories(tempDir.resolve("src"));
+		Files.writeString(sources.resolve("A.java"), """
+			public class A {
+				public unknown.Unknown<String> f;
+			}""");
+		LibraryTypes orig = new JdtTypesExtractor(new DefaultApiFactory(new CachingTypeReferenceFactory()))
+			.extractTypes(Library.of(sources));
+
+		Path json = tempDir.resolve("roundtrip.json");
+		orig.writeJson(json);
+		LibraryTypes res = LibraryTypes.fromJson(json);
+
+		assertThat(orig.getExtractionGaps()).hasSize(1);
+		assertThat(res).isEqualTo(orig);
+		assertThat(res.getExtractionGaps()).isEqualTo(orig.getExtractionGaps());
 	}
 }

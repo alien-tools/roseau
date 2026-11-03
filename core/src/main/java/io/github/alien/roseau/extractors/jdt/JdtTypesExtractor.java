@@ -3,8 +3,10 @@ package io.github.alien.roseau.extractors.jdt;
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.ModuleDecl;
+import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.extractors.ExtractorSink;
@@ -36,7 +38,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(JdtTypesExtractor.class);
 
-	record ParsingResult(Set<TypeDecl> types, Set<ModuleDecl> modules) {
+	record ParsingResult(Set<TypeDecl> types, Set<ModuleDecl> modules, Set<ExtractionGap> gaps) {
 	}
 
 	public JdtTypesExtractor(ApiFactory factory) {
@@ -56,8 +58,8 @@ public final class JdtTypesExtractor implements TypesExtractor {
 			Set<ModuleDecl> modules = result.modules();
 
 			return switch (modules.size()) {
-				case 0 -> new LibraryTypes(library, types);
-				case 1 -> new LibraryTypes(library, modules.iterator().next(), result.types());
+				case 0 -> new LibraryTypes(library, ModuleDecl.UNNAMED_MODULE, types, result.gaps());
+				case 1 -> new LibraryTypes(library, modules.iterator().next(), types, result.gaps());
 				default ->
 					throw new RoseauException("%s contains multiple module declarations: %s".formatted(library, modules));
 			};
@@ -94,10 +96,12 @@ public final class JdtTypesExtractor implements TypesExtractor {
 
 		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
 		Set<String> reportedErrors = ConcurrentHashMap.newKeySet();
+		Set<String> acceptedFiles = ConcurrentHashMap.newKeySet();
 		// Receive parsed ASTs and forward them to the visitor
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
+				acceptedFiles.add(sourceFilePath);
 				Path filePath = library.getLocation().relativize(Path.of(sourceFilePath));
 				IProblem[] problems = ast.getProblems();
 				if (problems != null) {
@@ -116,7 +120,16 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		// Start parsing and forwarding ASTs
 		try {
 			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
-			return new ParsingResult(sink.getTypes(), sink.getModules());
+			// JDT may stop delivering compilation units without reporting any error
+			Arrays.stream(sourcesArray)
+				.filter(file -> !acceptedFiles.contains(file))
+				.forEach(file -> {
+					Path filePath = library.getLocation().relativize(Path.of(file));
+					LOGGER.warn("JDT did not parse {}", filePath);
+					sink.accept(new ExtractionGap(null, filePath.toString(), null,
+						new SourceLocation(filePath, -1), ExtractionGap.Reason.UNPARSED_FILE));
+				});
+			return new ParsingResult(sink.getTypes(), sink.getModules(), sink.getGaps());
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
 			throw new RoseauException("JDT failed to parse code from " + library.getLocation(), e);

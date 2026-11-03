@@ -9,6 +9,7 @@ import com.fasterxml.jackson.datatype.jdk8.Jdk8Module;
 import com.fasterxml.jackson.module.paranamer.ParanamerModule;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableSortedMap;
+import com.google.common.collect.ImmutableSortedSet;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.resolution.TypeProvider;
@@ -48,6 +49,11 @@ public final class LibraryTypes implements TypeProvider {
 	 */
 	private final Map<String, TypeDecl> allTypes;
 
+	/**
+	 * The declarations that could not be extracted faithfully, in a deterministic order.
+	 */
+	private final Set<ExtractionGap> extractionGaps;
+
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final Logger LOGGER = LoggerFactory.getLogger(LibraryTypes.class);
 
@@ -62,14 +68,16 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}.
+	 * Initializes from the given list of {@link TypeDecl}, {@link ModuleDecl}, and {@link ExtractionGap}.
 	 *
 	 * @param library The analyzed library
 	 * @param module  The module corresponding to the library
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 * @param gaps    The declarations that could not be extracted faithfully; {@code null} means none
 	 */
 	@JsonCreator
-	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") Set<TypeDecl> types) {
+	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") Set<TypeDecl> types,
+	                    @JsonProperty("extractionGaps") Set<ExtractionGap> gaps) {
 		Preconditions.checkNotNull(library);
 		Preconditions.checkNotNull(module);
 		Preconditions.checkNotNull(types);
@@ -84,6 +92,18 @@ public final class LibraryTypes implements TypeProvider {
 					throw new RoseauException("Duplicated type in %s: %s".formatted(library, type.getQualifiedName()));
 				}
 			));
+		extractionGaps = gaps == null ? ImmutableSortedSet.of() : ImmutableSortedSet.copyOf(gaps);
+	}
+
+	/**
+	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}.
+	 *
+	 * @param library The analyzed library
+	 * @param module  The module corresponding to the library
+	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 */
+	public LibraryTypes(Library library, ModuleDecl module, Set<TypeDecl> types) {
+		this(library, module, types, Set.of());
 	}
 
 	/**
@@ -124,6 +144,17 @@ public final class LibraryTypes implements TypeProvider {
 	@JsonProperty("allTypes")
 	public Collection<TypeDecl> getAllTypes() {
 		return allTypes.values();
+	}
+
+	/**
+	 * Returns the declarations, exported or not, that could not be extracted faithfully from the sources. The model
+	 * lacks these declarations or holds a distorted version of them. Always empty for bytecode extraction.
+	 *
+	 * @return the extraction gaps, in a deterministic order
+	 */
+	@JsonProperty("extractionGaps")
+	public Set<ExtractionGap> getExtractionGaps() {
+		return extractionGaps;
 	}
 
 	/**
@@ -185,11 +216,12 @@ public final class LibraryTypes implements TypeProvider {
 		return obj instanceof LibraryTypes other
 			&& Objects.equals(library, other.library)
 			&& Objects.equals(module, other.module)
-			&& Objects.equals(allTypes, other.allTypes);
+			&& Objects.equals(allTypes, other.allTypes)
+			&& Objects.equals(extractionGaps, other.extractionGaps);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(library, module, allTypes);
+		return Objects.hash(library, module, allTypes, extractionGaps);
 	}
 }

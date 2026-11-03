@@ -5,6 +5,7 @@ import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.api.model.API;
+import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
@@ -269,7 +270,10 @@ public final class GitWalker {
 		Set<TypeDecl> allTypes = perRoot.stream()
 			.flatMap(types -> types.getAllTypes().stream())
 			.collect(Collectors.toCollection(LinkedHashSet::new));
-		return new LibraryTypes(first.getLibrary(), first.getModule(), allTypes);
+		Set<ExtractionGap> gaps = perRoot.stream()
+			.flatMap(types -> types.getExtractionGaps().stream())
+			.collect(Collectors.toSet());
+		return new LibraryTypes(first.getLibrary(), first.getModule(), allTypes, gaps);
 	}
 
 	private ApiResult buildApiIncremental(CommitInfo info, CommitDiff diff,
