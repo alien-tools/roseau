@@ -6,7 +6,6 @@ import io.github.alien.roseau.api.model.Annotation;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.ConstructorDecl;
-import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.FormalTypeParameter;
 import io.github.alien.roseau.api.model.InterfaceDecl;
@@ -26,15 +25,10 @@ import org.eclipse.jdt.core.dom.AbstractTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeDeclaration;
 import org.eclipse.jdt.core.dom.AnnotationTypeMemberDeclaration;
 import org.eclipse.jdt.core.dom.ArrayType;
-import org.eclipse.jdt.core.dom.BooleanLiteral;
-import org.eclipse.jdt.core.dom.CastExpression;
-import org.eclipse.jdt.core.dom.CharacterLiteral;
 import org.eclipse.jdt.core.dom.CompilationUnit;
-import org.eclipse.jdt.core.dom.ConditionalExpression;
 import org.eclipse.jdt.core.dom.EnumConstantDeclaration;
 import org.eclipse.jdt.core.dom.EnumDeclaration;
 import org.eclipse.jdt.core.dom.ExportsDirective;
-import org.eclipse.jdt.core.dom.Expression;
 import org.eclipse.jdt.core.dom.FieldDeclaration;
 import org.eclipse.jdt.core.dom.IAnnotationBinding;
 import org.eclipse.jdt.core.dom.IBinding;
@@ -43,23 +37,14 @@ import org.eclipse.jdt.core.dom.IMethodBinding;
 import org.eclipse.jdt.core.dom.ITypeBinding;
 import org.eclipse.jdt.core.dom.IVariableBinding;
 import org.eclipse.jdt.core.dom.ImportDeclaration;
-import org.eclipse.jdt.core.dom.InfixExpression;
 import org.eclipse.jdt.core.dom.MethodDeclaration;
 import org.eclipse.jdt.core.dom.ModuleDeclaration;
 import org.eclipse.jdt.core.dom.NameQualifiedType;
-import org.eclipse.jdt.core.dom.NumberLiteral;
 import org.eclipse.jdt.core.dom.ParameterizedType;
-import org.eclipse.jdt.core.dom.ParenthesizedExpression;
-import org.eclipse.jdt.core.dom.PrefixExpression;
-import org.eclipse.jdt.core.dom.PrimitiveType;
-import org.eclipse.jdt.core.dom.QualifiedName;
 import org.eclipse.jdt.core.dom.QualifiedType;
 import org.eclipse.jdt.core.dom.RecordDeclaration;
-import org.eclipse.jdt.core.dom.SimpleName;
 import org.eclipse.jdt.core.dom.SimpleType;
 import org.eclipse.jdt.core.dom.SingleVariableDeclaration;
-import org.eclipse.jdt.core.dom.StringLiteral;
-import org.eclipse.jdt.core.dom.TextBlock;
 import org.eclipse.jdt.core.dom.Type;
 import org.eclipse.jdt.core.dom.TypeDeclaration;
 import org.eclipse.jdt.core.dom.TypeParameter;
@@ -79,12 +64,12 @@ import java.util.Collection;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
+import java.util.TreeSet;
 import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 import java.util.stream.Stream;
@@ -197,7 +182,6 @@ final class JdtApiVisitor extends ASTVisitor {
 		ITypeBinding binding = type.resolveBinding();
 		if (binding == null) {
 			LOGGER.warn("No binding for {}; skipping", type.getName().getFullyQualifiedName());
-			reportUnboundType(type);
 			return;
 		}
 
@@ -207,7 +191,10 @@ final class JdtApiVisitor extends ASTVisitor {
 		}
 
 		String qualifiedName = makeFqn(binding);
-		reportGaps(type, qualifiedName);
+		Set<String> unresolvedTypes = collectUnresolvedTypes(type, qualifiedName);
+		if (!unresolvedTypes.isEmpty()) {
+			sink.acceptUnresolvedTypes(qualifiedName, unresolvedTypes);
+		}
 		AccessModifier visibility = convertVisibility(binding.getModifiers());
 		Set<Modifier> modifiers = convertModifiers(binding.getModifiers());
 		Set<Annotation> annotations = convertAnnotations(binding.getAnnotations());
@@ -264,12 +251,14 @@ final class JdtApiVisitor extends ASTVisitor {
 	}
 
 	/*
-	 * ecj does not recover missing types spelled as qualified names with type arguments (a.b.Missing<String>,
-	 * Outer.Inner<String>, List<a.b.Missing<String>>): the declarations that use them lose their binding and vanish
-	 * from ITypeBinding, and supertypes and bounds silently become java.lang.Object. Such declarations cannot be
-	 * extracted faithfully, so we record them as extraction gaps instead.
+	 * ecj does not recover missing types spelled with a dotted name and type arguments (a.b.Missing<String>,
+	 * Outer<String>.Inner, List<a.b.Missing<String>>): the declarations that use them lose their binding and vanish,
+	 * and supertypes, bounds, and thrown types are silently replaced or dropped. We cannot rebuild these declarations,
+	 * so we record the missing types to expose the model's incompleteness.
 	 */
-	private void reportGaps(AbstractTypeDeclaration type, String qualifiedName) {
+	private Set<String> collectUnresolvedTypes(AbstractTypeDeclaration type, String qualifiedName) {
+		Set<String> unresolved = new TreeSet<>();
+
 		List<Type> header = new ArrayList<>();
 		switch (type) {
 			case TypeDeclaration t -> {
@@ -284,27 +273,24 @@ final class JdtApiVisitor extends ASTVisitor {
 				header.addAll(stream(r.superInterfaceTypes(), Type.class).toList());
 				header.addAll(typeParameterBounds(r.typeParameters()));
 				stream(r.recordComponents(), SingleVariableDeclaration.class).forEach(component ->
-					reportLostTypes(qualifiedName, qualifiedName + "." + component.getName().getIdentifier(),
-						List.of(component.getType())));
+					collectLostTypeNames(qualifiedName + "." + component.getName(), List.of(component.getType()),
+						unresolved));
 			}
 			default -> {
 			}
 		}
-		reportLostTypes(qualifiedName, qualifiedName, header);
+		collectLostTypeNames(qualifiedName, header, unresolved);
 
-		// Members of interfaces are public unless declared private; annotation members are always public
+		// Only members we extract: members of interfaces are public unless private, annotation members always are
 		boolean isInterface = type instanceof AnnotationTypeDeclaration ||
 			type instanceof TypeDeclaration t && t.isInterface();
 		for (Object member : type.bodyDeclarations()) {
 			switch (member) {
 				case FieldDeclaration field when isInterface || isPublicOrProtected(field.getModifiers()) ->
-					stream(field.fragments(), VariableDeclarationFragment.class).forEach(fragment -> {
-						String declaration = qualifiedName + "." + fragment.getName().getIdentifier();
-						reportMember(qualifiedName, declaration, fragment.resolveBinding(), fragment,
-							List.of(field.getType()));
-						reportUnknownConstant(qualifiedName, declaration, fragment);
-					});
-				case MethodDeclaration method when isApiMethod(method, isInterface) -> {
+					stream(field.fragments(), VariableDeclarationFragment.class).forEach(fragment ->
+						collectLostTypeNames(qualifiedName + "." + fragment.getName(), List.of(field.getType()),
+							unresolved));
+				case MethodDeclaration method when isExtractedMethod(method, isInterface) -> {
 					List<Type> types = new ArrayList<>();
 					if (method.getReturnType2() != null) {
 						types.add(method.getReturnType2());
@@ -312,119 +298,35 @@ final class JdtApiVisitor extends ASTVisitor {
 					stream(method.parameters(), SingleVariableDeclaration.class).forEach(p -> types.add(p.getType()));
 					types.addAll(typeParameterBounds(method.typeParameters()));
 					types.addAll(stream(method.thrownExceptionTypes(), Type.class).toList());
-					String parameters = stream(method.parameters(), SingleVariableDeclaration.class)
-						.map(p -> p.getType() + (p.isVarargs() ? "..." : "") + "[]".repeat(p.getExtraDimensions()))
-						.collect(Collectors.joining(", "));
-					String name = method.isConstructor() ? "<init>" : method.getName().getIdentifier();
-					reportMember(qualifiedName, "%s.%s(%s)".formatted(qualifiedName, name, parameters),
-						method.resolveBinding(), method.getName(), types);
+					collectLostTypeNames(qualifiedName + "." + method.getName(), types, unresolved);
 				}
 				case AnnotationTypeMemberDeclaration annotationMember ->
-					reportMember(qualifiedName, qualifiedName + "." + annotationMember.getName().getIdentifier() + "()",
-						annotationMember.resolveBinding(), annotationMember.getName(), List.of(annotationMember.getType()));
+					collectLostTypeNames(qualifiedName + "." + annotationMember.getName(),
+						List.of(annotationMember.getType()), unresolved);
 				default -> {
 				}
 			}
 		}
+
+		return unresolved;
 	}
 
-	private static boolean isApiMethod(MethodDeclaration method, boolean isInterface) {
-		int modifiers = method.getModifiers();
-		if (isInterface) {
-			return !org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers);
-		}
-		// Mirror the members we extract: non-private methods, public or protected constructors
-		return method.isConstructor()
-			? isPublicOrProtected(modifiers)
-			: !org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers);
-	}
-
-	private void reportMember(String declaringType, String declaration, IBinding binding, ASTNode node,
-	                          List<Type> types) {
-		if (!reportLostTypes(declaringType, declaration, types) && binding == null) {
-			reportGap(declaringType, declaration, null, node, ExtractionGap.Reason.NO_BINDING);
-		}
-	}
-
-	private boolean reportLostTypes(String declaringType, String declaration, List<Type> types) {
+	private void collectLostTypeNames(String declaration, List<Type> types, Set<String> unresolved) {
 		List<Type> lost = new ArrayList<>();
 		types.forEach(type -> collectLostTypes(type, lost));
-		// One gap per lost type name
-		Map<String, Type> byName = new LinkedHashMap<>();
-		lost.forEach(type -> byName.putIfAbsent(lostTypeName(type), type));
-		byName.forEach((name, type) ->
-			reportGap(declaringType, declaration, name, type, ExtractionGap.Reason.UNRESOLVED_TYPE));
-		return !byName.isEmpty();
-	}
-
-	/*
-	 * A constant whose initializer references a missing type (= a.b.Missing.VALUE) has no constant value.
-	 * Initializers that cannot be constant expressions (= compute()) are not reported, even with errors.
-	 */
-	private void reportUnknownConstant(String declaringType, String declaration, VariableDeclarationFragment fragment) {
-		IVariableBinding binding = fragment.resolveBinding();
-		Expression initializer = fragment.getInitializer();
-		if (binding == null || initializer == null || binding.getConstantValue() != null ||
-			!org.eclipse.jdt.core.dom.Modifier.isFinal(binding.getModifiers()) ||
-			!(binding.getType().isPrimitive() || "java.lang.String".equals(binding.getType().getQualifiedName())) ||
-			!mayBeConstantExpression(initializer)) {
-			return;
-		}
-
-		int start = initializer.getStartPosition();
-		int end = start + initializer.getLength();
-		boolean hasError = Arrays.stream(cu.getProblems())
-			.anyMatch(problem -> problem.isError() && problem.getSourceStart() >= start && problem.getSourceEnd() < end);
-		if (hasError) {
-			reportGap(declaringType, declaration, null, fragment, ExtractionGap.Reason.UNKNOWN_CONSTANT);
-		}
-	}
-
-	// §15.29: literals, simple and qualified names, casts, and operators other than ++/--
-	private static boolean mayBeConstantExpression(Expression expression) {
-		boolean[] mayBeConstant = {true};
-		expression.accept(new ASTVisitor() {
-			@Override
-			public boolean preVisit2(ASTNode node) {
-				boolean allowed = switch (node) {
-					case NumberLiteral _, CharacterLiteral _, StringLiteral _, TextBlock _, BooleanLiteral _,
-					     SimpleName _, QualifiedName _, ParenthesizedExpression _, InfixExpression _,
-					     ConditionalExpression _, CastExpression _, PrimitiveType _, SimpleType _ -> true;
-					case PrefixExpression prefix -> prefix.getOperator() != PrefixExpression.Operator.INCREMENT &&
-						prefix.getOperator() != PrefixExpression.Operator.DECREMENT;
-					default -> false;
-				};
-				mayBeConstant[0] &= allowed;
-				return allowed;
-			}
+		lost.forEach(type -> {
+			String name = lostTypeName(type);
+			LOGGER.warn("Cannot extract {} [{}:{}]: type {} cannot be resolved",
+				declaration, filePath, cu.getLineNumber(type.getStartPosition()), name);
+			unresolved.add(name);
 		});
-		return mayBeConstant[0];
 	}
 
-	private void reportUnboundType(AbstractTypeDeclaration type) {
-		if (org.eclipse.jdt.core.dom.Modifier.isPrivate(type.getModifiers())) {
-			return;
-		}
-
-		List<String> names = new ArrayList<>();
-		for (ASTNode node = type; !(node instanceof CompilationUnit); node = node.getParent()) {
-			if (!(node instanceof AbstractTypeDeclaration decl)) {
-				// Local or anonymous
-				return;
-			}
-			names.addFirst(decl.getName().getIdentifier());
-		}
-		String pkg = cu.getPackage() != null ? cu.getPackage().getName().getFullyQualifiedName() + "." : "";
-		String qualifiedName = pkg + String.join("$", names);
-		reportGap(qualifiedName, qualifiedName, null, type.getName(), ExtractionGap.Reason.NO_BINDING);
-	}
-
-	private void reportGap(String declaringType, String declaration, String reference, ASTNode node,
-	                       ExtractionGap.Reason reason) {
-		SourceLocation location = factory.location(filePath, cu.getLineNumber(node.getStartPosition()));
-		ExtractionGap gap = new ExtractionGap(declaringType, declaration, reference, location, reason);
-		LOGGER.debug("Cannot extract {}", gap);
-		sink.accept(gap);
+	private static boolean isExtractedMethod(MethodDeclaration method, boolean isInterface) {
+		int modifiers = method.getModifiers();
+		return (isInterface || !method.isConstructor())
+			? !org.eclipse.jdt.core.dom.Modifier.isPrivate(modifiers)
+			: isPublicOrProtected(modifiers);
 	}
 
 	private static boolean hasLostRecordComponent(AbstractTypeDeclaration type) {

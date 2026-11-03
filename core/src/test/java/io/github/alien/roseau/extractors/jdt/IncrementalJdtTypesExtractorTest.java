@@ -2,7 +2,6 @@ package io.github.alien.roseau.extractors.jdt;
 
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
-import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
 import io.github.alien.roseau.api.model.reference.CachingTypeReferenceFactory;
@@ -284,7 +283,7 @@ class IncrementalJdtTypesExtractorTest {
 	}
 
 	@Test
-	void extraction_gaps_follow_their_file(@TempDir Path wd) throws Exception {
+	void unresolved_types_follow_their_declaring_type(@TempDir Path wd) throws Exception {
 		var a = wd.resolve("A.java");
 		var b = wd.resolve("B.java");
 		Files.writeString(a, "public class A { public unknown.Unknown<String> f; }");
@@ -296,8 +295,8 @@ class IncrementalJdtTypesExtractorTest {
 		var changedFiles = new ChangedFiles(Set.of(wd.relativize(a)), Set.of(), Set.of(wd.relativize(c)));
 		var types2 = incrementalExtractor.incrementalUpdate(types1, Library.of(wd), changedFiles);
 
-		assertThat(types1.getExtractionGaps()).extracting(ExtractionGap::declaration).containsExactly("A.f", "B.f");
-		assertThat(types2.getExtractionGaps()).extracting(ExtractionGap::declaration).containsExactly("B.f", "C.f");
+		assertThat(types1.getUnresolvedTypes()).containsOnlyKeys("A", "B");
+		assertThat(types2.getUnresolvedTypes()).containsOnlyKeys("B", "C");
 		assertThat(types2).isEqualTo(extractor.extractTypes(Library.of(wd)));
 	}
 }

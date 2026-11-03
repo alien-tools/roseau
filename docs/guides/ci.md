@@ -10,7 +10,7 @@ roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar \
   --report JSON=reports/breaking-changes.json
 ```
 
-`--fail-on-bc` makes the process fail when breaking changes are found. `--fail-on-unresolved` makes it fail when the analysis is unreliable due to missing types in the classpath, including source declarations that could not be extracted because of them; Roseau logs a warning listing them either way. `--plain` removes ANSI control codes from the log output. The `--report` option generates a machine-readable JSON report.
+`--fail-on-bc` makes the process fail when breaking changes are found. `--fail-on-unresolved` makes it fail when the analysis is unreliable due to missing types in the classpath. `--plain` removes ANSI control codes from the log output. The `--report` option generates a machine-readable JSON report.
 
 ## Exit Codes
 
@@ -18,4 +18,4 @@ roseau --diff --v1 path/to/v1.jar --v2 path/to/v2.jar \
 | --- | --- |
 | `0` | the check completed and no breaking changes were found |
 | `1` | `--fail-on-bc` was set and breaking changes were found |
-| `2` | the command failed before producing a result, or `--fail-on-unresolved` was set and some types could not be resolved or some declarations could not be extracted |
+| `2` | the command failed before producing a result, or `--fail-on-unresolved` was set and some types could not be resolved |

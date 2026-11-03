@@ -3,13 +3,13 @@ package io.github.alien.roseau.extractors.jdt;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.Library;
-import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.incremental.ChangedFiles;
 import io.github.alien.roseau.extractors.incremental.IncrementalTypesExtractor;
 
 import java.nio.file.Path;
+import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
@@ -55,7 +55,7 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 				return previousTypes;
 			}
 			return new LibraryTypes(newVersion, previousTypes.getModule(), Set.copyOf(previousTypes.getAllTypes()),
-				previousTypes.getExtractionGaps());
+				previousTypes.getUnresolvedTypes());
 		}
 
 		// Collect types that should be discarded from the previous API
@@ -71,17 +71,21 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 			.filter(t -> !discarded.contains(t.getLocation().file()))
 			.collect(Collectors.toSet());
 
-		Set<ExtractionGap> unchangedGaps = previousTypes.getExtractionGaps().stream()
-			.filter(gap -> !discarded.contains(gap.location().file()))
-			.collect(Collectors.toSet());
-
 		// Parse, collect, and merge the updated files
 		JdtTypesExtractor.ParsingResult parsed = extractor.parseTypes(newVersion, filesToParse);
 		Set<TypeDecl> newTypeDecls = Stream.concat(unchanged.stream(), parsed.types().stream())
 			.collect(Collectors.toSet());
-		Set<ExtractionGap> newGaps = Stream.concat(unchangedGaps.stream(), parsed.gaps().stream())
-			.collect(Collectors.toSet());
 
-		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls, newGaps);
+		// Unresolved types follow their declaring type
+		Set<String> unchangedNames = unchanged.stream()
+			.map(TypeDecl::getQualifiedName)
+			.collect(Collectors.toSet());
+		Map<String, Set<String>> unresolvedTypes = Stream.concat(
+				previousTypes.getUnresolvedTypes().entrySet().stream()
+					.filter(entry -> unchangedNames.contains(entry.getKey())),
+				parsed.unresolvedTypes().entrySet().stream())
+			.collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue, (kept, _) -> kept));
+
+		return new LibraryTypes(newVersion, previousTypes.getModule(), newTypeDecls, unresolvedTypes);
 	}
 }

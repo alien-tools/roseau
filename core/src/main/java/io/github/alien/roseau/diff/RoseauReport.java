@@ -5,7 +5,6 @@ import com.google.common.collect.ImmutableSortedSet;
 import com.google.common.collect.Sets;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.api.model.Symbol;
 import io.github.alien.roseau.api.model.TypeDecl;
@@ -28,7 +27,6 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
@@ -153,8 +151,8 @@ public final class RoseauReport {
 	}
 
 	/**
-	 * Returns the qualified names of the types that could not be resolved while analyzing either version, including
-	 * those of the {@link #getExtractionGaps() extraction gaps}.
+	 * Returns the qualified names of the types that could not be resolved while extracting or analyzing either
+	 * version.
 	 *
 	 * @return the qualified names of the unresolved types
 	 * @see #checkFullyResolved()
@@ -163,26 +161,17 @@ public final class RoseauReport {
 		return ImmutableSortedSet.<String>naturalOrder()
 			.addAll(missingFromClasspath(v1))
 			.addAll(missingFromClasspath(v2))
-			.addAll(getExtractionGaps().stream().map(ExtractionGap::reference).filter(Objects::nonNull).iterator())
+			.addAll(missingFromExtraction(v1))
+			.addAll(missingFromExtraction(v2))
 			.build();
 	}
 
-	/**
-	 * Returns the declarations of either version that could not be extracted faithfully and may affect the API,
-	 * except those of excluded types.
-	 *
-	 * @return the extraction gaps
-	 * @see API#getExtractionGaps()
-	 * @see #checkFullyResolved()
-	 */
-	public Set<ExtractionGap> getExtractionGaps() {
-		ImmutableSortedSet.Builder<ExtractionGap> gaps = ImmutableSortedSet.naturalOrder();
-		for (API version : List.of(v1, v2)) {
-			version.getExtractionGaps().stream()
-				.filter(gap -> !isExcluded(gap, version))
-				.forEach(gaps::add);
-		}
-		return gaps.build();
+	// The declarations using these types are not in the model, so they are not checked against its references
+	private Set<String> missingFromExtraction(API version) {
+		return version.getExtractionUnresolvedTypes().entrySet().stream()
+			.filter(entry -> version.getLibraryTypes().findType(entry.getKey()).map(type -> !isExcluded(type)).orElse(true))
+			.flatMap(entry -> entry.getValue().stream())
+			.collect(Collectors.toSet());
 	}
 
 	private static Set<String> missingFromClasspath(API version) {
@@ -197,41 +186,29 @@ public final class RoseauReport {
 			}
 		}.$(version.getLibraryTypes()).visit();
 
-		// Extraction gaps are not part of the model, and are added separately
 		return Sets.intersection(version.analyzer().resolver().getUnresolvedTypes(), referenced);
 	}
 
 	/**
-	 * Checks that both API models are complete, i.e. that every type reference the analysis needed was resolved and
-	 * that every declaration that may affect the API was extracted faithfully.
+	 * Checks that both API models are complete, i.e. that every type reference the extraction and the analysis needed
+	 * was resolved.
 	 *
-	 * @throws RoseauException if at least one type could not be resolved or one declaration could not be extracted
+	 * @throws RoseauException if at least one type could not be resolved
 	 */
 	public void checkFullyResolved() {
 		Set<String> unresolved = getUnresolvedTypes();
-		Set<ExtractionGap> gaps = getExtractionGaps();
-		if (unresolved.isEmpty() && gaps.isEmpty()) {
+		if (unresolved.isEmpty()) {
 			return;
 		}
 
-		List<String> problems = new ArrayList<>();
-		if (!unresolved.isEmpty()) {
-			problems.add("%d type(s) could not be resolved (%s)".formatted(unresolved.size(), summarize(unresolved)));
-		}
-		if (!gaps.isEmpty()) {
-			problems.add("%d declaration(s) could not be extracted: %s".formatted(gaps.size(), summarize(gaps)));
-		}
-		throw new RoseauException(String.join("; ", problems) + "; make sure the classpaths are accurate");
-	}
-
-	private static String summarize(Collection<?> elements) {
-		String listed = elements.stream()
+		String names = unresolved.stream()
 			.limit(25L)
-			.map(Object::toString)
 			.collect(Collectors.joining(", "));
-		return elements.size() > 25
-			? "%s, and %d more".formatted(listed, elements.size() - 25)
-			: listed;
+		String more = unresolved.size() > 25
+			? ", and %d more".formatted(unresolved.size() - 25)
+			: "";
+		throw new RoseauException(("%d type(s) could not be resolved (%s%s); make sure the classpaths are accurate")
+			.formatted(unresolved.size(), names, more));
 	}
 
 	public RoseauReport filterReport(RoseauOptions.Diff diffOptions) {
@@ -293,13 +270,6 @@ public final class RoseauReport {
 			case BreakingChangeDetails.FormalTypeParametersChanged(var oldFtp, var newFtp) ->
 				"%s %s".formatted(oldFtp.name(), newFtp.name());
 		};
-	}
-
-	private boolean isExcluded(ExtractionGap gap, API version) {
-		return excludedNamePatterns.stream().anyMatch(pattern -> pattern.matcher(gap.declaration()).matches()) ||
-			gap.declaringType() != null && version.getLibraryTypes().findType(gap.declaringType())
-				.map(this::isExcluded)
-				.orElse(false);
 	}
 
 	private boolean isExcluded(Symbol symbol) {

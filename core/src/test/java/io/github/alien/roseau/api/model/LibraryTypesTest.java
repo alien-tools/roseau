@@ -101,7 +101,7 @@ class LibraryTypesTest {
 	}
 
 	@Test
-	void json_round_trip_with_extraction_gaps(@TempDir Path tempDir) throws IOException {
+	void json_round_trip_with_unresolved_types(@TempDir Path tempDir) throws IOException {
 		Path sources = Files.createDirectories(tempDir.resolve("src"));
 		Files.writeString(sources.resolve("A.java"), """
 			public class A {
@@ -114,8 +114,8 @@ class LibraryTypesTest {
 		orig.writeJson(json);
 		LibraryTypes res = LibraryTypes.fromJson(json);
 
-		assertThat(orig.getExtractionGaps()).hasSize(1);
+		assertThat(orig.getUnresolvedTypes()).isNotEmpty();
 		assertThat(res).isEqualTo(orig);
-		assertThat(res.getExtractionGaps()).isEqualTo(orig.getExtractionGaps());
+		assertThat(res.getUnresolvedTypes()).isEqualTo(orig.getUnresolvedTypes());
 	}
 }

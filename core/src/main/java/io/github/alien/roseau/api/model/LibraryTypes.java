@@ -50,9 +50,10 @@ public final class LibraryTypes implements TypeProvider {
 	private final Map<String, TypeDecl> allTypes;
 
 	/**
-	 * The declarations that could not be extracted faithfully, in a deterministic order.
+	 * The types the extractor could not resolve in the declarations of each type, which therefore are missing from the
+	 * model or are distorted. Indexed by the declaring type's qualified name.
 	 */
-	private final Set<ExtractionGap> extractionGaps;
+	private final Map<String, Set<String>> unresolvedTypes;
 
 	private static final ObjectMapper MAPPER = new ObjectMapper();
 	private static final Logger LOGGER = LoggerFactory.getLogger(LibraryTypes.class);
@@ -68,16 +69,17 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Initializes from the given list of {@link TypeDecl}, {@link ModuleDecl}, and {@link ExtractionGap}.
+	 * Initializes from the given list of {@link TypeDecl} and {@link ModuleDecl}, and the types the extractor could not
+	 * resolve in their declarations.
 	 *
-	 * @param library The analyzed library
-	 * @param module  The module corresponding to the library
-	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
-	 * @param gaps    The declarations that could not be extracted faithfully; {@code null} means none
+	 * @param library         The analyzed library
+	 * @param module          The module corresponding to the library
+	 * @param types           Initial set of {@link TypeDecl} instances inferred from the library, exported or not
+	 * @param unresolvedTypes The types that could not be resolved, per declaring type; {@code null} means none
 	 */
 	@JsonCreator
 	public LibraryTypes(Library library, ModuleDecl module, @JsonProperty("allTypes") Set<TypeDecl> types,
-	                    @JsonProperty("extractionGaps") Set<ExtractionGap> gaps) {
+	                    @JsonProperty("unresolvedTypes") Map<String, Set<String>> unresolvedTypes) {
 		Preconditions.checkNotNull(library);
 		Preconditions.checkNotNull(module);
 		Preconditions.checkNotNull(types);
@@ -92,7 +94,14 @@ public final class LibraryTypes implements TypeProvider {
 					throw new RoseauException("Duplicated type in %s: %s".formatted(library, type.getQualifiedName()));
 				}
 			));
-		extractionGaps = gaps == null ? ImmutableSortedSet.of() : ImmutableSortedSet.copyOf(gaps);
+		this.unresolvedTypes = unresolvedTypes == null
+			? ImmutableSortedMap.of()
+			: unresolvedTypes.entrySet().stream()
+				.collect(ImmutableSortedMap.toImmutableSortedMap(
+					Comparator.naturalOrder(),
+					Map.Entry::getKey,
+					entry -> ImmutableSortedSet.copyOf(entry.getValue())
+				));
 	}
 
 	/**
@@ -103,7 +112,7 @@ public final class LibraryTypes implements TypeProvider {
 	 * @param types   Initial set of {@link TypeDecl} instances inferred from the library, exported or not
 	 */
 	public LibraryTypes(Library library, ModuleDecl module, Set<TypeDecl> types) {
-		this(library, module, types, Set.of());
+		this(library, module, types, Map.of());
 	}
 
 	/**
@@ -147,14 +156,15 @@ public final class LibraryTypes implements TypeProvider {
 	}
 
 	/**
-	 * Returns the declarations, exported or not, that could not be extracted faithfully from the sources. The model
-	 * lacks these declarations or holds a distorted version of them. Always empty for bytecode extraction.
+	 * Returns the types the extractor could not resolve in the declarations of each type, exported or not. These
+	 * declarations are missing from the model or are distorted (e.g., a supertype replaced with
+	 * {@code java.lang.Object}). Always empty for bytecode extraction.
 	 *
-	 * @return the extraction gaps, in a deterministic order
+	 * @return the qualified names of the unresolved types, indexed by the qualified name of their declaring type
 	 */
-	@JsonProperty("extractionGaps")
-	public Set<ExtractionGap> getExtractionGaps() {
-		return extractionGaps;
+	@JsonProperty("unresolvedTypes")
+	public Map<String, Set<String>> getUnresolvedTypes() {
+		return unresolvedTypes;
 	}
 
 	/**
@@ -217,11 +227,11 @@ public final class LibraryTypes implements TypeProvider {
 			&& Objects.equals(library, other.library)
 			&& Objects.equals(module, other.module)
 			&& Objects.equals(allTypes, other.allTypes)
-			&& Objects.equals(extractionGaps, other.extractionGaps);
+			&& Objects.equals(unresolvedTypes, other.unresolvedTypes);
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(library, module, allTypes, extractionGaps);
+		return Objects.hash(library, module, allTypes, unresolvedTypes);
 	}
 }

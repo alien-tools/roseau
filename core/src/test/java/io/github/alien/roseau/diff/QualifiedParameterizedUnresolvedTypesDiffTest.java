@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  * Changes involving an unresolved type spelled with a dotted name and type arguments, e.g.
  * {@code unknown.Unknown<String>} with no classpath. ecj does not recover such types, and the declarations using them
  * are missing from the API model or distorted, so the breaking changes are unreported or of the wrong kind. Roseau
- * cannot extract these declarations faithfully; instead, it must refuse to vouch for the report.
+ * cannot extract these declarations faithfully; instead, it reports the missing types as unresolved.
  * <p>
  * The expected breaking changes, were these declarations extracted, are those Roseau reports when the same type is
  * imported instead ({@code import unknown.Unknown;} and {@code Unknown<String>}).
@@ -22,8 +22,7 @@ class QualifiedParameterizedUnresolvedTypesDiffTest {
 
 		assertThatThrownBy(report::checkFullyResolved)
 			.isInstanceOf(RoseauException.class)
-			.hasMessageContaining("unknown.Unknown")
-			.hasMessageContaining("could not be extracted");
+			.hasMessageContaining("unknown.Unknown");
 	}
 
 	// Expected: A.m(unknown.Unknown<java.lang.String>) EXECUTABLE_REMOVED

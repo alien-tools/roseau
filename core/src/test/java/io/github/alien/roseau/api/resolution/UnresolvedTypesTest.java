@@ -2,7 +2,10 @@ package io.github.alien.roseau.api.resolution;
 
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
+import io.github.alien.roseau.options.RoseauOptions;
 import org.junit.jupiter.api.Test;
+
+import java.util.List;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.buildSourcesAPI;
@@ -244,5 +247,61 @@ class UnresolvedTypesTest {
 		assertThatThrownBy(report::checkFullyResolved)
 			.isInstanceOf(RoseauException.class)
 			.hasMessageContaining("unknown.Unknown");
+	}
+
+	@Test
+	void unresolved_types_of_internal_declarations_are_ignored() {
+		var api = buildSourcesAPI("""
+			class Internal {
+				public unknown.Unknown<String> f;
+			}""");
+
+		assertThat(api.getLibraryTypes().getUnresolvedTypes()).containsOnlyKeys("Internal");
+		assertThat(api.getUnresolvedTypes()).isEmpty();
+	}
+
+	@Test
+	void unresolved_types_of_internal_supertypes_of_exported_types_are_reported() {
+		var api = buildSourcesAPI("""
+			class Base implements Super {
+				public unknown.Unknown<String> f;
+			}
+			interface Super {
+				unknown.Other<String> m();
+			}
+			class Unrelated {
+				public unknown.Unrelated<String> f;
+			}
+			public class A extends Base {}""");
+
+		assertThat(api.getUnresolvedTypes()).containsExactly("unknown.Other", "unknown.Unknown");
+	}
+
+	@Test
+	void unresolved_types_of_excluded_types_are_ignored() {
+		var src = """
+			public class A {
+				public unknown.Unknown<String> f;
+			}
+			public class B {
+				public unknown.Other<String> f;
+			}""";
+		var exclude = new RoseauOptions.Exclude(List.of("A"), List.of());
+
+		var report = Roseau.diff(buildSourcesAPI(src, exclude), buildSourcesAPI(src, exclude));
+
+		assertThat(report.getUnresolvedTypes()).containsExactly("unknown.Other");
+	}
+
+	@Test
+	void identical_recovered_types_do_not_fail() {
+		var src = """
+			public class A {
+				public unknown.Unknown f;
+			}""";
+
+		var report = Roseau.diff(buildSourcesAPI(src), buildSourcesAPI(src));
+
+		assertThatCode(report::checkFullyResolved).doesNotThrowAnyException();
 	}
 }

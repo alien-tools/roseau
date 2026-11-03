@@ -28,7 +28,7 @@ public final class API {
 	private final ApiAnalyzer analyzer;
 	private final Map<String, TypeDecl> exportedTypes;
 	private final List<TypeDecl> exportedTypesList;
-	private final Set<ExtractionGap> extractionGaps;
+	private final Map<String, Set<String>> extractionUnresolvedTypes;
 
 	public API(LibraryTypes libraryTypes, ApiAnalyzer analyzer) {
 		Preconditions.checkNotNull(libraryTypes);
@@ -43,34 +43,24 @@ public final class API {
 				Function.identity()
 			));
 		this.exportedTypesList = ImmutableList.copyOf(exportedTypes.values());
-		this.extractionGaps = apiExtractionGaps();
+		this.extractionUnresolvedTypes = computeExtractionUnresolvedTypes();
 	}
 
-	/*
-	 * A gap matters if it can affect the exported API: its declaring type is exported, or is a supertype of an
-	 * exported type since inherited members are part of the API. Gaps whose declaring type is absent from the model
-	 * (lost type declarations) and file-level gaps are conservatively kept.
-	 */
-	private Set<ExtractionGap> apiExtractionGaps() {
-		Set<ExtractionGap> gaps = libraryTypes.getExtractionGaps();
-		if (gaps.isEmpty()) {
-			return ImmutableSortedSet.of();
+	// Inherited members are part of the API, so the supertypes of exported types matter too
+	private Map<String, Set<String>> computeExtractionUnresolvedTypes() {
+		Map<String, Set<String>> unresolved = libraryTypes.getUnresolvedTypes();
+		if (unresolved.isEmpty()) {
+			return unresolved;
 		}
 
-		Set<String> apiTypes = gaps.stream().anyMatch(this::isInternalGap)
-			? exportedTypesAndSuperTypes()
-			: exportedTypes.keySet();
-		return gaps.stream()
-			.filter(gap -> !isInternalGap(gap) || apiTypes.contains(gap.declaringType()))
-			.collect(ImmutableSortedSet.toImmutableSortedSet(Comparator.naturalOrder()));
+		Set<String> apiTypes = exportedTypesAndSuperTypes();
+		return unresolved.entrySet().stream()
+			.filter(entry -> apiTypes.contains(entry.getKey()))
+			.collect(ImmutableSortedMap.toImmutableSortedMap(
+				Comparator.naturalOrder(), Map.Entry::getKey, Map.Entry::getValue));
 	}
 
-	private boolean isInternalGap(ExtractionGap gap) {
-		return gap.declaringType() != null && !exportedTypes.containsKey(gap.declaringType()) &&
-			libraryTypes.findType(gap.declaringType()).isPresent();
-	}
-
-	// Only walks the library's own types: the resolver records the types it cannot resolve
+	// Only walks the library's types: the resolver would record the classpath types it cannot resolve
 	private Set<String> exportedTypesAndSuperTypes() {
 		Set<String> types = new HashSet<>(exportedTypes.keySet());
 		Deque<TypeDecl> toVisit = new ArrayDeque<>(exportedTypes.values());
@@ -127,32 +117,32 @@ public final class API {
 
 	/**
 	 * Returns the qualified names of the types that could not be resolved while analyzing this API, including those
-	 * of the {@link #getExtractionGaps() extraction gaps}. A non-empty result means the API model is incomplete and
-	 * that verdicts may be inaccurate.
+	 * the extractor could not resolve in the API's declarations. A non-empty result means the API model is incomplete
+	 * and that verdicts may be inaccurate.
 	 *
 	 * @return the qualified names of the unresolved types
+	 * @see #getExtractionUnresolvedTypes()
 	 */
 	public Set<String> getUnresolvedTypes() {
 		Set<String> unresolved = analyzer.resolver().getUnresolvedTypes();
-		if (extractionGaps.isEmpty()) {
+		if (extractionUnresolvedTypes.isEmpty()) {
 			return unresolved;
 		}
 		return ImmutableSortedSet.<String>naturalOrder()
 			.addAll(unresolved)
-			.addAll(extractionGaps.stream().map(ExtractionGap::reference).filter(Objects::nonNull).iterator())
+			.addAll(extractionUnresolvedTypes.values().stream().flatMap(Set::stream).iterator())
 			.build();
 	}
 
 	/**
-	 * Returns the declarations that could not be extracted faithfully and may affect the exported API: those of
-	 * exported types and of their supertypes, and those whose declaring type is missing from the model. A non-empty
-	 * result means the API model is incomplete and that verdicts may be inaccurate.
+	 * Returns the types the extractor could not resolve in the declarations of exported types and of their supertypes.
+	 * These declarations are missing from the API model or are distorted.
 	 *
-	 * @return the extraction gaps that may affect the API, in a deterministic order
-	 * @see LibraryTypes#getExtractionGaps()
+	 * @return the qualified names of the unresolved types, indexed by the qualified name of their declaring type
+	 * @see LibraryTypes#getUnresolvedTypes()
 	 */
-	public Set<ExtractionGap> getExtractionGaps() {
-		return extractionGaps;
+	public Map<String, Set<String>> getExtractionUnresolvedTypes() {
+		return extractionUnresolvedTypes;
 	}
 
 	/**

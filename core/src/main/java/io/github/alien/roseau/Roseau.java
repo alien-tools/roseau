@@ -4,7 +4,6 @@ import com.google.common.base.Preconditions;
 import com.google.common.base.Stopwatch;
 import io.github.alien.roseau.api.analysis.DefaultApiAnalyzer;
 import io.github.alien.roseau.api.model.API;
-import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.factory.ApiFactory;
 import io.github.alien.roseau.api.model.factory.DefaultApiFactory;
@@ -36,7 +35,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.ForkJoinPool;
-import java.util.stream.Collectors;
 
 /**
  * Entry point for extracting library snapshots, building resolved APIs, and computing diffs.
@@ -125,11 +123,6 @@ public final class Roseau {
 		if (!unresolved.isEmpty()) {
 			LOGGER.warn("{} type(s) could not be resolved ({}); are the classpaths correct?",
 				unresolved.size(), String.join(", ", unresolved));
-		}
-		Set<ExtractionGap> gaps = report.getExtractionGaps();
-		if (!gaps.isEmpty()) {
-			LOGGER.warn("{} declaration(s) could not be extracted: {}; are the classpaths correct?",
-				gaps.size(), gaps.stream().map(ExtractionGap::toString).collect(Collectors.joining(", ")));
 		}
 
 		return report;

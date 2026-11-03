@@ -108,9 +108,8 @@ public final class RoseauMojo extends AbstractMojo {
 	private boolean failOnSourceIncompatibility;
 
 	/**
-	 * Fails the build when some types cannot be resolved or some source declarations cannot be extracted, instead of
-	 * reporting breaking changes computed from an incomplete API model. Recommended in CI, where the warnings Roseau
-	 * logs for unresolved types go unnoticed.
+	 * Fails the build when some types cannot be resolved, instead of reporting breaking changes computed from an
+	 * incomplete API model. Recommended in CI, where the warnings Roseau logs for unresolved types go unnoticed.
 	 */
 	@Parameter(property = "roseau.failOnUnresolvedTypes")
 	private Boolean failOnUnresolvedTypes;

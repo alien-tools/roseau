@@ -370,7 +370,7 @@ class RoseauCLITest {
 		}
 
 		@Test
-		void fail_on_unresolved_aborts_on_declarations_that_cannot_be_extracted(@TempDir Path tempDir)
+		void fail_on_unresolved_aborts_on_types_lost_by_source_extraction(@TempDir Path tempDir)
 			throws IOException {
 			Path sources = Files.createDirectories(tempDir.resolve("pkg"));
 			Files.writeString(sources.resolve("A.java"), """
@@ -385,8 +385,7 @@ class RoseauCLITest {
 			assertThatCli(result)
 				.failed()
 				.hasNoStdout()
-				.reportedError("1 type(s) could not be resolved (dependency.Base); 1 declaration(s) could not be " +
-					"extracted: pkg.A.f (pkg/A.java:3, dependency.Base); make sure the classpaths are accurate");
+				.reportedError("1 type(s) could not be resolved (dependency.Base); make sure the classpaths are accurate");
 		}
 
 		@Test

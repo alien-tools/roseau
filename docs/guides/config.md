@@ -52,7 +52,7 @@ common:
 | `common` | shared classpath, exclusion rules, and `ignoreModule` |
 | `v1` | input path and overrides for the baseline version |
 | `v2` | input path and overrides for the current version |
-| `diff` | diff options such as `ignore`, `binaryOnly`, `sourceOnly`, and `failOnUnresolved` (fail when some types cannot be resolved or some source declarations cannot be extracted) |
+| `diff` | diff options such as `ignore`, `binaryOnly`, `sourceOnly`, and `failOnUnresolved` |
 | `reports` | report files to generate |
 
 ```yaml title="roseau.yaml"

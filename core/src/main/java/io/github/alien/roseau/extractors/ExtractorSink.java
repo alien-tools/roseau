@@ -1,21 +1,21 @@
 package io.github.alien.roseau.extractors;
 
-import io.github.alien.roseau.api.model.ExtractionGap;
 import io.github.alien.roseau.api.model.ModuleDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class ExtractorSink {
 	private final Set<TypeDecl> types;
 	private final Set<ModuleDecl> modules;
-	private final Set<ExtractionGap> gaps;
+	private final Map<String, Set<String>> unresolvedTypes;
 
 	public ExtractorSink(int initialCapacity) {
 		this.types = ConcurrentHashMap.newKeySet(initialCapacity);
 		this.modules = ConcurrentHashMap.newKeySet(1);
-		this.gaps = ConcurrentHashMap.newKeySet();
+		this.unresolvedTypes = new ConcurrentHashMap<>();
 	}
 
 	public void accept(TypeDecl type) {
@@ -26,8 +26,8 @@ public final class ExtractorSink {
 		modules.add(module);
 	}
 
-	public void accept(ExtractionGap gap) {
-		gaps.add(gap);
+	public void acceptUnresolvedTypes(String declaringType, Set<String> types) {
+		unresolvedTypes.put(declaringType, types);
 	}
 
 	public Set<TypeDecl> getTypes() {
@@ -38,7 +38,7 @@ public final class ExtractorSink {
 		return modules;
 	}
 
-	public Set<ExtractionGap> getGaps() {
-		return gaps;
+	public Map<String, Set<String>> getUnresolvedTypes() {
+		return unresolvedTypes;
 	}
 }
