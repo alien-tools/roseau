@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.rules.breaking;
 
+import io.github.alien.roseau.api.analysis.TypeParameterMapping;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.TypeParameterScope;
@@ -11,6 +12,7 @@ import io.github.alien.roseau.diff.rules.MemberRule;
 import io.github.alien.roseau.diff.rules.MemberRuleContext;
 
 import java.util.Set;
+import java.util.function.UnaryOperator;
 
 public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 	/**
@@ -29,20 +31,36 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 		Set<ITypeReference> thrown1 = ctx.v1().analyzer().getThrownCheckedExceptions(oldExecutable);
 		Set<ITypeReference> thrown2 = ctx.v2().analyzer().getThrownCheckedExceptions(newExecutable);
 
+		// Type variables are compared both erased (raw types, JLS §4.8) and as is (type arguments, JLS §4.5.2)
+		UnaryOperator<ITypeReference> erase1 = exc ->
+			ctx.v1().analyzer().typeParameter().resolveBound(oldExecutable, exc);
+		UnaryOperator<ITypeReference> erase2 = exc ->
+			ctx.v2().analyzer().typeParameter().resolveBound(newExecutable, exc);
+		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forExecutable(
+			ctx.oldType(), ctx.newType(), oldExecutable, newExecutable);
+
 		thrown1.stream()
 			// An exception that is no longer checked in v2 constrains no client: callers need not catch it and
 			// overriders need not declare it, so removing (or keeping) it from the throws clause is compatible.
-			.filter(exc1 -> isChecked(exc1, ctx))
-			.filter(exc1 -> thrown2.stream()
-				.noneMatch(exc2 -> ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)))
+			.filter(exc1 -> isChecked(erase1.apply(exc1), ctx))
+			.filter(exc1 -> thrown2.stream().noneMatch(exc2 -> ctx.v2().analyzer()
+					.isSubtypeOf(TypeParameterScope.EMPTY, erase1.apply(exc1), erase2.apply(exc2))) ||
+				thrown2.stream().noneMatch(exc2 -> ctx.v2().analyzer()
+					.isSubtypeOf(newExecutable, normalizer.normalizeOld(exc1), normalizer.normalizeNew(exc2))))
+			.map(erase1)
+			.distinct()
 			.forEach(exc1 ->
 				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION,
 					ctx.oldType(), oldExecutable, newExecutable,
 					new BreakingChangeDetails.MethodNoLongerThrowsCheckedException(exc1)));
 
 		thrown2.stream()
-			.filter(exc2 -> thrown1.stream()
-				.noneMatch(exc1 -> ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)))
+			.filter(exc2 -> thrown1.stream().noneMatch(exc1 -> ctx.v2().analyzer()
+					.isSubtypeOf(TypeParameterScope.EMPTY, erase2.apply(exc2), erase1.apply(exc1))) ||
+				thrown1.stream().noneMatch(exc1 -> ctx.v2().analyzer()
+					.isSubtypeOf(newExecutable, normalizer.normalizeNew(exc2), normalizer.normalizeOld(exc1))))
+			.map(erase2)
+			.distinct()
 			.forEach(exc2 ->
 				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION,
 					ctx.oldType(), oldExecutable, newExecutable,

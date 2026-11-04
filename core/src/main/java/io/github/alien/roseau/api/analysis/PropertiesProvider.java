@@ -265,7 +265,8 @@ public interface PropertiesProvider {
 	}
 
 	/**
-	 * Returns the subset of this executable's thrown exceptions that are checked exceptions.
+	 * Returns the subset of this executable's thrown exceptions that are checked exceptions. Thrown type variables are
+	 * returned as is, and are checked if their bound is.
 	 *
 	 * @param executable the executable to check
 	 * @return the thrown checked exceptions
@@ -273,8 +274,7 @@ public interface PropertiesProvider {
 	default Set<ITypeReference> getThrownCheckedExceptions(ExecutableDecl executable) {
 		Preconditions.checkNotNull(executable);
 		return executable.getThrownExceptions().stream()
-			.map(exc -> typeParameter().resolveBound(executable, exc))
-			.filter(exc -> subtyping().isCheckedException(exc))
+			.filter(exc -> subtyping().isCheckedException(typeParameter().resolveBound(executable, exc)))
 			.collect(Collectors.toUnmodifiableSet());
 	}
 }

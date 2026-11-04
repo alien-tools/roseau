@@ -231,6 +231,42 @@ class ExecutableNowThrowsCheckedExceptionTest {
 
 	@Client("""
 		try {
+			new A().<java.io.ObjectStreamException>m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void method_type_parameter_replaced_by_bound_in_throws() {
+		var v1 = """
+			public class A {
+				public <T extends java.io.IOException> void m() throws T {}
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends java.io.IOException> void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A<java.io.ObjectStreamException>().m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void class_type_parameter_replaced_by_bound_in_throws() {
+		var v1 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws T {}
+			}""";
+		var v2 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws java.io.IOException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
 			new A().m();
 		} catch (java.io.IOException e) {}""")
 	@Test

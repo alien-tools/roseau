@@ -460,4 +460,100 @@ class ExecutableNoLongerThrowsCheckedExceptionTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("""
+		try {
+			new A<java.io.ObjectStreamException>().m();
+		} catch (java.io.FileNotFoundException e) {
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void bound_replaced_by_class_type_parameter_in_throws() {
+		var v1 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws T {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A<java.io.ObjectStreamException>().m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void class_type_parameter_renamed_in_throws() {
+		var v1 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws T {}
+			}""";
+		var v2 = """
+			public class A<U extends java.io.IOException> {
+				public void m() throws U {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().<java.io.ObjectStreamException>m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void method_type_parameter_renamed_in_throws() {
+		var v1 = """
+			public class A {
+				public <T extends java.io.IOException> void m() throws T {}
+			}""";
+		var v2 = """
+			public class A {
+				public <U extends java.io.IOException> void m() throws U {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new B().m();
+		} catch (java.io.ObjectStreamException e) {}""")
+	@Test
+	void class_type_parameter_renamed_in_throws_inherited() {
+		var v1 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws T {}
+			}
+			public class B extends A<java.io.ObjectStreamException> {}""";
+		var v2 = """
+			public class A<U extends java.io.IOException> {
+				public void m() throws U {}
+			}
+			public class B extends A<java.io.ObjectStreamException> {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.FileNotFoundException e) {
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void class_type_parameter_bound_narrowed_in_throws_raw() {
+		var v1 = """
+			public class A<T extends java.io.IOException> {
+				public void m() throws T {}
+			}""";
+		var v2 = """
+			public class A<T extends java.io.ObjectStreamException> {
+				public void m() throws T {}
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1),
+			bc("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2));
+	}
 }
