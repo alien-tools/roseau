@@ -14,13 +14,14 @@ import java.util.Set;
 
 public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 	/**
-	 * Always binary-compatible.
+	 * Changes to a throws clause are always binary-compatible (JLS §13.4.21). Only checked exceptions matter.
 	 * <ul>
-	 *   <li>Throwing a new checked exception breaks invokers only</li>
-	 *   <li>No longer throwing a checked exception breaks invokers and overriders</li>
-	 *   <li>Throwing a subtype of an existing checked exception (less) breaks overriders</li>
-	 *   <li>Throwing a supertype of an existing checked exception (more) breaks invokers</li>
-	 *   <li>The only safe case is replacing with a subtype exception when the executable is final</li>
+	 *   <li>A newly thrown exception that is not a subtype of a previously thrown one breaks invokers that do not
+	 *   handle it (JLS §11.2.3)</li>
+	 *   <li>A previously thrown exception that is not a subtype of a newly thrown one breaks invokers whose catch
+	 *   clauses name it or one of its subclasses (JLS §11.2.3), and overriders that declare it (JLS §8.4.8.3).
+	 *   Invokers break even when the executable cannot be overridden: replacing {@code IOException} with its subtype
+	 *   {@code ObjectStreamException} breaks {@code catch (FileNotFoundException e)}.</li>
 	 * </ul>
 	 */
 	@Override
@@ -28,17 +29,12 @@ public class ExecutableThrownExceptions implements MemberRule<ExecutableDecl> {
 		Set<ITypeReference> thrown1 = ctx.v1().analyzer().getThrownCheckedExceptions(oldExecutable);
 		Set<ITypeReference> thrown2 = ctx.v2().analyzer().getThrownCheckedExceptions(newExecutable);
 
-		boolean effectivelyFinal = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
-
 		thrown1.stream()
 			// An exception that is no longer checked in v2 constrains no client: callers need not catch it and
 			// overriders need not declare it, so removing (or keeping) it from the throws clause is compatible.
 			.filter(exc1 -> isChecked(exc1, ctx))
-			.filter(exc1 -> thrown2.stream().noneMatch(exc2 ->
-				effectivelyFinal
-					? ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc2, exc1)
-					: ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)
-			))
+			.filter(exc1 -> thrown2.stream()
+				.noneMatch(exc2 -> ctx.v2().analyzer().isSubtypeOf(TypeParameterScope.EMPTY, exc1, exc2)))
 			.forEach(exc1 ->
 				ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION,
 					ctx.oldType(), oldExecutable, newExecutable,

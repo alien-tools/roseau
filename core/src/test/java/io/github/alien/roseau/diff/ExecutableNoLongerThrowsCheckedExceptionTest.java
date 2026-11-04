@@ -400,4 +400,64 @@ class ExecutableNoLongerThrowsCheckedExceptionTest {
 			bc("MyException", "MyException", BreakingChangeKind.TYPE_REMOVED, 1),
 			bc("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2));
 	}
+
+	@Client("""
+		try {
+			A.m();
+		} catch (java.io.FileNotFoundException e) {
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void static_method_in_final_class_no_longer_throws_redundant_subtype() {
+		var v1 = """
+			public final class A {
+				public static void m() throws java.io.FileNotFoundException, java.io.IOException {}
+			}""";
+		var v2 = """
+			public final class A {
+				public static void m() throws java.io.IOException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A();
+		} catch (java.io.FileNotFoundException e) {
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void constructor_no_longer_throws_redundant_subtype() {
+		var v1 = """
+			public class A {
+				public A() throws java.io.FileNotFoundException, java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public A() throws java.io.IOException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.FileNotFoundException e) {
+		} catch (java.io.IOException e) {}
+		new A() {
+			@Override public void m() throws java.io.FileNotFoundException {}
+		};""")
+	@Test
+	void method_no_longer_throws_redundant_subtype() {
+		var v1 = """
+			public class A {
+				public void m() throws java.io.FileNotFoundException, java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

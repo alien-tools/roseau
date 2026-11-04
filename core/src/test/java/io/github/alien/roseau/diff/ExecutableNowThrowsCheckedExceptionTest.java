@@ -118,11 +118,9 @@ class ExecutableNowThrowsCheckedExceptionTest {
 	}
 
 	@Client("""
-		new A() {
-			// Cannot override
-		};
 		try {
 			new A().m();
+		} catch (java.io.FileNotFoundException e) {
 		} catch (java.io.IOException e) {}""")
 	@Test
 	void final_method_now_throws_subtype() {
@@ -135,12 +133,13 @@ class ExecutableNowThrowsCheckedExceptionTest {
 				public final void m() throws java.io.ObjectStreamException {}
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
 		try {
 			new A();
+		} catch (java.io.FileNotFoundException e) {
 		} catch (java.io.IOException e) {}""")
 	@Test
 	void constructor_now_throws_subtype() {
@@ -153,7 +152,27 @@ class ExecutableNowThrowsCheckedExceptionTest {
 				public A() throws java.io.ObjectStreamException {}
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.<init>()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		class MyException extends java.io.IOException {}
+		try {
+			A.m();
+		} catch (MyException e) {
+		} catch (java.io.IOException e) {}""")
+	@Test
+	void static_method_in_final_class_now_throws_subtype() {
+		var v1 = """
+			public final class A {
+				public static void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public final class A {
+				public static void m() throws java.io.ObjectStreamException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -189,9 +208,7 @@ class ExecutableNowThrowsCheckedExceptionTest {
 				public final void m() throws java.io.IOException {}
 			}""";
 
-		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2),
-			bc("A", "A.m()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 2));
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -209,9 +226,7 @@ class ExecutableNowThrowsCheckedExceptionTest {
 				public A() throws java.io.IOException {}
 			}""";
 
-		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.<init>()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 2),
-			bc("A", "A.<init>()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 2));
+		assertBC("A", "A.<init>()", BreakingChangeKind.EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -323,6 +338,7 @@ class ExecutableNowThrowsCheckedExceptionTest {
 	@Client("""
 		try {
 			new A().m();
+		} catch (java.io.FileNotFoundException e) {
 		} catch (java.io.IOException e) {}""")
 	@Test
 	void final_class_method_now_throws_subtype() {
@@ -335,6 +351,27 @@ class ExecutableNowThrowsCheckedExceptionTest {
 			public final class A {
 				public A() {}
 				public void m() throws java.io.ObjectStreamException {}
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION, 3, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		try {
+			new A().m();
+		} catch (java.io.IOException e) {}
+		new A() {
+			@Override public void m() throws java.io.IOException {}
+		};""")
+	@Test
+	void method_now_throws_redundant_subtype() {
+		var v1 = """
+			public class A {
+				public void m() throws java.io.IOException {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m() throws java.io.FileNotFoundException, java.io.IOException {}
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
