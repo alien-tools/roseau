@@ -317,7 +317,7 @@ public interface HierarchyProvider {
 	}
 
 	/**
-	 * Returns all methods that can be invoked on this type, including those declared in its super types. For each unique
+	 * Returns all methods that can be invoked on this type, including those inherited from super types. For each unique
 	 * method erasure, returns the most concrete implementation, indexed by erasure. Erasures are those seen from
 	 * {@code type}: inherited methods are instantiated with its type arguments.
 	 *
@@ -333,7 +333,10 @@ public interface HierarchyProvider {
 					.flatMap(superType -> resolver().resolve(superType).stream()
 						.flatMap(decl -> {
 							Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
-							return decl.getDeclaredMethods().stream().map(m -> instantiate(m, substitutions));
+							return decl.getDeclaredMethods().stream()
+								// §8.4.8, §9.4.1: static interface methods are not inherited.
+								.filter(m -> !decl.isInterface() || !m.isStatic())
+								.map(m -> instantiate(m, substitutions));
 						})))
 			.collect(Collectors.toMap(
 				m -> erasure().getErasure(type, m),

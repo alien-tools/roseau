@@ -147,6 +147,44 @@ class ExecutableRemovedTest {
 		assertBC("B", "A.m()", BreakingChangeKind.EXECUTABLE_REMOVED, 2, buildDiff(v1, v2));
 	}
 
+	@Client("I.m();")
+	@Test
+	void static_interface_method_removed() {
+		var v1 = """
+			public interface I {
+				static void m() {}
+			}
+			public interface J extends I {}
+			public class A implements J {}
+			public class B extends A {}""";
+		var v2 = """
+			public interface I {}
+			public interface J extends I {}
+			public class A implements J {}
+			public class B extends A {}""";
+
+		assertBC("I", "I.m()", BreakingChangeKind.EXECUTABLE_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("A.m();")
+	@Test
+	void static_class_method_removed_with_same_signature_on_interface() {
+		var v1 = """
+			public interface I {
+				static void m() {}
+			}
+			public class A implements I {
+				public static void m() {}
+			}""";
+		var v2 = """
+			public interface I {
+				static void m() {}
+			}
+			public class A implements I {}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.EXECUTABLE_REMOVED, 2, buildDiff(v1, v2));
+	}
+
 	@Client("new I(){}.m1();")
 	@Test
 	void default_method_removed_in_interface() {

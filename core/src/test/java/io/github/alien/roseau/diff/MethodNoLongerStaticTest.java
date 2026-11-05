@@ -39,4 +39,21 @@ class MethodNoLongerStaticTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("I.m();")
+	@Test
+	void interface_method_no_longer_static_with_implementing_class() {
+		var v1 = """
+			public interface I {
+				static void m() {}
+			}
+			public class A implements I {}""";
+		var v2 = """
+			public interface I {
+				default void m() {}
+			}
+			public class A implements I {}""";
+
+		assertBC("I", "I.m()", BreakingChangeKind.METHOD_NO_LONGER_STATIC, 2, buildDiff(v1, v2));
+	}
 }

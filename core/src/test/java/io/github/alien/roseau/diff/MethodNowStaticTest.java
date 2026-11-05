@@ -94,4 +94,26 @@ class MethodNowStaticTest {
 			bc("I", "I.m()", BreakingChangeKind.METHOD_NOW_STATIC, 2),
 			bc("I", "I.m()", BreakingChangeKind.METHOD_OVERRIDABLE_NOW_STATIC, 2));
 	}
+
+	@Client("""
+		new A().m();
+		new I() { @Override public void m() {} };""")
+	@Test
+	void interface_method_now_static_with_implementing_class() {
+		var v1 = """
+			public interface I {
+				default void m() {}
+			}
+			public class A implements I {}""";
+		var v2 = """
+			public interface I {
+				static void m() {}
+			}
+			public class A implements I {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("I", "I.m()", BreakingChangeKind.METHOD_NOW_STATIC, 2),
+			bc("I", "I.m()", BreakingChangeKind.METHOD_OVERRIDABLE_NOW_STATIC, 2),
+			bc("A", "I.m()", BreakingChangeKind.EXECUTABLE_REMOVED, 2));
+	}
 }

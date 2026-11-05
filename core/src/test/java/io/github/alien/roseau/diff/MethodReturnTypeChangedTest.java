@@ -584,6 +584,46 @@ class MethodReturnTypeChangedTest {
 			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
+	@Client("Number n = I.m();")
+	@Test
+	void static_method_added_to_implementing_class() {
+		var v1 = """
+			public interface I {
+				static Number m() { return null; }
+			}
+			public class A implements I {}
+			public class B extends A {}""";
+		var v2 = """
+			public interface I {
+				static Number m() { return null; }
+			}
+			public class A implements I {
+				public static Integer m() { return null; }
+			}
+			public class B extends A {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("Number n = I.m();")
+	@Test
+	void static_method_added_to_subinterface() {
+		var v1 = """
+			public interface I {
+				static Number m() { return null; }
+			}
+			public interface J extends I {}""";
+		var v2 = """
+			public interface I {
+				static Number m() { return null; }
+			}
+			public interface J extends I {
+				static String m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Test
 	void to_unknown_binary_and_source() {
 		var v1 = """

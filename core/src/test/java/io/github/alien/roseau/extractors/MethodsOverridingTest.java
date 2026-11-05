@@ -14,6 +14,7 @@ import java.util.List;
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
+import static io.github.alien.roseau.utils.TestUtils.assertNoMethod;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -308,5 +309,34 @@ class MethodsOverridingTest {
 		assertThat(api.analyzer().getExportedMethodsByErasure(a))
 			.containsKeys("arr(java.lang.Number[])", "vrg(java.lang.Number[])", "nested(java.util.List)",
 				"shadowed(java.lang.CharSequence)");
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void static_interface_methods_are_not_inherited(ApiBuilder builder) {
+		var api = builder.build("""
+			public interface I {
+				static void factory() {}
+				default void m() {}
+			}
+			public interface J extends I {}
+			public class A implements I {}
+			public class B extends A implements J {}
+			public class C extends B {}""");
+
+		var i = assertInterface(api, "I");
+		var j = assertInterface(api, "J");
+		var a = assertClass(api, "A");
+		var b = assertClass(api, "B");
+		var c = assertClass(api, "C");
+
+		assertThat(api.analyzer().findMethod(i, "factory()")).contains(assertMethod(api, i, "factory()"));
+		for (var type : List.of(j, a, b, c)) {
+			assertNoMethod(api, type, "factory()");
+			assertThat(api.analyzer().getAllMethodsByErasure(type)).doesNotContainKey("factory()");
+			assertThat(api.analyzer().findMethod(type, "m()"))
+				.map(MethodDecl::getQualifiedSignature)
+				.contains("I.m()");
+		}
 	}
 }
