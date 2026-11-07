@@ -24,29 +24,46 @@ import java.util.zip.ZipFile;
 /**
  * Provides type declarations by resolving fully qualified names based on a user-specified classpath.
  * <p>
- * This implementation supports searching for type declarations both on the platform class loader (prioritized) and in
- * the specified classpath entries.
+ * This implementation searches for type declarations in the JDK first, then in the specified classpath entries. JDK
+ * types are read from the running JDK's {@code lib/ct.sym}, so that resolution does not depend on the modules the
+ * runtime contains.
  */
 public class ClasspathTypeProvider implements TypeProvider {
 	private final AsmTypesExtractor extractor;
 	private final List<ClasspathEntry> classpath;
+	// Null when the running JDK has no usable ct.sym: JDK types then come from the running JVM's modules
+	private final CtSymPlatform platform;
 
 	private static final ClassLoader PLATFORM_CLASS_LOADER = ClassLoader.getPlatformClassLoader();
 	private static final Runtime.Version RUNTIME_VERSION = JarFile.runtimeVersion();
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathTypeProvider.class);
 
 	/**
-	 * Constructs a {@code ClasspathTypeProvider} that resolves and provides type declarations
-	 * based on the specified classpath entries.
+	 * Constructs a {@code ClasspathTypeProvider} that resolves and provides type declarations based on the specified
+	 * classpath entries and the running JDK.
 	 *
 	 * @param extractor the {@link AsmTypesExtractor} responsible for extracting type declarations from class files
 	 * @param classpath a list of paths representing the classpath entries (directories or JAR files) to be searched
 	 */
 	public ClasspathTypeProvider(AsmTypesExtractor extractor, List<Path> classpath) {
+		this(extractor, classpath, hostPlatform());
+	}
+
+	ClasspathTypeProvider(AsmTypesExtractor extractor, List<Path> classpath, CtSymPlatform platform) {
 		this.extractor = Preconditions.checkNotNull(extractor);
 		this.classpath = Preconditions.checkNotNull(classpath).stream()
 			.map(ClasspathEntry::new)
 			.toList();
+		this.platform = platform;
+	}
+
+	private static CtSymPlatform hostPlatform() {
+		Optional<CtSymPlatform> platform = CtSymPlatform.forRelease(Runtime.version().feature());
+		if (platform.isEmpty()) {
+			LOGGER.warn("No usable lib/ct.sym in {}; resolving JDK types from the running JVM's modules instead, " +
+				"which may not contain every JDK type the analyzed libraries use", System.getProperty("java.home"));
+		}
+		return platform.orElse(null);
 	}
 
 	@Override
@@ -63,7 +80,9 @@ public class ClasspathTypeProvider implements TypeProvider {
 	}
 
 	private Optional<TypeDecl> readPlatformType(String entryName) {
-		try (InputStream in = PLATFORM_CLASS_LOADER.getResourceAsStream(entryName)) {
+		try (InputStream in = platform != null
+			? platform.openClass(entryName)
+			: PLATFORM_CLASS_LOADER.getResourceAsStream(entryName)) {
 			return extractType(in);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to read platform class {}: {}", entryName, e.getMessage());

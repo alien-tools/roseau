@@ -127,6 +127,10 @@ assemble:
         useWildcardInPath: false
         targets:
           - cli/target/roseau-cli-{{projectVersion}}.jar
+      # jdeps only finds the modules Roseau itself needs. jdk.compiler ships lib/ct.sym, which Roseau needs
+      # to parse JDK types.
+      additionalModuleNames:
+        - jdk.compiler
       mainJar:
         path: cli/target/roseau-cli-{{projectVersion}}.jar
       jars:

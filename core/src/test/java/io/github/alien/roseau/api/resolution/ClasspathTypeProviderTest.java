@@ -171,11 +171,25 @@ class ClasspathTypeProviderTest {
 	}
 
 	@Test
+	void stdlib_internal_class_is_not_resolved() {
+		assertThat(provider.findType("jdk.internal.misc.Unsafe")).isEmpty();
+		assertThat(provider.findType("sun.misc.Unsafe", ClassDecl.class)).isPresent();
+	}
+
+	@Test
+	void stdlib_without_ct_sym_falls_back_to_running_jvm() {
+		var fallback = new ClasspathTypeProvider(extractor, List.of(), null);
+
+		assertThat(fallback.findType("java.lang.String", ClassDecl.class)).isPresent();
+		assertThat(fallback.findType("jdk.internal.misc.Unsafe", ClassDecl.class)).isPresent();
+	}
+
+	@Test
 	void classpath_no_anonymous() throws IOException {
 		var sources = Map.of("pkg.C", """
 			package pkg;
 			public class C {
-				public Runnable r = new Runnable() { public void run() {} };			
+				public Runnable r = new Runnable() { public void run() {} };
 			}""");
 		var jar = tempDir.resolve("jar1.jar");
 
