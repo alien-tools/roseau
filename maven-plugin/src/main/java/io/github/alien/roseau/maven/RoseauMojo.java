@@ -1,5 +1,6 @@
 package io.github.alien.roseau.maven;
 
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.Roseau;
 import io.github.alien.roseau.RoseauException;
@@ -10,6 +11,7 @@ import io.github.alien.roseau.diff.formatter.BreakingChangesFormatter;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 import io.github.alien.roseau.options.RoseauOptions;
 import org.apache.maven.model.Dependency;
+import org.apache.maven.model.Plugin;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugins.annotations.LifecyclePhase;
@@ -17,6 +19,7 @@ import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.plugins.annotations.ResolutionScope;
 import org.apache.maven.project.MavenProject;
+import org.codehaus.plexus.util.xml.Xpp3Dom;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.eclipse.aether.artifact.Artifact;
@@ -42,6 +45,8 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Compares the current module artifact with a baseline artifact and reports API breaking changes.
@@ -59,6 +64,10 @@ import java.util.Optional;
 	requiresDependencyResolution = ResolutionScope.COMPILE
 )
 public final class RoseauMojo extends AbstractMojo {
+	private static final String COMPILER_PLUGIN = "org.apache.maven.plugins:maven-compiler-plugin";
+	// A javac -source/-target/--release value: N, or 1.N for N <= 8
+	private static final Pattern COMPILER_VERSION = Pattern.compile("(?:1\\.)?(\\d{1,3})");
+
 	/**
 	 * Current Maven project.
 	 */
@@ -120,6 +129,21 @@ public final class RoseauMojo extends AbstractMojo {
 	 */
 	@Parameter(property = "roseau.ignoreModule")
 	private Boolean ignoreModule;
+
+	/**
+	 * The Java release on which to check compatibility (e.g., {@code 8}, {@code 17}, {@code 21}; {@code 1.8} means
+	 * {@code 8}). Both versions are compared on this release. Defaults to the release the project compiles for: the
+	 * compiler plug-in's {@code release} (or {@code maven.compiler.release}), else its {@code target} (or
+	 * {@code maven.compiler.target}); without either, to the release of the JDK running Maven.
+	 */
+	@Parameter(property = "roseau.javaRelease")
+	private String javaRelease;
+
+	@Parameter(property = "maven.compiler.release", readonly = true)
+	private String compilerRelease;
+
+	@Parameter(property = "maven.compiler.target", readonly = true)
+	private String compilerTarget;
 
 	/**
 	 * Baseline artifact coordinates as a string ({@code groupId:artifactId:version[:extension[:classifier]]})
@@ -276,7 +300,7 @@ public final class RoseauMojo extends AbstractMojo {
 	 */
 	private RoseauOptions loadConfiguration(Path oldJar, Path newJar) throws MojoExecutionException {
 		// Start with default configuration
-		RoseauOptions options = RoseauOptions.newDefault();
+		RoseauOptions options = RoseauOptions.newDefault().mergeWith(buildDefaults());
 		Path resolvedConfigFile = resolvePath(configFile);
 
 		// Load and merge YAML configuration if enabled
@@ -291,7 +315,7 @@ public final class RoseauMojo extends AbstractMojo {
 		}
 
 		// Load and merge Maven configuration
-		RoseauOptions mavenOptions = buildMavenOptions(oldJar, newJar);
+		RoseauOptions mavenOptions = buildMavenOptions(oldJar, newJar, parseJavaRelease());
 		options = options.mergeWith(mavenOptions);
 		options = normalizePaths(options);
 		if (Boolean.TRUE.equals(options.diff().sourceOnly()) && Boolean.TRUE.equals(options.diff().binaryOnly())) {
@@ -305,11 +329,12 @@ public final class RoseauMojo extends AbstractMojo {
 	/**
 	 * Builds RoseauOptions from Maven configuration parameters.
 	 *
-	 * @param oldJar the path to the baseline JAR
-	 * @param newJar the path to the current JAR
+	 * @param oldJar              the path to the baseline JAR
+	 * @param newJar              the path to the current JAR
+	 * @param explicitJavaRelease the {@code javaRelease} parameter, if set
 	 * @return the RoseauOptions instance
 	 */
-	private RoseauOptions buildMavenOptions(Path oldJar, Path newJar) {
+	private RoseauOptions buildMavenOptions(Path oldJar, Path newJar, Integer explicitJavaRelease) {
 		// Resolve project classpath if enabled
 		List<Path> projectClasspath = resolveProjectClasspath();
 
@@ -330,7 +355,8 @@ public final class RoseauMojo extends AbstractMojo {
 		// Build Common configuration (classpath + exclusions)
 		RoseauOptions.Classpath commonClasspath = new RoseauOptions.Classpath(resolvePath(classpathPom), mergedClasspath);
 		RoseauOptions.Exclude commonExclude = new RoseauOptions.Exclude(List.of(), List.of());
-		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude, ignoreModule, null);
+		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude, ignoreModule,
+			explicitJavaRelease);
 
 		// Build Library v1 (baseline)
 		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
@@ -536,6 +562,84 @@ public final class RoseauMojo extends AbstractMojo {
 		if (failOnSourceIncompatibility && filteredReport.isSourceBreaking()) {
 			throw new MojoExecutionException("Source incompatible changes found; failing.");
 		}
+	}
+
+	private Integer parseJavaRelease() throws MojoExecutionException {
+		if (javaRelease == null || javaRelease.isBlank()) {
+			return null;
+		}
+		String value = javaRelease.trim();
+		try {
+			return "1.8".equals(value) ? 8 : Integer.parseInt(value);
+		} catch (NumberFormatException e) {
+			throw new MojoExecutionException("Invalid javaRelease parameter: expected an integer release, got '" +
+				javaRelease + "'", e);
+		}
+	}
+
+	/**
+	 * The release the project compiles for, as maven-compiler-plugin resolves it: its {@code release} (configured,
+	 * else {@code maven.compiler.release}), else its {@code target} (configured, else {@code maven.compiler.target}).
+	 */
+	private RoseauOptions buildDefaults() {
+		Optional<CompilerSetting> setting = compilerSetting("release", "maven.compiler.release", compilerRelease)
+			.or(() -> compilerSetting("target", "maven.compiler.target", compilerTarget));
+		Integer release = setting.flatMap(this::toSupportedRelease).orElse(null);
+		RoseauOptions.Common common = new RoseauOptions.Common(null, null, null, release);
+		return new RoseauOptions(common, null, null, null, null);
+	}
+
+	private record CompilerSetting(String source, String value) {
+	}
+
+	private Optional<CompilerSetting> compilerSetting(String parameter, String property, String propertyValue) {
+		Plugin compiler = project.getPlugin(COMPILER_PLUGIN);
+		if (compiler != null) {
+			Optional<String> configured = compiler.getExecutions().stream()
+				.filter(execution -> "default-compile".equals(execution.getId()))
+				.findFirst()
+				.flatMap(execution -> configurationValue(execution.getConfiguration(), parameter))
+				.or(() -> configurationValue(compiler.getConfiguration(), parameter));
+			if (configured.isPresent()) {
+				return Optional.of(new CompilerSetting("maven-compiler-plugin's " + parameter, configured.get()));
+			}
+		}
+
+		return Optional.ofNullable(propertyValue)
+			.filter(value -> !value.isBlank())
+			.map(value -> new CompilerSetting(property, value));
+	}
+
+	private static Optional<String> configurationValue(Object configuration, String parameter) {
+		if (configuration instanceof Xpp3Dom dom && dom.getChild(parameter) != null) {
+			return Optional.ofNullable(dom.getChild(parameter).getValue())
+				.map(String::trim)
+				.filter(value -> !value.isEmpty() && !value.startsWith("${"));
+		}
+		return Optional.empty();
+	}
+
+	private Optional<Integer> toSupportedRelease(CompilerSetting setting) {
+		Matcher matcher = COMPILER_VERSION.matcher(setting.value());
+		if (!matcher.matches()) {
+			getLog().warn("Ignoring %s '%s', which is not a Java release".formatted(setting.source(), setting.value()));
+			return Optional.empty();
+		}
+
+		int release = Integer.parseInt(matcher.group(1));
+		if (release < JavaRelease.MINIMUM) {
+			getLog().warn("The project compiles for Java %d (%s), older than Roseau supports; checking compatibility on Java %d"
+				.formatted(release, setting.source(), JavaRelease.MINIMUM));
+			return Optional.of(JavaRelease.MINIMUM);
+		}
+		if (release > JavaRelease.host()) {
+			getLog().warn(("The project compiles for Java %d (%s), newer than the JDK running Maven; " +
+				"checking compatibility on Java %d").formatted(release, setting.source(), JavaRelease.host()));
+			return Optional.empty();
+		}
+
+		getLog().debug("Java release %d from %s".formatted(release, setting.source()));
+		return Optional.of(release);
 	}
 
 	private Optional<Path> resolveArtifactJar() {

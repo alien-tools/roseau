@@ -10,6 +10,8 @@ import com.soebes.itf.jupiter.extension.SystemProperty;
 import com.soebes.itf.jupiter.maven.MavenExecutionResult;
 import org.junit.jupiter.api.Nested;
 
+import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static com.soebes.itf.extension.assertj.MavenITAssertions.assertThat;
@@ -27,7 +29,8 @@ class RoseauPluginIT {
 			assertThat(result).out().warn()
 				.anyMatch(m -> m.contains("pkg.I.foo() EXECUTABLE_REMOVED"))
 				.anyMatch(m -> m.contains("pkg.I TYPE_NEW_ABSTRACT_METHOD"))
-				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"));
+				.anyMatch(m -> m.contains("pkg.C.f FIELD_NOW_STATIC"))
+				.noneMatch(m -> m.contains("cannot load"));
 		}
 
 		@SystemProperty("roseau.binaryOnly")
@@ -171,7 +174,8 @@ class RoseauPluginIT {
 		void maven_properties_override_yaml_options(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().warn().noneMatch(m -> m.contains("TYPE_NEW_ABSTRACT_METHOD"));
-			assertThat(result).out().info().anyMatch(m -> m.contains("No breaking changes found on Java "));
+			assertThat(result).out().info()
+				.anyMatch(m -> m.contains("No breaking changes found on Java 21."));
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-source-only.yaml")
@@ -318,6 +322,7 @@ class RoseauPluginIT {
 			assertThat(result).isSuccessful();
 			assertThat(baseDir.resolve("module-a/target/roseau/report.csv")).isRegularFile().isNotEmptyFile();
 			assertThat(baseDir.resolve("module-b/target/roseau/report.csv")).isRegularFile().isNotEmptyFile();
+			assertThat(result).out().warn().noneMatch(m -> m.contains("cannot load"));
 		}
 	}
 
@@ -332,6 +337,128 @@ class RoseauPluginIT {
 			assertThat(baseDir.resolve("report.html")).doesNotExist();
 			assertThat(baseDir.resolve("target/foo/report.csv")).isRegularFile().isNotEmptyFile();
 			assertThat(baseDir.resolve("target/foo/report.html")).isRegularFile().isNotEmptyFile();
+		}
+	}
+
+	// The baseline declares Foo.reversed(), which the current version drops: Java 8 clients break (NoSuchMethodError),
+	// Java 21+ clients reach List.reversed() instead
+	@Nested
+	@MavenProjectSources(sources = "java-release-test")
+	class JavaRelease {
+		@MavenTest
+		void release_defaults_to_the_compiler_target(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"))
+				.anyMatch(m -> m.contains("p.Foo.reversed() EXECUTABLE_REMOVED"))
+				.noneMatch(m -> m.contains("cannot load"));
+		}
+
+		@SystemProperty(value = "maven.compiler.target", content = "21")
+		@SystemProperty(value = "maven.compiler.source", content = "21")
+		@MavenTest
+		void command_line_target_overrides_the_pom_property(MavenExecutionResult result) {
+			assertThat(result).isSuccessful().out().info()
+				.anyMatch(m -> m.contains("No breaking changes found on Java 21."));
+		}
+
+		@SystemProperty(value = "roseau.javaRelease", content = "21")
+		@MavenTest
+		void parameter_sets_the_release(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().info()
+				.anyMatch(m -> m.contains("No breaking changes found on Java 21."));
+			assertThat(result).out().warn().noneMatch(m -> m.contains("EXECUTABLE_REMOVED"));
+		}
+
+		@SystemProperty(value = "roseau.javaRelease", content = "1.8")
+		@MavenTest
+		void parameter_accepts_1_8(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"));
+		}
+
+		@SystemProperty(value = "roseau.configFile", content = "roseau-java-21.yaml")
+		@MavenTest
+		void yaml_overrides_the_compiler_target(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().info()
+				.anyMatch(m -> m.contains("No breaking changes found on Java 21."));
+		}
+
+		@SystemProperty(value = "roseau.configFile", content = "roseau-java-21.yaml")
+		@SystemProperty(value = "roseau.javaRelease", content = "8")
+		@MavenTest
+		void parameter_overrides_yaml(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"));
+		}
+
+		@SystemProperty(value = "roseau.javaRelease", content = "latest")
+		@MavenTest
+		void invalid_parameter_fails_the_build(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error()
+				.anyMatch(m -> m.contains("Invalid javaRelease parameter: expected an integer release, got 'latest'"));
+		}
+
+		@SystemProperty(value = "roseau.javaRelease", content = "7")
+		@MavenTest
+		void unsupported_parameter_fails_the_build(MavenExecutionResult result) {
+			assertThat(result).isFailure()
+				.out().error()
+				.anyMatch(m -> m.contains("Unsupported Java release 7"));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "java-release-command-line-test")
+	class JavaReleaseFromCommandLine {
+		@SystemProperty(value = "maven.compiler.release", content = "8")
+		@SystemProperty("roseau.failOnIncompatibility")
+		@MavenTest
+		void command_line_release_catches_breaks_for_older_clients(MavenExecutionResult result) {
+			assertThat(result).isFailure().out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"))
+				.anyMatch(m -> m.contains("p.Foo.reversed() EXECUTABLE_REMOVED"));
+		}
+
+		@SystemProperty(value = "maven.compiler.source", content = "8")
+		@SystemProperty(value = "maven.compiler.target", content = "8")
+		@SystemProperty("roseau.failOnIncompatibility")
+		@MavenTest
+		void command_line_target_catches_breaks_for_older_clients(MavenExecutionResult result) {
+			assertThat(result).isFailure().out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"))
+				.anyMatch(m -> m.contains("p.Foo.reversed() EXECUTABLE_REMOVED"));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "java-release-property-test")
+	class JavaReleasePropertyOverride {
+		@SystemProperty(value = "maven.compiler.release", content = "8")
+		@SystemProperty("roseau.failOnIncompatibility")
+		@MavenTest
+		void command_line_release_overrides_the_pom_property(MavenExecutionResult result) {
+			assertThat(result).isFailure().out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"))
+				.anyMatch(m -> m.contains("p.Foo.reversed() EXECUTABLE_REMOVED"));
+		}
+	}
+
+	@Nested
+	@MavenProjectSources(sources = "java-release-compiler-plugin-test")
+	class JavaReleaseFromCompilerPlugin {
+		@SystemProperty(value = "maven.compiler.release", content = "21")
+		@MavenTest
+		void compiler_plugin_release_wins_over_the_property(MavenExecutionResult result) {
+			assertThat(result).isSuccessful()
+				.out().warn()
+				.anyMatch(m -> m.contains("Breaking Changes found on Java 8: 1"))
+				.anyMatch(m -> m.contains("p.Foo.reversed() EXECUTABLE_REMOVED"));
 		}
 	}
 }

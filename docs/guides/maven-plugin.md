@@ -83,6 +83,22 @@ Use `baselineDependency` for structured XML configuration:
 
 When multiple baseline parameters are set, `baselineCoordinates` takes precedence over `baselineDependency`, which takes precedence over `baselineJar`.
 
+## Java release
+
+The plug-in compares both versions on a [Java release](../java-release.md). By default, it is the release the project compiles for, as set by `maven-compiler-plugin`: `release` (configured, else `maven.compiler.release`) or `target` (configured, else `maven.compiler.target`).
+
+Set `javaRelease` to check compatibility on another release:
+
+```xml
+<configuration>
+  <javaRelease>11</javaRelease>
+</configuration>
+```
+
+```bash
+mvn verify -Droseau.javaRelease=11
+```
+
 ## Multi-module projects
 
 In a multi-module build, the plug-in configuration can be placed once in the parent POM and reused across all modules.

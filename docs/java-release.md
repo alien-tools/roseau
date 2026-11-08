@@ -14,12 +14,7 @@ For example, take a library that targets Java 8 and declares `public List<String
 
 ## Choosing the release
 
-The release defaults to the release of the JDK running Roseau. Pick the oldest release the library supports to catch the changes that break its oldest clients. For multi-release JARs, also check the releases that select different implementations:
-
-| Where | Setting | Precedence |
-| --- | --- | --- |
-| CLI | `--java-release=N` | over the YAML file |
-| YAML | `common.javaRelease: N` | over the default |
+The release defaults to the release of the JDK running Roseau. Pick the oldest release the library supports to catch the changes that break its oldest clients. For multi-release JARs, also check the releases that select different implementations. The release can be set on the CLI, in the YAML configuration, and in the Maven plug-in.
 
 `N` is a feature release such as `8`, `17`, or `21`. Both versions are always compared on the same release.
 
