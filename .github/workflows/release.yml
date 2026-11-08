@@ -142,6 +142,8 @@ jobs:
         run: ${{ runner.os == 'Windows' && 'mvn' || './mvnw' }} --batch-mode -pl cli -am -DskipTests clean package
       - name: Assemble jlink archive
         run: ${{ runner.os == 'Windows' && 'mvn' || './mvnw' }} --batch-mode -N jreleaser:assemble -Djreleaser.config.file=jreleaser.yml -Djreleaser.assemble.jlink.roseau-standalone.jdk.path="$JAVA_HOME" -Djreleaser.assemble.jlink.roseau-standalone.jdk.platform="${{ matrix.platform }}"
+      - name: Check jlink archive includes ct.sym
+        run: jar tf target/jreleaser/assemble/roseau-standalone/jlink/*.zip | grep '/lib/ct.sym$'
       - name: Upload jlink archive
         uses: actions/upload-artifact@v7
         with:
