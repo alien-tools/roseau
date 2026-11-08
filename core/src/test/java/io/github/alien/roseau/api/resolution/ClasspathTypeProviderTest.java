@@ -1,5 +1,7 @@
 package io.github.alien.roseau.api.resolution;
 
+import io.github.alien.roseau.JavaRelease;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.ClassDecl;
 import io.github.alien.roseau.api.model.EnumDecl;
 import io.github.alien.roseau.api.model.InterfaceDecl;
@@ -20,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 class ClasspathTypeProviderTest {
 	private AsmTypesExtractor extractor;
@@ -171,6 +174,33 @@ class ClasspathTypeProviderTest {
 	}
 
 	@Test
+	void classpath_multi_release_jar_uses_entries_of_the_release() {
+		var multiRelease = List.of(Path.of("src/test/resources/multi-release.jar"));
+		var java11 = new ClasspathTypeProvider(extractor, multiRelease, 11).findType("pkg.C").orElseThrow();
+		var java17 = new ClasspathTypeProvider(extractor, multiRelease, 17).findType("pkg.C").orElseThrow();
+
+		// The Java 17 version adds a @Deprecated that Java 11 clients do not see
+		assertThat(java11.getAnnotations()).isEmpty();
+		assertThat(java17.getAnnotations()).isNotEmpty();
+	}
+
+	@Test
+	void stdlib_is_that_of_the_release() {
+		var java8 = new ClasspathTypeProvider(extractor, List.of(), 8);
+		var java21 = new ClasspathTypeProvider(extractor, List.of(), 21);
+
+		assertThat(java8.findType("java.util.SequencedCollection")).isEmpty();
+		assertThat(java21.findType("java.util.SequencedCollection", InterfaceDecl.class)).isPresent();
+	}
+
+	@Test
+	void stdlib_of_invalid_release_doesnt_fallback_to_running_jvm() {
+		assertThatThrownBy(() -> new ClasspathTypeProvider(extractor, List.of(), 7))
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("Cannot resolve the JDK types of Java release 7");
+	}
+
+	@Test
 	void stdlib_internal_class_is_not_resolved() {
 		assertThat(provider.findType("jdk.internal.misc.Unsafe")).isEmpty();
 		assertThat(provider.findType("sun.misc.Unsafe", ClassDecl.class)).isPresent();
@@ -178,7 +208,7 @@ class ClasspathTypeProviderTest {
 
 	@Test
 	void stdlib_without_ct_sym_falls_back_to_running_jvm() {
-		var fallback = new ClasspathTypeProvider(extractor, List.of(), null);
+		var fallback = new ClasspathTypeProvider(extractor, List.of(), JavaRelease.host(), null);
 
 		assertThat(fallback.findType("java.lang.String", ClassDecl.class)).isPresent();
 		assertThat(fallback.findType("jdk.internal.misc.Unsafe", ClassDecl.class)).isPresent();

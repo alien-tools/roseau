@@ -1,5 +1,6 @@
 package io.github.alien.roseau.cli;
 
+import io.github.alien.roseau.JavaRelease;
 import org.assertj.core.api.InstanceOfAssertFactories;
 import org.json.JSONArray;
 import org.json.JSONObject;
@@ -19,6 +20,7 @@ import static io.github.alien.roseau.cli.CliRunner.runExpectingDiagnostics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RoseauCLITest {
+	private static final int HOST = JavaRelease.host();
 	private static final String V1_SOURCES = "--v1=src/test/resources/test-project-v1/src";
 	private static final String V2_SOURCES = "--v2=src/test/resources/test-project-v2/src";
 	private static final String V1_JAR = "--v1=src/test/resources/test-project-v1/test-project-v1.jar";
@@ -668,6 +670,48 @@ class RoseauCLITest {
 				.stderrContains("dependency.Base");
 		}
 
+		@Test
+		void yaml_java_release_is_honored(@TempDir Path tempDir) throws IOException {
+			var config = write(tempDir, """
+				common:
+				  javaRelease: 21
+				""");
+			var result = runExpectingDiagnostics(V1_JAR, "--api", "--config=" + config);
+
+			assertThatCli(result)
+				.succeeded()
+				.stdoutAsJson();
+			assertThat(new JSONObject(result.stdout()).getJSONObject("library").getInt("javaRelease")).isEqualTo(21);
+		}
+
+		@Test
+		void cli_java_release_wins_over_the_config_file(@TempDir Path tempDir) throws IOException {
+			var config = write(tempDir, """
+				common:
+				  javaRelease: 21
+				""");
+			var result = runExpectingDiagnostics(V1_JAR, "--api", "--java-release=17", "--config=" + config);
+
+			assertThatCli(result)
+				.succeeded()
+				.stdoutAsJson();
+			assertThat(new JSONObject(result.stdout()).getJSONObject("library").getInt("javaRelease")).isEqualTo(17);
+		}
+
+		@Test
+		void yaml_java_release_must_be_a_release(@TempDir Path tempDir) throws IOException {
+			var config = write(tempDir, """
+				common:
+				  javaRelease: latest
+				""");
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--config=" + config);
+
+			assertThatCli(result)
+				.failed()
+				.stderrContains("Couldn't read options file " + config)
+				.stderrContains("latest");
+		}
+
 		private static Path write(Path tempDir, String contents) throws IOException {
 			Path config = tempDir.resolve("roseau.yaml");
 			Files.writeString(config, contents);
@@ -754,6 +798,75 @@ class RoseauCLITest {
 				.failed()
 				.hasStderr("Cannot find v1: src/test/resources/invalid-path" + System.lineSeparator()
 					+ "Use -v/-vv for detailed error logs." + System.lineSeparator());
+		}
+	}
+
+	@Nested
+	class JavaReleases {
+		@Test
+		void the_host_release_is_the_default() {
+			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--plain", "--java-release=" + HOST))
+				.succeeded()
+				.hasReport(FULL_DIFF_FROM_JAR);
+		}
+
+		@Test
+		void an_older_release_is_reported() {
+			// The fixture JARs are compiled with Java 25
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--plain", "--java-release=21");
+
+			assertThatCli(result)
+				.succeeded()
+				.hasReport(FULL_DIFF_FROM_JAR);
+		}
+
+		@Test
+		void api_mode_records_the_release() {
+			var result = runExpectingDiagnostics(V1_JAR, "--api", "--java-release=17");
+
+			assertThatCli(result)
+				.succeeded()
+				.stdoutAsJson();
+			assertThat(new JSONObject(result.stdout()).getJSONObject("library").getInt("javaRelease")).isEqualTo(17);
+		}
+
+		@Test
+		void a_non_release_is_an_error() {
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--java-release=latest");
+
+			assertThatCli(result)
+				.failed()
+				.reportedError("Invalid value for option '--java-release': 'latest' is not an int");
+		}
+
+		@Test
+		void a_release_older_than_8_is_an_error() {
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--java-release=7");
+
+			assertThatCli(result)
+				.failed()
+				.reportedError("Unsupported Java release 7; Roseau running on Java %d supports releases 8 to %d"
+					.formatted(HOST, HOST));
+		}
+
+		@Test
+		void a_release_newer_than_the_host_is_an_error() {
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--java-release=" + (HOST + 1));
+
+			assertThatCli(result)
+				.failed()
+				.reportedError("Unsupported Java release %d; Roseau running on Java %d supports releases 8 to %d"
+					.formatted(HOST + 1, HOST, HOST));
+		}
+
+		@Test
+		void sources_only_support_the_host_release() {
+			var result = runExpectingDiagnostics(V1_SOURCES, V2_JAR, "--diff", "--java-release=8");
+
+			assertThatCli(result)
+				.failed()
+				.stderrContains(("Source libraries can only be checked on the release of the JDK running Roseau (%d), " +
+					"not Java 8; compare compiled JARs instead").formatted(HOST));
 		}
 	}
 

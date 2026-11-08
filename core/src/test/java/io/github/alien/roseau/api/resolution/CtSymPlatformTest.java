@@ -98,7 +98,7 @@ class CtSymPlatformTest {
 
 	private ClasspathTypeProvider provider(int release) {
 		var platform = CtSymPlatform.open(HOST_CT_SYM, release).orElseThrow();
-		return new ClasspathTypeProvider(extractor, List.of(), platform);
+		return new ClasspathTypeProvider(extractor, List.of(), release, platform);
 	}
 
 	private static List<String> methodNames(Set<MethodDecl> methods) {

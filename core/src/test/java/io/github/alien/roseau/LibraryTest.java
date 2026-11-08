@@ -168,4 +168,66 @@ class LibraryTest {
 			.hasMessageContaining("Invalid path to POM file");
 	}
 
+	@Test
+	void java_release_defaults_to_the_host() {
+		var lib = Library.of(validJar);
+
+		assertThat(lib.getJavaRelease()).isEqualTo(JavaRelease.host());
+		assertThat(lib.isModuleDeclarationIgnored()).isFalse();
+	}
+
+	@Test
+	void jar_can_be_checked_on_another_release() {
+		var lib = Library.builder().location(validJar).javaRelease(17).build();
+
+		assertThat(lib.getJavaRelease()).isEqualTo(17);
+		assertThat(lib.isModuleDeclarationIgnored()).isFalse();
+	}
+
+	@Test
+	void module_declaration_is_ignored_below_java_9() {
+		var lib = Library.builder().location(validJar).javaRelease(8).build();
+
+		assertThat(lib.isIgnoringModule()).isFalse();
+		assertThat(lib.isModuleDeclarationIgnored()).isTrue();
+	}
+
+	@Test
+	void module_declaration_can_be_ignored_on_purpose() {
+		var lib = Library.builder().location(validJar).ignoreModule(true).javaRelease(11).build();
+
+		assertThat(lib.isIgnoringModule()).isTrue();
+		assertThat(lib.isModuleDeclarationIgnored()).isTrue();
+	}
+
+	@Test
+	void unsupported_java_release_throws() {
+		assertThatThrownBy(() -> Library.builder().location(validJar).javaRelease(7).build())
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("Unsupported Java release 7");
+		assertThatThrownBy(() -> Library.builder().location(validJar).javaRelease(JavaRelease.host() + 1).build())
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("Unsupported Java release " + (JavaRelease.host() + 1));
+	}
+
+	@Test
+	void sources_can_only_be_checked_on_the_host_release(@TempDir Path tempDir) {
+		assertThatThrownBy(() -> Library.builder().location(tempDir).javaRelease(17).build())
+			.isInstanceOf(RoseauException.class)
+			.hasMessageContaining("Source libraries can only be checked on the release of the JDK running Roseau (" +
+				JavaRelease.host() + ")")
+			.hasMessageContaining("compare compiled JARs instead");
+		assertThat(Library.builder().location(tempDir).javaRelease(JavaRelease.host()).build().getJavaRelease())
+			.isEqualTo(JavaRelease.host());
+	}
+
+	@Test
+	void java_release_is_part_of_equality() {
+		var java17 = Library.builder().location(validJar).javaRelease(17).build();
+		var java21 = Library.builder().location(validJar).javaRelease(21).build();
+
+		assertThat(java17).isNotEqualTo(java21);
+		assertThat(java17).isEqualTo(Library.builder().location(validJar).javaRelease(17).build());
+		assertThat(java17.toString()).contains("javaRelease=17");
+	}
 }

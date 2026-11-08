@@ -87,6 +87,23 @@ public final class CtSymPlatform {
 	}
 
 	/**
+	 * Checks whether the running JDK's {@code lib/ct.sym} provides the JDK types of the given release.
+	 *
+	 * @param release the Java feature release (e.g., 8, 21)
+	 * @return whether the JDK running Roseau can check compatibility on the given release
+	 */
+	public static boolean isAvailable(int release) {
+		return forRelease(release).isPresent();
+	}
+
+	/**
+	 * @return the path to the running JDK's {@code lib/ct.sym}
+	 */
+	public static Path hostCtSym() {
+		return HOST_CT_SYM;
+	}
+
+	/**
 	 * Opens the class file of a JDK type.
 	 *
 	 * @param classEntry the type's class file name (e.g., {@code java/util/Map$Entry.class})

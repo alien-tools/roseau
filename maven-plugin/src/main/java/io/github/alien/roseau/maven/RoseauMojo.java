@@ -330,7 +330,7 @@ public final class RoseauMojo extends AbstractMojo {
 		// Build Common configuration (classpath + exclusions)
 		RoseauOptions.Classpath commonClasspath = new RoseauOptions.Classpath(resolvePath(classpathPom), mergedClasspath);
 		RoseauOptions.Exclude commonExclude = new RoseauOptions.Exclude(List.of(), List.of());
-		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude, ignoreModule);
+		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, commonExclude, ignoreModule, null);
 
 		// Build Library v1 (baseline)
 		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
@@ -483,16 +483,17 @@ public final class RoseauMojo extends AbstractMojo {
 		// Load configuration (YAML + Maven parameters)
 		RoseauOptions options = loadConfiguration(oldJar, newJar);
 
-		// Build libraries with configuration
-		Library oldLibrary = options.v1().mergeWith(options.common()).toLibrary();
-		Library newLibrary = options.v2().mergeWith(options.common()).toLibrary();
-
-		// Debug
-		getLog().debug("v1 classpath is: " + oldLibrary.getClasspath());
-		getLog().debug("v2 classpath is: " + newLibrary.getClasspath());
-
-		// Run diff
-		RoseauReport report = Roseau.diff(oldLibrary, newLibrary);
+		// Build libraries with configuration and run diff
+		RoseauReport report;
+		try {
+			Library oldLibrary = options.v1().toLibrary(options.common());
+			Library newLibrary = options.v2().toLibrary(options.common());
+			getLog().debug("v1 classpath is: " + oldLibrary.getClasspath());
+			getLog().debug("v2 classpath is: " + newLibrary.getClasspath());
+			report = Roseau.diff(oldLibrary, newLibrary);
+		} catch (RoseauException e) {
+			throw new MojoExecutionException(e.getMessage(), e);
+		}
 
 		// Reject a verdict computed from an incomplete API model before reporting anything
 		if (Boolean.TRUE.equals(options.diff().failOnUnresolved())) {
@@ -653,7 +654,7 @@ public final class RoseauMojo extends AbstractMojo {
 			resolvePaths(options.common().classpath().jars())
 		);
 		RoseauOptions.Common common = new RoseauOptions.Common(commonClasspath, options.common().excludes(),
-			options.common().ignoreModule());
+			options.common().ignoreModule(), options.common().javaRelease());
 
 		RoseauOptions.Classpath v1Classpath = new RoseauOptions.Classpath(
 			resolvePath(options.v1().classpath().pom()),
