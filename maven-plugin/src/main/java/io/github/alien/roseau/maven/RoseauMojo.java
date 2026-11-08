@@ -517,7 +517,7 @@ public final class RoseauMojo extends AbstractMojo {
 		List<BreakingChange> bcs = filteredReport.getBreakingChanges();
 
 		if (bcs.isEmpty()) {
-			getLog().info("No breaking changes found.");
+			getLog().info("No breaking changes found on Java " + filteredReport.getJavaRelease() + ".");
 			return;
 		} else {
 			BreakingChangesFormatter formatter = new MavenFormatter(getLog());

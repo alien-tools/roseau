@@ -26,14 +26,16 @@ public class MavenFormatter implements BreakingChangesFormatter {
 	public String format(RoseauReport report) {
 		List<BreakingChange> changes = report.getBreakingChanges();
 		if (changes.isEmpty()) {
-			log.info("No breaking changes found.");
+			log.info("No breaking changes found on Java %d.".formatted(report.getJavaRelease()));
+			return "";
 		}
 
 		int binaryBreaking = report.getBinaryBreakingChanges().size();
 		int sourceBreaking = report.getSourceBreakingChanges().size();
 
-		log.warn(String.format("Breaking Changes found: %d (%d binary-breaking, %d source-breaking)",
-			changes.size(), binaryBreaking, sourceBreaking));
+		log.warn(String.format(
+			"Breaking Changes found on Java %d: %d (%d binary-breaking, %d source-breaking)",
+			report.getJavaRelease(), changes.size(), binaryBreaking, sourceBreaking));
 
 		report.getBreakingChanges().forEach(this::formatBreakingChange);
 

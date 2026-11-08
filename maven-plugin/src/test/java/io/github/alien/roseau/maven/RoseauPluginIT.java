@@ -171,7 +171,7 @@ class RoseauPluginIT {
 		void maven_properties_override_yaml_options(MavenExecutionResult result) {
 			assertThat(result).isSuccessful();
 			assertThat(result).out().warn().noneMatch(m -> m.contains("TYPE_NEW_ABSTRACT_METHOD"));
-			assertThat(result).out().info().anyMatch(m -> m.contains("No breaking changes found."));
+			assertThat(result).out().info().anyMatch(m -> m.contains("No breaking changes found on Java "));
 		}
 
 		@SystemProperty(value = "roseau.configFile", content = "roseau-source-only.yaml")

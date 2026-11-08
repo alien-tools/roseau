@@ -2,7 +2,6 @@ package io.github.alien.roseau.cli;
 
 import io.github.alien.roseau.JavaRelease;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,7 +26,7 @@ class RoseauCLITest {
 	private static final String V2_JAR = "--v2=src/test/resources/test-project-v2/test-project-v2.jar";
 
 	private static final String FULL_DIFF = """
-		Breaking Changes found: 4 (2 binary-breaking, 3 source-breaking)
+		Breaking Changes found on Java %d: 4 (2 binary-breaking, 3 source-breaking)
 		⚠ pkg.T FORMAL_TYPE_PARAMETER_REMOVED [U]
 		  ✓ binary-compatible ✗ source-breaking
 		  → pkg/T.java:3
@@ -40,11 +39,11 @@ class RoseauCLITest {
 		⚠ pkg.T.n() METHOD_OVERRIDABLE_NOW_STATIC
 		  ✓ binary-compatible ✗ source-breaking
 		  → pkg/T.java:5
-		""";
+		""".formatted(HOST);
 
 	private static final String FULL_DIFF_FROM_JAR = FULL_DIFF.replace("→ pkg/T.java:3", "→ pkg/T.java");
 
-	private static final String NO_CHANGES = "No breaking changes found.";
+	private static final String NO_CHANGES = "No breaking changes found on Java %d.".formatted(HOST);
 
 	@Nested
 	class Meta {
@@ -145,14 +144,14 @@ class RoseauCLITest {
 				"--v2=src/test/resources/inheritance-v2/src", "--diff", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (2 binary-breaking, 2 source-breaking)
+					Breaking Changes found on Java %d: 2 (2 binary-breaking, 2 source-breaking)
 					✗ pkg.Base.removed() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → pkg/Base.java:5
 					✗ pkg.Base.removed() in pkg.Child EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → pkg/Base.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -160,14 +159,14 @@ class RoseauCLITest {
 			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--binary-only", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (2 binary-breaking, 1 source-breaking)
+					Breaking Changes found on Java %d: 2 (2 binary-breaking, 1 source-breaking)
 					✗ pkg.T.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → pkg/T.java:4
 					⚠ pkg.T.n() METHOD_NOW_STATIC
 					  ✗ binary-breaking ✓ source-compatible
 					  → pkg/T.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -175,7 +174,7 @@ class RoseauCLITest {
 			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--source-only", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 3 (1 binary-breaking, 3 source-breaking)
+					Breaking Changes found on Java %d: 3 (1 binary-breaking, 3 source-breaking)
 					⚠ pkg.T FORMAL_TYPE_PARAMETER_REMOVED [U]
 					  ✓ binary-compatible ✗ source-breaking
 					  → pkg/T.java
@@ -185,7 +184,7 @@ class RoseauCLITest {
 					⚠ pkg.T.n() METHOD_OVERRIDABLE_NOW_STATIC
 					  ✓ binary-compatible ✗ source-breaking
 					  → pkg/T.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -194,11 +193,11 @@ class RoseauCLITest {
 				"--v2=src/test/resources/module-library-v2/src", "--diff", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 1 (1 binary-breaking, 1 source-breaking)
+					Breaking Changes found on Java %d: 1 (1 binary-breaking, 1 source-breaking)
 					✗ exported.Exported.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → exported/Exported.java:4
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -207,14 +206,14 @@ class RoseauCLITest {
 				"--v2=src/test/resources/module-library-v2/src", "--diff", "--ignore-module", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (2 binary-breaking, 2 source-breaking)
+					Breaking Changes found on Java %d: 2 (2 binary-breaking, 2 source-breaking)
 					✗ exported.Exported.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → exported/Exported.java:4
 					✗ internal.Internal.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → internal/Internal.java:4
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -432,7 +431,9 @@ class RoseauCLITest {
 
 			run(V1_SOURCES, V2_SOURCES, "--diff", "--report=JSON=" + json);
 
-			assertThat(new JSONArray(Files.readString(json))).hasSize(4);
+			var report = new JSONObject(Files.readString(json));
+			assertThat(report.getInt("javaRelease")).isEqualTo(HOST);
+			assertThat(report.getJSONArray("breakingChanges")).hasSize(4);
 		}
 
 		@Test
@@ -527,8 +528,8 @@ class RoseauCLITest {
 						  ✗ binary-breaking ✗ source-breaking
 						  → pkg/T.java:4
 						""", "")
-					.replace("found: 4 (2 binary-breaking, 3 source-breaking)",
-						"found: 3 (1 binary-breaking, 2 source-breaking)"));
+					.replace(": 4 (2 binary-breaking, 3 source-breaking)",
+						": 3 (1 binary-breaking, 2 source-breaking)"));
 		}
 
 		@Test
@@ -541,14 +542,14 @@ class RoseauCLITest {
 			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--plain", "--ignored=" + ignored))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (1 binary-breaking, 1 source-breaking)
+					Breaking Changes found on Java %d: 2 (1 binary-breaking, 1 source-breaking)
 					⚠ pkg.T.n() METHOD_NOW_STATIC
 					  ✗ binary-breaking ✓ source-compatible
 					  → pkg/T.java:5
 					⚠ pkg.T.n() METHOD_OVERRIDABLE_NOW_STATIC
 					  ✓ binary-compatible ✗ source-breaking
 					  → pkg/T.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -817,7 +818,7 @@ class RoseauCLITest {
 
 			assertThatCli(result)
 				.succeeded()
-				.hasReport(FULL_DIFF_FROM_JAR);
+				.hasReport(FULL_DIFF_FROM_JAR.replace("on Java " + HOST, "on Java 21"));
 		}
 
 		@Test
