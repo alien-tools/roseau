@@ -18,11 +18,15 @@ import org.eclipse.jdt.core.dom.FileASTRequestor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.stream.Collectors;
@@ -94,11 +98,16 @@ public final class JdtTypesExtractor implements TypesExtractor {
 
 		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
 		Set<String> reportedErrors = ConcurrentHashMap.newKeySet();
+		List<Path> misplacedFiles = new ArrayList<>();
 		// Receive parsed ASTs and forward them to the visitor
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
 				Path filePath = library.getLocation().relativize(Path.of(sourceFilePath));
+				String packageName = ast.getPackage() != null ? ast.getPackage().getName().getFullyQualifiedName() : "";
+				if (!packageMatchesLocation(filePath, packageName)) {
+					misplacedFiles.add(filePath);
+				}
 				IProblem[] problems = ast.getProblems();
 				if (problems != null) {
 					// Actual parsing errors are just warnings for us
@@ -116,11 +125,21 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		// Start parsing and forwarding ASTs
 		try {
 			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
+			if (!misplacedFiles.isEmpty()) {
+				LOGGER.warn("{} file(s) in {} do not match their package declaration (e.g., {}); is the source root correct?",
+					misplacedFiles.size(), library.getLocation(), misplacedFiles.getFirst());
+			}
 			return new ParsingResult(sink.getTypes(), sink.getModules());
 		} catch (RuntimeException e) {
 			// Catching JDT's internal messy errors
 			throw new RoseauException("JDT failed to parse code from " + library.getLocation(), e);
 		}
+	}
+
+	static boolean packageMatchesLocation(Path relativeFile, String packageName) {
+		String directory = Objects.toString(relativeFile.getParent(), "");
+		return relativeFile.endsWith("module-info.java")
+			|| directory.replace(File.separatorChar, '.').equals(packageName);
 	}
 
 	private static boolean canExtract(Library library) {
