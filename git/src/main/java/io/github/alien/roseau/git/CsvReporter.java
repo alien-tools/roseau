@@ -5,6 +5,7 @@ import com.google.common.collect.Iterables;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AccessModifier;
 import io.github.alien.roseau.api.model.Annotation;
+import io.github.alien.roseau.api.model.ExecutableDecl;
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.SourceLocation;
@@ -82,6 +83,8 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"has_java_changes",
 		"has_pom_changes",
 		"source_root",
+		"unresolved_types_count",
+		"incomplete_hierarchy_types_count",
 		"checkout_time_ms",
 		"classpath_time_ms",
 		"api_time_ms",
@@ -106,6 +109,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		"is_deprecated_removal",
 		"is_internal_removal",
 		"matched_exclusion_rule",
+		"impacted_type_hierarchy_incomplete",
 		"source_file",
 		"source_line"
 	);
@@ -152,7 +156,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		try {
 			writeCommitRow(analysis, stats, daysSincePrev, bcs, matchedRules);
 			if (analysis.api().isPresent()) {
-				writeBreakingChangesRows(analysis.commit().sha(), bcs, matchedRules);
+				writeBreakingChangesRows(analysis.commit().sha(), bcs, analysis.api().get(), matchedRules);
 			}
 		} catch (IOException e) {
 			LOGGER.error("Error writing data for commit {}", analysis.commit().sha(), e);
@@ -175,7 +179,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		int exportedMethodsCount,
 		int exportedFieldsCount,
 		long deprecatedCount,
-		long internalCount
+		long internalCount,
+		int unresolvedTypesCount,
+		int incompleteHierarchyTypesCount
 	) {
 		int allApiSymbolsCount() {
 			return allApiTypesCount + allApiMethodsCount + allApiFieldsCount;
@@ -186,7 +192,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		}
 	}
 
-	private static final ApiStats EMPTY_STATS = new ApiStats(0, 0, 0, 0, 0, 0, 0, 0);
+	private static final ApiStats EMPTY_STATS = new ApiStats(0, 0, 0, 0, 0, 0, 0, 0, 0, 0);
 
 	private record StatsResult(ApiStats stats, long timeMs) {
 	}
@@ -220,6 +226,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		int exportedTypesCount = 0;
 		int exportedMethodsCount = 0;
 		int exportedFieldsCount = 0;
+		int incompleteHierarchyTypesCount = 0;
 		long deprecatedCount = 0;
 		long internalCount = 0;
 		for (TypeDecl type : api.getExportedTypes()) {
@@ -229,6 +236,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			exportedTypesCount++;
 			exportedMethodsCount += methods.size();
 			exportedFieldsCount += fields.size();
+			if (hasIncompleteHierarchy(type, api)) {
+				incompleteHierarchyTypesCount++;
+			}
 			if (hasAnnotation(type, deprecated)) {
 				deprecatedCount++;
 			}
@@ -253,7 +263,9 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			exportedMethodsCount,
 			exportedFieldsCount,
 			deprecatedCount,
-			internalCount
+			internalCount,
+			api.getUnresolvedTypes().size(),
+			incompleteHierarchyTypesCount
 		);
 	}
 
@@ -274,7 +286,8 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			if (symbol == null) {
 				return Optional.empty();
 			}
-			Optional<String> byName = namePatterns.stream()
+			// Name rules apply to package and type names only: members are matched through their containing type
+			Optional<String> byName = !(symbol instanceof TypeDecl) ? Optional.empty() : namePatterns.stream()
 				.filter(p -> p.matcher(symbol.getQualifiedName()).matches())
 				.findFirst()
 				.map(p -> "name:" + p.pattern());
@@ -373,6 +386,8 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 			c.javaChanged(),
 			c.pomChanged(),
 			analysis.sourceRoots().stream().map(Path::toString).collect(Collectors.joining(";")),
+			stats.stats().unresolvedTypesCount(),
+			stats.stats().incompleteHierarchyTypesCount(),
 			analysis.checkoutTimeMs(),
 			0L,
 			analysis.apiTimeMs(),
@@ -386,7 +401,7 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 		return url + "/commit/" + sha;
 	}
 
-	private void writeBreakingChangesRows(String commitSha, List<BreakingChange> bcs,
+	private void writeBreakingChangesRows(String commitSha, List<BreakingChange> bcs, API api,
 	                                      Map<BreakingChange, String> matchedRules) throws IOException {
 		for (BreakingChange bc : bcs) {
 			SourceLocation location = bc.getLocation();
@@ -407,12 +422,13 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 				compatibility(kind),
 				bc.impactedType().getPackageName(),
 				bc.impactedType().getQualifiedName(),
-				impactedSymbol.getQualifiedName(),
+				impactedSymbol instanceof ExecutableDecl exec ? exec.getQualifiedSignature() : impactedSymbol.getQualifiedName(),
 				visibility(impactedSymbol.getVisibility()),
 				isExcludedSymbol,
 				isDeprecatedRemoval,
 				isInternalRemoval,
 				matchedRule,
+				hasIncompleteHierarchy(bc.impactedType(), api),
 				location.file() != null ? location.file().toString() : "",
 				location.line() >= 0 ? location.line() : ""
 			));
@@ -461,6 +477,11 @@ final class CsvReporter implements CommitSink, AutoCloseable {
 	}
 
 	private static String visibility(AccessModifier visibility) {
-		return visibility == null ? "" : visibility.toString();
+		return visibility == null ? "" : visibility.toString().toLowerCase(Locale.ROOT);
+	}
+
+	private static boolean hasIncompleteHierarchy(TypeDecl type, API api) {
+		return api.analyzer().getAllSuperTypes(type).stream()
+			.anyMatch(ref -> api.analyzer().resolver().resolve(ref).isEmpty());
 	}
 }
