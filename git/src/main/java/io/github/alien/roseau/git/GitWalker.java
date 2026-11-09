@@ -252,10 +252,12 @@ public final class GitWalker {
 
 	private ApiResult buildApiFull(List<Path> sourceRoots, JdtTypesExtractor extractor) {
 		Stopwatch sw = Stopwatch.createStarted();
-		// A Library points to a single location, so each root is parsed on its own. Merging the extracted types before
-		// building the API is enough for cross-root references to resolve: resolution runs on the merged set.
+		// A Library points to a single location, so each root is parsed on its own and the extracted types are merged.
+		// The other roots go on the classpath: JDT reads their sources to resolve cross-root references (otherwise
+		// recorded as bare simple names) without extracting their types twice.
 		List<LibraryTypes> perRoot = sourceRoots.stream()
-			.map(root -> extractor.extractTypes(buildLibrary(root)))
+			.map(root -> extractor.extractTypes(buildLibrary(root,
+				sourceRoots.stream().filter(other -> !other.equals(root)).toList())))
 			.toList();
 		API api = Roseau.buildAPI(mergeTypes(perRoot));
 		return new ApiResult(api, sw.elapsed().toMillis(), List.of());
@@ -285,7 +287,7 @@ public final class GitWalker {
 
 		try {
 			LibraryTypes updatedTypes = incrementalExtractor.incrementalUpdate(
-				previousApi.getLibraryTypes(), buildLibrary(sourceRoot), changedFiles);
+				previousApi.getLibraryTypes(), buildLibrary(sourceRoot, List.of()), changedFiles);
 			return new ApiResult(Roseau.buildAPI(updatedTypes), sw.elapsed().toMillis(), List.of());
 		} catch (RuntimeException e) {
 			LOGGER.warn("Incremental update failed for commit {}; falling back to full rebuild", info.sha(), e);
@@ -294,12 +296,13 @@ public final class GitWalker {
 		}
 	}
 
-	private Library buildLibrary(Path sourceRoot) {
+	private Library buildLibrary(Path sourceRoot, List<Path> siblingRoots) {
 		// Exclusions are deliberately not applied here: we want breaking changes to be detected on excluded symbols
 		// too, and filtered downstream, so that public and internal breakage can be reported separately.
+		// The classpath holds no dependency, only the library's other source roots, if any.
 		return Library.builder()
 			.location(sourceRoot)
-			.classpath(List.of())
+			.classpath(siblingRoots)
 			.build();
 	}
 
