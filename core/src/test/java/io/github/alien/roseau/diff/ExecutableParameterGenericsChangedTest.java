@@ -469,4 +469,19 @@ class ExecutableParameterGenericsChangedTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("new A().m(new java.util.ArrayList<Comparable>());")
+	@Test
+	void method_parameterized_bound_param_added_and_used_as_part_of_parameter_type_final() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List<Comparable> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public final <T extends Comparable<T>> void m(java.util.List<T> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

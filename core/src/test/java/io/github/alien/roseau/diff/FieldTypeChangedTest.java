@@ -171,6 +171,21 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("Comparable f = new A().f;")
+	@Test
+	void type_parameterized_bound_param_added_and_used_as_direct_field_type_no_break() {
+		var v1 = """
+			public class A {
+				public Comparable f;
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("String f = new A<String>().f;")
 	@Test
 	void type_formal_type_parameter_renamed_direct_field_type_no_break() {
@@ -440,6 +455,22 @@ class FieldTypeChangedTest {
 		var v2 = """
 			public class A<T, U> {
 				public U f;
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("String[] f = new A<String, Integer>().f;")
+	@Test
+	void type_parameters_with_same_parameterized_bound_erasure_source_only() {
+		var v1 = """
+			public class A<T extends Comparable<T>, U extends Comparable<U>> {
+				public final T[] f = null;
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>, U extends Comparable<U>> {
+				public final U[] f = null;
 			}""";
 
 		assertBCs(buildDiff(v1, v2),

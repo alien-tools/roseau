@@ -42,7 +42,7 @@ public final class TypeParameterMapping {
 					mapping.put(oldParam.name(), new TypeParameterReference(newName));
 				}
 			} else {
-				mapping.put(oldParam.name(), oldParam.bounds().getFirst());
+				mapping.put(oldParam.name(), erasedFirstBound(oldParam));
 			}
 		}
 		return mapping;
@@ -62,9 +62,18 @@ public final class TypeParameterMapping {
 		Map<String, ITypeReference> mapping = new HashMap<>();
 		for (int i = oldParams.size(); i < newParams.size(); i++) {
 			FormalTypeParameter newParam = newParams.get(i);
-			mapping.put(newParam.name(), newParam.bounds().getFirst());
+			mapping.put(newParam.name(), erasedFirstBound(newParam));
 		}
 		return mapping;
+	}
+
+	/**
+	 * Returns the erasure of the left-most bound of a type parameter (JLS §4.6): {@code T extends Comparable<T>} yields
+	 * {@code Comparable}. A bound that is itself a type variable is returned unchanged.
+	 */
+	private static ITypeReference erasedFirstBound(FormalTypeParameter param) {
+		ITypeReference bound = param.bounds().getFirst();
+		return bound instanceof TypeReference<?> tr ? new TypeReference<>(tr.qualifiedName()) : bound;
 	}
 
 	/**

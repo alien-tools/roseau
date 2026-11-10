@@ -373,6 +373,36 @@ class MethodReturnTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	@Client("Comparable c = new A().m();")
+	@Test
+	void type_parameterized_bound_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public Comparable m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>> {
+				public T m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("A a = new A().m();")
+	@Test
+	void type_self_bounded_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public A m() { return this; }
+			}""";
+		var v2 = """
+			public class A<B extends A<B>> {
+				public B m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	@Client("""
 		new A<CharSequence, String>().m();
 		new A<CharSequence, String>() { @Override public CharSequence m() { return null; } };""")
@@ -419,6 +449,39 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("String s = new A<String, Integer>().m();")
+	@Test
+	void type_parameters_with_same_parameterized_bound_erasure_source_only() {
+		var v1 = """
+			public class A<T extends Comparable<T>, U extends Comparable<U>> {
+				public T m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>, U extends Comparable<U>> {
+				public U m() { return null; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("Integer i = new A<Integer, String>().m();")
+	@Test
+	void type_parameters_with_parameterized_bounds_of_different_erasure_binary_and_source() {
+		var v1 = """
+			public class A<T extends Comparable<T>, U extends CharSequence & Comparable<U>> {
+				public final T m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>, U extends CharSequence & Comparable<U>> {
+				public final U m() { return null; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 

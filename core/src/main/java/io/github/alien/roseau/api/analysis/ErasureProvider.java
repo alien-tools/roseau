@@ -63,7 +63,9 @@ public interface ErasureProvider {
 	}
 
 	/**
-	 * Returns the erased form of the given type reference within the context of the specified scope.
+	 * Returns the erased form of the given type reference within the context of the specified scope (JLS §4.6). A type
+	 * variable is erased to the erasure of its left-most bound (e.g., {@code T extends Comparable<T>} erases to
+	 * {@code Comparable}).
 	 *
 	 * @param scope     the scope defining the resolution context for type parameters
 	 * @param reference the type reference to be erased
@@ -73,7 +75,8 @@ public interface ErasureProvider {
 		Preconditions.checkNotNull(scope);
 		Preconditions.checkNotNull(reference);
 		return switch (reference) {
-			case TypeParameterReference tpr -> typeParameter().resolveTypeParameterBound(scope, tpr);
+			case TypeParameterReference tpr ->
+				getErasedType(scope, typeParameter().resolveTypeParameterBound(scope, tpr));
 			case ArrayTypeReference(var t, var dimension) -> new ArrayTypeReference(getErasedType(scope, t), dimension);
 			case TypeReference<?>(var fqn, _) -> new TypeReference<>(fqn);
 			default -> reference;
@@ -105,7 +108,7 @@ public interface ErasureProvider {
 	private ITypeReference getErasedType(TypeDecl owner, TypeParameterScope scope, ITypeReference reference) {
 		return switch (reference) {
 			case TypeParameterReference tpr when typeParameter().resolveTypeParameter(scope, tpr).isEmpty() ->
-				typeParameter().resolveTypeParameterBound(owner, tpr);
+				getErasedType(owner, typeParameter().resolveTypeParameterBound(owner, tpr));
 			case ArrayTypeReference(var t, var dimension) ->
 				new ArrayTypeReference(getErasedType(owner, scope, t), dimension);
 			default -> getErasedType(scope, reference);
