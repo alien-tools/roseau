@@ -8,7 +8,7 @@ import io.github.alien.roseau.diff.rules.MemberRuleContext;
 public class FieldNowStatic implements MemberRule<FieldDecl> {
 	@Override
 	public void onMatched(FieldDecl oldField, FieldDecl newField, MemberRuleContext ctx) {
-		if (!oldField.isStatic() && newField.isStatic()) {
+		if (!oldField.isStatic() && newField.isStatic() && !oldField.isCompileTimeConstant()) {
 			ctx.builder().memberBC(BreakingChangeKind.FIELD_NOW_STATIC, ctx.oldType(), oldField, newField);
 		}
 	}

@@ -9,7 +9,10 @@ public class FieldNowProtected implements MemberRule<FieldDecl> {
 	@Override
 	public void onMatched(FieldDecl oldField, FieldDecl newField, MemberRuleContext ctx) {
 		if (oldField.isPublic() && newField.isProtected()) {
-			ctx.builder().memberBC(BreakingChangeKind.FIELD_NOW_PROTECTED, ctx.oldType(), oldField, newField);
+			BreakingChangeKind kind = oldField.isCompileTimeConstant()
+				? BreakingChangeKind.FIELD_CONSTANT_NOW_PROTECTED
+				: BreakingChangeKind.FIELD_NOW_PROTECTED;
+			ctx.builder().memberBC(kind, ctx.oldType(), oldField, newField);
 		}
 	}
 }

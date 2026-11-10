@@ -39,4 +39,34 @@ class FieldNoLongerStaticTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("int i = A.X;")
+	@Test
+	void constant_no_longer_static() {
+		var v1 = """
+			public class A {
+				public static final int X = 1;
+			}""";
+		var v2 = """
+			public class A {
+				public final int X = 1;
+			}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_CONSTANT_NO_LONGER_STATIC, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = A.X;")
+	@Test
+	void non_constant_no_longer_static() {
+		var v1 = """
+			public class A {
+				public static final int X = Integer.parseInt("1");
+			}""";
+		var v2 = """
+			public class A {
+				public final int X = Integer.parseInt("1");
+			}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_NO_LONGER_STATIC, 2, buildDiff(v1, v2));
+	}
 }

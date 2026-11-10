@@ -199,4 +199,128 @@ class FieldRemovedTest {
 			bc("A", "A.i()", BreakingChangeKind.EXECUTABLE_REMOVED, -1),
 			bc("A", "A.<init>(int)", BreakingChangeKind.EXECUTABLE_REMOVED, -1));
 	}
+
+	@Client("int i = A.X;")
+	@Test
+	void static_constant_removed() {
+		var v1 = """
+			public class A {
+				public static final int X = 1;
+			}""";
+		var v2 = """
+			public class A {}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("String s = A.X;")
+	@Test
+	void string_constant_removed() {
+		var v1 = """
+			public class A {
+				public static final String X = "x";
+			}""";
+		var v2 = """
+			public class A {}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = new A().x;")
+	@Test
+	void instance_constant_removed() {
+		var v1 = """
+			public class A {
+				public final int x = 1;
+			}""";
+		var v2 = """
+			public class A {}""";
+
+		assertBC("A", "A.x", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = I.X;")
+	@Test
+	void interface_constant_removed() {
+		var v1 = """
+			public interface I {
+				int X = 1;
+			}""";
+		var v2 = """
+			public interface I {}""";
+
+		assertBC("I", "I.X", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = A.X;")
+	@Test
+	void constant_now_private() {
+		var v1 = """
+			public class A {
+				public static final int X = 1;
+			}""";
+		var v2 = """
+			public class A {
+				private static final int X = 1;
+			}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = B.X;")
+	@Test
+	void inherited_constant_removed() {
+		var v1 = """
+			public class A {
+				public static final int X = 1;
+			}
+			public class B extends A {}""";
+		var v2 = """
+			public class A {}
+			public class B extends A {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.X", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2),
+			bc("B", "A.X", BreakingChangeKind.FIELD_CONSTANT_REMOVED, 2));
+	}
+
+	@Client("String s = A.X;")
+	@Test
+	void null_string_field_removed() {
+		var v1 = """
+			public class A {
+				public static final String X = null;
+			}""";
+		var v2 = """
+			public class A {}""";
+
+		// null is not a constant expression (JLS §15.29)
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = A.X;")
+	@Test
+	void non_constant_field_removed() {
+		var v1 = """
+			public class A {
+				public static final int X = Integer.parseInt("1");
+			}""";
+		var v2 = """
+			public class A {}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("int i = A.X;")
+	@Test
+	void non_final_field_removed() {
+		var v1 = """
+			public class A {
+				public static int X = 1;
+			}""";
+		var v2 = """
+			public class A {}""";
+
+		assertBC("A", "A.X", BreakingChangeKind.FIELD_REMOVED, 2, buildDiff(v1, v2));
+	}
 }

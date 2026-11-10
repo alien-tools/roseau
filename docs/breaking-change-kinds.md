@@ -54,6 +54,9 @@ Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [An
 | [`FIELD_NOW_FINAL`](#field_now_final)                                                             | :material-package-variant-closed: | :material-code-braces: | A writable field becomes final                                              |
 | [`FIELD_NOW_STATIC`](#field_now_static)                                                           | :material-package-variant-closed: | | An instance field becomes static                                            |
 | [`FIELD_NO_LONGER_STATIC`](#field_no_longer_static)                                               | :material-package-variant-closed: | :material-code-braces: | A static field becomes an instance field                                    |
+| [`FIELD_CONSTANT_REMOVED`](#field_constant_removed)                                               | | :material-code-braces: | A constant field is removed from the API                            |
+| [`FIELD_CONSTANT_NOW_PROTECTED`](#field_constant_now_protected)                                   | | :material-code-braces: | A constant field becomes protected                                   |
+| [`FIELD_CONSTANT_NO_LONGER_STATIC`](#field_constant_no_longer_static)                             | | :material-code-braces: | A constant field becomes an instance field                           |
 | [`EXECUTABLE_REMOVED`](#executable_removed)                                                       | :material-package-variant-closed: | :material-code-braces: | An executable is removed from the API                                       |
 | [`EXECUTABLE_NOW_PROTECTED`](#executable_now_protected)                                           | :material-package-variant-closed: | :material-code-braces: | A public executable becomes protected                                       |
 | [`EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION`](#executable_now_throws_checked_exception)             | | :material-code-braces: | An executable adds or widens a checked exception                            |
@@ -446,7 +449,7 @@ An existing annotation element loses its default value. Annotation uses that rel
 
 :material-package-variant-closed: :material-code-braces:
 
-A visible field disappears from the API and can no longer be accessed in client code.
+A visible field disappears from the API and can no longer be accessed in client code. Constant fields are reported as [`FIELD_CONSTANT_REMOVED`](#field_constant_removed) instead.
 
 **Library**
 
@@ -468,7 +471,7 @@ int x = new A().f;
 
 :material-package-variant-closed: :material-code-braces:
 
-A public field becomes protected. Code outside subclasses or the package loses access.
+A public field becomes protected. Code outside subclasses or the package loses access. Constant fields are reported as [`FIELD_CONSTANT_NOW_PROTECTED`](#field_constant_now_protected) instead.
 
 **Library**
 
@@ -491,7 +494,7 @@ int x = new A().f;
 
 :material-package-variant-closed:
 
-A field's type changes in a way that alters its erased descriptor. Recompilation can still succeed (for example via autoboxing), but compiled bytecode that references the old field descriptor fails at link time. Fields that are compile-time constants (`public static final` fields of a primitive type or `String` initialized to a constant expression) are excluded: the Java compiler inlines their value at every use site and emits no field-access instruction, so the field descriptor is irrelevant to compiled clients.
+A field's type changes in a way that alters its erased descriptor. Recompilation can still succeed (for example via autoboxing), but compiled bytecode that references the old field descriptor fails at link time. Constant fields (`final` fields of a primitive type or `String` initialized with a constant expression) are excluded: the Java compiler inlines their value at every use site and emits no field-access instruction, so the field descriptor is irrelevant to compiled clients.
 
 **Library**
 
@@ -563,7 +566,7 @@ new A().f = 1;
 
 :material-package-variant-closed:
 
-An instance field becomes static. Compiled `getfield` instructions are incompatible with a static field and fail at link time.
+An instance field becomes static. Compiled `getfield` instructions are incompatible with a static field and fail at link time. Constant fields are excluded: compiled clients inlined their value and never access them (see [`FIELD_CONSTANT_REMOVED`](#field_constant_removed)).
 
 **Library**
 
@@ -590,7 +593,7 @@ int x = a.f;
 
 :material-package-variant-closed: :material-code-braces:
 
-A static field becomes an instance field. Static access no longer compiles, and compiled `getstatic` instructions fail at link time.
+A static field becomes an instance field. Static access no longer compiles, and compiled `getstatic` instructions fail at link time. Constant fields are reported as [`FIELD_CONSTANT_NO_LONGER_STATIC`](#field_constant_no_longer_static) instead.
 
 **Library**
 
@@ -605,6 +608,74 @@ A static field becomes an instance field. Static access no longer compiles, and 
 
 ```java
 int x = A.f;
+```
+
+---
+
+### `FIELD_CONSTANT_REMOVED`
+
+:material-code-braces:
+
+A constant field disappears from the API. A constant field is a `final` field of a primitive type or `String` initialized with a constant expression, `static` or not. The Java compiler inlines its value at every use site and emits no field-access instruction, so changes that only affect linking cannot break compiled clients.
+
+**Library**
+
+```diff
+ public class A {
+-  public static final int MAX = 10;
+ }
+```
+
+**Client**
+
+```java
+int x = A.MAX;
+```
+
+---
+
+### `FIELD_CONSTANT_NOW_PROTECTED`
+
+:material-code-braces:
+
+A constant field becomes protected. Code outside subclasses or the package loses access on recompilation, but compiled clients inlined the field's value and never access it (see [`FIELD_CONSTANT_REMOVED`](#field_constant_removed)).
+
+**Library**
+
+```diff
+ public class A {
+-  public static final int MAX = 10;
++  protected static final int MAX = 10;
+ }
+```
+
+**Client**
+
+```java
+int x = A.MAX;
+```
+
+---
+
+### `FIELD_CONSTANT_NO_LONGER_STATIC`
+
+:material-code-braces:
+
+A static constant field becomes an instance field. Static access no longer compiles, but compiled clients inlined the field's value and never access it (see [`FIELD_CONSTANT_REMOVED`](#field_constant_removed)).
+
+**Library**
+
+```diff
+ public class A {
+-  public static final int MAX = 10;
++  public final int MAX = 10;
+ }
+```
+
+**Client**
+
+```java
+int x = A.MAX;
 ```
 
 ---

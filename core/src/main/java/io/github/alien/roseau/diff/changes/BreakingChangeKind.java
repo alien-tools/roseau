@@ -40,6 +40,9 @@ public enum BreakingChangeKind {
 	FIELD_NOW_FINAL(MUTATION, true, true),
 	FIELD_NOW_STATIC(MUTATION, true, false),
 	FIELD_NO_LONGER_STATIC(MUTATION, true, true),
+	FIELD_CONSTANT_REMOVED(DELETION, false, true),
+	FIELD_CONSTANT_NOW_PROTECTED(MUTATION, false, true),
+	FIELD_CONSTANT_NO_LONGER_STATIC(MUTATION, false, true),
 
 	// Executable-related BCs
 	EXECUTABLE_REMOVED(DELETION, true, true),

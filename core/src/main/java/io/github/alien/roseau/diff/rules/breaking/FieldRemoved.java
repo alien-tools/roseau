@@ -8,6 +8,9 @@ import io.github.alien.roseau.diff.rules.MemberRuleContext;
 public class FieldRemoved implements MemberRule<FieldDecl> {
 	@Override
 	public void onRemoved(FieldDecl field, MemberRuleContext ctx) {
-		ctx.builder().memberBC(BreakingChangeKind.FIELD_REMOVED, ctx.oldType(), field);
+		BreakingChangeKind kind = field.isCompileTimeConstant()
+			? BreakingChangeKind.FIELD_CONSTANT_REMOVED
+			: BreakingChangeKind.FIELD_REMOVED;
+		ctx.builder().memberBC(kind, ctx.oldType(), field);
 	}
 }
