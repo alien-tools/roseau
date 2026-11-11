@@ -53,7 +53,7 @@ Roseau compares the library API surface, not every declaration in the input. For
 Typical CLI output looks like this:
 
 ```text
-Breaking changes found: 3 (2 binary-breaking, 2 source-breaking)
+Breaking changes found on Java 25: 3 (2 binary-breaking, 2 source-breaking)
 ✗ com.pkg.A TYPE_REMOVED
   ✗ binary-breaking ✗ source-breaking
   → com/pkg/A.java:4

@@ -15,6 +15,7 @@ public class MdFormatter implements BreakingChangesFormatter {
 	public String format(RoseauReport report) {
 		StringBuilder sb = new StringBuilder();
 		sb.append("## Breaking Changes Report\n");
+		sb.append("On Java ").append(report.getJavaRelease()).append(".\n\n");
 		if (report.getBreakingChanges().isEmpty()) {
 			sb.append("No breaking changes detected.");
 		} else {

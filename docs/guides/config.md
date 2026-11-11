@@ -45,11 +45,20 @@ common:
         args: { status: org.apiguardian.api.API$Status.INTERNAL }
 ```
 
+## Java release
+
+`common.javaRelease` sets the [Java release to consider](../java-release.md), which determines the JDK APIs clients see, the multi-release JAR entries they load, and whether modules apply. It defaults to the release of the JDK running Roseau and is overridden by `--java-release`. Both versions are always compared on the same release.
+
+```yaml title="roseau.yaml"
+common:
+  javaRelease: 8
+```
+
 ## Example configuration
 
 | Section | Meaning |
 | --- | --- |
-| `common` | shared classpath, exclusion rules, and `ignoreModule` |
+| `common` | shared classpath, exclusion rules, `ignoreModule`, and [`javaRelease`](../java-release.md) |
 | `v1` | input path and overrides for the baseline version |
 | `v2` | input path and overrides for the current version |
 | `diff` | diff options such as `ignore`, `binaryOnly`, `sourceOnly`, and `failOnUnresolved` |
@@ -69,6 +78,7 @@ common:
       - name: org.apiguardian.api.API
         args: { status: org.apiguardian.api.API$Status.INTERNAL }
   ignoreModule: false
+  javaRelease: 17
 
 v1:
   location: /path/to/library-1.0.0.jar

@@ -81,6 +81,13 @@ public final class RoseauReport {
 		return v2;
 	}
 
+	/**
+	 * @return the Java release on which both versions are compared
+	 */
+	public int getJavaRelease() {
+		return v1.getLibraryTypes().getLibrary().getJavaRelease();
+	}
+
 	public List<BreakingChange> getBreakingChanges() {
 		return breakingChanges.stream()
 			.filter(bc -> !isExcluded(bc.impactedSymbol()))

@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xmlns="http://maven.apache.org/POM/4.0.0"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>io.github.alien-tools</groupId>
+    <artifactId>java-release</artifactId>
+    <version>0.1.0</version>
+    <packaging>jar</packaging>
+
+    <!-- A library targeting Java 8, the legacy way -->
+    <properties>
+        <maven.compiler.source>1.8</maven.compiler.source>
+        <maven.compiler.target>1.8</maven.compiler.target>
+        <maven.compiler.showWarnings>false</maven.compiler.showWarnings>
+    </properties>
+
+    <build>
+        <plugins>
+            <plugin>
+                <groupId>io.github.alien-tools</groupId>
+                <artifactId>roseau-maven-plugin</artifactId>
+                <version>0.8.0-SNAPSHOT</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>check</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <baselineJar>old.jar</baselineJar>
+                    <reports>
+                        <report>
+                            <file>report.json</file>
+                            <format>JSON</format>
+                        </report>
+                        <report>
+                            <file>report.md</file>
+                            <format>MD</format>
+                        </report>
+                    </reports>
+                </configuration>
+            </plugin>
+        </plugins>
+    </build>
+</project>

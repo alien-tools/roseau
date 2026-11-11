@@ -2,6 +2,8 @@ package io.github.alien.roseau.api.resolution;
 
 import com.google.common.base.Preconditions;
 import com.google.common.base.Suppliers;
+import io.github.alien.roseau.JavaRelease;
+import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.TypeDecl;
 import io.github.alien.roseau.extractors.ExtractorSink;
 import io.github.alien.roseau.extractors.asm.AsmTypesExtractor;
@@ -24,29 +26,65 @@ import java.util.zip.ZipFile;
 /**
  * Provides type declarations by resolving fully qualified names based on a user-specified classpath.
  * <p>
- * This implementation supports searching for type declarations both on the platform class loader (prioritized) and in
- * the specified classpath entries.
+ * This implementation searches for type declarations in the JDK first, then in the specified classpath entries, as
+ * clients compiled for a given Java release see them. JDK types are those of that release, read from the running JDK's
+ * {@code lib/ct.sym}, so that resolution does not depend on the modules the runtime contains, and classpath JARs
+ * provide the multi-release entries that release loads.
  */
 public class ClasspathTypeProvider implements TypeProvider {
 	private final AsmTypesExtractor extractor;
 	private final List<ClasspathEntry> classpath;
+	// Null when the running JDK has no usable ct.sym: JDK types then come from the running JVM's modules
+	private final CtSymPlatform platform;
 
 	private static final ClassLoader PLATFORM_CLASS_LOADER = ClassLoader.getPlatformClassLoader();
-	private static final Runtime.Version RUNTIME_VERSION = JarFile.runtimeVersion();
 	private static final Logger LOGGER = LoggerFactory.getLogger(ClasspathTypeProvider.class);
 
 	/**
-	 * Constructs a {@code ClasspathTypeProvider} that resolves and provides type declarations
-	 * based on the specified classpath entries.
+	 * Constructs a {@code ClasspathTypeProvider} that resolves and provides type declarations based on the specified
+	 * classpath entries and the running JDK.
 	 *
 	 * @param extractor the {@link AsmTypesExtractor} responsible for extracting type declarations from class files
 	 * @param classpath a list of paths representing the classpath entries (directories or JAR files) to be searched
 	 */
 	public ClasspathTypeProvider(AsmTypesExtractor extractor, List<Path> classpath) {
+		this(extractor, classpath, JavaRelease.host());
+	}
+
+	/**
+	 * Constructs a {@code ClasspathTypeProvider} that resolves and provides type declarations based on the specified
+	 * classpath entries and the given JDK release.
+	 *
+	 * @param extractor   the {@link AsmTypesExtractor} responsible for extracting type declarations from class files
+	 * @param classpath   a list of paths representing the classpath entries (directories or JAR files) to be searched
+	 * @param javaRelease the Java release (see {@link JavaRelease})
+	 */
+	public ClasspathTypeProvider(AsmTypesExtractor extractor, List<Path> classpath, int javaRelease) {
+		this(extractor, classpath, javaRelease, platformFor(javaRelease));
+	}
+
+	ClasspathTypeProvider(AsmTypesExtractor extractor, List<Path> classpath, int javaRelease, CtSymPlatform platform) {
 		this.extractor = Preconditions.checkNotNull(extractor);
+		Runtime.Version version = JavaRelease.version(javaRelease);
 		this.classpath = Preconditions.checkNotNull(classpath).stream()
-			.map(ClasspathEntry::new)
+			.map(path -> new ClasspathEntry(path, version))
 			.toList();
+		this.platform = platform;
+	}
+
+	private static CtSymPlatform platformFor(int javaRelease) {
+		Optional<CtSymPlatform> platform = CtSymPlatform.forRelease(javaRelease);
+		if (platform.isPresent()) {
+			return platform.get();
+		}
+
+		if (javaRelease != JavaRelease.host()) {
+			throw new RoseauException("Cannot resolve the JDK types of Java release %d: %s does not provide them"
+				.formatted(javaRelease, CtSymPlatform.hostCtSym()));
+		}
+		LOGGER.warn("No usable lib/ct.sym in {}; resolving JDK types from the running JVM's modules instead, " +
+			"which may not contain every JDK type the analyzed libraries use", System.getProperty("java.home"));
+		return null;
 	}
 
 	@Override
@@ -63,7 +101,9 @@ public class ClasspathTypeProvider implements TypeProvider {
 	}
 
 	private Optional<TypeDecl> readPlatformType(String entryName) {
-		try (InputStream in = PLATFORM_CLASS_LOADER.getResourceAsStream(entryName)) {
+		try (InputStream in = platform != null
+			? platform.openClass(entryName)
+			: PLATFORM_CLASS_LOADER.getResourceAsStream(entryName)) {
 			return extractType(in);
 		} catch (IOException e) {
 			LOGGER.warn("Failed to read platform class {}: {}", entryName, e.getMessage());
@@ -103,7 +143,7 @@ public class ClasspathTypeProvider implements TypeProvider {
 			return Optional.empty();
 		}
 
-		try (JarFile jarFile = new JarFile(jar.path.toFile(), false, ZipFile.OPEN_READ, RUNTIME_VERSION)) {
+		try (JarFile jarFile = new JarFile(jar.path.toFile(), false, ZipFile.OPEN_READ, jar.version)) {
 			var entry = jarFile.getJarEntry(entryName);
 			if (entry == null) {
 				return Optional.empty();
@@ -135,20 +175,22 @@ public class ClasspathTypeProvider implements TypeProvider {
 
 	private static final class ClasspathEntry {
 		private final Path path;
+		private final Runtime.Version version;
 		private final Supplier<Set<String>> classFiles;
 
-		private ClasspathEntry(Path path) {
+		private ClasspathEntry(Path path, Runtime.Version version) {
 			this.path = path;
-			this.classFiles = Suppliers.memoize(() -> indexJar(path));
+			this.version = version;
+			this.classFiles = Suppliers.memoize(() -> indexJar(path, version));
 		}
 
-		private static Set<String> indexJar(Path path) {
+		private static Set<String> indexJar(Path path, Runtime.Version version) {
 			if (!Files.isRegularFile(path)) {
 				LOGGER.warn("Classpath entry {} does not exist or is not a regular file", path);
 				return Set.of();
 			}
 
-			try (JarFile jarFile = new JarFile(path.toFile(), false, ZipFile.OPEN_READ, RUNTIME_VERSION)) {
+			try (JarFile jarFile = new JarFile(path.toFile(), false, ZipFile.OPEN_READ, version)) {
 				return jarFile.versionedStream()
 					.map(ZipEntry::getName)
 					.filter(name -> name.endsWith(".class"))

@@ -1,7 +1,7 @@
 package io.github.alien.roseau.cli;
 
+import io.github.alien.roseau.JavaRelease;
 import org.assertj.core.api.InstanceOfAssertFactories;
-import org.json.JSONArray;
 import org.json.JSONObject;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -19,13 +19,14 @@ import static io.github.alien.roseau.cli.CliRunner.runExpectingDiagnostics;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class RoseauCLITest {
+	private static final int HOST = JavaRelease.host();
 	private static final String V1_SOURCES = "--v1=src/test/resources/test-project-v1/src";
 	private static final String V2_SOURCES = "--v2=src/test/resources/test-project-v2/src";
 	private static final String V1_JAR = "--v1=src/test/resources/test-project-v1/test-project-v1.jar";
 	private static final String V2_JAR = "--v2=src/test/resources/test-project-v2/test-project-v2.jar";
 
 	private static final String FULL_DIFF = """
-		Breaking Changes found: 4 (2 binary-breaking, 3 source-breaking)
+		Breaking Changes found on Java %d: 4 (2 binary-breaking, 3 source-breaking)
 		⚠ pkg.T FORMAL_TYPE_PARAMETER_REMOVED [U]
 		  ✓ binary-compatible ✗ source-breaking
 		  → pkg/T.java:3
@@ -38,11 +39,11 @@ class RoseauCLITest {
 		⚠ pkg.T.n() METHOD_OVERRIDABLE_NOW_STATIC
 		  ✓ binary-compatible ✗ source-breaking
 		  → pkg/T.java:5
-		""";
+		""".formatted(HOST);
 
 	private static final String FULL_DIFF_FROM_JAR = FULL_DIFF.replace("→ pkg/T.java:3", "→ pkg/T.java");
 
-	private static final String NO_CHANGES = "No breaking changes found.";
+	private static final String NO_CHANGES = "No breaking changes found on Java %d.".formatted(HOST);
 
 	@Nested
 	class Meta {
@@ -143,14 +144,14 @@ class RoseauCLITest {
 				"--v2=src/test/resources/inheritance-v2/src", "--diff", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (2 binary-breaking, 2 source-breaking)
+					Breaking Changes found on Java %d: 2 (2 binary-breaking, 2 source-breaking)
 					✗ pkg.Base.removed() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → pkg/Base.java:5
 					✗ pkg.Base.removed() in pkg.Child EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → pkg/Base.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -158,14 +159,14 @@ class RoseauCLITest {
 			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--binary-only", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (2 binary-breaking, 1 source-breaking)
+					Breaking Changes found on Java %d: 2 (2 binary-breaking, 1 source-breaking)
 					✗ pkg.T.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → pkg/T.java:4
 					⚠ pkg.T.n() METHOD_NOW_STATIC
 					  ✗ binary-breaking ✓ source-compatible
 					  → pkg/T.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -173,7 +174,7 @@ class RoseauCLITest {
 			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--source-only", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 3 (1 binary-breaking, 3 source-breaking)
+					Breaking Changes found on Java %d: 3 (1 binary-breaking, 3 source-breaking)
 					⚠ pkg.T FORMAL_TYPE_PARAMETER_REMOVED [U]
 					  ✓ binary-compatible ✗ source-breaking
 					  → pkg/T.java
@@ -183,7 +184,7 @@ class RoseauCLITest {
 					⚠ pkg.T.n() METHOD_OVERRIDABLE_NOW_STATIC
 					  ✓ binary-compatible ✗ source-breaking
 					  → pkg/T.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -192,11 +193,11 @@ class RoseauCLITest {
 				"--v2=src/test/resources/module-library-v2/src", "--diff", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 1 (1 binary-breaking, 1 source-breaking)
+					Breaking Changes found on Java %d: 1 (1 binary-breaking, 1 source-breaking)
 					✗ exported.Exported.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → exported/Exported.java:4
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -205,14 +206,14 @@ class RoseauCLITest {
 				"--v2=src/test/resources/module-library-v2/src", "--diff", "--ignore-module", "--plain"))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (2 binary-breaking, 2 source-breaking)
+					Breaking Changes found on Java %d: 2 (2 binary-breaking, 2 source-breaking)
 					✗ exported.Exported.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → exported/Exported.java:4
 					✗ internal.Internal.m() EXECUTABLE_REMOVED
 					  ✗ binary-breaking ✗ source-breaking
 					  → internal/Internal.java:4
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -430,7 +431,9 @@ class RoseauCLITest {
 
 			run(V1_SOURCES, V2_SOURCES, "--diff", "--report=JSON=" + json);
 
-			assertThat(new JSONArray(Files.readString(json))).hasSize(4);
+			var report = new JSONObject(Files.readString(json));
+			assertThat(report.getInt("javaRelease")).isEqualTo(HOST);
+			assertThat(report.getJSONArray("breakingChanges")).hasSize(4);
 		}
 
 		@Test
@@ -525,8 +528,8 @@ class RoseauCLITest {
 						  ✗ binary-breaking ✗ source-breaking
 						  → pkg/T.java:4
 						""", "")
-					.replace("found: 4 (2 binary-breaking, 3 source-breaking)",
-						"found: 3 (1 binary-breaking, 2 source-breaking)"));
+					.replace(": 4 (2 binary-breaking, 3 source-breaking)",
+						": 3 (1 binary-breaking, 2 source-breaking)"));
 		}
 
 		@Test
@@ -539,14 +542,14 @@ class RoseauCLITest {
 			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--plain", "--ignored=" + ignored))
 				.succeeded()
 				.hasReport("""
-					Breaking Changes found: 2 (1 binary-breaking, 1 source-breaking)
+					Breaking Changes found on Java %d: 2 (1 binary-breaking, 1 source-breaking)
 					⚠ pkg.T.n() METHOD_NOW_STATIC
 					  ✗ binary-breaking ✓ source-compatible
 					  → pkg/T.java:5
 					⚠ pkg.T.n() METHOD_OVERRIDABLE_NOW_STATIC
 					  ✓ binary-compatible ✗ source-breaking
 					  → pkg/T.java:5
-					""");
+					""".formatted(HOST));
 		}
 
 		@Test
@@ -668,6 +671,48 @@ class RoseauCLITest {
 				.stderrContains("dependency.Base");
 		}
 
+		@Test
+		void yaml_java_release_is_honored(@TempDir Path tempDir) throws IOException {
+			var config = write(tempDir, """
+				common:
+				  javaRelease: 21
+				""");
+			var result = runExpectingDiagnostics(V1_JAR, "--api", "--config=" + config);
+
+			assertThatCli(result)
+				.succeeded()
+				.stdoutAsJson();
+			assertThat(new JSONObject(result.stdout()).getJSONObject("library").getInt("javaRelease")).isEqualTo(21);
+		}
+
+		@Test
+		void cli_java_release_wins_over_the_config_file(@TempDir Path tempDir) throws IOException {
+			var config = write(tempDir, """
+				common:
+				  javaRelease: 21
+				""");
+			var result = runExpectingDiagnostics(V1_JAR, "--api", "--java-release=17", "--config=" + config);
+
+			assertThatCli(result)
+				.succeeded()
+				.stdoutAsJson();
+			assertThat(new JSONObject(result.stdout()).getJSONObject("library").getInt("javaRelease")).isEqualTo(17);
+		}
+
+		@Test
+		void yaml_java_release_must_be_a_release(@TempDir Path tempDir) throws IOException {
+			var config = write(tempDir, """
+				common:
+				  javaRelease: latest
+				""");
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--config=" + config);
+
+			assertThatCli(result)
+				.failed()
+				.stderrContains("Couldn't read options file " + config)
+				.stderrContains("latest");
+		}
+
 		private static Path write(Path tempDir, String contents) throws IOException {
 			Path config = tempDir.resolve("roseau.yaml");
 			Files.writeString(config, contents);
@@ -754,6 +799,75 @@ class RoseauCLITest {
 				.failed()
 				.hasStderr("Cannot find v1: src/test/resources/invalid-path" + System.lineSeparator()
 					+ "Use -v/-vv for detailed error logs." + System.lineSeparator());
+		}
+	}
+
+	@Nested
+	class JavaReleases {
+		@Test
+		void the_host_release_is_the_default() {
+			assertThatCli(run(V1_JAR, V2_JAR, "--diff", "--plain", "--java-release=" + HOST))
+				.succeeded()
+				.hasReport(FULL_DIFF_FROM_JAR);
+		}
+
+		@Test
+		void an_older_release_is_reported() {
+			// The fixture JARs are compiled with Java 25
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--plain", "--java-release=21");
+
+			assertThatCli(result)
+				.succeeded()
+				.hasReport(FULL_DIFF_FROM_JAR.replace("on Java " + HOST, "on Java 21"));
+		}
+
+		@Test
+		void api_mode_records_the_release() {
+			var result = runExpectingDiagnostics(V1_JAR, "--api", "--java-release=17");
+
+			assertThatCli(result)
+				.succeeded()
+				.stdoutAsJson();
+			assertThat(new JSONObject(result.stdout()).getJSONObject("library").getInt("javaRelease")).isEqualTo(17);
+		}
+
+		@Test
+		void a_non_release_is_an_error() {
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--java-release=latest");
+
+			assertThatCli(result)
+				.failed()
+				.reportedError("Invalid value for option '--java-release': 'latest' is not an int");
+		}
+
+		@Test
+		void a_release_older_than_8_is_an_error() {
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--java-release=7");
+
+			assertThatCli(result)
+				.failed()
+				.reportedError("Unsupported Java release 7; Roseau running on Java %d supports releases 8 to %d"
+					.formatted(HOST, HOST));
+		}
+
+		@Test
+		void a_release_newer_than_the_host_is_an_error() {
+			var result = runExpectingDiagnostics(V1_JAR, V2_JAR, "--diff", "--java-release=" + (HOST + 1));
+
+			assertThatCli(result)
+				.failed()
+				.reportedError("Unsupported Java release %d; Roseau running on Java %d supports releases 8 to %d"
+					.formatted(HOST + 1, HOST, HOST));
+		}
+
+		@Test
+		void sources_only_support_the_host_release() {
+			var result = runExpectingDiagnostics(V1_SOURCES, V2_JAR, "--diff", "--java-release=8");
+
+			assertThatCli(result)
+				.failed()
+				.stderrContains(("Source libraries can only be checked on the release of the JDK running Roseau (%d), " +
+					"not Java 8; compare compiled JARs instead").formatted(HOST));
 		}
 	}
 

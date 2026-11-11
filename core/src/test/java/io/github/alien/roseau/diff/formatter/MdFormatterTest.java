@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.RoseauReport;
 import org.junit.jupiter.api.Test;
@@ -21,6 +22,8 @@ class MdFormatterTest {
 	void report_is_rendered_in_full() {
 		assertThat(md(ReportFixtures.mixed())).isEqualTo("""
 			## Breaking Changes Report
+			On Java %d.
+
 			6 breaking changes detected (2 binary-breaking, 5 source-breaking).
 
 			| Type | Symbol | Kind | Nature | Location | New symbol | Binary | Source |
@@ -34,7 +37,7 @@ class MdFormatterTest {
 			| pkg.A | pkg.A.mutated() | METHOD_OVERRIDABLE_NOW_STATIC | MUTATION | pkg/A.java:5 | pkg.A.mutated() \
 			| false | true |
 			| pkg.A | pkg.A.removed() | EXECUTABLE_REMOVED | DELETION | pkg/A.java:4 |  | true | true |
-			""");
+			""".formatted(JavaRelease.host()));
 	}
 
 	@Test
@@ -60,7 +63,9 @@ class MdFormatterTest {
 	void empty_report_skips_the_table() {
 		assertThat(md(ReportFixtures.empty())).isEqualTo("""
 			## Breaking Changes Report
-			No breaking changes detected.""");
+			On Java %d.
+
+			No breaking changes detected.""".formatted(JavaRelease.host()));
 	}
 
 	@Test

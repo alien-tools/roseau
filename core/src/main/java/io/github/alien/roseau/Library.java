@@ -24,7 +24,8 @@ import java.util.zip.ZipFile;
  * The granularity of a library is that of a module, i.e., it should contain at most one module declaration
  * ({@code module-info.java}). If no module declaration is present, it is assumed that all names within this library
  * are implicitly exported. If a module declaration is present, the API accounts for unqualified {@code exports}
- * directives, unless {@code ignoreModule} is set. The library points to a physical location that is either:
+ * directives, unless {@code ignoreModule} is set or the library's clients are on a Java release older than 9. The
+ * library points to a physical location that is either:
  * <ul>
  *   <li>A source directory containing nested names and source files and one module declaration at most</li>
  *   <li>A {@code module-info.java}. In this case, the directory containing the module is used as root directory</li>
@@ -41,6 +42,7 @@ public final class Library {
 	private final ExtractorType extractorType;
 	private final RoseauOptions.Exclude exclusions;
 	private final boolean ignoreModule;
+	private final int javaRelease;
 	@JsonIgnore
 	private final Supplier<List<Path>> classpath;
 
@@ -50,13 +52,14 @@ public final class Library {
 	 * Use the provided {@link #of(Path)} or {@link #builder()} instead.
 	 */
 	private Library(Path location, List<Path> customClasspath, Path pom, ExtractorType extractorType,
-	                RoseauOptions.Exclude exclusions, boolean ignoreModule) {
+	                RoseauOptions.Exclude exclusions, boolean ignoreModule, int javaRelease) {
 		this.location = location.toAbsolutePath();
 		this.customClasspath = List.copyOf(customClasspath);
 		this.pom = pom;
 		this.extractorType = extractorType;
 		this.exclusions = exclusions;
 		this.ignoreModule = ignoreModule;
+		this.javaRelease = javaRelease > 0 ? javaRelease : JavaRelease.host();
 		this.classpath = Suppliers.memoize(this::resolveClasspath);
 	}
 
@@ -129,6 +132,23 @@ public final class Library {
 		return ignoreModule;
 	}
 
+	/**
+	 * Module declarations do not apply when they are explicitly ignored or when clients run on Java {@code < 9}, which has no
+	 * modules.
+	 *
+	 * @return whether the API ignores the library's module declaration
+	 */
+	public boolean isModuleDeclarationIgnored() {
+		return ignoreModule || javaRelease < 9;
+	}
+
+	/**
+	 * @return the Java release of the library's clients
+	 */
+	public int getJavaRelease() {
+		return javaRelease;
+	}
+
 	public boolean isJar() {
 		return isJar(location);
 	}
@@ -168,18 +188,19 @@ public final class Library {
 			Objects.equals(pom, other.pom) &&
 			Objects.equals(exclusions, other.exclusions) &&
 			ignoreModule == other.ignoreModule &&
+			javaRelease == other.javaRelease &&
 			extractorType == other.extractorType;
 	}
 
 	@Override
 	public int hashCode() {
-		return Objects.hash(location, customClasspath, pom, exclusions, ignoreModule, extractorType);
+		return Objects.hash(location, customClasspath, pom, exclusions, ignoreModule, javaRelease, extractorType);
 	}
 
 	@Override
 	public String toString() {
-		return "Library[location=%s, extractor=%s, classpath=%s, pom=%s, excludes=%s, ignoreModule=%s]".formatted(
-			location, extractorType, customClasspath, pom, exclusions, ignoreModule);
+		return ("Library[location=%s, extractor=%s, classpath=%s, pom=%s, excludes=%s, ignoreModule=%s, " +
+			"javaRelease=%d]").formatted(location, extractorType, customClasspath, pom, exclusions, ignoreModule, javaRelease);
 	}
 
 	/**
@@ -193,6 +214,7 @@ public final class Library {
 		private Path pom;
 		private RoseauOptions.Exclude exclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		private boolean ignoreModule;
+		private int javaRelease = JavaRelease.host();
 
 		private Builder() {
 
@@ -253,6 +275,17 @@ public final class Library {
 			return this;
 		}
 
+		/**
+		 * Sets the Java release of the library's clients
+		 *
+		 * @param javaRelease the Java feature release
+		 * @return this builder
+		 */
+		public Builder javaRelease(int javaRelease) {
+			this.javaRelease = javaRelease;
+			return this;
+		}
+
 		private static boolean isValidLocation(Path location) {
 			return isModuleInfo(location) || isSources(location) || isJar(location);
 		}
@@ -301,9 +334,16 @@ public final class Library {
 				throw new RoseauException("A library cannot contain multiple module-info.java");
 			}
 
+			JavaRelease.checkSupported(javaRelease);
+			if (isSources(location) && javaRelease != JavaRelease.host()) {
+				throw new RoseauException(("Source libraries can only be checked on the release of the JDK running " +
+					"Roseau (%d), not Java %d; compare compiled JARs instead: %s")
+					.formatted(JavaRelease.host(), javaRelease, location));
+			}
+
 			// Default extractors
 			ExtractorType extractorType = isSources(location) ? ExtractorType.JDT : ExtractorType.ASM;
-			return new Library(location, classpath, pom, extractorType, exclusions, ignoreModule);
+			return new Library(location, classpath, pom, extractorType, exclusions, ignoreModule, javaRelease);
 		}
 	}
 }

@@ -2,8 +2,11 @@ package io.github.alien.roseau.options;
 
 import com.fasterxml.jackson.annotation.JsonSetter;
 import com.fasterxml.jackson.annotation.Nulls;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.dataformat.yaml.YAMLFactory;
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.diff.formatter.BreakingChangesFormatterFactory;
 
@@ -30,12 +33,14 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	 * @param classpath    the {@link Classpath} to use
 	 * @param excludes     the API {@link Exclude} options to apply
 	 * @param ignoreModule whether to ignore the libraries' module declarations
+	 * @param javaRelease  the Java release
 	 */
-	public record Common(Classpath classpath, Exclude excludes, Boolean ignoreModule) {
+	public record Common(Classpath classpath, Exclude excludes, Boolean ignoreModule, Integer javaRelease) {
 		Common mergeWith(Common other) {
 			return other != null
 				? new Common(classpath.mergeWith(other.classpath()),
-				excludes.mergeWith(other.excludes()), either(other.ignoreModule(), ignoreModule))
+				excludes.mergeWith(other.excludes()), either(other.ignoreModule(), ignoreModule),
+				either(other.javaRelease(), javaRelease))
 				: this;
 		}
 	}
@@ -66,13 +71,25 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 				: this;
 		}
 
-		public io.github.alien.roseau.Library toLibrary() {
+		/**
+		 * Merges these options with the given common ones and builds the library.
+		 *
+		 * @param common the options shared by v1 and v2
+		 * @return the library
+		 */
+		public io.github.alien.roseau.Library toLibrary(Common common) {
+			Integer javaRelease = common != null ? common.javaRelease() : null;
+			return mergeWith(common).toLibrary(javaRelease != null ? javaRelease : JavaRelease.host());
+		}
+
+		private io.github.alien.roseau.Library toLibrary(int javaRelease) {
 			return io.github.alien.roseau.Library.builder()
 				.location(location)
 				.classpath(classpath.jars())
 				.pom(classpath.pom())
 				.exclusions(excludes)
 				.ignoreModule(Boolean.TRUE.equals(ignoreModule))
+				.javaRelease(javaRelease)
 				.build();
 		}
 	}
@@ -145,6 +162,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 	private static final ObjectMapper MAPPER = new ObjectMapper(new YAMLFactory()).findAndRegisterModules();
 
 	static {
+		MAPPER.disable(DeserializationFeature.ACCEPT_FLOAT_AS_INT);
 		// Force Jackson to initialize absent values as empty collections, not null
 		MAPPER.configOverride(List.class).setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY));
 		MAPPER.configOverride(Set.class).setSetterInfo(JsonSetter.Value.forValueNulls(Nulls.AS_EMPTY));
@@ -162,7 +180,8 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 		try {
 			return newDefault().mergeWith(MAPPER.readValue(yaml.toFile(), RoseauOptions.class));
 		} catch (IOException e) {
-			throw new RoseauException("Couldn't read options file %s".formatted(yaml), e);
+			String reason = e instanceof JsonProcessingException json ? json.getOriginalMessage() : e.getMessage();
+			throw new RoseauException("Couldn't read options file %s: %s".formatted(yaml, reason), e);
 		}
 	}
 
@@ -175,7 +194,7 @@ public record RoseauOptions(Common common, Library v1, Library v2, Diff diff, Li
 		Classpath defaultClasspath = new Classpath(null, List.of());
 		Exclude defaultExclusion = new Exclude(List.of(), List.of());
 		Library defaultLibrary = new Library(null, defaultClasspath, defaultExclusion, null, null);
-		Common defaultCommon = new Common(defaultClasspath, defaultExclusion, false);
+		Common defaultCommon = new Common(defaultClasspath, defaultExclusion, false, null);
 		Diff diff = new Diff(null, false, false, false);
 		List<Report> defaultReports = List.of();
 		return new RoseauOptions(defaultCommon, defaultLibrary, defaultLibrary, diff, defaultReports);

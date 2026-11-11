@@ -1,10 +1,11 @@
 Usage: roseau [-hVv] [--binary-only] [--fail-on-bc] [--fail-on-unresolved]
               [--ignore-module] [--plain] [--source-only] [--api-json=<path>]
               [--classpath=<path>[:<path>...]] [--config=<path>]
-              [--ignored=<path>] [--pom=<path>] [--v1=<path|coordinates>]
-              [--v1-classpath=<path>[:<path>...]] [--v1-pom=<path>]
-              [--v2=<path|coordinates>] [--v2-classpath=<path>[:<path>...]]
-              [--v2-pom=<path>] [--report=<format=path>]... (--api | --diff)
+              [--ignored=<path>] [--java-release=<N>] [--pom=<path>]
+              [--v1=<path|coordinates>] [--v1-classpath=<path>[:<path>...]]
+              [--v1-pom=<path>] [--v2=<path|coordinates>] [--v2-classpath=<path>
+              [:<path>...]] [--v2-pom=<path>] [--report=<format=path>]...
+              (--api | --diff)
 Roseau detects breaking changes between two versions (--v1/--v2) of a Java
 module or library. --v1 and --v2 accept JAR files, source code directories, or
 Maven coordinates (groupId:artifactId:version). Example: roseau --diff --v1
@@ -42,6 +43,10 @@ Maven coordinates (groupId:artifactId:version). Example: roseau --diff --v1
       --source-only          Only report source-breaking changes
       --ignore-module        Ignore the libraries' module declarations and
                                consider every public type as part of the API
+      --java-release=<N>     Check compatibility for clients on Java N (e.g.,
+                               8, 17, 21). Choose the oldest release the
+                               library supports. Defaults to the release of the
+                               JDK running Roseau.
       --ignored=<path>       Do not report the breaking changes listed in the
                                given CSV file; this CSV file shares the same
                                structure as a CSV report
