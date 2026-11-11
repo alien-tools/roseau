@@ -26,7 +26,8 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 			.allMatch(i -> oldExecutable.getParameters().get(i).type().equals(ctx.v2().analyzer().erasure()
 				.getErasedType(newExecutable, newExecutable.getParameters().get(i).type())));
 
-		// We checked executable erasures, so we know parameter types are equals modulo type arguments
+		// Matched executables share their erasure, either as seen from their type or of their declaration (see
+		// SymbolMatcher), so parameter types are equal modulo type arguments or type-argument substitution
 		for (int i = 0; i < oldExecutable.getParameters().size(); i++) {
 			ParameterDecl p1 = oldExecutable.getParameters().get(i);
 			ParameterDecl p2 = newExecutable.getParameters().get(i);

@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.api.analysis.ApiAnalyzer;
 import io.github.alien.roseau.api.model.API;
 import io.github.alien.roseau.api.model.AnnotationDecl;
 import io.github.alien.roseau.api.model.AnnotationMethodDecl;
@@ -25,7 +26,13 @@ public class DefaultSymbolMatcher implements SymbolMatcher {
 	@Override
 	public Optional<MethodDecl> matchMethod(API targetApi, TypeDecl targetType, MethodDecl method, API sourceApi,
 	                                        TypeDecl sourceType) {
-		return targetApi.analyzer().findMethod(targetType, sourceApi.analyzer().getErasure(sourceType, method));
+		ApiAnalyzer source = sourceApi.analyzer();
+		ApiAnalyzer target = targetApi.analyzer();
+		return target.findMethod(targetType, source.getErasure(sourceType, method))
+			// Fall back to the method a compiled reference links to when its erasure as seen from its type changed but
+			// its declaration's did not, e.g., put(Object) becoming put(T) in a supertype instantiated as put(String)
+			.or(() -> target.findMethodByDeclarationErasure(targetType,
+				source.getErasure(source.getDeclaration(sourceType, method))));
 	}
 
 	@Override

@@ -80,6 +80,8 @@ public class MavenFormatter implements BreakingChangesFormatter {
 			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
 				"%s → %s".formatted(oldType, newType);
 			case BreakingChangeDetails.FieldTypeChanged(var oldType, var newType) -> "%s → %s".formatted(oldType, newType);
+			case BreakingChangeDetails.MethodParameterErasureChanged(var oldErasure, var newErasure) ->
+				"%s → %s".formatted(oldErasure, newErasure);
 			case BreakingChangeDetails.TypeNewAbstractMethod(var newMethod) -> newMethod.getSignature();
 			case BreakingChangeDetails.TypeSupertypeRemoved(var type) -> type.getQualifiedName();
 			case BreakingChangeDetails.AnnotationTargetRemoved(var target) -> target.name();

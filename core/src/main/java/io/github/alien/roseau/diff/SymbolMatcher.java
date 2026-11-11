@@ -15,7 +15,9 @@ import java.util.Optional;
  * Matches the symbols of an {@link API} with their counterpart in another version of the same API.
  * <br>
  * Symbols matched by name only (types, fields, annotation methods) are looked up in {@code targetApi} directly.
- * Executables are matched by erasure, so the source API is needed to compute erasures accurately.
+ * Executables are matched by erasure, so the source API is needed to compute erasures accurately. A method inherited
+ * from a generic supertype has two erasures: the erasure as seen from the type that supplies the type arguments, and
+ * the erasure of its declaration, which is its binary descriptor.
  */
 public interface SymbolMatcher {
 	Optional<TypeDecl> matchType(API targetApi, TypeDecl type);
