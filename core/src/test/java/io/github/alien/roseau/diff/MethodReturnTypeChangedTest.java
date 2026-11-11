@@ -374,6 +374,55 @@ class MethodReturnTypeChangedTest {
 	}
 
 	@Client("""
+		A a = new A().m();
+		new A() { @Override public A m() { return this; } };""")
+	@Test
+	void type_self_bounded_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public class A {
+				public A m() { return this; }
+			}""";
+		var v2 = """
+			public class A<T extends A<T>> {
+				public T m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		I i = () -> "x";
+		Comparable c = i.m();""")
+	@Test
+	void interface_self_bounded_param_added_and_used_as_direct_return_no_break() {
+		var v1 = """
+			public interface I {
+				Comparable m();
+			}""";
+		var v2 = """
+			public interface I<T extends Comparable<T>> {
+				T m();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m().compareTo(\"x\");")
+	@Test
+	void method_self_bounded_param_added_and_used_as_direct_return_source_only() {
+		var v1 = """
+			public class A {
+				public Comparable m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public <T extends Comparable<T>> T m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
 		new A<CharSequence, String>().m();
 		new A<CharSequence, String>() { @Override public CharSequence m() { return null; } };""")
 	@Test

@@ -73,7 +73,7 @@ public interface ErasureProvider {
 		Preconditions.checkNotNull(scope);
 		Preconditions.checkNotNull(reference);
 		return switch (reference) {
-			case TypeParameterReference tpr -> typeParameter().resolveTypeParameterBound(scope, tpr);
+			case TypeParameterReference tpr -> getErasedType(scope, typeParameter().resolveTypeParameterBound(scope, tpr));
 			case ArrayTypeReference(var t, var dimension) -> new ArrayTypeReference(getErasedType(scope, t), dimension);
 			case TypeReference<?>(var fqn, _) -> new TypeReference<>(fqn);
 			default -> reference;
@@ -105,7 +105,7 @@ public interface ErasureProvider {
 	private ITypeReference getErasedType(TypeDecl owner, TypeParameterScope scope, ITypeReference reference) {
 		return switch (reference) {
 			case TypeParameterReference tpr when typeParameter().resolveTypeParameter(scope, tpr).isEmpty() ->
-				typeParameter().resolveTypeParameterBound(owner, tpr);
+				getErasedType(owner, typeParameter().resolveTypeParameterBound(owner, tpr));
 			case ArrayTypeReference(var t, var dimension) ->
 				new ArrayTypeReference(getErasedType(owner, scope, t), dimension);
 			default -> getErasedType(scope, reference);

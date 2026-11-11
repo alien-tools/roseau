@@ -4,6 +4,7 @@ import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
 
+import static io.github.alien.roseau.utils.TestUtils.assertBC;
 import static io.github.alien.roseau.utils.TestUtils.assertBCs;
 import static io.github.alien.roseau.utils.TestUtils.assertNoBC;
 import static io.github.alien.roseau.utils.TestUtils.bc;
@@ -169,6 +170,70 @@ class FieldTypeChangedTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new A().f = "x";
+		Comparable c = new A().f;""")
+	@Test
+	void type_self_bounded_param_added_and_used_as_direct_field_type_no_break() {
+		var v1 = """
+			public class A {
+				public Comparable f;
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>> {
+				public T f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().f = new String[0];")
+	@Test
+	void type_transitively_bounded_param_added_and_used_as_array_field_type_no_break() {
+		var v1 = """
+			public class A {
+				public Comparable[] f;
+			}""";
+		var v2 = """
+			public class A<U extends Comparable<U>, T extends U> {
+				public T[] f;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List l = new A().f;")
+	@Test
+	void type_self_bounded_param_added_with_other_erasure_binary_and_source() {
+		var v1 = """
+			public class A {
+				public java.util.List f;
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>> {
+				public T f;
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("String s = new A<String>().f;")
+	@Test
+	void self_bounded_param_replaced_by_its_erasure_source_only() {
+		var v1 = """
+			public class A<T extends Comparable<T>> {
+				public T f;
+			}""";
+		var v2 = """
+			public class A<T extends Comparable<T>> {
+				public Comparable f;
+			}""";
+
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 
 	@Client("String f = new A<String>().f;")

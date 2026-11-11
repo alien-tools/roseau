@@ -11,6 +11,7 @@ import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
 
 /**
  * Builds substitution mappings for type parameter references across API versions. When comparing types from v1 and v2,
@@ -49,9 +50,10 @@ public final class TypeParameterMapping {
 	}
 
 	/**
-	 * Builds a mapping that replaces newly added type parameter references with their erasure (first bound). Type
-	 * parameters at positions that existed in the old declaration are left unmapped. This reflects raw-type semantics:
-	 * existing clients that don't supply the new type arguments see erased types.
+	 * Builds a mapping that replaces newly added type parameter references with their erasure (JLS §4.6): the erasure
+	 * of their left-most bound, e.g. {@code Comparable} for {@code T extends Comparable<T>}. Type parameters at
+	 * positions that existed in the old declaration are left unmapped. This reflects raw-type semantics: existing
+	 * clients that don't supply the new type arguments see erased types.
 	 *
 	 * @param oldParams the type parameters from the v1 declaration
 	 * @param newParams the type parameters from the v2 declaration
@@ -59,12 +61,34 @@ public final class TypeParameterMapping {
 	 */
 	public static Map<String, ITypeReference> eraseAddedMapping(List<FormalTypeParameter> oldParams,
 	                                                            List<FormalTypeParameter> newParams) {
+		return mapAdded(oldParams, newParams, newParam -> erasure(newParam, newParams));
+	}
+
+	private static Map<String, ITypeReference> mapAdded(List<FormalTypeParameter> oldParams,
+	                                                    List<FormalTypeParameter> newParams,
+	                                                    Function<FormalTypeParameter, ITypeReference> replacement) {
 		Map<String, ITypeReference> mapping = new HashMap<>();
 		for (int i = oldParams.size(); i < newParams.size(); i++) {
 			FormalTypeParameter newParam = newParams.get(i);
-			mapping.put(newParam.name(), newParam.bounds().getFirst());
+			mapping.put(newParam.name(), replacement.apply(newParam));
 		}
 		return mapping;
+	}
+
+	/**
+	 * Erases a type parameter declared among {@code params}, following bounds that are other type parameters of
+	 * {@code params} ({@code <U extends Comparable<U>, T extends U>}). A bound declared elsewhere is left as is.
+	 */
+	private static ITypeReference erasure(FormalTypeParameter param, List<FormalTypeParameter> params) {
+		return switch (param.bounds().getFirst()) {
+			case TypeParameterReference tpr -> params.stream()
+				.filter(p -> p.name().equals(tpr.name()))
+				.findFirst()
+				.map(p -> erasure(p, params))
+				.orElse(tpr);
+			case TypeReference<?>(var fqn, _) -> new TypeReference<>(fqn);
+			case ITypeReference bound -> bound;
+		};
 	}
 
 	/**
@@ -172,9 +196,9 @@ public final class TypeParameterMapping {
 
 			Map<String, ITypeReference> typeErase = eraseAddedMapping(
 				oldType.getFormalTypeParameters(), newType.getFormalTypeParameters());
-			Map<String, ITypeReference> execErase = eraseAddedMapping(
-				oldExec.getFormalTypeParameters(), newExec.getFormalTypeParameters());
-			Map<String, ITypeReference> eraseAddedMap = merge(execErase, typeErase);
+			Map<String, ITypeReference> execBound = mapAdded(oldExec.getFormalTypeParameters(),
+				newExec.getFormalTypeParameters(), newParam -> newParam.bounds().getFirst());
+			Map<String, ITypeReference> eraseAddedMap = merge(execBound, typeErase);
 
 			return new Normalizer(forwardMap, eraseAddedMap);
 		}
