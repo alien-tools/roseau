@@ -66,6 +66,116 @@ public interface HierarchyProvider {
 	}
 
 	/**
+	 * Returns the declaration of a method of {@code owner}, i.e., the method as declared by its declaring type, before
+	 * the type arguments supplied by {@code owner} are substituted into it (see {@link #getAllMethodsByErasure}). The
+	 * erasure of the declaration, not of the substituted method, determines the method's binary descriptor (JLS §13.1).
+	 *
+	 * @param owner  the type {@code method} is a member of
+	 * @param method a method declared or inherited by {@code owner}
+	 * @return the declaration of {@code method}, or {@code method} itself if its declaring type cannot be resolved
+	 */
+	default MethodDecl getDeclaration(TypeDecl owner, MethodDecl method) {
+		Preconditions.checkNotNull(owner);
+		Preconditions.checkNotNull(method);
+		return resolver().resolve(method.getContainingType())
+			.flatMap(declaring -> {
+				List<MethodDecl> candidates = declaring.getDeclaredMethods().stream()
+					.filter(m -> m.getSimpleName().equals(method.getSimpleName()) &&
+						m.getParameters().size() == method.getParameters().size())
+					.toList();
+				if (candidates.size() == 1) {
+					return Optional.of(candidates.getFirst());
+				}
+				// Overloads: find the one whose instantiation in owner is method
+				return getAllMethodDeclarations(owner)
+					.filter(e -> e.getValue().equals(method))
+					.map(Map.Entry::getKey)
+					.findFirst();
+			})
+			.orElse(method);
+	}
+
+	/**
+	 * Returns the method declarations a compiled reference to a method of {@code type} with the given declaration erasure
+	 * may link to: the public or protected methods declared by {@code type} or its supertypes whose own erasure is
+	 * {@code erasure} (JVMS §5.4.3.3). For instance, for a {@code type} implementing {@code Supplier<String>} and
+	 * declaring {@code String get()}, both {@code type.get()} and {@code Supplier.get()} are linkable through
+	 * {@code get()}, with return types {@code String} and {@code Object}.
+	 *
+	 * @param type    the type the reference is made through
+	 * @param erasure the erasure of the declaration of the referenced method
+	 * @return the linkable declarations
+	 * @see #getDeclaration(TypeDecl, MethodDecl)
+	 */
+	default Set<MethodDecl> getLinkableMethodDeclarations(TypeDecl type, String erasure) {
+		Preconditions.checkNotNull(type);
+		Preconditions.checkNotNull(erasure);
+		return getAllMethodDeclarations(type)
+			.map(Map.Entry::getKey)
+			.filter(m -> (m.isPublic() || m.isProtected()) && erasure.equals(erasure().getErasure(m)))
+			.collect(Collectors.toUnmodifiableSet());
+	}
+
+	/**
+	 * Finds the method of {@code type}, as {@link #findMethod} would, that a compiled reference with the given
+	 * declaration erasure links to. Unlike {@link #findMethod}, it finds methods whose erasure as seen from {@code type}
+	 * differs from their declaration's, e.g., {@code put(T)} inherited from {@code Box<String>} for {@code put(Object)}.
+	 *
+	 * @param type    the type the reference is made through
+	 * @param erasure the erasure of the declaration of the referenced method
+	 * @return an {@link Optional} indicating whether the linked method was found
+	 * @see #getLinkableMethodDeclarations(TypeDecl, String)
+	 */
+	default Optional<MethodDecl> findMethodByDeclarationErasure(TypeDecl type, String erasure) {
+		Preconditions.checkNotNull(type);
+		Preconditions.checkNotNull(erasure);
+		return getAllMethodDeclarations(type)
+			.filter(e -> (e.getKey().isPublic() || e.getKey().isProtected()) &&
+				erasure.equals(erasure().getErasure(e.getKey())))
+			.flatMap(e -> findMethod(type, erasure().getErasure(type, e.getValue())).stream())
+			.findFirst();
+	}
+
+	/**
+	 * Returns the declaration of a field, i.e., the field as declared by its declaring type, before the type arguments
+	 * supplied by the type it is accessed through are substituted into it (see {@link #getExportedFieldsByName}). The
+	 * erasure of the declaration, not of the substituted field, determines the field's binary descriptor (JLS §13.1).
+	 *
+	 * @param field a field declared or inherited by some type
+	 * @return the declaration of {@code field}, or {@code field} itself if its declaring type cannot be resolved
+	 */
+	default FieldDecl getDeclaration(FieldDecl field) {
+		Preconditions.checkNotNull(field);
+		return resolver().resolve(field.getContainingType())
+			.flatMap(declaring -> declaring.getDeclaredFields().stream()
+				.filter(f -> f.getSimpleName().equals(field.getSimpleName()))
+				.findFirst())
+			.orElse(field);
+	}
+
+	/**
+	 * Returns the field declarations a compiled reference to a field of {@code type} with the given name may link to:
+	 * the public or protected fields with that name declared by {@code type} or its supertypes (JVMS §5.4.3.2). The
+	 * reference links to the first one whose type erasure matches its descriptor, even if it is hidden in source code.
+	 *
+	 * @param type the type the reference is made through
+	 * @param name the simple name of the referenced field
+	 * @return the linkable declarations
+	 * @see #getDeclaration(FieldDecl)
+	 */
+	default Set<FieldDecl> getLinkableFieldDeclarations(TypeDecl type, String name) {
+		Preconditions.checkNotNull(type);
+		Preconditions.checkNotNull(name);
+		return Stream.concat(
+				type.getDeclaredFields().stream(),
+				getAllSuperTypes(type).stream()
+					.flatMap(superType -> resolver().resolve(superType).stream())
+					.flatMap(decl -> decl.getDeclaredFields().stream()))
+			.filter(f -> (f.isPublic() || f.isProtected()) && f.getSimpleName().equals(name))
+			.collect(Collectors.toUnmodifiableSet());
+	}
+
+	/**
 	 * Finds a {@link ConstructorDecl} by erasure, declared by this type.
 	 *
 	 * @param erasure The erasure to look for, as seen from {@code classDecl}
@@ -327,22 +437,31 @@ public interface HierarchyProvider {
 	 */
 	default Map<String, MethodDecl> getAllMethodsByErasure(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		return Stream.concat(
-				type.getDeclaredMethods().stream(),
-				getInstantiatedSuperTypes(type)
-					.flatMap(superType -> resolver().resolve(superType).stream()
-						.flatMap(decl -> {
-							Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
-							return decl.getDeclaredMethods().stream()
-								// §8.4.8, §9.4.1: static interface methods are not inherited.
-								.filter(m -> !decl.isInterface() || !m.isStatic())
-								.map(m -> instantiate(m, substitutions));
-						})))
+		return getAllMethodDeclarations(type)
+			.map(Map.Entry::getValue)
 			.collect(Collectors.toMap(
 				m -> erasure().getErasure(type, m),
 				Function.identity(),
 				(m1, m2) -> isOverriding(m1, m2) ? m1 : m2
 			));
+	}
+
+	/**
+	 * Returns the methods declared by {@code type} and those declared by its supertypes, each paired with its
+	 * instantiation in {@code type} (see {@code instantiate}).
+	 */
+	private Stream<Map.Entry<MethodDecl, MethodDecl>> getAllMethodDeclarations(TypeDecl type) {
+		return Stream.concat(
+			type.getDeclaredMethods().stream().map(m -> Map.entry(m, m)),
+			getInstantiatedSuperTypes(type)
+				.flatMap(superType -> resolver().resolve(superType).stream()
+					.flatMap(decl -> {
+						Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
+						return decl.getDeclaredMethods().stream()
+							// §8.4.8, §9.4.1: static interface methods are not inherited.
+							.filter(m -> !decl.isInterface() || !m.isStatic())
+							.map(m -> Map.entry(m, instantiate(m, substitutions)));
+					})));
 	}
 
 	/**

@@ -477,6 +477,71 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
+	@Client("""
+		B b = new B();
+		Object o = b.f;
+		b.f = new Object();""")
+	@Test
+	void supertype_generified_source_only() {
+		var v1 = """
+			public class A { public Object f; }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T> { public T f; }
+			public class B extends A<String> {}""";
+
+		// The descriptor remains A.f:Object
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("String s = new B().f;")
+	@Test
+	void supertype_type_argument_changed_source_only() {
+		var v1 = """
+			public class A<T> { public T f; }
+			public class B extends A<String> {}""";
+		var v2 = """
+			public class A<T> { public T f; }
+			public class B extends A<Integer> {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("""
+		B b = new B();
+		Object o = b.f;
+		b.f = new Object();""")
+	@Test
+	void hidden_by_field_of_another_type_source_only() {
+		var v1 = """
+			public class A { public Object f; }
+			public class B extends A {}""";
+		var v2 = """
+			public class A { public Object f; }
+			public class B extends A { public String f; }""";
+
+		// B.f:Object still links to A.f
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("Number n = new B().f;")
+	@Test
+	void package_private_supertype_bound_widened_binary_only() {
+		var v1 = """
+			class A<T extends Number> { public T f; }
+			public class B extends A<Integer> {}""";
+		var v2 = """
+			class A<T> { public T f; }
+			public class B extends A<Integer> {}""";
+
+		// A.f:Number becomes A.f:Object
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 1));
+	}
+
 	@Client("int i = I.f;")
 	@Test
 	void interface_constant_type_change_source_only() {

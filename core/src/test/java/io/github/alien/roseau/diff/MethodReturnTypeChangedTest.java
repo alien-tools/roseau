@@ -1,5 +1,7 @@
 package io.github.alien.roseau.diff;
 
+import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.diff.changes.BreakingChangeDetails;
 import io.github.alien.roseau.diff.changes.BreakingChangeKind;
 import io.github.alien.roseau.utils.Client;
 import org.junit.jupiter.api.Test;
@@ -774,8 +776,8 @@ class MethodReturnTypeChangedTest {
 			public class A<T> { public T m() { return null; } }
 			public class B extends A<Integer> {}""";
 
+		// The descriptor remains A.m()Object
 		assertBCs(buildDiff(v1, v2),
-			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1),
 			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
 	}
 
@@ -805,5 +807,124 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A() {}.get();")
+	@Test
+	void covariant_specialization_of_inherited_generic_method_removed() {
+		var v1 = """
+			public abstract class A implements java.util.function.Supplier<String> {
+				public String get() { return "v1"; }
+			}""";
+		var v2 = "public abstract class A implements java.util.function.Supplier<String> {}";
+
+		// A.get()String is gone, only Supplier.get()Object remains
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.get()", BreakingChangeKind.METHOD_NOW_ABSTRACT, 2),
+			bc("A", "A.get()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
+	}
+
+	@Client("""
+		Object o = new B().m();
+		new B() { @Override public Object m() { return null; } };""")
+	@Test
+	void supertype_generified_source_only() {
+		var v1 = """
+			public class A { public Object m() { return null; } }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A<String> {}""";
+
+		// The descriptor remains A.m()Object
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("""
+		Object o = new B().m();
+		new B() { @Override public Object[] m() { return null; } };""")
+	@Test
+	void supertype_generified_array_source_only() {
+		var v1 = """
+			public class A { public Object[] m() { return null; } }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T> { public T[] m() { return null; } }
+			public class B extends A<String> {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("""
+		Object o = new B().m();
+		new B() { @Override public Object m() { return null; } };""")
+	@Test
+	void superinterface_default_method_generified_source_only() {
+		var v1 = """
+			public interface I { default Object m() { return null; } }
+			public class B implements I {}""";
+		var v2 = """
+			public interface I<T> { default T m() { return null; } }
+			public class B implements I<String> {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "I.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
+
+	@Client("Number n = new B().m();")
+	@Test
+	void supertype_bound_widened_binary_only() {
+		var v1 = """
+			public class A<T extends Number> { public T m() { return null; } }
+			public class B extends A<Integer> {}""";
+		var v2 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A<Integer> {}""";
+
+		// A.m()Number becomes A.m()Object
+		var bcs = buildDiff(v1, v2);
+		assertBCs(bcs,
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1));
+		assertThat(bcs).extracting(bc -> bc.details()).containsOnly(
+			new BreakingChangeDetails.MethodReturnTypeChanged(new TypeReference<>("java.lang.Number"), TypeReference.OBJECT));
+	}
+
+	@Client("Number n = new B().m();")
+	@Test
+	void package_private_supertype_bound_widened_binary_only() {
+		var v1 = """
+			class A<T extends Number> { public T m() { return null; } }
+			public class B extends A<Integer> {}""";
+		var v2 = """
+			class A<T> { public T m() { return null; } }
+			public class B extends A<Integer> {}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1));
+	}
+
+	@Client("""
+		java.util.Set<String> s = A.m();
+		class C extends A { public static java.util.Set<String> m() { return null; } }""")
+	@Test
+	void old_erasure_kept_by_hidden_method_in_package_private_supertype_source_only() {
+		var v1 = """
+			public class A {
+				public static java.util.Set<String> m() { return null; }
+			}""";
+		var v2 = """
+			abstract class Bridge {
+				public static java.util.Set<String> m() { return null; }
+			}
+			public class A extends Bridge {
+				public static java.util.HashSet<String> m() { return null; }
+			}""";
+
+		// A.m()Set still resolves to Bridge.m()Set; C.m() can no longer hide A.m()
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 }

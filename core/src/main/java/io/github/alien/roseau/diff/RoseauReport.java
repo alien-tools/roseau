@@ -251,6 +251,8 @@ public final class RoseauReport {
 			case BreakingChangeDetails.FieldTypeChanged(var oldType, var newType) -> "%s %s".formatted(oldType, newType);
 			case BreakingChangeDetails.MethodReturnTypeChanged(var oldType, var newType) ->
 				"%s %s".formatted(oldType, newType);
+			case BreakingChangeDetails.MethodParameterErasureChanged(var oldErasure, var newErasure) ->
+				"%s %s".formatted(oldErasure, newErasure);
 			case BreakingChangeDetails.MethodParameterGenericsChanged(var oldType, var newType) ->
 				"%s %s".formatted(oldType, newType);
 			case BreakingChangeDetails.FormalTypeParametersAdded(var ftp) -> ftp.name();

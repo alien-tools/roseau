@@ -37,6 +37,7 @@ import io.github.alien.roseau.diff.rules.breaking.MethodNowAbstract;
 import io.github.alien.roseau.diff.rules.breaking.MethodNowFinal;
 import io.github.alien.roseau.diff.rules.breaking.MethodNowProtected;
 import io.github.alien.roseau.diff.rules.breaking.MethodNowStatic;
+import io.github.alien.roseau.diff.rules.breaking.MethodParameterErasureChanged;
 import io.github.alien.roseau.diff.rules.breaking.MethodReturnTypeChanged;
 import io.github.alien.roseau.diff.rules.breaking.TypeFormalTypeParametersChanged;
 import io.github.alien.roseau.diff.rules.breaking.TypeKindChanged;
@@ -119,7 +120,8 @@ public class DefaultRuleSet implements RuleSet {
 			new MethodNowFinal(),
 			new MethodNowProtected(),
 			new MethodNowStatic(),
-			new MethodReturnTypeChanged()
+			new MethodReturnTypeChanged(),
+			new MethodParameterErasureChanged()
 		);
 	}
 

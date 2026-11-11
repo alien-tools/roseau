@@ -12,7 +12,8 @@ import io.github.alien.roseau.diff.rules.MemberRuleContext;
 public class ExecutableParameterGenericsChanged implements MemberRule<ExecutableDecl> {
 	@Override
 	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
-		// We checked executable erasures, so we know parameter types are equals modulo type arguments
+		// Matched executables share their erasure, either as seen from their type or of their declaration (see
+		// SymbolMatcher), so parameter types are equal modulo type arguments or type-argument substitution
 		for (int i = 0; i < oldExecutable.getParameters().size(); i++) {
 			ParameterDecl p1 = oldExecutable.getParameters().get(i);
 			ParameterDecl p2 = newExecutable.getParameters().get(i);

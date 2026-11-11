@@ -223,6 +223,8 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 				"<code>" + escape(String.valueOf(prev)) + "</code> → <code>" + escape(String.valueOf(now)) + "</code>";
 			case BreakingChangeDetails.FieldTypeChanged(var prev, var now) ->
 				"<code>" + escape(String.valueOf(prev)) + "</code> → <code>" + escape(String.valueOf(now)) + "</code>";
+			case BreakingChangeDetails.MethodParameterErasureChanged(var prev, var now) ->
+				"<code>" + escape(prev) + "</code> → <code>" + escape(now) + "</code>";
 			case BreakingChangeDetails.TypeNewAbstractMethod(var newMethod) ->
 				"<code>" + escape(newMethod.getSignature()) + "</code>";
 			case BreakingChangeDetails.TypeKindChanged(var oldType, var newType) ->

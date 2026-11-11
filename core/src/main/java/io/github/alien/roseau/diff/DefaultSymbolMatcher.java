@@ -25,7 +25,11 @@ public class DefaultSymbolMatcher implements SymbolMatcher {
 	@Override
 	public Optional<MethodDecl> matchMethod(API targetApi, TypeDecl targetType, MethodDecl method, API sourceApi,
 	                                        TypeDecl sourceType) {
-		return targetApi.analyzer().findMethod(targetType, sourceApi.analyzer().getErasure(sourceType, method));
+		// Fall back to the method a compiled reference links to when its erasure as seen from its type changed but its
+		// declaration's did not, e.g., put(Object) becoming put(T) in a supertype instantiated as put(String)
+		return targetApi.analyzer().findMethod(targetType, sourceApi.analyzer().getErasure(sourceType, method))
+			.or(() -> targetApi.analyzer().findMethodByDeclarationErasure(targetType,
+				sourceApi.analyzer().getErasure(sourceApi.analyzer().getDeclaration(sourceType, method))));
 	}
 
 	@Override

@@ -61,6 +61,7 @@ Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [An
 | [`EXECUTABLE_PARAMETER_GENERICS_CHANGED`](#executable_parameter_generics_changed)                           | | :material-code-braces: | Parameter generic arguments change while erasure stays the same             |
 | [`METHOD_RETURN_TYPE_ERASURE_CHANGED`](#method_return_type_erasure_changed)                       | :material-package-variant-closed: | | A return type change alters the erased method signature                     |
 | [`METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE`](#method_return_type_changed_incompatible)             | | :material-code-braces: | A return type change breaks callers or overriders                           |
+| [`METHOD_PARAMETER_ERASURE_CHANGED`](#method_parameter_erasure_changed)                           | :material-package-variant-closed: | | An inherited method's erased parameter types change, not its signature       |
 | [`METHOD_NOW_ABSTRACT`](#method_now_abstract)                                                     | :material-package-variant-closed: | :material-code-braces: | A concrete method becomes abstract                                          |
 | [`METHOD_NOW_FINAL`](#method_now_final)                                                           | :material-package-variant-closed: | :material-code-braces: | An overridable method becomes final                                         |
 | [`METHOD_NOW_STATIC`](#method_now_static)                                                         | :material-package-variant-closed: | | An instance method becomes static                                           |
@@ -491,7 +492,7 @@ int x = new A().f;
 
 :material-package-variant-closed:
 
-A field's type changes in a way that alters its erased descriptor. Recompilation can still succeed (for example via autoboxing), but compiled bytecode that references the old field descriptor fails at link time. Fields that are compile-time constants (`public static final` fields of a primitive type or `String` initialized to a constant expression) are excluded: the Java compiler inlines their value at every use site and emits no field-access instruction, so the field descriptor is irrelevant to compiled clients.
+A field's type changes in a way that alters its erased descriptor. Recompilation can still succeed (for example via autoboxing), but compiled bytecode that references the old field descriptor fails at link time. Compiled bytecode references the erasure of the field's declaration: a field inherited from a generic supertype keeps the erasure of its declared type, whatever the type arguments. It is not reported while a field with the old descriptor remains declared in the type hierarchy (for example, a field hidden by a new one). Fields that are compile-time constants (`public static final` fields of a primitive type or `String` initialized to a constant expression) are excluded: the Java compiler inlines their value at every use site and emits no field-access instruction, so the field descriptor is irrelevant to compiled clients.
 
 **Library**
 
@@ -742,7 +743,7 @@ new A().m(java.util.List.of("x"));
 
 :material-package-variant-closed:
 
-A method's return type changes in a way that alters its erased signature. Recompilation can still succeed (for example via autoboxing), but compiled bytecode linked against the old method descriptor fails at link time.
+A method's return type changes in a way that alters its erased signature. Recompilation can still succeed (for example via autoboxing), but compiled bytecode linked against the old method descriptor fails at link time. Compiled bytecode references the erasure of the method's declaration: a method inherited from a generic supertype keeps the erasure of its declared type, whatever the type arguments. It is not reported while a method with the old descriptor remains declared in the type hierarchy (for example, an overridden generic method).
 
 **Library**
 
@@ -784,6 +785,31 @@ Overriders break when the new return type is not a supertype of the old return t
 ```java
 Integer x = new A<Integer, String>().m();
 ```
+
+---
+
+### `METHOD_PARAMETER_ERASURE_CHANGED`
+
+:material-package-variant-closed:
+
+The erasure of a method's parameter types changes while its signature, as seen from the type that inherits it, does not. Compiled bytecode references the erasure of the method's declaration, so it fails at link time, but recompilation succeeds. This happens when a type variable's bound changes in a generic supertype, or when an override that specializes an inherited generic method is removed. It is not reported while the old erasure remains declared in the type hierarchy.
+
+**Library**
+
+```diff
+-public class A<T extends Number> { public void m(T t) {} }
++public class A<T> { public void m(T t) {} }
+ public class B extends A<Integer> {}
+```
+
+**Client**
+
+```java
+new B().m(1);
+```
+
+!!! note "Why binary-only"
+    `m` is seen as `m(Integer)` on `B` in both versions, so recompilation succeeds. Compiled bytecode references `B.m(Number)`, which becomes `m(Object)`.
 
 ---
 

@@ -754,4 +754,20 @@ class ExecutableRemovedTest {
 
 		assertBC("A", "A.m(java.lang.Object)", BreakingChangeKind.EXECUTABLE_REMOVED, 3, buildDiff(v1, v2));
 	}
+
+	@Client("new B().m(1);")
+	@Test
+	void supertype_generified_with_bound_parameter_erasure_changed() {
+		var v1 = """
+			public class A { public void m(Object o) {} }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T extends Number> { public void m(T t) {} }
+			public class B extends A<Integer> {}""";
+
+		// A.m(Object) becomes A.m(Number)
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m(java.lang.Object)", BreakingChangeKind.EXECUTABLE_REMOVED, 1),
+			bc("B", "A.m(java.lang.Object)", BreakingChangeKind.EXECUTABLE_REMOVED, 1));
+	}
 }

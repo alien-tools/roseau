@@ -484,4 +484,49 @@ class ExecutableParameterGenericsChangedTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	@Client("""
+		new B().m("");
+		new B() { @Override public void m(Object o) {} };""")
+	@Test
+	void supertype_generified() {
+		var v1 = """
+			public class A { public void m(Object o) {} }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T> { public void m(T t) {} }
+			public class B extends A<String> {}""";
+
+		// The descriptor remains A.m(Object): not removed
+		assertBC("B", "A.m(java.lang.Object)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Client("new B().m(\"\");")
+	@Test
+	void supertype_type_argument_changed() {
+		var v1 = """
+			public class A<T> { public void m(T t) {} }
+			public class B extends A<String> {}""";
+		var v2 = """
+			public class A<T> { public void m(T t) {} }
+			public class B extends A<Integer> {}""";
+
+		assertBC("B", "A.m(java.lang.String)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Client("new B().m(new Object());")
+	@Test
+	void supertype_generified_next_to_an_overload() {
+		var v1 = """
+			public class A { public void m(Object o) {} public void m(String s) {} }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T> { public void m(T t) {} public void m(String s) {} }
+			public class B extends A<Integer> {}""";
+
+		assertBC("B", "A.m(java.lang.Object)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
 }

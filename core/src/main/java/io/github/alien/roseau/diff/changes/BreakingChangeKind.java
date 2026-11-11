@@ -56,6 +56,7 @@ public enum BreakingChangeKind {
 	METHOD_NO_LONGER_STATIC(MUTATION, true, true),
 	METHOD_RETURN_TYPE_ERASURE_CHANGED(MUTATION, true, false),
 	METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE(MUTATION, false, true),
+	METHOD_PARAMETER_ERASURE_CHANGED(MUTATION, true, false),
 
 	// Formal type parameters-related BCs
 	FORMAL_TYPE_PARAMETER_ADDED(MUTATION, false, true),

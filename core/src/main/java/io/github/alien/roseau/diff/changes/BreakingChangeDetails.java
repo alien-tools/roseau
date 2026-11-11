@@ -20,6 +20,7 @@ public sealed interface BreakingChangeDetails {
 	record AnnotationTargetRemoved(ElementType target) implements BreakingChangeDetails {}
 	record FieldTypeChanged(ITypeReference oldType, ITypeReference newType) implements BreakingChangeDetails {}
 	record MethodReturnTypeChanged(ITypeReference oldType, ITypeReference newType) implements BreakingChangeDetails {}
+	record MethodParameterErasureChanged(String oldErasure, String newErasure) implements BreakingChangeDetails {}
 	record MethodNoLongerThrowsCheckedException(ITypeReference exception) implements BreakingChangeDetails {}
 	record MethodNowThrowsCheckedException(ITypeReference exception) implements BreakingChangeDetails {}
 	record FormalTypeParametersChanged(FormalTypeParameter oldFtp, FormalTypeParameter newFtp)
