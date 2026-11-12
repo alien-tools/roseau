@@ -11,6 +11,7 @@ import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
 
 import java.util.Optional;
+import java.util.stream.IntStream;
 
 public class DefaultSymbolMatcher implements SymbolMatcher {
 	@Override
@@ -32,7 +33,20 @@ public class DefaultSymbolMatcher implements SymbolMatcher {
 			// Fall back to the method a compiled reference links to when its erasure as seen from its type changed but
 			// its declaration's did not, e.g., put(Object) becoming put(T) in a supertype instantiated as put(String)
 			.or(() -> target.findMethodByDeclarationErasure(targetType,
-				source.getErasure(source.getDeclaration(sourceType, method))));
+				source.getErasure(source.getDeclaration(sourceType, method))))
+			// Fall back to the method with the same source signature when both erasures changed, e.g., put(T) when the
+			// bound of T changes: existing invocations and overriders still compile, only the descriptor differs
+			.or(() -> target.getExportedMethods(targetType).stream()
+				.filter(m -> hasSameSignature(m, method))
+				.findFirst());
+	}
+
+	private static boolean hasSameSignature(MethodDecl m1, MethodDecl m2) {
+		return m1.getSimpleName().equals(m2.getSimpleName()) &&
+			m1.getParameters().size() == m2.getParameters().size() &&
+			IntStream.range(0, m1.getParameters().size()).allMatch(i ->
+				m1.getParameters().get(i).type().equals(m2.getParameters().get(i).type()) &&
+					m1.getParameters().get(i).isVarargs() == m2.getParameters().get(i).isVarargs());
 	}
 
 	@Override

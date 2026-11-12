@@ -26,13 +26,12 @@ class MethodParameterErasureChangedTest {
 		// B.m(Number) becomes B.m(Object), while B.m(Integer) remains in source code
 		var bcs = buildDiff(v1, v2);
 		assertBCs(bcs,
-			bc("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_REMOVED, 1),
+			bc("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 1),
 			bc("B", "A.m(java.lang.Integer)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 1));
 		assertThat(bcs)
 			.filteredOn(bc -> bc.kind() == BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED)
-			.singleElement()
 			.extracting(bc -> bc.details())
-			.isEqualTo(new BreakingChangeDetails.MethodParameterErasureChanged(
+			.containsOnly(new BreakingChangeDetails.MethodParameterErasureChanged(
 				"m(java.lang.Number)", "m(java.lang.Object)"));
 	}
 
@@ -90,5 +89,30 @@ class MethodParameterErasureChangedTest {
 			public class B extends A<Integer> {}""";
 
 		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// A.m(Number) becomes A.m(Object): invocations and overriders still compile, but no longer link
+	@Client("""
+		new A<Integer>().m(1);
+		new A<Integer>() { @Override public void m(Integer i) {} };""")
+	@Test
+	void declaring_type_bound_widened_binary_only() {
+		var v1 = """
+			public class A<T extends Number> { public void m(T t) {} }""";
+		var v2 = """
+			public class A<T> { public void m(T t) {} }""";
+
+		assertBC("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Client("I<Integer> i = n -> {};")
+	@Test
+	void declaring_interface_bound_widened_binary_only() {
+		var v1 = """
+			public interface I<T extends Number> { void m(T t); }""";
+		var v2 = """
+			public interface I<T> { void m(T t); }""";
+
+		assertBC("I", "I.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 1, buildDiff(v1, v2));
 	}
 }

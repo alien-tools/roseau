@@ -565,7 +565,7 @@ class FormalTypeParameterChangedTest {
 				public void m(T t) {}
 			}""";
 
-		assertBC("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_REMOVED, 2, buildDiff(v1, v2));
+		assertBC("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("""
@@ -584,6 +584,6 @@ class FormalTypeParameterChangedTest {
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1),
-			bc("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_REMOVED, 2));
+			bc("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 2));
 	}
 }

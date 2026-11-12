@@ -66,7 +66,7 @@ Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [An
 | [`EXECUTABLE_PARAMETER_GENERICS_CHANGED`](#executable_parameter_generics_changed)                           | | :material-code-braces: | Parameter generic arguments change while erasure stays the same             |
 | [`METHOD_RETURN_TYPE_ERASURE_CHANGED`](#method_return_type_erasure_changed)                       | :material-package-variant-closed: | | A return type change alters the erased method signature                     |
 | [`METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE`](#method_return_type_changed_incompatible)             | | :material-code-braces: | A return type change breaks callers or overriders                           |
-| [`METHOD_PARAMETER_ERASURE_CHANGED`](#method_parameter_erasure_changed)                           | :material-package-variant-closed: | | An inherited method's erased parameter types change, not its signature       |
+| [`METHOD_PARAMETER_ERASURE_CHANGED`](#method_parameter_erasure_changed)                           | :material-package-variant-closed: | | A method's erased parameter types change, not its signature                 |
 | [`METHOD_NOW_ABSTRACT`](#method_now_abstract)                                                     | :material-package-variant-closed: | :material-code-braces: | A concrete method becomes abstract                                          |
 | [`METHOD_NOW_FINAL`](#method_now_final)                                                           | :material-package-variant-closed: | :material-code-braces: | An overridable method becomes final                                         |
 | [`METHOD_NOW_STATIC`](#method_now_static)                                                         | :material-package-variant-closed: | | An instance method becomes static                                           |
@@ -866,7 +866,7 @@ Integer x = new A<Integer, String>().m();
 
 :material-package-variant-closed:
 
-The erasure of a method's parameter types changes while its signature, as seen from the type that inherits it, does not. Compiled bytecode references the erasure of the method's declaration, so it fails at link time, but recompilation succeeds. This happens when a type variable's bound changes in a generic supertype, or when an override that specializes an inherited generic method is removed. It is not reported while the old erasure remains declared in the type hierarchy.
+The erasure of a method's parameter types changes while its signature, as seen from its declaring type or from the type that inherits it, does not. Compiled bytecode references the erasure of the method's declaration, so it fails at link time, but recompilation succeeds. This happens when a type variable's bound changes in a generic supertype, or when an override that specializes an inherited generic method is removed. It is not reported while the old erasure remains declared in the type hierarchy.
 
 **Library**
 
@@ -883,7 +883,7 @@ new B().m(1);
 ```
 
 !!! note "Why binary-only"
-    `m` is seen as `m(Integer)` on `B` in both versions, so recompilation succeeds. Compiled bytecode references `B.m(Number)`, which becomes `m(Object)`.
+    `m` is seen as `m(Integer)` on `B` in both versions, so recompilation succeeds. Compiled bytecode references `B.m(Number)`, which becomes `m(Object)`. The same holds for `A.m(T)` itself, which is reported on `A`.
 
 ---
 
