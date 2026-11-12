@@ -18,6 +18,8 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forExecutable(
 			ctx.oldType(), ctx.newType(), oldExecutable, newExecutable);
 		boolean isFinalExecutable = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
+		// §4.8: existing clients see the erasure of the new signature, which accepts the same arguments as the old one
+		boolean isErased = ctx.isErasedForExistingClients(newExecutable);
 		// §8.4.2: a signature is a subsignature of another if it is its erasure, so overriders and hiders written
 		// against an old signature that is the erasure of the new one are unaffected
 		boolean isErasureOfNewSignature = !isFinalExecutable && IntStream.range(0, oldExecutable.getParameters().size())
@@ -40,14 +42,19 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 				 * methods and constructors: the former can be overridden (thus parameters are immutable so that signatures in
 				 * sub/super-classes match), and the latter cannot (thus parameters can follow variance rules).
 				 */
-				boolean compatible = isFinalExecutable
+				boolean compatible;
+				if (isFinalExecutable) {
 					// Can't be overridden = variance: also erase newly added type params
-					? acceptsRawArguments || ctx.v2().analyzer().isSubtypeOf(newExecutable, normalizedPt1,
-						normalizer.normalizeNew(pt2))
+					compatible = isErased || acceptsRawArguments || ctx.v2().analyzer().isSubtypeOf(newExecutable,
+						normalizedPt1, normalizer.normalizeNew(pt2));
+				} else if (isErased) {
+					compatible = isErasureOfNewSignature;
+				} else {
 					// Can be overridden = invariant: only rename old type params (do NOT erase new type params, since
 					// generizing a type argument like List<Object> → List<T> IS a source break due to name clashes
 					// in overriding subclasses)
-					: normalizedPt1.equals(pt2) || (acceptsRawArguments && isErasureOfNewSignature);
+					compatible = normalizedPt1.equals(pt2) || (acceptsRawArguments && isErasureOfNewSignature);
+				}
 
 				if (!compatible) {
 					ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED,

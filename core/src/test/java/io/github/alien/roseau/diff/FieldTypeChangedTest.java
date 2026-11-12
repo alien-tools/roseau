@@ -142,9 +142,10 @@ class FieldTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("java.util.List<Object> f = new A().f;")
+	// §4.8: existing clients use A raw, and see the raw List: its members lose their type arguments
+	@Client("String s = new A().f.stream().map(Object::toString).findFirst().get();")
 	@Test
-	void type_first_param_added_and_used_as_nested_field_type_no_break() {
+	void type_first_param_added_and_used_as_nested_field_type_source_only() {
 		var v1 = """
 			public class A {
 				public java.util.List<Object> f;
@@ -154,7 +155,7 @@ class FieldTypeChangedTest {
 				public java.util.List<T> f;
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 
 	@Client("Number f = new A().f;")
@@ -574,5 +575,63 @@ class FieldTypeChangedTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	// §4.8: a type that becomes generic is used raw by existing clients, who see the erasure of its members
+	@Client("""
+		new A().f = new java.util.List[0];
+		java.util.List[] f = new A().f;
+		new A().g = new A();""")
+	@Test
+	void type_becomes_generic_raw_field_types_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List[] f;
+				public A g;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T>[] f;
+				public A<T> g;
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().f = new java.util.ArrayList[0];")
+	@Test
+	void type_becomes_generic_field_type_changed() {
+		var v1 = """
+			public class A {
+				public java.util.ArrayList[] f;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T>[] f;
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	// §4.8: the erasure also applies to the fields that did not change
+	@Client("String s = new A().f.get(0);")
+	@Test
+	void type_becomes_generic_unchanged_parameterized_field_source_only() {
+		var v1 = """
+			public class A {
+				public java.util.List<String> f;
+				public static java.util.List<String> g;
+				public String h;
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<String> f;
+				public static java.util.List<String> g;
+				public String h;
+			}""";
+
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 }

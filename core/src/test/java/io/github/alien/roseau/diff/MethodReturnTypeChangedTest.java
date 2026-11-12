@@ -343,9 +343,10 @@ class MethodReturnTypeChangedTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
-	@Client("java.util.List<Object> l = new A().m();")
+	// §4.8: existing clients use A raw, and see the raw List: its members lose their type arguments
+	@Client("String s = new A().m().stream().map(Object::toString).findFirst().get();")
 	@Test
-	void type_first_param_added_and_used_as_nested_return_no_break() {
+	void type_first_param_added_and_used_as_nested_return_source_only() {
 		var v1 = """
 			public class A {
 				public java.util.List<Object> m() { return null; }
@@ -355,7 +356,7 @@ class MethodReturnTypeChangedTest {
 				public java.util.List<T> m() { return null; }
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 
 	@Client("Number n = new A().m();")
@@ -788,6 +789,232 @@ class MethodReturnTypeChangedTest {
 		var v2 = """
 			public abstract class A implements java.util.function.Supplier<String> {
 				public String get() { return "v2"; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §4.8: a type that becomes generic is used raw by existing clients, who see the erasure of its members
+	@Client("""
+		A a = new A().m();
+		new A() {
+			@Override public A m() { return this; }
+		};""")
+	@Test
+	void type_becomes_generic_self_return_no_break() {
+		var v1 = """
+			public class A {
+				public A m() { return this; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public A<T> m() { return this; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		java.util.List l = new A().m();
+		new A() {
+			@Override public java.util.List m() { return null; }
+		};""")
+	@Test
+	void type_becomes_generic_raw_return_parameterized_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T extends Number> {
+				public java.util.List<T> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new A() {
+			@Override public java.util.Map m() { return null; }
+		};""")
+	@Test
+	void type_becomes_generic_raw_return_partially_parameterized_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.Map m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.Map<String, ? extends T> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new A() {
+			@Override public java.util.List[] m() { return null; }
+		};""")
+	@Test
+	void type_becomes_generic_raw_array_return_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List[] m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T>[] m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		java.util.List l = ((A) null).m();
+		A a = () -> null;""")
+	@Test
+	void interface_becomes_generic_raw_return_no_break() {
+		var v1 = """
+			public interface A {
+				java.util.List m();
+			}""";
+		var v2 = """
+			public interface A<T> {
+				java.util.List<T> m();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §4.8: the erasure applies to the whole member type, not only to the new type parameters
+	@Client("""
+		new A() {
+			@Override public java.util.List m() { return null; }
+		};""")
+	@Test
+	void type_becomes_generic_raw_return_unrelated_type_argument_no_break() {
+		var v1 = """
+			public class A {
+				public java.util.List m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<String> m() { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// The raw List loses its element type
+	@Client("for (String s : new A().m());")
+	@Test
+	void type_becomes_generic_parameterized_return_source_only() {
+		var v1 = """
+			public class A {
+				public java.util.List<String> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.List<T> m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("java.util.List<Integer> l = new A().m();")
+	@Test
+	void type_becomes_generic_return_changed_source_only() {
+		var v1 = """
+			public class A {
+				public java.util.List<Integer> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public java.util.Collection<T> m() { return null; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	// §4.8: the erasure also applies to the members that did not change
+	@Client("for (String s : new A().m());")
+	@Test
+	void type_becomes_generic_unchanged_parameterized_return_source_only() {
+		var v1 = """
+			public class A {
+				public final java.util.List<String> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public final java.util.List<String> m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("Runnable r = new A().m().asSubclass(Runnable.class).getConstructor().newInstance();")
+	@Test
+	void type_becomes_generic_unchanged_wildcard_return_source_only() {
+		var v1 = """
+			public class A {
+				public final Class<?> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public final Class<?> m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	// §4.8: the type parameters of a generic method of a raw type are erased too
+	@Client("String s = new A().m(String.class);")
+	@Test
+	void type_becomes_generic_unchanged_generic_method_return_source_only() {
+		var v1 = """
+			public class A {
+				public final <U> U m(Class<U> c) { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public final <U> U m(Class<U> c) { return null; }
+			}""";
+
+		assertBC("A", "A.m(java.lang.Class<U>)", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2,
+			buildDiff(v1, v2));
+	}
+
+	@Client("""
+		String s = new A().m("", new int[0]);
+		new A() {
+			@Override public String m(String s, int[] a) { return null; }
+		};""")
+	@Test
+	void type_becomes_generic_unchanged_erased_method_no_break() {
+		var v1 = """
+			public class A {
+				public String m(String s, int[] a) { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public String m(String s, int[] a) { return null; }
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = A.m().get(0);")
+	@Test
+	void type_becomes_generic_unchanged_static_parameterized_return_no_break() {
+		var v1 = """
+			public class A {
+				public static java.util.List<String> m() { return null; }
+			}""";
+		var v2 = """
+			public class A<T> {
+				public static java.util.List<String> m() { return null; }
 			}""";
 
 		assertNoBC(buildDiff(v1, v2));

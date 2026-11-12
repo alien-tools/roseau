@@ -767,4 +767,198 @@ class ExecutableParameterGenericsChangedTest {
 
 		assertNoBC(buildDiff(v1, v2));
 	}
+
+	// §4.8: a type that becomes generic is used raw by existing clients, who see the erasure of its members
+	@Client("""
+		new A().m(java.util.List.<String>of());
+		new A() {
+			@Override public void m(java.util.List l) {}
+		};""")
+	@Test
+	void type_becomes_generic_raw_parameter_parameterized() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<T> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<String>of());")
+	@Test
+	void type_becomes_generic_raw_parameter_parameterized_final() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public final void m(java.util.List<T> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		new A(String.class);
+		new A(Integer.class) {};""")
+	@Test
+	void type_becomes_generic_raw_constructor_parameter_parameterized() {
+		var v1 = """
+			public class A {
+				public A(Class c) {}
+			}""";
+		var v2 = """
+			public class A<T extends CharSequence> {
+				public A(Class<T> c) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<String>of(), java.util.List.<Integer>of());")
+	@Test
+	void type_becomes_generic_raw_varargs_parameter_parameterized() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List... l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<T>... l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §4.8: the type parameters of a generic method of a raw type are erased too
+	@Client("""
+		new A().m(java.util.List.<String>of());
+		new A() {
+			@Override public void m(java.util.List l) {}
+		};""")
+	@Test
+	void type_becomes_generic_raw_parameter_parameterized_with_method_type_parameter() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public <U extends T> void m(java.util.List<U> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §4.8: the erasure applies to the whole member type, not only to the new type parameters
+	@Client("new A().m(java.util.List.<Integer>of());")
+	@Test
+	void type_becomes_generic_raw_parameter_unrelated_type_argument() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<String> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §4.8: the type of a static member of a raw type is not erased
+	@Client("A.m(java.util.List.<Integer>of());")
+	@Test
+	void type_becomes_generic_raw_static_parameter_parameterized() {
+		var v1 = """
+			public class A {
+				public static void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public static void m(java.util.List<String> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	// A type that was already generic is not only used raw
+	@Client("new A<String>().m(java.util.List.<Integer>of());")
+	@Test
+	void generic_type_raw_parameter_parameterized() {
+		var v1 = """
+			public class A<T> {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<T> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	// §4.8, §8.4.2: m(List<String>) is not a subsignature of the erased m(List), even if m did not change
+	@Client("""
+		new A() {
+			@Override public void m(java.util.List<String> l) {}
+		};""")
+	@Test
+	void type_becomes_generic_unchanged_parameterized_parameter() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<String> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<String>of());")
+	@Test
+	void type_becomes_generic_parameterized_parameter_final() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List<String> l) {}
+				public A(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public final void m(java.util.List<T> l) {}
+				public A(java.util.List<T> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(List, List<String>) is not a subsignature of the erased m(List, List)
+	@Client("""
+		new A() {
+			@Override public void m(java.util.List l1, java.util.List<String> l2) {}
+		};""")
+	@Test
+	void type_becomes_generic_raw_parameter_parameterized_next_to_parameterized_parameter() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l1, java.util.List<String> l2) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<T> l1, java.util.List<String> l2) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List,java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
 }

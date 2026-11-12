@@ -21,6 +21,17 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 		int paramsCount2 = newExecutable.getFormalTypeParameters().size();
 		boolean isOverridable = !ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
 
+		// §4.8: existing clients see the erasure of the new executable, which has no type parameters: it accepts the
+		// same invocations, but a generic method is not a subsignature of its erasure (§8.4.2)
+		if (ctx.isErasedForExistingClients(newExecutable)) {
+			if (isOverridable) {
+				oldExecutable.getFormalTypeParameters().forEach(ftp ->
+					ctx.builder().memberBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_REMOVED, ctx.oldType(), oldExecutable,
+						newExecutable, new BreakingChangeDetails.FormalTypeParametersRemoved(ftp)));
+			}
+			return;
+		}
+
 		// Removing a type parameter is breaking if:
 		//  - it can be overridden
 		//  - it remains generic with fewer type parameters

@@ -131,4 +131,39 @@ class FormalTypeParameterRemovedTest {
 
 		assertBC("A", "A.<init>()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_REMOVED, 2, buildDiff(v1, v2));
 	}
+
+	// §4.8, §8.4.2: existing clients use A raw and see the erased m(Object), which the generic m(U) does not override
+	@Client("""
+		new A().<String>m("");
+		new A() {
+			@Override public <U> void m(U u) {}
+		};""")
+	@Test
+	void type_becomes_generic_unchanged_generic_method() {
+		var v1 = """
+			public class A {
+				public <U> void m(U u) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public <U> void m(U u) {}
+			}""";
+
+		assertBC("A", "A.m(U)", BreakingChangeKind.FORMAL_TYPE_PARAMETER_REMOVED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().<String>m(\"\");")
+	@Test
+	void type_becomes_generic_unchanged_generic_method_final() {
+		var v1 = """
+			public class A {
+				public final <U> void m(U u) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public final <U> void m(U u) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }
