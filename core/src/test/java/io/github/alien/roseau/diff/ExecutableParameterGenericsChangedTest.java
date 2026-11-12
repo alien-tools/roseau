@@ -141,6 +141,304 @@ class ExecutableParameterGenericsChangedTest {
 			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
 	}
 
+	// §4.8, §5.1.9, §8.4.2: every argument accepted by a raw List is accepted by List<?>, and the raw m(List) is
+	// still a subsignature of m(List<?>), so overriders and hiders are unaffected
+	@Client("""
+		new A().m(new java.util.ArrayList());
+		new A().m(java.util.List.<String>of());
+		new A() {
+			@Override public void m(java.util.List l) {}
+		}.m(java.util.List.<String>of());""")
+	@Test
+	void raw_to_unbounded_wildcard() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List<?> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<String>of());")
+	@Test
+	void raw_to_explicit_unbounded_wildcard() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List<? extends Object> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("""
+		A.m(String.class);
+		class B extends A {
+			public static void m(Class c) {}
+		}""")
+	@Test
+	void raw_to_unbounded_wildcard_static() {
+		var v1 = """
+			public class A {
+				public static void m(Class c) {}
+			}""";
+		var v2 = """
+			public class A {
+				public static void m(Class<?> c) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A(java.util.List.<String>of());")
+	@Test
+	void raw_to_unbounded_wildcard_constructor() {
+		var v1 = """
+			public class A {
+				public A(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public A(java.util.List<?> l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.Map.<String, Integer>of());")
+	@Test
+	void raw_to_unbounded_wildcards() {
+		var v1 = """
+			public class A {
+				public void m(java.util.Map m) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.Map<?, ?> m) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.Map.<Integer, Integer>of());")
+	@Test
+	void raw_to_partially_unbounded_wildcards() {
+		var v1 = """
+			public class A {
+				public void m(java.util.Map m) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.Map<String, ?> m) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.Map)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<String>of());")
+	@Test
+	void raw_to_bounded_wildcard() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List<? extends Number> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<Integer>of());")
+	@Test
+	void raw_to_concrete() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List<String> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(List, List<String>) is neither m(List<?>, List<String>) nor its erasure m(List, List)
+	@Client("""
+		new A() {
+			@Override public void m(java.util.List l1, java.util.List<String> l2) {}
+		};""")
+	@Test
+	void raw_to_unbounded_wildcard_next_to_parameterized_parameter() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l1, java.util.List<String> l2) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List<?> l1, java.util.List<String> l2) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List,java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(java.util.List.<Integer>of(), java.util.List.<String>of());")
+	@Test
+	void raw_to_unbounded_wildcard_next_to_parameterized_parameter_final() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List l1, java.util.List<String> l2) {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m(java.util.List<?> l1, java.util.List<String> l2) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(List, T) is neither m(List<?>, T) nor its erasure m(List, Object)
+	@Client("""
+		new A<String>() {
+			@Override public void m(java.util.List l, String t) {}
+		};""")
+	@Test
+	void raw_to_unbounded_wildcard_next_to_type_variable_parameter() {
+		var v1 = """
+			public class A<T> {
+				public void m(java.util.List l, T t) {}
+			}""";
+		var v2 = """
+			public class A<T> {
+				public void m(java.util.List<?> l, T t) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List,T)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("""
+		class B extends A {
+			public static void m(Class c, java.util.List<String> l) {}
+		}""")
+	@Test
+	void raw_to_unbounded_wildcard_next_to_parameterized_parameter_static() {
+		var v1 = """
+			public class A {
+				public static void m(Class c, java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public static void m(Class<?> c, java.util.List<String> l) {}
+			}""";
+
+		assertBC("A", "A.m(java.lang.Class,java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	// m(List, String, List[]) is the erasure of m(List<?>, String, List<?>[])
+	@Client("""
+		new A() {
+			@Override public void m(java.util.List l, String s, java.util.List[] ls) {}
+		}.m(java.util.List.<Integer>of(), "", new java.util.List[0]);""")
+	@Test
+	void raw_to_unbounded_wildcard_next_to_erased_parameters() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List l, String s, java.util.List[] ls) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List<?> l, String s, java.util.List<?>[] ls) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(List<?>) is not a subsignature of the raw m(List), so overriders break
+	@Client("""
+		new A() {
+			@Override public void m(java.util.List<?> l) {}
+		}.m(java.util.List.<String>of());""")
+	@Test
+	void unbounded_wildcard_to_raw() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List<?> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List<? extends java.lang.Object>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	// §4.8: every parameterization of List is a subtype of the raw List
+	@Client("new A().m(java.util.List.<String>of());")
+	@Test
+	void unbounded_wildcard_to_raw_final() {
+		var v1 = """
+			public class A {
+				public final void m(java.util.List<?> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public final void m(java.util.List l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(List<String>) is not a subsignature of the raw m(List), so overriders break
+	@Client("""
+		new A() {
+			@Override public void m(java.util.List<String> l) {}
+		}.m(java.util.List.<String>of());""")
+	@Test
+	void concrete_to_raw() {
+		var v1 = """
+			public class A {
+				public void m(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public void m(java.util.List l) {}
+			}""";
+
+		assertBC("A", "A.m(java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A(java.util.List.<String>of());")
+	@Test
+	void concrete_to_raw_constructor() {
+		var v1 = """
+			public class A {
+				public A(java.util.List<String> l) {}
+			}""";
+		var v2 = """
+			public class A {
+				public A(java.util.List l) {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
 	// §4.5.1: T <= ? super T, so List<Integer> <: List<? super Integer>
 	// but breaks overriders
 	@Client("""
