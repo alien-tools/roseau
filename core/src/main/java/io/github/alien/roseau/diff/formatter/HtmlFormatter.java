@@ -187,7 +187,9 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		int exported = api.getExportedTypes().size();
 		int all = api.getLibraryTypes().getAllTypes().size();
 		int methodCount = api.getExportedTypes().stream().mapToInt(t -> api.analyzer().getExportedMethods(t).size()).sum();
-		int fieldCount = api.getExportedTypes().stream().mapToInt(t -> t.getDeclaredFields().size()).sum();
+		int fieldCount = api.getExportedTypes().stream()
+			.mapToInt(t -> api.analyzer().getDeclaredExportedFields(t).size())
+			.sum();
 		return "<div class=\"lib\">" +
 			"<div class=\"lib-label\">" + escape(label) + "</div>" +
 			"<div class=\"lib-meta\"><span><span class=\"muted\">Exported types:</span> " +

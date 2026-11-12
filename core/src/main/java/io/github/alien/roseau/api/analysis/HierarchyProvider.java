@@ -15,6 +15,7 @@ import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
 
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -433,27 +434,59 @@ public interface HierarchyProvider {
 
 	/**
 	 * Returns all fields that can be accessed on this type, including those declared in its super types. In case of
-	 * shadowing, returns the visible field, indexed by simple name.
+	 * shadowing, returns the visible field, indexed by simple name. A field hidden by a field that is not exported
+	 * cannot be accessed on this type.
 	 *
 	 * @param type the base type
 	 * @return a map from field simple name to each {@link FieldDecl} that can be accessed on this type
 	 */
 	default Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		return Stream.concat(
-				type.getDeclaredFields().stream(),
-				getInstantiatedSuperTypes(type)
-					.flatMap(superType -> resolver().resolve(superType).stream()
-						.flatMap(decl -> {
-							Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
-							return decl.getDeclaredFields().stream().map(f -> instantiate(f, substitutions));
-						})))
+		return getMemberFields(type, new HashSet<>())
 			.filter(f -> properties().isExported(type, f))
 			.collect(Collectors.toMap(
 				FieldDecl::getSimpleName,
 				Function.identity(),
 				(f1, f2) -> isShadowing(f1, f2) ? f1 : f2
 			));
+	}
+
+	/**
+	 * Returns the fields that are members of {@code type} (JLS §8.2, §8.3): the fields it declares, whatever their
+	 * visibility, and the fields it inherits from its direct supertypes. A member of a direct supertype is inherited
+	 * if it is accessible in {@code type} and not hidden by a field of the same name declared in {@code type}.
+	 * Inherited fields are instantiated with the type arguments {@code type} supplies to its supertypes.
+	 *
+	 * @param type     the type to collect the member fields of
+	 * @param visiting the qualified names of the subtypes being visited, to stop at cyclic hierarchies
+	 */
+	private Stream<FieldDecl> getMemberFields(TypeDecl type, Set<String> visiting) {
+		if (!visiting.add(type.getQualifiedName())) {
+			return Stream.empty();
+		}
+
+		Set<String> declared = type.getDeclaredFields().stream()
+			.map(FieldDecl::getSimpleName)
+			.collect(Collectors.toSet());
+		List<FieldDecl> inherited = getSuperTypes(type).stream()
+			.flatMap(superType -> resolver().resolve(superType).stream()
+				.flatMap(decl -> {
+					Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
+					return getMemberFields(decl, visiting)
+						.filter(f -> !declared.contains(f.getSimpleName()) && isInheritedBy(type, f))
+						.map(f -> instantiate(f, substitutions));
+				}))
+			.toList();
+		visiting.remove(type.getQualifiedName());
+
+		return Stream.concat(type.getDeclaredFields().stream(), inherited.stream());
+	}
+
+	private boolean isInheritedBy(TypeDecl type, FieldDecl field) {
+		return field.isPublic() || field.isProtected() ||
+			(field.isPackagePrivate() && resolver().resolve(field.getContainingType())
+				.map(declaring -> declaring.getPackageName().equals(type.getPackageName()))
+				.orElse(false));
 	}
 
 	/**

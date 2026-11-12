@@ -133,7 +133,8 @@ public final class AsmClassVisitor extends ClassVisitor {
 
 	@Override
 	public FieldVisitor visitField(int access, String name, String descriptor, String signature, Object value) {
-		if (shouldSkip || isSynthetic(access) || !isTypeMemberExported(access)) {
+		// Non-exported fields are retained too: they hide the fields of the same name in supertypes (§8.3)
+		if (shouldSkip || isSynthetic(access)) {
 			return null;
 		}
 

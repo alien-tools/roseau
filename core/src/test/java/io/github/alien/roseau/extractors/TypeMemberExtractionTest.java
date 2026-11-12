@@ -12,9 +12,11 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
+import static io.github.alien.roseau.utils.TestUtils.assertEnum;
 import static io.github.alien.roseau.utils.TestUtils.assertField;
 import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static io.github.alien.roseau.utils.TestUtils.assertMethod;
+import static io.github.alien.roseau.utils.TestUtils.assertRecord;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -45,7 +47,9 @@ class TypeMemberExtractionTest {
 			.isEmpty();
 		assertThat(a.getDeclaredFields())
 			.extracting(FieldDecl::getSimpleName)
-			.containsOnly("f2", "f3");
+			.containsOnly("f1", "f2", "f3", "f4");
+		assertThat(a.getDeclaredFields().stream().filter(f -> api.analyzer().isExported(a, f)))
+			.isEmpty();
 	}
 
 	@ParameterizedTest
@@ -73,6 +77,9 @@ class TypeMemberExtractionTest {
 			.extracting(MethodDecl::getSimpleName)
 			.containsOnly("m2", "m3");
 		assertThat(a.getDeclaredFields())
+			.extracting(FieldDecl::getSimpleName)
+			.containsOnly("f1", "f2", "f3", "f4");
+		assertThat(a.getDeclaredFields().stream().filter(f -> api.analyzer().isExported(a, f)))
 			.extracting(FieldDecl::getSimpleName)
 			.containsOnly("f2", "f3");
 	}
@@ -123,8 +130,9 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "B$A");
 		assertTrue(api.analyzer().isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredFields()).hasSize(4);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
+		assertThat(api.analyzer().getExportedFields(a)).hasSize(2);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(2);
 
 		var f2 = assertField(api, a, "f2");
@@ -155,7 +163,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.analyzer().isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredFields()).hasSize(4);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
 		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
@@ -188,7 +196,7 @@ class TypeMemberExtractionTest {
 		var a = assertClass(api, "A");
 		assertTrue(api.analyzer().isExported(a));
 		assertTrue(a.isSealed());
-		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredFields()).hasSize(4);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
 		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
@@ -220,7 +228,7 @@ class TypeMemberExtractionTest {
 
 		var a = assertClass(api, "A");
 		assertTrue(api.analyzer().isExported(a));
-		assertThat(a.getDeclaredFields()).hasSize(2);
+		assertThat(a.getDeclaredFields()).hasSize(4);
 		assertThat(a.getDeclaredMethods()).hasSize(3);
 		assertThat(api.analyzer().getExportedFields(a)).hasSize(1);
 		assertThat(a.getDeclaredMethods().stream().filter(m -> api.analyzer().isExported(a, m))).hasSize(1);
@@ -463,5 +471,49 @@ class TypeMemberExtractionTest {
 		// In StringBox, it is substituted
 		var inherited = api.analyzer().findField(stringBox, "value").orElseThrow();
 		assertThat(inherited.getType()).isEqualTo(TypeReference.STRING);
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void non_exported_fields_keep_their_visibility(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A {
+			  private static int f1;
+			  static int f2;
+			}""");
+
+		var a = assertClass(api, "A");
+		assertTrue(assertField(api, a, "f1").isPrivate());
+		assertTrue(assertField(api, a, "f2").isPackagePrivate());
+		assertThat(api.analyzer().getExportedFields(a)).isEmpty();
+	}
+
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void compiler_generated_fields_are_not_extracted(ApiBuilder builder) {
+		var api = builder.build("""
+			public class A {
+			  public class I {
+			    private int f;
+			    void m() { assert f == 0; }
+			  }
+			  public enum E {
+			    X;
+			    private int f;
+			  }
+			  public record R(int c) {
+			    private static int f;
+			  }
+			}""");
+
+		assertThat(assertClass(api, "A$I").getDeclaredFields())
+			.extracting(FieldDecl::getSimpleName)
+			.containsOnly("f");
+		assertThat(assertEnum(api, "A$E").getDeclaredFields())
+			.extracting(FieldDecl::getSimpleName)
+			.containsOnly("X", "f");
+		assertThat(assertRecord(api, "A$R").getDeclaredFields())
+			.extracting(FieldDecl::getSimpleName)
+			.containsOnly("f");
 	}
 }

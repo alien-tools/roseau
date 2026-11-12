@@ -71,7 +71,8 @@ class JdtTypesExtractorTest {
 		assertThat(api.getAllTypes()).hasSize(1);
 
 		var b = api.findType("pkg.B").orElseThrow();
-		assertThat(b.getDeclaredFields()).isEmpty();
+		// The malformed field is recovered as a package-private field
+		assertThat(b.getDeclaredFields()).noneMatch(f -> f.isPublic() || f.isProtected());
 	}
 
 	@Test

@@ -276,8 +276,8 @@ final class JdtApiVisitor extends ASTVisitor {
 	}
 
 	private Set<FieldDecl> convertFields(ITypeBinding binding) {
+		// Non-exported fields are retained too: they hide the fields of the same name in supertypes (§8.3)
 		return Arrays.stream(binding.getDeclaredFields())
-			.filter(JdtApiVisitor::isPublicOrProtected)
 			.map(field -> convertField(field, binding))
 			.collect(toSet());
 	}
@@ -630,11 +630,6 @@ final class JdtApiVisitor extends ASTVisitor {
 			LOGGER.debug("JDT failed to evaluate the initializer of {} in {}: {}", field.getName(), filePath, e.toString());
 			return false;
 		}
-	}
-
-	private static boolean isPublicOrProtected(IVariableBinding field) {
-		return org.eclipse.jdt.core.dom.Modifier.isPublic(field.getModifiers()) ||
-			org.eclipse.jdt.core.dom.Modifier.isProtected(field.getModifiers());
 	}
 
 	private static boolean isPublicOrProtected(IMethodBinding method) {
