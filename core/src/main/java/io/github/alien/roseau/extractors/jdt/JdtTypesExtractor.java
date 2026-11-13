@@ -29,6 +29,7 @@ import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -99,10 +100,12 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
 		Set<String> reportedErrors = ConcurrentHashMap.newKeySet();
 		List<Path> misplacedFiles = new ArrayList<>();
+		AtomicInteger acceptedFiles = new AtomicInteger();
 		// Receive parsed ASTs and forward them to the visitor
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
 			public void acceptAST(String sourceFilePath, CompilationUnit ast) {
+				acceptedFiles.incrementAndGet();
 				Path filePath = library.getLocation().relativize(Path.of(sourceFilePath));
 				String packageName = ast.getPackage() != null ? ast.getPackage().getName().getFullyQualifiedName() : "";
 				if (!packageMatchesLocation(filePath, packageName)) {
@@ -117,14 +120,24 @@ public final class JdtTypesExtractor implements TypesExtractor {
 						.forEach(p -> LOGGER.warn("JDT error [{}:{}]: {}", filePath, p.getSourceLineNumber(), p.getMessage()));
 				}
 
-				JdtApiVisitor visitor = new JdtApiVisitor(ast, filePath, sink, factory);
-				ast.accept(visitor);
+				// Nothing may escape the requestor: JDT handles an exception thrown here (an AbortCompilation raised
+				// while lazily resolving bindings, typically) by silently dropping every file left in the batch
+				try {
+					JdtApiVisitor visitor = new JdtApiVisitor(ast, filePath, sink, factory);
+					ast.accept(visitor);
+				} catch (RuntimeException e) {
+					LOGGER.error("Failed to extract the types of {}; its API may be incomplete", filePath, e);
+				}
 			}
 		};
 
 		// Start parsing and forwarding ASTs
 		try {
 			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
+			if (acceptedFiles.get() != sourcesArray.length) {
+				LOGGER.error("JDT processed {} of the {} files in {}; the API is incomplete",
+					acceptedFiles.get(), sourcesArray.length, library.getLocation());
+			}
 			if (!misplacedFiles.isEmpty()) {
 				LOGGER.warn("{} file(s) in {} do not match their package declaration (e.g., {}); is the source root correct?",
 					misplacedFiles.size(), library.getLocation(), misplacedFiles.getFirst());

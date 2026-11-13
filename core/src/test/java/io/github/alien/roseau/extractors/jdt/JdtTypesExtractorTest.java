@@ -18,6 +18,7 @@ import java.nio.file.Path;
 import java.util.List;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
+import static io.github.alien.roseau.utils.TestUtils.assertInterface;
 import static org.assertj.core.api.Assertions.assertThat;
 
 class JdtTypesExtractorTest {
@@ -231,6 +232,53 @@ class JdtTypesExtractorTest {
 			public class A {
 				public Missing<String> f;
 			}""")).isEqualTo(new TypeReference<>("com.example.absent.Missing", List.of(TypeReference.STRING)));
+	}
+
+	// Asking JDT for the constant value of these fields resolves their initializers, and resolving a reference to a
+	// field of a missing type throws AbortType ("Missing code implementation in the compiler"). Escaping the AST
+	// requestor, it made JDT silently drop every file left in the batch (log4j-core ContextDataFactory, 2017).
+	@Test
+	void initializers_referring_to_a_field_of_a_missing_type_do_not_abort_extraction() throws IOException {
+		Files.writeString(wd.resolve("A.java"), """
+			package pkg;
+			public class A {
+				public static final Class<? extends Missing> C = make();
+				public static final Object D = use(C);
+				public static final Object E = use(C);
+				public static final String S = String.valueOf(C);
+				public static final int K = 1;
+				public static final String N = "n";
+				public static int notFinal = 2;
+			}""");
+		Files.writeString(wd.resolve("B.java"), """
+			package pkg;
+			public class B {}""");
+
+		var api = Roseau.buildAPI(extractor.extractTypes(Library.of(wd)));
+
+		assertThat(api.getLibraryTypes().getAllTypes())
+			.extracting(TypeDecl::getQualifiedName)
+			.containsExactlyInAnyOrder("pkg.A", "pkg.B");
+		assertThat(assertClass(api, "pkg.A").getDeclaredFields())
+			.extracting(f -> f.getSimpleName() + "=" + f.isCompileTimeConstant())
+			.containsExactlyInAnyOrder("C=false", "D=false", "E=false", "S=false", "K=true", "N=true", "notFinal=false");
+	}
+
+	@Test
+	void interface_constants_are_compile_time_constants() throws IOException {
+		Files.writeString(wd.resolve("I.java"), """
+			package pkg;
+			public interface I {
+				int K = 1;
+				String N = "n";
+				Object O = new Object();
+			}""");
+
+		var api = Roseau.buildAPI(extractor.extractTypes(Library.of(wd)));
+
+		assertThat(assertInterface(api, "pkg.I").getDeclaredFields())
+			.extracting(f -> f.getSimpleName() + "=" + f.isCompileTimeConstant())
+			.containsExactlyInAnyOrder("K=true", "N=true", "O=false");
 	}
 
 	private ITypeReference typeOfField(String source) throws IOException {

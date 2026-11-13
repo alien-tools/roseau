@@ -311,8 +311,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		int line = lineNumbersMapping.getOrDefault(binding.getKey(), -1);
 		SourceLocation location = factory.location(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = createTypeReference(enclosingType);
-		boolean compileTimeConstant = binding.getConstantValue() != null &&
-			(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING));
+		boolean compileTimeConstant = isConstantVariable(binding, fieldType);
 
 		return factory.createField(makeMemberFqn(enclosingType, binding), visibility, mods,
 			anns, location, enclosingTypeRef, fieldType, compileTimeConstant);
@@ -610,6 +609,27 @@ final class JdtApiVisitor extends ASTVisitor {
 			.map(IVariableBinding::getName)
 			.map(ElementType::valueOf)
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(ElementType.class)));
+	}
+
+	/*
+	 * A constant variable is a final variable of primitive type or type String initialized with a constant expression
+	 * (JLS §4.12.4). getConstantValue() resolves the field's initializer lazily, outside JDT's own error handling: on
+	 * incomplete code, JDT may throw (e.g., an AbortType when an initializer refers to a field of a missing type) and,
+	 * escaping the AST requestor, the exception makes JDT drop the rest of the batch. The value is therefore only
+	 * queried when the field can be a constant variable, and a failure to evaluate it means it is not one.
+	 */
+	private boolean isConstantVariable(IVariableBinding field, ITypeReference fieldType) {
+		if (!org.eclipse.jdt.core.dom.Modifier.isFinal(field.getModifiers()) ||
+			!(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING))) {
+			return false;
+		}
+
+		try {
+			return field.getConstantValue() != null;
+		} catch (RuntimeException e) {
+			LOGGER.debug("JDT failed to evaluate the initializer of {} in {}: {}", field.getName(), filePath, e.toString());
+			return false;
+		}
 	}
 
 	private static boolean isPublicOrProtected(IVariableBinding field) {
