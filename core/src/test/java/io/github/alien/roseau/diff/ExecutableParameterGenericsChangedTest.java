@@ -1006,4 +1006,252 @@ class ExecutableParameterGenericsChangedTest {
 		assertBC("B", "A.m(java.lang.Object)",
 			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
 	}
+
+	// Arrays as substituted type arguments: assertj's S isSameAs(A) inherited as isSameAs(boolean[])
+	@Client("new B() { @Override public B m(boolean[] a) { return this; } };")
+	@Test
+	void inherited_array_type_argument_becomes_object() {
+		var v1 = """
+			abstract class A<S extends A<S, T>, T> { public S m(T t) { return null; } }
+			public class B extends A<B, boolean[]> {}""";
+		var v2 = """
+			abstract class A<S extends A<S, T>, T> { public S m(Object o) { return null; } }
+			public class B extends A<B, boolean[]> {}""";
+
+		assertBC("B", "A.m(boolean[])", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	// Final: callers only; Object accepts every boolean[]
+	@Client("new B().m(new boolean[0]);")
+	@Test
+	void inherited_array_type_argument_becomes_object_final() {
+		var v1 = """
+			abstract class A<S extends A<S, T>, T> { public final S m(T t) { return null; } }
+			public class B extends A<B, boolean[]> {}""";
+		var v2 = """
+			abstract class A<S extends A<S, T>, T> { public final S m(Object o) { return null; } }
+			public class B extends A<B, boolean[]> {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// assertj's final S isIn(Object...) becoming isIn(A...)
+	@Client("new B().m(\"\");")
+	@Test
+	void final_object_varargs_become_type_argument() {
+		var v1 = """
+			abstract class A<S extends A<S, T>, T> { public final S m(Object... o) { return null; } }
+			public class B extends A<B, Integer> {}""";
+		var v2 = """
+			abstract class A<S extends A<S, T>, T> { public final S m(T... t) { return null; } }
+			public class B extends A<B, Integer> {}""";
+
+		assertBC("B", "A.m(java.lang.Object[])", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	@Client("new A().m(new java.util.List[0]);")
+	@Test
+	void raw_array_component_becomes_unbounded_wildcard_final() {
+		var v1 = """
+			public class A { public final void m(java.util.List[] l) {} }""";
+		var v2 = """
+			public class A { public final void m(java.util.List<?>[] l) {} }""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// Neither type has type arguments: not a raw type becoming parameterized
+	@Client("new B().m(1);")
+	@Test
+	void final_object_becomes_type_argument() {
+		var v1 = """
+			abstract class A<S extends A<S, T>, T> { public final S m(Object o) { return null; } }
+			public class B extends A<B, String> {}""";
+		var v2 = """
+			abstract class A<S extends A<S, T>, T> { public final S m(T t) { return null; } }
+			public class B extends A<B, String> {}""";
+
+		assertBC("B", "A.m(java.lang.Object)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	// joda-time: a final class implementing raw Comparable becomes Comparable<P>
+	@Client("new P().compareTo(\"\");")
+	@Test
+	void raw_comparable_generified_in_final_class() {
+		var v1 = """
+			public final class P implements Comparable { public int compareTo(Object o) { return 0; } }""";
+		var v2 = """
+			public final class P implements Comparable<P> { public int compareTo(P o) { return 0; } }""";
+
+		assertBC("P", "P.compareTo(java.lang.Object)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	// Same parameter, only its declaration changes: an array becoming variadic
+	@Client("new A().m(new String[] {\"a\"});")
+	@Test
+	void array_becomes_varargs() {
+		var v1 = """
+			public class A { public void m(String[] a) {} }""";
+		var v2 = """
+			public class A { public void m(String... a) {} }""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// The erasure of <T> T[] toArray(T[]) is the old signature: callers and overriders still compile
+	@Client("""
+		Object[] r = new A().toArray(new String[0]);
+		new A() { @Override public Object[] toArray(Object[] a) { return a; } };""")
+	@Test
+	void array_parameter_becomes_generic_method_array() {
+		var v1 = """
+			public class A { public Object[] toArray(Object[] a) { return a; } }""";
+		var v2 = """
+			public class A { public <T> T[] toArray(T[] a) { return a; } }""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// assertj's ObjectArrayAssert<T> extends AbstractAssert<..., T[]>: isSameAs(T[]) becoming isSameAs(Object)
+	@Client("new B<String>() { @Override public B<String> m(String[] a) { return this; } };")
+	@Test
+	void inherited_array_of_type_variable_becomes_object() {
+		var v1 = """
+			abstract class A<S extends A<S, U>, U> { public S m(U u) { return null; } }
+			public class B<T> extends A<B<T>, T[]> {}""";
+		var v2 = """
+			abstract class A<S extends A<S, U>, U> { public S m(Object o) { return null; } }
+			public class B<T> extends A<B<T>, T[]> {}""";
+
+		assertBC("B", "A.m(T[])", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	// spring's ScriptFactory.getScriptedObject(ScriptSource, Class[]) becoming (ScriptSource, Class<?>...): Class[] is
+	// the erasure of Class<?>[], so implementations keeping Class[] still override it
+	@Client("new F() { @Override public Object get(Class[] c) { return null; } }.get(new Class[0]);")
+	@Test
+	void raw_array_becomes_unbounded_wildcard_varargs_overridable() {
+		var v1 = """
+			public abstract class F { public abstract Object get(Class[] c); }""";
+		var v2 = """
+			public abstract class F { public abstract Object get(Class<?>... c); }""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §15.27.3: the parameters of a lambda get the parameter types of the interface method it implements
+	@Client("F f = c -> { Class<String> s = c[0]; return s; };")
+	@Test
+	void raw_array_becomes_unbounded_wildcard_varargs_interface() {
+		var v1 = """
+			public interface F { Object get(Class[] c); }""";
+		var v2 = """
+			public interface F { Object get(Class<?>... c); }""";
+
+		assertBC("F", "F.get(java.lang.Class[])", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	@Client("I i = l -> l.add(1);")
+	@Test
+	void raw_to_unbounded_wildcard_interface() {
+		var v1 = """
+			public interface I { void m(java.util.List l); }""";
+		var v2 = """
+			public interface I { void m(java.util.List<?> l); }""";
+
+		assertBC("I", "I.m(java.util.List)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	// A lambda can implement m through a subinterface that implements n
+	@Client("""
+		interface J extends I { default void n() {} }
+		J j = l -> l.add(1);""")
+	@Test
+	void raw_to_unbounded_wildcard_interface_with_several_abstract_methods() {
+		var v1 = """
+			public interface I { void m(java.util.List l); void n(); }""";
+		var v2 = """
+			public interface I { void m(java.util.List<?> l); void n(); }""";
+
+		assertBC("I", "I.m(java.util.List)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	@Client("new I() { @Override public void m(java.util.List l) { l.add(1); } }.m(java.util.List.<String>of());")
+	@Test
+	void raw_to_unbounded_wildcard_default_method() {
+		var v1 = """
+			public interface I { default void m(java.util.List l) {} }""";
+		var v2 = """
+			public interface I { default void m(java.util.List<?> l) {} }""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(T) is neither m(Object) nor its erasure, so overriders in generic subclasses get a name clash
+	@Client("class C<T> extends A<T> { @Override public void m(T t) {} }")
+	@Test
+	void type_variable_becomes_object() {
+		var v1 = """
+			public class A<T> { public void m(T t) {} }""";
+		var v2 = """
+			public class A<T> { public void m(Object o) {} }""";
+
+		assertBC("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().m(\"\");")
+	@Test
+	void type_variable_becomes_object_final() {
+		var v1 = """
+			public class A<T> { public final void m(T t) {} }""";
+		var v2 = """
+			public class A<T> { public final void m(Object o) {} }""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A<String>().m(new Object());")
+	@Test
+	void object_becomes_type_variable_final() {
+		var v1 = """
+			public class A<T> { public final void m(Object o) {} }""";
+		var v2 = """
+			public class A<T> { public final void m(T t) {} }""";
+
+		assertBC("A", "A.m(java.lang.Object)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1,
+			buildDiff(v1, v2));
+	}
+
+	// §8.4.2: m(List<String>) is neither m(List<T>) nor its erasure
+	@Client("new A() { @Override public void m(java.util.List<String> l) {} };")
+	@Test
+	void parameterized_becomes_method_type_parameter() {
+		var v1 = """
+			public class A { public void m(java.util.List<String> l) {} }""";
+		var v2 = """
+			public class A { public <T> void m(java.util.List<T> l) {} }""";
+
+		assertBC("A", "A.m(java.util.List<java.lang.String>)",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
+
+	// §4.8, §8.4.2: m(List<String>[]) is not a subsignature of the erased m(List[]), even if m did not change
+	@Client("new A() { @Override public void m(java.util.List<String>[] l) {} };")
+	@Test
+	void type_becomes_generic_unchanged_parameterized_array_parameter() {
+		var v1 = """
+			public class A { public void m(java.util.List<String>[] l) {} }""";
+		var v2 = """
+			public class A<T> { public void m(java.util.List<String>[] l) {} }""";
+
+		assertBC("A", "A.m(java.util.List[])",
+			BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 1, buildDiff(v1, v2));
+	}
 }
