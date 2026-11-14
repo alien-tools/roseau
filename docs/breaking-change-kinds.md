@@ -795,6 +795,7 @@ Parameter generic arguments change while the erased signature stays the same.
 - For **overridable** methods, any change to generic arguments is a source break: subclasses overriding with the old signature would have mismatched parameter types.
 - For **effectively final** methods or constructors, Roseau applies a variance check: the new parameter type must be a supertype of the old to be compatible.
 - A **raw** parameter type accepts the same arguments as its unbounded wildcard parameterization (`List` → `List<?>`). For overridable methods, this change is compatible only if the old signature is the erasure of the new one, so that existing overriders still override it: `m(List, String)` → `m(List<?>, String)` is compatible, `m(List, List<String>)` → `m(List<?>, List<String>)` is not.
+- For the **abstract methods of an interface**, any change is a source break: the parameters of the lambda expressions that implement them, directly or through a subinterface, get their types from the method, and their bodies were written against the old ones.
 
 **Library**
 
@@ -1020,6 +1021,8 @@ A.m();
 :material-code-braces:
 
 A type, method, or constructor gains an extra formal type parameter, changing its generic arity. Existing source-level uses with the old arity no longer compile.
+
+A non-generic method or constructor that becomes generic is still invoked and overridden the same way, and is not reported. The abstract methods of an interface are an exception: lambda expressions cannot implement a generic method.
 
 **Library**
 

@@ -164,4 +164,70 @@ class FormalTypeParameterAddedTest {
 
 		assertBC("A", "A.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_ADDED, 2, buildDiff(v1, v2));
 	}
+
+	// §15.27.3: a lambda expression cannot implement a generic method
+	@Client("I i = () -> {};")
+	@Test
+	void interface_method_first_param_added() {
+		var v1 = """
+			public interface I {
+				void m();
+			}""";
+		var v2 = """
+			public interface I {
+				<T> void m();
+			}""";
+
+		assertBC("I", "I.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_ADDED, 2, buildDiff(v1, v2));
+	}
+
+	// A lambda expression can implement m through a subinterface that implements n
+	@Client("""
+		interface J extends I { default void n() {} }
+		J j = () -> {};""")
+	@Test
+	void interface_method_first_param_added_next_to_another_abstract_method() {
+		var v1 = """
+			public interface I {
+				void m();
+				void n();
+			}""";
+		var v2 = """
+			public interface I {
+				<T> void m();
+				void n();
+			}""";
+
+		assertBC("I", "I.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_ADDED, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new I() {}.m();")
+	@Test
+	void interface_default_method_first_param_added() {
+		var v1 = """
+			public interface I {
+				default void m() {}
+			}""";
+		var v2 = """
+			public interface I {
+				default <T> void m() {}
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("new A() { @Override public void m() {} };")
+	@Test
+	void abstract_method_first_param_added() {
+		var v1 = """
+			public abstract class A {
+				public abstract void m();
+			}""";
+		var v2 = """
+			public abstract class A {
+				public abstract <T> void m();
+			}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
 }

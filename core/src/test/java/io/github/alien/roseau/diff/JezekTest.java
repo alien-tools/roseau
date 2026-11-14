@@ -283,6 +283,8 @@ class JezekTest {
 		assertNoBC(buildDiff(v1, v2));
 	}
 
+	// Compatible when the benchmark was written, but lambda expressions cannot implement a generic method:
+	// I i = () -> {};
 	@Test
 	void genericsIfazeMethodTypeAddN() {
 		var v1 = """
@@ -294,7 +296,7 @@ class JezekTest {
 				public <T> void m();
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("I", "I.m()", BreakingChangeKind.FORMAL_TYPE_PARAMETER_ADDED, 2, buildDiff(v1, v2));
 	}
 
 	@Test

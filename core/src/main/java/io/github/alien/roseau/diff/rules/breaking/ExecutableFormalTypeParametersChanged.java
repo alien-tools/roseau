@@ -43,8 +43,9 @@ public class ExecutableFormalTypeParametersChanged implements MemberRule<Executa
 			return;
 		}
 
-		// Adding a type parameter is only breaking if there was already some
-		if (paramsCount1 > 0 && paramsCount1 < paramsCount2) {
+		// Adding a type parameter is only breaking if there was already some, or if lambdas implement the method, which
+		// cannot be generic (§15.27.3)
+		if (paramsCount1 < paramsCount2 && (paramsCount1 > 0 || ctx.isLambdaImplementable(oldExecutable))) {
 			newExecutable.getFormalTypeParameters().subList(paramsCount1, paramsCount2)
 				.forEach(ftp ->
 					ctx.builder().memberBC(BreakingChangeKind.FORMAL_TYPE_PARAMETER_ADDED, ctx.oldType(), oldExecutable, newExecutable,

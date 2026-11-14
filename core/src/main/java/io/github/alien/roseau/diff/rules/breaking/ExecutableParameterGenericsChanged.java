@@ -61,9 +61,8 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 		boolean breaksOverriders = !v1.isEffectivelyFinal(ctx.oldType(), oldExecutable) &&
 			!IntStream.range(0, oldTypes.size()).allMatch(i ->
 				oldTypes.get(i).equals(v2.getErasedType(newExecutable, newTypes.get(i))));
-		// §15.27.3: lambdas implementing an interface method, possibly through a subinterface, get its parameter types
-		boolean breaksLambdas = ctx.oldType().isInterface() &&
-			oldExecutable instanceof MethodDecl method && !method.isDefault() && !method.isStatic();
+		// §15.27.3: the parameters of a lambda get the parameter types of the method it implements
+		boolean breaksLambdas = ctx.isLambdaImplementable(oldExecutable);
 
 		for (int i = 0; i < oldTypes.size(); i++) {
 			ITypeReference oldType = oldTypes.get(i);
