@@ -729,4 +729,21 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 1),
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 1));
 	}
+
+	// B.f:Object still resolves to A.f, which compiled clients can no longer access
+	@Client("Object o = new B().f;")
+	@Test
+	void hidden_by_field_of_another_type_and_now_protected() {
+		var v1 = """
+			public class A { public Object f; }
+			public class B extends A {}""";
+		var v2 = """
+			public class A { protected Object f; }
+			public class B extends A { public String f; }""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_NOW_PROTECTED, 1),
+			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 1),
+			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
 }

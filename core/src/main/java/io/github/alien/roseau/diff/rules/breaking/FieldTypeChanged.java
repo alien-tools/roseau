@@ -60,11 +60,13 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 
 	/**
 	 * Checks whether a field with the old descriptor remains linkable in the new hierarchy, e.g., a superclass field
-	 * hidden by a new field of another type.
+	 * hidden by a new field of another type. Compiled accesses also expect it to be as accessible as the old field,
+	 * and static if it was.
 	 */
 	private static boolean isLinkable(FieldDecl oldField, ITypeReference oldErased, MemberRuleContext ctx) {
 		ApiAnalyzer v2 = ctx.v2().analyzer();
 		return v2.getLinkableFieldDeclarations(ctx.newType(), oldField.getSimpleName()).stream()
+			.filter(decl -> decl.isStatic() == oldField.isStatic() && (decl.isPublic() || !oldField.isPublic()))
 			.anyMatch(decl -> oldErased.equals(getErasedType(v2, ctx.newType(), decl)));
 	}
 
