@@ -525,6 +525,8 @@ int x = new A().f;
 
 A field's type changes in a way that breaks source-level reads or writes, even though the erased descriptor is unchanged.
 
+A raw type and its parameterizations are assignable to each other, but are not interchangeable: readers of a `List<String>` field that becomes a raw `List` get `Object` elements, and a raw `List` field that becomes a `List<String>` or a `List<?>` no longer accepts every element or every list.
+
 **Library**
 
 ```diff
@@ -844,6 +846,8 @@ A method's return type changes in a way that breaks callers or overriders at the
 
 Callers break when the new return type cannot be used in place of the old one — for instance, when a caller assigns the return value to a variable typed with the old return type.
 Overriders break when the new return type is not a supertype of the old return type. Java's covariant override rule requires the overriding method's return type to be a subtype of the overridden method's; if the parent's return type narrows, subclasses that still declare the old (broader) type violate this rule.
+
+A raw type and its parameterizations are assignable to each other, but are not interchangeable: callers of a method whose return type goes from `List<String>` to a raw `List` get `Object` elements, and can no longer add any element to a raw `List` that becomes a `List<String>` or a `List<?>`.
 
 **Library**
 

@@ -41,9 +41,7 @@ public class MethodReturnTypeChanged implements MemberRule<MethodDecl> {
 			return;
 		}
 
-		// An erased return type is assignable to the old one, but its type arguments and type variables are lost
-		boolean invokerCompatible = (!isErased || oldMethod.getType().equals(oldErased)) &&
-			v2.isSourceCompatibleExpression(newMethod, normalizedOld, normalizedNew);
+		boolean invokerCompatible = v2.isSourceCompatibleExpression(newMethod, normalizedOld, normalizedNew);
 		boolean overriderCompatible = v1.isEffectivelyFinal(ctx.oldType(), oldMethod) ||
 			v2.isSubtypeOf(newMethod, normalizedOld, normalizedNew);
 		if (!invokerCompatible || !overriderCompatible) {

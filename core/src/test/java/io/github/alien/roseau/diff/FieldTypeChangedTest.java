@@ -413,12 +413,10 @@ class FieldTypeChangedTest {
 			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("""
-		java.util.List<String> f = new A().f;
-		f.add("");
-		String s = f.get(0);""")
+	// A raw ArrayList is assignable to List<String>, but its elements are Objects
+	@Client("String s = new A().f.get(0);")
 	@Test
-	void raw_subtype_to_parameterized_supertype_final_binary_only() {
+	void parameterized_to_raw_subtype_final() {
 		var v1 = """
 			public class A {
 				public final java.util.List<String> f = new java.util.ArrayList<>();
@@ -429,10 +427,13 @@ class FieldTypeChangedTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2));
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
 
-	@Client("new A().f.add(1);")
+	@Client("""
+		new A().f.add(1);
+		new A().f = java.util.List.<Integer>of();""")
 	@Test
 	void raw_to_parameterized() {
 		var v1 = """
@@ -444,13 +445,26 @@ class FieldTypeChangedTest {
 				public java.util.List<String> f = new java.util.ArrayList<String>();
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 
-	@Client("""
-		java.util.List<String> l = new A().f;
-		l.add("");
-		String s = l.get(0);""")
+	// Writers are unaffected, but readers can no longer add anything to the list
+	@Client("new A().f.add(1);")
+	@Test
+	void raw_to_unbounded_wildcard() {
+		var v1 = """
+			public class A {
+				public java.util.List f = new java.util.ArrayList();
+			}""";
+		var v2 = """
+			public class A {
+				public java.util.List<?> f = new java.util.ArrayList<String>();
+			}""";
+
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A().f.get(0);")
 	@Test
 	void parameterized_to_raw() {
 		var v1 = """
@@ -462,7 +476,7 @@ class FieldTypeChangedTest {
 				public java.util.List f = new java.util.ArrayList<>();
 			}""";
 
-		assertNoBC(buildDiff(v1, v2));
+		assertBC("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
 	}
 
 	@Client("new A<CharSequence, String>().f = new StringBuilder();")

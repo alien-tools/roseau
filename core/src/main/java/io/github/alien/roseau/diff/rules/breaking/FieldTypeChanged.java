@@ -42,10 +42,9 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 			return;
 		}
 
-		// An erased field type is assignable to the old one, but its type arguments are lost
-		boolean readCompatible = (!isErased || oldField.getType().equals(oldErased)) &&
-			v2.isSourceCompatibleExpression(ctx.newType(), normalizedOld, normalizedNew);
-		boolean writeCompatible = oldField.isFinal() || v2.isAssignable(ctx.newType(), normalizedOld, normalizedNew);
+		boolean readCompatible = v2.isSourceCompatibleExpression(ctx.newType(), normalizedOld, normalizedNew);
+		boolean writeCompatible = oldField.isFinal() ||
+			v2.isSourceCompatibleVariable(ctx.newType(), normalizedOld, normalizedNew);
 
 		if (!readCompatible || !writeCompatible) {
 			ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, ctx.oldType(), oldField, newField,

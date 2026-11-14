@@ -506,12 +506,10 @@ class MethodReturnTypeChangedTest {
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
 	}
 
-	@Client("""
-		java.util.List<String> f = new A().m();
-		f.add("");
-		String s = f.get(0);""")
+	// A raw ArrayList is assignable to List<String>, but its elements are Objects
+	@Client("String s = new A().m().get(0);")
 	@Test
-	void raw_subtype_to_parameterized_supertype_final_binary_only() {
+	void parameterized_to_raw_subtype_final() {
 		var v1 = """
 			public class A {
 				public final java.util.List<String> m() { return new java.util.ArrayList<>(java.util.List.of("")); }
@@ -522,7 +520,103 @@ class MethodReturnTypeChangedTest {
 			}""";
 
 		assertBCs(buildDiff(v1, v2),
-			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2));
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("String s = new A().m().get(0);")
+	@Test
+	void parameterized_to_raw_final() {
+		var v1 = """
+			public class A {
+				public final java.util.List<String> m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("String s = new A().m().stream().map(Object::toString).findFirst().get();")
+	@Test
+	void unbounded_wildcard_to_raw_final() {
+		var v1 = """
+			public class A {
+				public final java.util.List<?> m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m().add(1);")
+	@Test
+	void raw_to_parameterized_final() {
+		var v1 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.List<String> m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	@Client("new A().m().add(1);")
+	@Test
+	void raw_to_unbounded_wildcard_final() {
+		var v1 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.List<?> m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2, buildDiff(v1, v2));
+	}
+
+	// String is a Comparable<String>, not a raw Comparable
+	@Client("new A().m().compareTo(1);")
+	@Test
+	void raw_to_subtype_of_parameterized_final() {
+		var v1 = """
+			public class A {
+				public final Comparable m() { return ""; }
+			}""";
+		var v2 = """
+			public class A {
+				public final String m() { return ""; }
+			}""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
+	}
+
+	@Client("""
+		java.util.List l = new A().m();
+		new A().m().add(1);""")
+	@Test
+	void raw_to_raw_subtype_final_binary_only() {
+		var v1 = """
+			public class A {
+				public final java.util.List m() { return null; }
+			}""";
+		var v2 = """
+			public class A {
+				public final java.util.ArrayList m() { return null; }
+			}""";
+
+		assertBC("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 2, buildDiff(v1, v2));
 	}
 
 	@Client("int[] a = new A().m();")

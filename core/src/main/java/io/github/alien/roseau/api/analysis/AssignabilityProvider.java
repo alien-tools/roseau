@@ -2,12 +2,15 @@ package io.github.alien.roseau.api.analysis;
 
 import com.google.common.base.Preconditions;
 import io.github.alien.roseau.api.model.TypeParameterScope;
+import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
+import io.github.alien.roseau.api.model.reference.WildcardTypeReference;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 /**
  * Evaluates Java assignment compatibility between types.
@@ -79,7 +82,10 @@ public interface AssignabilityProvider {
 
 	/**
 	 * Checks whether replacing an expression of type {@code oldType} by one of type {@code newType} preserves
-	 * assignment-compatibility for previously valid clients.
+	 * compatibility for previously valid clients, which assign its value and use its members. Although they are
+	 * assignable to each other, a raw type and a parameterized one do not have the same members: a parameterized type
+	 * loses its type arguments when it becomes raw ({@code String s = list.get(0)}), and a raw type no longer accepts
+	 * every value when it becomes parameterized ({@code list.add(1)}).
 	 */
 	default boolean isSourceCompatibleExpression(TypeParameterScope scope, ITypeReference oldType, ITypeReference newType) {
 		Preconditions.checkNotNull(scope);
@@ -100,7 +106,58 @@ public interface AssignabilityProvider {
 			return boxed == null || isAssignable(scope, newType, boxed);
 		}
 
-		return true;
+		return isParameterizedAs(newType, oldType) == isParameterized(oldType);
+	}
+
+	/**
+	 * Checks whether replacing a variable of type {@code oldType} by one of type {@code newType} preserves the
+	 * assignments of previously valid clients: every value that was assignable to it must still be. Any
+	 * parameterization can be assigned to a raw type, so, once parameterized, it only accepts them all with unbounded
+	 * wildcards.
+	 */
+	default boolean isSourceCompatibleVariable(TypeParameterScope scope, ITypeReference oldType, ITypeReference newType) {
+		Preconditions.checkNotNull(scope);
+		Preconditions.checkNotNull(oldType);
+		Preconditions.checkNotNull(newType);
+		return isAssignable(scope, oldType, newType) &&
+			(isParameterizedAs(oldType, newType) || !isParameterized(newType) || isUnboundedParameterization(newType));
+	}
+
+	private static boolean isParameterized(ITypeReference type) {
+		return switch (type) {
+			case TypeReference<?> reference -> !reference.typeArguments().isEmpty();
+			case ArrayTypeReference(var componentType, _) -> isParameterized(componentType);
+			default -> false;
+		};
+	}
+
+	private static boolean isUnboundedParameterization(ITypeReference type) {
+		return switch (type) {
+			case TypeReference<?> reference -> reference.typeArguments().stream()
+				.allMatch(arg -> arg instanceof WildcardTypeReference wildcard && wildcard.isUnbounded());
+			case ArrayTypeReference(var componentType, _) -> isUnboundedParameterization(componentType);
+			default -> false;
+		};
+	}
+
+	/**
+	 * Checks whether {@code type} is parameterized when it is seen as {@code target}, i.e., whether {@code type} or
+	 * its supertype that refers to the same type as {@code target} has type arguments. Unrelated types are seen as
+	 * {@code target} itself.
+	 */
+	private boolean isParameterizedAs(ITypeReference type, ITypeReference target) {
+		return switch (type) {
+			case TypeReference<?> reference when target instanceof TypeReference<?> targetReference ->
+				Stream.concat(Stream.of(reference), subtyping().hierarchy().getAllInstantiatedSuperTypes(reference).stream())
+					.filter(superType -> superType.getQualifiedName().equals(targetReference.getQualifiedName()))
+					.findFirst()
+					.map(AssignabilityProvider::isParameterized)
+					.orElseGet(() -> isParameterized(target));
+			case ArrayTypeReference(var componentType, var dimension)
+				when target instanceof ArrayTypeReference(var targetComponentType, var targetDimension) &&
+				dimension == targetDimension -> isParameterizedAs(componentType, targetComponentType);
+			default -> isParameterized(target);
+		};
 	}
 
 	private static boolean isPrimitiveWidening(PrimitiveTypeReference from, PrimitiveTypeReference to) {
