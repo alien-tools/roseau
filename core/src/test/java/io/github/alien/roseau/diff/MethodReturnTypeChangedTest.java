@@ -1180,9 +1180,11 @@ class MethodReturnTypeChangedTest {
 			bc("B", "I.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1));
 	}
 
-	@Client("Number n = new B().m();")
+	@Client("""
+		Number n = new B().m();
+		Number r = new A().m();""")
 	@Test
-	void supertype_bound_widened_binary_only() {
+	void supertype_bound_widened() {
 		var v1 = """
 			public class A<T extends Number> { public T m() { return null; } }
 			public class B extends A<Integer> {}""";
@@ -1190,10 +1192,11 @@ class MethodReturnTypeChangedTest {
 			public class A<T> { public T m() { return null; } }
 			public class B extends A<Integer> {}""";
 
-		// A.m()Number becomes A.m()Object
+		// A.m()Number becomes A.m()Object, which is what the clients that use A raw get (§4.8)
 		var bcs = buildDiff(v1, v2);
 		assertBCs(bcs,
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1),
+			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1),
 			bc("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_ERASURE_CHANGED, 1));
 		assertThat(bcs).extracting(bc -> bc.details()).containsOnly(
 			new BreakingChangeDetails.MethodReturnTypeChanged(new TypeReference<>("java.lang.Number"), TypeReference.OBJECT));

@@ -551,11 +551,12 @@ class FormalTypeParameterChangedTest {
 
 	@Client("""
 		A<String> a = new A<>();
-		a.m("");""")
+		a.m("");
+		new A() { @Override public void m(String s) {} };""")
 	@Test
 	void bound_widened_used_as_method_parameter_type() {
-		// Source-compatible, but the method's erasure and descriptor change from
-		// m(java.lang.String) to m(java.lang.CharSequence): clients compiled against v1 no longer link
+		// The method's erasure and descriptor change from m(java.lang.String) to m(java.lang.CharSequence): clients
+		// compiled against v1 no longer link, and subclasses that extend the raw A no longer override m (§4.8)
 		var v1 = """
 			public class A<T extends String> {
 				public void m(T t) {}
@@ -565,7 +566,9 @@ class FormalTypeParameterChangedTest {
 				public void m(T t) {}
 			}""";
 
-		assertBC("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 2, buildDiff(v1, v2));
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 2),
+			bc("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2));
 	}
 
 	@Client("""
@@ -584,6 +587,7 @@ class FormalTypeParameterChangedTest {
 
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A", BreakingChangeKind.FORMAL_TYPE_PARAMETER_CHANGED, 1),
-			bc("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 2));
+			bc("A", "A.m(T)", BreakingChangeKind.METHOD_PARAMETER_ERASURE_CHANGED, 2),
+			bc("A", "A.m(T)", BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED, 2));
 	}
 }

@@ -25,30 +25,39 @@ public class MethodReturnTypeChanged implements MemberRule<MethodDecl> {
 				newMethod, new BreakingChangeDetails.MethodReturnTypeChanged(oldErased, newErased));
 		}
 
-		// §4.8: existing clients see the erasure of the new return type, even if its declaration did not change
-		boolean isErased = ctx.isErasedForExistingClients(newMethod);
-		if (!isErased && oldMethod.getType().equals(newMethod.getType())) {
-			return;
-		}
-
-		// Build combined type-level + method-level mappings. Method-level entries take precedence (shadowing).
+		// Clients that parameterize the type see the method as it is declared, and those that use the type raw see its
+		// erasure (§4.8). The existing clients of a type that becomes generic can only use it raw.
 		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forExecutable(
 			ctx.oldType(), ctx.newType(), oldMethod, newMethod);
 		ITypeReference normalizedOld = normalizer.normalizeOld(oldMethod.getType());
-		ITypeReference normalizedNew = isErased ? newErased : normalizer.normalizeNew(newMethod.getType());
+		if (!ctx.isErasedForExistingClients(newMethod) &&
+			!isCompatible(oldMethod, newMethod, normalizedOld, normalizer.normalizeNew(newMethod.getType()), ctx)) {
+			report(oldMethod, newMethod, oldMethod.getType(), newMethod.getType(), ctx);
+		} else if (v2.isErasedInRawType(ctx.newType(), newMethod)) {
+			boolean wasErased = v1.isErasedInRawType(ctx.oldType(), oldMethod);
+			if (!isCompatible(oldMethod, newMethod, wasErased ? oldErased : normalizedOld, newErased, ctx)) {
+				report(oldMethod, newMethod, wasErased ? oldErased : oldMethod.getType(), newErased, ctx);
+			}
+		}
+	}
 
-		if (normalizedOld.equals(normalizedNew)) {
-			return;
+	private static boolean isCompatible(MethodDecl oldMethod, MethodDecl newMethod, ITypeReference oldType,
+	                                    ITypeReference newType, MemberRuleContext ctx) {
+		if (oldType.equals(newType)) {
+			return true;
 		}
 
-		boolean invokerCompatible = v2.isSourceCompatibleExpression(newMethod, normalizedOld, normalizedNew);
-		boolean overriderCompatible = v1.isEffectivelyFinal(ctx.oldType(), oldMethod) ||
-			v2.isSubtypeOf(newMethod, normalizedOld, normalizedNew);
-		if (!invokerCompatible || !overriderCompatible) {
-			ctx.builder().memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, ctx.oldType(), oldMethod,
-				newMethod, new BreakingChangeDetails.MethodReturnTypeChanged(oldMethod.getType(),
-					isErased ? newErased : newMethod.getType()));
-		}
+		ApiAnalyzer v2 = ctx.v2().analyzer();
+		boolean invokerCompatible = v2.isSourceCompatibleExpression(newMethod, oldType, newType);
+		boolean overriderCompatible = ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldMethod) ||
+			v2.isSubtypeOf(newMethod, oldType, newType);
+		return invokerCompatible && overriderCompatible;
+	}
+
+	private static void report(MethodDecl oldMethod, MethodDecl newMethod, ITypeReference oldType,
+	                           ITypeReference newType, MemberRuleContext ctx) {
+		ctx.builder().memberBC(BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, ctx.oldType(), oldMethod,
+			newMethod, new BreakingChangeDetails.MethodReturnTypeChanged(oldType, newType));
 	}
 
 	/**

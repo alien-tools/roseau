@@ -11,7 +11,7 @@ This catalog lists every breaking change kind Roseau reports.
 
 In the following, a breaking change on an *executable* applies to both methods and constructors.
 
-**A type that becomes generic is used raw by existing clients.** They see the erasure of its constructors, instance methods, and non-static fields ([JLS §4.8](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.8)), whether their declaration changed or not. Roseau compares the old member types with these erased types: turning `List m()` into `List<T> m()` is compatible, but existing clients of an unchanged `List<String> m()` now get a raw `List`, and existing overriders of an unchanged `void m(List<String> l)` no longer override it.
+**A type that becomes generic is used raw by existing clients.** They see the erasure of its constructors, instance methods, and non-static fields ([JLS §4.8](https://docs.oracle.com/javase/specs/jls/se25/html/jls-4.html#jls-4.8)), whether their declaration changed or not. Roseau compares the old member types with these erased types: turning `List m()` into `List<T> m()` is compatible, but existing clients of an unchanged `List<String> m()` now get a raw `List`, and existing overriders of an unchanged `void m(List<String> l)` no longer override it. The same goes for the clients that use an already generic type raw: when the erasure of one of its members changes, for instance because the bound of a type parameter changes, they are affected even if the clients that parameterize the type are not.
 
 Each entry shows the smallest library change that triggers the kind, and a minimal example of client code affected by it. One library edit can trigger multiple kinds, so a real diff may report several related findings for the same change.
 
@@ -887,7 +887,7 @@ new B().m(1);
 ```
 
 !!! note "Why binary-only"
-    `m` is seen as `m(Integer)` on `B` in both versions, so recompilation succeeds. Compiled bytecode references `B.m(Number)`, which becomes `m(Object)`. The same holds for `A.m(T)` itself, which is reported on `A`.
+    `m` is seen as `m(Integer)` on `B` in both versions, so recompilation succeeds. Compiled bytecode references `B.m(Number)`, which becomes `m(Object)`. `A.m(T)` itself is reported on `A` too, together with an [`EXECUTABLE_PARAMETER_GENERICS_CHANGED`](#executable_parameter_generics_changed): subclasses that extend the raw `A` override `m(Number)`, which no longer exists.
 
 ---
 

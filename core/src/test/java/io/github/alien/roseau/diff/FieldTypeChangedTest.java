@@ -713,4 +713,20 @@ class FieldTypeChangedTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("B", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 1));
 	}
+
+	// §4.8: clients that use A raw read a Number, which becomes an Object
+	@Client("""
+		Integer i = new A<Integer>().f;
+		Number n = new A().f;""")
+	@Test
+	void declaring_type_bound_widened() {
+		var v1 = """
+			public class A<T extends Number> { public T f; }""";
+		var v2 = """
+			public class A<T> { public T f; }""";
+
+		assertBCs(buildDiff(v1, v2),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_ERASURE_CHANGED, 1),
+			bc("A", "A.f", BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, 1));
+	}
 }

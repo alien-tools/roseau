@@ -25,31 +25,37 @@ public class FieldTypeChanged implements MemberRule<FieldDecl> {
 				new BreakingChangeDetails.FieldTypeChanged(oldErased, newErased));
 		}
 
-		// §4.8: existing clients see the erasure of the new field type, even if its declaration did not change
-		boolean isErased = ctx.isErasedForExistingClients(newField);
-		if (!isErased && oldField.getType().equals(newField.getType())) {
-			return;
-		}
-
-		// Normalize type references across versions to handle type parameter renaming (T→U) and generization
-		// (Object→T). The forward mapping renames old type params to v2's names; the eraseAdded mapping replaces
-		// newly added type params with their erasure (raw-type semantics for existing clients).
+		// Clients that parameterize the type see the field as it is declared, and those that use the type raw see its
+		// erasure (§4.8). The existing clients of a type that becomes generic can only use it raw.
 		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forType(ctx.oldType(), ctx.newType());
 		ITypeReference normalizedOld = normalizer.normalizeOld(oldField.getType());
-		ITypeReference normalizedNew = isErased ? newErased : normalizer.normalizeNew(newField.getType());
+		if (!ctx.isErasedForExistingClients(newField) &&
+			!isCompatible(oldField, normalizedOld, normalizer.normalizeNew(newField.getType()), ctx)) {
+			report(oldField, newField, oldField.getType(), newField.getType(), ctx);
+		} else if (v2.isErasedInRawType(ctx.newType(), newField)) {
+			boolean wasErased = v1.isErasedInRawType(ctx.oldType(), oldField);
+			if (!isCompatible(oldField, wasErased ? oldErased : normalizedOld, newErased, ctx)) {
+				report(oldField, newField, wasErased ? oldErased : oldField.getType(), newErased, ctx);
+			}
+		}
+	}
 
-		if (normalizedOld.equals(normalizedNew)) {
-			return;
+	private static boolean isCompatible(FieldDecl oldField, ITypeReference oldType, ITypeReference newType,
+	                                    MemberRuleContext ctx) {
+		if (oldType.equals(newType)) {
+			return true;
 		}
 
-		boolean readCompatible = v2.isSourceCompatibleExpression(ctx.newType(), normalizedOld, normalizedNew);
-		boolean writeCompatible = oldField.isFinal() ||
-			v2.isSourceCompatibleVariable(ctx.newType(), normalizedOld, normalizedNew);
+		ApiAnalyzer v2 = ctx.v2().analyzer();
+		boolean readCompatible = v2.isSourceCompatibleExpression(ctx.newType(), oldType, newType);
+		boolean writeCompatible = oldField.isFinal() || v2.isSourceCompatibleVariable(ctx.newType(), oldType, newType);
+		return readCompatible && writeCompatible;
+	}
 
-		if (!readCompatible || !writeCompatible) {
-			ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, ctx.oldType(), oldField, newField,
-				new BreakingChangeDetails.FieldTypeChanged(oldField.getType(), isErased ? newErased : newField.getType()));
-		}
+	private static void report(FieldDecl oldField, FieldDecl newField, ITypeReference oldType, ITypeReference newType,
+	                           MemberRuleContext ctx) {
+		ctx.builder().memberBC(BreakingChangeKind.FIELD_TYPE_CHANGED_INCOMPATIBLE, ctx.oldType(), oldField, newField,
+			new BreakingChangeDetails.FieldTypeChanged(oldType, newType));
 	}
 
 	/**

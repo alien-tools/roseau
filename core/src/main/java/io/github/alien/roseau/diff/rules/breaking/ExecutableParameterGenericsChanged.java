@@ -33,7 +33,8 @@ import java.util.stream.IntStream;
 public class ExecutableParameterGenericsChanged implements MemberRule<ExecutableDecl> {
 	@Override
 	public void onMatched(ExecutableDecl oldExecutable, ExecutableDecl newExecutable, MemberRuleContext ctx) {
-		// §4.8: the existing clients of a type that becomes generic use it raw, and see the erasure of the executable
+		// Clients that parameterize the type see the executable as it is declared, and those that use the type raw see
+		// its erasure (§4.8). The existing clients of a type that becomes generic can only use it raw.
 		findRawChange(oldExecutable, newExecutable, ctx)
 			.or(() -> findChange(oldExecutable, newExecutable, ctx))
 			.ifPresent(details -> ctx.builder().memberBC(BreakingChangeKind.EXECUTABLE_PARAMETER_GENERICS_CHANGED,
@@ -84,34 +85,43 @@ public class ExecutableParameterGenericsChanged implements MemberRule<Executable
 	}
 
 	/**
-	 * Finds the first parameter whose change breaks the existing clients of a type that becomes generic, if any. They
-	 * use it raw and see the erasure of the new executable's declaration, which accepts the arguments of its
-	 * supertypes and is only overridden by itself.
+	 * Finds the first parameter whose change breaks the clients that use the type raw, if any. They see the erasure
+	 * of the executable's declaration, which accepts the arguments of its supertypes and is only overridden by
+	 * itself.
 	 */
 	private static Optional<MethodParameterGenericsChanged> findRawChange(ExecutableDecl oldExecutable,
 	                                                                      ExecutableDecl newExecutable,
 	                                                                      MemberRuleContext ctx) {
-		if (!ctx.isErasedForExistingClients(newExecutable)) {
+		ApiAnalyzer v1 = ctx.v1().analyzer();
+		ApiAnalyzer v2 = ctx.v2().analyzer();
+		if (!v2.isErasedInRawType(ctx.newType(), newExecutable)) {
 			return Optional.empty();
 		}
 
-		ApiAnalyzer v2 = ctx.v2().analyzer();
+		ExecutableDecl oldDeclaration = getDeclaration(ctx.oldType(), oldExecutable, v1);
 		ExecutableDecl newDeclaration = getDeclaration(ctx.newType(), newExecutable, v2);
+		boolean wasErased = v1.isErasedInRawType(ctx.oldType(), oldExecutable);
 		TypeParameterMapping.Normalizer normalizer = TypeParameterMapping.Normalizer.forExecutable(
 			ctx.oldType(), ctx.newType(), oldExecutable, newExecutable);
-		List<ITypeReference> oldTypes = parameterTypes(oldExecutable, newExecutable);
+		List<ITypeReference> oldTypes = parameterTypes(wasErased ? oldDeclaration : oldExecutable, newExecutable).stream()
+			.map(type -> wasErased ? v1.getErasedType(oldDeclaration, type) : type)
+			.toList();
 		List<ITypeReference> newTypes = parameterTypes(newDeclaration, oldExecutable).stream()
 			.map(type -> v2.getErasedType(newDeclaration, type))
 			.toList();
-		boolean isOverridable = !ctx.v1().analyzer().isEffectivelyFinal(ctx.oldType(), oldExecutable);
-		// A generic method never is its own erasure: its type parameters are reported as removed
-		boolean isGenericMethod = !oldExecutable.getFormalTypeParameters().isEmpty();
+		boolean isOverridable = !v1.isEffectivelyFinal(ctx.oldType(), oldExecutable);
+		// A generic method never is the erasure that the clients of a type that becomes generic see: its type
+		// parameters are reported as removed
+		boolean isGenericMethod = !wasErased && !oldExecutable.getFormalTypeParameters().isEmpty();
 		return IntStream.range(0, oldTypes.size())
 			.filter(i -> isOverridable
 				? !oldTypes.get(i).equals(newTypes.get(i)) && !isGenericMethod
 				: !v2.isSubtypeOf(newExecutable, normalizer.normalizeOld(oldTypes.get(i)), newTypes.get(i)))
 			.mapToObj(i -> new MethodParameterGenericsChanged(oldTypes.get(i), newTypes.get(i)))
-			.findFirst();
+			.findFirst()
+			// The erased signature that raw clients invoke and override may remain declared by a supertype
+			.filter(_ -> !wasErased || !(oldDeclaration instanceof MethodDecl) ||
+				v2.getLinkableMethodDeclarations(ctx.newType(), v1.getErasure(oldDeclaration)).isEmpty());
 	}
 
 	private static ExecutableDecl getDeclaration(TypeDecl type, ExecutableDecl executable, ApiAnalyzer analyzer) {
