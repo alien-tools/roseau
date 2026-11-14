@@ -64,6 +64,7 @@ Jump to: [Type-Related](#type-related) · [Class-Related](#class-related) · [An
 | [`EXECUTABLE_NOW_THROWS_CHECKED_EXCEPTION`](#executable_now_throws_checked_exception)             | | :material-code-braces: | An executable adds or widens a checked exception                            |
 | [`EXECUTABLE_NO_LONGER_THROWS_CHECKED_EXCEPTION`](#executable_no_longer_throws_checked_exception) | | :material-code-braces: | An executable removes or narrows a checked exception                        |
 | [`EXECUTABLE_PARAMETER_GENERICS_CHANGED`](#executable_parameter_generics_changed)                           | | :material-code-braces: | Parameter generic arguments change while erasure stays the same             |
+| [`EXECUTABLE_NO_LONGER_VARARGS`](#executable_no_longer_varargs)                                   | | :material-code-braces: | A variable arity parameter becomes an array                                 |
 | [`METHOD_RETURN_TYPE_ERASURE_CHANGED`](#method_return_type_erasure_changed)                       | :material-package-variant-closed: | | A return type change alters the erased method signature                     |
 | [`METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE`](#method_return_type_changed_incompatible)             | | :material-code-braces: | A return type change breaks callers or overriders                           |
 | [`METHOD_PARAMETER_ERASURE_CHANGED`](#method_parameter_erasure_changed)                           | :material-package-variant-closed: | | A method's erased parameter types change, not its signature                 |
@@ -815,6 +816,29 @@ new A().m(java.util.List.of("x"));
 ---
 
 ## Method-Related
+
+### `EXECUTABLE_NO_LONGER_VARARGS`
+
+:material-code-braces:
+
+The variable arity parameter of a method or constructor becomes an array. The erased signature is the same, so compiled clients still link and array arguments are still accepted, but variable arity invocations no longer compile.
+
+**Library**
+
+```diff
+ public class A {
+-  public void m(String... s) {}
++  public void m(String[] s) {}
+ }
+```
+
+**Client**
+
+```java
+new A().m("a", "b");
+```
+
+---
 
 ### `METHOD_RETURN_TYPE_ERASURE_CHANGED`
 

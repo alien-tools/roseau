@@ -23,6 +23,7 @@ import io.github.alien.roseau.diff.rules.breaking.ClassNowFinal;
 import io.github.alien.roseau.diff.rules.breaking.ClassNowStatic;
 import io.github.alien.roseau.diff.rules.breaking.ConstructorNowProtected;
 import io.github.alien.roseau.diff.rules.breaking.ExecutableFormalTypeParametersChanged;
+import io.github.alien.roseau.diff.rules.breaking.ExecutableNoLongerVarargs;
 import io.github.alien.roseau.diff.rules.breaking.ExecutableParameterGenericsChanged;
 import io.github.alien.roseau.diff.rules.breaking.ExecutableRemoved;
 import io.github.alien.roseau.diff.rules.breaking.ExecutableThrownExceptions;
@@ -106,6 +107,7 @@ public class DefaultRuleSet implements RuleSet {
 		return List.of(
 			new ExecutableRemoved(),
 			new ExecutableFormalTypeParametersChanged(),
+			new ExecutableNoLongerVarargs(),
 			new ExecutableParameterGenericsChanged(),
 			new ExecutableThrownExceptions()
 		);
