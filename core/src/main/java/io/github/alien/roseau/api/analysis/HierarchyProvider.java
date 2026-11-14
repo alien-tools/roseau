@@ -10,6 +10,7 @@ import io.github.alien.roseau.api.model.LibraryTypes;
 import io.github.alien.roseau.api.model.MethodDecl;
 import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.TypeDecl;
+import io.github.alien.roseau.api.model.TypeMemberDecl;
 import io.github.alien.roseau.api.model.reference.ITypeReference;
 import io.github.alien.roseau.api.model.reference.TypeReference;
 import io.github.alien.roseau.api.resolution.TypeResolver;
@@ -23,6 +24,7 @@ import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.Function;
+import java.util.function.UnaryOperator;
 import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
@@ -93,9 +95,8 @@ public interface HierarchyProvider {
 				// Overloads: find the one whose instantiation in owner is method
 				return getInstantiatedSuperTypes(owner)
 					.filter(superType -> superType.getQualifiedName().equals(declaring.getQualifiedName()))
-					.map(superType -> typeArgumentSubstitutions(declaring, superType))
-					.flatMap(substitutions -> candidates.stream()
-						.filter(m -> instantiate(m, substitutions).equals(method)))
+					.flatMap(superType -> candidates.stream()
+						.filter(m -> instantiate(m, declaring, superType).equals(method)))
 					.findFirst();
 			})
 			.orElse(method);
@@ -321,24 +322,55 @@ public interface HierarchyProvider {
 	default Set<TypeReference<TypeDecl>> getAllInstantiatedSuperTypes(TypeReference<?> reference) {
 		Preconditions.checkNotNull(reference);
 		Set<TypeReference<TypeDecl>> result = new LinkedHashSet<>();
-		collectInstantiatedSuperTypes(reference, result);
+		collectInstantiatedSuperTypes(reference, false, result);
 		return result;
 	}
 
-	private void collectInstantiatedSuperTypes(TypeReference<?> reference, Set<TypeReference<TypeDecl>> accumulator) {
+	private void collectInstantiatedSuperTypes(TypeReference<?> reference, boolean erased,
+	                                           Set<TypeReference<TypeDecl>> accumulator) {
 		Optional<TypeDecl> resolved = resolver().resolve(reference);
 		if (resolved.isEmpty()) {
 			accumulator.addAll(getAllSuperTypes(reference));
 			return;
 		}
 
+		// §4.8: the supertypes of a raw type are erased, all the way up the hierarchy
+		boolean raw = erased || isRaw(resolved.get(), reference);
 		Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(resolved.get(), reference);
 		for (TypeReference<TypeDecl> superType : getSuperTypes(resolved.get())) {
-			TypeReference<TypeDecl> instantiated = substituteSuperType(superType, substitutions);
+			TypeReference<TypeDecl> instantiated = raw
+				? new TypeReference<>(superType.qualifiedName())
+				: substituteSuperType(superType, substitutions);
 			if (accumulator.add(instantiated)) {
-				collectInstantiatedSuperTypes(instantiated, accumulator);
+				collectInstantiatedSuperTypes(instantiated, raw, accumulator);
 			}
 		}
+	}
+
+	/**
+	 * Checks whether {@code reference} is a raw type (JLS §4.8), i.e., a reference that supplies no type argument to
+	 * the generic type {@code typeDecl} it refers to.
+	 */
+	private static boolean isRaw(TypeDecl typeDecl, TypeReference<?> reference) {
+		return !typeDecl.getFormalTypeParameters().isEmpty() && reference.typeArguments().isEmpty();
+	}
+
+	/**
+	 * Checks whether {@code member} is erased when {@code type}, which it is a member of, is used as a raw type (JLS
+	 * §4.8). This is the case for the constructors, instance methods, and non-static fields declared by a generic
+	 * type: {@code type} itself or one of its supertypes, which are raw types too.
+	 *
+	 * @param type   a type
+	 * @param member a member declared or inherited by {@code type}
+	 * @return true if raw references to {@code type} see the erasure of {@code member}
+	 */
+	default boolean isErasedInRawType(TypeDecl type, TypeMemberDecl member) {
+		Preconditions.checkNotNull(type);
+		Preconditions.checkNotNull(member);
+		return !type.getFormalTypeParameters().isEmpty() && !member.isStatic() &&
+			resolver().resolve(member.getContainingType())
+				.map(declaring -> !declaring.getFormalTypeParameters().isEmpty())
+				.orElse(false);
 	}
 
 	/**
@@ -373,14 +405,26 @@ public interface HierarchyProvider {
 	}
 
 	/**
-	 * Returns the given inherited method with the supertype's type arguments substituted into its return type,
-	 * parameters, and thrown exceptions. The method's own formal type parameters shadow the supertype's and are left
-	 * untouched. Returns the method unchanged when no substitution applies.
+	 * Returns a method declared by {@code declaring} as a member of {@code superType}, a reference to
+	 * {@code declaring}. The type arguments of {@code superType} are substituted into its return type, parameters, and
+	 * thrown exceptions; the method's own formal type parameters shadow those of {@code declaring} and are left
+	 * untouched. If {@code superType} is a raw type, an instance method is erased instead (JLS §4.8). Returns the
+	 * method unchanged when neither applies.
 	 */
-	private static MethodDecl instantiate(MethodDecl method, Map<String, ITypeReference> substitutions) {
-		Map<String, ITypeReference> effective = withoutShadowedParameters(method, substitutions);
-		if (effective.isEmpty()) {
-			return method;
+	private MethodDecl instantiate(MethodDecl method, TypeDecl declaring, TypeReference<?> superType) {
+		UnaryOperator<ITypeReference> mapping;
+		if (isRaw(declaring, superType)) {
+			if (method.isStatic()) {
+				return method;
+			}
+			mapping = type -> erasure().getErasedType(method, type);
+		} else {
+			Map<String, ITypeReference> substitutions =
+				withoutShadowedParameters(method, typeArgumentSubstitutions(declaring, superType));
+			if (substitutions.isEmpty()) {
+				return method;
+			}
+			mapping = type -> TypeParameterMapping.substitute(type, substitutions);
 		}
 		return new MethodDecl(
 			method.getQualifiedName(),
@@ -389,23 +433,18 @@ public interface HierarchyProvider {
 			method.getAnnotations(),
 			method.getLocation(),
 			method.getContainingType(),
-			TypeParameterMapping.substitute(method.getType(), effective),
+			mapping.apply(method.getType()),
 			method.getParameters().stream()
-				.map(p -> new ParameterDecl(p.name(), TypeParameterMapping.substitute(p.type(), effective), p.isVarargs()))
+				.map(p -> new ParameterDecl(p.name(), mapping.apply(p.type()), p.isVarargs()))
 				.toList(),
-			method.getFormalTypeParameters(),
+			isRaw(declaring, superType) ? List.of() : method.getFormalTypeParameters(),
 			method.getThrownExceptions().stream()
-				.map(e -> TypeParameterMapping.substitute(e, effective))
+				.map(mapping)
 				.collect(Collectors.toUnmodifiableSet()));
 	}
 
-	/**
-	 * Returns the given inherited field with the supertype's type arguments substituted into its type. Returns the field
-	 * unchanged when no substitution applies.
-	 */
-	private FieldDecl instantiate(FieldDecl field, Map<String, ITypeReference> substitutions) {
-		ITypeReference substituted = TypeParameterMapping.substitute(field.getType(), substitutions);
-		if (substituted.equals(field.getType())) {
+	private static FieldDecl withType(FieldDecl field, ITypeReference type) {
+		if (type.equals(field.getType())) {
 			return field;
 		}
 		return new FieldDecl(
@@ -415,7 +454,7 @@ public interface HierarchyProvider {
 			field.getAnnotations(),
 			field.getLocation(),
 			field.getContainingType(),
-			substituted,
+			type,
 			field.isCompileTimeConstant());
 	}
 
@@ -458,13 +497,10 @@ public interface HierarchyProvider {
 			type.getDeclaredMethods().stream().map(m -> Map.entry(m, m)),
 			getInstantiatedSuperTypes(type)
 				.flatMap(superType -> resolver().resolve(superType).stream()
-					.flatMap(decl -> {
-						Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
-						return decl.getDeclaredMethods().stream()
-							// §8.4.8, §9.4.1: static interface methods are not inherited.
-							.filter(m -> !decl.isInterface() || !m.isStatic())
-							.map(m -> Map.entry(m, instantiate(m, substitutions)));
-					})));
+					.flatMap(decl -> decl.getDeclaredMethods().stream()
+						// §8.4.8, §9.4.1: static interface methods are not inherited.
+						.filter(m -> !decl.isInterface() || !m.isStatic())
+						.map(m -> Map.entry(m, instantiate(m, decl, superType))))));
 	}
 
 	/**
@@ -573,7 +609,7 @@ public interface HierarchyProvider {
 	 */
 	default Map<String, FieldDecl> getExportedFieldsByName(TypeDecl type) {
 		Preconditions.checkNotNull(type);
-		return getMemberFields(type, new HashSet<>())
+		return getMemberFields(type, false, new HashSet<>())
 			.filter(f -> properties().isExported(type, f))
 			.collect(Collectors.toMap(
 				FieldDecl::getSimpleName,
@@ -586,12 +622,14 @@ public interface HierarchyProvider {
 	 * Returns the fields that are members of {@code type} (JLS §8.2, §8.3): the fields it declares, whatever their
 	 * visibility, and the fields it inherits from its direct supertypes. A member of a direct supertype is inherited
 	 * if it is accessible in {@code type} and not hidden by a field of the same name declared in {@code type}.
-	 * Inherited fields are instantiated with the type arguments {@code type} supplies to its supertypes.
+	 * Inherited fields are instantiated with the type arguments {@code type} supplies to its supertypes. The
+	 * non-static fields of a raw type are erased, and its supertypes are raw types too (JLS §4.8).
 	 *
 	 * @param type     the type to collect the member fields of
+	 * @param raw      whether {@code type} is a raw type or the supertype of one
 	 * @param visiting the qualified names of the subtypes being visited, to stop at cyclic hierarchies
 	 */
-	private Stream<FieldDecl> getMemberFields(TypeDecl type, Set<String> visiting) {
+	private Stream<FieldDecl> getMemberFields(TypeDecl type, boolean raw, Set<String> visiting) {
 		if (!visiting.add(type.getQualifiedName())) {
 			return Stream.empty();
 		}
@@ -600,17 +638,23 @@ public interface HierarchyProvider {
 			.map(FieldDecl::getSimpleName)
 			.collect(Collectors.toSet());
 		List<FieldDecl> inherited = getSuperTypes(type).stream()
+			.map(superType -> raw ? new TypeReference<TypeDecl>(superType.qualifiedName()) : superType)
 			.flatMap(superType -> resolver().resolve(superType).stream()
 				.flatMap(decl -> {
 					Map<String, ITypeReference> substitutions = typeArgumentSubstitutions(decl, superType);
-					return getMemberFields(decl, visiting)
+					return getMemberFields(decl, raw || isRaw(decl, superType), visiting)
 						.filter(f -> !declared.contains(f.getSimpleName()) && isInheritedBy(type, f))
-						.map(f -> instantiate(f, substitutions));
+						.map(f -> withType(f, TypeParameterMapping.substitute(f.getType(), substitutions)));
 				}))
 			.toList();
 		visiting.remove(type.getQualifiedName());
 
-		return Stream.concat(type.getDeclaredFields().stream(), inherited.stream());
+		return Stream.concat(
+			type.getDeclaredFields().stream()
+				.map(f -> raw && !type.getFormalTypeParameters().isEmpty() && !f.isStatic()
+					? withType(f, erasure().getErasedType(type, f.getType()))
+					: f),
+			inherited.stream());
 	}
 
 	private boolean isInheritedBy(TypeDecl type, FieldDecl field) {

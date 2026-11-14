@@ -1140,4 +1140,63 @@ class MethodReturnTypeChangedTest {
 		assertBCs(buildDiff(v1, v2),
 			bc("A", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 2));
 	}
+
+	// §4.8: B extends the raw A and inherits its erased members, in both versions
+	@Client("""
+		Object o = new B().m();
+		new B() { @Override public Object m() { return null; } };""")
+	@Test
+	void supertype_becomes_generic_raw_subtype() {
+		var v1 = """
+			public class A { public Object m() { return null; } }
+			public class B extends A {}""";
+		var v2 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	@Client("String s = new B().m();")
+	@Test
+	void supertype_becomes_raw() {
+		var v1 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A<String> {}""";
+		var v2 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A {}""";
+
+		assertBC("B", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1, buildDiff(v1, v2));
+	}
+
+	// §4.8: existing clients use B raw, but the members of the non-generic A are not erased
+	@Client("String s = new B().m().get(0);")
+	@Test
+	void type_becomes_generic_method_inherited_from_non_generic_supertype() {
+		var v1 = """
+			public class A { public java.util.List<String> m() { return null; } }
+			public class B extends A {}""";
+		var v2 = """
+			public class A { public java.util.List<String> m() { return null; } }
+			public class B<T> extends A {}""";
+
+		assertNoBC(buildDiff(v1, v2));
+	}
+
+	// §4.8: existing clients use C raw, and its supertypes are raw too, even through the non-generic B
+	@Client("String s = new C().m();")
+	@Test
+	void type_becomes_generic_method_inherited_from_generic_supertype() {
+		var v1 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A<String> {}
+			public class C extends B {}""";
+		var v2 = """
+			public class A<T> { public T m() { return null; } }
+			public class B extends A<String> {}
+			public class C<U> extends B {}""";
+
+		assertBC("C", "A.m()", BreakingChangeKind.METHOD_RETURN_TYPE_CHANGED_INCOMPATIBLE, 1, buildDiff(v1, v2));
+	}
 }

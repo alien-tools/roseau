@@ -2,6 +2,7 @@ package io.github.alien.roseau.extractors;
 
 import io.github.alien.roseau.api.model.FieldDecl;
 import io.github.alien.roseau.api.model.MethodDecl;
+import io.github.alien.roseau.api.model.ParameterDecl;
 import io.github.alien.roseau.api.model.reference.ArrayTypeReference;
 import io.github.alien.roseau.api.model.reference.PrimitiveTypeReference;
 import io.github.alien.roseau.api.model.reference.TypeParameterReference;
@@ -10,6 +11,8 @@ import io.github.alien.roseau.utils.ApiBuilder;
 import io.github.alien.roseau.utils.ApiBuilderType;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+
+import java.util.List;
 
 import static io.github.alien.roseau.utils.TestUtils.assertClass;
 import static io.github.alien.roseau.utils.TestUtils.assertEnum;
@@ -471,6 +474,59 @@ class TypeMemberExtractionTest {
 		// In StringBox, it is substituted
 		var inherited = api.analyzer().findField(stringBox, "value").orElseThrow();
 		assertThat(inherited.getType()).isEqualTo(TypeReference.STRING);
+	}
+
+	// §4.8: the instance members of a raw type are erased, and its supertypes are raw types too
+	@ParameterizedTest
+	@EnumSource(ApiBuilderType.class)
+	void members_inherited_through_raw_supertypes_are_erased(ApiBuilder builder) {
+		var api = builder.build("""
+			public class Box<T extends Number> {
+				public T value;
+				public static java.util.List<String> names;
+				public T get() { return null; }
+				public <U> void put(java.util.List<U> l, T t) {}
+				public static java.util.List<String> names() { return null; }
+			}
+			public class Plain {
+				public java.util.List<String> list() { return null; }
+			}
+			public class IntBox extends Box<Integer> {}
+			public class Gen<V> extends IntBox {}
+			public class GenPlain<V> extends Plain {}
+			public class RawBox extends Box {}
+			public class RawGen extends Gen {}
+			public class RawGenPlain extends GenPlain {}""");
+		var analyzer = api.analyzer();
+		var number = new TypeReference<>("java.lang.Number");
+		var list = new TypeReference<>("java.util.List");
+		var stringList = new TypeReference<>("java.util.List", List.of(TypeReference.STRING));
+
+		var rawBox = assertClass(api, "RawBox");
+		assertThat(analyzer.findField(rawBox, "value").orElseThrow().getType()).isEqualTo(number);
+		assertThat(analyzer.findField(rawBox, "names").orElseThrow().getType()).isEqualTo(stringList);
+		assertThat(analyzer.findMethod(rawBox, "get()").orElseThrow().getType()).isEqualTo(number);
+		assertThat(analyzer.findMethod(rawBox, "names()").orElseThrow().getType()).isEqualTo(stringList);
+		var put = analyzer.findMethod(rawBox, "put(java.util.List,java.lang.Number)").orElseThrow();
+		assertThat(put.getFormalTypeParameters()).isEmpty();
+		assertThat(put.getParameters()).extracting(ParameterDecl::type).containsExactly(list, number);
+
+		// The supertypes of a raw type are erased all the way up, even through the non-generic IntBox
+		var rawGen = assertClass(api, "RawGen");
+		assertThat(analyzer.findField(rawGen, "value").orElseThrow().getType()).isEqualTo(number);
+		assertThat(analyzer.findMethod(rawGen, "get()").orElseThrow().getType()).isEqualTo(number);
+
+		// The members of a non-generic type are not erased
+		var rawGenPlain = assertClass(api, "RawGenPlain");
+		assertThat(analyzer.findMethod(rawGenPlain, "list()").orElseThrow().getType()).isEqualTo(stringList);
+
+		var gen = assertClass(api, "Gen");
+		assertThat(analyzer.findMethod(gen, "get()").orElseThrow().getType())
+			.isEqualTo(new TypeReference<>("java.lang.Integer"));
+		assertThat(analyzer.isErasedInRawType(gen, analyzer.findMethod(gen, "get()").orElseThrow())).isTrue();
+		assertThat(analyzer.isErasedInRawType(gen, analyzer.findMethod(gen, "names()").orElseThrow())).isFalse();
+		var genPlain = assertClass(api, "GenPlain");
+		assertThat(analyzer.isErasedInRawType(genPlain, analyzer.findMethod(genPlain, "list()").orElseThrow())).isFalse();
 	}
 
 	@ParameterizedTest
