@@ -311,8 +311,7 @@ final class JdtApiVisitor extends ASTVisitor {
 		int line = lineNumbersMapping.getOrDefault(binding.getKey(), -1);
 		SourceLocation location = factory.location(filePath, line);
 		TypeReference<TypeDecl> enclosingTypeRef = createTypeReference(enclosingType);
-		boolean compileTimeConstant = binding.getConstantValue() != null &&
-			(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING));
+		boolean compileTimeConstant = isConstantVariable(binding, fieldType);
 
 		return factory.createField(makeMemberFqn(enclosingType, binding), visibility, mods,
 			anns, location, enclosingTypeRef, fieldType, compileTimeConstant);
@@ -610,6 +609,24 @@ final class JdtApiVisitor extends ASTVisitor {
 			.map(IVariableBinding::getName)
 			.map(ElementType::valueOf)
 			.collect(Collectors.toCollection(() -> EnumSet.noneOf(ElementType.class)));
+	}
+
+	private boolean isConstantVariable(IVariableBinding field, ITypeReference fieldType) {
+		if (!org.eclipse.jdt.core.dom.Modifier.isFinal(field.getModifiers())) {
+			return false;
+		}
+		if (!(fieldType instanceof PrimitiveTypeReference || fieldType.equals(TypeReference.STRING))) {
+			return false;
+		}
+
+		try {
+			// This can fail on incorrect code, so be safe
+			return field.getConstantValue() != null;
+		} catch (RuntimeException e) {
+			LOGGER.debug("JDT failed to evaluate the initializer of {} in {}: {}",
+				field.getName(), filePath, e.toString());
+			return false;
+		}
 	}
 
 	private static boolean isPublicOrProtected(IVariableBinding field) {
