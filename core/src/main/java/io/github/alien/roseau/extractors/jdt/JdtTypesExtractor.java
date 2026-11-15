@@ -99,6 +99,7 @@ public final class JdtTypesExtractor implements TypesExtractor {
 		ExtractorSink sink = new ExtractorSink(sourcesToParse.size() << 1);
 		Set<String> reportedErrors = ConcurrentHashMap.newKeySet();
 		List<Path> misplacedFiles = new ArrayList<>();
+		List<Path> extractedFiles = new ArrayList<>(sourcesToParse.size());
 		// Receive parsed ASTs and forward them to the visitor
 		FileASTRequestor requestor = new FileASTRequestor() {
 			@Override
@@ -119,12 +120,17 @@ public final class JdtTypesExtractor implements TypesExtractor {
 
 				JdtApiVisitor visitor = new JdtApiVisitor(ast, filePath, sink, factory);
 				ast.accept(visitor);
+				extractedFiles.add(filePath);
 			}
 		};
 
 		// Start parsing and forwarding ASTs
 		try {
 			parser.createASTs(sourcesArray, null, new String[0], requestor, null);
+			if (extractedFiles.size() != sourcesToParse.size()) {
+				throw new RoseauException("JDT only extracted %d of %d files in %s".formatted(
+					extractedFiles.size(), sourcesToParse.size(), library.getLocation()));
+			}
 			if (!misplacedFiles.isEmpty()) {
 				LOGGER.warn("{} file(s) in {} do not match their package declaration (e.g., {}); is the source root correct?",
 					misplacedFiles.size(), library.getLocation(), misplacedFiles.getFirst());
