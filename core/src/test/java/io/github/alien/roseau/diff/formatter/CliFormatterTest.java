@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.api.model.SourceLocation;
 import org.junit.jupiter.api.Test;
 
@@ -22,7 +23,7 @@ class CliFormatterTest {
 	@Test
 	void plain_report_is_rendered_in_full() {
 		assertThat(plain()).isEqualTo("""
-			Breaking Changes found: 6 (2 binary-breaking, 5 source-breaking)
+			Breaking Changes found on Java %d: 6 (2 binary-breaking, 5 source-breaking)
 			⚠ pkg.A FORMAL_TYPE_PARAMETER_REMOVED [T]
 			  ✓ binary-compatible ✗ source-breaking
 			  → pkg/A.java:3
@@ -43,7 +44,7 @@ class CliFormatterTest {
 			✗ pkg.A.removed() EXECUTABLE_REMOVED
 			  ✗ binary-breaking ✗ source-breaking
 			  → pkg/A.java:4
-			""");
+			""".formatted(JavaRelease.host()));
 	}
 
 	@Test
@@ -55,20 +56,20 @@ class CliFormatterTest {
 	void inherited_changes_name_the_type_they_impact() {
 		assertThat(normalize(new CliFormatter(CliFormatter.Mode.PLAIN).format(ReportFixtures.inherited())))
 			.isEqualTo("""
-				Breaking Changes found: 2 (2 binary-breaking, 2 source-breaking)
+				Breaking Changes found on Java %d: 2 (2 binary-breaking, 2 source-breaking)
 				✗ pkg.Base.removed() EXECUTABLE_REMOVED
 				  ✗ binary-breaking ✗ source-breaking
 				  → pkg/Base.java:4
 				✗ pkg.Base.removed() in pkg.Child EXECUTABLE_REMOVED
 				  ✗ binary-breaking ✗ source-breaking
 				  → pkg/Base.java:4
-				""");
+				""".formatted(JavaRelease.host()));
 	}
 
 	@Test
 	void empty_report_says_so() {
 		assertThat(new CliFormatter(CliFormatter.Mode.PLAIN).format(ReportFixtures.empty()))
-			.isEqualTo("No breaking changes found.");
+			.isEqualTo("No breaking changes found on Java %d.".formatted(JavaRelease.host()));
 	}
 
 	@Test

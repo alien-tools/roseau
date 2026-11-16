@@ -52,7 +52,7 @@ Identify breaking changes between two versions, passed as local JARs or source t
 
 ```
 $ roseau --diff --v1 com.google.guava:guava:33.4.0-jre --v2 com.google.guava:guava:33.6.0-jre
-Breaking Changes found: 7 (3 binary-breaking, 7 source-breaking)
+Breaking Changes found on Java 25: 7 (3 binary-breaking, 7 source-breaking)
 ★ com.google.common.graph.Graph TYPE_NEW_ABSTRACT_METHOD [asNetwork()]
   ✓ binary-compatible ✗ source-breaking
   → com/google/common/graph/Graph.java

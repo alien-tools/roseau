@@ -61,10 +61,10 @@ class ReportWritingTest {
 		// Guards the wiring from format to formatter; the size check fails when a new format needs a line here
 		assertThat(BreakingChangesFormatterFactory.values()).hasSize(5);
 		assertThat(written(BreakingChangesFormatterFactory.CSV)).startsWith("type;symbol;kind");
-		assertThat(written(BreakingChangesFormatterFactory.JSON)).startsWith("[");
+		assertThat(written(BreakingChangesFormatterFactory.JSON)).startsWith("{");
 		assertThat(written(BreakingChangesFormatterFactory.MD)).startsWith("## Breaking Changes Report");
 		assertThat(written(BreakingChangesFormatterFactory.HTML)).startsWith("<!DOCTYPE html>");
-		assertThat(written(BreakingChangesFormatterFactory.CLI)).startsWith("Breaking Changes found:");
+		assertThat(written(BreakingChangesFormatterFactory.CLI)).startsWith("Breaking Changes found on Java");
 	}
 
 	@Test

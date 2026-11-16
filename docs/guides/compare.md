@@ -53,6 +53,7 @@ roseau --diff --v1 path/to/v1/src --v2 path/to/v2/src \
 | only source-breaking changes | `--source-only` |
 | accepted-change baseline | `--ignored accepted.csv` |
 | report artifacts | `--report=FORMAT=PATH` |
+| [clients on an older Java](../java-release.md) | `--java-release 8` |
 
 !!! note
     `--binary-only` and `--source-only` are mutually exclusive.

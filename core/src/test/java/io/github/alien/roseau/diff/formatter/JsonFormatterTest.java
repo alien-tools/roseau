@@ -1,5 +1,6 @@
 package io.github.alien.roseau.diff.formatter;
 
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.api.model.SourceLocation;
 import io.github.alien.roseau.diff.RoseauReport;
 import org.json.JSONArray;
@@ -16,7 +17,15 @@ class JsonFormatterTest {
 		"newSymbol", "binaryBreaking", "sourceBreaking");
 
 	private static JSONArray json(RoseauReport report) {
-		return new JSONArray(new JsonFormatter().format(report));
+		return new JSONObject(new JsonFormatter().format(report)).getJSONArray("breakingChanges");
+	}
+
+	@Test
+	void report_states_the_java_release_and_holds_the_changes() {
+		JSONObject report = new JSONObject(new JsonFormatter().format(ReportFixtures.mixed()));
+
+		assertThat(report.keySet()).containsExactlyInAnyOrder("javaRelease", "breakingChanges");
+		assertThat(report.getInt("javaRelease")).isEqualTo(JavaRelease.host());
 	}
 
 	@Test
@@ -69,8 +78,11 @@ class JsonFormatterTest {
 	}
 
 	@Test
-	void empty_report_is_an_empty_array() {
-		assertThat(new JsonFormatter().format(ReportFixtures.empty())).isEqualTo("[]");
+	void empty_report_states_the_java_release_and_no_changes() {
+		JSONObject report = new JSONObject(new JsonFormatter().format(ReportFixtures.empty()));
+
+		assertThat(report.getInt("javaRelease")).isEqualTo(JavaRelease.host());
+		assertThat(report.getJSONArray("breakingChanges")).isEmpty();
 	}
 
 	private static List<String> kinds(JSONArray changes) {

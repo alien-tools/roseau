@@ -59,6 +59,20 @@ class AsmTypesExtractorTest {
 	}
 
 	@Test
+	void multi_release_jar_uses_base_classes_before_the_versioned_release() {
+		var types = extractor.extractTypes(Library.builder().location(MULTI_RELEASE_JAR).javaRelease(11).build());
+		// The Java 17 version adds a @Deprecated that Java 11 clients do not see
+		assertThat(types.findType("pkg.C").orElseThrow().getAnnotations()).isEmpty();
+	}
+
+	@Test
+	void multi_release_jar_uses_versioned_classes_from_their_release() {
+		var types = extractor.extractTypes(Library.builder().location(MULTI_RELEASE_JAR).javaRelease(17).build());
+		// The Java 17 version adds a @Deprecated that Java 11 clients do not see
+		assertThat(types.findType("pkg.C").orElseThrow().getAnnotations()).isNotEmpty();
+	}
+
+	@Test
 	void corrupt_class_file_does_not_abort_whole_jar() {
 		var types = extractor.extractTypes(Library.of(CORRUPT_JAR));
 		assertThat(types.findType("pkg.Valid")).isPresent();

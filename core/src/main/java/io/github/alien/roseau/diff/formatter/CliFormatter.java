@@ -43,7 +43,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 	public String format(RoseauReport report) {
 		List<BreakingChange> changes = report.getBreakingChanges();
 		if (changes.isEmpty()) {
-			return "No breaking changes found.";
+			return "No breaking changes found on Java " + report.getJavaRelease() + ".";
 		}
 
 		int binaryBreaking = report.getBinaryBreakingChanges().size();
@@ -51,7 +51,7 @@ public class CliFormatter implements BreakingChangesFormatter {
 
 		StringBuilder sb = new StringBuilder();
 
-		sb.append(bold("Breaking Changes found: ")).append(changes.size());
+		sb.append(bold("Breaking Changes found on Java " + report.getJavaRelease() + ": ")).append(changes.size());
 		sb.append(" (").append(binaryBreaking).append(" binary-breaking, ");
 		sb.append(sourceBreaking).append(" source-breaking)");
 		sb.append(System.lineSeparator());

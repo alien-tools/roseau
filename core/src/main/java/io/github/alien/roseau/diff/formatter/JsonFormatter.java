@@ -16,6 +16,13 @@ public class JsonFormatter implements BreakingChangesFormatter {
 	 */
 	@Override
 	public String format(RoseauReport report) {
+		JSONObject json = new JSONObject();
+		json.put("javaRelease", report.getJavaRelease());
+		json.put("breakingChanges", breakingChanges(report));
+		return json.toString(JSON_INDENT);
+	}
+
+	private static JSONArray breakingChanges(RoseauReport report) {
 		return new JSONArray().putAll(
 			report.getBreakingChanges().stream()
 				.map(bc -> {
@@ -35,7 +42,7 @@ public class JsonFormatter implements BreakingChangesFormatter {
 					return jsonObject;
 				})
 				.toList()
-		).toString(JSON_INDENT);
+		);
 	}
 
 	private static JSONObject formatLocation(SourceLocation location) {

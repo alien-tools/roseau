@@ -38,13 +38,14 @@ public final class IncrementalJdtTypesExtractor implements IncrementalTypesExtra
 		Preconditions.checkNotNull(newVersion);
 		Preconditions.checkNotNull(changedFiles);
 
-		boolean classpathChanged = !previousTypes.getLibrary().getClasspath().equals(newVersion.getClasspath());
+		boolean classpathChanged = !previousTypes.getLibrary().getClasspath().equals(newVersion.getClasspath()) ||
+			previousTypes.getLibrary().getJavaRelease() != newVersion.getJavaRelease();
 		boolean moduleChanged = Stream.of(changedFiles.createdFiles(), changedFiles.updatedFiles(),
 				changedFiles.deletedFiles())
 			.flatMap(Set::stream)
 			.anyMatch(path -> path.endsWith("module-info.java"));
 
-		// Always reparse when the classpath or module declaration changes
+		// Always reparse when the classpath, Java release, or module declaration changes
 		if (classpathChanged || moduleChanged) {
 			return extractor.extractTypes(newVersion);
 		}

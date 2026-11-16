@@ -63,6 +63,7 @@ nav:
       - Gradle: guides/gradle.md
   - Concepts:
       - API surface: api-surface.md
+      - Java release: java-release.md
       - Kinds of breaking changes: breaking-change-kinds.md
   - Reference:
       - CLI options: reference/cli.md

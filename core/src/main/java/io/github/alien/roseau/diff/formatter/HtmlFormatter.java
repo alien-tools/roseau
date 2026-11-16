@@ -69,6 +69,7 @@ public final class HtmlFormatter implements BreakingChangesFormatter {
 		sb.append("</div>\n</div>\n");
 		// Metrics
 		sb.append("<div class=\"card metrics\">\n<h2>Summary</h2>\n<div class=\"metrics-grid\">\n");
+		sb.append(metric("Java release", "Java " + report.getJavaRelease(), "info"));
 		sb.append(metric("Breaking changes", Integer.toString(changes.size()),
 			changes.isEmpty() ? "ok" : "danger"));
 		sb.append(metric("Impacted types", Integer.toString(impactedTypes.size()),

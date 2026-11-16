@@ -112,6 +112,10 @@ public final class RoseauCLI implements Callable<Integer> {
 	@Option(names = "--ignore-module",
 		description = "Ignore the libraries' module declarations and consider every public type as part of the API")
 	private Boolean ignoreModule;
+	@Option(names = "--java-release", paramLabel = "<N>",
+		description = "Check compatibility for clients on Java N (e.g., 8, 17, 21). Choose the oldest release the " +
+			"library supports. Defaults to the release of the JDK running Roseau.")
+	private Integer javaRelease;
 	@Option(names = "--ignored", paramLabel = "<path>",
 		description = "Do not report the breaking changes listed in the given CSV file; " +
 			"this CSV file shares the same structure as a CSV report")
@@ -283,7 +287,8 @@ public final class RoseauCLI implements Callable<Integer> {
 		// No CLI option (yet?) for API exclusions
 		RoseauOptions.Exclude noExclusions = new RoseauOptions.Exclude(List.of(), List.of());
 		RoseauOptions.Common commonCli = new RoseauOptions.Common(
-			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions, ignoreModule);
+			new RoseauOptions.Classpath(pom, buildClasspathFromString(classpath)), noExclusions, ignoreModule,
+			javaRelease);
 		RoseauOptions.Library v1Cli = new RoseauOptions.Library(
 			resolvedV1.location(), new RoseauOptions.Classpath(v1Pom, buildClasspathFromString(v1Classpath)),
 			noExclusions, apiJson, null);
@@ -305,7 +310,7 @@ public final class RoseauCLI implements Callable<Integer> {
 
 	private static Library toLibrary(RoseauOptions.Library libraryOptions, RoseauOptions.Common commonOptions,
 	                                 List<Path> coordinateClasspath) {
-		Library library = libraryOptions.mergeWith(commonOptions).toLibrary();
+		Library library = libraryOptions.toLibrary(commonOptions);
 		if (coordinateClasspath.isEmpty()) {
 			return library;
 		}
@@ -319,6 +324,7 @@ public final class RoseauCLI implements Callable<Integer> {
 			.pom(library.getPom())
 			.exclusions(library.getExclusions())
 			.ignoreModule(library.isIgnoringModule())
+			.javaRelease(library.getJavaRelease())
 			.build();
 	}
 

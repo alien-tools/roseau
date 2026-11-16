@@ -1,6 +1,7 @@
 package io.github.alien.roseau.extractors.asm;
 
 import com.google.common.base.Preconditions;
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.RoseauException;
 import io.github.alien.roseau.api.model.LibraryTypes;
@@ -53,7 +54,8 @@ public class AsmTypesExtractor implements TypesExtractor {
 	@Override
 	public LibraryTypes extractTypes(Library library) {
 		Preconditions.checkArgument(canExtract(library));
-		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, JarFile.runtimeVersion())) {
+		Runtime.Version version = JavaRelease.version(library.getJavaRelease());
+		try (JarFile jar = new JarFile(library.getLocation().toFile(), false, ZipFile.OPEN_READ, version)) {
 			return extractTypes(library, jar);
 		} catch (IOException e) {
 			throw new RoseauException("Failed to process JAR file", e);

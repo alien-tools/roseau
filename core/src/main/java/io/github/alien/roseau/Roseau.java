@@ -109,6 +109,7 @@ public final class Roseau {
 	public static RoseauReport diff(API v1, API v2) {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
+		checkSameJavaRelease(v1.getLibraryTypes().getLibrary(), v2.getLibraryTypes().getLibrary());
 
 		Stopwatch sw = Stopwatch.createStarted();
 		ApiWalker walker = new ApiWalker(v1, v2, new DefaultSymbolMatcher());
@@ -140,6 +141,7 @@ public final class Roseau {
 		Preconditions.checkNotNull(v1);
 		Preconditions.checkNotNull(v2);
 		Preconditions.checkNotNull(executor);
+		checkSameJavaRelease(v1, v2);
 
 		Stopwatch sw = Stopwatch.createStarted();
 		CompletableFuture<API> futureV1 = CompletableFuture.supplyAsync(() -> buildAPI(v1), executor);
@@ -204,6 +206,7 @@ public final class Roseau {
 		Preconditions.checkNotNull(executor);
 		Preconditions.checkArgument(v1.getExtractorType() == ExtractorType.JDT);
 		Preconditions.checkArgument(v2.getExtractorType() == ExtractorType.JDT);
+		checkSameJavaRelease(v1, v2);
 		HashingChangedFilesProvider provider = new HashingChangedFilesProvider(HashFunction.XXHASH);
 
 		Stopwatch sw = Stopwatch.createStarted();
@@ -258,9 +261,22 @@ public final class Roseau {
 		return types;
 	}
 
+	/**
+	 * Both versions must be compared on the same Java release
+	 */
+	private static void checkSameJavaRelease(Library v1, Library v2) {
+		if (v1.getJavaRelease() != v2.getJavaRelease()) {
+			throw new RoseauException(("Cannot compare %s on Java %d with %s on Java %d: both versions must be " +
+				"compared on the same Java release")
+				.formatted(v1.getLocation(), v1.getJavaRelease(), v2.getLocation(), v2.getJavaRelease()));
+		}
+	}
+
 	private static API buildAPI(LibraryTypes types, ApiFactory factory) {
 		AsmTypesExtractor extractor = new AsmTypesExtractor(factory);
-		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, types.getLibrary().getClasspath());
+		Library library = types.getLibrary();
+		TypeProvider classpathProvider = new ClasspathTypeProvider(extractor, library.getClasspath(),
+			library.getJavaRelease());
 		TypeResolver cachingTypeResolver = new CachingTypeResolver(List.of(types, classpathProvider));
 		return buildAPI(types, cachingTypeResolver);
 	}

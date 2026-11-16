@@ -14,7 +14,7 @@ Library versions can be passed as local JAR files or source directories, or can 
 
 ```bash
 $ roseau --diff --v1 library-1.0.0.jar --v2 library-2.0.0.jar
-Breaking changes found: 3 (2 binary-breaking, 2 source-breaking)
+Breaking changes found on Java 25: 3 (2 binary-breaking, 2 source-breaking)
 ✗ com.pkg.A TYPE_REMOVED
   ✗ binary-breaking ✗ source-breaking
   → com/pkg/A.java:4

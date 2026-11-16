@@ -45,6 +45,7 @@ Classpath entries are JARs or class directories, separated by `:` (`;` on Window
 | `--source-only` | Only report source-breaking changes |
 | `--ignored=<path>` | Ignore breaking changes listed in a CSV file |
 | `--ignore-module` | Ignore the module declarations of `--v1` and `--v2`, as seen by clients using the library from the class path |
+| `--java-release=<N>` | Check compatibility for clients on Java `N` (`8` or later, up to the JDK running Roseau): the JDK APIs they see, the multi-release JAR entries they load, and, below 9, no modules. Defaults to the release of the JDK running Roseau. Source directories only support the default for now |
 
 ## Reports
 

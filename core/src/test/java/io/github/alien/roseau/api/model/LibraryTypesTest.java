@@ -1,5 +1,6 @@
 package io.github.alien.roseau.api.model;
 
+import io.github.alien.roseau.JavaRelease;
 import io.github.alien.roseau.Library;
 import io.github.alien.roseau.MavenClasspathBuilder;
 import io.github.alien.roseau.RoseauException;
@@ -14,6 +15,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.List;
 import java.util.Set;
@@ -97,5 +99,30 @@ class LibraryTypesTest {
 		LibraryTypes res = LibraryTypes.fromJson(json);
 
 		assertThat(res).isEqualTo(orig);
+	}
+
+	@Test
+	void json_round_trip_keeps_java_release(@TempDir Path tempDir) throws IOException {
+		var library = Library.builder().location(Path.of("src/test/resources/api-showcase.jar")).javaRelease(11).build();
+		var orig = new LibraryTypes(library, Set.of(ApiTestFactory.newInterface("test.pkg.I", AccessModifier.PUBLIC)));
+
+		var json = tempDir.resolve("release.json");
+		orig.writeJson(json);
+		var res = LibraryTypes.fromJson(json);
+
+		assertThat(res.getLibrary().getJavaRelease()).isEqualTo(11);
+		assertThat(res).isEqualTo(orig);
+	}
+
+	@Test
+	void json_without_java_release_means_host_release(@TempDir Path tempDir) throws IOException {
+		var library = Library.builder().location(Path.of("src/test/resources/api-showcase.jar")).javaRelease(11).build();
+		var orig = new LibraryTypes(library, Set.of(ApiTestFactory.newInterface("test.pkg.I", AccessModifier.PUBLIC)));
+
+		var json = Files.writeString(tempDir.resolve("legacy.json"),
+			orig.toJson().replaceFirst(",?\\s*\"javaRelease\"\\s*:\\s*11", ""));
+		assertThat(Files.readString(json)).doesNotContain("javaRelease");
+
+		assertThat(LibraryTypes.fromJson(json).getLibrary().getJavaRelease()).isEqualTo(JavaRelease.host());
 	}
 }

@@ -60,7 +60,7 @@ public interface PropertiesProvider {
 	}
 
 	private boolean isExported(TypeDecl type, Set<String> inProgress) {
-		if (!libraryTypes().getLibrary().isIgnoringModule() &&
+		if (!libraryTypes().getLibrary().isModuleDeclarationIgnored() &&
 			libraryTypes().findType(type.getQualifiedName()).isPresent() &&
 			!libraryTypes().getModule().isExporting(type.getPackageName())) {
 			return false;
